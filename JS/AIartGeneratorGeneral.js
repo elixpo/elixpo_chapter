@@ -1181,4 +1181,4 @@ document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     }
 });
 
-
+//commiting to pollinations right now
