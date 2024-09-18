@@ -30,3 +30,34 @@ setInterval(() => {
   
   prev = index;
 },1000);
+
+document.getElementById("aiArtCreate").addEventListener("click", function() {
+  
+  if(localStorage.getItem("ElixpoAIUser") !== null) {
+      location.replace("elixpoArtGenerator.html");
+  }
+  else 
+  {
+      location.replace("log_in_out.html");
+  }
+  
+});
+
+
+
+document.getElementById("aiArtCreateNavBar").addEventListener("click", function() {
+  
+  if(localStorage.getItem("ElixpoAIUser") !== null) {
+      location.replace("elixpoArtGenerator.html");
+  }
+  else 
+  {
+      location.replace("log_in_out.html");
+  }
+  
+});
+
+document.getElementById("followWhatsapp").addEventListener("click", () => {
+
+location.href = "https://www.instagram.com/elixpo_ai/";
+})

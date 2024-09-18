@@ -36,16 +36,7 @@ const typewriterElement = document.getElementById('searchText');
 window.addEventListener('resize', scaleContainer);
 window.addEventListener('load', scaleContainer);
 
-document.getElementById("aiArtCreate").addEventListener("click", function() {
-    if(localStorage.getItem("ElixpoAIUser") !== null) {
-        location.replace("elixpoArtGenerator.html");
-    }
-    else 
-    {
-        location.replace("log_in_out.html");
-    }
-    
-});
+
 
 function typeWriterEffect(text, i, callback) {
     if (i < text.length) {

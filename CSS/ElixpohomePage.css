@@ -250,11 +250,12 @@ overflow-x: hidden;
   height: 60px;
   background: #fff;
   border-radius: 15px;
-  left: 40%;
+  left: 50%;
   transform: translateX(-50%);
   overflow: hidden; /* Ensure the inner element doesn't overflow */
   cursor: pointer;
   transition: 0.25s;
+  z-index: 10;
 }
 .aiArtCreate.blur 
 {
@@ -291,6 +292,7 @@ overflow-x: hidden;
   justify-content: center;
   cursor: pointer;
   transition: 0.25s;
+  display: none;
 }
 
 .aiArtDocs.blur 

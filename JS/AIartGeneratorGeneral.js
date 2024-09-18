@@ -12,7 +12,8 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   let generating = false;
-  let tokens = 0;
+//   let tokens = 0;
+let imageUrl = '';
   let formatted_prompt = "";
   let hashtags = "";
   let tags = "";
@@ -181,169 +182,289 @@ const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
 
 
 
-        async function tokenDeduct(aspectRatio, theme, numberOfImages) {
-            // Fetch the user's token balance from the database
-            const userDoc = await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).get();
-            let tokens = userDoc.data().coins;
+        // async function tokenDeduct(aspectRatio, theme, numberOfImages) {
+        //     // Fetch the user's token balance from the database
+        //     // const userDoc = await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).get();
+        //     // let tokens = userDoc.data().coins;
             
-            let aspectRatioMultiplier;
-            let themeMultiplier;
-            let baseCostPerImage = 1000; // Base cost per image
+        //     let aspectRatioMultiplier;
+        //     let themeMultiplier;
+        //     let baseCostPerImage = 1000; // Base cost per image
         
-            // Define aspect ratio multipliers
-            switch (aspectRatio) {
-                case '1:1':
-                    aspectRatioMultiplier = 1.0;
-                    break;
-                case '9:16':
-                    aspectRatioMultiplier = 1.2;
-                    break;
-                case '16:9':
-                    aspectRatioMultiplier = 1.1;
-                    break;
-                case '4:3':
-                    aspectRatioMultiplier = 1.3;
-                    break;
-                case '3:2':
-                    aspectRatioMultiplier = 1.4;
-                    break;
-                default:
-                    aspectRatioMultiplier = 1.0; // Default multiplier
-            }
+        //     // Define aspect ratio multipliers
+        //     switch (aspectRatio) {
+        //         case '1:1':
+        //             aspectRatioMultiplier = 1.0;
+        //             break;
+        //         case '9:16':
+        //             aspectRatioMultiplier = 1.2;
+        //             break;
+        //         case '16:9':
+        //             aspectRatioMultiplier = 1.1;
+        //             break;
+        //         case '4:3':
+        //             aspectRatioMultiplier = 1.3;
+        //             break;
+        //         case '3:2':
+        //             aspectRatioMultiplier = 1.4;
+        //             break;
+        //         default:
+        //             aspectRatioMultiplier = 1.0; // Default multiplier
+        //     }
         
-            // Define theme multipliers
-            switch (theme) {
-                case 'Fantasy':
-                    themeMultiplier = 1.5;
-                    break;
-                case 'Halloween':
-                    themeMultiplier = 1.4;
-                    break;
-                case 'Euphoric':
-                    themeMultiplier = 1.3;
-                    break;
-                case 'Crayon':
-                    themeMultiplier = 1.2;
-                    break;
-                case 'Space':
-                    themeMultiplier = 1.6;
-                    break;
-                case 'Chromatic':
-                    themeMultiplier = 1.7;
-                    break;
-                case 'Cyberpunk':
-                    themeMultiplier = 1.8;
-                    break;
-                case 'Anime':
-                    themeMultiplier = 1.5;
-                    break;
-                case 'Landscape':
-                    themeMultiplier = 1.2;
-                    break;
-                case 'Samurai':
-                    themeMultiplier = 1.6;
-                    break;
-                case 'Wpap':
-                    themeMultiplier = 1.3;
-                    break;
-                case 'Vintage':
-                    themeMultiplier = 1.4;
-                    break;
-                case 'Pixel':
-                    themeMultiplier = 1.2;
-                    break;
-                case 'Normal':
-                    themeMultiplier = 1.0;
-                    break;
-                case 'Synthwave':
-                    themeMultiplier = 1.5;
-                    break;
-                default:
-                    themeMultiplier = 1.0; // Default multiplier
-            }
+        //     // Define theme multipliers
+        //     switch (theme) {
+        //         case 'Fantasy':
+        //             themeMultiplier = 1.5;
+        //             break;
+        //         case 'Halloween':
+        //             themeMultiplier = 1.4;
+        //             break;
+        //         case 'Euphoric':
+        //             themeMultiplier = 1.3;
+        //             break;
+        //         case 'Crayon':
+        //             themeMultiplier = 1.2;
+        //             break;
+        //         case 'Space':
+        //             themeMultiplier = 1.6;
+        //             break;
+        //         case 'Chromatic':
+        //             themeMultiplier = 1.7;
+        //             break;
+        //         case 'Cyberpunk':
+        //             themeMultiplier = 1.8;
+        //             break;
+        //         case 'Anime':
+        //             themeMultiplier = 1.5;
+        //             break;
+        //         case 'Landscape':
+        //             themeMultiplier = 1.2;
+        //             break;
+        //         case 'Samurai':
+        //             themeMultiplier = 1.6;
+        //             break;
+        //         case 'Wpap':
+        //             themeMultiplier = 1.3;
+        //             break;
+        //         case 'Vintage':
+        //             themeMultiplier = 1.4;
+        //             break;
+        //         case 'Pixel':
+        //             themeMultiplier = 1.2;
+        //             break;
+        //         case 'Normal':
+        //             themeMultiplier = 1.0;
+        //             break;
+        //         case 'Synthwave':
+        //             themeMultiplier = 1.5;
+        //             break;
+        //         default:
+        //             themeMultiplier = 1.0; // Default multiplier
+        //     }
         
-            // Calculate total cost
-            let totalCost = baseCostPerImage * aspectRatioMultiplier * themeMultiplier * numberOfImages;
+        //     // Calculate total cost
+        //     let totalCost = baseCostPerImage * aspectRatioMultiplier * themeMultiplier * numberOfImages;
         
-            // Deduct tokens
-            tokens -= totalCost;
-            await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).update({
-                coins: tokens,
-            });
+        //     // Deduct tokens
+        //     // tokens -= totalCost;
+        //     // await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).update({
+        //     //     coins: tokens,
+        //     // });
         
-            console.log("Total Cost:", totalCost);
-            return totalCost;
-        }
+        //     console.log("Total Cost:", totalCost);
+        //     return totalCost;
+        // }
         
 
-            tokenDeduct("1:1", "Fantasy", 1);
+            // tokenDeduct("1:1", "Fantasy", 1);
+
+
+        // async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
+        //     document.getElementById("NotifTxt").innerText = "Generating Images...";
+        //     document.getElementById("savedMsg").classList.add("display");
+        //     const model = Math.random() < 0.5 ? "flux" : "boltning";
+        //     var enhanceSwitch = document.getElementById("enhanceSwitch");
+        //     if(enhanceSwitch.checked)
+        //     {
+        //         imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&&enhance=true`;
+        //     }
+        //     else 
+        //     {
+        //         imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false`;
+        //     }
+            
+        //  //x
+        //     const imageTile = document.querySelector(".imageTile" + genNumber);
+        //     imageTile.classList.add("generating");
+        //     specialDir = localStorage.getItem("ElixpoAIUser") + "_" + Date.now();
+        //     document.getElementById("generationTimeMask" + genNumber).style.animation = "loadingFlash 2s linear infinite";
+        //     document.getElementById("generatedSeedIcon" + genNumber).style.animation = "loadingFlash 2s linear infinite";
+        //     document.getElementById("generatedSeedIcon" + genNumber).style.color = "#00ff73";
+        
+        //     const startTime = Date.now();
+        
+        //     try {
+        //         // const serverResponse = await fetch('./server.json'); // Ensure this path is correct relative to your HTML file
+        //         // const serverData = await serverResponse.json();
+        //         // const downloadUrl = serverData.servers.server1;
+        
+        //         return new Promise(async (resolve, reject) => {
+        //             const imgElement = document.getElementById("imageRecieve" + genNumber);
+        
+        //             if (!imgElement) {
+        //                 reject(`Element with ID "imageRecieve${genNumber}" not found.`);
+        //                 return;
+        //             }
+        //             console.log(downloadUrl);
+        //             try {
+                        
+        //                 const response = await fetch(`${downloadUrl}/download-image`, {  //get image
+        //                     method: 'POST',
+        //                     headers: {
+        //                         'Content-Type': 'application/json'
+        //                     },
+        //                     body: JSON.stringify({ imageUrl }),
+        //                     signal: controller.signal
+        //                 });
+        
+        //                 if (!response.ok) {
+        //                     throw new Error(`HTTP error! Status: ${response.status}`);
+        //                 }
+        
+        //                 const data = await response.json();
+        //                 const base64 = data.base64;
+        //                 const url = `data:image/png;base64,${base64}`;
+        //                 const blob = await fetch(url).then(res => res.blob());
+        //                 blobs.push(blob);
+        
+        //                 imgElement.onload = () => {
+        //                     const endTime = Date.now();
+        //                     const generationTime = Math.round((endTime - startTime) / 1000);
+        //                     if (generationTime > 9) {
+        //                         document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationTime").style.fontSize = "1.5em";
+        //                         document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationAspectRatio").style.fontSize = "1.5em";
+        //                         document.getElementById("expansionIcon" + genNumber).classList.remove("hidden");
+        //                     }
+        //                     document.getElementById("generationTime" + genNumber).innerText = `${generationTime}s`;
+        //                     document.getElementById("generationAspectRatio" + genNumber).innerText = `${aspectRatio}`;
+        //                     document.getElementById("generatedSeed" + genNumber).innerText = seed;
+        //                     document.getElementById("generationTheme" + genNumber).innerText = theme;
+        //                     const encodedData = url + "###" + prompt + "###" + localStorage.getItem("ElixpoAIUser") + "###" + genNumber;
+        //                     document.getElementById("maskImageTile" + genNumber).setAttribute("data-id", encodedData);
+        
+        //                     if (imageTile) {
+        //                         imageTile.classList.remove("generating");
+        //                         imageTile.classList.add("generated");
+        //                         document.getElementById("generationTimeMask" + genNumber).style.animation = "none";
+        //                         document.getElementById("generatedSeedIcon" + genNumber).style.animation = "none";
+        //                         document.getElementById("generatedSeedIcon" + genNumber).style.color = "#fff";
+        //                         document.getElementById("expansionIcon" + genNumber).classList.add("shrink");
+        //                         document.getElementById("maskImageTile" + genNumber).classList.add("expand");
+        //                     }
+        
+        //                     // Remove blur effect
+        //                     imgElement.style.filter = 'blur(0)';
+        //                     resolve();
+        //                 };
+        
+        //                 // Add blur effect initially
+        //                 imgElement.style.filter = 'blur(10px)';
+        //                 imgElement.src = url;
+        
+        //                 controller.signal.addEventListener('abort', () => {
+        //                     imgElement.src = '';
+        //                     reject(new Error('Image generation aborted.'));
+        //                     handleStaticModeExclusive(currentIndex + 1);
+        //                 });
+        //             } catch (error) {
+        //                 console.error('Error fetching image:', error);
+        //                 if (error.message.includes('Failed to fetch')) {
+        //                     document.getElementById("NotifTxt").innerText = "Server Offline!";
+        //                     document.getElementById("savedMsg").classList.add("display");
+        //                     setTimeout(() => {
+        //                         document.getElementById("savedMsg").classList.remove("display");
+        //                     }, 1500);
+        //                     document.getElementById("NotifTxt").innerText = "Greetings";
+        //                     handleStaticModeExclusive(currentIndex + 1);
+        //                     reject(new Error('Node.js server is not running.'));
+        //                 } else {
+        //                     reject(error);
+        //                 }
+        //             }
+        //         });
+        //     } catch (error) {
+        //         console.error('Error fetching server URL:', error);
+        //         document.getElementById("NotifTxt").innerText = "Error fetching server URL";
+        //         document.getElementById("savedMsg").classList.add("display");
+        //         setTimeout(() => {
+        //             document.getElementById("savedMsg").classList.remove("display");
+        //         }, 1500);
+        //         document.getElementById("NotifTxt").innerText = "Greetings";
+        //     }
+        // }
+        
 
 
         async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
             document.getElementById("NotifTxt").innerText = "Generating Images...";
             document.getElementById("savedMsg").classList.add("display");
+            
             const model = Math.random() < 0.5 ? "flux" : "boltning";
-            // const model = "boltning";
-            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1`;
-        
+            const enhanceSwitch = document.getElementById("enhanceSwitch");
+            
+            // Construct the image URL based on enhance switch
+            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=${enhanceSwitch.checked}`;
+            
+            // Getting the image tile element
             const imageTile = document.querySelector(".imageTile" + genNumber);
             imageTile.classList.add("generating");
+            
             specialDir = localStorage.getItem("ElixpoAIUser") + "_" + Date.now();
             document.getElementById("generationTimeMask" + genNumber).style.animation = "loadingFlash 2s linear infinite";
             document.getElementById("generatedSeedIcon" + genNumber).style.animation = "loadingFlash 2s linear infinite";
             document.getElementById("generatedSeedIcon" + genNumber).style.color = "#00ff73";
-        
+            
             const startTime = Date.now();
-        
+            
             try {
-                // const serverResponse = await fetch('./server.json'); // Ensure this path is correct relative to your HTML file
-                // const serverData = await serverResponse.json();
-                // const downloadUrl = serverData.servers.server1;
-        
                 return new Promise(async (resolve, reject) => {
                     const imgElement = document.getElementById("imageRecieve" + genNumber);
-        
+                    
                     if (!imgElement) {
                         reject(`Element with ID "imageRecieve${genNumber}" not found.`);
                         return;
                     }
-                    console.log(downloadUrl);
+                    
                     try {
+                        // Directly fetch the image as a blob from the external URL
+                        const response = await fetch(imageUrl, { signal: controller.signal, mode: 'cors' });
                         
-                        const response = await fetch(`${downloadUrl}/download-image`, {  //get image
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ imageUrl }),
-                            signal: controller.signal
-                        });
-        
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
                         }
-        
-                        const data = await response.json();
-                        const base64 = data.base64;
-                        const url = `data:image/png;base64,${base64}`;
-                        const blob = await fetch(url).then(res => res.blob());
-                        blobs.push(blob);
-        
+                        
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        
                         imgElement.onload = () => {
                             const endTime = Date.now();
                             const generationTime = Math.round((endTime - startTime) / 1000);
+                            
                             if (generationTime > 9) {
                                 document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationTime").style.fontSize = "1.5em";
                                 document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationAspectRatio").style.fontSize = "1.5em";
                                 document.getElementById("expansionIcon" + genNumber).classList.remove("hidden");
                             }
+                            
                             document.getElementById("generationTime" + genNumber).innerText = `${generationTime}s`;
                             document.getElementById("generationAspectRatio" + genNumber).innerText = `${aspectRatio}`;
                             document.getElementById("generatedSeed" + genNumber).innerText = seed;
                             document.getElementById("generationTheme" + genNumber).innerText = theme;
+                            
                             const encodedData = url + "###" + prompt + "###" + localStorage.getItem("ElixpoAIUser") + "###" + genNumber;
                             document.getElementById("maskImageTile" + genNumber).setAttribute("data-id", encodedData);
-        
+                            
                             if (imageTile) {
                                 imageTile.classList.remove("generating");
                                 imageTile.classList.add("generated");
@@ -353,16 +474,16 @@ const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
                                 document.getElementById("expansionIcon" + genNumber).classList.add("shrink");
                                 document.getElementById("maskImageTile" + genNumber).classList.add("expand");
                             }
-        
+                            
                             // Remove blur effect
                             imgElement.style.filter = 'blur(0)';
                             resolve();
                         };
-        
+                        
                         // Add blur effect initially
                         imgElement.style.filter = 'blur(10px)';
                         imgElement.src = url;
-        
+                        
                         controller.signal.addEventListener('abort', () => {
                             imgElement.src = '';
                             reject(new Error('Image generation aborted.'));
@@ -370,23 +491,18 @@ const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
                         });
                     } catch (error) {
                         console.error('Error fetching image:', error);
-                        if (error.message.includes('Failed to fetch')) {
-                            document.getElementById("NotifTxt").innerText = "Server Offline!";
-                            document.getElementById("savedMsg").classList.add("display");
-                            setTimeout(() => {
-                                document.getElementById("savedMsg").classList.remove("display");
-                            }, 1500);
-                            document.getElementById("NotifTxt").innerText = "Greetings";
-                            handleStaticModeExclusive(currentIndex + 1);
-                            reject(new Error('Node.js server is not running.'));
-                        } else {
-                            reject(error);
-                        }
+                        document.getElementById("NotifTxt").innerText = "Error fetching image";
+                        document.getElementById("savedMsg").classList.add("display");
+                        setTimeout(() => {
+                            document.getElementById("savedMsg").classList.remove("display");
+                        }, 1500);
+                        document.getElementById("NotifTxt").innerText = "Greetings";
+                        reject(error);
                     }
                 });
             } catch (error) {
-                console.error('Error fetching server URL:', error);
-                document.getElementById("NotifTxt").innerText = "Error fetching server URL";
+                console.error('Error during image generation:', error);
+                document.getElementById("NotifTxt").innerText = "Error during image generation";
                 document.getElementById("savedMsg").classList.add("display");
                 setTimeout(() => {
                     document.getElementById("savedMsg").classList.remove("display");
@@ -395,9 +511,6 @@ const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
             }
         }
         
-
-
-
 
 
 
@@ -420,7 +533,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
         await Promise.all(promises);
         console.log("All images generated successfully.");
         generating = false;
-        tokenDeduct(aspectRatio, theme, numberOfImages);
+        // tokenDeduct(aspectRatio, theme, numberOfImages);
         document.getElementById("rejectBtn").classList.remove("hidden");
         if (document.getElementById("privateSwitch").checked == false) {
             document.getElementById("acceptBtn").classList.add("hidden");
@@ -537,36 +650,36 @@ async function gettotalGenOnServer() {
     return totalGen;
 }
 
-async function fetchFormattedPrompt(prompt) {
-     formatted_prompt = "";
-     hashtags = "";
-     tags = "";
-    try {
-        const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: prompt }),
-        });
+// async function fetchFormattedPrompt(prompt) {
+//      formatted_prompt = "";
+//      hashtags = "";
+//      tags = "";
+//     try {
+//         const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({ prompt: prompt }),
+//         });
   
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
   
-        const data = await response.json();
-        formatted_prompt = data.formatted_prompt;
-        hashtags = data.hashtags
-        tags = data.tags;
-        console.log(formatted_prompt, hashtags, tags);
+//         const data = await response.json();
+//         formatted_prompt = data.formatted_prompt;
+//         hashtags = data.hashtags
+//         tags = data.tags;
+//         console.log(formatted_prompt, hashtags, tags);
 
-        return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
-    } catch (error) {
-        console.error("Error fetching formatted prompt:", error);
-        return "";
-    }
+//         return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
+//     } catch (error) {
+//         console.error("Error fetching formatted prompt:", error);
+//         return "";
+//     }
     
-}
+// }
 // document.getElementById("serverStatus").addEventListener("click" ,async () => {
 //     const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt("A small butterfly with an epic outline and glittery outlook");
     
@@ -590,8 +703,8 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     return new Promise(async (resolve, reject) => {
         try {
 
-            const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
-            console.log("Updated with" + formatted_prompt, hashtags, tags);
+            // const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
+            // console.log("Updated with" + formatted_prompt, hashtags, tags);
 
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
@@ -637,10 +750,6 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 likes: 0,
                                 total_gen_number: blobs.length,
                                 genNum : nextImageNumber,
-                                formatted_prompt: formatted_prompt,
-                                tags: tags,       
-                                hashtags: hashtags,
-                                enhanced_prompt: ai_enhanced_prompt  
                             });
                             await db.collection("ImageGen").doc(specialDir).update({
                                 [`Imgurl${index}`]: url,
@@ -822,10 +931,12 @@ async function generatingModeHandle() {
         document.getElementById("privatePublicResultDesc").classList.add("hidden");
         document.getElementById("privateResultSection").classList.add("hidden");
         document.getElementById("enhanceButton").classList.add("hidden");
-        document.getElementById("enhancingMessage").classList.remove("hidden");
+        document.getElementById("enhancingMessage").classList.contains("hidden") ? null : document.getElementById("isoAIEnhancement").classList.add("hidden");
+        document.getElementById("enhancingMessage").classList.add("noEnhancement");
         document.getElementById("enhancementAI").classList.remove("hidden");
         document.getElementById("hqlqcontainer").classList.add("hidden");
         document.getElementById("isoAIEnhancement").classList.add("hidden");
+        document.getElementById("enhancedPrompt").innerText = " Image(s) are being Generated -- Pls StandBy! ";
     }
 
     const promptTextInput = document.getElementById("promptTextInput");
@@ -868,55 +979,7 @@ switch (RatioValue) {
     controller = new AbortController();
 
     try {
-        
-
-        if (enhanceSwitch.checked) {
-            document.getElementById("textLoadingAnim1").style.opacity = "1";
-            document.getElementById("textLoadingAnim2").style.opacity = "1";
-            document.getElementById("textLoadingAnim3").style.opacity = "1";
-            try {
-                const response = await fetch(`${enhanceUrl}/enhance-prompt`, {  // pimp-prompt
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ prompt: encodedPrompt, seed: Math.random() * 1000000 })
-                });
-
-                if (!response.ok) {
-                    document.getElementById("textLoadingAnim1").style.opacity = "0";
-                    document.getElementById("textLoadingAnim2").style.opacity = "0";
-                    document.getElementById("textLoadingAnim3").style.opacity = "0";
-                    enhancedPrompt = encodedPrompt;
-                    throw new Error('Failed to enhance prompt');
-                }
-
-                const data = await response.json();
-                enhancedPrompt = data.enhancedPrompt;
-                if (enhancedPrompt.includes("it doesn not mean anything")) {
-                    handleStaticModeExclusive(currentIndex + 1);
-                    document.getElementById("promptTextInput").setAttribute("placeholder", "Please Enter a Prompt to Generate an Image");
-                    setTimeout(() => {
-                        document.getElementById("promptTextInput").setAttribute("placeholder", "Type in Your Prompt for Elixpo to Imagine");
-                    }, 3000);
-                    document.getElementById("promptTextInput").focus();
-                }
-
-                setTimeout(() => {
-                    document.getElementById("enhancedPrompt").innerText = enhancedPrompt;
-                }, 1000);
-
-                document.getElementById("textLoadingAnim1").style.opacity = "0";
-                document.getElementById("textLoadingAnim2").style.opacity = "0";
-                document.getElementById("textLoadingAnim3").style.opacity = "0";
-                
-                await generateMultipleImages(enhancedPrompt, width, height, seeds, RatioValue, imageVarType, numberOfImages, controller);
-            } catch (error) {
-                await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, numberOfImages, controller);
-            }
-        } else {
-            await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, numberOfImages, controller);
-        }
+        await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, numberOfImages, controller);
     } catch (error) {
         console.error('Error fetching server URL:', error);
         document.getElementById("NotifTxt").innerText = "Error fetching server URL";
@@ -1044,19 +1107,15 @@ function expandImage(enc) {
 
 document.getElementById("downloadBox").addEventListener("click", (e) => {
     const downloadUrl = document.getElementById("downloadBox").getAttribute("data-id");
-
-    uploadBlob(downloadUrl, fileName);
+    downloadBlob(downloadUrl, fileName);
 })
 
 
 function downloadBlob(blob, fileName) {
-    const ctx = canvas.getContext('2d');
-
     const url = blob;
-    // console.log(url)
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = "elixpo-ai-generated-image.jpg"; // Set the file name to "elixpo-ai-generated-image.jpg"
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1172,7 +1231,7 @@ document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv)
 document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     if (generating) {
         alert("Image geneerating alredy, progress will  be lost")
-        location.replace("gallery.html");
+        location.replace("GalleryImageIcon.html");
             
     }
     else 

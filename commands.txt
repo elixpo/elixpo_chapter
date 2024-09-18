@@ -61,9 +61,12 @@ wb api key - be4164e2510a26a0499aa79fa88c5bb3c43a3731
 
 for vercell deployment
 
-1. no token use and display`
-2. no instagram upload
-3. no metamask
-4. make the gallery button hidden (like coming soon)
-5. make sure no one can F12
-6. rather than sending requests to the enhance-prompt just make enhance = true that's it 
+1. no token use and display -- moving the wifi symboll closer [ checked]
+2. no instagram upload [checked]
+3. no metamask [checked]
+4. make the gallery button hidden (like coming soon) [checked]
+5. make sure no one can F12 
+6. rather than sending requests to the enhance-prompt just make enhance = true that's it [checked]
+7. don't provide any watermarks [checked]
+8. removed tags generator [checked]
+9. added way to reach back to the docs [checked]

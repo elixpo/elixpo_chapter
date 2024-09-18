@@ -57,7 +57,7 @@ body
   border-radius: 10px;
   border: 2px solid #dca3ff;
   background: #dca3ff7e;
-  display: flex;
+  display: none;
   overflow: hidden;
   justify-content: center;
   align-items: center;
@@ -89,7 +89,7 @@ body
 {
   position: absolute;
   top: 3%;
-  left: 80%;
+  left: 85%;
   height: 40px;
   width: 80px;
   background-size: cover;
@@ -112,14 +112,14 @@ body
 {
   position: absolute;
   top: 3%;
-  left: 75%;
+  left: 80%;
   height: 40px;
   width: 80px;
   background-size: cover;
   cursor: pointer;
   padding: 5px 5px;
   border-radius: 10px;
-  display: flex;
+  display: block;
   overflow: hidden;
   color: #ffd103;
   justify-content: center;
