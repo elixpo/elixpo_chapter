@@ -23,7 +23,7 @@
     overflow: hidden;
     border-radius: 10px;
     z-index: 1;
-    display: block;
+    display: none;
   }
   .MaskdisplayImage.displayInfo
   {
@@ -79,28 +79,38 @@
   }
   
  
-  .imageShowCase.square
-  {
+  .imageShowCase.square {
     width: 70%;
     height: 70%;
     left: 50%;
     transform: translateX(-50%);
     position: relative;
-    object-fit: cover;
     overflow: hidden;
     border-radius: 10px;
     box-shadow: 0 0 5px #ff2288;
   }
-  .imageShowCase.square img
-  {
-    width: 100%;
+  
+  .imageShowCase.square img {
+    width: auto;
     height: 100%;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     object-fit: cover;
-    overflow: hidden;
     border-radius: 10px;
-    background-size: cover;
   }
-
+  
+  .imageShowCase.square canvas {
+    max-width: 100%;    /* Limit the width to the container */
+    max-height: 87%;   /* Limit the height to the container */
+    width: 100%;        /* Use 100% width by default */
+    height: auto;       /* Adjust height based on the aspect ratio */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
 
   .downloadGalleryImage 
   {
@@ -672,7 +682,7 @@ canvas {
   width: 100%;
   background: #1f1f1fcb;
   backdrop-filter: blur(15px);
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   transition: 0.25s;

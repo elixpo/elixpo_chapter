@@ -228,7 +228,7 @@ button svg {
     transition: 0.25s;
     z-index: 10;
     transform: translateX(-50%);
-    display: none;
+    display: block;
 }
 .samplePrompt.contracted
 {
@@ -488,6 +488,8 @@ padding: 8px 10px;
 .tagsHolder {
     position: absolute;
     top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
     height: 25%;
     width: 80%;
     display: flex;
@@ -538,7 +540,7 @@ padding: 8px 10px;
     transform: translateX(-50%);
     width: 60%;
     height: 10%;
-    background: url(/CSS/IMAGES/THEMES/anime.jpeg);
+    background: url("");
     background-size: cover;
     border-radius: 15px;
     overflow: hidden;
@@ -558,4 +560,14 @@ padding: 8px 10px;
     font-family: "VT323", monospace;
     cursor: pointer;
     transition: 0.25s;
+}
+
+.promptSectionBackButton
+{
+    position: absolute;
+    left: 5%;
+    top: 5%;
+    color: #fff;
+    font-size: 2em;
+    cursor: pointer;
 }

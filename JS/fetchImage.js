@@ -180,7 +180,7 @@ async function fetchImages() {
             .orderBy("total_gen_number")
             .orderBy("timestamp")
             .startAt(startAt) // Start at the calculated index
-            .limit(1) // Limit the number of results to batchSize
+            .limit(20) // Limit the number of results to batchSize
             .get();
 
         if (querySnapshot.empty) {
@@ -296,7 +296,7 @@ function removeCanvasIfExists() {
 
 async function imageDetails(self)
 {
-
+   
     removeCanvasIfExists();
     images = [];
     console.log("Image Clicked");
@@ -307,7 +307,8 @@ async function imageDetails(self)
     spanAdjust(50);
     initializeSlider(majorityColor);
     document.getElementById("rgbKineticSlider").style.background = majorityColor;
-    
+    document.getElementById("promptEngineering").style.display = "none";
+    document.getElementById("MaskdisplayImage").classList.add("displayinfo");
     let likes = details[0];
     let ratio = details[1];
     let theme = details[2];
@@ -321,14 +322,25 @@ async function imageDetails(self)
         document.getElementById("tag").innerHTML += item;
     });
     document.getElementById("generationAspectRatio").innerHTML = ratio;
-
+    document.getElementById("aspectRatioTileText").innerHTML = ratio;
     document.getElementById("PromptDisplay").innerHTML = marked.parse(formatted_prompt);
+    document.getElementById("themeViewerText").innerHTML = theme;
+    document.getElementById("userCreditsName").innerHTML = user;
+    document.getElementById("themeViewer").style.background = 'url("./CSS/IMAGES/THEMES/'+theme.toLowerCase()+'.jpeg")';
+
+
     images.push(link);
 
     
     
 }
 
+document.getElementById("promptSectionBackButton").addEventListener("click", () => {
+    document.getElementById("promptEngineering").style.display = "none";
+});
+document.getElementById("promtEngineeringSection").addEventListener("click", () => {
+    document.getElementById("promptEngineering").style.display = "block";
+})
 
 
 

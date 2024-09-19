@@ -49,29 +49,30 @@
             </div>
             <div class="next" id="next"><ion-icon name="chevron-forward"></ion-icon></div>
             <div class="aspectRatioTile">
-                <span> 1:1 </span>
+                <span id="aspectRatioTileText"></span>
             </div>
             <div class="imageShowCase square">
-                <!-- <img id="imageShowCaseTiles" src="https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/generatedImages%2FFantasy%2Fimage_1722097283490_0.png?alt=media&amp;token=93418206-e16c-47e8-8bd3-56c097497ef3" alt="Image"> -->
+                <!-- <img src="https://images.pexels.com/photos/3512848/pexels-photo-3512848.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="Image"> -->
                 <div id="rgbKineticSlider" class="rgbKineticSlider"></div>
             </div>
-            <div class="userCredits"><span>Created by <u>@Anwesha</u></span></div>
+            <div class="userCredits"><span>Created by <u id="userCreditsName"></u></span></div>
             <button class="downloadGalleryImage">
                 Download
             </button>
-            <div class="promtEngineeringSection">
+            <div class="promtEngineeringSection" id="promtEngineeringSection">
                 <span>For Prompt Engineering <ion-icon name="chevron-down"></ion-icon> </span>
             </div>
             <div class="promptEngineering" id="promptEngineering">
-                <div class="themeViewer"> <span> Fantasy </span></div>
+                <ion-icon name="chevron-back-outline" class="promptSectionBackButton" id="promptSectionBackButton"></ion-icon>
+                <div class="themeViewer" id="themeViewer"> <span id="themeViewerText">  </span></div>
                 <div class="tagsHolder">
                     <div class="tag" id="tag">
                         
                     </div>
                 </div>
                 <div class="generationTimeMask" id="generationTimeMask">
-                    <p class="generationQuality" id="generationQuality"><span>HQ</span></p>
-                <p class="generationAspectRatio" id="generationAspectRatio">1:1</p>
+                    <p class="generationQuality" id="generationQuality"><span></span></p>
+                <p class="generationAspectRatio" id="generationAspectRatio"></p>
                 </div>
 
                 <div  class="PromptDisplay" id="PromptDisplay" spellcheck="false" autocapitalize="false"> </div>   
