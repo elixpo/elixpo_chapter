@@ -231,7 +231,7 @@ async function loadImagesFromLatch() {
         console.log("Majority Color: ", majorityColor);
 
         const itemFetchData = `
-            <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${imgIndex}" onclick="imageDetails(this)" data-id="${data.likes+"###"+data.ratio+"###"+data.theme+"###"+data.prompt+"###"+data.user+"###"+data.Imgurl0}" style="background: ${majorityColor}; background-size: cover; background-position: center center;">
+            <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${imgIndex}" onclick="imageDetails(this)" data-id="${data.likes+"###"+data.ratio+"###"+data.theme+"###"+data.formatted_prompt+"###"+data.user+"###"+data.Imgurl0+"###"+data.hashtags}" style="background: ${majorityColor}; background-size: cover; background-position: center center;">
                 <img id="img${imgIndex}" src="${data.Imgurl0}" alt="Image" />
             </div>
         `;
@@ -311,9 +311,18 @@ async function imageDetails(self)
     let likes = details[0];
     let ratio = details[1];
     let theme = details[2];
-    let prompt = details[3];
+    let formatted_prompt = details[3];
     let user = details[4];
     let link = details[5];
+    let hashtags = details[6];
+    hashtags = hashtags.split(",");
+    hashtags.forEach(element => {
+        var item = `<span>${element}</span>`
+        document.getElementById("tag").innerHTML += item;
+    });
+    document.getElementById("generationAspectRatio").innerHTML = ratio;
+
+    document.getElementById("PromptDisplay").innerHTML = marked.parse(formatted_prompt);
     images.push(link);
 
     

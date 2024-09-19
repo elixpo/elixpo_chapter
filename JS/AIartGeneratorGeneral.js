@@ -611,7 +611,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
             {
                 ai_enhanced_prompt = document.getElementById("enhancedPrompt").innerText;
             }
-
+            
 
             // Prepare upload tasks for each blob
             blobs.forEach((blob, index) => {
@@ -647,6 +647,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 likes: 0,
                                 total_gen_number: blobs.length,
                                 genNum : nextImageNumber,
+                                hq : document.getElementById("hqlqParent").checked,
                             });
                             await db.collection("ImageGen").doc(specialDir).update({
                                 [`Imgurl${index}`]: url,

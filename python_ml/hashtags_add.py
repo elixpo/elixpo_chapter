@@ -60,7 +60,7 @@ async def update_document(doc_ref, prompt):
         new_tags = await generate_keywords(prompt, num_keywords=10)
         
         # Update the document by overwriting the 'hashtags' field with new hashtags
-        doc_ref.update({"hashtags": new_tags})
+        doc_ref.update({"hq": True})
         print(f"Document {doc_ref.id} updated with new hashtags: {new_tags}")
 
     except Exception as e:
