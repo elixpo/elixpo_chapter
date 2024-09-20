@@ -70,3 +70,8 @@ for vercell deployment
 7. don't provide any watermarks [checked]
 8. removed tags generator [checked]
 9. added way to reach back to the docs [checked]
+
+
+1. change the lazy loading effect to have cached memory from the server
+2. allow changes to be pulled from the user-client side
+3. add button for more loading and a progress bar for details of the progress 

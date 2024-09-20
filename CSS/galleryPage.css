@@ -167,6 +167,7 @@ body
         gap: 10px; /* Consistent 10px gap on all sides */
         grid-auto-flow: dense; /* Helps in filling gaps */
         transition: 0.5s;
+        background: transparent;
     }
     
     .masonry::-webkit-scrollbar {
@@ -187,6 +188,8 @@ body
         aspect-ratio: 1 / 1; /* Default aspect ratio */
         transform-origin: center;
         transform: scale(1); /* No scaling by default */
+        opacity: 0;  /* Hidden initially */
+        transition: opacity 0.8s ease-in-out;  /* Smooth fade-in on appearance */
     }
     
 
@@ -258,15 +261,14 @@ body
         width: 100%;
         opacity: 1;
         transition: 0.25s;
-        background: #101010;
+        background: transparent;
     }
-    .masonry-item img 
-    {
+    .masonry-item img {
         position: absolute;
         height: 100%;
         width: 100%;
-        opacity: 1;
-        transition: 0.25s;
+        opacity: 0;  /* Hidden until image is loaded */
+        transition: opacity 0.3s ease-in-out;  /* Smooth fade-in for the image */
         object-fit: cover;
         top: 0;
         left: 0;
@@ -274,41 +276,37 @@ body
         background-repeat: no-repeat;
         z-index: 10;
     }
-    .masonry-item.no-anim:has(.no-anim)
-    {
-        opacity: .7;
-        animation: none;
-        transition: 0.25s;
-    }
-    .masonry-item.no-anim:has(.loading)
-    {
-        opacity: .7;
-        animation: none;
-        transition: 0.25s;
-    }
-    .masonry-item:has(.loaded)
+    
+    .masonry-item.loading 
     {
         opacity: 1;
-        filter: blur(0px);
-        transition: 0.25s;
     }
-    @keyframes blurLoading 
-    {
-        0% 
-        {   
-            
-            opacity: 0.5;
+    .masonry-item.loading img {
+        opacity: 0;  /* While loading */
+    }
+    
+    .masonry-item.loaded img {
+        opacity: 1;  /* Fade in image when loaded */
+        animation: appear 0.08s linear forwards;
+    }
+    
+    /* No blur effect, just smooth fade */
+    .masonry-item.loading {
+        opacity: 1;  /* Container hidden initially */
+       
+    }
+    
+    .masonry-item.loaded {
+        opacity: 1;  /* Container fully visible after load */
+    }
+
+    @keyframes appear {
+        0%
+        {
             filter: blur(5px);
         }
-        50% 
-        {  
-            opacity: .3;
-            filter: blur(5px);
-        }
-        100% 
-        {   
-           
-            opacity: .7;
-            filter: blur(5px);
+        100%
+        {
+            filter: blur(0px);
         }
     }

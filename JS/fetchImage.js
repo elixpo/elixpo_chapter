@@ -1,4 +1,3 @@
-
 const firebaseConfig = {
     apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
     authDomain: "elixpoai.firebaseapp.com",
@@ -8,118 +7,46 @@ const firebaseConfig = {
     appId: "1:718153866206:web:671c00aba47368b19cdb4f"
 };
 
-let images = [];
-const texts = [];
-let rgbKineticSliderInstance = null;
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const masonry = document.querySelector('.masonry');
+let images = [];
+const texts = [];
 const aspectRatios = ['aspect-9-16', 'aspect-4-3', 'aspect-16-9', 'aspect-3-2', 'aspect-1-1'];
-const displayedImages = new Set(); // Track displayed images
+const displayedImages = new Set();
+const batchSize = 0;
 
-let currentSegment = 0; // Start with the first 100 images
-const batchSize = 20;
 let segmentSize;
-let availableBatches = []; // Store available batch indices within the current segment
-let fetchedBatches = new Set(); // Track fetched batches within the segment
-let lastScrollTop = 0;
+let availableBatches = [];
+let fetchedBatches = new Set();
 let isFetching = false;
 let imageLatch = [];
-spanAdjust(50);
+let rgbKineticSliderInstance = null;
 
-function initializeSlider(majorityColor) {
-    // Dispose of the existing instance if it exists
-    if (rgbKineticSliderInstance && typeof rgbKineticSliderInstance.dispose === 'function') {
-        rgbKineticSliderInstance.dispose();
-    }
-
-    // Create a new instance of rgbKineticSlider with updated data
-    rgbKineticSliderInstance = new rgbKineticSlider({
-        slideImages: images, // array of images
-        itemsTitles: texts, // array of titles / subtitles
-
-        backgroundDisplacementSprite: 'https://images.unsplash.com/photo-1558865869-c93f6f8482af?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2081&q=80', // slide displacement image 
-        cursorDisplacementSprite: 'https://images.unsplash.com/photo-1558865869-c93f6f8482af?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2081&q=80', // cursor displacement image
-
-        cursorImgEffect: true, // enable cursor effect
-        cursorTextEffect: false, // enable cursor text effect
-        cursorScaleIntensity: 0.65, // cursor effect intensity
-        cursorMomentum: 0.14, // lower is slower
-
-        swipe: true, // enable swipe
-        swipeDistance: window.innerWidth * 0.4, // swipe distance - ex : 580
-        swipeScaleIntensity: 2, // scale intensity during swiping
-
-        slideTransitionDuration: 1, // transition duration
-        transitionScaleIntensity: 30, // scale intensity during transition
-        transitionScaleAmplitude: 160, // scale amplitude during transition
-
-        nav: true, // enable navigation
-        navElement: '.next', // set nav class
-
-        imagesRgbEffect: false, // enable img rgb effect
-        imagesRgbIntensity: 0.9, // set img rgb intensity
-        navImagesRgbIntensity: 80, // set img rgb intensity for regular nav
-
-        textsDisplay: true, // show title
-        textsSubTitleDisplay: true, // show subtitles
-        textsTiltEffect: true, // enable text tilt
-        googleFonts: ['Playfair Display:700', 'Roboto:400'], // select google font to use
-        buttonMode: false, // enable button mode for title
-        textsRgbEffect: true, // enable text rgb effect
-        textsRgbIntensity: 0.03, // set text rgb intensity
-        navTextsRgbIntensity: 15, // set text rgb intensity for regular nav
-
-        textTitleColor: 'white', // title color
-        textTitleSize: 125, // title size
-        mobileTextTitleSize: 125, // title size
-        textTitleLetterspacing: 3, // title letterspacing
-
-        textSubTitleColor: 'white', // subtitle color ex : 0x000000
-        textSubTitleSize: 21, // subtitle size
-        mobileTextSubTitleSize: 21, // mobile subtitle size
-        textSubTitleLetterspacing: 2, // subtitle letter spacing
-        textSubTitleOffsetTop: 90, // subtitle offset top
-        mobileTextSubTitleOffsetTop: 90, // mobile subtitle offset top
-    });
+async function initialize() {
+    globalThis.userName = localStorage.getItem('ElixpoAIUser');
+    segmentSize = await getTotalGenOnServer();
+    spanAdjust(50);
+    fetchImagesConcurrently();
+    setInterval(async () => {
+        segmentSize = await getTotalGenOnServer();
+    }, 60000);
+    setTimeout(() => spanAdjust(50), 1000);
 }
 
-
-
-function disposeSlider() {
-    if (rgbKineticSlider && typeof rgbKineticSlider.dispose === 'function') {
-        rgbKineticSlider.dispose(); // Clean up existing instance
-    }
-}
-
-async function gettotalGenOnServer() {
-    
+async function getTotalGenOnServer() {
     const snapshot = await db.collection('Server').doc("totalGen").get();
-    console.log("Total Gen:", snapshot.data().value);
-    let totalGen = parseInt(snapshot.data().value);
+    const totalGen = parseInt(snapshot.data().value);
     segmentSize = totalGen;
     initializeBatches();
-    fetchImages();
-    
     return totalGen;
 }
 
-
-
-
-// // Initialize available batches for the current segment
 function initializeBatches() {
-    availableBatches = [];
-    for (let i = 0; i < Math.ceil(segmentSize / batchSize); i++) {
-        availableBatches.push(i);
-    }
-    availableBatches = shuffle(availableBatches); // Randomize the order of fetching
+    availableBatches = shuffle(Array.from({ length: Math.ceil(segmentSize / batchSize) }, (_, i) => i));
 }
 
-// Shuffle function to randomize batches
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -131,56 +58,37 @@ function shuffle(array) {
 async function applyDominantColor(imgUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "Anonymous";  // Attempt to load image with CORS headers
+        img.crossOrigin = "Anonymous";
         img.src = imgUrl;
 
         img.onload = () => {
             const colorThief = new ColorThief();
-            const dominantColor = colorThief.getColor(img);
-            let dominantColorScheme = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
-            console.log("Dominant Color: ", dominantColorScheme);
-            resolve(dominantColorScheme);
+            const [r, g, b] = colorThief.getColor(img);
+            resolve(`rgb(${r}, ${g}, ${b})`);
         };
 
         img.onerror = () => {
             console.error("Failed to load image for dominant color extraction");
-            resolve("");  // Resolve with an empty string or a fallback color
+            resolve(""); // or a fallback color
         };
     });
 }
 
-
-
-
-
-
-async function fetchImages() {
+async function fetchImages(startAt = 0) {
     if (isFetching) return;
     isFetching = true;
 
-    if (availableBatches.length === 0) {
-        currentSegment++;
-    }
-
-    if (availableBatches.length === 0) {
-        isFetching = false;
-        return;
-    }
-
     const batchIndex = availableBatches.pop();
-    const startAt = (currentSegment * segmentSize) + (batchIndex * batchSize);
-    console.log("fetch_images called with startAt: " + startAt);
-    const imageRef = db.collection("ImageGen");
+    const calculatedStartAt = startAt || (batchIndex * batchSize);
 
     try {
-        // Fetch the batch of images within the current segment
-        const querySnapshot = await imageRef
-            .where("genNum", ">", -1) // genNum is greater than 0
+        const querySnapshot = await db.collection("ImageGen")
+            .where("genNum", ">", -1)
             .orderBy("genNum")
             .orderBy("total_gen_number")
             .orderBy("timestamp")
-            .startAt(startAt) // Start at the calculated index
-            .limit(20) // Limit the number of results to batchSize
+            .startAt(calculatedStartAt)
+            .limit(batchSize)
             .get();
 
         if (querySnapshot.empty) {
@@ -188,184 +96,197 @@ async function fetchImages() {
             return;
         }
 
-        for (const doc of querySnapshot.docs) {
+        querySnapshot.docs.forEach(doc => {
             const data = doc.data();
             if (!displayedImages.has(data.Imgurl0)) {
                 displayedImages.add(data.Imgurl0);
-
-                // Store the image data in the buffer
                 imageLatch.push(data);
             }
-        }
-        isFetching = false;
+        });
+
         fetchedBatches.add(batchIndex);
-
-        // Load images from the buffer after fetching
         loadImagesFromLatch();
-
     } catch (error) {
         console.error("Error fetching images: ", error);
+    } finally {
         isFetching = false;
     }
 }
 
 async function loadImagesFromLatch() {
+    const promises = [];
     while (imageLatch.length > 0) {
-        const data = imageLatch.shift(); // Get the first item in the buffer
+        const data = imageLatch.shift();
+        const aspectRatio = aspectRatios[["9:16", "4:3", "16:9", "3:2", "1:1"].indexOf(data.ratio)];
+        const majorityColor = await applyDominantColor(data.Imgurl0);
 
-        let aspectRatio = data.ratio;
-        if (aspectRatio == "1:1") {
-            aspectRatio = aspectRatios[4];
-        } else if (aspectRatio == "9:16") {
-            aspectRatio = aspectRatios[0];
-        } else if (aspectRatio == "4:3") {
-            aspectRatio = aspectRatios[1];
-        } else if (aspectRatio == "16:9") {
-            aspectRatio = aspectRatios[2];
-        } else if (aspectRatio == "3:2") {
-            aspectRatio = aspectRatios[3];
-        }
-
-        let majorityColor = await applyDominantColor(data.Imgurl0);   
-        let imgIndex = data.genNum; 
-        console.log("Majority Color: ", majorityColor);
-
-        const itemFetchData = `
-            <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${imgIndex}" onclick="imageDetails(this)" data-id="${data.likes+"###"+data.ratio+"###"+data.theme+"###"+data.formatted_prompt+"###"+data.user+"###"+data.Imgurl0+"###"+data.hashtags}" style="background: ${majorityColor}; background-size: cover; background-position: center center;">
-                <img id="img${imgIndex}" src="${data.Imgurl0}" alt="Image" />
+        const itemHtml = `
+            <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${data.genNum}" 
+                onclick="imageDetails(this)" 
+                data-id="${data.likes}###${data.ratio}###${data.theme}###${data.formatted_prompt}###${data.user}###${data.Imgurl0}###${data.hashtags}" 
+                style="background: ${majorityColor}; background-size: cover; background-position: center center;">
             </div>
         `;
-        
-        masonry.innerHTML += (itemFetchData);
-        document.getElementById("masonryTile"+imgIndex).classList.add("loading");
-        document.getElementById("img"+imgIndex).addEventListener("load", () => {
-            document.getElementById("masonryTile"+imgIndex).classList.remove("loading");
-            document.getElementById("masonryTile"+imgIndex).classList.add("loaded");
-        })
+        masonry.innerHTML += itemHtml;
+
+        const masonryTile = document.getElementById("masonryTile" + data.genNum);
+        masonryTile.classList.add("loaded");
+        promises.push(loadImage(data.Imgurl0, masonryTile));
+
+        if (promises.length >= 8) {
+            await Promise.all(promises);
+            promises.length = 0;
+        }
+    }
+
+    if (promises.length > 0) {
+        await Promise.all(promises);
     }
 }
 
+function loadImage(imageUrl, masonryTile) {
+    return new Promise((resolve, reject) => {
+        const imgElement = new Image();
+        imgElement.src = imageUrl;
 
+        imgElement.onload = () => {
+            masonryTile.classList.remove("loading");
+            masonryTile.classList.add("loaded");
+            resolve();
+        };
 
+        imgElement.onerror = () => {
+            console.error(`Failed to load image: ${imageUrl}`);
+            masonryTile.classList.remove("loading");
+            reject();
+        };
 
+        masonryTile.appendChild(imgElement);
+    });
+}
 
+async function fetchImagesConcurrently() {
+    const firstStartAt = 0;
+    const secondStartAt = batchSize;
 
-function getDominantColor(imageData) {
-    const data = imageData.data;    
-    let r = 0, g = 0, b = 0;
-    const length = data.length;
-    const count = length / 4;
+    await Promise.all([
+        fetchImages(firstStartAt),
+        fetchImages(secondStartAt)
+    ]);
+}
 
-    for (let i = 0; i < length; i += 4) {
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
+function initializeSlider(majorityColor) {
+    disposeSlider();
+    rgbKineticSliderInstance = new rgbKineticSlider({
+        slideImages: images,
+        itemsTitles: texts,
+        backgroundDisplacementSprite: 'https://images.unsplash.com/photo-1558865869-c93f6f8482af?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2081&q=80',
+        cursorDisplacementSprite: 'https://images.unsplash.com/photo-1558865869-c93f6f8482af?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2081&q=80',
+        cursorImgEffect: true,
+        cursorTextEffect: false,
+        cursorScaleIntensity: 0.65,
+        cursorMomentum: 0.14,
+        swipe: true,
+        swipeDistance: window.innerWidth * 0.4,
+        swipeScaleIntensity: 2,
+        slideTransitionDuration: 1,
+        transitionScaleIntensity: 30,
+        transitionScaleAmplitude: 160,
+        nav: true,
+        navElement: '.next',
+        imagesRgbEffect: false,
+        imagesRgbIntensity: 0.9,
+        navImagesRgbIntensity: 80,
+        textsDisplay: true,
+        textsSubTitleDisplay: true,
+        textsTiltEffect: true,
+        googleFonts: ['Playfair Display:700', 'Roboto:400'],
+        buttonMode: false,
+        textsRgbEffect: true,
+        textsRgbIntensity: 0.03,
+        navTextsRgbIntensity: 15,
+        textTitleColor: 'white',
+        textTitleSize: 125,
+        mobileTextTitleSize: 125,
+        textTitleLetterspacing: 3,
+        textSubTitleColor: 'white',
+        textSubTitleSize: 21,
+        mobileTextSubTitleSize: 21,
+        textSubTitleLetterspacing: 2,
+        textSubTitleOffsetTop: 90,
+        mobileTextSubTitleOffsetTop: 90
+    });
+}
+
+function disposeSlider() {
+    if (rgbKineticSliderInstance && typeof rgbKineticSliderInstance.dispose === 'function') {
+        rgbKineticSliderInstance.dispose();
     }
-
-    // Calculate the average color
-    r = Math.floor(r / count);
-    g = Math.floor(g / count);
-    b = Math.floor(b / count);
-
-    return `rgb(${r}, ${g}, ${b})`;
 }
 
 function removeCanvasIfExists() {
-    // Get the DOM element with the ID 'rgbKineticSlider'
     const container = document.getElementById('rgbKineticSlider');
-
-    // Check if the container element exists
     if (container) {
-        // Find the canvas element within the container
         const canvas = container.querySelector('canvas');
-        
-        // If a canvas element is found, remove it
         if (canvas) {
             canvas.remove();
             console.log('Canvas removed successfully.');
-            return true
         } else {
             console.log('No canvas element found to remove.');
-            return false;
         }
     } else {
         console.log('Container with ID "rgbKineticSlider" does not exist.');
-        return false;
     }
 }
 
-async function imageDetails(self)
-{
-   
+async function imageDetails(self) {
+    // Cache DOM element references
+    const tagElement = document.getElementById("tag");
+    const maskDisplayImage = document.getElementById("MaskdisplayImage");
+    const rgbKineticSlider = document.getElementById("rgbKineticSlider");
+    const promptDisplay = document.getElementById("PromptDisplay");
+    const generationAspectRatio = document.getElementById("generationAspectRatio");
+    const aspectRatioTileText = document.getElementById("aspectRatioTileText");
+    const themeViewerText = document.getElementById("themeViewerText");
+    const userCreditsName = document.getElementById("userCreditsName");
+    const themeViewer = document.getElementById("themeViewer");
+    
+    // Remove existing canvas if any
     removeCanvasIfExists();
+    
+    // Clear images array
     images = [];
+    
     console.log("Image Clicked");
-    let data = self.getAttribute("data-id");
-    let details = data.split("###");
-    let majorityColor = await applyDominantColor(details[5]);
-    document.getElementById("MaskdisplayImage").classList.add("displayInfo");
+    
+    // Get and parse data
+    const data = self.getAttribute("data-id").split("###");
+    const [likes, ratio, theme, formatted_prompt, user, link, hashtags] = data;
+    
+    // Apply dominant color
+    const majorityColor = await applyDominantColor(link);
+    
+    // Batch DOM updates
+    tagElement.innerHTML = hashtags.split(",").map(tag => `<span>${tag}</span>`).join('');
+    generationAspectRatio.innerHTML = ratio;
+    aspectRatioTileText.innerHTML = ratio;
+    promptDisplay.innerHTML = marked.parse(formatted_prompt);
+    themeViewerText.innerHTML = theme;
+    userCreditsName.innerHTML = user;
+    themeViewer.style.background = `url("./CSS/IMAGES/THEMES/${theme.toLowerCase()}.jpeg")`;
+    rgbKineticSlider.style.background = majorityColor;
+    
+    // Update display classes
+    maskDisplayImage.classList.add("displayInfo");
+    document.getElementById("promptEngineering").style.display = "none";
+    maskDisplayImage.classList.add("displayinfo");
+    
+    // Push link to images array
+    images.push(link);
+    
+    // Initialize slider
     spanAdjust(50);
     initializeSlider(majorityColor);
-    document.getElementById("rgbKineticSlider").style.background = majorityColor;
-    document.getElementById("promptEngineering").style.display = "none";
-    document.getElementById("MaskdisplayImage").classList.add("displayinfo");
-    let likes = details[0];
-    let ratio = details[1];
-    let theme = details[2];
-    let formatted_prompt = details[3];
-    let user = details[4];
-    let link = details[5];
-    let hashtags = details[6];
-    hashtags = hashtags.split(",");
-    hashtags.forEach(element => {
-        var item = `<span>${element}</span>`
-        document.getElementById("tag").innerHTML += item;
-    });
-    document.getElementById("generationAspectRatio").innerHTML = ratio;
-    document.getElementById("aspectRatioTileText").innerHTML = ratio;
-    document.getElementById("PromptDisplay").innerHTML = marked.parse(formatted_prompt);
-    document.getElementById("themeViewerText").innerHTML = theme;
-    document.getElementById("userCreditsName").innerHTML = user;
-    document.getElementById("themeViewer").style.background = 'url("./CSS/IMAGES/THEMES/'+theme.toLowerCase()+'.jpeg")';
-
-
-    images.push(link);
-
-    
-    
 }
 
-document.getElementById("promptSectionBackButton").addEventListener("click", () => {
-    document.getElementById("promptEngineering").style.display = "none";
-});
-document.getElementById("promtEngineeringSection").addEventListener("click", () => {
-    document.getElementById("promptEngineering").style.display = "block";
-})
-
-
-
-
-document.getElementById("masonry").addEventListener("scroll", () => {
-    const scrollTop = masonry.scrollTop;
-    if (scrollTop > lastScrollTop && scrollTop + masonry.clientHeight >= masonry.scrollHeight - 300) {
-        initializeBatches();
-        fetchImages();
-    }   
-    lastScrollTop = scrollTop;
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    globalThis.userName = localStorage.getItem('ElixpoAIUser');
-    gettotalGenOnServer();
-    spanAdjust(50);
-    
-});
-
-setInterval(async() => {
-    segmentSize = await gettotalGenOnServer();
-    
-}, 60000);
-
-setTimeout(() => {
-    spanAdjust(50);
-}   , 1000);
+initialize();

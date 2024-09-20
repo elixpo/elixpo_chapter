@@ -1129,12 +1129,12 @@ document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv)
 document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     if (generating) {
         alert("Image geneerating alredy, progress will  be lost")
-        location.replace("GalleryImageIcon.html");
+        location.replace("elixpo_homepage.html");
             
     }
     else 
     {
-        location.replace("gallery.html");
+        location.replace("elixpo_homepage.html");
     }
 });
 
