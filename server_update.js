@@ -27,7 +27,7 @@ const isInternetAvailable = async () => {
 
 const startNgrok = () => {
     const command = `ngrok start --config=${ngrokConfigPath} --all`;
-    const tunnelStart = `bash /home/pi/elixpo.ai/server.sh`;
+    const tunnelStart = `bash /home/pi/Desktop/elixpo.ai/server.sh`;
     
     exec(command, (error) => {
         if (error) {
