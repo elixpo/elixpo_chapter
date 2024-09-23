@@ -5,14 +5,14 @@ import asyncio
 
 
 # Initialize Firebase Admin SDK
-cred = credentials.Certificate("./elixpoai-firebase-adminsdk-poswc-728c25f591.json")
+cred = credentials.Certificate("./elixpoai-firebase-adminsdk-poswc-112466be27.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
 # References
 image_ref = db.collection("ImageGen")
-server_ref = db.collection("server")
+
 
 
 async def process_documents():
@@ -29,8 +29,8 @@ async def process_documents():
             doc_data = doc.to_dict()
             
             # Fetch the prompt to generate new hashtags
-            prompt = doc_data.get("prompt")
-            tasks.append(update_document(doc_ref, prompt))
+
+            tasks.append(update_document(doc_ref))
                 
             last_doc_name = doc.id
 
@@ -41,7 +41,7 @@ async def process_documents():
         print(f"Error processing document {last_doc_name}: {e}")
 
 
-async def update_document(doc_ref, prompt):
+async def update_document(doc_ref):
     try:
         # Generate exactly 10 new one-word hashtags
         # Add your hashtag generation logic here

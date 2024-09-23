@@ -31,6 +31,8 @@ if(currWidth == 90)
         element.classList.remove("contracted");
         document.getElementById("masonry").style.width = "90%";
         document.getElementById("samplePrompt").classList.remove("contracted");
+        document.getElementById("progressBar").classList.remove("contracted");
+        localStorage.setItem("currWidth", 90);
     });
 
 }
@@ -41,6 +43,8 @@ else if(currWidth == 50)
             element.classList.add("contracted");
             document.getElementById("masonry").style.width = "50%";
             document.getElementById("samplePrompt").classList.add("contracted");
+            document.getElementById("progressBar").classList.add("contracted");
+            localStorage.setItem("currWidth", 50);
         });
     }
 
@@ -56,7 +60,9 @@ const pressEsc = (event) => {
         if(document.getElementById("MaskdisplayImage").classList.contains("displayInfo"))
         {
             document.getElementById("MaskdisplayImage").classList.remove("displayInfo");
+            document.getElementById("promptEngineering").style.display = "none";
             spanAdjust(90);
+            
         }
     }
 }
@@ -69,6 +75,6 @@ window.addEventListener("keydown", pressEsc)
 
 
 
-document.getElementById("aiArtCreate").addEventListener("click", () => {
-    location.replace("elixpoArtGenerator.html");
-});
+// document.getElementById("aiArtCreate").addEventListener("click", () => {
+//     location.replace("elixpoArtGenerator.html");
+// });

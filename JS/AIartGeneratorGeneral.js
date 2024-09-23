@@ -547,40 +547,56 @@ async function gettotalGenOnServer() {
     return totalGen;
 }
 
-// async function fetchFormattedPrompt(prompt) {
-//      formatted_prompt = "";
-//      hashtags = "";
-//      tags = "";
-//     try {
-//         const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({ prompt: prompt }),
-//         });
+async function fetchFormattedPrompt(prompt) {
+     formatted_prompt = "";
+     hashtags = "";
+     tags = "";
+    try {
+        const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: prompt }),
+        });
   
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
   
-//         const data = await response.json();
-//         formatted_prompt = data.formatted_prompt;
-//         hashtags = data.hashtags
-//         tags = data.tags;
-//         console.log(formatted_prompt, hashtags, tags);
+        const data = await response.json();
+        formatted_prompt = data.formatted_prompt;
+        hashtags = data.hashtags
+        tags = data.tags;
+        console.log(formatted_prompt, hashtags, tags);
 
-//         return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
-//     } catch (error) {
-//         console.error("Error fetching formatted prompt:", error);
-//         return "";
-//     }
+        return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
+    } catch (error) {
+        console.error("Error fetching formatted prompt:", error);
+        return "";
+    }
     
-// }
+}
 // document.getElementById("serverStatus").addEventListener("click" ,async () => {
 //     const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt("A small butterfly with an epic outline and glittery outlook");
     
 // })
+
+function generateUniqueId(inputString) {
+    // Get the current timestamp
+    const timestamp = Date.now().toString();
+
+    // Concatenate the input string and the timestamp
+    let combined = inputString + timestamp;
+
+    // Shuffle the combined string
+    combined = combined.split('').sort(() => Math.random() - 0.5).join('');
+
+    // Generate a unique alphanumeric ID by slicing the shuffled string
+    const uniqueId = combined.slice(0, 10); // You can adjust the length of the ID by changing this value
+
+    return uniqueId;
+}
 
 
 async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir, progress = 0) {
@@ -600,9 +616,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     return new Promise(async (resolve, reject) => {
         try {
 
-            // const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
-            // console.log("Updated with" + formatted_prompt, hashtags, tags);
-
+            const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
+            console.log("Updated with" + formatted_prompt, hashtags, tags);
+            const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
             const uploadPromises = [];
@@ -648,6 +664,10 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 total_gen_number: blobs.length,
                                 genNum : nextImageNumber,
                                 hq : document.getElementById("hqlqParent").checked,
+                                formatted_prompt: formatted_prompt,
+                                tags: tags,       
+                                hashtags: hashtags,
+                                imgId : imageGenId
                             });
                             await db.collection("ImageGen").doc(specialDir).update({
                                 [`Imgurl${index}`]: url,
@@ -1138,4 +1158,4 @@ document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     }
 });
 
-//commiting to pollinations right now
+

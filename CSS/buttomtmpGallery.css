@@ -228,7 +228,7 @@ button svg {
     transition: 0.25s;
     z-index: 10;
     transform: translateX(-50%);
-    display: block;
+    display: none;
 }
 .samplePrompt.contracted
 {
@@ -563,6 +563,15 @@ padding: 8px 10px;
 }
 
 .promptSectionBackButton
+{
+    position: absolute;
+    left: 5%;
+    top: 5%;
+    color: #fff;
+    font-size: 2em;
+    cursor: pointer;
+}
+.imageSectionBackButton
 {
     position: absolute;
     left: 5%;

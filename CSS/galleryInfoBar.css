@@ -87,17 +87,18 @@
     position: relative;
     overflow: hidden;
     border-radius: 10px;
-    box-shadow: 0 0 5px #ff2288;
   }
   
   .imageShowCase.square img {
-    width: auto;
-    height: 100%;
+    max-width: 100%;    /* Limit the width to the container */
+    max-height: 87%;   /* Limit the height to the container */
+    width: auto;        /* Use 100% width by default */
+    height: auto;       /* Adjust height based on the aspect ratio */
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
-    object-fit: cover;
-    border-radius: 10px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: 0.5s;
   }
   
   .imageShowCase.square canvas {
@@ -191,60 +192,17 @@
   }
 
 
-  .postLike {
-    --heart-color: rgb(13, 238, 133);
+  .postShare {
     position: absolute;
     width: 50px;
     height: 50px;
     transition: .3s;
     top: 28%;
-  }
-  
-  .postLike .checkbox {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    z-index: 20;
+    color: rgb(13, 238, 133);
     cursor: pointer;
   }
   
-  .postLike .svg-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
   
-  .postLike .svg-outline,
-          .postLike .svg-filled {
-    fill: var(--heart-color);
-    position: absolute;
-  }
-  
-  .postLike .svg-filled {
-    animation: keyframes-svg-filled 1s;
-    display: none;
-  }
-  
-  .postLike .svg-celebrate {
-    position: absolute;
-    animation: keyframes-svg-celebrate .5s;
-    animation-fill-mode: forwards;
-    display: none;
-    stroke: var(--heart-color);
-    fill: var(--heart-color);
-    stroke-width: 2px;
-  }
-  
-  .postLike .checkbox:checked~.svg-container .svg-filled {
-    display: block
-  }
-  
-  .postLike .checkbox:checked~.svg-container .svg-celebrate {
-    display: block
-  }
 
   .aspectRatioTile
   {

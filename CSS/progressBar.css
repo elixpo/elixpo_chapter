@@ -1,7 +1,7 @@
 /* From Uiverse.io by cohencoo */ 
 .custom-loader {
     position: absolute;
-    top: 80%;
+    top: 93%;
     left: 50%;
     transform: translateX(-50%);
     width: 60%;
@@ -9,11 +9,37 @@
     border-radius: 3px;
     color: #009bf4;
     border: 2px solid;
+    opacity: 0;
+    z-index: -1;
+    transition: 0.5s;
   }
+  .custom-loader.contracted
+  {
+    left: 35%;
+    width: 30%;
+    transition: 0.5s;
+  }
+  .custom-loader.progressShow
+  {
+    opacity: 1;
+    z-index: 10;
+    transition: 0.5s;
+  }
+
+  .custom-loader.contracted.custom-loader.progressShow
+  {
+    left: 30%;
+    width: 30%;
+    opacity: 1;
+    z-index: 10;
+    transition: 0.5s;
+  }
+
+
 .loader {
   position: absolute;
   top: 10%; /* Center vertically */
-  width: 60%;
+  width: 0%;
   height: 80%; /* Added height property */
   left: 0.2%;
   background: transparent;
@@ -45,3 +71,4 @@
   0% { transform: translateX(0); }
   100% { transform: translateX(-10%); } /* Move the background */
 }
+
