@@ -29,7 +29,7 @@ let fetchingSize = 0;
 let metadataCache = {};
 let cachedBatches = 0;
 const maxCachedBatches = 2; // Only cache the first two batches
-
+getQueryParam();
 
 async function initialize() {
     globalThis.userName = localStorage.getItem('ElixpoAIUser');
@@ -191,7 +191,10 @@ async function loadImagesFromLatch() {
 
             const masonryTile = document.getElementById("masonryTile"+data.genNum);
             masonryTile.classList.add("loaded");
-
+            if(localStorage.getItem("currWidth") == 50)
+            {
+                spanAdjust(50);
+            }
             // Try loading the image, skip if failed
             promises.push(loadImage(data.Imgurl0, masonryTile));
         } catch (error) {
@@ -213,13 +216,13 @@ async function loadImagesFromLatch() {
 
     // Log when all images have been loaded
     console.log("All images have been loaded successfully.");
-    if(localStorage.getItem("currWidth") == 90)
+    if(document.getElementById("MaskdisplayImage").classList.contains("displayInfo"))
+    {
+        spanAdjust(50);
+    }
+    else
     {
         spanAdjust(90);
-    }
-    else if(localStorage.getItem("currWidth") == 50)
-    {
-        spanAdjust(50)
     }
     
     
@@ -385,12 +388,12 @@ async function getQueryParam() {
                     const data = doc.data();
                     const imgUrl = data.Imgurl0; // Assuming ImgUrl0 is the field name
                     console.log(imgUrl)
-                    spanAdjust(50)
+                    spanAdjust(50);
                     imageDetailsParameters(data.ratio, data.theme, data.formatted_prompt, data.user, imgUrl, data.hashtags, data.hq, data.imgId);
                 });
             } else {
                 console.log('No document found with the provided imgId');
-                spanAdjust(50);
+                spanAdjust(90);
             }
         })
         .catch((error) => {
@@ -409,7 +412,7 @@ async function getQueryParam() {
 //   const [likes, ratio, theme, formatted_prompt, user, link, hashtags] = data;
 async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link, hashtags, hq, id) {
     
-    // Cache DOM elements
+    spanAdjust(50);
     const tagElement = document.getElementById("tag");
     const maskDisplayImage = document.getElementById("MaskdisplayImage");
     const rgbKineticSlider = document.getElementById("rgbKineticSlider");
@@ -597,6 +600,7 @@ document.getElementById("postShare").addEventListener("click", () => {
         document.getElementById("NotifTxt").innerText = "Greetings!";
     }, 1500);
 });
-getQueryParam();
+
+
 updateButtonVisibility();
 initialize();
