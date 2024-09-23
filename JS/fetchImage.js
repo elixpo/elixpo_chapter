@@ -221,7 +221,7 @@ async function loadImagesFromLatch() {
     {
         spanAdjust(50)
     }
-    getQueryParam();
+    
     
     
     setTimeout(() => document.getElementById("progressBar").classList.remove("progressShow"), 1500);
@@ -597,6 +597,6 @@ document.getElementById("postShare").addEventListener("click", () => {
         document.getElementById("NotifTxt").innerText = "Greetings!";
     }, 1500);
 });
-
+getQueryParam();
 updateButtonVisibility();
 initialize();
