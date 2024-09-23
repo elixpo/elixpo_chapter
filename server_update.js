@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import simpleGit from 'simple-git';
 import admin from 'firebase-admin';
-import serviceAccount from './elixpoai-firebase-adminsdk-poswc-728c25f591.json' assert { type: "json" };
+import serviceAccount from './elixpoai-firebase-adminsdk-poswc-112466be27.json' assert { type: "json" };
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -27,7 +27,7 @@ const isInternetAvailable = async () => {
 
 const startNgrok = () => {
     const command = `ngrok start --config=${ngrokConfigPath} --all`;
-    const tunnelStart = `bash /home/pi/elixpo.ai/server.sh`;
+    const tunnelStart = `bash /home/pi/Desktop/elixpo.ai/server.sh`;
     
     exec(command, (error) => {
         if (error) {
