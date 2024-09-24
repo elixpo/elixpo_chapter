@@ -1,0 +1,16 @@
+@media screen and (max-width: 600px)
+{
+.container 
+{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 730px;
+  width: 600px;
+  transition: 0.5s;
+  opacity: 1;
+  overflow: hidden;
+  background: #0fb6b6;
+  background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
+}}

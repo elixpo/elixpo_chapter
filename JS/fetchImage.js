@@ -203,7 +203,7 @@ async function loadImagesFromLatch() {
             console.log("Skipping image due to error.");
         }
 
-        if (promises.length >= 4) {
+        if (promises.length >= 5) {
             await Promise.all(promises);
             promises.length = 0;
         }
@@ -295,7 +295,7 @@ async function fetchImagesConcurrently() {
 
     await Promise.all([
         fetchImages(firstStartAt),
-        fetchImages(secondStartAt)
+        // fetchImages(secondStartAt)
     ]);
 }
 
