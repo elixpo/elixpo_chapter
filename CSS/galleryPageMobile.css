@@ -1,3 +1,4 @@
+/*
 @media screen and (max-width: 600px)
 {
 .container 
@@ -14,3 +15,74 @@
   background: #0fb6b6;
   background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
 }}
+*/
+
+/*changes and responsive by ez.vivek*/
+@media (max-width: 1080px) and (max-height: 1440px) {
+  .container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100%;
+    width: 375px;
+    transition: 0.5s;
+    opacity: 1;
+    overflow: hidden;
+    justify-content: center;
+    background: #0fb6b6;
+    background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
+
+  }
+
+  .masonry {
+    gap: 14.4px;
+    grid-auto-rows: 10px;
+    grid-auto-flow: dense;
+    transition: 0.5s;
+    background: transparent;
+    position: absolute;
+    top: 15%;
+    left: 5%;
+    width: 90%;
+    height: 74%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: grid;
+  }
+  .MaskdisplayImage{
+    justify-content: center;
+    align-items: center;
+    height: 79.5%;
+    width: 90%;
+    position: relative;
+    top: 10%;
+    left:5%;
+    background: transparent;
+  }
+  .postShare{
+    position: absolute;
+    top: 66%;
+    right: 30%;
+  }
+  .aspectRatioTile{
+    position: absolute;
+    top: 66.5%;
+    right: 53%;
+    width: 17%; 
+    height: 6%; 
+  }
+  .userCredits{
+    top: 75%;
+  }
+  .downloadGalleryImage{
+    width: 55%; 
+    height: 7.7%;
+    font-size: 25px;
+  }
+  .promtEngineeringSection{
+    font-size: 13.3px;
+    text-wrap: nowrap;
+  }
+}
+

@@ -1,5 +1,6 @@
 
 function scaleContainer() {
+    
     const container = document.querySelector('.container');
     const containerWidth = 1519;
     const containerHeight = 730;
@@ -69,8 +70,8 @@ const pressEsc = (event) => {
 
 
 
-window.addEventListener('resize', scaleContainer);
-window.addEventListener('load', scaleContainer);
+// window.addEventListener('resize', scaleContainer);
+// window.addEventListener('load', scaleContainer);
 window.addEventListener("keydown", pressEsc)
 
 
