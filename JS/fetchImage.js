@@ -196,7 +196,7 @@ async function loadImagesFromLatch() {
 
             const masonryTile = document.getElementById("masonryTile"+data.genNum);
             masonryTile.classList.add("loaded");
-            if(localStorage.getItem("currWidth") == 50)
+            if((localStorage.getItem("currWidth") == 50) && !isMobileDevice && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
             {
                 spanAdjust(50);
             }
@@ -340,8 +340,11 @@ async function imageDetails(self) {
     userCreditsName.style.filter = "blur(2px)";
     postShare.style.filter = "blur(2px)";
     postShare.style.opacity = "0";
-
-    spanAdjust(50);
+    if((!isMobileDevice) && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+    {
+        spanAdjust(50);
+    }
+    
     maskDisplayImage.classList.add("displayInfo");
     document.getElementById("promptEngineering").style.display = "none";
     maskDisplayImage.classList.add("displayinfo");
@@ -401,7 +404,11 @@ async function getQueryParam() {
                     const data = doc.data();
                     const imgUrl = data.Imgurl0; 
                     console.log(imgUrl)
-                    spanAdjust(50);
+                    if((!isMobileDevice) && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+                    {
+                        spanAdjust(50);
+                    }
+                    
                     batchSize = 4;
                     imageDetailsParameters(data.ratio, data.theme, data.formatted_prompt, data.user, imgUrl, data.hashtags, data.hq, data.imgId);
 
@@ -474,29 +481,28 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
     })
     qualityOfImage.innerHTML = hq ? "HQ" : "LQ";
     
-    
-    // Use MutationObserver to monitor the masonry container for changes
-    const observer = new MutationObserver((mutationsList) => {
-        for (let mutation of mutationsList) {
-            if (mutation.type === "childList" && masonryContainer.childElementCount > 0) {
-                // When child elements are added, apply class changes
-                masonryElement = document.querySelectorAll(".masonry-item");
-                masonryElement.forEach(element => {
-                    element.classList.remove("expanded");
-                    element.classList.add("contracted");
-                });
-
-                if(!isMobileDevice)
-                {
+                if((!isMobileDevice) && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+                {    
+                // Use MutationObserver to monitor the masonry container for changes
+            const observer = new MutationObserver((mutationsList) => {
+                for (let mutation of mutationsList) {
+                    if (mutation.type === "childList" && masonryContainer.childElementCount > 0) {
+                        // When child elements are added, apply class changes
+                        masonryElement = document.querySelectorAll(".masonry-item");
+                        masonryElement.forEach(element => {
+                            element.classList.remove("expanded");
+                            element.classList.add("contracted");
+                        });
                     spanAdjust(50);
                     masonryContainer.style.width = "50%";
                     document.getElementById("samplePrompt").classList.add("contracted");
                     document.getElementById("progressBar").classList.add("contracted");
-                }
+                
                 
             }
         }
     });
+}
 
     // Observe the masonry container for added child elements
     observer.observe(masonryContainer, { childList: true, subtree: true });
