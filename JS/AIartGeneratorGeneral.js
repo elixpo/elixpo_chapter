@@ -583,8 +583,8 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     return new Promise(async (resolve, reject) => {
         try {
 
-            const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
-            console.log("Updated with" + formatted_prompt, hashtags, tags);
+            // const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
+            // console.log("Updated with" + formatted_prompt, hashtags, tags);
             const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
@@ -631,9 +631,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 total_gen_number: blobs.length,
                                 genNum : nextImageNumber,
                                 hq : document.getElementById("hqlqParent").checked,
-                                formatted_prompt: formatted_prompt,
-                                tags: tags,       
-                                hashtags: hashtags,
+                                formatted_prompt: "",
+                                tags: "",       
+                                hashtags: "",
                                 imgId : imageGenId
                             });
                             await db.collection("ImageGen").doc(specialDir).update({

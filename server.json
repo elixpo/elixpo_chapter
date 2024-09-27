@@ -1,7 +1,5 @@
 {
   "servers": {
-    "server1": "https://cc3c-27-131-209-144.ngrok-free.app",
-    "server2": "https://a38f-27-131-209-144.ngrok-free.app",
-    "server3": "https://20b4-27-131-209-144.ngrok-free.app"
+    "server1": "https://cc3c-27-131-209-144.ngrok-free.app"
   }
 }
