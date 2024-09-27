@@ -15,7 +15,7 @@ let images = [];
 const texts = [];
 const aspectRatios = ['aspect-9-16', 'aspect-4-3', 'aspect-16-9', 'aspect-3-2', 'aspect-1-1'];
 const displayedImages = new Set();
-const batchSize = 20; // Set a valid batch size greater than 0
+let batchSize = 20; // Set a valid batch size greater than 0
 
 let segmentSize;
 let availableBatches = [];
@@ -29,7 +29,7 @@ let fetchingSize = 0;
 let metadataCache = {};
 let cachedBatches = 0;
 const maxCachedBatches = 2; // Only cache the first two batches
-getQueryParam();
+
 
 async function initialize() {
     globalThis.userName = localStorage.getItem('ElixpoAIUser');
@@ -179,11 +179,12 @@ async function loadImagesFromLatch() {
         try {
             document.getElementById("progressBar").classList.add("progressShow");
             const aspectRatio = aspectRatios[["9:16", "4:3", "16:9", "3:2", "1:1"].indexOf(data.ratio)];
-            const majorityColor = await applyDominantColor(data.Imgurl0);  // This can fail
+            const majorityColor = await applyDominantColor(data.Imgurl0);  
+            const imageBlobUrl = await convertToBlob(data.Imgurl0);
             const itemHtml = `
                 <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${data.genNum}" 
                     onclick="imageDetails(this)" 
-                    data-id="${data.likes}###${data.ratio}###${data.theme}###${data.formatted_prompt}###${data.user}###${data.Imgurl0}###${data.hashtags}###${data.hq}###${data.imgId}" 
+                    data-id="${data.likes}###${data.ratio}###${data.theme}###${data.formatted_prompt}###${data.user}###${imageBlobUrl}###${data.hashtags}###${data.hq}###${data.imgId}" 
                     style="background: ${majorityColor}; background-size: cover; background-position: center center;">
                 </div>
             `;
@@ -284,6 +285,14 @@ function loadImage(imageUrl, masonryTile, timeout = 10000) {
         masonryTile.appendChild(imgElement);
     });
 }
+
+
+async function convertToBlob(imageUrl) {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+}
+
 
 function logProgress(loadedImages, fetchingSize)
 {
@@ -386,10 +395,12 @@ async function getQueryParam() {
             if (!querySnapshot.empty) {
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    const imgUrl = data.Imgurl0; // Assuming ImgUrl0 is the field name
+                    const imgUrl = data.Imgurl0; 
                     console.log(imgUrl)
                     spanAdjust(50);
+                    batchSize = 4;
                     imageDetailsParameters(data.ratio, data.theme, data.formatted_prompt, data.user, imgUrl, data.hashtags, data.hq, data.imgId);
+
                 });
             } else {
                 console.log('No document found with the provided imgId');
@@ -532,7 +543,7 @@ function updateButtonVisibility() {
     }
 }
 
-// Initial check on load
+
 
 
 // Add scroll event listener
@@ -555,6 +566,7 @@ masonry.addEventListener('scroll', () => {
 const observer = new MutationObserver(updateButtonVisibility);
 observer.observe(masonry, { childList: true, subtree: true });
 document.getElementById("loadMoreBtn").addEventListener("click", () => {
+    batchSize = 20;
     fetchImages();
 });
 
@@ -601,6 +613,6 @@ document.getElementById("postShare").addEventListener("click", () => {
     }, 1500);
 });
 
-
+getQueryParam();
 updateButtonVisibility();
 initialize();
