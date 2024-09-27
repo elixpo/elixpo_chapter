@@ -165,6 +165,33 @@
   transform-origin: center;
   transform: scale(1) translateX(-50%);
 }
+.masonry-item.expanded.aspect-9-16 {
+  grid-row: span 25;
+  aspect-ratio: 9 / 16;
+}
 
+
+.masonry-item.expanded.aspect-4-3 {
+  grid-row: span 11;
+  aspect-ratio: 4 / 3;
+}
+
+
+.masonry-item.expanded.aspect-16-9 {
+  grid-row: span 8;
+  aspect-ratio: 16 / 9;
+}
+
+
+.masonry-item.expanded.aspect-3-2 {
+  grid-row: span 10;
+  aspect-ratio: 3 / 2;
+}
+
+
+.masonry-item.expanded.aspect-1-1 {
+  grid-row: span 14;
+  aspect-ratio: 1 / 1;
+}
 }
 
