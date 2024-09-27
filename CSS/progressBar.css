@@ -9,6 +9,7 @@
     border-radius: 3px;
     color: #009bf4;
     border: 2px solid;
+    overflow: hidden;
     opacity: 0;
     z-index: -1;
     transition: 0.5s;
