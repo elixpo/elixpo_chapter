@@ -1,3 +1,4 @@
 *.csv
 node_modules/
 .venv/
+.env
