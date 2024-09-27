@@ -30,6 +30,9 @@ let metadataCache = {};
 let cachedBatches = 0;
 const maxCachedBatches = 2; // Only cache the first two batches
 
+// let details = navigator.userAgent; 
+// let regexp = /android|iphone|kindle|ipad/i;
+// let isMobileDevice = regexp.test(details);
 
 async function initialize() {
     globalThis.userName = localStorage.getItem('ElixpoAIUser');
@@ -203,8 +206,8 @@ async function loadImagesFromLatch() {
             loadedImages++;
             console.log("Skipping image due to error.");
         }
-
-        if (promises.length >= 4) {
+        
+        if (promises.length >= 5) {
             await Promise.all(promises);
             promises.length = 0;
         }
@@ -481,9 +484,14 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
                     element.classList.remove("expanded");
                     element.classList.add("contracted");
                 });
-                masonryContainer.style.width = "50%";
-                document.getElementById("samplePrompt").classList.add("contracted");
-                document.getElementById("progressBar").classList.add("contracted");
+
+                if(!isMobileDevice)
+                {
+                    masonryContainer.style.width = "50%";
+                    document.getElementById("samplePrompt").classList.add("contracted");
+                    document.getElementById("progressBar").classList.add("contracted");
+                }
+                
             }
         }
     });
@@ -524,24 +532,7 @@ document.getElementById("imageSectionBackButton").addEventListener("click", () =
 })
 
 
-const masonry = document.getElementById('masonry'); // Replace with your element's ID
-const LoadButton = document.getElementById('loadMoreBtn'); // Replace with your button's ID
 
-function updateButtonVisibility() {
-    const scrollHeight = masonry.scrollHeight;
-    const clientHeight = masonry.clientHeight;
-
-    // Check if the DOM is overflowing
-    if ((scrollHeight <= clientHeight) && !isFetching && availableBatches.length > 0) {
-        console.log("no overflow")
-        LoadButton.style.display = "block";
-        LoadButton.classList.add("visible")
-    } else {
-        // Overflow exists, hide the button
-        LoadButton.style.display = 'none';
-        LoadButton.classList.remove("visible");
-    }
-}
 
 
 
