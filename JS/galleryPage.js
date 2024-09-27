@@ -95,6 +95,7 @@ const pressEsc = (event) => {
             document.getElementById("MaskdisplayImage").classList.remove("displayInfo");
             document.getElementById("promptEngineering").style.display = "none";
             spanAdjust(90);
+            updateButtonVisibility();
             
         }
     }
