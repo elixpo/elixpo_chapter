@@ -128,6 +128,7 @@ async function fetchImages(startAt = 0) {
             .where("genNum", ">", lastFetchedGenNum)  // Ensure this is a valid number
             .orderBy("genNum")
             .limit(batchSize)
+            .startAt(214)
             .get();
 
         if (querySnapshot.empty) {
@@ -426,7 +427,7 @@ async function getQueryParam() {
 //   const [likes, ratio, theme, formatted_prompt, user, link, hashtags] = data;
 async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link, hashtags, hq, id) {
     
-    spanAdjust(50);
+    
     const tagElement = document.getElementById("tag");
     const maskDisplayImage = document.getElementById("MaskdisplayImage");
     const rgbKineticSlider = document.getElementById("rgbKineticSlider");
@@ -487,6 +488,7 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
 
                 if(!isMobileDevice)
                 {
+                    spanAdjust(50);
                     masonryContainer.style.width = "50%";
                     document.getElementById("samplePrompt").classList.add("contracted");
                     document.getElementById("progressBar").classList.add("contracted");
@@ -528,6 +530,7 @@ document.getElementById("imageSectionBackButton").addEventListener("click", () =
             document.getElementById("MaskdisplayImage").classList.remove("displayInfo");
             document.getElementById("promptEngineering").style.display = "none";
             spanAdjust(90);
+            updateButtonVisibility();
         }
 })
 
