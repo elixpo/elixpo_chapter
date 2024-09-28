@@ -76,6 +76,10 @@ setInterval(() => {
 
 
 function scaleContainer() {
+  if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+  {
+
+  
     const container = document.querySelector('.container');
     const containerWidth = 1519;
     const containerHeight = 730;
@@ -91,6 +95,7 @@ function scaleContainer() {
 
     // Apply the scale transform
     container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
 }
 
 
