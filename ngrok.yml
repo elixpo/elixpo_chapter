@@ -5,10 +5,4 @@ tunnels:
   server1:
     addr: 3000
     proto: http
-  server2:
-    addr: 3001
-    proto: http
-  server3:
-    addr: 3002
-    proto: http
 

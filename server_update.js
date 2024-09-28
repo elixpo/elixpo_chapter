@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import simpleGit from 'simple-git';
 import admin from 'firebase-admin';
-import serviceAccount from './elixpoai-firebase-adminsdk-poswc-112466be27.json' assert { type: "json" };
+import serviceAccount from './elixpoai-firebase-adminsdk-poswc-66a1ef0407.json' assert { type: "json" };
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -27,7 +27,7 @@ const isInternetAvailable = async () => {
 
 const startNgrok = () => {
     const command = `ngrok start --config=${ngrokConfigPath} --all`;
-    const tunnelStart = `bash /home/pi/Desktop/elixpo.ai/server.sh`;
+    const tunnelStart = `bash /home/pi/Desktop/Elixpo_ai_pollinations/server.sh`;
     
     exec(command, (error) => {
         if (error) {
@@ -53,19 +53,15 @@ const updateServerUrls = async () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     const server1Url = await getNgrokUrl(3000); //node
-    const server2Url = await getNgrokUrl(3001); //python
-    const server3Url = await getNgrokUrl(3002); //node
 
 
     console.log(`image and ping URL: ${server1Url}`);
-    console.log(`tags URL: ${server2Url}`);
-    console.log(`prompt pimp URL: ${server3Url}`);
+
 
     const serverJson = JSON.parse(fs.readFileSync(serverJsonPath, 'utf-8'));
 
     serverJson.servers.server1 = server1Url; //get image and ping
-    serverJson.servers.server2 = server1Url; //tags 
-    serverJson.servers.server3 = server3Url; //pimp prompt
+
 
     fs.writeFileSync(serverJsonPath, JSON.stringify(serverJson, null, 2));
 
@@ -76,8 +72,6 @@ const updateServerUrls = async () => {
     await serverRef.update({
         download_image: server1Url,
         get_ping: server1Url,
-        get_tags : server2Url,
-        pimp_prompt: server3Url,
     });
 
     console.log('Firebase collection updated successfully!');

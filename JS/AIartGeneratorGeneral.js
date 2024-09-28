@@ -13,7 +13,7 @@ const firebaseConfig = {
   const db = firebase.firestore();
   let generating = false;
 //   let tokens = 0;
-let imageUrl = '';
+  let imageUrl = '';
   let formatted_prompt = "";
   let hashtags = "";
   let tags = "";
@@ -22,6 +22,7 @@ let imageUrl = '';
   let pingUrl = '';
   let tagUrl = '';
   let ai_enhanced_prompt = '';
+  let suffixPrompt = "";
 //new commit
 window.onload = function() {
     document.querySelector(".patternContainer").classList.remove("hidden");
@@ -148,138 +149,6 @@ const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-fou
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
-
-const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
-    const genAI = new GoogleGenerativeAI(API_KEY);
-    const modelConfig  = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: `
-            You are Elixpo, an AI prompt generator model developed by Elixpo Labs India.
-            Elixpo enhances user-provided art prompts with a variety of predefined styles
-            and adds personalized, fanciful details to create vivid and imaginative scenarios.
-            Follow these steps for each user input:
-            
-            - Analyze User Input: Understand the core theme or concept of the user's input.
-            - Enhance with Available Styles: Incorporate elements from one or more of the available styles to enrich the prompt.
-            - Add Detailed Elements: Include specific details such as setting, characters, objects, and atmosphere.
-            - Suggest an Art Style: Recommend an appropriate art style from the available options.
-            - Create a Concise Prompt: Combine these elements into a concise, cohesive prompt that is more detailed and imaginative than the original user input. Ensure the enhanced prompt does not exceed 70 words.
-            - Handling Questions: If a prompt seems like a direct question and lacks a defined answer, respond with: "Ask to paint, I am not good at answering questions."
-            
-            Available Styles:
-            - Fantasy: Magical and mythical elements, enchanted settings.
-            - Halloween: Spooky, eerie, and ghostly themes.
-            - Euphoric: Bright, joyful, and uplifting atmosphere.
-            - Crayon: Childlike, colorful, and playful.
-            - Space: Futuristic, cosmic, and sci-fi settings.
-            - Chromatic: Vibrant colors, rainbow effects, and high saturation.
-            - Cyberpunk: Futuristic, dystopian, and neon-lit urban scenes.
-            - Anime: Japanese animation style, exaggerated expressions, and dynamic poses.
-            - Landscape: Natural scenes, wide vistas, and detailed environments.
-            - Samurai: Feudal Japan, warriors, and traditional elements.
-          `,
-        });
-
-
-
-        // async function tokenDeduct(aspectRatio, theme, numberOfImages) {
-        //     // Fetch the user's token balance from the database
-        //     // const userDoc = await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).get();
-        //     // let tokens = userDoc.data().coins;
-            
-        //     let aspectRatioMultiplier;
-        //     let themeMultiplier;
-        //     let baseCostPerImage = 1000; // Base cost per image
-        
-        //     // Define aspect ratio multipliers
-        //     switch (aspectRatio) {
-        //         case '1:1':
-        //             aspectRatioMultiplier = 1.0;
-        //             break;
-        //         case '9:16':
-        //             aspectRatioMultiplier = 1.2;
-        //             break;
-        //         case '16:9':
-        //             aspectRatioMultiplier = 1.1;
-        //             break;
-        //         case '4:3':
-        //             aspectRatioMultiplier = 1.3;
-        //             break;
-        //         case '3:2':
-        //             aspectRatioMultiplier = 1.4;
-        //             break;
-        //         default:
-        //             aspectRatioMultiplier = 1.0; // Default multiplier
-        //     }
-        
-        //     // Define theme multipliers
-        //     switch (theme) {
-        //         case 'Fantasy':
-        //             themeMultiplier = 1.5;
-        //             break;
-        //         case 'Halloween':
-        //             themeMultiplier = 1.4;
-        //             break;
-        //         case 'Euphoric':
-        //             themeMultiplier = 1.3;
-        //             break;
-        //         case 'Crayon':
-        //             themeMultiplier = 1.2;
-        //             break;
-        //         case 'Space':
-        //             themeMultiplier = 1.6;
-        //             break;
-        //         case 'Chromatic':
-        //             themeMultiplier = 1.7;
-        //             break;
-        //         case 'Cyberpunk':
-        //             themeMultiplier = 1.8;
-        //             break;
-        //         case 'Anime':
-        //             themeMultiplier = 1.5;
-        //             break;
-        //         case 'Landscape':
-        //             themeMultiplier = 1.2;
-        //             break;
-        //         case 'Samurai':
-        //             themeMultiplier = 1.6;
-        //             break;
-        //         case 'Wpap':
-        //             themeMultiplier = 1.3;
-        //             break;
-        //         case 'Vintage':
-        //             themeMultiplier = 1.4;
-        //             break;
-        //         case 'Pixel':
-        //             themeMultiplier = 1.2;
-        //             break;
-        //         case 'Normal':
-        //             themeMultiplier = 1.0;
-        //             break;
-        //         case 'Synthwave':
-        //             themeMultiplier = 1.5;
-        //             break;
-        //         default:
-        //             themeMultiplier = 1.0; // Default multiplier
-        //     }
-        
-        //     // Calculate total cost
-        //     let totalCost = baseCostPerImage * aspectRatioMultiplier * themeMultiplier * numberOfImages;
-        
-        //     // Deduct tokens
-        //     // tokens -= totalCost;
-        //     // await db.collection("users").doc(localStorage.getItem("ElixpoAIUser")).update({
-        //     //     coins: tokens,
-        //     // });
-        
-        //     console.log("Total Cost:", totalCost);
-        //     return totalCost;
-        // }
-        
-
-            // tokenDeduct("1:1", "Fantasy", 1);
-
-
         async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
             document.getElementById("NotifTxt").innerText = "Generating Images...";
             document.getElementById("savedMsg").classList.add("display");
@@ -305,10 +174,6 @@ const API_KEY = "AIzaSyASFyHF9z64nPDPvdljL1ETQXM2NaFTGBg";
             const startTime = Date.now();
         
             try {
-                // const serverResponse = await fetch('./server.json'); // Ensure this path is correct relative to your HTML file
-                // const serverData = await serverResponse.json();
-                // const downloadUrl = serverData.servers.server1;
-        
                 return new Promise(async (resolve, reject) => {
                     const imgElement = document.getElementById("imageRecieve" + genNumber);
         
@@ -616,8 +481,8 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     return new Promise(async (resolve, reject) => {
         try {
 
-            const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
-            console.log("Updated with" + formatted_prompt, hashtags, tags);
+            // const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
+            // console.log("Updated with" + formatted_prompt, hashtags, tags);
             const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
@@ -664,9 +529,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 total_gen_number: blobs.length,
                                 genNum : nextImageNumber,
                                 hq : document.getElementById("hqlqParent").checked,
-                                formatted_prompt: formatted_prompt,
-                                tags: tags,       
-                                hashtags: hashtags,
+                                formatted_prompt: "",
+                                tags: "",       
+                                hashtags: "",
                                 imgId : imageGenId
                             });
                             await db.collection("ImageGen").doc(specialDir).update({
@@ -822,7 +687,7 @@ async function enhance(prompt) {
  
 async function generatingModeHandle() {
     generating = true;
-    let enhancedPrompt = "";
+    suffixPrompt = "";
     document.getElementById("samplePrompt").classList.add("generating");
     document.getElementById("samplePrompt").style.height = "60px";
     document.getElementById("typeOfImageTile").classList.add("hidden");
@@ -858,7 +723,68 @@ async function generatingModeHandle() {
     }
 
     const promptTextInput = document.getElementById("promptTextInput");
-    let encodedPrompt = promptTextInput.value.trim() + " in the style of " + imageVarType;
+    if(imageVarType == "Fantasy")
+        {
+            suffixPrompt = "in a magical fantasy setting, with mythical creatures and surreal landscapes";
+        }
+        else if(imageVarType == "Halloween")
+        {
+            suffixPrompt = "with spooky Halloween-themed elements, pumpkins, and eerie shadows";
+        }
+        else if(imageVarType == "Structure")
+        {
+            suffixPrompt = "in the style of monumental architecture, statues, or structural art";
+        }
+        else if(imageVarType == "Crayon")
+        {
+            suffixPrompt = "in the style of colorful crayon art with vibrant, childlike strokes";
+        }
+        else if(imageVarType == "Space")
+        {
+            suffixPrompt = "in a vast, cosmic space setting with stars, planets, and nebulae";
+        }
+        else if(imageVarType == "Chromatic")
+        {
+            suffixPrompt = "in a chromatic style with vibrant, shifting colors and gradients";
+        }
+        else if(imageVarType == "Cyberpunk")
+        {
+            suffixPrompt = "in a futuristic cyberpunk setting with neon lights and dystopian vibes";
+        }
+        else if(imageVarType == "Anime")
+        {
+            suffixPrompt = "in the style of anime, with detailed character designs and dynamic poses";
+        }
+        else if(imageVarType == "Landscape")
+        {
+            suffixPrompt = "depicting a breathtaking landscape with natural scenery and serene views";
+        }
+        else if(imageVarType == "Samurai")
+        {
+            suffixPrompt = "featuring a traditional samurai theme with warriors and ancient Japan";
+        }
+        else if(imageVarType == "Wpap")
+        {
+            suffixPrompt = "in the WPAP style with geometric shapes and vibrant pop-art colors";
+        }
+        else if(imageVarType == "Vintage")
+        {
+            suffixPrompt = "in a vintage, old-fashioned style with sepia tones and retro aesthetics";
+        }
+        else if(imageVarType == "Pixel")
+        {
+            suffixPrompt = "in a pixel art style with blocky, 8-bit visuals and retro game aesthetics";
+        }
+        else if(imageVarType == "Normal")
+        {
+            suffixPrompt = "in a realistic and natural style with minimal artistic exaggeration";
+        }
+        else if(imageVarType == "Synthwave")
+        {
+            suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
+        }
+        
+    let encodedPrompt = promptTextInput.value.trim() + " " + suffixPrompt;
     let width, height;
 
     const isHQorLQ = document.getElementById("hqlqParent").checked;
@@ -893,7 +819,10 @@ switch (RatioValue) {
 
     const numberOfImages = currentIndex + 1;
     const seeds = generateSeeds(numberOfImages, 4, 6);
-    document.getElementById("statusImage").innerHTML = isHQorLQ ? "Image Generation HQ" : "Image Generation  LQ";
+    document.getElementById("statusImage1").innerText = isHQorLQ ? "In Progress" : "Generating";
+    document.getElementById("statusImage2").innerText = isHQorLQ ? "In Progress" : "Generating";
+    document.getElementById("statusImage3").innerText = isHQorLQ ? "In Progress" : "Generating";
+    document.getElementById("statusImage4").innerText = isHQorLQ ? "In Progress" : "Generating";
     controller = new AbortController();
 
     try {

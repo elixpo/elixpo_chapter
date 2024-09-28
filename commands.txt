@@ -1,7 +1,7 @@
 ngrok start --config=./ngrok.yml --all  [to start the node js servers in the backend]
 gsutil cors set cors.json gs://elixpoai.appspot.com [to set no cors on te firebase storage]
 3c4053d7847629d1d2210b93a5ae219551bc430f [access token for github commit/pull/push req]
-PAT == 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
+PAT == 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
 ngrok start --config=./ngrok.yml --all [command run in the ~ directory to run all servers]
 sudo nano ngrok.yml [command run in the ~ directory to edit the server directories!]
 
