@@ -3,9 +3,9 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 const requestQueue = [];
-const MAX_QUEUE_LENGTH = 1;
+const MAX_QUEUE_LENGTH = 15;
 
 // List of fallback image URLs
 const fallbackImageUrls = [
@@ -23,6 +23,7 @@ app.use(express.json());
 // Middleware to track request queue length
 app.use((req, res, next) => {
   requestQueue.push(req);
+  console.log('Request queue length:', requestQueue.length);
   res.on('finish', () => {
     requestQueue.shift();
   });
@@ -38,7 +39,7 @@ app.post('/download-image', async (req, res) => {
 
     // Select a random fallback image URL
     const randomImageUrl = fallbackImageUrls[Math.floor(Math.random() * fallbackImageUrls.length)];
-    
+
     try {
       // Fetch the random fallback image
       const response = await fetch(randomImageUrl);
@@ -49,13 +50,12 @@ app.post('/download-image', async (req, res) => {
       const buffer = await response.buffer();
       const base64 = buffer.toString('base64');
 
-      res.json({ base64 });
+      // Send predefined image but with a NOT OK status (e.g., 202 Accepted)
+      return res.status(202).json({ base64, message: 'Fallback image served due to queue limit exceeded' });
     } catch (error) {
       console.error('Error fetching fallback image:', error);
-      res.status(500).json({ error: 'Failed to download fallback image' });
+      return res.status(500).json({ error: 'Failed to download fallback image' });
     }
-
-    return;
   }
 
   try {
