@@ -47,6 +47,9 @@ document.getElementById("signInFormBtn").addEventListener("click", () => {
 
 document.getElementById("logoutBtn").addEventListener("click", () => {
    localStorage.removeItem("ElixpoAIUser");
+   localStorage.removeItem("metadataCache");
+   localStorage.removeItem("currWidth");
+   
    document.getElementById("form_logout").classList.add("hidden");
    document.getElementById("form_register").classList.add("hidden");
    document.getElementById("form_login").classList.remove("hidden");
