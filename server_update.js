@@ -52,7 +52,7 @@ const getNgrokUrl = async (port) => {
 const updateServerUrls = async () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    const server1Url = await getNgrokUrl(3000); //node
+    const server1Url = await getNgrokUrl(3001); //node
 
 
     console.log(`image and ping URL: ${server1Url}`);
