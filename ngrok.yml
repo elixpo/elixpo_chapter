@@ -3,6 +3,6 @@ authtoken: 2ODqcF3SmOqUU6hDgXtIT645NF7_46dd4oNnLLzUSEm5Dcn7h
 
 tunnels:
   server1:
-    addr: 3000
+    addr: 3001
     proto: http
 
