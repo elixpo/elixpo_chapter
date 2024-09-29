@@ -180,7 +180,7 @@
   {
     position: absolute;
     top: 80%; 
-    height: 140%;  
+    height: 155%;  
     overflow-y: auto;
     overflow-x: hidden;
     background: transparent;
@@ -447,7 +447,7 @@
 .socialMediaPage
 {
     position: relative;
-    top: 115%;
+    top: 125%;
 }
 .socialMediaContainer .socialMediaDesc
 {
