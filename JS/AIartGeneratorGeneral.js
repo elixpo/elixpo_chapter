@@ -23,6 +23,7 @@ const firebaseConfig = {
   let tagUrl = '';
   let ai_enhanced_prompt = '';
   let suffixPrompt = "";
+  let serverReturnStatus = true;
 //new commit
 window.onload = function() {
     document.querySelector(".patternContainer").classList.remove("hidden");
@@ -183,7 +184,7 @@ let controller;
                     }
                     console.log(downloadUrl);
                     try {
-                        
+                        serverReturnStatus = true;
                         const response = await fetch(`${downloadUrl}/download-image`, {  //get image
                             method: 'POST',
                             headers: {
@@ -195,6 +196,11 @@ let controller;
         
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        else if(response.status == 202)
+                        {
+                            serverReturnStatus = false;
+                            document.getElementById("acceptBtn").classList.add("hidden");
                         }
         
                         const data = await response.json();
@@ -297,7 +303,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
         generating = false;
         // tokenDeduct(aspectRatio, theme, numberOfImages);
         document.getElementById("rejectBtn").classList.remove("hidden");
-        if (document.getElementById("privateSwitch").checked == false) {
+        if ((document.getElementById("privateSwitch").checked == false) || !serverReturnStatus) {
             document.getElementById("acceptBtn").classList.add("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings - (Private Result)";
             setTimeout(() => {
@@ -306,7 +312,17 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
             document.getElementById("enhancementAI").classList.add("hidden");
             document.getElementById("stopGeneration").classList.add("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings!";
-        } else {
+        } 
+        else if ((document.getElementById("privateSwitch").checked == true) && serverReturnStatus) {
+            document.getElementById("acceptBtn").classList.remove("hidden");
+            document.getElementById("NotifTxt").innerText = "Greetings";
+            setTimeout(() => {
+                document.getElementById("savedMsg").classList.remove("display");
+            }, 1500);
+            document.getElementById("enhancementAI").classList.add("hidden");
+            document.getElementById("stopGeneration").classList.add("hidden");
+        } 
+        else{
             document.getElementById("acceptBtn").classList.remove("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings";
             setTimeout(() => {
@@ -386,7 +402,10 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
     document.getElementById("hqlqcontainer").classList.remove("hidden");
-    document.getElementById("statusImage").innerHTML = "";
+    document.getElementById("statusImage1").innerHTML = "";
+    document.getElementById("statusImage2").innerHTML = "";
+    document.getElementById("statusImage3").innerHTML = "";
+    document.getElementById("statusImage4").innerHTML = "";
     
     specialDir = "";
     encodedPrompt = "";
@@ -632,7 +651,10 @@ function handleStaticModeExclusive(numberOfImages) {
     document.querySelector(".progressBar").classList.add("zeroProgress");
     document.querySelector("."+imageVarType).style.opacity = "1";
     document.getElementById("hqlqcontainer").classList.remove("hidden");
-    document.getElementById("statusImage").innerHTML = "";
+    document.getElementById("statusImage1").innerHTML = "";
+    document.getElementById("statusImage2").innerHTML = "";
+    document.getElementById("statusImage3").innerHTML = "";
+    document.getElementById("statusImage4").innerHTML = "";
     encodedPrompt = "";
     specialDir = "";
     },1500)
