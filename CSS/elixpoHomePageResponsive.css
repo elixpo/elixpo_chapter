@@ -162,13 +162,13 @@
 .offeringDescMask
 {
     position: relative;
-    top: 25%;
+    top: 26%;
     left: 25%;
 }
   .offeringDescText
   {
     position: relative;
-    top: 26%;
+    top: 27%;
     left: 50%;
     font-size: 2em;
     overflow: hidden;
