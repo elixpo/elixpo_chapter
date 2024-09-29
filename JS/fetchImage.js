@@ -340,7 +340,7 @@ async function imageDetails(self) {
     userCreditsName.style.filter = "blur(2px)";
     postShare.style.filter = "blur(2px)";
     postShare.style.opacity = "0";
-    if((!isMobileDevice) && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+    if((isMobileDevice == false) && ((window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches) == false))
     {
         spanAdjust(50);
     }
@@ -481,7 +481,7 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
     })
     qualityOfImage.innerHTML = hq ? "HQ" : "LQ";
     
-                if((!isMobileDevice) && (window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+            if((isMobileDevice == false) && ((window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches) == false))
                 {    
                 // Use MutationObserver to monitor the masonry container for changes
             const observer = new MutationObserver((mutationsList) => {
