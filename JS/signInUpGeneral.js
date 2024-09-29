@@ -120,5 +120,5 @@ function scaleContainer() {
    container.style.transform = `translate(-50%, -50%) scale(${scale})`;
 }
 
-window.addEventListener('resize', scaleContainer);
-window.addEventListener('load', scaleContainer);
+// window.addEventListener('resize', scaleContainer);
+// window.addEventListener('load', scaleContainer);

@@ -1,0 +1,32 @@
+@media (max-width: 1080px) and (max-height: 1440px) {
+    *
+    {
+      -webkit-tap-highlight-color : transparent;
+      user-select: none;
+    }
+    .container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      height: 100%;
+      width: 450px;
+      transition: 0.5s;
+      opacity: 1;
+      overflow: hidden;
+      justify-content: center;
+      background: #0fb6b6;
+      background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
+  
+    }
+    .backgroundClipPath
+    {
+     display: none;
+    }
+    .vgGirl
+    {
+        left: -10%;
+        top: 0%;
+        transform:scale(1.8);
+    }
+}
