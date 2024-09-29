@@ -128,7 +128,6 @@ async function fetchImages(startAt = 0) {
             .where("genNum", ">", lastFetchedGenNum)  // Ensure this is a valid number
             .orderBy("genNum")
             .limit(batchSize)
-            .startAt(214)
             .get();
 
         if (querySnapshot.empty) {
