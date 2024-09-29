@@ -25,8 +25,59 @@
     }
     .vgGirl
     {
-        left: -10%;
+        left: 0%;
         top: 0%;
-        transform:scale(1.8);
+        transform:scale(1);
+        background-image: url(IMAGES/vrGirlPortrait.jpg);
     }
+    .form_login
+    {
+        left: 40%;
+        transform-origin: center;
+        transform: scale(0.8) translateX(-50%) translateY(-50%);
+    }
+    .form_register
+    {
+        left: 40%;
+        transform-origin: center;
+        transform: scale(0.8) translateX(-50%) translateY(-50%);
+    }
+    .form_logout
+    {
+        left: 40%;
+        transform-origin: center;
+        transform: scale(0.8) translateX(-50%) translateY(-50%);
+    }
+    .appName
+    {
+        left: 25%;
+    }
+    .logo
+    {
+        left: 15%;
+    }
+    #readDocs
+{
+    position: absolute;
+    top: 95%;
+    left: 35%;
+    color: #00a2ff;
+    font-size: 2em;
+    cursor: pointer;    
+    z-index: 10;
+
+}
+
+#visitGallery
+{
+    position: absolute;
+    top: 95%;
+    left: 50%;
+    color: #f3fb02;
+    font-size: 2em;
+    cursor: pointer;    
+    z-index: 10;
+
+}
+
 }
