@@ -402,7 +402,10 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
     document.getElementById("hqlqcontainer").classList.remove("hidden");
-    document.getElementById("statusImage").innerHTML = "";
+    document.getElementById("statusImage1").innerHTML = "";
+    document.getElementById("statusImage2").innerHTML = "";
+    document.getElementById("statusImage3").innerHTML = "";
+    document.getElementById("statusImage4").innerHTML = "";
     
     specialDir = "";
     encodedPrompt = "";
@@ -648,7 +651,10 @@ function handleStaticModeExclusive(numberOfImages) {
     document.querySelector(".progressBar").classList.add("zeroProgress");
     document.querySelector("."+imageVarType).style.opacity = "1";
     document.getElementById("hqlqcontainer").classList.remove("hidden");
-    document.getElementById("statusImage").innerHTML = "";
+    document.getElementById("statusImage1").innerHTML = "";
+    document.getElementById("statusImage2").innerHTML = "";
+    document.getElementById("statusImage3").innerHTML = "";
+    document.getElementById("statusImage4").innerHTML = "";
     encodedPrompt = "";
     specialDir = "";
     },1500)
