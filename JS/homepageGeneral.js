@@ -33,8 +33,8 @@ const prompts = [
 let promptIndex = 0;
 const typewriterElement = document.getElementById('searchText');
 
-window.addEventListener('resize', scaleContainer);
-window.addEventListener('load', scaleContainer);
+//window.addEventListener('resize', scaleContainer);
+//window.addEventListener('load', scaleContainer);
 
 
 

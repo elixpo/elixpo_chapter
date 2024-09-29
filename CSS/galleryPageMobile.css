@@ -1,12 +1,9 @@
-
-
-/*changes and responsive by ez.vivek*/
 @media (max-width: 1080px) and (max-height: 1440px) {
-  *
-  {
-    -webkit-tap-highlight-color : transparent;
+  * {
+    -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
+
   .container {
     position: absolute;
     top: 50%;
@@ -22,10 +19,11 @@
     background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
 
   }
-.appName
-{
-  display: none;
-}
+
+  .appName {
+    display: none;
+  }
+
   .masonry {
     gap: 14.4px;
     grid-auto-rows: 10px;
@@ -41,7 +39,8 @@
     overflow-y: auto;
     display: grid;
   }
-  .MaskdisplayImage{
+
+  .MaskdisplayImage {
     justify-content: center;
     align-items: center;
     height: 88%;
@@ -49,10 +48,11 @@
     position: relative;
     top: 55%;
     transform: translateY(-50%);
-    left:5%;
+    left: 5%;
     background: transparent;
     z-index: 5;
   }
+
   .imageShowCase.square {
     width: 95%;
     height: 70%;
@@ -61,31 +61,34 @@
     position: relative;
     overflow: hidden;
     border-radius: 10px;
-    background:transparent;
+    background: transparent;
   }
 
-  .aspectRatioTile{
+  .aspectRatioTile {
     position: absolute;
     top: 66.5%;
     left: 50%;
     transform: translateX(-50%);
-    width: 17%; 
-    height: 6%; 
+    width: 17%;
+    height: 6%;
   }
-  .userCredits{
+
+  .userCredits {
     top: 75%;
   }
-  .downloadGalleryImage{
-    width: 55%; 
+
+  .downloadGalleryImage {
+    width: 55%;
     height: 7.7%;
     font-size: 25px;
   }
-  .promtEngineeringSection{
+
+  .promtEngineeringSection {
     font-size: 13.3px;
     text-wrap: nowrap;
   }
-  .imageSectionBackButton
-  {
+
+  .imageSectionBackButton {
     position: absolute;
     top: 5%;
     left: 5%;
@@ -94,8 +97,8 @@
     color: #888;
     font-family: "VT323", monospace;
   }
-  .custom-loader.progressShow
-  {
+
+  .custom-loader.progressShow {
     opacity: 1;
     z-index: 3;
     transition: 0.5s;
@@ -109,47 +112,49 @@
     top: 5%;
     left: 88%;
     font-size: 0.5em;
-    color: #fff;;
+    color: #fff;
+    ;
     cursor: pointer;
     z-index: 10;
   }
-  .themeViewer span 
-  {
-      font-size: 3em;
-      color: #fff;
-      font-family: "VT323", monospace;
-      cursor: pointer;
-      transition: 0.25s;
+
+  .themeViewer span {
+    font-size: 3em;
+    color: #fff;
+    font-family: "VT323", monospace;
+    cursor: pointer;
+    transition: 0.25s;
   }
-  .generationQuality
-{
-    font-size: 2em; 
-}
-.generationAspectRatio
-{
-    font-size: 2em; 
-}
 
-.savedMsg {
-  transform: translateX(-50%) scale(0.2) translateY(-250px);
+  .generationQuality {
+    font-size: 2em;
+  }
 
-}
-.savedMsg.display {
-  transform: translateX(-50%) scale(0.8) translateY(0px);
-}
-.inner
-{
-  text-align: center;
-}
+  .generationAspectRatio {
+    font-size: 2em;
+  }
+
+  .savedMsg {
+    transform: translateX(-50%) scale(0.2) translateY(-250px);
+
+  }
+
+  .savedMsg.display {
+    transform: translateX(-50%) scale(0.8) translateY(0px);
+  }
+
+  .inner {
+    text-align: center;
+  }
 
 
-.loadMoreBtn {
-  position: absolute;
-  top: 91%;
-  left: 50%;
-  transform: translateX(-50%) scale(0);
-  border-radius: 8px;
-  background: #212121d5;
+  .loadMoreBtn {
+    position: absolute;
+    top: 91%;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    border-radius: 8px;
+    background: #212121d5;
     border: 2px solid #01e7ad;
     font-family: "VT323", monospace;
     font-size: 1.3em;
@@ -158,40 +163,153 @@
     transition: 0.5s;
     z-index: -1;
     display: block;
+  }
+
+  .loadMoreBtn.visible {
+    left: 50%;
+    transform-origin: center;
+    transform: scale(1) translateX(-50%);
+  }
+
+  .masonry-item.expanded.aspect-9-16 {
+    grid-row: span 25;
+    aspect-ratio: 9 / 16;
+  }
+
+
+  .masonry-item.expanded.aspect-4-3 {
+    grid-row: span 11;
+    aspect-ratio: 4 / 3;
+  }
+
+
+  .masonry-item.expanded.aspect-16-9 {
+    grid-row: span 8;
+    aspect-ratio: 16 / 9;
+  }
+
+
+  .masonry-item.expanded.aspect-3-2 {
+    grid-row: span 10;
+    aspect-ratio: 3 / 2;
+  }
+
+
+  .masonry-item.expanded.aspect-1-1 {
+    grid-row: span 14;
+    aspect-ratio: 1 / 1;
+  }
+
+  .mainName {
+    text-align: center;
+    /* Center the text */
+    display: flex;
+    /* Use flexbox for layout */
+    flex-direction: column;
+    /* Stack children vertically */
+    justify-content: center;
+    /* Center children vertically */
+    align-items: center;
+    /* Center children horizontally */
+  }
+
+  /* Media query for mobile devices */
+  @media (max-width: 1080px) {
+    .mainName {
+      font-size: 0.88vh;
+      /* Smaller font size for mobile */
+      justify-content: center;
+      align-items: center;
+      left: 9%;
+      top: 21%;
+
+    }
+  }
+
+
+  .desc {
+    text-align: center;
+    /* Centers the text horizontally */
+    display: flex;
+    /* Uses flexbox to align children */
+    flex-direction: column;
+    /* Stacks children vertically */
+    justify-content: center;
+    /* Centers the children vertically */
+    align-items: center;
+    /* Centers the children horizontally */
+    gap: 5px;
+    /* Adds space between the children */
+    width: 100%;
+    top: 50%;
+    /* Ensures the div takes full width */
+  }
+
+  .searchButton {
+    left: 30%;
+    font-size: 25px;
+  }
+
+
+  #offeringsTile1 {
+    max-width: 80%;
+    /* Limit the maximum width */
+    margin: 0 auto;
+    /* Center the div horizontally */
+    padding: 20px;
+    /* Add some padding around the content */
+    box-sizing: border-box;
+    /* Include padding in width calculation */
+  }
+
+  #tiles {
+    display: flex;
+    justify-content: center;
+    /* Center tiles horizontally */
+    flex-wrap: wrap;
+    /* Allow tiles to wrap on smaller screens */
+  }
+
+  .tile {
+    flex: 1 1 200px;
+    /* Flex basis of 200px, grow and shrink */
+    margin: 10px;
+    /* Space between tiles */
+    text-align: center;
+    /* Center content within each tile */
+  }
+
+  .tile img {
+    width: 100%;
+    /* Make images responsive within tiles */
+    height: auto;
+    /* Maintain aspect ratio */
+    max-width: 180px;
+    /* Limit image size */
+  }
+
+  /* Media query for smaller screens */
+  @media (max-width: 768px) {
+    #offeringsTile1 {
+      max-width: 95%;
+      left: 3%;
+      top: 7.5%;
+
+    }
+  }
+  /* Adjust the search button size and position */
+  .searchButton {
+    width: 110px; /* Smaller width for mobile */
+    height: 40px; /* Smaller height for mobile */
+    font-size: 20px; /* Smaller font size for text inside the button */
+    left: 75%; /* Center the button horizontally */
+    transform: translate(-50%, -50%); /* Adjust position to stay centered */
+  }
+
+  /* Adjust the search text input size and position */
+  .searchText {
+    font-size: 15px; /* Smaller font size for mobile */
+    left: 10%; /* Adjust left position */
+    width: 80%; /* Increase width to take more space */
+  }
 }
-.loadMoreBtn.visible
-{
-  left: 50%;
-  transform-origin: center;
-  transform: scale(1) translateX(-50%);
-}
-.masonry-item.expanded.aspect-9-16 {
-  grid-row: span 25;
-  aspect-ratio: 9 / 16;
-}
-
-
-.masonry-item.expanded.aspect-4-3 {
-  grid-row: span 11;
-  aspect-ratio: 4 / 3;
-}
-
-
-.masonry-item.expanded.aspect-16-9 {
-  grid-row: span 8;
-  aspect-ratio: 16 / 9;
-}
-
-
-.masonry-item.expanded.aspect-3-2 {
-  grid-row: span 10;
-  aspect-ratio: 3 / 2;
-}
-
-
-.masonry-item.expanded.aspect-1-1 {
-  grid-row: span 14;
-  aspect-ratio: 1 / 1;
-}
-}
-
