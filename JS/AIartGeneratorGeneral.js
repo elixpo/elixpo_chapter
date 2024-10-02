@@ -177,7 +177,7 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
     const startTime = Date.now();
 
     // Create an array to store blobs
-    
+    const blobsList = []; // Initialize the blobsList here
 
     try {
         return new Promise(async (resolve, reject) => {
@@ -187,6 +187,8 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
                 reject(`Element with ID "imageRecieve${genNumber}" not found.`);
                 return;
             }
+
+            imgElement.crossOrigin = "anonymous"; // Set CORS policy
 
             imgElement.onload = async () => {
                 const endTime = Date.now();
@@ -257,6 +259,7 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
         document.getElementById("NotifTxt").innerText = "Greetings";
     }
 }
+
 
 
 
