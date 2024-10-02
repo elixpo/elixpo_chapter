@@ -18,6 +18,7 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                         notify("Login Successful!");
                         localStorage.setItem("ElixpoAIUser", usernameSignIn);
                         setTimeout(() => {
+                            localStorage.setItem("guestLogin", "false");
                             location.replace("elixpoArtGenerator.html");
                         }, 2000);
                     }
@@ -43,6 +44,7 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                 }).then(() => {
                     RemovetileFlash();
                     localStorage.setItem("ElixpoAIUser", user.displayName);
+                    localStorage.setItem("guestLogin", "false");
                     location.replace("elixpoArtGenerator.html");
                 })
                 .catch((err) => {

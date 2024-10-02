@@ -11,6 +11,25 @@ const firebaseConfig = {
  firebase.initializeApp(firebaseConfig);
  const db = firebase.firestore();
 
+ function typeWriterHTML(idOfTextHolder, textToType, speed, callback) {
+   var i = 0;
+   var speed = speed || 25; // Default speed if not provided
+   document.getElementById(idOfTextHolder).innerText = "";
+   
+   function type() {
+       if (i < textToType.length) {
+           document.getElementById(idOfTextHolder).innerHTML += textToType.charAt(i);
+           i++;
+           setTimeout(type, speed);
+       } else if (i === textToType.length) {
+           if (typeof callback === 'function') {
+               callback(); // Call the callback when typing is done
+           }
+       }
+   }
+   
+   type(); // Start the typing effect
+}
 
  window.onload = () => {
       if(localStorage.getItem("ElixpoAIUser") !== null) {
@@ -20,12 +39,24 @@ const firebaseConfig = {
       }
       else
       {
+
+        
          document.getElementById("form_logout").classList.add("hidden");
          document.getElementById("form_login").classList.remove("hidden");
          document.getElementById("form_register").classList.add("hidden");
       }
 }
 
+
+
+
+
+
+document.getElementById("terminalClose").addEventListener("click", () => {
+   document.getElementById("userNameGuest").style.display = "none";
+   document.getElementById("usernameGuestInput").value = "";
+   
+})
 
 document.querySelectorAll("img").forEach((img) => { 
    img.addEventListener("load", () => { 
@@ -49,6 +80,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
    localStorage.removeItem("ElixpoAIUser");
    localStorage.removeItem("metadataCache");
    localStorage.removeItem("currWidth");
+   localStorage.removeItem("guestLogin");
    
    document.getElementById("form_logout").classList.add("hidden");
    document.getElementById("form_register").classList.add("hidden");
@@ -124,5 +156,100 @@ function scaleContainer() {
    }
 }
 
-// window.addEventListener('resize', scaleContainer);
-// window.addEventListener('load', scaleContainer);
+document.getElementById("usernameGuestInput").addEventListener("keypress", function(event) {
+    if(event.key == "Enter")
+    {
+        event.preventDefault();
+        var today  = new Date();
+        var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
+        let timestamp = new Date().getTime();
+        if((this.value.trim() !== "") && this.value.length >= 3 && (/^[a-zA-Z]+$/g).test(this.value))
+        {
+            
+            document.getElementById("userAcceptance").style.color = "white";
+            typeWriterHTML("userAcceptance", "namespace --accepted", 50, function() {
+                console.log("fifth typing complete!");
+            });
+            document.getElementById("usernameGuestInput").style.pointerEvents = "none";
+            document.getElementById("usernameGuestInput").style.color = "#555";
+            db.collection('guests').doc(this.value.toLowerCase()+timestamp).set({
+                username: this.value,
+                date: date
+            })
+            .then(() => {
+                localStorage.setItem("ElixpoAIUser", this.value);
+                localStorage.setItem("guestLogin", "true");
+                var nameSelected = "[" + this.value + "]";
+                typeWriterHTML("userSavedName", nameSelected, 50, function() {
+                    console.log("fifth typing complete!");
+                });
+                typeWriterHTML("userSaved", "name --saved True;", 50, function() {
+                    console.log("fifth typing complete!");
+                });
+                document.getElementById("userNameGuest").style.display = "none";
+                document.getElementById("usernameGuestInput").style.pointerEvents = "none";
+                 location.replace("elixpoArtGenerator.html");
+            })
+           
+        }
+        else 
+        {
+            document.getElementById("userAcceptance").style.color = "red";
+            typeWriterHTML("userAcceptance", "namespace --rejected !! Length must be more than 3 characters, less than 20 characters and consisting of only alphabets (a-z)", 50, function() {
+                console.log("fifth typing complete!");
+            });
+            document.getElementById("usernameGuestInput").style.pointerEvents = "all";
+            document.getElementById("userAcceptance").style.color = "red";
+        }
+    }
+    
+ });
+
+document.getElementById("guestAuth").addEventListener("click", () => {
+    document.getElementById("userNameGuest").style.display = "block";
+    document.getElementById("initializeText1").innerText = "";
+    document.getElementById("initializeText2").innerText = "";
+    document.getElementById("initializeText3").innerText = "";
+    document.getElementById("initializeText4").innerText = "";
+    document.getElementById("initializeText4_config").innerText = "";
+    document.getElementById("initializeText4_message").innerText = "";
+    document.getElementById("userSavedName").innerText = "";
+    document.getElementById("userSaved").innerText = "";
+    document.getElementById("usernameGuestInput").style.pointerEvents = "none";
+    document.getElementById("usernameGuestInput").setAttribute("placeholder", "")
+    setTimeout(() => {
+
+
+       typeWriterHTML("initializeText1", "elixpo loading recipes", 50, function() {
+           console.log("First typing complete!");
+       
+           typeWriterHTML("initializeText2", "loaded 1258 recipies in 5s", 50, function() {
+               console.log("Second typing complete!");
+    
+           typeWriterHTML("initializeText3", "elixpo init", 50, function() {
+               console.log("Second typing complete!");
+           })
+               
+               // Add more calls if needed
+               typeWriterHTML("initializeText4", "elixpo", 50, function() {
+                   console.log("Third typing complete!");
+               });
+    
+               typeWriterHTML("initializeText4_config", "--configure ", 50, function() {
+                   console.log("Third typing complete!");
+               });
+               typeWriterHTML("initializeText4_message", "__", 50, function() {
+                   console.log("fourth typing complete!");
+                   document.getElementById("usernameGuestInput").focus();
+                   document.getElementById("usernameGuestInput").style.pointerEvents = "all";
+                   document.getElementById("usernameGuestInput").setAttribute("placeholder", "Type in an Username Here Buddy .. and Hit Enter")
+               });
+           });
+       });
+    
+    }, 1300);
+});
+
+
+window.addEventListener('resize', scaleContainer);
+window.addEventListener('load', scaleContainer);

@@ -10,7 +10,9 @@
     <link rel="stylesheet" href="CSS/signIn.css">
     <link rel="stylesheet" href="CSS/signUp.css">
     <link rel="stylesheet" href="CSS/logout.css">
+    <link rel="stylesheet" type="text/css" href="CSS/userGuestLogin.css">
     <link rel="stylesheet" href="CSS/mobileResponsive.css">
+    
     <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5">
 </head>
 <body>
@@ -96,7 +98,13 @@
             Github
             <p id="LoginError"> </p>
           
-    </button></div></form>
+    </button>
+    <button class="btn guest" type="button" id="guestAuth">
+      <ion-icon name="person"></ion-icon>
+      Guest
+      <p id="RegisterError"></p>
+</button>
+  </div></form>
 
 
     <form class="form_register hidden" id="form_register">
@@ -141,17 +149,61 @@
           <ion-icon name="logo-google"></ion-icon>
   </svg>
           Google 
-        </button><button class="btn github">
+        </button>
+        
+        <button class="btn github">
           <ion-icon name="logo-github"></ion-icon>
   
           Github
           <p id="RegisterError"></p>
-  </button></div></form>
+      </button>
+      <button class="btn guest" type="button" id="guestAuth">
+        <ion-icon name="person"></ion-icon>
+        Guest
+        <p id="RegisterError"></p>
+  </button>
+      
+
+  </div></form>
 
   <form class="form_logout hidden" id="form_logout">    
     <button class="button-submit" id="logoutBtn" type="button">Logout</button>
     <p class="p" id="reDirectPage"> Don't want to logout?<span class="span" id="signUpFormBtn"> Get Back</span>        
-</button></div></form>
+</button>
+</div>
+
+<div class="userNameGuest hidden" id="userNameGuest">
+  
+  <div class="initializeText" >
+    <span> > </span> <p id="initializeText3"></p>
+  </div>
+  <div class="initializeText">
+    <span> > </span> <p id="initializeText1"></p>
+  </div>
+  <div class="initializeText">
+    <span> > </span> <p id="initializeText2"></p>
+  </div>
+  <div class="initializeText">
+    <span> > </span> <p id="initializeText4"><p id="initializeText4_config"></p> <p id="initializeText4_message"></p></p>
+  </div>
+  <input type="text" class="usernameGuestInput" id="usernameGuestInput" maxlength="15" autocomplete="off" spellcheck="false">
+  <div class="initializeText">
+    <span> > </span> <p id="userAcceptance"></p>
+  </div>
+  <div class="initializeText">
+    <span id="userSavedName"> </span> <p id="userSaved"></p>
+  </div>
+  <div class="terminal-loader">
+    <div class="terminal-header">
+      <p class="headerText"> Welcome Guest - (Paswordless Login, You may have to re-apply your username is session expires)</p>
+      <div class="terminal-controls">
+        <div class="control close" id="terminalClose"></div>
+        <div class="control minimize"></div>
+        <div class="control maximize"></div>
+      </div>
+    </div>
+  </div>
+  
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>

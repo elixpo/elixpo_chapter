@@ -57,16 +57,16 @@
         left: 15%;
     }
     #readDocs
-{
-    position: absolute;
-    top: 95%;
-    left: 35%;
-    color: #00a2ff;
-    font-size: 2em;
-    cursor: pointer;    
-    z-index: 10;
+    {
+        position: absolute;
+        top: 95%;
+        left: 35%;
+        color: #00a2ff;
+        font-size: 2em;
+        cursor: pointer;    
+        z-index: 10;
 
-}
+    }
 
 #visitGallery
 {
@@ -80,4 +80,66 @@
 
 }
 
+.terminal-header {
+    height: 20%;
+    padding: 0 0.1em;
+   
+}
+
+.headerText
+{
+    font-size: 0.8em;
+    top: 0;
+}
+.control
+{
+    left: 90%;
+    width: 0.6em;
+    height: 0.6em;
+}
+.initializeText:nth-child(2)
+{
+    top: 25%;
+}
+.initializeText:nth-child(1)
+{
+    top: 40%;
+}
+.initializeText:nth-child(3)
+{
+    top: 32%;
+}
+.initializeText:nth-child(4)
+{
+    top: 45%;
+    flex-wrap: wrap;
+    line-height: 2px;
+    display: flex;
+    font-size: 1em;
+}
+.initializeText:nth-child(4) #initializeText4_message
+{
+    display: none;
+}
+.initializeText:nth-child(6)
+{
+    top: 60%;
+    font-size: 0.8em;
+}
+
+.initializeText:nth-child(7)
+{
+    top: 65%;
+    font-size: 0.6em;
+}
+
+.usernameGuestInput
+{
+    top: 51%;
+    font-size: 20px;
+}
+.usernameGuestInput::placeholder
+{
+    font-size: 20px
+}
 }

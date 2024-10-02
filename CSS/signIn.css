@@ -166,7 +166,7 @@
     justify-content: center;
     align-items: center;
     font-weight: 500;
-    gap: 10px;
+    gap: 5px;
     border: 1px solid #151717; /* Remove border */
     background-color: #2E2E2E; /* Match form background */
     color: #E0E0E0; /* Light text color */
@@ -188,7 +188,10 @@
 {
     color: #00ff95;
 }
-
+.form_login .btn.guest ion-icon
+{
+    color: #0073ff;
+}
 #LoginError
 {
     position: absolute;

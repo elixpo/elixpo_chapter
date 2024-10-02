@@ -24,7 +24,23 @@ const firebaseConfig = {
   let ai_enhanced_prompt = '';
   let suffixPrompt = "";
   let serverReturnStatus = true;
+  let blobsList = [];
+
+  const randomLogos = 
+  [
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F1.jpeg?alt=media&token=01b96c7a-2ff4-4f7b-99e4-80f510315bb2",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F2.jpeg?alt=media&token=ace5b321-0c49-4b8c-912e-3d51ceb81545",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F3.jpeg?alt=media&token=41f1a76b-c1fc-476e-9156-570a8165d2c0",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F4.jpeg?alt=media&token=94e0f9b5-a1c3-4aa3-9fa7-239c1b08f983",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F5.jpeg?alt=media&token=d363bee4-01bc-4b8d-b90d-6e31a98c2bad",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F6.jpeg?alt=media&token=50c05867-0050-4d89-9c27-cb5040605d6d",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F7.jpeg?alt=media&token=4884744b-1c4d-46de-a245-5f96f344e268",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F8.jpeg?alt=media&token=6c50ad97-63ac-4bf8-9ac0-acf9c5ba0ca8",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F9.jpeg?alt=media&token=47923f1f-516a-4263-a613-d144e3ef6eb9",
+    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F10.jpeg?alt=media&token=88686e4f-c02c-4937-af00-3a471b7cf574"
+  ]
 //new commit
+
 window.onload = function() {
     document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
@@ -41,9 +57,8 @@ window.onload = function() {
     globalThis.imgProg = 0;
     globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
     globalThis.specialDir = "";
-    
-  
-    
+
+
     document.getElementById("promptTextInput").focus();
     setInterval(() => {
         if (localStorage.getItem("ElixpoAIUser") == null) {
@@ -72,8 +87,8 @@ window.onload = function() {
                 console.log(`Server4 URL: ${tagUrl}`);
 
                 // Schedule pingServer after URLs are retrieved
-                pingServer();
-                setInterval(() => pingServer(), 20000);
+                checkNetwork();
+                setInterval(() => checkNetwork(), 5000);
             } else {
                 console.log("No such document!");
             }
@@ -82,6 +97,14 @@ window.onload = function() {
         });
 }
 
+function checkNetwork()
+{
+    if (navigator.onLine) {
+        document.getElementById("serverStatus").classList.remove("offline");
+      } else {
+        document.getElementById("serverStatus").classList.add("offline");
+      }
+}
 async function pingServer() {
     try {
         const response = await fetch(`${pingUrl}/ping`, {
@@ -109,40 +132,28 @@ async function pingServer() {
     setInterval(getServerURLs, 30000);
 };
 
-
-db.collection("users").doc(localStorage.getItem("ElixpoAIUser").toLowerCase()).get().then((doc) => {
-    if (doc.exists) {
-        // console.log("Document data:", doc.data());
-        document.getElementById("userLogo").style.backgroundImage = `url(${doc.data().user_logo})`;
-    } else {
-       console.log("No such document!");
-    }
-}).catch((error) => {
-   location.reload();
-});
-
-db.collection("users").doc(localStorage.getItem("ElixpoAIUser").toLowerCase()).get().then((doc) => {
-    if (doc.exists) {
-        let coins = doc.data().coins;
-        let formattedCoins;
-
-        if (coins < 1000) {
-            formattedCoins = coins;
-        } else if (coins < 10000) {
-            formattedCoins = `${(coins / 1000).toFixed(0)}K`;
-        } else if (coins < 100000) {
-            formattedCoins = `${(coins / 1000).toFixed(0)}K`;
+if(localStorage.getItem("guestLogin") == true)
+{
+    db.collection("users").doc(localStorage.getItem("ElixpoAIUser").toLowerCase()).get().then((doc) => {
+        if (doc.exists) {
+            // console.log("Document data:", doc.data());
+            document.getElementById("userLogo").style.backgroundImage = `url(${doc.data().user_logo})`;
         } else {
-            formattedCoins = "100K";
+           console.log("No such document!");
         }
+    }).catch((error) => {
+       location.reload();
+    });
+}
+else 
+{
+const randomIndex = Math.floor(Math.random() * randomLogos.length);
+const randomLogo = randomLogos[randomIndex];
+document.getElementById("userLogo").style.backgroundImage = `url(${randomLogo})`;
+}
 
-        document.getElementById("tokenValue").innerText = formattedCoins;
-    } else {
-        console.log("No such document!");
-    }
-}).catch((error) => {
-    location.reload();
-});
+
+
 
 
 const diceIcon = document.getElementById('OneImage');
@@ -150,145 +161,106 @@ const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-fou
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
-        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
-            document.getElementById("NotifTxt").innerText = "Generating Images...";
-            document.getElementById("savedMsg").classList.add("display");
-            const model = Math.random() < 0.5 ? "flux" : "boltning";
-            var enhanceSwitch = document.getElementById("enhanceSwitch");
-            if(enhanceSwitch.checked)
-            {
-                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&&enhance=true`;
+async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
+    document.getElementById("NotifTxt").innerText = "Generating Images...";
+    document.getElementById("savedMsg").classList.add("display");
+    const model = Math.random() < 0.5 ? "flux" : "boltning";
+    
+    const enhanceSwitch = document.getElementById("enhanceSwitch");
+    const enhanceValue = enhanceSwitch.checked ? "true" : "false";
+    const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=${enhanceValue}`;
+
+    const imageTile = document.querySelector(".imageTile" + genNumber);
+    specialDir = localStorage.getItem("ElixpoAIUser") + "_" + Date.now();
+    imageTile.classList.add("generating");
+
+    const startTime = Date.now();
+
+    // Create an array to store blobs
+    
+
+    try {
+        return new Promise(async (resolve, reject) => {
+            const imgElement = document.getElementById("imageRecieve" + genNumber);
+
+            if (!imgElement) {
+                reject(`Element with ID "imageRecieve${genNumber}" not found.`);
+                return;
             }
-            else 
-            {
-                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false`;
-            }
-            
-         //x
-            const imageTile = document.querySelector(".imageTile" + genNumber);
-            imageTile.classList.add("generating");
-            specialDir = localStorage.getItem("ElixpoAIUser") + "_" + Date.now();
-            document.getElementById("generationTimeMask" + genNumber).style.animation = "loadingFlash 2s linear infinite";
-            document.getElementById("generatedSeedIcon" + genNumber).style.animation = "loadingFlash 2s linear infinite";
-            document.getElementById("generatedSeedIcon" + genNumber).style.color = "#00ff73";
-        
-            const startTime = Date.now();
-        
-            try {
-                return new Promise(async (resolve, reject) => {
-                    const imgElement = document.getElementById("imageRecieve" + genNumber);
-        
-                    if (!imgElement) {
-                        reject(`Element with ID "imageRecieve${genNumber}" not found.`);
-                        return;
-                    }
-                    console.log(downloadUrl);
-                    try {
-                        serverReturnStatus = true;
-                        const response = await fetch(`${downloadUrl}/download-image`, {  //get image
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ imageUrl }),
-                            signal: controller.signal
-                        });
-        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        else if(response.status == 202)
-                        {
-                            serverReturnStatus = false;
-                            document.getElementById("acceptBtn").classList.add("hidden");
-                        }
-        
-                        const data = await response.json();
-                        const base64 = data.base64;
-                        const url = `data:image/png;base64,${base64}`;
-                        const blob = await fetch(url).then(res => res.blob());
-                        blobs.push(blob);
-        
-                        imgElement.onload = () => {
-                            const endTime = Date.now();
-                            const generationTime = Math.round((endTime - startTime) / 1000);
-                            if (generationTime > 9) {
-                                document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationTime").style.fontSize = "1.5em";
-                                document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationAspectRatio").style.fontSize = "1.5em";
-                                document.getElementById("expansionIcon" + genNumber).classList.remove("hidden");
-                            }
-                            document.getElementById("generationTime" + genNumber).innerText = `${generationTime}s`;
-                            document.getElementById("generationAspectRatio" + genNumber).innerText = `${aspectRatio}`;
-                            document.getElementById("generatedSeed" + genNumber).innerText = seed;
-                            document.getElementById("generationTheme" + genNumber).innerText = theme;
-                            const encodedData = url + "###" + prompt + "###" + localStorage.getItem("ElixpoAIUser") + "###" + genNumber;
-                            document.getElementById("maskImageTile" + genNumber).setAttribute("data-id", encodedData);
-        
-                            if (imageTile) {
-                                imageTile.classList.remove("generating");
-                                imageTile.classList.add("generated");
-                                document.getElementById("generationTimeMask" + genNumber).style.animation = "none";
-                                document.getElementById("generatedSeedIcon" + genNumber).style.animation = "none";
-                                document.getElementById("generatedSeedIcon" + genNumber).style.color = "#fff";
-                                document.getElementById("expansionIcon" + genNumber).classList.add("shrink");
-                                document.getElementById("maskImageTile" + genNumber).classList.add("expand");
-                            }
-        
-                            // Remove blur effect
-                            imgElement.style.filter = 'blur(0)';
-                            resolve();
-                        };
-        
-                        // Add blur effect initially
-                        imgElement.style.filter = 'blur(10px)';
-                        imgElement.src = url;
-        
-                        controller.signal.addEventListener('abort', () => {
-                            imgElement.src = '';
-                            reject(new Error('Image generation aborted.'));
-                            handleStaticModeExclusive(currentIndex + 1);
-                        });
-                    } catch (error) {
-                        console.error('Error fetching image:', error);
-                        if (error.message.includes('Failed to fetch')) {
-                            document.getElementById("NotifTxt").innerText = "Server Offline!";
-                            document.getElementById("savedMsg").classList.add("display");
-                            setTimeout(() => {
-                                document.getElementById("savedMsg").classList.remove("display");
-                            }, 1500);
-                            document.getElementById("NotifTxt").innerText = "Greetings";
-                            handleStaticModeExclusive(currentIndex + 1);
-                            reject(new Error('Node.js server is not running.'));
-                        } else {
-                            reject(error);
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Error fetching server URL:', error);
-                document.getElementById("NotifTxt").innerText = "Error fetching server URL";
-                document.getElementById("savedMsg").classList.add("display");
-                setTimeout(() => {
-                    document.getElementById("savedMsg").classList.remove("display");
-                }, 1500);
-                document.getElementById("NotifTxt").innerText = "Greetings";
-            }
-        }
-        
+
+            imgElement.onload = async () => {
+                const endTime = Date.now();
+                const generationTime = Math.round((endTime - startTime) / 1000);
+                
+                if (generationTime > 9) {
+                    document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationTime").style.fontSize = "1.5em";
+                    document.querySelector(".imageTiles .maskImageTile" + genNumber + " .creationStats .generationAspectRatio").style.fontSize = "1.5em";
+                    document.getElementById("expansionIcon" + genNumber).classList.remove("hidden");
+                }
+
+                document.getElementById("generationTime" + genNumber).innerText = `${generationTime}s`;
+                document.getElementById("generationAspectRatio" + genNumber).innerText = `${aspectRatio}`;
+                document.getElementById("generatedSeed" + genNumber).innerText = seed;
+                document.getElementById("generationTheme" + genNumber).innerText = theme;
+                
+                const encodedData = `${imgElement.src}###${prompt}###${localStorage.getItem("ElixpoAIUser")}###${genNumber}`;
+                document.getElementById("maskImageTile" + genNumber).setAttribute("data-id", encodedData);
+
+                // Create a canvas and draw the image
+                const canvas = document.createElement('canvas');
+                canvas.width = width; // Set canvas width
+                canvas.height = height; // Set canvas height
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgElement, 0, 0, width, height); // Draw the image on the canvas
+
+                // Get the Data URL
+                const dataUrl = canvas.toDataURL('image/png'); // Get Data URL
+
+                // Convert Data URL to Blob
+                const blob = await fetch(dataUrl).then(res => res.blob());
+
+                // Store the blob in the blobsList array
+                blobsList.push(blob); // Add the blob to the array
+
+                if (imageTile) {
+                    imageTile.classList.remove("generating");
+                    imageTile.classList.add("generated");
+                    document.getElementById("generationTimeMask" + genNumber).style.animation = "none";
+                    document.getElementById("generatedSeedIcon" + genNumber).style.animation = "none";
+                    document.getElementById("generatedSeedIcon" + genNumber).style.color = "#fff";
+                    document.getElementById("expansionIcon" + genNumber).classList.add("shrink");
+                    document.getElementById("maskImageTile" + genNumber).classList.add("expand");
+                }
+
+                // Remove blur effect
+                imgElement.style.filter = 'blur(0)';
+                resolve();
+            };
+
+            // Add blur effect initially
+            imgElement.style.filter = 'blur(10px)';
+            imgElement.src = imageUrl; // Set the image URL directly
+
+            controller.signal.addEventListener('abort', () => {
+                imgElement.src = ''; // Clear the image on abort
+                reject(new Error('Image generation aborted.'));
+                handleStaticModeExclusive(currentIndex + 1);
+            });
+        });
+    } catch (error) {
+        console.error('Error fetching server URL:', error);
+        document.getElementById("NotifTxt").innerText = "Error fetching server URL";
+        document.getElementById("savedMsg").classList.add("display");
+        setTimeout(() => {
+            document.getElementById("savedMsg").classList.remove("display");
+        }, 1500);
+        document.getElementById("NotifTxt").innerText = "Greetings";
+    }
+}
 
 
 
-        
 
-
-
-       
-        
-        
-        // Example usage
-
-        
-// Function to generate multiple images in parallel
 async function generateMultipleImages(encodedPrompt, width, height, seeds, aspectRatio, theme, numberOfImages, controller) {
     const promises = [];
 
@@ -358,7 +330,7 @@ document.getElementById("stopGeneration").addEventListener("click", () => {
 
 function handleStaticMode(numberOfImages) {
     generating = false;
-    blobs = [];
+    blobsList = [];
     for (let i = 1; i <= numberOfImages; i++) {
         const imgElement = document.getElementById("imageRecieve" + i.toString());
 
@@ -419,7 +391,7 @@ document.getElementById("rejectBtn").addEventListener("click", () => {
 });
 
 document.getElementById("acceptBtn").addEventListener("click", () => {
-    handleStaticServerUpload(blobs, blobs.length, imageVarType, specialDir ,0);
+    handleStaticServerUpload(blobsList, blobsList.length, imageVarType, specialDir ,0);
 });
 
 
@@ -483,7 +455,7 @@ function generateUniqueId(inputString) {
 }
 
 
-async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir, progress = 0) {
+async function handleStaticServerUpload(blobsList, imageNumber, imgTheme, specialDir, progress = 0) {
     generating = false;
     document.getElementById("NotifTxt").innerText = "Uploading Images...";
     document.getElementById("savedMsg").classList.add("display");
@@ -514,7 +486,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
             
 
             // Prepare upload tasks for each blob
-            blobs.forEach((blob, index) => {
+            blobsList.forEach((blob, index) => {
                 const imageRef = storageRef.child(`generatedImages/${imgTheme}/image_${timestamp}_${index}.png`);
                 const uploadTask = imageRef.put(blob);
 
@@ -545,7 +517,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 ratio: RatioValue,
                                 ai_enhanced: enhanceSwitch.checked,
                                 likes: 0,
-                                total_gen_number: blobs.length,
+                                total_gen_number: blobsList.length,
                                 genNum : nextImageNumber,
                                 hq : document.getElementById("hqlqParent").checked,
                                 formatted_prompt: "",
@@ -563,7 +535,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                             document.getElementById("progressBarAccept").style.width = prog + "%";
 
                             // Check if all uploads are complete
-                            if (progress === blobs.length) {
+                            if (progress === blobsList.length) {
                                 resolve(uploadPromises);
                                 console.log("All images uploaded successfully.");
                                 generating = false;
@@ -606,8 +578,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     });
 }
 
+
 function handleStaticModeExclusive(numberOfImages) {
-    blobs = [];
+    blobsList = [];
     for (let i = 1; i <= numberOfImages; i++) {
         const imgElement = document.getElementById("imageRecieve" + i.toString());
 
@@ -976,24 +949,47 @@ function expandImage(enc) {
 
 document.getElementById("downloadBox").addEventListener("click", (e) => {
     const downloadUrl = document.getElementById("downloadBox").getAttribute("data-id");
-    downloadBlob(downloadUrl, fileName);
+    downloadBlob(downloadUrl);
 })
 
 
-function downloadBlob(blob, fileName) {
-    const url = blob;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "elixpo-ai-generated-image.jpg"; // Set the file name to "elixpo-ai-generated-image.jpg"
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    document.getElementById("savedMsg").classList.add("display");
-    setTimeout(() => {
-        document.getElementById("savedMsg").classList.remove("display");
-    }, 1500);
+function downloadBlob(imageUrl) {
+    const img = new Image();
+    
+    img.crossOrigin = 'anonymous'; // Set cross-origin to avoid CORS issues
+    img.src = imageUrl;
+    
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert the canvas to a data URL
+        const dataUrl = canvas.toDataURL('image/jpeg'); // or 'image/png'
+        
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = "elixpo-ai-generated-image.jpg"; // Set the file name
+        document.body.appendChild(a);
+        a.click(); // Trigger the download
+        document.body.removeChild(a); // Clean up
+
+        // Optionally, show a message after download
+        document.getElementById("savedMsg").classList.add("display");
+        setTimeout(() => {
+            document.getElementById("savedMsg").classList.remove("display");
+        }, 1500);
+    };
+
+    img.onerror = function() {
+        console.error("Image load failed.");
+        // Handle error
+    };
 }
+
 
 function uploadBlob(blob, fileName) {
     const watermarkImage = new Image();
