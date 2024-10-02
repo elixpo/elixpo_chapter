@@ -149,19 +149,15 @@ function loginUser() {
         {
             console.log(usernameSignIn, emailSignIn, passwordSignIn);   
             if (doc.data().username == usernameSignIn && doc.data().email == emailSignIn && doc.data().password == passwordSignIn) {
-                if(doc.data().isDev == "DEV")
-                {
                     notify("Login Successful!");
                     localStorage.setItem("ElixpoAIUser", usernameSignIn);
                     setTimeout(() => {
+                        localStorage.setItem("guestLogin", "false");
                         location.replace("elixpoArtGenerator.html");
+                        
                     }, 2000);
-                }
-                else 
-                {
-                    LoginError("Access Denied!");
-                    RemovetileFlash();
-                } 
+                
+ 
             } else {
                 LoginError("Invalid Credentials!");
                 RemovetileFlash();
@@ -235,3 +231,4 @@ function RemovetileFlash() {
         }); 
     }, 2200);
 }
+

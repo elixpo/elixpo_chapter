@@ -167,6 +167,7 @@ overflow-x: hidden;
   transform-origin: center;
   opacity: 1; /*change to zero*/
   transform: translateX(-50%) translateY(-50%);
+  
 }
 
 
