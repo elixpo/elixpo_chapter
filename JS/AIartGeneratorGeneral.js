@@ -85,7 +85,7 @@ window.onload = function() {
 
                 // Schedule pingServer after URLs are retrieved
                 checkNetwork();
-                setInterval(() => checkNetwork(), 20000);
+                setInterval(() => checkNetwork(), 5000);
             } else {
                 console.log("No such document!");
             }
