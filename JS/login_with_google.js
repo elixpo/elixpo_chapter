@@ -7,26 +7,20 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
     .then(function(result) {
         var token = result.credential.accessToken;
         var user = result.user;
-
+        var today  = new Date();
+        var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
         var docRef = db.collection("users").doc(user.displayName);
 
         docRef.get().then((doc) => { // gets the whole data against the entered email address
             if (doc.exists) {
                 tileFlash();
-                if(doc.data().isDev == "DEV")
-                    {
                         notify("Login Successful!");
                         localStorage.setItem("ElixpoAIUser", usernameSignIn);
                         setTimeout(() => {
                             localStorage.setItem("guestLogin", "false");
                             location.replace("elixpoArtGenerator.html");
                         }, 2000);
-                    }
-                    else 
-                    {
-                        LoginError("Access Denied!");
-                        RemovetileFlash();
-                    }
+
             } else {
            
                 tileFlash();
@@ -35,6 +29,7 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                     email: user.email,
                     uid: user.uid,
                     displayName: user.displayName,
+                    dateCreated: date,
                     isDev: "NotDev",
                     provider: "Google",
                     plan : "lix",
