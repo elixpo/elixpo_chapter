@@ -882,7 +882,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 c.style.opacity = ".25";
             });
             child.style.opacity = "1";
-            document.getElementById("isoImageType").style.background = 'url("./CSS/IMAGES/THEMES/'+imageVarType.toLowerCase()+'.jpeg")';
+            document.getElementById("isoImageType").style.background = 'url("./CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
             document.getElementById("isoImageType").style.backgroundSize = "cover";
             document.getElementById("isoImageType").style.backgroundPosition = "50% 30%";
             document.getElementById("themeNameIcon").innerHTML = imageVarType;
