@@ -164,13 +164,15 @@ let controller;
             document.getElementById("savedMsg").classList.add("display");
             const model = Math.random() < 0.5 ? "flux" : "boltning";
             var enhanceSwitch = document.getElementById("enhanceSwitch");
+            var privateImage = document.getElementById("privateSwitch").checked ? "false" : "true";
+            
             if(enhanceSwitch.checked)
             {
-                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&&enhance=true`;
+                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=true&private=${privateImage}`;
             }
             else 
             {
-                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false`;
+                imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false&private=${privateImage}`;
             }
             
          //x
