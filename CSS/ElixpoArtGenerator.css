@@ -1095,14 +1095,14 @@ z-index: -1;
   position: absolute;
   display: flex;
   gap: 10px;
-    font-size: 1.5em;
+    font-size: 1.2em;
     margin: 0 30px; /* Optional: add some margin between the elements */
 }
 
 .imageTiles .maskImageTile1 .creationStats .generationTime {
-    position: relative; /* Changed to relative for flex layout */
+    position: absolute; /* Changed to relative for flex layout */
     font-family: "Orbitron", sans-serif;
-    left: 1%;
+    left: 48%;
     }
 
 .imageTiles .maskImageTile1 .creationStats .generationAspectRatio {
@@ -1464,14 +1464,14 @@ z-index: -1;
 
 .imageTiles .maskImageTile2 .creationStats .generationTime,
 .imageTiles .maskImageTile2 .creationStats .generationAspectRatio {
-    font-size: 2em;
+    font-size: 1.3em;
     margin: 0 30px; /* Optional: add some margin between the elements */
 }
 
 .imageTiles .maskImageTile2 .creationStats .generationTime {
-    position: relative; /* Changed to relative for flex layout */
+    position: absolute; /* Changed to relative for flex layout */
     font-family: "Orbitron", sans-serif;
-    left: 1%;
+    left: 50%;
     }
 
 .imageTiles .maskImageTile2 .creationStats .generationAspectRatio {
@@ -1610,14 +1610,14 @@ z-index: -1;
 
 .imageTiles .maskImageTile3 .creationStats .generationTime,
 .imageTiles .maskImageTile3 .creationStats .generationAspectRatio {
-    font-size: 2em;
+    font-size: 1em;
     margin: 0 30px; /* Optional: add some margin between the elements */
 }
 
 .imageTiles .maskImageTile3 .creationStats .generationTime {
-    position: relative; /* Changed to relative for flex layout */
+    position: absolute; /* Changed to relative for flex layout */
     font-family: "Orbitron", sans-serif;
-    left: 1%;
+    left: 50%;
     }
 
 .imageTiles .maskImageTile3 .creationStats .generationAspectRatio {
@@ -1793,14 +1793,14 @@ z-index: -1;
 
 .imageTiles .maskImageTile4 .creationStats .generationTime,
 .imageTiles .maskImageTile4 .creationStats .generationAspectRatio {
-    font-size: 2em;
+    font-size: 1em;
     margin: 0 30px; /* Optional: add some margin between the elements */
 }
 
 .imageTiles .maskImageTile4 .creationStats .generationTime {
-    position: relative; /* Changed to relative for flex layout */
+    position: absolute; /* Changed to relative for flex layout */
     font-family: "Orbitron", sans-serif;
-    left: 1%;
+    left: 50%;
     }
 
 .imageTiles .maskImageTile4 .creationStats .generationAspectRatio {
