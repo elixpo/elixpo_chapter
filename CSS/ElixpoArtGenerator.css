@@ -2610,3 +2610,129 @@ body {
   border-width: 0 0.15em 0.15em 0;
   transform: rotate(45deg);
 }
+
+.logoutPopUp
+{
+  position: absolute;
+  height: 30%;
+  width: 15%;
+  top: 12%;
+  left: 84%;
+  background-color: #2d414d76;
+  backdrop-filter: blur(5px);
+  border-radius: 25px;
+  box-shadow: inset 5px 0 5px #636f69;
+  opacity: 1;
+  z-index: 10;
+  transition: 0.5s;
+  overflow: hidden;
+}
+
+.maskBackground
+{
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0.35;
+  filter: blur(2px) brightness(0.5);
+  background: url(../CSS/IMAGES/abstract\ art.jpeg);
+}
+
+.logoutPopUp.hidden 
+{
+  left: 120%;
+  opacity: 0;
+  z-index: -1;
+  transition: 0.5s;
+}
+
+.logoutPopUp .logoutPopUpUsername
+{
+  position: absolute;
+  top: 0%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5em;
+  white-space: normal;
+  flex-wrap: wrap;
+  word-break: break-all;
+  text-align: center;
+  color: #fff;
+  font-family: 'Source Code Pro', monospace;
+}
+
+.logouBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) scale(1.2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 45px;
+  height: 45px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: .3s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.199);
+  background-color: rgb(255, 65, 65);
+}
+
+
+/* plus sign */
+.sign {
+  left: -3%;
+  width: 100%;
+  transition-duration: .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sign svg {
+  width: 17px;
+}
+
+.sign svg path {
+  fill: white;
+}
+/* text */
+.text {
+  position: absolute;
+  left: 30%;
+  width: 0%;
+  opacity: 0;
+  color: white;
+  font-size: 1.2em;
+  font-weight: 600;
+  transition-duration: .3s;
+}
+/* hover effect on button width */
+.logouBtn:hover {
+  width: 125px;
+  border-radius: 40px;
+  transition-duration: .3s;
+}
+
+.logouBtn:hover .sign {
+  width: 30%;
+  transition-duration: .3s;
+  padding-left: 20px;
+}
+/* hover effect button's text */
+.logouBtn:hover .text {
+  opacity: 1;
+  width: 70%;
+  transition-duration: .3s;
+  padding-right: 10px;
+}
+/* button click effect*/
+.logouBtn:active {
+  transform: translate(2px ,2px) translateX(-50%) scale(1);
+}
+

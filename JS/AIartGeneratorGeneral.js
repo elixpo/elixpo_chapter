@@ -56,6 +56,7 @@ window.onload = function() {
     globalThis.imgProg = 0;
     globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
     globalThis.specialDir = "";
+    document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
 
 
     document.getElementById("promptTextInput").focus();
