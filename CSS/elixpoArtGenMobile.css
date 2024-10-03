@@ -1,4 +1,4 @@
-@media (max-width: 1080px) and (max-height: 1440px) {
+@media (max-width: 768px) { 
     * {
         -webkit-tap-highlight-color: transparent;
         user-select: none;
@@ -264,5 +264,18 @@
     top: 72%;
     left: 60%;
     transform: scale(0.75);
+  }
+  .logoutPopUp
+  {
+    width: 200px;
+    left: 60%;
+    top: 10%;
+    z-index: 50;
+    scale: 0.7;
+  }
+  .logoutPopUp .logoutPopUpUsername
+  {
+    font-size: 1.3em;
+    top: 8%;
   }
 }

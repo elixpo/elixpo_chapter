@@ -8,8 +8,7 @@ var emailSignIn = document.getElementById("signInEmail").value.toLowerCase().tri
 var usernameSignIn = document.getElementById("signInName").value.toLowerCase().trim();
 var passwordSignIn = document.getElementById("signInPassword").value.toLowerCase().trim();
 
-today  = new Date();
-var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
+
 
 document.getElementById("signupBtnDB").addEventListener("click", () => { //when the signup button is clicked
     emailSignUp = document.getElementById("signupEmail").value.trim();
@@ -77,7 +76,8 @@ function registerUser() {
         }
     })
     document.getElementById("form_register").style.pointerEvents = "none";
-
+    var today  = new Date();
+    var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
     firebase.auth().createUserWithEmailAndPassword(emailSignUp, passwordSignUp)
     .then(function(userCredential) {
         var user = userCredential.user //contains the user credentials

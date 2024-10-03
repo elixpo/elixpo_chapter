@@ -45,10 +45,13 @@ promptTextInput.addEventListener("input", function() {
 
 
   document.getElementById("userLogo").addEventListener("click", function() {    
-    location.replace("log_in_out.html");
+    document.getElementById("logoutPopUp").classList.toggle("hidden");
   });
 
-
+document.getElementById("logouBtn").addEventListener("click", function() {
+    document.getElementById("logoutPopUp").classList.add("hidden");
+    location.replace("log_in_out.html");
+});
   const wrapper = document.getElementById("wrapper");
 
 

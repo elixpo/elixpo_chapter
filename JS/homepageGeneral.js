@@ -33,8 +33,8 @@ const prompts = [
 let promptIndex = 0;
 const typewriterElement = document.getElementById('searchText');
 
-//window.addEventListener('resize', scaleContainer);
-//window.addEventListener('load', scaleContainer);
+window.addEventListener('resize', scaleContainer);
+window.addEventListener('load', scaleContainer);
 
 
 
@@ -131,25 +131,26 @@ setInterval(scrollImages_right, 1000);
 
 
 
-//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 ---greqPAI
-
-
 
 function scaleContainer() {
+    if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+    {
+ 
     const container = document.querySelector('.container');
     const containerWidth = 1519;
     const containerHeight = 730;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-
+ 
     // Calculate scale factors for both width and height
     const scaleWidth = windowWidth / containerWidth;
     const scaleHeight = windowHeight / containerHeight;
-
+ 
     // Use the smaller scale factor to ensure the container fits in the viewport
     const scale = Math.min(scaleWidth, scaleHeight);
-
+ 
     // Apply the scale transform
     container.style.transform = `translate(-50%, -50%) scale(${scale})`;
-}
+    }
+ }
 
