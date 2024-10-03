@@ -2702,7 +2702,7 @@ body {
   fill: white;
 }
 /* text */
-.text {
+.logoutText {
   position: absolute;
   left: 30%;
   width: 0%;
@@ -2725,7 +2725,7 @@ body {
   padding-left: 20px;
 }
 /* hover effect button's text */
-.logouBtn:hover .text {
+.logouBtn:hover .logoutText {
   opacity: 1;
   width: 70%;
   transition-duration: .3s;
