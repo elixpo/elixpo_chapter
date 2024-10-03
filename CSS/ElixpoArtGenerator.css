@@ -302,19 +302,17 @@ overflow-x: hidden;
     border-radius: 50%;
     flex-wrap: wrap;
   }
-  .enhancingMessage > .enhancedPrompt
-  {
+  .enhancingMessage > .enhancedPrompt {
     position: absolute;
     left: 50%;
-    top: -15px;
+    top: 5%;
+    transform: translate(-50%, -50%);
     width: 100%;
-    transform: translateX(-50%);
     font-family: "Orbitron", sans-serif;
-    flex-wrap: wrap; 
+    flex-wrap: wrap;
     color: #001520;
-    font-size: 1.7em; 
-    text-align: justify;
-
+    font-size: 1.5em;
+    text-align: center; /* Change from justify to center */
   }
   .enhancingMessage.hidden
   {
