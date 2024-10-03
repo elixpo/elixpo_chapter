@@ -849,10 +849,11 @@ switch (RatioValue) {
 
     const numberOfImages = currentIndex + 1;
     const seeds = generateSeeds(numberOfImages, 4, 6);
-    document.getElementById("statusImage1").innerText = isHQorLQ ? "In Progress" : "Generating";
-    document.getElementById("statusImage2").innerText = isHQorLQ ? "In Progress" : "Generating";
-    document.getElementById("statusImage3").innerText = isHQorLQ ? "In Progress" : "Generating";
-    document.getElementById("statusImage4").innerText = isHQorLQ ? "In Progress" : "Generating";
+    for(let i = 1; i <= numberOfImages; i++)
+    {
+        document.getElementById("statusImage"+i).innerText = isHQorLQ ? "In Progress" : "Generating";
+    }
+    
     controller = new AbortController();
 
     try {
