@@ -187,7 +187,7 @@ async function loadImagesFromLatch() {
             const itemHtml = `
                 <div class="masonry-item ${aspectRatio} expanded" id="masonryTile${data.genNum}" 
                     onclick="imageDetails(this)" 
-                    data-id="${data.likes}###${data.ratio}###${data.theme}###${data.formatted_prompt}###${data.user}###${imageBlobUrl}###${data.hashtags}###${data.hq}###${data.imgId}" 
+                    data-id="${data.likes}###${data.ratio}###${data.theme}###${data.prompt}###${data.user}###${imageBlobUrl}###${data.hashtags}###${data.hq}###${data.imgId}" 
                     style="background: ${majorityColor}; background-size: cover; background-position: center center;">
                 </div>
             `;
@@ -409,7 +409,7 @@ async function getQueryParam() {
                     }
                     
                     batchSize = 4;
-                    imageDetailsParameters(data.ratio, data.theme, data.formatted_prompt, data.user, imgUrl, data.hashtags, data.hq, data.imgId);
+                    imageDetailsParameters(data.ratio, data.theme, data.prompt, data.user, imgUrl, data.hashtags, data.hq, data.imgId);
 
                 });
             } else {
