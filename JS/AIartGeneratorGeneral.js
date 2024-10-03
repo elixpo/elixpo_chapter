@@ -78,23 +78,29 @@ window.onload = function() {
             if (doc.exists) {
                 downloadUrl = await doc.data().download_image;
                 pingUrl = await doc.data().get_ping;
-                tagUrl = await doc.data().get_tags;
-                enhanceUrl = await doc.data().pimp_prompt;
+
 
                 console.log(`Server1 URL: ${downloadUrl}`);
-                console.log(`Server2 URL: ${enhanceUrl}`);
                 console.log(`Server3 URL: ${pingUrl}`);
-                console.log(`Server4 URL: ${tagUrl}`);
 
                 // Schedule pingServer after URLs are retrieved
-                // pingServer();
-                // setInterval(() => pingServer(), 20000);
+                checkNetwork();
+                setInterval(() => checkNetwork(), 20000);
             } else {
                 console.log("No such document!");
             }
         }).catch((error) => {
             console.log("Error getting document:", error);
         });
+}
+
+function checkNetwork()
+{
+    if (navigator.onLine) {
+        document.getElementById("serverStatus").classList.remove("offline");
+      } else {
+        document.getElementById("serverStatus").classList.add("offline");
+      }
 }
 
 async function pingServer() {
@@ -434,40 +440,37 @@ async function gettotalGenOnServer() {
     return totalGen;
 }
 
-async function fetchFormattedPrompt(prompt) {
-     formatted_prompt = "";
-     hashtags = "";
-     tags = "";
-    try {
-        const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: prompt }),
-        });
+// async function fetchFormattedPrompt(prompt) {
+//      formatted_prompt = "";
+//      hashtags = "";
+//      tags = "";
+//     try {
+//         const response = await fetch(`${tagUrl}/tag_gen`, { //python endpoint -- tags generator
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({ prompt: prompt }),
+//         });
   
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
   
-        const data = await response.json();
-        formatted_prompt = data.formatted_prompt;
-        hashtags = data.hashtags
-        tags = data.tags;
-        console.log(formatted_prompt, hashtags, tags);
+//         const data = await response.json();
+//         formatted_prompt = data.formatted_prompt;
+//         hashtags = data.hashtags
+//         tags = data.tags;
+//         console.log(formatted_prompt, hashtags, tags);
 
-        return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
-    } catch (error) {
-        console.error("Error fetching formatted prompt:", error);
-        return "";
-    }
+//         return [data.formatted_prompt, data.hashtags, data.tags];  // Return the markdown formatted prompt
+//     } catch (error) {
+//         console.error("Error fetching formatted prompt:", error);
+//         return "";
+//     }
     
-}
-// document.getElementById("serverStatus").addEventListener("click" ,async () => {
-//     const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt("A small butterfly with an epic outline and glittery outlook");
-    
-// })
+// }
+
 
 function generateUniqueId(inputString) {
     // Get the current timestamp
