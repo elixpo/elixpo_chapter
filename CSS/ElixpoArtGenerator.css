@@ -2242,6 +2242,7 @@ body {
   z-index: 20;
   opacity: .75;
   transition: 0.5s;
+  display: none;
 }
 .aiEnhancementDesc.hidden 
 {
@@ -2301,6 +2302,7 @@ body {
   color: #FFCC70;
   opacity: .75;
   transition: 0.5s;
+  display: none;
 }
 .privatePublicResultDesc.hidden 
 {

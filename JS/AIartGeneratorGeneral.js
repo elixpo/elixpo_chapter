@@ -1108,7 +1108,7 @@ document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv)
 
 document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     if (generating) {
-        alert("Image geneerating alredy, progress will  be lost")
+        alert("Image generating alredy, progress will  be lost")
         location.replace("elixpo_homepage.html");
             
     }
