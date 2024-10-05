@@ -985,7 +985,7 @@ function expandImage(enc) {
 
 document.getElementById("downloadBox").addEventListener("click", (e) => {
     const downloadUrl = document.getElementById("downloadBox").getAttribute("data-id");
-    downloadBlob(downloadUrl, fileName);
+    downloadBlobWatermark(downloadUrl, fileName);
 })
 
 
@@ -1004,7 +1004,7 @@ function downloadBlob(blob, fileName) {
     }, 1500);
 }
 
-function uploadBlob(blob, fileName) {
+function downloadBlobWatermark(blob) {
     const watermarkImage = new Image();
     const watermarkImageInverted = new Image();
     watermarkImage.crossOrigin = "Anonymous";
@@ -1061,7 +1061,7 @@ function uploadBlob(blob, fileName) {
                 const downloadUrl = URL.createObjectURL(modifiedBlob);
                 const a = document.createElement('a');
                 a.href = downloadUrl;
-                a.download = fileName;
+                a.download = "elixpo-ai-generated-image.jpg"; // Set the file name to "elixpo-ai-generated-image.jpg"
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
