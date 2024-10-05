@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { execSync, exec } from 'child_process';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
@@ -27,21 +27,25 @@ const isInternetAvailable = async () => {
 // Function to start and capture the LocalTunnel URL
 const getLocalTunnelUrl = (port) => {
     return new Promise((resolve, reject) => {
-        const command = `lt --port ${port}`;
-        
-        // Execute the lt command to start localtunnel
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                return reject(`Error fetching localtunnel URL: ${error.message}`);
-            } 
-            if (stderr) {
-                return reject(`Localtunnel error: ${stderr}`);
-            }
+        const ltCommand = `lt --port ${port}`;
 
-            // Strip out the "your url is: " part and return only the URL
-            const urlPrefix = "your url is: ";
-            const url = stdout.trim().replace(urlPrefix, '').trim();
-            resolve(url);
+        // Run the lt command inside a GNOME terminal
+        const gnomeTerminalCommand = `gnome-terminal -- bash -c "${ltCommand}; exec bash"`;
+
+        // Start the GNOME terminal
+        exec(gnomeTerminalCommand, (error, stdout, stderr) => {
+            console.log(stdout);
+            if (error) {
+                reject(`Error opening GNOME terminal: ${error.message}`);
+            } else if (stderr) {
+                reject(`GNOME terminal error: ${stderr}`);
+            } else {
+                // Strip "your url is: " from the output to get only the URL
+                const urlPrefix = "your url is: ";
+                const url = stdout.trim().replace(urlPrefix, '').trim();
+                console.log(url)
+                resolve(url);
+            }
         });
     });
 };
