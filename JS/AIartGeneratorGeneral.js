@@ -1003,7 +1003,7 @@ function downloadBlob(blob, fileName) {
         document.getElementById("savedMsg").classList.remove("display");
     }, 1500);
 }
-
+//added the change to allow watermarkes here
 function downloadBlobWatermark(blob) {
     const watermarkImage = new Image();
     const watermarkImageInverted = new Image();
