@@ -13,7 +13,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-const ngrokConfigPath = './ngrok.yml';
 const serverJsonPath = path.join(process.cwd(), 'server.json');
 
 const isInternetAvailable = async () => {
@@ -25,43 +24,33 @@ const isInternetAvailable = async () => {
     }
 };
 
-const startNgrok = () => {
-    const command = `ngrok start --config=${ngrokConfigPath} --all`;
-    const tunnelStart = `bash /home/pi/Desktop/Elixpo_ai_pollinations/server.sh`;
-    
-    exec(command, (error) => {
-        if (error) {
-            console.error(`Error starting ngrok: ${error.message}`);
-        }
+const getLocalTunnelUrl = (port) => {
+    return new Promise((resolve, reject) => {
+        const command = `lt --port ${port}`;
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(`Error fetching localtunnel URL: ${error.message}`);
+            } else if (stderr) {
+                reject(`Localtunnel error: ${stderr}`);
+            } else {
+                // Parse the URL from stdout
+                const url = stdout.trim().split('\n').find(line => line.includes('https://'));
+                resolve(url);
+            }
+        });
     });
-
-    exec(tunnelStart, (error) => {
-        if (error) {
-            console.error(`Error starting ngrok tunnel script: ${error.message}`);
-        }
-    });
-};
-
-const getNgrokUrl = async (port) => {
-    const response = await fetch('http://127.0.0.1:4040/api/tunnels');
-    const data = await response.json();
-    const tunnel = data.tunnels.find(tunnel => tunnel.config.addr.endsWith(`:${port}`));
-    return tunnel ? tunnel.public_url : null;
 };
 
 const updateServerUrls = async () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    const server1Url = await getNgrokUrl(3001); //node
+    const server1Url = await getLocalTunnelUrl(3001); // node
 
-
-    console.log(`image and ping URL: ${server1Url}`);
-
+    console.log(`Image and ping URL: ${server1Url}`);
 
     const serverJson = JSON.parse(fs.readFileSync(serverJsonPath, 'utf-8'));
 
-    serverJson.servers.server1 = server1Url; //get image and ping
-
+    serverJson.servers.server1 = server1Url; // get image and ping
 
     fs.writeFileSync(serverJsonPath, JSON.stringify(serverJson, null, 2));
 
@@ -80,7 +69,7 @@ const updateServerUrls = async () => {
 const main = async () => {
     console.log('Checking internet connection...');
     let internetAvailable = false;
-    
+
     while (!internetAvailable) {
         internetAvailable = await isInternetAvailable();
         if (!internetAvailable) {
@@ -90,7 +79,6 @@ const main = async () => {
     }
 
     console.log('Internet connection established.');
-    startNgrok();
     await updateServerUrls().catch(error => {
         console.error('Error updating server URLs:', error);
     });
