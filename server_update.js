@@ -33,8 +33,9 @@ const getLocalTunnelUrl = (port) => {
             } else if (stderr) {
                 reject(`Localtunnel error: ${stderr}`);
             } else {
-                // Parse the URL from stdout
-                const url = stdout.trim().split('\n').find(line => line.includes('https://'));
+                // Strip "your url is: " from the output to get only the URL
+                const urlPrefix = "your url is: ";
+                const url = stdout.trim().replace(urlPrefix, '').trim();
                 resolve(url);
             }
         });
