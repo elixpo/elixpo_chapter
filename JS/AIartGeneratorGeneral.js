@@ -501,25 +501,23 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
     document.getElementById("hqlqcontainer").classList.add("hidden");
+    
     var currentTotalImageOnServer = await gettotalGenOnServer();
     console.log("Current Total Image on Server:", currentTotalImageOnServer);
     var nextImageNumber = currentTotalImageOnServer + 1;
     console.log("Next Image Number:", nextImageNumber);
+    
     return new Promise(async (resolve, reject) => {
         try {
-
-            // const [formatted_prompt, hashtags, tags] = await fetchFormattedPrompt(promptTextInput.value);
-            // console.log("Updated with" + formatted_prompt, hashtags, tags);
             const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
             const uploadPromises = [];
+            let imageUrls = [];  // To store image URLs for Instagram upload
 
-            if(enhanceSwitch.checked)
-            {
+            if (enhanceSwitch.checked) {
                 ai_enhanced_prompt = document.getElementById("enhancedPrompt").innerText;
             }
-            
 
             // Prepare upload tasks for each blob
             blobs.forEach((blob, index) => {
@@ -529,20 +527,18 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                 // Track upload progress
                 uploadTask.on('state_changed',
                     (snapshot) => {
-                        // Upload progress
                         const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         console.log(`Image ${index + 1} upload is ${currentProgress}% done`);
                     },
                     (error) => {
-                        // Handle unsuccessful uploads
                         console.error(`Error during upload of image ${index + 1}:`, error);
                         reject(error);
                     },
                     async () => {
-                        // Handle successful uploads
                         try {
                             const url = await imageRef.getDownloadURL();
                             console.log(`Download URL for image ${index + 1}:`, url);
+                            imageUrls.push(url);  // Add URL to array for Instagram upload
                             
                             // Update Firestore with image metadata
                             await db.collection("ImageGen").doc(specialDir).set({
@@ -554,17 +550,16 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 ai_enhanced: enhanceSwitch.checked,
                                 likes: 0,
                                 total_gen_number: blobs.length,
-                                genNum : nextImageNumber,
-                                hq : document.getElementById("hqlqParent").checked,
+                                genNum: nextImageNumber,
+                                hq: document.getElementById("hqlqParent").checked,
                                 formatted_prompt: "",
-                                tags: "",       
+                                tags: "",
                                 hashtags: "",
-                                imgId : imageGenId
+                                imgId: imageGenId
                             });
                             await db.collection("ImageGen").doc(specialDir).update({
                                 [`Imgurl${index}`]: url,
-                            })
-
+                            });
 
                             progress += 1;
                             let prog = Math.round((progress / imageNumber) * 100);
@@ -572,7 +567,6 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
 
                             // Check if all uploads are complete
                             if (progress === blobs.length) {
-                                resolve(uploadPromises);
                                 console.log("All images uploaded successfully.");
                                 generating = false;
                                 setTimeout(() => {
@@ -583,18 +577,30 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 document.getElementById("savedMsg").classList.add("display");
                                 await db.collection("Server").doc("totalGen").update({
                                     value: nextImageNumber,
-                                })
+                                });
                                 handleStaticMode(imageNumber);
+                                
+                                // Send image URLs to /instagram-upload route without awaiting response
+                                axios.post('/instagram-upload', {
+                                    imageUrls: imageUrls,
+                                    caption: `Prompt: ${promptTextInput.value}\nTheme: ${imgTheme}\nRatio: ${RatioValue}\nAI Enhanced: ${enhanceSwitch.checked ? 'Yes' : 'No'}\nGenerated by: ${localStorage.getItem("ElixpoAIUser")}\n\nGenerated by Elixpo.ai - The AI Art Generator dated ${new Date().toDateString()}`,
+                                }).then(() => {
+                                    console.log('Instagram upload request sent.');
+                                }).catch(err => {
+                                    console.error('Error sending request to Instagram:', err);
+                                });
+                                
+                                resolve(uploadPromises);
                             }
                         } catch (error) {
                             console.error(`Error getting download URL or updating database for image ${index + 1}:`, error);
                             document.getElementById("NotifTxt").innerText = "Upload Failed!";
-                            document.getElementById("savedMsg").classList.add("display"); 
+                            document.getElementById("savedMsg").classList.add("display");
                             setTimeout(() => {
-                            document.getElementById("savedMsg").classList.remove("display"); 
-                        }, 1500);
+                                document.getElementById("savedMsg").classList.remove("display");
+                            }, 1500);
                             document.getElementById("NotifTxt").innerText = "Greetings";
-                            handleStaticMode(currentIndex+1);
+                            handleStaticMode(currentIndex + 1);
                             reject(error);
                         }
                     }
@@ -606,13 +612,14 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
 
             // Wait for all upload tasks to complete
             await Promise.all(uploadPromises.map(task => task));
-            
+
         } catch (error) {
             console.error("Error uploading images:", error);
             reject(error);
         }
     });
 }
+
 
 function handleStaticModeExclusive(numberOfImages) {
     blobs = [];
