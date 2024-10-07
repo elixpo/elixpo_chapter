@@ -53,6 +53,41 @@ const fallbackImageUrls = [
 app.use(cors());
 app.use(express.json());
 
+let ig; // Instagram API client
+
+// Function to log request details into the CSV file
+function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
+  const record = {
+    date: new Date().toISOString(),
+    imageUrl,
+    status,
+    aspectRatio,
+    seed,
+    model,
+    responseTime
+  };
+
+  // Append the log entry to the CSV file
+  csvWriter.writeRecords([record])
+    .then(() => console.log('Log entry saved:', record))
+    .catch(err => console.error('Error writing to CSV log:', err));
+}
+
+// Function to initialize Instagram client and login
+const initializeInstagramClient = async () => {
+  ig = new IgApiClient();
+  ig.state.generateDevice('elixpo_ai');
+
+  if (fs.existsSync(sessionFilePath)) {
+    const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
+    await ig.state.deserializeCookieJar(savedSession);
+  } else {
+    await ig.account.login('elixpo_ai', 'PIXIEFY16');
+    const session = await ig.state.serializeCookieJar();
+    fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+  }
+};
+
 // Middleware to track request queue length and log details
 app.use((req, res, next) => {
   requestQueue.push(req);
@@ -145,39 +180,8 @@ app.post('/instagram-upload', async (req, res) => {
   }
 });
 
-// Function to log request details into the CSV file
-function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
-  const record = {
-    date: new Date().toISOString(),
-    imageUrl,
-    status,
-    aspectRatio,
-    seed,
-    model,
-    responseTime
-  };
-
-  // Append the log entry to the CSV file
-  csvWriter.writeRecords([record])
-    .then(() => console.log('Log entry saved:', record))
-    .catch(err => console.error('Error writing to CSV log:', err));
-}
-
 // Upload a single image to Instagram
 const postSingleImageToInsta = async (imageUrl, caption) => {
-  const ig = new IgApiClient();
-  ig.state.generateDevice('elixpo_ai');
-
-  // Load session if exists, otherwise login
-  if (fs.existsSync(sessionFilePath)) {
-    const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
-    await ig.state.deserializeCookieJar(savedSession);
-  } else {
-    await ig.account.login('elixpo_ai', 'PIXIEFY16');
-    const session = await ig.state.serializeCookieJar();
-    fs.writeFileSync(sessionFilePath, JSON.stringify(session));
-  }
-
   try {
     // Fetch image as a buffer
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -198,19 +202,6 @@ const postSingleImageToInsta = async (imageUrl, caption) => {
 
 // Upload a carousel of images to Instagram
 const postCarouselToInsta = async (imageUrls, caption) => {
-  const ig = new IgApiClient();
-  ig.state.generateDevice('elixpo_ai');
-
-  // Load session if exists, otherwise login
-  if (fs.existsSync(sessionFilePath)) {
-    const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
-    await ig.state.deserializeCookieJar(savedSession);
-  } else {
-    await ig.account.login('elixpo_ai', 'PIXIEFY16');
-    const session = await ig.state.serializeCookieJar();
-    fs.writeFileSync(sessionFilePath, JSON.stringify(session));
-  }
-
   try {
     // Fetch images and store them as buffers
     const imageBuffers = await Promise.all(
@@ -230,9 +221,10 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   }
 };
 
-// Start server
-app.listen(PORT, () => {
+// Start server and initialize Instagram client
+app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  await initializeInstagramClient(); // Initialize Instagram client on server start
 });
 
 // Error handling for uncaught exceptions and unhandled promise rejections
