@@ -85,6 +85,7 @@ const initializeInstagramClient = async () => {
     await ig.account.login('elixpo_ai', 'PIXIEFY16');
     const session = await ig.state.serializeCookieJar();
     fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+    console.log("client has been logged in and session saved");
   }
 };
 
