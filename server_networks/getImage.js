@@ -16,7 +16,7 @@ let activeRequests = 0;
 
 // File paths for CSV log and Instagram session
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
-const sessionFilePath = path.join('/home/pi', 'ig_session.json');
+const sessionFilePath = './ig_session.json'
 
 // Create CSV writer
 const csvWriter = createCsvWriter({
