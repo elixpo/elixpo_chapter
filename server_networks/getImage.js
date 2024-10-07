@@ -16,7 +16,7 @@ const maxRequests = 20;
 
 // File path for CSV log in home directory of pi
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
-const sessionFilePath = './ig_session.json';
+const sessionFilePath = path.join('/home/pi', 'ig_session.json');
 
 // Create CSV writer
 const csvWriter = createCsvWriter({
