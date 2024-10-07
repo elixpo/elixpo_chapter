@@ -142,7 +142,7 @@ app.post('/instagram-upload', async (req, res) => {
   try {
       // Call the postCarouselToInsta function to process the images
       await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
-
+      console.log("insta-upload request sent")
       // Send a success response
       res.status(200).send('Upload attempt made.');
   } catch (error) {
@@ -187,6 +187,7 @@ function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
 
 const postCarouselToInsta = async (imageUrls, caption) => {
   try {
+    console.log("recieved upload request")
     const ig = new IgApiClient();
     ig.state.generateDevice('elixpo_ai');  // Generate device based on username
 
@@ -225,6 +226,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
     console.log('Carousel uploaded successfully with caption!');
   } catch (error) {
     // Skip the error without any error logging
+    console.log("error occured while loggin in", error);
     if (fs.existsSync(sessionFilePath)) {
       fs.unlinkSync(sessionFilePath);  // Delete the session file if the session is invalid
     }

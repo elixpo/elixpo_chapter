@@ -594,7 +594,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                     });
 
                                     if (response.ok) {
-                                        const responseData = await response.json();
+                                        const responseData = await response.text;
                                         console.log('Instagram upload request sent successfully.', responseData);
                                     } else {
                                         console.error('Failed to send Instagram upload request.');
