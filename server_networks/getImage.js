@@ -123,6 +123,7 @@ app.post('/download-image', async (req, res) => {
 });
 
 app.post('/instagram-upload', async (req, res) => {
+  console.log("insta-upload recieved")
   const { imageUrls, caption } = req.body;
 
   // Validate request
