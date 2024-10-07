@@ -81,6 +81,7 @@ const initializeInstagramClient = async () => {
   if (fs.existsSync(sessionFilePath)) {
     const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
     await ig.state.deserializeCookieJar(savedSession);
+    console.log("session loaded from cache");
   } else {
     await ig.account.login('elixpo_ai', 'PIXIEFY16');
     const session = await ig.state.serializeCookieJar();
