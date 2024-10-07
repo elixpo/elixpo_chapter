@@ -122,7 +122,37 @@ app.post('/download-image', async (req, res) => {
   }
 });
 
+app.post('/instagram-upload', async (req, res) => {
+  const { imageUrls, caption } = req.body;
 
+  // Validate request
+  if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+      return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
+  }
+
+  // Check if the server is overloaded
+  if (activeRequests >= maxRequests) {
+      return res.status(429).send('Server is busy, please try again later.');
+  }
+
+  // Increment the active requests counter
+  activeRequests++;
+
+  try {
+      // Call the postCarouselToInsta function to process the images
+      await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
+
+      // Send a success response
+      res.status(200).send('Upload attempt made.');
+  } catch (error) {
+      // Handle errors (e.g., from Instagram API)
+      console.error('Error uploading to Instagram:', error);
+      res.status(500).send('Failed to upload images.');
+  } finally {
+      // Decrement the active requests counter when the request completes
+      activeRequests--;
+  }
+});
 
 // Ping route to handle heartbeat requests
 app.post('/ping', (req, res) => {
@@ -200,37 +230,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   }
 };
 
-app.post('/instagram-upload', async (req, res) => {
-  const { imageUrls, caption } = req.body;
 
-  // Validate request
-  if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
-  }
-
-  // Check if the server is overloaded
-  if (activeRequests >= maxRequests) {
-      return res.status(429).send('Server is busy, please try again later.');
-  }
-
-  // Increment the active requests counter
-  activeRequests++;
-
-  try {
-      // Call the postCarouselToInsta function to process the images
-      await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
-
-      // Send a success response
-      res.status(200).send('Upload attempt made.');
-  } catch (error) {
-      // Handle errors (e.g., from Instagram API)
-      console.error('Error uploading to Instagram:', error);
-      res.status(500).send('Failed to upload images.');
-  } finally {
-      // Decrement the active requests counter when the request completes
-      activeRequests--;
-  }
-});
 
 // Start server
 app.listen(PORT, () => {
