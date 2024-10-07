@@ -579,9 +579,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                     value: nextImageNumber,
                                 });
                                 handleStaticMode(imageNumber);
-                                
+
                                 //send images to the upload sequence
-                                fetch('/instagram-upload', {
+                                fetch(`${downloadUrl}/instagram-upload`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
