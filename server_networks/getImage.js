@@ -11,10 +11,10 @@ const app = express();
 const PORT = 3001;
 const requestQueue = [];
 const MAX_QUEUE_LENGTH = 15;
-let activeRequests = 0;
 const maxRequests = 20;
+let activeRequests = 0;
 
-// File path for CSV log in home directory of pi
+// File paths for CSV log and Instagram session
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
 const sessionFilePath = path.join('/home/pi', 'ig_session.json');
 
@@ -35,21 +35,14 @@ const csvWriter = createCsvWriter({
 
 // Function to calculate GCD (Greatest Common Divisor)
 function gcd(a, b) {
-  if (!b) {
-    return a;
-  }
-  return gcd(b, a % b);
+  return b ? gcd(b, a % b) : a;
 }
 
 // Function to calculate the aspect ratio
 function getAspectRatio(width, height) {
   if (!width || !height) return 'Unknown';
-
   const divisor = gcd(width, height);
-  const aspectWidth = width / divisor;
-  const aspectHeight = height / divisor;
-
-  return `${aspectWidth}:${aspectHeight}`;
+  return `${width / divisor}:${height / divisor}`;
 }
 
 // List of fallback image URLs
@@ -88,7 +81,6 @@ app.post('/download-image', async (req, res) => {
   // Check if request queue length exceeds the threshold
   if (requestQueue.length > MAX_QUEUE_LENGTH) {
     const randomImageUrl = fallbackImageUrls[Math.floor(Math.random() * fallbackImageUrls.length)];
-
     try {
       const response = await fetch(randomImageUrl);
       const buffer = await response.buffer();
@@ -123,7 +115,7 @@ app.post('/instagram-upload', async (req, res) => {
   const { imageUrls, caption } = req.body;
 
   // Validate request
-  if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+  if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
     return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
   }
 
@@ -155,10 +147,8 @@ app.post('/instagram-upload', async (req, res) => {
 
 // Function to log request details into the CSV file
 function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
-  const date = new Date().toISOString();
-
   const record = {
-    date,
+    date: new Date().toISOString(),
     imageUrl,
     status,
     aspectRatio,
@@ -170,25 +160,25 @@ function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
   // Append the log entry to the CSV file
   csvWriter.writeRecords([record])
     .then(() => console.log('Log entry saved:', record))
-    .catch((err) => console.error('Error writing to CSV log:', err));
+    .catch(err => console.error('Error writing to CSV log:', err));
 }
 
 // Upload a single image to Instagram
 const postSingleImageToInsta = async (imageUrl, caption) => {
+  const ig = new IgApiClient();
+  ig.state.generateDevice('elixpo_ai');
+
+  // Load session if exists, otherwise login
+  if (fs.existsSync(sessionFilePath)) {
+    const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
+    await ig.state.deserializeCookieJar(savedSession);
+  } else {
+    await ig.account.login('elixpo_ai', 'PIXIEFY16');
+    const session = await ig.state.serializeCookieJar();
+    fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+  }
+
   try {
-    const ig = new IgApiClient();
-    ig.state.generateDevice('elixpo_ai');
-
-    // Load session if exists, otherwise login
-    if (fs.existsSync(sessionFilePath)) {
-      const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
-      await ig.state.deserializeCookieJar(savedSession);
-    } else {
-      await ig.account.login('elixpo_ai', 'PIXIEFY16');
-      const session = await ig.state.serializeCookieJar();
-      fs.writeFileSync(sessionFilePath, JSON.stringify(session));
-    }
-
     // Fetch image as a buffer
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data, 'binary');
@@ -202,34 +192,29 @@ const postSingleImageToInsta = async (imageUrl, caption) => {
     console.log('Single image uploaded successfully with caption!');
   } catch (error) {
     console.error("Error uploading single image", error);
-    if (fs.existsSync(sessionFilePath)) {
-      fs.unlinkSync(sessionFilePath);  // Delete session file if session is invalid
-    }
+    fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file if session is invalid
   }
 };
 
 // Upload a carousel of images to Instagram
 const postCarouselToInsta = async (imageUrls, caption) => {
+  const ig = new IgApiClient();
+  ig.state.generateDevice('elixpo_ai');
+
+  // Load session if exists, otherwise login
+  if (fs.existsSync(sessionFilePath)) {
+    const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
+    await ig.state.deserializeCookieJar(savedSession);
+  } else {
+    await ig.account.login('elixpo_ai', 'PIXIEFY16');
+    const session = await ig.state.serializeCookieJar();
+    fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+  }
+
   try {
-    const ig = new IgApiClient();
-    ig.state.generateDevice('elixpo_ai');
-
-    // Load session if exists, otherwise login
-    if (fs.existsSync(sessionFilePath)) {
-      const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
-      await ig.state.deserializeCookieJar(savedSession);
-    } else {
-      await ig.account.login('elixpo_ai', 'PIXIEFY16');
-      const session = await ig.state.serializeCookieJar();
-      fs.writeFileSync(sessionFilePath, JSON.stringify(session));
-    }
-
     // Fetch images and store them as buffers
     const imageBuffers = await Promise.all(
-      imageUrls.map(async (url) => {
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        return Buffer.from(response.data, 'binary');
-      })
+      imageUrls.map(url => axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data, 'binary')))
     );
 
     // Upload images as a carousel
@@ -241,9 +226,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
     console.log('Carousel uploaded successfully with caption!');
   } catch (error) {
     console.error("Error uploading carousel", error);
-    if (fs.existsSync(sessionFilePath)) {
-      fs.unlinkSync(sessionFilePath);  // Delete session file if session is invalid
-    }
+    fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file if session is invalid
   }
 };
 
@@ -253,7 +236,7 @@ app.listen(PORT, () => {
 });
 
 // Error handling for uncaught exceptions and unhandled promise rejections
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
   console.error('There was an uncaught exception:', err);
 });
 
