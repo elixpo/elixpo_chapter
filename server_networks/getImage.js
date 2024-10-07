@@ -11,6 +11,8 @@ const app = express();
 const PORT = 3001;
 const requestQueue = [];
 const MAX_QUEUE_LENGTH = 15;
+let activeRequests = 0;
+const maxRequests = 20;
 
 // File path for CSV log in home directory of pi
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
@@ -200,11 +202,34 @@ const postCarouselToInsta = async (imageUrls, caption) => {
 
 app.post('/instagram-upload', async (req, res) => {
   const { imageUrls, caption } = req.body;
+
+  // Validate request
   if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-    return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
+      return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
   }
-  await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
-  res.status(200).send('Upload attempt made.');
+
+  // Check if the server is overloaded
+  if (activeRequests >= maxRequests) {
+      return res.status(429).send('Server is busy, please try again later.');
+  }
+
+  // Increment the active requests counter
+  activeRequests++;
+
+  try {
+      // Call the postCarouselToInsta function to process the images
+      await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
+
+      // Send a success response
+      res.status(200).send('Upload attempt made.');
+  } catch (error) {
+      // Handle errors (e.g., from Instagram API)
+      console.error('Error uploading to Instagram:', error);
+      res.status(500).send('Failed to upload images.');
+  } finally {
+      // Decrement the active requests counter when the request completes
+      activeRequests--;
+  }
 });
 
 // Start server
