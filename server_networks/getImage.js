@@ -3,6 +3,8 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
+import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
 
 const app = express();
@@ -12,6 +14,7 @@ const MAX_QUEUE_LENGTH = 15;
 
 // File path for CSV log in home directory of pi
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
+const sessionFilePath = './ig_session.json';
 
 // Create CSV writer
 const csvWriter = createCsvWriter({
@@ -117,6 +120,8 @@ app.post('/download-image', async (req, res) => {
   }
 });
 
+
+
 // Ping route to handle heartbeat requests
 app.post('/ping', (req, res) => {
   if (req.body.message === 'heartbeat') {
@@ -146,6 +151,61 @@ function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
     .then(() => console.log('Log entry saved:', record))
     .catch((err) => console.error('Error writing to CSV log:', err));
 }
+
+const postCarouselToInsta = async (imageUrls, caption) => {
+  try {
+    const ig = new IgApiClient();
+    ig.state.generateDevice('elixpo_ai');  // Generate device based on username
+
+    // Load session if exists, otherwise login
+    if (fs.existsSync(sessionFilePath)) {
+      // Load session data (cookies) from file
+      const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
+      await ig.state.deserializeCookieJar(savedSession);
+    } else {
+      // Login and save session if not cached
+      await ig.account.login('elixpo_ai', 'PIXIEFY16');
+      const session = await ig.state.serializeCookieJar();  // Save session after login
+      fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+    }
+
+    // Fetch images using axios and store them as buffers
+    const imageBuffers = await Promise.all(
+      imageUrls.map(async (url) => {
+        const response = await axios({
+          url,
+          method: 'GET',
+          responseType: 'arraybuffer',
+        });
+        return Buffer.from(response.data, 'binary');
+      })
+    );
+
+    // Upload both images as a carousel (album)
+    await ig.publish.album({
+      items: imageBuffers.map((file) => ({
+        file,
+      })),
+      caption: caption,
+    });
+
+    console.log('Carousel uploaded successfully with caption!');
+  } catch (error) {
+    // Skip the error without any error logging
+    if (fs.existsSync(sessionFilePath)) {
+      fs.unlinkSync(sessionFilePath);  // Delete the session file if the session is invalid
+    }
+  }
+};
+
+app.post('/instagram-upload', async (req, res) => {
+  const { imageUrls, caption } = req.body;
+  if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+    return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
+  }
+  await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
+  res.status(200).send('Upload attempt made.');
+});
 
 // Start server
 app.listen(PORT, () => {
