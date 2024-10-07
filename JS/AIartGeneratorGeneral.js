@@ -570,7 +570,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 console.log("All images uploaded successfully.");
                                 generating = false;
                                 setTimeout(() => {
-                                    document.getElementById("NotifTxt").innerText = "Uploading to Instagram";
+                                    document.getElementById("NotifTxt").innerText = "Uploading to Server Instagram @elixpo_ai";
                                 }, 1500);
                                 document.getElementById("progressBarAccept").style.width = 0 + "%";
                                 document.getElementById("savedMsg").classList.add("display");

@@ -120,7 +120,6 @@ app.post('/download-image', async (req, res) => {
 
 // Instagram upload route (single image or carousel)
 app.post('/instagram-upload', async (req, res) => {
-  console.log("insta-upload received");
   const { imageUrls, caption } = req.body;
 
   // Validate request
@@ -144,7 +143,6 @@ app.post('/instagram-upload', async (req, res) => {
       await postCarouselToInsta(imageUrls, caption || 'A really nice carousel from the internet!');
     }
 
-    console.log("insta-upload request sent");
     res.status(200).send('Upload attempt made.');
   } catch (error) {
     console.error('Error uploading to Instagram:', error);
