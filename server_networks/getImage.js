@@ -54,11 +54,7 @@ function getAspectRatio(width, height) {
 
 // List of fallback image URLs
 const fallbackImageUrls = [
-  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(1).jpg?alt=media&token=14d3abc9-b5a4-4283-b775-b4313f2b73d4',
-  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(2).jpg?alt=media&token=970ea47d-4404-4210-9d66-c5445dfbb3d3',
-  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(3).jpg?alt=media&token=a6252943-849d-429a-8821-07ac037f034b',
-  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(4).jpg?alt=media&token=1f3a1df6-f18e-4271-b568-dd13b83a6e3e',
-  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(5).jpg?alt=media&token=89b88057-5f9e-452c-b7c4-05eb2d90a2d7',
+  // Your fallback URLs here...
 ];
 
 app.use(cors());
@@ -122,46 +118,40 @@ app.post('/download-image', async (req, res) => {
   }
 });
 
+// Instagram upload route (single image or carousel)
 app.post('/instagram-upload', async (req, res) => {
-  console.log("insta-upload recieved")
+  console.log("insta-upload received");
   const { imageUrls, caption } = req.body;
 
   // Validate request
   if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
+    return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
   }
 
   // Check if the server is overloaded
   if (activeRequests >= maxRequests) {
-      return res.status(429).send('Server is busy, please try again later.');
+    return res.status(429).send('Server is busy, please try again later.');
   }
 
   // Increment the active requests counter
   activeRequests++;
 
   try {
-      // Call the postCarouselToInsta function to process the images
-      await postCarouselToInsta(imageUrls, caption || 'A really nice photo from the internet!');
-      console.log("insta-upload request sent")
-      // Send a success response
-      res.status(200).send('Upload attempt made.');
-  } catch (error) {
-      // Handle errors (e.g., from Instagram API)
-      console.error('Error uploading to Instagram:', error);
-      res.status(500).send('Failed to upload images.');
-  } finally {
-      // Decrement the active requests counter when the request completes
-      activeRequests--;
-  }
-});
+    // Handle single image or carousel
+    if (imageUrls.length === 1) {
+      await postSingleImageToInsta(imageUrls[0], caption || 'A really nice photo from the internet!');
+    } else {
+      await postCarouselToInsta(imageUrls, caption || 'A really nice carousel from the internet!');
+    }
 
-// Ping route to handle heartbeat requests
-app.post('/ping', (req, res) => {
-  if (req.body.message === 'heartbeat') {
-    console.log('Heartbeat received');
-    res.send('OK');
-  } else {
-    res.status(400).send('Invalid request');
+    console.log("insta-upload request sent");
+    res.status(200).send('Upload attempt made.');
+  } catch (error) {
+    console.error('Error uploading to Instagram:', error);
+    res.status(500).send('Failed to upload images.');
+  } finally {
+    // Decrement the active requests counter when the request completes
+    activeRequests--;
   }
 });
 
@@ -185,64 +175,88 @@ function logRequest(imageUrl, status, aspectRatio, seed, model, responseTime) {
     .catch((err) => console.error('Error writing to CSV log:', err));
 }
 
-const postCarouselToInsta = async (imageUrls, caption) => {
+// Upload a single image to Instagram
+const postSingleImageToInsta = async (imageUrl, caption) => {
   try {
-    console.log("recieved upload request")
     const ig = new IgApiClient();
-    ig.state.generateDevice('elixpo_ai');  // Generate device based on username
+    ig.state.generateDevice('elixpo_ai');
 
     // Load session if exists, otherwise login
     if (fs.existsSync(sessionFilePath)) {
-      // Load session data (cookies) from file
       const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
       await ig.state.deserializeCookieJar(savedSession);
     } else {
-      // Login and save session if not cached
       await ig.account.login('elixpo_ai', 'PIXIEFY16');
-      const session = await ig.state.serializeCookieJar();  // Save session after login
+      const session = await ig.state.serializeCookieJar();
       fs.writeFileSync(sessionFilePath, JSON.stringify(session));
     }
 
-    // Fetch images using axios and store them as buffers
-    const imageBuffers = await Promise.all(
-      imageUrls.map(async (url) => {
-        const response = await axios({
-          url,
-          method: 'GET',
-          responseType: 'arraybuffer',
-        });
-        return Buffer.from(response.data, 'binary');
-      })
-    );
+    // Fetch image as a buffer
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(response.data, 'binary');
 
-    // Upload both images as a carousel (album)
-    await ig.publish.album({
-      items: imageBuffers.map((file) => ({
-        file,
-      })),
-      caption: caption,
+    // Upload the single image
+    await ig.publish.photo({
+      file: imageBuffer,
+      caption: caption
     });
 
-    console.log('Carousel uploaded successfully with caption!');
+    console.log('Single image uploaded successfully with caption!');
   } catch (error) {
-    // Skip the error without any error logging
-    console.log("error occured while loggin in", error);
+    console.error("Error uploading single image", error);
     if (fs.existsSync(sessionFilePath)) {
-      fs.unlinkSync(sessionFilePath);  // Delete the session file if the session is invalid
+      fs.unlinkSync(sessionFilePath);  // Delete session file if session is invalid
     }
   }
 };
 
+// Upload a carousel of images to Instagram
+const postCarouselToInsta = async (imageUrls, caption) => {
+  try {
+    const ig = new IgApiClient();
+    ig.state.generateDevice('elixpo_ai');
 
+    // Load session if exists, otherwise login
+    if (fs.existsSync(sessionFilePath)) {
+      const savedSession = JSON.parse(fs.readFileSync(sessionFilePath, 'utf-8'));
+      await ig.state.deserializeCookieJar(savedSession);
+    } else {
+      await ig.account.login('elixpo_ai', 'PIXIEFY16');
+      const session = await ig.state.serializeCookieJar();
+      fs.writeFileSync(sessionFilePath, JSON.stringify(session));
+    }
+
+    // Fetch images and store them as buffers
+    const imageBuffers = await Promise.all(
+      imageUrls.map(async (url) => {
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        return Buffer.from(response.data, 'binary');
+      })
+    );
+
+    // Upload images as a carousel
+    await ig.publish.album({
+      items: imageBuffers.map(file => ({ file })),
+      caption: caption
+    });
+
+    console.log('Carousel uploaded successfully with caption!');
+  } catch (error) {
+    console.error("Error uploading carousel", error);
+    if (fs.existsSync(sessionFilePath)) {
+      fs.unlinkSync(sessionFilePath);  // Delete session file if session is invalid
+    }
+  }
+};
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// Error handling for uncaught exceptions and unhandled rejections
+// Error handling for uncaught exceptions and unhandled promise rejections
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  console.error('There was an uncaught exception:', err);
 });
 
 process.on('unhandledRejection', (reason, promise) => {

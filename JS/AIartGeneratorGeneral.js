@@ -570,8 +570,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 console.log("All images uploaded successfully.");
                                 generating = false;
                                 setTimeout(() => {
-                                    document.getElementById("savedMsg").classList.remove("display");
-                                    document.getElementById("NotifTxt").innerText = "Greetings";
+                                    document.getElementById("NotifTxt").innerText = "Uploading to Instagram";
                                 }, 1500);
                                 document.getElementById("progressBarAccept").style.width = 0 + "%";
                                 document.getElementById("savedMsg").classList.add("display");
@@ -602,7 +601,10 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                                 } catch (err) {
                                     console.error('Error sending request to Instagram:', err);
                                 }
-
+                                
+                                document.getElementById("NotifTxt").innerText = "Greetings!";
+                                document.getElementById("progressBarAccept").style.width = 0 + "%";
+                                document.getElementById("savedMsg").classList.remove("display");
                                 
                                 handleStaticMode(imageNumber);
                                 resolve(uploadPromises);
