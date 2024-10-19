@@ -150,19 +150,18 @@ app.post('/instagram-upload', async (req, res) => {
     console.error('Error uploading to Instagram:', error);
     res.status(500).send('Failed to upload images.');
   } finally {
-    // Decrement the active requests counter when the request completes
     activeRequests--;
   }
 });
 
-// Upload a single image to Instagram
+
 const postSingleImageToInsta = async (imageUrl, caption) => {
   try {
     // Fetch image as a buffer
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data, 'binary');
 
-    // Upload the single image
+   
     await ig.publish.photo({
       file: imageBuffer,
       caption: caption
@@ -174,15 +173,15 @@ const postSingleImageToInsta = async (imageUrl, caption) => {
     
     // Check for login required error
     if (error.message.includes('login_required')) {
-      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file
+      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); 
       console.log("Session expired. Attempting to re-login...");
-      await initializeInstagramClient(); // Attempt re-login
-      await postSingleImageToInsta(imageUrl, caption); // Retry the upload
+      await initializeInstagramClient(); 
+      await postSingleImageToInsta(imageUrl, caption); 
     }
   }
 };
 
-// Upload a carousel of images to Instagram with retry logic for expired sessions
+
 const postCarouselToInsta = async (imageUrls, caption) => {
   try {
     // Fetch images and store them as buffers
@@ -190,7 +189,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
       imageUrls.map(url => axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data, 'binary')))
     );
 
-    // Upload images as a carousel
+    
     await ig.publish.album({
       items: imageBuffers.map(file => ({ file })),
       caption: caption
@@ -200,23 +199,23 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   } catch (error) {
     console.error("Error uploading carousel", error);
     
-    // Check for login required error
+    
     if (error.message.includes('login_required')) {
-      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file
+      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); 
       console.log("Session expired. Attempting to re-login...");
-      await initializeInstagramClient(); // Attempt re-login
-      await postCarouselToInsta(imageUrls, caption); // Retry the upload
+      await initializeInstagramClient(); 
+      await postCarouselToInsta(imageUrls, caption); 
     }
   }
 };
 
-// Start server and initialize Instagram client
+
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  await initializeInstagramClient(); // Initialize Instagram client on server start
+  await initializeInstagramClient(); 
 });
 
-// Error handling for uncaught exceptions and unhandled promise rejections
+
 process.on('uncaughtException', err => {
   console.error('There was an uncaught exception:', err);
 });
