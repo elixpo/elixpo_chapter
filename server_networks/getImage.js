@@ -33,6 +33,9 @@ const csvWriter = createCsvWriter({
   append: true
 });
 
+// NSFW words list
+const nsfwWords = ['nsfw', 'explicit', 'nudity', 'violence', 'pornographic']; // Add more words as needed
+
 // Function to calculate GCD (Greatest Common Divisor)
 function gcd(a, b) {
   return b ? gcd(b, a % b) : a;
@@ -47,7 +50,11 @@ function getAspectRatio(width, height) {
 
 // List of fallback image URLs
 const fallbackImageUrls = [
-  // Your fallback URLs here...
+  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(1).jpg?alt=media&token=14d3abc9-b5a4-4283-b775-b4313f2b73d4',
+  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(2).jpg?alt=media&token=970ea47d-4404-4210-9d66-c5445dfbb3d3',
+  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(3).jpg?alt=media&token=a6252943-849d-429a-8821-07ac037f034b',
+  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(4).jpg?alt=media&token=1f3a1df6-f18e-4271-b568-dd13b83a6e3e',
+  'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(5).jpg?alt=media&token=89b88057-5f9e-452c-b7c4-05eb2d90a2d7'
 ];
 
 app.use(cors());
@@ -102,50 +109,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Route to handle image download requests
-app.post('/download-image', async (req, res) => {
-  const { imageUrl } = req.body;
-  const startTime = Date.now(); // Start time to track response time
-
-  // Extract parameters from imageUrl
-  const urlParams = new URLSearchParams(imageUrl.split('?')[1]);
-  const width = parseInt(urlParams.get('width'), 10);
-  const height = parseInt(urlParams.get('height'), 10);
-  const seed = urlParams.get('seed');
-  const model = urlParams.get('model');
-  const aspectRatio = getAspectRatio(width, height);
-
-  // Check if request queue length exceeds the threshold
-  if (requestQueue.length > MAX_QUEUE_LENGTH) {
-    const randomImageUrl = fallbackImageUrls[Math.floor(Math.random() * fallbackImageUrls.length)];
-    try {
-      const response = await fetch(randomImageUrl);
-      const buffer = await response.buffer();
-      const base64 = buffer.toString('base64');
-
-      logRequest(imageUrl, 202, aspectRatio, seed, model, Date.now() - startTime); // Log fallback request
-      return res.status(202).json({ base64, message: 'Fallback image served due to queue limit exceeded' });
-    } catch (error) {
-      console.error('Error fetching fallback image:', error);
-      logRequest(imageUrl, 500, aspectRatio, seed, model, Date.now() - startTime);
-      return res.status(500).json({ error: 'Failed to download fallback image' });
-    }
-  }
-
-  // If the queue length is within the limit, proceed with the normal image download
-  try {
-    const response = await fetch(imageUrl);
-    const buffer = await response.buffer();
-    const base64 = buffer.toString('base64');
-
-    logRequest(imageUrl, response.status, aspectRatio, seed, model, Date.now() - startTime); // Log successful request
-    res.json({ base64 });
-  } catch (error) {
-    console.error('Error fetching image:', error);
-    logRequest(imageUrl, 500, aspectRatio, seed, model, Date.now() - startTime); // Log error request
-    res.status(500).json({ error: 'Failed to download image' });
-  }
-});
+// Function to check for NSFW content
+const containsNsfwWords = (text) => {
+  return nsfwWords.some(word => text.toLowerCase().includes(word));
+};
 
 // Instagram upload route (single image or carousel)
 app.post('/instagram-upload', async (req, res) => {
@@ -154,6 +121,12 @@ app.post('/instagram-upload', async (req, res) => {
   // Validate request
   if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
     return res.status(400).send('Invalid request: imageUrls must be a non-empty array.');
+  }
+
+  // Check for NSFW words in the caption
+  if (containsNsfwWords(caption || '')) {
+    console.log('NSFW content detected, upload aborted.');
+    return res.status(400).send('NSFW content detected. Upload aborted.');
   }
 
   // Check if the server is overloaded
@@ -177,19 +150,18 @@ app.post('/instagram-upload', async (req, res) => {
     console.error('Error uploading to Instagram:', error);
     res.status(500).send('Failed to upload images.');
   } finally {
-    // Decrement the active requests counter when the request completes
     activeRequests--;
   }
 });
 
-// Upload a single image to Instagram
+
 const postSingleImageToInsta = async (imageUrl, caption) => {
   try {
     // Fetch image as a buffer
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data, 'binary');
 
-    // Upload the single image
+   
     await ig.publish.photo({
       file: imageBuffer,
       caption: caption
@@ -201,15 +173,15 @@ const postSingleImageToInsta = async (imageUrl, caption) => {
     
     // Check for login required error
     if (error.message.includes('login_required')) {
-      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file
+      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); 
       console.log("Session expired. Attempting to re-login...");
-      await initializeInstagramClient(); // Attempt re-login
-      await postSingleImageToInsta(imageUrl, caption); // Retry the upload
+      await initializeInstagramClient(); 
+      await postSingleImageToInsta(imageUrl, caption); 
     }
   }
 };
 
-// Upload a carousel of images to Instagram with retry logic for expired sessions
+
 const postCarouselToInsta = async (imageUrls, caption) => {
   try {
     // Fetch images and store them as buffers
@@ -217,7 +189,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
       imageUrls.map(url => axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data, 'binary')))
     );
 
-    // Upload images as a carousel
+    
     await ig.publish.album({
       items: imageBuffers.map(file => ({ file })),
       caption: caption
@@ -227,22 +199,23 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   } catch (error) {
     console.error("Error uploading carousel", error);
     
-    // Check for login required error
+    
     if (error.message.includes('login_required')) {
-      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); // Delete session file
+      fs.existsSync(sessionFilePath) && fs.unlinkSync(sessionFilePath); 
       console.log("Session expired. Attempting to re-login...");
-      await initializeInstagramClient(); // Attempt re-login
-      await postCarouselToInsta(imageUrls, caption); // Retry the upload
+      await initializeInstagramClient(); 
+      await postCarouselToInsta(imageUrls, caption); 
     }
   }
 };
-// Start server and initialize Instagram client
+
+
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  await initializeInstagramClient(); // Initialize Instagram client on server start
+  await initializeInstagramClient(); 
 });
 
-// Error handling for uncaught exceptions and unhandled promise rejections
+
 process.on('uncaughtException', err => {
   console.error('There was an uncaught exception:', err);
 });
