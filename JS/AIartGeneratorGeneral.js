@@ -25,6 +25,10 @@ const firebaseConfig = {
   let suffixPrompt = "";
   let serverReturnStatus = true;
 
+  
+let originalTitle = document.title;
+let timeoutId;
+
   const randomLogos = 
   [
     "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F1.jpeg?alt=media&token=01b96c7a-2ff4-4f7b-99e4-80f510315bb2",
@@ -1147,3 +1151,14 @@ document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     }
 });
 
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        timeoutId = setTimeout(() => {
+            document.title = "We miss you! Come back soon!";
+        }, 800);
+    } else {
+        clearTimeout(timeoutId);
+        document.title = originalTitle;
+    }
+});
