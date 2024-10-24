@@ -461,7 +461,7 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
     const majorityColor = await applyDominantColor(link);
     
     // Batch DOM updates to prevent layout thrashing
-    tagElement.innerHTML = hashtags.map(tag => `<span>${tag}</span>`).join('');
+    // tagElement.innerHTML = hashtags.map(tag => `<span>${tag}</span>`).join('');
     generationAspectRatio.innerHTML = ratio;
     aspectRatioTileText.innerHTML = ratio;
     promptDisplay.innerHTML = marked.parse(formatted_prompt); // Be careful with `marked.parse` to avoid XSS
