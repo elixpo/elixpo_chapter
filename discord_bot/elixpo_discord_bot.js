@@ -33,7 +33,7 @@ const client = new Client({
 
 // On bot ready
 client.on('ready', async () => {
-client.user.seActivity("Generating Images for You ", {type: "WATCHING" });
+client.user.setActivity("Generating Images for You", { type: "WATCHING" });
   console.log('Bot is online and ready!');
 
   // Fetch the download_image URL from Firestore
