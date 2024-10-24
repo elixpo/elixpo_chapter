@@ -24,7 +24,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 let downloadUrl = '';
-let totalImages = 0;
+let suffixPrompt = '';
 let queue = [];
 let isProcessing = false;
 const client = new Client({
@@ -54,6 +54,40 @@ client.on('ready', async () => {
 client.on('interactionCreate', async interaction => {
   if (interaction.user.bot) return;
   if (!interaction.isChatInputCommand()) return;
+  const botMember = interaction.guild.members.me; // The bot's member object in the guild
+  const channel = interaction.channel;
+
+  // Fetch the permissions for the bot in the current channel
+  const botPermissions = channel.permissionsFor(botMember);
+
+  // Log the permission bitfield if needed for debugging
+  console.log(botPermissions.bitfield); // Logs the raw bitfield
+
+  // Check for 'Send Messages' permission
+  if (!botPermissions.has('SendMessages')) {
+    await interaction.reply({
+      content: `
+      ⚠️ I am missing the **Send Messages** permission in this channel. Please ensure that I have the "Send Messages" permission by following these steps:
+      1. Go to the server settings.
+      2. Under **Roles**, select the role for the bot or manually assign the permission.
+      3. Ensure that **Send Messages** is enabled for this channel.`,
+      ephemeral: true 
+    });
+    return false;
+  }
+
+  // Check for 'Embed Links' permission
+  if (!botPermissions.has('EmbedLinks')) {
+    await interaction.reply({
+      content: `
+      ⚠️ I am missing the **Embed Links** permission in this channel. To allow me to send rich embeds with content, please follow these steps:
+      1. Go to the channel settings.
+      2. Under **Permissions**, ensure that the bot has the **Embed Links** permission enabled.
+      3. Without this permission, I can only send plain text.`,
+      ephemeral: true
+    });
+    return false;
+  }
 
   if (interaction.commandName === 'generate') {
     await addToQueue(interaction);
@@ -73,6 +107,9 @@ client.on('interactionCreate', async interaction => {
 - **\`/help\`** - Display this help message.
     `;
     await interaction.reply(helpMessage);
+  }
+  if (interaction.commandName === 'ping') {
+    await interaction.reply("Yooo! I'm ready to paint xD");
   }
 });
 
@@ -148,7 +185,68 @@ async function generateImage(interaction) {
     case '3:2': width = 1024; height = 683; break;
   }
 
-  const suffixPrompt = theme === "fantasy" ? "in a magical fantasy setting" : "";
+  if(theme == "fantasy")
+    {
+        suffixPrompt = "in a magical fantasy setting, with mythical creatures and surreal landscapes";
+    }
+    else if(theme == "halloween")
+    {
+        suffixPrompt = "with spooky Halloween-themed elements, pumpkins, and eerie shadows";
+    }
+    else if(theme == "structure")
+    {
+        suffixPrompt = "in the style of monumental architecture, statues, or structural art";
+    }
+    else if(theme == "crayon")
+    {
+        suffixPrompt = "in the style of colorful crayon art with vibrant, childlike strokes";
+    }
+    else if(theme == "space")
+    {
+        suffixPrompt = "in a vast, cosmic space setting with stars, planets, and nebulae";
+    }
+    else if(theme == "chromatic")
+    {
+        suffixPrompt = "in a chromatic style with vibrant, shifting colors and gradients";
+    }
+    else if(theme == "cyberpunk")
+    {
+        suffixPrompt = "in a futuristic cyberpunk setting with neon lights and dystopian vibes";
+    }
+    else if(theme == "anime")
+    {
+        suffixPrompt = "in the style of anime, with detailed character designs and dynamic poses";
+    }
+    else if(theme == "landscape")
+    {
+        suffixPrompt = "depicting a breathtaking landscape with natural scenery and serene views";
+    }
+    else if(theme == "samurai")
+    {
+        suffixPrompt = "featuring a traditional samurai theme with warriors and ancient Japan";
+    }
+    else if(theme == "wpap")
+    {
+        suffixPrompt = "in the WPAP style with geometric shapes and vibrant pop-art colors";
+    }
+    else if(theme == "vintage")
+    {
+        suffixPrompt = "in a vintage, old-fashioned style with sepia tones and retro aesthetics";
+    }
+    else if(theme == "pixel")
+    {
+        suffixPrompt = "in a pixel art style with blocky, 8-bit visuals and retro game aesthetics";
+    }
+    else if(theme == "normal")
+    {
+        suffixPrompt = "in a realistic and natural style with minimal artistic exaggeration";
+    }
+    else if(theme == "synthwave")
+    {
+        suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
+    }
+    
+  
   const encodedPrompt = `${prompt.trim()} ${suffixPrompt}`;
 
   try {
