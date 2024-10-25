@@ -154,6 +154,51 @@ app.post('/instagram-upload', async (req, res) => {
   }
 });
 
+app.post('/download-image', async (req, res) => {
+  const { imageUrl } = req.body;
+  const startTime = Date.now(); // Start time to track response time
+
+  // Extract parameters from imageUrl
+  const urlParams = new URLSearchParams(imageUrl.split('?')[1]);
+  const width = parseInt(urlParams.get('width'), 10);
+  const height = parseInt(urlParams.get('heights'), 10);
+  const seed = urlParams.get('seed');
+  const model = urlParams.get('model');
+  const aspectRatio = getAspectRatio(width, height);
+
+  // Check if request queue length exceeds the threshold
+  if (requestQueue.length > MAX_QUEUE_LENGTH) {
+    const randomImageUrl = fallbackImageUrls[Math.floor(Math.random() * fallbackImageUrls.length)];
+
+    try {
+      const response = await fetch(randomImageUrl);
+      const buffer = await response.buffer();
+      const base64 = buffer.toString('base64');
+
+      logRequest(imageUrl, 202, aspectRatio, seed, model, Date.now() - startTime); // Log fallback request
+      return res.status(202).json({ base64, message: 'Fallback image served due to queue limit exceeded' });
+    } catch (error) {
+      console.error('Error fetching fallback image:', error);
+      logRequest(imageUrl, 500, aspectRatio, seed, model, Date.now() - startTime);
+      return res.status(500).json({ error: 'Failed to download fallback image' });
+    }
+  }
+
+  // If the queue length is within the limit, proceed with the normal image download
+  try {
+    const response = await fetch(imageUrl);
+    const buffer = await response.buffer();
+    const base64 = buffer.toString('base64');
+
+    logRequest(imageUrl, response.status, aspectRatio, seed, model, Date.now() - startTime); // Log successful request
+    res.json({ base64 });
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    logRequest(imageUrl, 500, aspectRatio, seed, model, Date.now() - startTime); // Log error request
+    res.status(500).json({ error: 'Failed to download image' });
+  }
+});
+
 
 const postSingleImageToInsta = async (imageUrl, caption) => {
   try {
