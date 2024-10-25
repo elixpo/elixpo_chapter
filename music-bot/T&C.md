@@ -1,6 +1,6 @@
 # Terms and Conditions for elixpo-vibe
 
-**Last updated:** [Date]
+**Last updated:** [26/10/24]
 
 Welcome to elixpo-vibe! By using this Discord bot, you agree to these Terms and Conditions. Please read them carefully to understand your rights, responsibilities, and how we handle data.
 
