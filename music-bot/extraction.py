@@ -166,9 +166,11 @@ class MusicControlView(View):
         if is_looping:
             button.label = "🔁 Looping"
             await interaction.response.edit_message(content=f"Looping is now enabled. Triggered by {interaction.user.mention}", view=self)
+            await interaction.response.send_message("Looping is now enabled.", ephemeral=True)
         else:
             button.label = "🔁 Loop"
             await interaction.response.edit_message(content=f"Looping is now disabled. Triggered by {interaction.user.mention}", view=self)
+            await interaction.response.send_message("Looping is now disabled.", ephemeral=True)
 
     @discord.ui.button(label="🔉 Volume Down", style=ButtonStyle.secondary)
     async def volume_down_button(self, interaction: Interaction, button: Button):
