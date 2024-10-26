@@ -159,6 +159,7 @@ class MusicControlView(View):
         else:
             await interaction.response.send_message("The bot is not connected to any voice channel.", ephemeral=True)
 
+
     @discord.ui.button(label="🔁 Loop", style=ButtonStyle.secondary)
     async def loop_button(self, interaction: Interaction, button: Button):
         global is_looping
@@ -166,9 +167,11 @@ class MusicControlView(View):
         if is_looping:
             button.label = "🔁 Looping"
             await interaction.response.edit_message(content=f"Looping is now enabled. Triggered by {interaction.user.mention}", view=self)
+            await interaction.response.send_message("Looping is now enabled.", ephemeral=True)
         else:
             button.label = "🔁 Loop"
             await interaction.response.edit_message(content=f"Looping is now disabled. Triggered by {interaction.user.mention}", view=self)
+            await interaction.response.send_message("Looping is now disabled.", ephemeral=True)
 
     @discord.ui.button(label="🔉 Volume Down", style=ButtonStyle.secondary)
     async def volume_down_button(self, interaction: Interaction, button: Button):
@@ -212,52 +215,105 @@ class MusicControlView(View):
         else:
             await interaction.response.send_message("No music is currently playing.", ephemeral=True)
 
+async def checkPermission(interaction):
+    # Get the bot's permissions in the guild (server) where the command was issued
+    voice_channel = interaction.user.voice.channel
+    permissions = voice_channel.permissions_for(interaction.guild.me)  # Bot's permissions in the guild
+
+    # Required permissions list
+    required_permissions = [
+        permissions.connect,
+        permissions.speak,
+        permissions.read_messages,
+        permissions.send_messages,
+        permissions.embed_links,
+        permissions.attach_files,
+        permissions.manage_messages
+    ]
+
+    # Check if all required permissions are granted
+    if not all(required_permissions):
+        print(f"Warning: Bot does not have all necessary permissions in the guild: {interaction.guild.name}")
+        missing_permissions = [
+            perm for perm, has_perm in zip([
+                "connect", "speak", "read_messages",
+                "send_messages", "embed_links", "attach_files", "manage_messages"
+            ], required_permissions) if not has_perm
+        ]
+
+        # Send a message to the channel about missing permissions
+        await interaction.response.send_message(
+            f"⚠️ The bot is missing the following permissions in this guild: {', '.join(missing_permissions)}",
+            ephemeral=True
+        )
+        return False
+    return True
+
+
 # Play command as a slash command
 @bot.tree.command(name='play', description="Play a song by name")
 async def play(interaction: discord.Interaction, song_name: str):
     global current_voice_client, current_song_info, queue, is_looping
 
-    # Connect to the user's voice channel
-    if interaction.user.voice:
-        channel = interaction.user.voice.channel
-        if current_voice_client is None or not current_voice_client.is_connected():
-            current_voice_client = await channel.connect()
-        elif current_voice_client.channel != channel:
-            await current_voice_client.move_to(channel)
-    else:
-        await interaction.response.send_message("You need to be in a voice channel to play a song.", ephemeral=True)
-        return
+    if await checkPermission(interaction):
+        # Ensure the user is in a voice channel
+        if interaction.user.voice:
+            user_channel = interaction.user.voice.channel
 
-    await interaction.response.send_message("Fetching audio, please wait...", ephemeral=True)
+            # Check if the bot is connected and in the same channel as the user
+            if current_voice_client is None or not current_voice_client.is_connected():
+                # Connect to the user's channel if not connected
+                current_voice_client = await user_channel.connect()
+            elif current_voice_client.channel != user_channel:
+                # If the bot is connected to another channel, check for members
+                if len(current_voice_client.channel.members) > 1:
+                    await interaction.response.send_message(
+                        "I'm currently playing in another voice channel. Please wait until it becomes free or join that channel.",
+                        ephemeral=True
+                    )
+                    return
+                else:
+                    # Move to the user's channel if no other members are present
+                    await current_voice_client.move_to(user_channel)
+            else:
+                # The bot is already connected to the same channel
+                pass
 
-    # Get the song's audio URL, title, duration, and thumbnail
-    audio_url, title, duration, thumbnail_url = await get_audio_url(song_name)
-    if current_voice_client.is_playing() or current_voice_client.is_paused():
-        song_queue.append((audio_url, title, duration, thumbnail_url))
-        await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
-    else:
-        current_song_info = {
-            'title': title,
-            'duration': duration,
-            'requested_by': interaction.user.display_name,
-            'audio_url': audio_url  # Save URL to replay if looping
-        }
+        else:
+            await interaction.response.send_message("You need to be in a voice channel to play a song.", ephemeral=True)
+            return
 
-        embed = Embed(
-            title="Now Playing",
-            description=f"**{title}**",
-            color=discord.Color.blue()
-        )
-        embed.set_thumbnail(url=thumbnail_url)
-        embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
-        embed.add_field(name="Volume", value="100%", inline=True)
-        embed.add_field(name="Uptime", value="24/7", inline=True)
+        await interaction.response.send_message("Fetching audio, please wait...", ephemeral=True)
 
-        await interaction.followup.send(embed=embed, view=MusicControlView())
+        # Get the song's audio URL, title, duration, and thumbnail
+        audio_url, title, duration, thumbnail_url = await get_audio_url(song_name)
+        if current_voice_client.is_playing() or current_voice_client.is_paused():
+            song_queue.append((audio_url, title, duration, thumbnail_url))
+            await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
+        else:
+            current_song_info = {
+                'title': title,
+                'duration': duration,
+                'requested_by': interaction.user.display_name,
+                'audio_url': audio_url  # Save URL to replay if looping
+            }
 
-        # Play the song
-        audio_source = FFmpegPCMAudio(audio_url)
-        current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
+            embed = discord.Embed(
+                title="Now Playing",
+                description=f"**{title}**",
+                color=discord.Color.blue()
+            )
+            embed.set_thumbnail(url=thumbnail_url)
+            embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
+            embed.add_field(name="Volume", value="100%", inline=True)
+            embed.add_field(name="Uptime", value="24/7", inline=True)
+
+            await interaction.followup.send(embed=embed, view=MusicControlView())
+
+            # Play the song
+            audio_source = FFmpegPCMAudio(audio_url)
+            current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
+
 
 @bot.tree.command(name='ping', description="Check the bot's responsiveness")
 async def ping(interaction: discord.Interaction):
@@ -267,63 +323,108 @@ async def ping(interaction: discord.Interaction):
 async def play_url(interaction: discord.Interaction, url: str):
     global current_voice_client, current_song_info, queue, is_looping
 
+    if await checkPermission(interaction):
+        # Ensure the user is in a voice channel
+        if interaction.user.voice:
+            user_channel = interaction.user.voice.channel
 
-    if interaction.user.voice:
-        channel = interaction.user.voice.channel
-        if current_voice_client is None or not current_voice_client.is_connected():
-            current_voice_client = await channel.connect()
-        elif current_voice_client.channel != channel:
-            await current_voice_client.move_to(channel)
-    else:
-        await interaction.response.send_message("You need to be in a voice channel to play a song.", ephemeral=True)
-        return
+            # Check if the bot is connected and in the same channel as the user
+            if current_voice_client is None or not current_voice_client.is_connected():
+                # Connect to the user's channel if not connected
+                current_voice_client = await user_channel.connect()
+            elif current_voice_client.channel != user_channel:
+                # If the bot is connected to another channel, check for members
+                if len(current_voice_client.channel.members) > 1:
+                    await interaction.response.send_message(
+                        "I'm currently playing in another voice channel. Please wait until it becomes free or join that channel.",
+                        ephemeral=True
+                    )
+                    return
+                else:
+                    # Move to the user's channel if no other members are present
+                    await current_voice_client.move_to(user_channel)
+            else:
+               pass
 
-    await interaction.response.send_message("Fetching audio, please wait...", ephemeral=True)
+        else:
+            await interaction.response.send_message("You need to be in a voice channel to play a song.", ephemeral=True)
+            return
 
-    # Get the audio URL, title, duration, and thumbnail directly from the provided URL
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'quiet': True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        audio_url = info['url']
-        title = info['title']
-        duration = info['duration']
-        thumbnail_url = info['thumbnail']
+        await interaction.response.send_message("Fetching audio, please wait...", ephemeral=True)
 
-    if current_voice_client.is_playing() or current_voice_client.is_paused():
-        song_queue.append((audio_url, title, duration, thumbnail_url))
-        await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
-    else:
-        current_song_info = {
-            'title': title,
-            'duration': duration,
-            'requested_by': interaction.user.display_name,
-            'audio_url': audio_url  # Save URL to replay if looping
+        # Get the audio URL, title, duration, and thumbnail directly from the provided URL
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'noplaylist': True,
+            'quiet': True,
         }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            audio_url = info['url']
+            title = info['title']
+            duration = info['duration']
+            thumbnail_url = info['thumbnail']
 
-        embed = Embed(
-            title="Now Playing",
-            description=f"**{title}**",
-            color=discord.Color.blue()
-        )
-        embed.set_thumbnail(url=thumbnail_url)
-        embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
-        embed.add_field(name="Volume", value="100%", inline=True)
-        embed.add_field(name="Uptime", value="24/7", inline=True)
+        if current_voice_client.is_playing() or current_voice_client.is_paused():
+            song_queue.append((audio_url, title, duration, thumbnail_url))
+            await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
+        else:
+            current_song_info = {
+                'title': title,
+                'duration': duration,
+                'requested_by': interaction.user.display_name,
+                'audio_url': audio_url  # Save URL to replay if looping
+            }
 
-        await interaction.followup.send(embed=embed, view=MusicControlView())
+            embed = discord.Embed(
+                title="Now Playing",
+                description=f"**{title}**",
+                color=discord.Color.blue()
+            )
+            embed.set_thumbnail(url=thumbnail_url)
+            embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
+            embed.add_field(name="Volume", value="100%", inline=True)
+            embed.add_field(name="Uptime", value="24/7", inline=True)
 
-        # Play the song
-        audio_source = FFmpegPCMAudio(audio_url)
-        current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
+            await interaction.followup.send(embed=embed, view=MusicControlView())
+
+            # Play the song
+            audio_source = FFmpegPCMAudio(audio_url)
+            current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
 
 @bot.tree.command(name='skip', description="Skip the current song")
 async def skip(interaction: discord.Interaction):
     view = MusicControlView()
     await view.skip_button.callback(interaction)
+
+@bot.tree.command(name='join', description="Make the bot join the voice channel you are in")
+async def join(interaction: discord.Interaction):
+    global current_voice_client
+
+    if await checkPermission(interaction):
+    # Check if the user is in a voice channel
+        if interaction.user.voice:
+            user_channel = interaction.user.voice.channel
+
+            # If the bot is not connected, or not playing in another channel
+            if current_voice_client is None or not current_voice_client.is_connected():
+                current_voice_client = await user_channel.connect()
+                await interaction.response.send_message(f"Joined {user_channel.name}.", ephemeral=False)
+            elif current_voice_client.channel != user_channel:
+                # Check if there are other users in the current channel
+                if len(current_voice_client.channel.members) > 1:
+                    await interaction.response.send_message(
+                        "I'm currently playing in another voice channel. Please wait until it becomes free or join that channel.",
+                        ephemeral=True
+                    )
+                else:
+                    # Disconnect from the current channel and connect to the user's channel
+                    await current_voice_client.move_to(user_channel)
+                    await interaction.response.send_message(f"Moved to {user_channel.name}.", ephemeral=False)
+            else:
+                await interaction.response.send_message("I'm already in your voice channel.", ephemeral=True)
+        else:
+            await interaction.response.send_message("You need to be in a voice channel to use this command.", ephemeral=True)
 
 @bot.tree.command(name='queue', description="Show the current queue")
 async def queue(interaction: discord.Interaction):
@@ -385,7 +486,7 @@ async def replay(interaction: discord.Interaction):
             description=f"**{title}**",
             color=discord.Color.blue()
         )
-        embed.set_thumbnail(url=thumbnail_url)
+
         embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
         embed.add_field(name="Volume", value="100%", inline=True)
         embed.add_field(name="Uptime", value="24/7", inline=True)
@@ -418,6 +519,17 @@ async def now_playing(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("No song is currently playing.", ephemeral=True)
 
+@bot.tree.command(name='disconnect', description="Disconnect the bot from the voice channel")
+async def disconnect(interaction: discord.Interaction):
+    global current_voice_client
+
+    if current_voice_client and current_voice_client.is_connected():
+        await current_voice_client.disconnect()
+        current_voice_client = None
+        await interaction.response.send_message(f"Disconnected from the voice channel. Disconnected by {interaction.user.mention}.", ephemeral=False)
+    else:
+        await interaction.response.send_message("The bot is not connected to any voice channel.", ephemeral=True)
+
 @bot.tree.command(name='clear_queue', description="Clear the current song queue")
 async def clear_queue(interaction: discord.Interaction):
     global song_queue
@@ -431,38 +543,5 @@ async def clear_queue(interaction: discord.Interaction):
 async def on_ready():
     await bot.tree.sync() 
     print(f'{bot.user.name} has connected to Discord!')
-
-    # Check permissions for each guild
-    guilds = bot.guilds
-    for guild in guilds:
-        permissions = guild.me.guild_permissions  # Get bot's permissions in the guild
-        required_permissions = [
-            permissions.connect,
-            permissions.speak,
-            permissions.use_voice_activation,
-            permissions.read_messages,
-            permissions.send_messages,
-            permissions.embed_links,
-            permissions.attach_files,
-            permissions.manage_messages
-        ]
-        # Check if all required permissions are granted
-        if not all(required_permissions):
-            print(f"Warning: Bot does not have all the necessary permissions in guild: {guild.name}")
-            missing_permissions = [
-                perm for perm, has_perm in zip([
-                    "connect", "speak", "use_voice_activation", "read_messages",
-                    "send_messages", "embed_links", "attach_files", "manage_messages"
-                ], required_permissions) if not has_perm
-            ]
-
-            # Send a message to the system channel about missing permissions
-            if guild.system_channel is not None:
-                await guild.system_channel.send(f"⚠️ The bot is missing the following permissions in this server: {', '.join(missing_permissions)}")
-        else:
-            # Optional: send a confirmation if all permissions are present
-            if guild.system_channel is not None:
-                await guild.system_channel.send("✅ The bot has all the necessary permissions in this server.")
-
 # Run the bot
 bot.run(TOKEN)
