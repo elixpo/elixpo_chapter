@@ -217,37 +217,40 @@ class MusicControlView(View):
 
 async def checkPermission(interaction):
     # Get the bot's permissions in the guild (server) where the command was issued
-    voice_channel = interaction.user.voice.channel
-    permissions = voice_channel.permissions_for(interaction.guild.me)  # Bot's permissions in the guild
+    try:
+        voice_channel = interaction.user.voice.channel
+        permissions = voice_channel.permissions_for(interaction.guild.me)  # Bot's permissions in the guild
 
-    # Required permissions list
-    required_permissions = [
-        permissions.connect,
-        permissions.speak,
-        permissions.read_messages,
-        permissions.send_messages,
-        permissions.embed_links,
-        permissions.attach_files,
-        permissions.manage_messages
-    ]
-
-    # Check if all required permissions are granted
-    if not all(required_permissions):
-        print(f"Warning: Bot does not have all necessary permissions in the guild: {interaction.guild.name}")
-        missing_permissions = [
-            perm for perm, has_perm in zip([
-                "connect", "speak", "read_messages",
-                "send_messages", "embed_links", "attach_files", "manage_messages"
-            ], required_permissions) if not has_perm
+        # Required permissions list
+        required_permissions = [
+            permissions.connect,
+            permissions.speak,
+            permissions.read_messages,
+            permissions.send_messages,
+            permissions.embed_links,
+            permissions.attach_files,
+            permissions.manage_messages
         ]
 
-        # Send a message to the channel about missing permissions
-        await interaction.response.send_message(
-            f"⚠️ The bot is missing the following permissions in this guild: {', '.join(missing_permissions)}",
-            ephemeral=True
-        )
-        return False
-    return True
+        # Check if all required permissions are granted
+        if not all(required_permissions):
+            print(f"Warning: Bot does not have all necessary permissions in the guild: {interaction.guild.name}")
+            missing_permissions = [
+                perm for perm, has_perm in zip([
+                    "connect", "speak", "read_messages",
+                    "send_messages", "embed_links", "attach_files", "manage_messages"
+                ], required_permissions) if not has_perm
+            ]
+
+            # Send a message to the channel about missing permissions
+            await interaction.response.send_message(
+                f"⚠️ The bot is missing the following permissions in this guild: {', '.join(missing_permissions)}",
+                ephemeral=True
+            )
+            return False
+        return True
+    except AttributeError:
+        await interaction.response.send_message("You need to be in a voice channel to use this command.", ephemeral=True)
 
 
 # Play command as a slash command
@@ -433,8 +436,26 @@ async def queue(interaction: discord.Interaction):
 
 @bot.tree.command(name='pause', description="Pause or resume the current song")
 async def pause(interaction: discord.Interaction):
-    view = MusicControlView()
-    await view.pause_button.callback(interaction)
+    global current_voice_client
+    if current_voice_client.is_playing():
+        view = MusicControlView()
+        await view.pause_button.callback(interaction)
+        await interaction.response.send_message(f"Paused the music by command. Triggered by {interaction.user.mention}", ephemeral=False)
+
+    elif current_voice_client.is_paused():
+        view = MusicControlView()
+        await view.pause_button.callback(interaction)
+        await interaction.response.send_message(f"Resumed the music by command. Resumed by {interaction.user.mention}", ephemeral=False)
+
+@bot.tree.command(name='resume', description="Resume the current song")
+async def resume(interaction: discord.Interaction):
+    global current_voice_client
+
+    if current_voice_client and current_voice_client.is_paused():
+        current_voice_client.resume()
+        await interaction.response.send_message(f"Resumed the music by command. Resumed by {interaction.user.mention}.", ephemeral=False)
+    else:
+        await interaction.response.send_message("No music is currently paused.", ephemeral=True)
 
 @bot.tree.command(name='stop', description="Stop the current song and clear the queue")
 async def stop(interaction: discord.Interaction):
@@ -538,6 +559,19 @@ async def clear_queue(interaction: discord.Interaction):
         await interaction.response.send_message("The queue has been cleared.", ephemeral=False)
     else:
         await interaction.response.send_message("The queue is already empty.", ephemeral=True)
+
+@bot.tree.command(name='controls', description="Show music control buttons")
+async def controls(interaction: discord.Interaction):
+    global current_voice_client
+
+    if await checkPermission(interaction):
+        if interaction.user.voice:
+            if current_voice_client and current_voice_client.is_connected():
+                await interaction.response.send_message("Here are the music controls:", view=MusicControlView(), ephemeral=False)
+            else:
+                await interaction.response.send_message("No music is currently playing.", ephemeral=True)
+        else:
+            await interaction.response.send_message("You need to be in a voice channel to use this command.", ephemeral=True)
 
 @bot.event
 async def on_ready():
