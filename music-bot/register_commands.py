@@ -130,6 +130,15 @@ async def shuffle(interaction: discord.Interaction):
 async def now_playing(interaction: discord.Interaction):
     await interaction.response.send_message("Now playing the current track")
 
+@bot.tree.command(name='controls', description="Show playback controls")
+async def controls(interaction: discord.Interaction):
+    await interaction.response.send_message("Displaying playback controls")
+
+@bot.tree.command(name='resume', description="Resume the current track")
+async def resume(interaction: discord.Interaction):
+    await interaction.response.send_message("Resuming the current track")
+
+
 # Run the bot
 bot.run(TOKEN)
 # Configure logging
