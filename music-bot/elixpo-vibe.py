@@ -38,7 +38,7 @@ async def play_next_song(interaction):
 
     if is_looping and current_song_info:
         # Replay the current song if looping
-        audio_source = FFmpegPCMAudio(current_song_info['audio_url'])
+        audio_source = FFmpegPCMAudio(current_song_info['audio_url'], before_options="-buffer_size=10240")
         current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
     elif song_queue:
         # Play the next song if looping is disabled and queue is not empty
@@ -50,7 +50,7 @@ async def play_next_song(interaction):
             'requested_by': interaction.user.display_name,
             'audio_url': audio_url
         }
-        audio_source = FFmpegPCMAudio(audio_url)
+        audio_source = FFmpegPCMAudio(audio_url, before_options="-buffer_size=10240")
         current_voice_client.play(audio_source, after=lambda e: bot.loop.create_task(play_next_song(interaction)))
 
         # Send updated Now Playing message
@@ -310,6 +310,7 @@ async def play(interaction: discord.Interaction, song_name: str):
             embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
             embed.add_field(name="Volume", value="100%", inline=True)
             embed.add_field(name="Uptime", value="24/7", inline=True)
+            embed.add_field(name="Duration", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
 
             await interaction.followup.send(embed=embed, view=MusicControlView())
 
@@ -388,6 +389,7 @@ async def play_url(interaction: discord.Interaction, url: str):
             embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url)
             embed.add_field(name="Volume", value="100%", inline=True)
             embed.add_field(name="Uptime", value="24/7", inline=True)
+            embed.add_field(name="Duration", value=f"{duration // 60}:{duration % 60:02d}", inline=True)
 
             await interaction.followup.send(embed=embed, view=MusicControlView())
 
