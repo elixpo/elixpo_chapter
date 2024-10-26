@@ -288,7 +288,7 @@ async def play(interaction: discord.Interaction, song_name: str):
         # Get the song's audio URL, title, duration, and thumbnail
         audio_url, title, duration, thumbnail_url = await get_audio_url(song_name)
         if current_voice_client.is_playing() or current_voice_client.is_paused():
-            queue.append((audio_url, title, duration, thumbnail_url))
+            song_queue.append((audio_url, title, duration, thumbnail_url))
             await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
         else:
             current_song_info = {
@@ -366,7 +366,7 @@ async def play_url(interaction: discord.Interaction, url: str):
             thumbnail_url = info['thumbnail']
 
         if current_voice_client.is_playing() or current_voice_client.is_paused():
-            queue.append((audio_url, title, duration, thumbnail_url))
+            song_queue.append((audio_url, title, duration, thumbnail_url))
             await interaction.followup.send(f"Added **{title}** to the queue.", ephemeral=True)
         else:
             current_song_info = {
