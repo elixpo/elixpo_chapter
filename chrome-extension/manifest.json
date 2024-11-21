@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "Text Selector Star",
+    "version": "1.0",
+    "description": "Shows a star icon above selected text.",
+    "host_permissions": ["<all_urls>"],
+    "web_accessible_resources": [
+      {
+        "resources": ["shines.png"],
+        "matches": ["<all_urls>"]
+      }
+    ],
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"],
+        "css": ["test.css"]
+      }
+    ]
+  }
+  

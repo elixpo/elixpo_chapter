@@ -190,7 +190,7 @@ let controller;
             const startTime = Date.now();
         
             try {
-                return new Promise(async (resolve, reject) => {
+                return new Promise(async (resolve, reject) => { 
                     const imgElement = document.getElementById("imageRecieve" + genNumber);
         
                     if (!imgElement) {
