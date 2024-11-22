@@ -3,6 +3,8 @@
 .generatingHolder 
 {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 500px;
     height: 450px;
     /* background: #ffffff; */
@@ -14,13 +16,13 @@
 #star-icon {
     position: relative;
     top: 5%;
-    left: 5%;
+    left: 10%;
     padding: 8px;
     cursor: pointer;
     z-index: 9999;
     overflow: hidden;
     height: 20px;
-    transform: scale(1.3);
+    transform: scale(0.8);
     width: 30px;
     border-radius: 14px;
     background: linear-gradient(145deg, #1a3d2f, #0f1020);
@@ -46,7 +48,7 @@
   }
   
   #star-icon:hover {
-    transform: scale(1.2);
+    transform: scale(0.9);
     box-sizing: 0 0 40px rgb(137, 137, 231);
   }
   
