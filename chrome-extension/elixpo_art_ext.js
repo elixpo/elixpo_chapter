@@ -240,7 +240,7 @@ document.addEventListener("mouseup", async (event) => {
   const model = Math.random() < 0.5 ? "flux" : "boltning";
   const seed = Math.floor(Math.random() * (1000000 - 1000 + 1)) + 1000;
   const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(
-    sanitizedText
+    selectedText
   )}?width=1024&height=768&seed=${seed}&model=${model}&nologo=1&enhance=false&private=false`;
 
   const downloadUrl =
