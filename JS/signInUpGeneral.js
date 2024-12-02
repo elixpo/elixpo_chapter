@@ -88,11 +88,14 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 })
 
 document.getElementById("readDocs").addEventListener("click", () => {
-   location.replace("elixpo_homepage.html");
+   redirectTo("");
 });
 
+document.getElementById("visitGallery").addEventListener("click", () => {
+    redirectTo("src/gallery");
+});
 document.getElementById("reDirectPage").addEventListener("click", () => {
-   location.replace("elixpoArtGenerator.html");
+    redirectTo("src/create");
 });
 
 
@@ -188,7 +191,7 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", funct
                 });
                 document.getElementById("userNameGuest").style.display = "none";
                 document.getElementById("usernameGuestInput").style.pointerEvents = "none";
-                 location.replace("elixpoArtGenerator.html");
+                 redirectTo("src/create");
             })
            
         }
