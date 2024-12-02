@@ -19,7 +19,7 @@ document.getElementById("signin_with_github").addEventListener("click", () => {
                         localStorage.setItem("ElixpoAIUser", usernameSignIn);
                         setTimeout(() => {
                             localStorage.setItem("guestLogin", "false");
-                            location.replace("elixpoArtGenerator.html");
+                            redirectTo("src/create");
                         }, 2000);
                     }
                     else 
@@ -46,7 +46,7 @@ document.getElementById("signin_with_github").addEventListener("click", () => {
                     RemovetileFlash();
                     localStorage.setItem("ElixpoAIUser", user.displayName);
                     localStorage.setItem("guestLogin", "false");
-                    location.replace("elixpoArtGenerator.html");
+                    redirectTo("src/create");
                 })
                 .catch((err) => {
                     RemovetileFlash();

@@ -50,7 +50,7 @@ promptTextInput.addEventListener("input", function() {
 
 document.getElementById("logouBtn").addEventListener("click", function() {
     document.getElementById("logoutPopUp").classList.add("hidden");
-    location.replace("log_in_out.html");
+    redirectTo("src/auth");
 });
   const wrapper = document.getElementById("wrapper");
 
