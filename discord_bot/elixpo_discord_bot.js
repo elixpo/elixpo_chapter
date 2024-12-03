@@ -346,7 +346,7 @@ async function generateImage(interaction) {
     await updateDoc(doc(db, 'Server', 'totalGen'), { 
       value: nextImageNumber,
     });
-    const galleryUrl = `https://circuit-overtime.github.io/Elixpo_ai_pollinations/gallery.html?id=${imageGenId}`;
+    const galleryUrl = `https://circuit-overtime.github.io/Elixpo_ai_pollinations/src/gallery?id=${imageGenId}`;
     await interaction.channel.send(`${interaction.user} has created image(s) for the Elixpo-AI gallery! View it here: ${galleryUrl}`);
 
   } catch (error) {
@@ -355,46 +355,26 @@ async function generateImage(interaction) {
   }
 }
 
-// Function to apply watermark
 async function applyWatermark(blob) {
-  const watermarkImage = await loadImage("https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20final.png?alt=media&token=4bdf46cb-c851-4638-a0ea-a2723c8d4038");
-  const watermarkImageInverted = await loadImage("https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20inverted%20final.png?alt=media&token=4a7b007d-e5dc-4b56-aa7f-acc6446b1bbe");
-  const mainImage = await loadImage(blob);
-  
-  const canvas = createCanvas(mainImage.width, mainImage.height);
-  const ctx = canvas.getContext('2d');
+  try {
+    const mainImage = await loadImage(blob);
 
-  // Draw the main image onto the canvas
-  ctx.drawImage(mainImage, 0, 0);
+    if (!mainImage || !mainImage.width || !mainImage.height) {
+      throw new Error('Failed to load the main image for processing.');
+    }
 
-  // Detect brightness in the bottom left corner
-  const sampleSize = 10; // Size of the sample area
-  const imageData = ctx.getImageData(0, canvas.height - sampleSize, sampleSize, sampleSize);
-  let totalBrightness = 0;
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    const r = imageData.data[i];
-    const g = imageData.data[i + 1];
-    const b = imageData.data[i + 2];
-    // Calculate brightness using the formula
-    totalBrightness += 0.299 * r + 0.587 * g + 0.114 * b;
+    const canvas = createCanvas(mainImage.width, mainImage.height);
+    const ctx = canvas.getContext('2d');
+
+    // Draw the main image onto the canvas
+    ctx.drawImage(mainImage, 0, 0);
+
+    // Return the processed image buffer
+    return canvas.toBuffer('image/jpeg');
+  } catch (error) {
+    console.error('Error in applyWatermark:', error.message);
+    throw error;
   }
-  const averageBrightness = totalBrightness / (imageData.data.length / 4);
-
-  // Choose the watermark based on the brightness
-  const selectedWatermark = averageBrightness < 128 ? watermarkImageInverted : watermarkImage;
-
-  // Define the position for the watermark
-  const watermarkX = 10;
-  const watermarkY = canvas.height - selectedWatermark.height - 10;
-  const watermarkX_right = canvas.width - selectedWatermark.width - 10;
-  const watermarkY_right = 10;
-
-  // Draw the watermark onto the canvas
-  ctx.drawImage(selectedWatermark, watermarkX, watermarkY);
-  ctx.drawImage(selectedWatermark, watermarkX_right, watermarkY_right);
-
-  // Convert the canvas to a Blob
-  return canvas.toBuffer('image/jpeg'); // Return the modified image as a buffer
 }
 
 // Helper function to generate a unique ID
