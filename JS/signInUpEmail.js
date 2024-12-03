@@ -153,7 +153,7 @@ function loginUser() {
                     localStorage.setItem("ElixpoAIUser", usernameSignIn);
                     setTimeout(() => {
                         localStorage.setItem("guestLogin", "false");
-                        location.replace("elixpoArtGenerator.html");
+                        redirectTo("src/create");
                         
                     }, 2000);
                 

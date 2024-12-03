@@ -43,6 +43,3 @@ This project is an AI-powered art generator that combines a robust backend with 
 This software is made available under the terms of *either* of the licenses
 found in LICENSE.APACHE or LICENSE.BSD. Contributions to uritemplate are
 made under the terms of *both* these licenses. 
-
-
-applied now
