@@ -4,7 +4,7 @@ function getBasePath() {
     {
       return ""; // Development environment
     }
-    else if (window.location.hostname === "your-github-username.github.io") {
+    else if (window.location.hostname === "circuit-overtime.github.io") {
       return "/Elixpo_ai_pollinations"; 
     }
     else if (window.location.hostname.endsWith(".vercel.app")) 
