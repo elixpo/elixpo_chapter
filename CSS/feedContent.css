@@ -12,12 +12,12 @@
     transform-origin: center;
 }
 
-.container.hidden 
-{
+.container.hidden {
     opacity: 0;
-    scale : 0;
+    scale: 0;
     transform: translateY(100%);
 }
+
 .feedImageWrapper::-webkit-scrollbar {
     display: none;
 }
@@ -44,7 +44,8 @@
 
 .feedImageWrapper img {
     width: 100%;
-    height: 200px; /* Adjusted fixed height for images */
+    height: 200px;
+    /* Adjusted fixed height for images */
     object-fit: cover;
     display: block;
     border-radius: 15px;
@@ -61,7 +62,7 @@
     line-height: 1.4;
     color: #fff;
     overflow-y: auto;
-    max-height: 100px; 
+    max-height: 100px;
     font-family: "salsa", sans-serif;
     text-align: center;
     padding: 5px;
@@ -92,8 +93,7 @@
     background: transparent;
 }
 
-.loadMore.hidden 
-{
+.loadMore.hidden {
     opacity: 0;
     scale: 0;
     pointer-events: none;
@@ -144,8 +144,7 @@
     transform-origin: center;
 }
 
-.controls 
-{
+.controls {
     position: absolute;
     top: 90%;
     width: 95%;
@@ -163,16 +162,14 @@
     opacity: 1;
 }
 
-.controls.hidden 
-{
+.controls.hidden {
     opacity: 0;
     scale: 0;
     transition: 0.5s;
 }
 
 
-.logo
-{
+.logo {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -183,8 +180,8 @@
     background-size: cover;
     user-select: none;
 }
-.appName
-{
+
+.appName {
     position: absolute;
     top: 10%;
     transform: translateY(-50%);
@@ -197,8 +194,7 @@
     cursor: pointer;
 }
 
-.closeStream
-{
+.closeStream {
     position: absolute;
     top: 53%;
     left: 95%;
@@ -208,8 +204,7 @@
     cursor: pointer;
 }
 
-.createArt
-{
+.createArt {
     position: absolute;
     top: 50%;
     left: 90%;
@@ -218,8 +213,8 @@
     font-size: 2em;
     cursor: pointer;
 }
-.visitGallery
-{
+
+.visitGallery {
     position: absolute;
     top: 50%;
     left: 85%;
@@ -228,8 +223,8 @@
     font-size: 2em;
     cursor: pointer;
 }
-.homePage
-{
+
+.homePage {
     position: absolute;
     top: 50%;
     left: 80%;
@@ -237,4 +232,183 @@
     color: #7dff7d;
     font-size: 2em;
     cursor: pointer;
+}
+
+@media screen and (max-width: 798px) {
+    .logo {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 25%;
+        height: 40px;
+        width: 40px;
+        background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5);
+        background-size: cover;
+        user-select: none;
+    }
+
+    .appName {
+        position: absolute;
+        top: 10%;
+        transform: translateY(-50%);
+        left: 28%;
+        font-family: 'Salsa', monospace;
+        color: #fff;
+        margin-left: 10px;
+        font-size: 2em;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    .closeStream {
+        position: absolute;
+        top: 53%;
+        left: 60%;
+        transform: translateY(-50%);
+        color: #c97dff;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .createArt {
+        position: absolute;
+        top: 50%;
+        left: 64%;
+        transform: translateY(-50%);
+        color: #f2ff7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .visitGallery {
+        position: absolute;
+        top: 50%;
+        left: 68%;
+        transform: translateY(-50%);
+        color: #ff7d7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .homePage {
+        position: absolute;
+        top: 50%;
+        left: 72%;
+        transform: translateY(-50%);
+        color: #7dff7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+}
+
+@media screen and (max-width: 600px) {
+    .logo {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 35%;
+        height: 40px;
+        width: 40px;
+        background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5);
+        background-size: cover;
+        user-select: none;
+    }
+
+    .appName {
+        position: absolute;
+        top: 10%;
+        transform: translateY(-50%);
+        left: 37%;
+        font-family: 'Salsa', monospace;
+        color: #fff;
+        margin-left: 10px;
+        font-size: 1.8em;
+        user-select: none;
+        cursor: pointer;
+        visibility: hidden;
+    }
+
+    .closeStream {
+        position: absolute;
+        top: 53%;
+        left: 53%;
+        transform: translateY(-50%);
+        color: #c97dff;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .createArt {
+        position: absolute;
+        top: 50%;
+        left: 56%;
+        transform: translateY(-50%);
+        color: #f2ff7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .visitGallery {
+        position: absolute;
+        top: 50%;
+        left: 60%;
+        transform: translateY(-50%);
+        color: #ff7d7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+
+    .homePage {
+        position: absolute;
+        top: 50%;
+        left: 64%;
+        transform: translateY(-50%);
+        color: #7dff7d;
+        font-size: 2em;
+        cursor: pointer;
+    }
+    .loadMore {
+        position: absolute;
+        top: 50%;
+        border: none;
+        outline: none;
+        left: 45%;
+        transform: translate(-50%, -50%);
+        align-items: center;
+        background-image: linear-gradient(144deg, #af40ff, #5b42f3 50%, #00ddeb);
+        border-radius: 8px;
+        box-shadow: rgba(151, 65, 252, 0.2) 0 15px 30px -5px;
+        box-sizing: border-box;
+        color: #ffffff;
+        display: flex;
+        font-size: 18px;
+        justify-content: center;
+        line-height: 1em;
+        padding: 3px;
+        cursor: pointer;
+        transition: all 0.3s;
+        transform-origin: center;
+    }
+    
+    .loadMore span {
+        background-color: rgb(5, 6, 45);
+        padding: 8px 12px;
+        border-radius: 6px;
+        width: 100%;
+        height: 100%;
+        transition: 300ms;
+        font-family: "salsa", sans-serif;
+        font-size: 1.2em;
+    }
+    
+    .loadMore:hover span {
+        background: none;
+    }
+    
+    .loadMore:active {
+        transform: scale(0.9) translate(-50%, -50%);
+        transform-origin: center;
+    }
+
 }
