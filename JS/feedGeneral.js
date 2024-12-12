@@ -1,7 +1,7 @@
 
 // makes the gsap loader active and then trigegrs the preloader and the living hsape loader 
-document.getElementById("welcomeScreen").classList.add("hidden");
-document.getElementById("preLoader").classList.remove("hidden");
+// document.getElementById("welcomeScreen").classList.add("hidden");
+// document.getElementById("preLoader").classList.remove("hidden");
 
 
 document.getElementById("feedStart").addEventListener("click", function () {
@@ -45,17 +45,3 @@ window.onload = function () {
 }
 
 
-
-document.getElementById("homePage").addEventListener("click", function () { 
-    redirectTo("");
-});
-
-document.getElementById("visitGallery").addEventListener("click", function () { 
-    redirectTo("/src/gallery");
-});
-document.getElementById("createArt").addEventListener("click", function () { 
-    redirectTo("/src/create");
-});
-document.getElementById("closeStream").addEventListener("click", function () { 
-    redirectTo("/src/feed");
-});

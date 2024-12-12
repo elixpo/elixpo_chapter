@@ -38,6 +38,53 @@ window.addEventListener('load', scaleContainer);
 
 
 
+document.getElementById("aiArtCreate").addEventListener("click", function() {
+    console.log("hello")
+    if(localStorage.getItem("ElixpoAIUser") != null || localStorage.getItem("ElixpoAIUser") != undefined) {
+        redirectTo("src/create");
+    }
+    else if((localStorage.getItem("ElixpoAIUser") == undefined) || localStorage.getItem("ElixpoAIUser") == null) 
+    {
+        redirectTo("src/auth");
+    }
+    else 
+    {
+        redirectTo("src/auth"); 
+    }
+});
+  
+document.getElementById("galleryVisit").addEventListener("click", function() {
+  
+    redirectTo("src/gallery");
+});
+
+document.getElementById("feedVisit").addEventListener("click", function() {
+  
+    redirectTo("src/feed");
+});
+
+
+  
+  
+  document.getElementById("aiArtCreateNavbar").addEventListener("click", function() {
+    
+    if(localStorage.getItem("ElixpoAIUser") !== null) {
+        redirectTo("src/create");
+    }
+    else 
+    {
+        redirectTo("src/auth");
+    }
+    
+  });
+  
+  document.getElementById("followWhatsapp").addEventListener("click", () => {
+  
+  location.href = "https://www.instagram.com/elixpo_ai/";
+  })
+
+
+
 function typeWriterEffect(text, i, callback) {
     if (i < text.length) {
         typewriterElement.innerHTML = text.substring(0, i + 1);
@@ -162,43 +209,4 @@ function scaleContainer() {
  }
 
 
- document.getElementById("aiArtCreate").addEventListener("click", function() {
-  
-    if(localStorage.getItem("ElixpoAIUser") !== null) {
-        redirectTo("src/create");
-    }
-    else 
-    {
-        redirectTo("src/auth");
-    } 
-});
-  
-document.getElementById("galleryVisit").addEventListener("click", function() {
-  
-    redirectTo("src/gallery");
-});
-
-document.getElementById("feedVisit").addEventListener("click", function() {
-  
-    redirectTo("src/feed");
-});
-
-
-  
-  
-  document.getElementById("aiArtCreateNavBar").addEventListener("click", function() {
-    
-    if(localStorage.getItem("ElixpoAIUser") !== null) {
-        redirectTo("src/create");
-    }
-    else 
-    {
-        redirectTo("src/auth");
-    }
-    
-  });
-  
-  document.getElementById("followWhatsapp").addEventListener("click", () => {
-  
-  location.href = "https://www.instagram.com/elixpo_ai/";
-  })
+ 

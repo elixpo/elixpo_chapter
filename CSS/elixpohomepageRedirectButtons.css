@@ -100,11 +100,7 @@
   .aiArtCreate:hover svg {
     fill: #212121;
   }
-  
-  .aiArtCreate:active {
-    scale: 0.95;
-    
-  }
+ 
   
   .aiArtCreate .circle {
     width: 220px;

@@ -66,7 +66,7 @@ window.onload = function() {
     document.getElementById("promptTextInput").focus();
     setInterval(() => {
         if (localStorage.getItem("ElixpoAIUser") == null) {
-            redirectTo(""); //root hompage redirect
+            redirectTo("src/auth/?notify=true"); //root hompage redirect
         } else {
             document.querySelector(".patternContainer").classList.add("hidden");
         }

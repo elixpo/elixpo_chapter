@@ -45,3 +45,19 @@ const eventSource = new EventSource('https://image.pollinations.ai/feed');
 // Attach the event listener to the button
 document.getElementById('loadMore').addEventListener('click', startListening);
 startListening();
+
+
+
+document.getElementById("homePage").addEventListener("click", function () { 
+  redirectTo("");
+});
+
+document.getElementById("visitGallery").addEventListener("click", function () { 
+  redirectTo("src/gallery");
+});
+document.getElementById("createArt").addEventListener("click", function () { 
+  redirectTo("src/create");
+});
+document.getElementById("closeStream").addEventListener("click", function () { 
+  redirectTo("src/feed");
+});
