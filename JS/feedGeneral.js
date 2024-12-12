@@ -1,7 +1,7 @@
 
 // makes the gsap loader active and then trigegrs the preloader and the living hsape loader 
-document.getElementById("welcomeScreen").classList.remove("hidden");
-
+document.getElementById("welcomeScreen").classList.add("hidden");
+document.getElementById("preLoader").classList.remove("hidden");
 
 
 document.getElementById("feedStart").addEventListener("click", function () {

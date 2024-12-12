@@ -30,34 +30,3 @@ setInterval(() => {
   
   prev = index;
 },1000);
-
-document.getElementById("aiArtCreate").addEventListener("click", function() {
-  
-  if(localStorage.getItem("ElixpoAIUser") !== null) {
-      redirectTo("src/create");
-  }
-  else 
-  {
-      redirectTo("src/auth");
-  }
-  
-});
-
-
-
-document.getElementById("aiArtCreateNavBar").addEventListener("click", function() {
-  
-  if(localStorage.getItem("ElixpoAIUser") !== null) {
-      redirectTo("src/create");
-  }
-  else 
-  {
-      redirectTo("src/auth");
-  }
-  
-});
-
-document.getElementById("followWhatsapp").addEventListener("click", () => {
-
-location.href = "https://www.instagram.com/elixpo_ai/";
-})

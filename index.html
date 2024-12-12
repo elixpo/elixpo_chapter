@@ -10,6 +10,7 @@
   <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
   <script nomodule="" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.js"></script>
   <link rel="stylesheet" type="text/css" href="CSS/ElixpohomePage.css">
+  <link rel="stylesheet" type="text/css" href="CSS/elixpohomepageRedirectButtons.css">
   <link rel="stylesheet" type="text/css" href="CSS/ElixpohomePageAdvertisement.css">
   <link rel="stylesheet" type="text/css" href="CSS/ElixpohomePageOfferings.css">
   <link rel="stylesheet" type="text/css" href="CSS/ElixpohomePagePricing.css">
@@ -23,14 +24,24 @@
 
 <body>
   <div class="ParticleContainer" id="bg"> </div>
+  <div class="blob1Background"></div>
+    <div class="blob2Background"></div>
+    
   <div class="container">
+
     <div class="upperNavBar hidden" id="upperNavBar">
       <div class="logo"></div>
       <p class="appName"> Elixpo.ai </p>
-      <div class="aiArtCreate navbar" id="aiArtCreateNavBar"> <span class="aiArtCreateText navbar"> Create Art</span>
+
+      <button class="aiArtCreateNavbar" id="aiArtCreateNavbar">
+        <span class="text">Elixpo - Art</span>
+        <span class="circle"></span>
+        <ion-icon name="play"></ion-icon>
+      </button>
+
+
       </div>
-      <div class="aiArtDocs navbar" id="aiArtDocsNavBar"> <span class="aiArtDocsText navbar"> Gallery </span></div>
-    </div>
+    
 
     <div id="wrapper" data-configuration="1" data-roundness="1">
       <div class="shape"></div>
@@ -44,7 +55,27 @@
 
     <div class="sitecontent" id="sitecontent">
       <!-- <textarea id="auto-resize" placeholder="Enter your text here..."></textarea></div> -->
-      <div class="aiArtCreate" id="aiArtCreate"> <span class="aiArtCreateText"> Create Art</span></div>
+      <!-- <div class="aiArtCreate" id="aiArtCreate"> <span class="aiArtCreateText"> Create Art</span></div> -->
+
+      <button class="aiArtCreate" id="aiArtCreate">
+        <span class="text">Elixpo - Art</span>
+        <span class="circle"></span>
+        <ion-icon name="play"></ion-icon>
+      </button>
+
+      <button class="galleryVisit" id="galleryVisit">
+        <span class="text">Elixpo - Gallery</span>
+        <span class="circle"></span>
+      </button>
+
+      <button class="feedVisit" id="feedVisit">
+        <span class="text">Elixpo - Feed</span>
+        <span class="circle"></span>
+      </button>
+
+
+
+
       <div class="aiArtDocs" id="aiArtDocs"> <span class="aiArtDocsText"> Gallery </span></div>
       <div class="mainName"><span class="mainName_name">ELIXPO</span><span class="mainName_ending">AI</span></div>
       <div class="desc">

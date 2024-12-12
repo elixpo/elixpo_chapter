@@ -377,3 +377,16 @@ html
     transform: translateX(-20px);
   }
 }
+
+.warning 
+{
+  position: absolute;
+  top: 80%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 15px;
+  color: #ffffff;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  font-family: "salsa", sans-serif;
+}

@@ -1,7 +1,3 @@
-document.getElementById("container").classList.remove("hidden"); //remove this line inst for ayushman
-document.getElementById("controls").classList.remove("hidden"); //remove this line inst for ayushman
-
-
 let imageCount = 0; // Counter for the number of images received
 
 // Function to append new images
