@@ -364,7 +364,7 @@
     .visitGallery {
         position: absolute;
         top: 50%;
-        left: 60%;
+        left: 59%;
         transform: translateY(-50%);
         color: #ff7d7d;
         font-size: 2em;
