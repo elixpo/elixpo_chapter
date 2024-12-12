@@ -31,7 +31,28 @@ const firebaseConfig = {
    type(); // Start the typing effect
 }
 
+
+
+function notify(msg) {
+    document.getElementById("savedMsg").classList.add("display");
+    document.getElementById("NotifTxt").innerText = msg;
+    setTimeout(() => {
+        document.getElementById("savedMsg").classList.remove("display");
+        document.getElementById("NotifTxt").innerText = "";
+    }, 3500);
+}
+
+
+
+
  window.onload = () => {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('notify') === "true") {
+        notify("Sign-in as Guest/GitHub/Google to Continue!");
+    }
+
+
       if(localStorage.getItem("ElixpoAIUser") !== null) {
          document.getElementById("form_logout").classList.remove("hidden");
          document.getElementById("form_login").classList.add("hidden");
@@ -88,11 +109,14 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 })
 
 document.getElementById("readDocs").addEventListener("click", () => {
-   location.replace("elixpo_homepage.html");
+   redirectTo("");
 });
 
+document.getElementById("visitGallery").addEventListener("click", () => {
+    redirectTo("src/gallery");
+});
 document.getElementById("reDirectPage").addEventListener("click", () => {
-   location.replace("elixpoArtGenerator.html");
+    redirectTo("src/create");
 });
 
 
@@ -188,7 +212,7 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", funct
                 });
                 document.getElementById("userNameGuest").style.display = "none";
                 document.getElementById("usernameGuestInput").style.pointerEvents = "none";
-                 location.replace("elixpoArtGenerator.html");
+                 redirectTo("src/create");
             })
            
         }

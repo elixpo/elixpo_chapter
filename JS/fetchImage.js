@@ -461,7 +461,7 @@ async function imageDetailsParameters(ratio, theme, formatted_prompt, user, link
     const majorityColor = await applyDominantColor(link);
     
     // Batch DOM updates to prevent layout thrashing
-    tagElement.innerHTML = hashtags.map(tag => `<span>${tag}</span>`).join('');
+    // tagElement.innerHTML = hashtags.map(tag => `<span>${tag}</span>`).join('');
     generationAspectRatio.innerHTML = ratio;
     aspectRatioTileText.innerHTML = ratio;
     promptDisplay.innerHTML = marked.parse(formatted_prompt); // Be careful with `marked.parse` to avoid XSS
@@ -598,7 +598,7 @@ function downloadBlob(url) {
 
 document.getElementById("postShare").addEventListener("click", () => {
     const id = document.getElementById("postShare").getAttribute("data-id");
-    let fullLink = (`https://circuit-overtime.github.io/Elixpo_ai_pollinations/gallery.html?id=${id}`);
+    let fullLink = (`https://circuit-overtime.github.io/Elixpo_ai_pollinations/src/gallery?id=${id}`);
     navigator.clipboard.writeText(fullLink).then(() => {
         console.log('Link copied to clipboard:', fullLink);
     }).catch(err => {

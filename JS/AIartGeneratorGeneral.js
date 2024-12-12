@@ -66,7 +66,7 @@ window.onload = function() {
     document.getElementById("promptTextInput").focus();
     setInterval(() => {
         if (localStorage.getItem("ElixpoAIUser") == null) {
-            location.href = "elixpo_homepage.html";
+            redirectTo("src/auth/?notify=true"); //root hompage redirect
         } else {
             document.querySelector(".patternContainer").classList.add("hidden");
         }
@@ -190,7 +190,7 @@ let controller;
             const startTime = Date.now();
         
             try {
-                return new Promise(async (resolve, reject) => {
+                return new Promise(async (resolve, reject) => { 
                     const imgElement = document.getElementById("imageRecieve" + genNumber);
         
                     if (!imgElement) {
@@ -1018,11 +1018,11 @@ function expandImage(enc) {
 
 document.getElementById("downloadBox").addEventListener("click", (e) => {
     const downloadUrl = document.getElementById("downloadBox").getAttribute("data-id");
-    downloadBlobWatermark(downloadUrl, fileName);
+    downloadBlob(downloadUrl);
 })
 
 
-function downloadBlob(blob, fileName) {
+function downloadBlob(blob) {
     const url = blob;
     const a = document.createElement('a');
     a.href = url;
@@ -1142,12 +1142,12 @@ document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv)
 document.getElementById("GalleryImageIcon").addEventListener("click", () => {
     if (generating) {
         alert("Image generating alredy, progress will  be lost")
-        location.replace("elixpo_homepage.html");
+        redirectTo("");
             
     }
     else 
     {
-        location.replace("elixpo_homepage.html");
+        redirectTo("");
     }
 });
 
