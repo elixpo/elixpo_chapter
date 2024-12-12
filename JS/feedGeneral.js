@@ -6,14 +6,18 @@
 
 document.getElementById("feedStart").addEventListener("click", function () {
     document.getElementById("preLoader").classList.add("hidden");
-    document.getElementById("container").classList.remove("hidden");
-    document.getElementById("controls").classList.remove("hidden");
+    setTimeout(() => {
+      document.getElementById("container").classList.remove("hidden");
+      document.getElementById("controls").classList.remove("hidden");
+    }, 1000);
+
     setTimeout(() => {
         startListening();
     }, 500);
 });
 
 window.onload = function () {
+  scaleContainer();
     document.getElementById("patternContainer").classList.add("hidden");
     const hulu = new SplitText("#hulu-text"),
       originals = new SplitText("#originals-text");
@@ -45,3 +49,28 @@ window.onload = function () {
 }
 
 
+
+function scaleContainer() {
+  if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+  {
+
+  const container = document.querySelector('.mainContainer');
+  const containerWidth = 1519;
+  const containerHeight = 730;
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+
+  // Calculate scale factors for both width and height
+  const scaleWidth = windowWidth / containerWidth;
+  const scaleHeight = windowHeight / containerHeight;
+
+  // Use the smaller scale factor to ensure the container fits in the viewport
+  const scale = Math.min(scaleWidth, scaleHeight);
+
+  // Apply the scale transform
+  container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+}
+
+window.addEventListener('resize', scaleContainer);
+window.addEventListener('load', scaleContainer);

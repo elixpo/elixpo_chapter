@@ -1,7 +1,7 @@
 .container {
     position: absolute;
     height: 85%;
-    width: 95%;
+    width: 85%;
     top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -235,6 +235,10 @@
 }
 
 @media screen and (max-width: 798px) {
+    .container
+    {
+        width: 50%;
+    }
     .logo {
         position: absolute;
         top: 50%;
@@ -245,6 +249,7 @@
         background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5);
         background-size: cover;
         user-select: none;
+        /* display: none; */
     }
 
     .appName {
@@ -258,6 +263,7 @@
         font-size: 2em;
         user-select: none;
         cursor: pointer;
+        /* display: none; */
     }
 
     .closeStream {
@@ -303,6 +309,10 @@
 }
 
 @media screen and (max-width: 600px) {
+    .container 
+    {
+        width: 25%;
+    }
     .logo {
         position: absolute;
         top: 50%;
@@ -313,6 +323,7 @@
         background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5);
         background-size: cover;
         user-select: none;
+        display: none;
     }
 
     .appName {
@@ -327,6 +338,7 @@
         user-select: none;
         cursor: pointer;
         visibility: hidden;
+        display: none;
     }
 
     .closeStream {
