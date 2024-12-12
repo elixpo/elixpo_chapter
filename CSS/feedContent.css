@@ -364,7 +364,7 @@
     .visitGallery {
         position: absolute;
         top: 50%;
-        left: 60%;
+        left: 59%;
         transform: translateY(-50%);
         color: #ff7d7d;
         font-size: 2em;
@@ -374,7 +374,7 @@
     .homePage {
         position: absolute;
         top: 50%;
-        left: 64%;
+        left: 50%;
         transform: translateY(-50%);
         color: #7dff7d;
         font-size: 2em;
@@ -421,6 +421,10 @@
     .loadMore:active {
         transform: scale(0.9) translate(-50%, -50%);
         transform-origin: center;
+    }
+    .controls
+    {
+        top: 87%;
     }
 
 }
