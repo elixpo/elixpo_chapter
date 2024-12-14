@@ -44,7 +44,7 @@
 
 .feedImageWrapper img {
     width: 100%;
-    height: 100%;
+    height: 90%;
     /* Adjusted fixed height for images */
     object-fit: cover;
     display: block;
