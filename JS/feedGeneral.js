@@ -13,7 +13,7 @@ document.getElementById("feedStart").addEventListener("click", function () {
 
     setTimeout(() => {
         startListening();
-    }, 500);
+    }, 1000);
 });
 
 window.onload = function () {

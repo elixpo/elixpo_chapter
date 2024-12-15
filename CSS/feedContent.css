@@ -40,6 +40,7 @@
     background: #111;
     padding: 10px 10px;
     border-radius: 20px;
+    transition: height 0.4s ease-in-out;
 }
 
 .feedImageWrapper img {
@@ -50,6 +51,7 @@
     display: block;
     border-radius: 15px;
     transition: opacity 0.4s ease-in-out;
+
 }
 
 .feedImageWrapper img.loaded {
