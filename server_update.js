@@ -45,7 +45,7 @@ const main = async () => {
     }
 
     console.log('Internet connection established.');
-    startTunnel();
+    // startTunnel();
     startServer();
 };
 
