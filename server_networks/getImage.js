@@ -254,6 +254,10 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   }
 };
 
+app.get('/ping', (req, res) => {
+  res.send('OK');
+});
+
 
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
@@ -268,3 +272,5 @@ process.on('uncaughtException', err => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+
