@@ -1,0 +1,60 @@
+sudo mkdir /etc/nginx/ssl
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/elixpo.key -out /etc/nginx/ssl/elixpo.crt
+(elixpo.com provided)
+
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:IN
+State or Province Name (full name) [Some-State]:West-Bengal
+Locality Name (eg, city) []:Chinsurah
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Elixpo
+Organizational Unit Name (eg, section) []:ML
+Common Name (e.g. server FQDN or YOUR name) []:elixpo.com
+Email Address []:ayushbhatt633@gmail.com
+------
+
+sudo nano /etc/hosts
+ping elixpo.com
+sudo mkdir /etc/nginx/ssl
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/elixpo.key -out /etc/nginx/ssl/elixpo.crt
+sudo nano /etc/nginx/sites-available/default
+
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name elixpo.com;
+
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+# SSL Configuration for HTTPS
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name elixpo.com;
+
+    ssl_certificate /etc/nginx/ssl/elixpo.crt;
+    ssl_certificate_key /etc/nginx/ssl/elixpo.key;
+
+    root /var/www/html;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+
+sudo nginx -t
+sudo systemctl reload nginx
