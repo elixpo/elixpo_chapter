@@ -15,13 +15,16 @@ const isInternetAvailable = async () => {
 const startTunnel = () => {
 
     const playItService = `bash /home/pi/tunnel.sh`;
-    const tunnelStart = `bash /home/pi/Desktop/Elixpo_ai_pollinations/server.sh`;
-    exec(tunnelStart, (error) => {
+    exec(playItService, (error) => {
         if (error) {
             console.error(`Error starting ngrok tunnel script: ${error.message}`);
         }
     });
-    exec(playItService, (error) => {
+}
+
+const startServer = () => {
+    const tunnelStart = `bash /home/pi/Desktop/Elixpo_ai_pollinations/server.sh`;
+    exec(tunnelStart, (error) => {
         if (error) {
             console.error(`Error starting ngrok tunnel script: ${error.message}`);
         }
@@ -43,6 +46,7 @@ const main = async () => {
 
     console.log('Internet connection established.');
     startTunnel();
+    startServer();
 };
 
 main();
