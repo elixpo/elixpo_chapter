@@ -254,7 +254,7 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   }
 };
 
-app.get('/ping', (req, res) => {
+app.post('/ping', (req, res) => {
   res.send('OK');
 });
 
