@@ -14,6 +14,10 @@ const MAX_QUEUE_LENGTH = 15;
 const maxRequests = 20;
 let activeRequests = 0;
 
+
+
+app.use(cors());
+
 // File paths for CSV log and Instagram session
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
 const sessionFilePath = './ig_session.json'
