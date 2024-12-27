@@ -48,11 +48,12 @@ async function pingServer(downloadUrl) {
     try {
         const response = await fetch(`${downloadUrl}/ping`, {
             method: "POST", // Use POST if you prefer to simulate heartbeat requests
+
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: 'heartbeat' }) // Send a heartbeat signal
         });
+        // console.log(response)
 
         if (response.ok) {
             // console.log(`${pingUrl} is up`);
@@ -63,6 +64,7 @@ async function pingServer(downloadUrl) {
         }
     } catch (error) {
         // console.log(`${pingUrl} is down`);
+        console.log(error);
         document.getElementById("serverStatus").classList.add("offline");
     }
 }
@@ -85,8 +87,8 @@ window.onload = function() {
     globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
     globalThis.specialDir = "";
     document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
-    downloadUrl = "month-certainly.gl.at.ply.gg:47006";
-
+    downloadUrl = "http://elixpo-net.duckdns.org:3000";
+    pingServer(downloadUrl);
     document.getElementById("promptTextInput").focus();
     setInterval(() => {
         if (localStorage.getItem("ElixpoAIUser") == null) {

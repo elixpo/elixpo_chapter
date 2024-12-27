@@ -35,20 +35,7 @@ const client = new Client({
 client.on('ready', async () => {
 client.user.setActivity("Generating Images for You", { type: "WATCHING" });
   console.log('Bot is online and ready!');
-
-  // Fetch the download_image URL from Firestore
-  try {
-    const docRef = doc(db, 'Server', 'servers'); // Specify the correct document ID
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      downloadUrl = docSnap.data().download_image;
-      console.log('Fetched download URL:', downloadUrl);
-    } else {
-      console.log('No document found.');
-    }
-  } catch (error) {
-    console.error('Error fetching or downloading image:', error);
-  }
+  downloadUrl = "http://elixpo-net.duckdns.org:3000";
 });
 
 // Event listener: Handle slash command interactions
