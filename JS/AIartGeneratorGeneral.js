@@ -87,8 +87,8 @@ window.onload = function() {
     globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
     globalThis.specialDir = "";
     document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
-    downloadUrl = "http://elixpo-net.duckdns.org:3000";
-    pingServer(downloadUrl);
+    downloadUrl = "https://direct-enhanced-glider.ngrok-free.app";
+    // pingServer(downloadUrl);
     document.getElementById("promptTextInput").focus();
     setInterval(() => {
         if (localStorage.getItem("ElixpoAIUser") == null) {
@@ -99,7 +99,7 @@ window.onload = function() {
     }, 1000);
 
     setInterval(() => {
-        pingServer(downloadUrl);
+        // pingServer(downloadUrl);
     }, 20000);
 
 };

@@ -35,7 +35,7 @@ const client = new Client({
 client.on('ready', async () => {
 client.user.setActivity("Generating Images for You", { type: "WATCHING" });
   console.log('Bot is online and ready!');
-  downloadUrl = "http://elixpo-net.duckdns.org:3000";
+  downloadUrl = "https://direct-enhanced-glider.ngrok-free.app";
 });
 
 // Event listener: Handle slash command interactions
