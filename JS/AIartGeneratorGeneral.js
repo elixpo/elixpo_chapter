@@ -53,7 +53,7 @@ async function pingServer(downloadUrl) {
                 'Content-Type': 'application/json',
             },
         });
-        // console.log(response)
+        console.log(response)
 
         if (response.ok) {
             // console.log(`${pingUrl} is up`);
