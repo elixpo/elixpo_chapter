@@ -1,14 +1,18 @@
-document.addEventListener('DOMContentLoaded', function () {
 
-    const scroll = new LocomotiveScroll({
-        el: document.querySelector('body'), 
-        smooth: true
-    });
-});
+  let backToTopButton = document.getElementById("back-to-top");
 
-let startTime = Date.now();
-setInterval(() => {
-    let elapsedTime = Date.now() - startTime;
-    let minutes = Math.floor(elapsedTime / 60000);
-    document.getElementById('read-time').textContent = minutes;
-}, 60000);
+    window.onscroll = function () {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            backToTopButton.style.right = "20px";
+            backToTopButton.style.background = "#000";
+            backToTopButton.style.color = "#fff";
+        } else {
+            backToTopButton.style.right = "-60px";
+            backToTopButton.style.background = "#000";
+            backToTopButton.style.color = "#fff";
+        }
+    };
+
+    backToTopButton.onclick = function () {
+        document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
+    };
