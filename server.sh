@@ -4,5 +4,3 @@
 cd /home/pi/Desktop/Elixpo_ai_pollinations/server_networks
 node getImage.js &
 echo "image.js is running in the background with PID $!"
-sh -c ngrok start elixpo_art &
-echo "ngrok is running in the background with PID $!"
