@@ -97,7 +97,12 @@ h3::before {
 p {
     margin-bottom: 20px;
 }
-
+a 
+{
+    text-decoration: none;
+    color: #5569c3;
+    font-weight: 700;
+}
 ul,
 ol {
     padding-left: 20px;
