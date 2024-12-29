@@ -103,6 +103,33 @@ a
     color: #5569c3;
     font-weight: 700;
 }
+
+
+.intro {
+    position: relative;
+    text-decoration: none;
+    color: #5569c3;
+    font-weight: 700;
+}
+
+.intro::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    display: block;
+    right: 50%;
+    background: #6565bc;
+    transition: width 0.3s ease, right 0.3s ease;
+}
+
+.intro:hover::after {
+    width: 100%;
+    right: 0;
+}
+
+
+
 ul,
 ol {
     padding-left: 20px;
