@@ -5,11 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elixpo Art - Blog</title>
-    <link rel="stylesheet" href="../../../CSS/blog.css">
+    
     <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/THEMES/pixel.jpeg">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.0.0/dist/locomotive-scroll.min.css">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+
+    <link rel="stylesheet" href="../../../CSS/blog.css">
 </head>
 
 <body>
@@ -280,24 +283,25 @@
                     handles image generation requests efficiently. Below is a snippet of the server API code that powers
                     the back-end operations:
                 </p>
-                <pre>
-            <code>
-            import requests
-            
-            def download_image(prompt):
-                url = f"https://elixpo-art/p/{prompt}"  # URL isn't valid yet
-                response = requests.get(url)
-                with open('generated_image.jpg', 'wb') as file:
-                    file.write(response.content)
-                print('Image downloaded!')
-            
-            download_image("conceptual_isometric_world_of_pollinations_ai_surreal_hyperrealistic_digital_garden")
-            </code>
-                </pre>
+    <pre>
+        <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
+    <code class="python">
+    import requests
+
+    def download_image(prompt):
+        url = f"https://elixpo-art/p/{prompt}"  # URL isn't valid yet
+        response = requests.get(url)
+        with open('generated_image.jpg', 'wb') as file:
+            file.write(response.content)
+        print('Image downloaded!')
+
+        download_image("conceptual_isometric_world_of_pollinations_ai_surreal_hyperrealistic_digital_garden")
+    </code>
+    </pre>
                 <p>
                     This code snippet demonstrates how to use the API to download an image based on a given prompt.
                     While the URL is not valid yet, the function sends a GET request to fetch the image and saves it
-                    locally as `generated_image.jpg`.
+                    locally as <code class="shortCode"> generated_image.jpg.</code> Which will be in jpg format.
                 </p>
             </section>
 
