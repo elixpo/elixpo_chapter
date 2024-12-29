@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Open+Sans:wght@400;600&display=swap');
 
-*
-{
+* {
     -webkit-tap-highlight-color: transparent;
 }
+
 body {
     font-family: 'Open Sans', sans-serif;
     line-height: 1.6;
@@ -19,6 +19,27 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background: #625f64e5;
+    border-radius: 10px;
+}
+
+pre {
+    background-color: #ECECEC;
+    padding: 15px;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+code {
+    font-family: 'Consolas';
+    color: #000000;
+}
+
+pre::-webkit-scrollbar {
+    height: 6px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #bdbdbde5;
     border-radius: 10px;
 }
 
@@ -97,8 +118,8 @@ h3::before {
 p {
     margin-bottom: 20px;
 }
-a 
-{
+
+a {
     text-decoration: none;
     color: #5569c3;
     font-weight: 700;
@@ -422,5 +443,3 @@ strong {
         font-size: 1.3rem;
     }
 }
-
-
