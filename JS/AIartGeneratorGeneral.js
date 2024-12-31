@@ -45,9 +45,11 @@ let timeoutId;
 //new commit
 
 window.onload = function() {
-    document.querySelector(".patternContainer").classList.remove("hidden");
+    // document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
+    globalThis.modelType = "Flux-Core";
     globalThis.RatioValue = "1:1";
+    document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+modelType).style.opacity = "1" : document.querySelector("."+modelType).style.opacity = "0";
     document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+imageVarType).style.opacity = "1" : document.querySelector("."+imageVarType).style.opacity = "0";
     globalThis.width = 2048;
     globalThis.height = 2048;
@@ -79,36 +81,6 @@ window.onload = function() {
     
     globalThis.serverRef = db.collection('Server').doc('servers');
 
-   
- function getServerURLs() {
-        serverRef.get().then(async (doc) => {
-            if (doc.exists) {
-                downloadUrl = await doc.data().download_image;
-                pingUrl = await doc.data().get_ping;
-
-
-                console.log(`Server1 URL: ${downloadUrl}`);
-                console.log(`Server3 URL: ${pingUrl}`);
-
-                // Schedule pingServer after URLs are retrieved
-                checkNetwork();
-                setInterval(() => checkNetwork(), 5000);
-            } else {
-                console.log("No such document!");
-            }
-        }).catch((error) => {
-            console.log("Error getting document:", error);
-        });
-}
-
-function checkNetwork()
-{
-    if (navigator.onLine) {
-        document.getElementById("serverStatus").classList.remove("offline");
-      } else {
-        document.getElementById("serverStatus").classList.add("offline");
-      }
-}
 
 async function pingServer() {
     try {
@@ -171,10 +143,10 @@ const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-fou
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
-        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, genNumber, controller) {
+        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, controller) {
             document.getElementById("NotifTxt").innerText = "Generating Images...";
             document.getElementById("savedMsg").classList.add("display");
-            const model = Math.random() < 0.5 ? "flux" : "boltning";
+            // const model = Math.random() < 0.5 ? "flux" : "boltning";
             var enhanceSwitch = document.getElementById("enhanceSwitch");
             var privateImage = document.getElementById("privateSwitch").checked ? "false" : "true";
             
@@ -312,12 +284,12 @@ let controller;
 
         
 // Function to generate multiple images in parallel
-async function generateMultipleImages(encodedPrompt, width, height, seeds, aspectRatio, theme, numberOfImages, controller) {
+async function generateMultipleImages(encodedPrompt, width, height, seeds, aspectRatio, theme, model, numberOfImages, controller) {
     const promises = [];
 
     for (let i = 0; i < numberOfImages; i++) {
         const genNumber = (i + 1).toString();
-        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, genNumber, controller));
+        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, model, genNumber, controller));
     }
 
     try {
@@ -406,6 +378,7 @@ function handleStaticMode(numberOfImages) {
     setTimeout(() => {
         document.getElementById("stopGeneration").classList.add("hidden");
     document.getElementById("typeOfImageTile").classList.remove("hidden");
+    document.getElementById("typeOfModelTile").classList.remove("hidden");
     document.getElementById("aspectRatioControls").classList.remove("hidden");
     document.getElementById("aiEnhancementDesc").classList.remove("hidden");
     document.getElementById("privatePublicResultDesc").classList.remove("hidden");
@@ -421,6 +394,7 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("promptTextInput").value = "";
     document.querySelector(".progressBar").classList.add("zeroProgress");
     document.querySelector("."+imageVarType).style.opacity = "1";
+    document.querySelector("."+modelType).style.opacity = "1";
     document.getElementById("savedMsg").classList.remove("display");
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
@@ -442,7 +416,7 @@ document.getElementById("rejectBtn").addEventListener("click", () => {
 });
 
 document.getElementById("acceptBtn").addEventListener("click", () => {
-    handleStaticServerUpload(blobs, blobs.length, imageVarType, specialDir ,0);
+    handleStaticServerUpload(blobs, blobs.length, imageVarType, modelType, specialDir ,0);
 });
 
 
@@ -472,7 +446,7 @@ function generateUniqueId(inputString) {
 }
 
 
-async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir, progress = 0) {
+async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, specialDir, progress = 0) {
     generating = false;
     document.getElementById("NotifTxt").innerText = "Uploading Images...";
     document.getElementById("savedMsg").classList.add("display");
@@ -524,6 +498,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, specialDir
                             // Update Firestore with image metadata
                             await db.collection("ImageGen").doc(specialDir).set({
                                 theme: imgTheme,
+                                model : model,
                                 timestamp: timestamp,
                                 user: localStorage.getItem("ElixpoAIUser"),
                                 prompt: promptTextInput.value,
@@ -655,6 +630,7 @@ function handleStaticModeExclusive(numberOfImages) {
     setTimeout(() => {
     document.getElementById("stopGeneration").classList.add("hidden");
     document.getElementById("typeOfImageTile").classList.remove("hidden");
+    document.getElementById("typeOfModelTile").classList.remove("hidden");
     document.getElementById("aspectRatioControls").classList.remove("hidden");
     document.getElementById("aiEnhancementDesc").classList.remove("hidden");
     document.getElementById("privatePublicResultDesc").classList.remove("hidden");
@@ -669,6 +645,7 @@ function handleStaticModeExclusive(numberOfImages) {
     document.getElementById("acceptBtn").classList.add("hidden");
     document.querySelector(".progressBar").classList.add("zeroProgress");
     document.querySelector("."+imageVarType).style.opacity = "1";
+    document.querySelector("."+modelType).style.opacity = "1";
     document.getElementById("hqlqcontainer").classList.remove("hidden");
     document.getElementById("statusImage1").innerHTML = "";
     document.getElementById("statusImage2").innerHTML = "";
@@ -732,6 +709,7 @@ async function generatingModeHandle() {
     document.getElementById("samplePrompt").classList.add("generating");
     document.getElementById("samplePrompt").style.height = "60px";
     document.getElementById("typeOfImageTile").classList.add("hidden");
+    document.getElementById("typeOfModelTile").classList.add("hidden");
     document.getElementById("aspectRatioControls").classList.add("hidden");
     document.getElementById("imageTiles").classList.remove("hidden");
     document.getElementById("stopGeneration").classList.remove("hidden");
@@ -868,7 +846,7 @@ switch (RatioValue) {
     controller = new AbortController();
 
     try {
-        await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, numberOfImages, controller);
+        await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, modelType, numberOfImages, controller);
     } catch (error) {
         console.error('Error fetching server URL:', error);
         document.getElementById("NotifTxt").innerText = "Error fetching server URL";
@@ -888,6 +866,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const typeOfImageTile = document.getElementById('typeOfImageTile');
     const children = typeOfImageTile.getElementsByTagName('span');
 
+    const typeofModels = document.getElementById('typeOfModelTile');
+    const models = typeofModels.getElementsByTagName('span');
+
+
+    Array.from(models).forEach(model => {
+        model.addEventListener('click', () => {
+            modelType = model.className;
+            Array.from(models).forEach(m => {
+                m.style.opacity = ".25";
+            });
+            model.style.opacity = "1";
+        });
+    });
+
     Array.from(children).forEach(child => {
         child.addEventListener('click', () => {
             imageVarType = child.className;
@@ -896,7 +888,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 c.style.opacity = ".25";
             });
             child.style.opacity = "1";
-            document.getElementById("isoImageType").style.background = 'url("./CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
+            document.getElementById("isoImageType").style.background = 'url("../../CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
             document.getElementById("isoImageType").style.backgroundSize = "cover";
             document.getElementById("isoImageType").style.backgroundPosition = "50% 30%";
             document.getElementById("themeNameIcon").innerHTML = imageVarType;
@@ -1117,17 +1109,6 @@ function copyTextFromDiv() {
 } 
 document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv);
 
-document.getElementById("GalleryImageIcon").addEventListener("click", () => {
-    if (generating) {
-        alert("Image generating alredy, progress will  be lost")
-        redirectTo("");
-            
-    }
-    else 
-    {
-        redirectTo("");
-    }
-});
 
 
 document.addEventListener('visibilitychange', function() {

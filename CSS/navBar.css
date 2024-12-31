@@ -177,6 +177,7 @@
     border-radius: 50px;
     overflow: hidden;
     scale: 1;
+    cursor: pointer;
     transition: all 0.3s ease;
   }
   
@@ -203,7 +204,7 @@
   }
   
   .loginButton:hover {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: translateY(-50%) scale(1.05);
     box-shadow: 0 10px 30px rgba(39, 174, 96, 0.6);
   }
   
@@ -255,7 +256,7 @@
   }
   
   .loginButton:active {
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: translateY(-50%) scale(0.95);
   }
   
   @keyframes loginButton-rotate {
