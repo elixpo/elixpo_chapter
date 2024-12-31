@@ -45,7 +45,7 @@ let timeoutId;
 //new commit
 
 window.onload = function() {
-    // document.querySelector(".patternContainer").classList.remove("hidden");
+    document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
     globalThis.modelType = "Flux-Core";
     globalThis.RatioValue = "1:1";

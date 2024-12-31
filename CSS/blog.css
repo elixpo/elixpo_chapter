@@ -400,7 +400,25 @@ strong {
     color: #000;
 }
 
+#back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: -60px;
+    z-index: 99;
+    border: none;
+    outline: none;
+    background-color: #000;
+    color: white;
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 10px;
+    transition: right 0.3s, background-color 0.3s, color 0.3s;
+}
 
+#back-to-top:hover {
+    background-color: #a6a6a6;
+    color: #000;
+}
 
 @media (max-width: 798px) {
     .container {

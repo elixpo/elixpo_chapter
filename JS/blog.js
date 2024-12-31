@@ -1,22 +1,11 @@
 hljs.highlightAll();
   let backToTopButton = document.getElementById("back-to-top");
 
-    window.onscroll = function () {
-        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-            backToTopButton.style.right = "20px";
-            backToTopButton.style.background = "#000";
-            backToTopButton.style.color = "#fff";
-        } else {
-            backToTopButton.style.right = "-60px";
-            backToTopButton.style.background = "#000";
-            backToTopButton.style.color = "#fff";
-        }
-    };
 
 
-    document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
-        redirectTo("src/create");
-        });
+    // document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
+    //     redirectTo("src/create");
+    //     });
 
         
     backToTopButton.onclick = function () {
@@ -41,3 +30,18 @@ hljs.highlightAll();
         });
     });
 
+
+
+
+    window.onscroll = function () {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            backToTopButton.style.right = "20px";
+        } else {
+            backToTopButton.style.right = "-60px";
+        }
+    };
+
+    backToTopButton.onclick = function () {
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+    };
