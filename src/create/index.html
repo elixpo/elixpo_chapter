@@ -20,6 +20,7 @@
     <link rel="stylesheet" type="text/css" href="../../CSS/buttomtmp.css">
     <link rel="stylesheet" type="text/css" href="../../CSS/pageloadingPattern.css">
     <link rel="stylesheet" type="text/css" href="../../CSS/imageDispSection.css">
+    <link rel="stylesheet" type="text/css" href="../../CSS/navBar.css">
     <link rel="stylesheet" type="text/css" href="../../CSS/elixpoArtGenMobile.css">
     <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/LOGOS/logo2.jpeg">
     
@@ -43,6 +44,32 @@
   </div>
 
     <div class="container">
+
+
+      <div class="loginNavBar" id="loginNavBar">
+        <div class="userLogo" id="userLogo"></div>
+        <div class="pixelsHolder" id="pixelsHolder"></div>
+        <span class="accountMode" id="accountMode">Hi, Annonymous User xD </span>
+        <ion-icon name="wifi" class="serverStatus" id="serverStatus"></ion-icon>
+        <ion-icon name="logo-github" class="navBarGitHub" id="navBarGitHub"></ion-icon>
+        <ion-icon name="document-text" class="navBarDocs" id="navBarDocs"></ion-icon>
+        <ion-icon name="home" class="redirectHome" id="redirectHome"></ion-icon>
+        <div class="loginButton" id="loginButton" >
+            Account
+            <div class="liquid"></div>
+            <div class="bubbles">
+              <div class="bubble"></div>
+              <div class="bubble"></div>
+              <div class="bubble"></div>
+              <div class="bubble"></div>
+              <div class="bubble"></div>
+              <div class="bubble"></div>
+            </div>
+          </div>
+    </div>
+
+
+
         <div class="logo"></div><p class="appName"> Elixpo.art </p>
         <div class="logoutPopUp hidden" id="logoutPopUp">
           <div class="maskBackground"></div>
@@ -54,10 +81,8 @@
             <div class="logoutText">Logout</div>
           </button>
         </div>
-        <div class="userLogo" id="userLogo"></div>
+        
         <div class="tokens"> <p class="tokenValue" id="tokenValue"></p> <ion-icon name="sparkles"></ion-icon> </div>
-        <ion-icon name="wifi" class="serverStatus" id="serverStatus"></ion-icon>
-        <ion-icon name="document-text" class="GalleryImageIcon" id="GalleryImageIcon"></ion-icon>
         <div class="savedMsg" id="savedMsg">
             <div class="blob1"></div>
             <div class="blob2"></div>
@@ -92,6 +117,17 @@
             <span id="imagePixel" class="Pixel"><p>Pixel</p></span>
             <span id="imageNormal" class="Normal"><p>Normal</p></span>
             <span id="imageSynthwave" class="Synthwave"><p>Synthwave</p></span>
+        </div>
+
+        <div class="typeOfModelTile" id="typeOfModelTile">
+            <span id="model1" class="model1"><p>Flux-Core</p></span>
+            <span id="model2" class="model2"><p>Flux-Realism</p></span>
+            <span id="model3" class="model3"><p>Flux-Cablyai</p></span>
+            <span id="model4" class="model4"><p>Flux-Anime</p></span>
+            <span id="model5" class="model5"><p>Flux-3d</p></span>
+            <span id="model6" class="model6"><p>Any-Dark</p></span>
+            <span id="model7" class="model7"><p>Flux-Pro</p></span>
+            <span id="model8" class="model8"><p>Turbo</p></span>
         </div>
 
         <div class="aspectRatioControls" id="aspectRatioControls">
@@ -361,8 +397,9 @@
         <script src="../../JS/particles.min.js"></script>
         <script src="../../JS/isoImagetypeParticle.js"></script>`
         <script src="../../JS/AIImageEnhancementEffect.js"> </script> 
+        <script src="../../JS/navBar.js"></script>
 
-        <script src="../../JS/PatchContextMenu.js"></script>
+        <!-- <script src="../../JS/PatchContextMenu.js"></script> -->
         
 </body>
 </html>

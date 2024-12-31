@@ -33,8 +33,10 @@ body
 .userLogo
 {
   position: absolute;
-  top: 3%;
-  left: 95%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  left: 3%;
   height: 40px;
   width: 40px;
   background-size: cover;
@@ -85,28 +87,7 @@ body
   font-size: 1.2em;
   margin-left: 8px; /* Add this line */
 }
-.serverStatus
-{
-  position: absolute;
-  top: 3%;
-  left: 85%;
-  height: 40px;
-  width: 80px;
-  background-size: cover;
-  cursor: pointer;
-  padding: 5px 5px;
-  border-radius: 10px;
-  display: flex;
-  overflow: hidden;
-  color: #03ff92;
-  justify-content: center;
-  align-items: center;
- transition: 0.25s;
-}
-.serverStatus.offline 
-{
-  color: #ff0000;
-}
+
 
 .GalleryImageIcon
 {
@@ -334,42 +315,44 @@ overflow-x: hidden;
   }
 
 
-
   .typeOfImageTile {
     position: absolute;
-    top: 10%;
-    width: 40%;
+    top: 15%;
+    width: 25%;
     left: 30%;
-    height: 200px;
+    max-height: 300px; /* Set a maximum height */
     background-color: transparent;
     display: flex;
     flex-wrap: wrap; /* Enable wrapping of the flex items */
-    justify-content: space-between; /* Distribute space evenly between items */
+    justify-content: flex-start; /* Align items to the start */
+    gap: 20px; /* Add consistent spacing between items */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
     z-index: 10;
 }
-.typeOfImageTile > * 
-{
-  opacity: .25;
+.typeOfImageTile::-webkit-scrollbar {
+  display: none;
 }
+
+.typeOfImageTile > * {
+    opacity: 0.25;
+}
+
 .typeOfImageTile span {
     position: relative;
     height: 100px;
     width: 100px;
     border-radius: 15px;
     background: #202020;
-    margin-bottom: 10px; /* Add space between rows */
-    margin-right: calc((100% - (5 * 100px)) / 4); /* Calculate space between items */
     cursor: pointer;
 }
+
 .typeOfImageTile.hidden 
 {
   z-index: -1;
   opacity: 0;
 }
 
-.typeOfImageTile span:nth-child(5n) {
-    margin-right: 0; /* Remove margin-right for the last item in each row */
-}
+
 
 .typeOfImageTile span p {
   position: absolute; /* Change to absolute positioning */
@@ -505,10 +488,6 @@ overflow-x: hidden;
 }
 
 
-
-
-
-
 .typeOfImageTile.hidden span:nth-child(1)
 {
   background: url(IMAGES/THEMES/fantasy.jpeg);
@@ -594,6 +573,66 @@ overflow-x: hidden;
   z-index: -1;
    opacity: 0;
 }
+
+
+
+.typeOfModelTile {
+
+  position: absolute;
+  top: 15%;
+  padding: 0;
+  width: 20%;
+  left: 55%;
+  max-height: 300px; /* Set a maximum height */
+  background-color: transparent;
+  display: flex;
+  flex-wrap: wrap; /* Enable wrapping of the flex items */
+  justify-content: flex-start; /* Align items to the start */
+  gap: 10px; /* Add consistent spacing between items */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+  z-index: 10;
+}
+.typeOfModelTile::-webkit-scrollbar {
+  display: none;
+}
+
+
+.typeOfModelTile > * {
+  opacity: 0.25;
+}
+
+.typeOfModelTile span {
+  position: relative;
+  height: 100px;
+  width: 100px;
+  text-align: center;
+  border-radius: 12px;
+  font-size: 13px;
+  background: #202020;
+  cursor: pointer;
+}
+
+.typeOfModelTile.hidden {
+  z-index: -1;
+  opacity: 0;
+}
+
+.typeOfModelTile span p {
+  position: absolute; /* Change to absolute positioning */
+  bottom: 5px; /* Position at the bottom */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust for horizontal centering */
+  margin: 0; /* Reset margin */
+  color: white;
+  background: #f9f9f900;
+  font-size: 1em;
+  width: 100%;
+  backdrop-filter: blur(2px); /* Add a backdrop filter */
+  font-family: 'Source Code Pro', monospace;
+}
+
+
+
 
 .aspectRatioControls {
   position: absolute;

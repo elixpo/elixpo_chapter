@@ -44,10 +44,6 @@ promptTextInput.addEventListener("input", function() {
   }, 1200);
 
 
-  document.getElementById("userLogo").addEventListener("click", function() {    
-    document.getElementById("logoutPopUp").classList.toggle("hidden");
-  });
-
 document.getElementById("logouBtn").addEventListener("click", function() {
     document.getElementById("logoutPopUp").classList.add("hidden");
     redirectTo("src/auth");
