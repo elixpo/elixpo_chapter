@@ -239,12 +239,15 @@ strong {
     font-weight: 600;
     margin-bottom: 10px;
     transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    z-index: 50;
 }
 
 .cta-button:hover {
     background-color: #e3e3e3;
     color: #1d1d1d;
-    transform: scale(1.01);
+    transform: scale(1.11);
 }
 
 .floating-navbar {
@@ -366,6 +369,7 @@ strong {
     text-decoration: none;
     font-weight: 600;
     transition: all 0.3s ease;
+    cursor: pointer;
 
 }
 

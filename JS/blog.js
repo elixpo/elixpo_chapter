@@ -13,6 +13,12 @@ hljs.highlightAll();
         }
     };
 
+
+    document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
+        redirectTo("src/create");
+        });
+
+        
     backToTopButton.onclick = function () {
         document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -34,3 +40,4 @@ hljs.highlightAll();
             });
         });
     });
+
