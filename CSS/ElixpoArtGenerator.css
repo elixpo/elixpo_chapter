@@ -179,8 +179,8 @@ overflow-x: hidden;
 
 .ParticleContainer
 {
-  background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
-  filter: brightness(80%);
+  background: linear-gradient(105deg, #01473b 10%, #172a4f 20%, #1e343f 80%, #4a0e4d 100%);
+  filter: brightness(50%);
   position: absolute;
   top: 0;
   left: 0;
