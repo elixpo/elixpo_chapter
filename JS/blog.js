@@ -1,11 +1,11 @@
-hljs.highlightAll();
+
   let backToTopButton = document.getElementById("back-to-top");
 
+  hljs.highlightAll();
 
-
-    // document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
-    //     redirectTo("src/create");
-    //     });
+    document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
+        redirectTo("src/create");
+        });
 
         
     backToTopButton.onclick = function () {
@@ -45,3 +45,31 @@ hljs.highlightAll();
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
     };
+
+window.addEventListener("load", function () {
+    if ((window.matchMedia("(max-width: 767px)").matches) || navigator.userAgent.toLowerCase().includes("mobi"))
+        {
+         document.querySelector(".cta-buttonnav").innerText = "";
+         document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
+            
+        } 
+        else 
+        {
+            document.querySelector(".cta-buttonnav").innerHTML = "";
+            document.querySelector(".cta-buttonnav").innerText = "Try Elixpo Art Now";
+        }
+    });
+
+    window.addEventListener("resize", function () {
+        if ((window.matchMedia("(max-width: 767px)").matches) || navigator.userAgent.toLowerCase().includes("mobi"))
+            {
+             document.querySelector(".cta-buttonnav").innerText = "";
+             document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
+                
+            }
+            else 
+            {
+                document.querySelector(".cta-buttonnav").innerHTML = "";
+                document.querySelector(".cta-buttonnav").innerText = "Try Elixpo Art Now";
+            } 
+        });
