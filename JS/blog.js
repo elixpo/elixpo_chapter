@@ -46,12 +46,30 @@
         document.documentElement.scrollTop = 0;
     };
 
+window.addEventListener("load", function () {
     if ((window.matchMedia("(max-width: 767px)").matches) || navigator.userAgent.toLowerCase().includes("mobi"))
-    {
-     document.querySelector(".cta-buttonnav").innerText = "";
-     document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
-        
-    } else {
-        console.log("The screen is not in phone mode.");
-        // Add any additional functionality for non-phone mode here
-    }
+        {
+         document.querySelector(".cta-buttonnav").innerText = "";
+         document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
+            
+        } 
+        else 
+        {
+            document.querySelector(".cta-buttonnav").innerHTML = "";
+            document.querySelector(".cta-buttonnav").innerText = "Try Elixpo Art Now";
+        }
+    });
+
+    window.addEventListener("resize", function () {
+        if ((window.matchMedia("(max-width: 767px)").matches) || navigator.userAgent.toLowerCase().includes("mobi"))
+            {
+             document.querySelector(".cta-buttonnav").innerText = "";
+             document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
+                
+            }
+            else 
+            {
+                document.querySelector(".cta-buttonnav").innerHTML = "";
+                document.querySelector(".cta-buttonnav").innerText = "Try Elixpo Art Now";
+            } 
+        });
