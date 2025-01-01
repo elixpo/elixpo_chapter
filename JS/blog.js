@@ -1,11 +1,11 @@
-hljs.highlightAll();
+
   let backToTopButton = document.getElementById("back-to-top");
 
+  hljs.highlightAll();
 
-
-    // document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
-    //     redirectTo("src/create");
-    //     });
+    document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
+        redirectTo("src/create");
+        });
 
         
     backToTopButton.onclick = function () {
@@ -45,3 +45,13 @@ hljs.highlightAll();
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
     };
+
+    if ((window.matchMedia("(max-width: 767px)").matches) || navigator.userAgent.toLowerCase().includes("mobi"))
+    {
+     document.querySelector(".cta-buttonnav").innerText = "";
+     document.querySelector(".cta-buttonnav").innerHTML = "<i class='bi bi-palette'></i>";
+        
+    } else {
+        console.log("The screen is not in phone mode.");
+        // Add any additional functionality for non-phone mode here
+    }

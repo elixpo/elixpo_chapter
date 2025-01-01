@@ -449,6 +449,7 @@ strong {
 }
 
 @media (max-width: 600px) {
+
     .floating-navbar {
         position: fixed;
         top: 20px;
@@ -469,17 +470,7 @@ strong {
         width: 80%;
     }
 
-    .cta-buttonnav {
-        display: inline-block;
-        background-color: #1d1d1d;
-        color: #ffffff;
-        padding: 7px 7px;
-        border-radius: 30px;
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        font-size: smaller;
-    }
+
 
     .video-container iframe {
         width: 100%;
@@ -509,5 +500,17 @@ strong {
 
     h3 {
         font-size: 1.3rem;
+    }
+    .cta-buttonnav {
+        height: 30px;
+        width: 20px;
+        border-radius: 32px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #5569c3;
+    }
+    .cta-buttonnav > i {
+        font-size: 1.5em;
     }
 }
