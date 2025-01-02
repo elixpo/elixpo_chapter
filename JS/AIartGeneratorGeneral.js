@@ -159,7 +159,7 @@ const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-fou
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
-        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, controller) {
+        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, numberOfImages, controller) {
             document.getElementById("NotifTxt").innerText = "Generating Images...";
             document.getElementById("savedMsg").classList.add("display");
             // const model = Math.random() < 0.5 ? "flux" : "boltning";
@@ -268,8 +268,33 @@ let controller;
                                 document.getElementById("savedMsg").classList.remove("display");
                             }, 1500);
                             document.getElementById("NotifTxt").innerText = "Greetings";
-                            handleStaticModeExclusive(currentIndex + 1);
-                            reject(new Error('Node.js server is not running.'));
+                            // handleStaticModeExclusive(currentIndex + 1);
+                            const errorImages = [
+                                "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/ServerDownFeed%2Felixpo-ai-generated-image%20(52).jpg?alt=media&token=8b18e83b-0e36-4c08-96f2-773d853eada2",
+                                "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/ServerDownFeed%2Felixpo-ai-generated-image%20(53).jpg?alt=media&token=9b7e1139-64cb-4ede-a1d1-3a25c00d5ad9"
+                            ];
+
+                            for (let i = 1; i <= numberOfImages; i++) {
+                                const imgElement = document.getElementById("imageRecieve" + i);
+                                if (imgElement) {
+                                    imgElement.src = errorImages[i % errorImages.length];
+                                    imgElement.style.filter = 'blur(0)';
+                                    document.querySelector(".imageTile" + i).classList.remove("generating");
+                                    document.querySelector(".imageTile" + i).classList.add("generated");
+                                }
+                            }
+
+                            setTimeout(() => {
+                                handleStaticModeExclusive(numberOfImages);
+                                document.getElementById("NotifTxt").innerText = "Server Offline!";
+                                document.getElementById("savedMsg").classList.add("display");
+                                setTimeout(() => {
+                                    document.getElementById("savedMsg").classList.remove("display");
+                                    document.getElementById("NotifTxt").innerText = "Greetings";
+                                }, 1500);
+                            }, 5000);
+                            
+                            
                         } else {
                             reject(error);
                         }
@@ -305,7 +330,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
 
     for (let i = 0; i < numberOfImages; i++) {
         const genNumber = (i + 1).toString();
-        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, model, genNumber, controller));
+        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, model, genNumber, numberOfImages, controller));
     }
 
     try {
