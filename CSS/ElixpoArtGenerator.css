@@ -336,7 +336,8 @@ overflow-x: hidden;
 }
 
 .typeOfImageTile > * {
-    opacity: 0.25;
+    opacity: 0.35;
+    
 }
 
 .typeOfImageTile span {
@@ -605,7 +606,7 @@ overflow-x: hidden;
 }
 
 .typeOfModelTile > * {
-  opacity: 0.25;
+  opacity: 0.35;
 }
 
 .typeOfModelTile span {

@@ -51,8 +51,12 @@ promptTextInput.addEventListener("input", function() {
     redirectTo("src/auth");
   });
   document.getElementById("navBarDocs").addEventListener("click", function() {
-    redirectTo("src/blogs/elixpo_art");
+    redirectTo("blogs/elixpo_art");
   });
+
+  document.getElementById("navBarGitHub").addEventListener("click", () => {
+    location.href = "https://github.com/Circuit-Overtime/elixpo_ai_chapter"
+  })
 
 const uniqueRand = (min, max, prev) => {
   let next = prev;

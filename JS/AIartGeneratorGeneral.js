@@ -42,15 +42,31 @@ let timeoutId;
     "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F9.jpeg?alt=media&token=47923f1f-516a-4263-a613-d144e3ef6eb9",
     "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F10.jpeg?alt=media&token=88686e4f-c02c-4937-af00-3a471b7cf574"
   ]
-//new commit
+
 
 window.onload = function() {
     document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
     globalThis.modelType = "Flux-Core";
     globalThis.RatioValue = "1:1";
-    document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+modelType).style.opacity = "1" : document.querySelector("."+modelType).style.opacity = "0";
-    document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+imageVarType).style.opacity = "1" : document.querySelector("."+imageVarType).style.opacity = "0";
+    if (document.getElementById("imageTiles").classList.contains("hidden")) {
+        document.querySelector("." + modelType).style.opacity = "1";
+        document.querySelector("." + modelType).style.border = "1px solid #f4bb00";
+    } else {
+        document.querySelector("." + modelType).style.opacity = "0";
+        document.querySelector("." + modelType).style.border = "none";
+    }
+
+    if (document.getElementById("imageTiles").classList.contains("hidden")) {
+        document.querySelector("." + imageVarType).style.opacity = "1";
+        document.querySelector("." + imageVarType).style.border = "1px solid #f4bb00";
+    } else {
+        document.querySelector("." + imageVarType).style.opacity = "0";
+        document.querySelector("." + imageVarType).style.border = "none";
+    }
+
+
+
     globalThis.width = 2048;
     globalThis.height = 2048;
     globalThis.encodedPrompt = "";
@@ -143,7 +159,7 @@ const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-fou
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
-        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, controller) {
+        async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, numberOfImages, controller) {
             document.getElementById("NotifTxt").innerText = "Generating Images...";
             document.getElementById("savedMsg").classList.add("display");
             // const model = Math.random() < 0.5 ? "flux" : "boltning";
@@ -252,8 +268,33 @@ let controller;
                                 document.getElementById("savedMsg").classList.remove("display");
                             }, 1500);
                             document.getElementById("NotifTxt").innerText = "Greetings";
-                            handleStaticModeExclusive(currentIndex + 1);
-                            reject(new Error('Node.js server is not running.'));
+                            // handleStaticModeExclusive(currentIndex + 1);
+                            const errorImages = [
+                                "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/ServerDownFeed%2Felixpo-ai-generated-image%20(52).jpg?alt=media&token=8b18e83b-0e36-4c08-96f2-773d853eada2",
+                                "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/ServerDownFeed%2Felixpo-ai-generated-image%20(53).jpg?alt=media&token=9b7e1139-64cb-4ede-a1d1-3a25c00d5ad9"
+                            ];
+
+                            for (let i = 1; i <= numberOfImages; i++) {
+                                const imgElement = document.getElementById("imageRecieve" + i);
+                                if (imgElement) {
+                                    imgElement.src = errorImages[i % errorImages.length];
+                                    imgElement.style.filter = 'blur(0)';
+                                    document.querySelector(".imageTile" + i).classList.remove("generating");
+                                    document.querySelector(".imageTile" + i).classList.add("generated");
+                                }
+                            }
+
+                            setTimeout(() => {
+                                handleStaticModeExclusive(numberOfImages);
+                                document.getElementById("NotifTxt").innerText = "Server Offline!";
+                                document.getElementById("savedMsg").classList.add("display");
+                                setTimeout(() => {
+                                    document.getElementById("savedMsg").classList.remove("display");
+                                    document.getElementById("NotifTxt").innerText = "Greetings";
+                                }, 1500);
+                            }, 5000);
+                            
+                            
                         } else {
                             reject(error);
                         }
@@ -289,7 +330,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
 
     for (let i = 0; i < numberOfImages; i++) {
         const genNumber = (i + 1).toString();
-        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, model, genNumber, controller));
+        promises.push(generateImageAsync(encodedPrompt, width, height, seeds[i], aspectRatio, theme, model, genNumber, numberOfImages, controller));
     }
 
     try {
@@ -875,8 +916,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             modelType = model.className;
             Array.from(models).forEach(m => {
                 m.style.opacity = ".25";
+                m.style.border = "none"
             });
             model.style.opacity = "1";
+            model.style.border = "1px solid #f4bb00";
         });
     });
 
@@ -886,8 +929,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             console.log(imageVarType);
             Array.from(children).forEach(c => {
                 c.style.opacity = ".25";
+                c.style.border = "none";
             });
             child.style.opacity = "1";
+            child.style.border = "1px solid #f4bb00";
             document.getElementById("isoImageType").style.background = 'url("../../CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
             document.getElementById("isoImageType").style.backgroundSize = "cover";
             document.getElementById("isoImageType").style.backgroundPosition = "50% 30%";

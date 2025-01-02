@@ -180,7 +180,8 @@ function scaleContainer() {
    }
 }
 
-document.getElementById("usernameGuestInput").addEventListener("keypress", function(event) {
+document.getElementById("usernameGuestInput").addEventListener("keypress", async function(event) {
+
     if(event.key == "Enter")
     {
         event.preventDefault();
@@ -190,15 +191,28 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", funct
         if((this.value.trim() !== "") && this.value.length >= 3 && (/^[a-zA-Z]+$/g).test(this.value))
         {
             
+            const ip = await publicIp(); // Wait for the public IP to resolve
+
             document.getElementById("userAcceptance").style.color = "white";
             typeWriterHTML("userAcceptance", "namespace --accepted", 50, function() {
                 console.log("fifth typing complete!");
             });
+        
             document.getElementById("usernameGuestInput").style.pointerEvents = "none";
             document.getElementById("usernameGuestInput").style.color = "#555";
-            db.collection('guests').doc(this.value.toLowerCase()+timestamp).set({
+        
+            // Ensure the public IP is passed as a resolved value
+            db.collection('guests').doc(this.value.toLowerCase() + timestamp).set({
                 username: this.value,
-                date: date
+                date: date,
+                timestamp: timestamp,
+                tempUsrID: generateUUID(),
+                userAgent: navigator.userAgent,
+                guest: true,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                locale: navigator.language,
+                referrer: document.referrer || "direct",
+                publicIpAddr: ip, // Use the resolved IP value here
             })
             .then(() => {
                 localStorage.setItem("ElixpoAIUser", this.value);
@@ -210,10 +224,12 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", funct
                 typeWriterHTML("userSaved", "name --saved True;", 50, function() {
                     console.log("fifth typing complete!");
                 });
+        
                 document.getElementById("userNameGuest").style.display = "none";
                 document.getElementById("usernameGuestInput").style.pointerEvents = "none";
-                 redirectTo("src/create");
-            })
+        
+                redirectTo("src/create");
+            });
            
         }
         else 
@@ -273,6 +289,26 @@ document.getElementById("guestAuth").addEventListener("click", () => {
     
     }, 1300);
 });
+
+
+function generateUUID() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+    );
+}
+
+async function publicIp() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip; // Return the public IP
+    } catch (error) {
+        console.error("Error fetching public IP:", error);
+        return null; // Handle errors and return null or a default value
+    }
+}
+
+
 
 
 window.addEventListener('resize', scaleContainer);
