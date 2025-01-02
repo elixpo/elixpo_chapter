@@ -27,7 +27,13 @@ const availableModels = [
 ];
 
 
-app.use(cors());
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    next();
+});
+
 
 // File paths for CSV log and Instagram session
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
@@ -356,11 +362,13 @@ app.post('/ping', (req, res) => {
   res.send('OK');
 });
 
+app.get('/', (req, res) => {
+	res.send('hello world');
+});
 
 
-
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '10.42.0.1', async () => {
+  console.log(`Server running on http://10.42.0.1:${PORT}`);
   await initializeInstagramClient(); 
 });
 
