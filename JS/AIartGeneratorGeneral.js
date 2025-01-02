@@ -42,15 +42,31 @@ let timeoutId;
     "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F9.jpeg?alt=media&token=47923f1f-516a-4263-a613-d144e3ef6eb9",
     "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F10.jpeg?alt=media&token=88686e4f-c02c-4937-af00-3a471b7cf574"
   ]
-//new commit
+
 
 window.onload = function() {
     document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
     globalThis.modelType = "Flux-Core";
     globalThis.RatioValue = "1:1";
-    document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+modelType).style.opacity = "1" : document.querySelector("."+modelType).style.opacity = "0";
-    document.getElementById("imageTiles").classList.contains("hidden") ? document.querySelector("."+imageVarType).style.opacity = "1" : document.querySelector("."+imageVarType).style.opacity = "0";
+    if (document.getElementById("imageTiles").classList.contains("hidden")) {
+        document.querySelector("." + modelType).style.opacity = "1";
+        document.querySelector("." + modelType).style.border = "1px solid #f4bb00";
+    } else {
+        document.querySelector("." + modelType).style.opacity = "0";
+        document.querySelector("." + modelType).style.border = "none";
+    }
+
+    if (document.getElementById("imageTiles").classList.contains("hidden")) {
+        document.querySelector("." + imageVarType).style.opacity = "1";
+        document.querySelector("." + imageVarType).style.border = "1px solid #f4bb00";
+    } else {
+        document.querySelector("." + imageVarType).style.opacity = "0";
+        document.querySelector("." + imageVarType).style.border = "none";
+    }
+
+
+
     globalThis.width = 2048;
     globalThis.height = 2048;
     globalThis.encodedPrompt = "";
@@ -875,8 +891,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             modelType = model.className;
             Array.from(models).forEach(m => {
                 m.style.opacity = ".25";
+                m.style.border = "none"
             });
             model.style.opacity = "1";
+            model.style.border = "1px solid #f4bb00";
         });
     });
 
@@ -886,8 +904,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             console.log(imageVarType);
             Array.from(children).forEach(c => {
                 c.style.opacity = ".25";
+                c.style.border = "none";
             });
             child.style.opacity = "1";
+            child.style.border = "1px solid #f4bb00";
             document.getElementById("isoImageType").style.background = 'url("../../CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
             document.getElementById("isoImageType").style.backgroundSize = "cover";
             document.getElementById("isoImageType").style.backgroundPosition = "50% 30%";

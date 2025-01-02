@@ -55,7 +55,7 @@ document.getElementById("aiArtCreate").addEventListener("click", function() {
   
 document.getElementById("galleryVisit").addEventListener("click", function() {
   
-    redirectTo("src/gallery");
+    redirectTo("blogs/elixpo_art");
 });
 
 document.getElementById("feedVisit").addEventListener("click", function() {
