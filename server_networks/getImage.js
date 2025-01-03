@@ -8,7 +8,7 @@ import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
 
 const app = express();
-const PORT = 3000;
+const PORT = 3008;
 const requestQueue = [];
 let endPointRequestQueue = [];
 const MAX_QUEUE_LENGTH = 15;
@@ -20,6 +20,11 @@ const defaultHeight = 576;
 const defaultModel = 'flux';
 const defaultEnhance = false;
 const defaultPrivate = false;
+
+const MAX_CONCURRENT_REQUESTS = 4;
+let activeQueueWorkers = 0;
+let activeRequestWorkers = 0;
+
 
 const availableModels = [
   "flux", "flux-realism", "flux-cablyai", "flux-anime",
@@ -33,6 +38,43 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     next();
 });
+
+
+app.use((req, res, next) => {
+  requestQueue.push(req);
+  console.log('Request added to queue:', req.originalUrl);
+
+  if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
+    processRequestQueue(); // Trigger processing
+  }
+
+  res.on('finish', () => {
+    // Optional: Remove request from queue if no longer needed
+  });
+
+  next();
+});
+
+async function processRequestQueue() {
+  while (activeRequestWorkers < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
+    const req = requestQueue.shift(); // Remove the request from the queue
+    activeRequestWorkers++;
+
+    (async () => {
+      try {
+        // Process your request logic here.
+        console.log("Processing request:", req.originalUrl);
+        // Simulate processing with a delay (replace with actual logic)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error("Error processing request:", error);
+      } finally {
+        activeRequestWorkers--;
+        processRequestQueue(); // Trigger the next task
+      }
+    })();
+  }
+}
 
 
 // File paths for CSV log and Instagram session
@@ -282,45 +324,44 @@ function generateRandomSeed() {
 
 
 async function processQueue() {
-  // If the queue is not empty, process the next request
-  if (endPointRequestQueue.length > 0) {
-    const { res, prompt, queryParams } = endPointRequestQueue.shift(); // Get the first request in the queue
-    
-    try {
-      // Use provided values or fallback to defaults
-      const { 
-        width, height, seed, model, enhance, privateMode 
-      } = queryParams;
-  
-      const finalWidth = width ? parseInt(width) : defaultWidth;
-      const finalHeight = height ? parseInt(height) : defaultHeight
-      const finalSeed = seed || generateRandomSeed();
-      const finalModel = model || defaultModel;
-      const finalEnhance = enhance !== undefined ? enhance === 'true' : defaultEnhance;
-      const finalPrivate = privateMode !== undefined ? privateMode === 'true' : defaultPrivate;
-  
-      // Construct the URL with query params
-      const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${finalWidth}&height=${finalHeight}&seed=${finalSeed}&model=${finalModel}&nologo=1&enhance=${finalEnhance}&private=${finalPrivate}`;
-  
-      // Fetch the image from the external URL
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-  
-      // Set the response headers and send the image
-      res.set('Content-Type', 'image/png');
-      res.send(response.data);
-  
-    } catch (error) {
-      // Handle connection errors gracefully
-      if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
-        return res.status(503).json({ error: "Connection error, please try again later." });
-      }
-      res.status(500).json({ error: "Failed to generate image" });
-    }
+  while (activeQueueWorkers < MAX_CONCURRENT_REQUESTS && endPointRequestQueue.length > 0) {
+    const { res, prompt, queryParams } = endPointRequestQueue.shift(); // Remove the request from the queue
+    activeQueueWorkers++;
 
-    // Continue processing the next request after the current one is done
-    processQueue();
+    (async () => {
+      try {
+        const { 
+          width, height, seed, model, enhance, privateMode 
+        } = queryParams;
+
+        const finalWidth = width ? parseInt(width) : defaultWidth;
+        const finalHeight = height ? parseInt(height) : defaultHeight;
+        const finalSeed = seed || generateRandomSeed();
+        const finalModel = model || defaultModel;
+        const finalEnhance = enhance !== undefined ? enhance === 'true' : defaultEnhance;
+        const finalPrivate = privateMode !== undefined ? privateMode === 'true' : defaultPrivate;
+
+        const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${finalWidth}&height=${finalHeight}&seed=${finalSeed}&model=${finalModel}&nologo=1&enhance=${finalEnhance}&private=${finalPrivate}`;
+
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        res.set('Content-Type', 'image/png');
+        res.send(response.data);
+
+      } catch (error) {
+        if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
+          res.status(503).json({ error: "Connection error, please try again later." });
+        } else {
+          res.status(500).json({ error: "Failed to generate image" });
+        }
+      } finally {
+        activeQueueWorkers--;
+        processQueue(); // Trigger the next task
+      }
+    })();
   }
 }
+
+
 
 
 app.get('/c/:prompt', async (req, res) => {
@@ -367,9 +408,9 @@ app.get('/', (req, res) => {
 });
 
 
-app.listen(PORT, '10.42.0.1', async () => {
+app.listen(PORT, '10.42.0.56', async () => {
   console.log(`Server running on http://10.42.0.1:${PORT}`);
-  await initializeInstagramClient(); 
+  // await initializeInstagramClient(); 
 });
 
 
