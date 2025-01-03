@@ -8,7 +8,7 @@ import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
 
 const app = express();
-const PORT = 3008;
+const PORT = 3000;
 const requestQueue = [];
 let endPointRequestQueue = [];
 const MAX_QUEUE_LENGTH = 15;
@@ -408,7 +408,7 @@ app.get('/', (req, res) => {
 });
 
 
-app.listen(PORT, '10.42.0.56', async () => {
+app.listen(PORT, '10.42.0.1', async () => {
   console.log(`Server running on http://10.42.0.1:${PORT}`);
   // await initializeInstagramClient(); 
 });
