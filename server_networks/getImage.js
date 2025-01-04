@@ -48,7 +48,7 @@ let activeQueueWorkers = 0;
 let activeRequestWorkers = 0;
 
 
-const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
+
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
 const sessionFilePath = './ig_session.json'
 
@@ -487,93 +487,112 @@ app.get('/c/:prompt', limiter, async (req, res) => {
   }
 });
 
-upstreamFeed.onmessage = (event) => {
-  let parsedData = JSON.parse(event.data);
 
-  // Only proceed if nologo is true
-  if (parsedData.nologo) {
-    const filteredData = {
-      width: parsedData.width,
-      height: parsedData.height,
-      seed: parsedData.seed,
-      model: parsedData.model,
-      enhance: parsedData.enhance,
-      nologo: parsedData.nologo,
-      negative_prompt: parsedData.negative_prompt,
-      nofeed: parsedData.nofeed,
-      safe: parsedData.safe,
-      prompt: parsedData.prompt,
-      ip: parsedData.ip,
-      status: parsedData.status,
-      concurrentRequests: parsedData.concurrentRequests,
-      timingInfo: parsedData.timingInfo,
-    };
-
-    // Broadcast the filtered data to all clients
-    feedClients.forEach((client) => client.res.write(`data: ${JSON.stringify(filteredData)}\n\n`));
-  }
-};
-
-
-upstreamFeed.onerror = (err) => {
-  console.error('Error with upstream feed', err);
-};
 
 
 
 app.get('/feed', async (req, res) => {
-  let publicIp = "";
-
   // Set headers for SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  // Keep the connection open
+  // Flush headers to establish SSE connection
   res.flushHeaders();
+
+  let publicIp = "";
 
   // Fetch public IP of the client
   try {
     const response = await fetch('https://api.ipify.org?format=json');
     const data = await response.json();
-    
-    // Split the IP by dots and join with hyphens
     publicIp = data.ip.split('.').join('-');
-    
     console.log(`Client public IP: ${publicIp}`);
   } catch (error) {
     console.error('Error fetching public IP:', error);
-    
-    // Fallback to request IP if the fetch fails
-    publicIp = req.ip.split('.').join('-');
+    publicIp = req.ip.split('.').join('-'); // Fallback to client IP
   }
 
+  // Add client to feedClients
   const clientId = publicIp;
   feedClients.push({ id: clientId, res });
 
+  // Add client to Firebase
   try {
-    const db = getDatabase(); // Ensure you have the correct db reference
+    const db = getDatabase();
     const clientRef = ref(db, `feedClients/${publicIp}`);
-    await set(clientRef, true); // Store the IP in Firebase
+    await set(clientRef, true);
     console.log(`Client connected: ${clientId}. Total feedClients: ${feedClients.length}`);
   } catch (error) {
     console.error("Error storing client IP in Firebase:", error);
   }
 
-  // When the request is closed (client disconnects)
+  // Start the upstream feed connection only when the first client connects
+  if (feedClients.length === 1) {
+    const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
+
+    upstreamFeed.onmessage = (event) => {
+      const parsedData = JSON.parse(event.data);
+
+      // Only proceed if nologo is true
+      if (parsedData.nologo) {
+        const filteredData = {
+          width: parsedData.width,
+          height: parsedData.height,
+          seed: parsedData.seed,
+          model: parsedData.model,
+          enhance: parsedData.enhance,
+          nologo: parsedData.nologo,
+          negative_prompt: parsedData.negative_prompt,
+          nofeed: parsedData.nofeed,
+          safe: parsedData.safe,
+          prompt: parsedData.prompt,
+          ip: parsedData.ip,
+          status: parsedData.status,
+          concurrentRequests: parsedData.concurrentRequests,
+          timingInfo: parsedData.timingInfo,
+        };
+
+        // Broadcast the filtered data to all connected clients
+        feedClients.forEach((client) =>
+          client.res.write(`data: ${JSON.stringify(filteredData)}\n\n`)
+        );
+      }
+    };
+
+    upstreamFeed.onerror = (err) => {
+      console.error('Error with upstream feed', err);
+    };
+
+    // Clean up when the last client disconnects
+    upstreamFeed.onclose = () => {
+      console.log('Upstream feed closed');
+    };
+
+    // Monitor feedClients and close the upstream feed when no clients are connected
+    const interval = setInterval(() => {
+      if (feedClients.length === 0) {
+        console.log('No clients connected. Closing upstream feed.');
+        upstreamFeed.close();
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+
+  // Handle client disconnection
   req.on('close', async () => {
     feedClients = feedClients.filter((client) => client.id !== clientId);
     console.log(`Client disconnected: ${clientId}. Total feedClients: ${feedClients.length}`);
-    
     try {
-      const db = getDatabase(); // Ensure correct db reference
+      const db = getDatabase();
       const clientRef = ref(db, `feedClients/${publicIp}`);
-      await remove(clientRef); // Remove the client IP from Firebase
+      await remove(clientRef);
     } catch (error) {
-      console.log("Error removing client from feedClients:", error);
+      console.error("Error removing client from Firebase:", error);
     }
   });
 });
+
 
 
 app.get('/models', (req, res) => {
