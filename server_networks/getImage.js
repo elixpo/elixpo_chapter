@@ -75,6 +75,9 @@ const availableRatios =
 
 
 
+//only use the queue for the download-image endpoint
+//use the endpointRequestQueue for the /c/:prompt endpoint
+// and dont let the /c connection die if it takes time 
 app.use((req, res, next) => {
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -82,7 +85,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   // Add request to the queue
-  requestQueue.push(req);
+  
   console.log('Request added to queue:', req.originalUrl);
   console.log('Request queue length:', requestQueue.length);
 
@@ -90,14 +93,6 @@ app.use((req, res, next) => {
   if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
     processRequestQueue(); // Trigger processing
   }
-
-  // Remove request from queue after processing
-  res.on('finish', () => {
-    requestQueue.shift(); // Remove request after it is finished
-    console.log('Request processed:', req.originalUrl);
-  });
-
-  // Move to the next middleware
   next();
 });
 
@@ -267,7 +262,7 @@ app.post('/instagram-upload', async (req, res) => {
 app.post('/download-image', async (req, res) => {
   const { imageUrl } = req.body;
   const startTime = Date.now(); // Start time to track response time
-
+  requestQueue.push(req); // Add the request to the queue
   // Extract parameters from imageUrl
   const urlParams = new URLSearchParams(imageUrl.split('?')[1]);
   const width = parseInt(urlParams.get('width'), 10);
@@ -302,6 +297,10 @@ app.post('/download-image', async (req, res) => {
 
     logRequest(imageUrl, response.status, aspectRatio, seed, model, Date.now() - startTime); // Log successful request
     res.json({ base64 });
+    res.on('finish', () => {
+      requestQueue.shift(); // Remove request after it is finished
+      console.log('Request processed:', req.originalUrl);
+    });
   } catch (error) {
     console.error('Error fetching image:', error);
     logRequest(imageUrl, 500, aspectRatio, seed, model, Date.now() - startTime); // Log error request
@@ -616,8 +615,8 @@ app.get('/', (req, res) => {
 });
 
 
-app.listen(PORT, '10.42.0.1', async () => {
-  console.log(`Server running on http://10.42.0.1:${PORT}`);
+app.listen(PORT, '10.42.0.57', async () => {
+  console.log(`Server running on http://10.42.0.57:${PORT}`);
   // await initializeInstagramClient(); 
 });
 

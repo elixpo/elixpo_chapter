@@ -80,6 +80,7 @@ window.onload = function() {
     globalThis.specialDir = "";
     // document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
     downloadUrl = "https://elixpo-art-node.serveo.net";
+    // downloadUrl = "http://10.42.0.57:3000"
     pingUrl = "https://elixpo-art-node.serveo.net";
 
 
