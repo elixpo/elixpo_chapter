@@ -85,7 +85,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   requestQueue.push(req);
-  // console.log('Request added to queue:', req.originalUrl);
+  console.log('Request added to queue:', req.originalUrl);
 
   if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
     processRequestQueue(); // Trigger processing
@@ -117,10 +117,10 @@ async function processRequestQueue() {
 
     (async () => {
       try {
-        // console.log("Processing request:", req.originalUrl);
+        console.log("Processing request:", req.originalUrl);
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
-        // console.error("Error processing request:", error);
+        console.error("Error processing request:", error);
       } finally {
         activeRequestWorkers--;
         processRequestQueue(); 
@@ -543,7 +543,7 @@ app.get('/feed', async (req, res) => {
     // Split the IP by dots and join with hyphens
     publicIp = data.ip.split('.').join('-');
     
-    // console.log(`Client public IP: ${publicIp}`);
+    console.log(`Client public IP: ${publicIp}`);
   } catch (error) {
     console.error('Error fetching public IP:', error);
     
@@ -558,7 +558,7 @@ app.get('/feed', async (req, res) => {
     const db = getDatabase(); // Ensure you have the correct db reference
     const clientRef = ref(db, `feedClients/${publicIp}`);
     await set(clientRef, true); // Store the IP in Firebase
-    // console.log(`Client connected: ${clientId}. Total feedClients: ${feedClients.length}`);
+    console.log(`Client connected: ${clientId}. Total feedClients: ${feedClients.length}`);
   } catch (error) {
     console.error("Error storing client IP in Firebase:", error);
   }
@@ -566,7 +566,7 @@ app.get('/feed', async (req, res) => {
   // When the request is closed (client disconnects)
   req.on('close', async () => {
     feedClients = feedClients.filter((client) => client.id !== clientId);
-    // console.log(`Client disconnected: ${clientId}. Total feedClients: ${feedClients.length}`);
+    console.log(`Client disconnected: ${clientId}. Total feedClients: ${feedClients.length}`);
     
     try {
       const db = getDatabase(); // Ensure correct db reference
