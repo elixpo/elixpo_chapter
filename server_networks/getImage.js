@@ -6,9 +6,30 @@ import path from 'path';
 import axios from 'axios';
 import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getDatabase, ref, push } from "firebase/database";
+import { v4 as uuidv4 } from "uuid";
+import {rateLimit} from 'express-rate-limit';
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
+  authDomain: "elixpoai.firebaseapp.com",
+  databaseURL: "https://elixpoai-default-rtdb.firebaseio.com",
+  projectId: "elixpoai",
+  storageBucket: "elixpoai.appspot.com",
+  messagingSenderId: "718153866206",
+  appId: "1:718153866206:web:671c00aba47368b19cdb4f"
+};
+
+const FBapp = initializeApp(firebaseConfig);          
+const db = getFirestore(FBapp);
+const dbRef = getDatabase(FBapp);
 
 const app = express();
 const PORT = 3000;
+const serverIP = "10.42.0.1";
 const requestQueue = [];
 let endPointRequestQueue = [];
 const MAX_QUEUE_LENGTH = 15;
@@ -30,6 +51,19 @@ const availableModels = [
   "flux", "flux-realism", "flux-cablyai", "flux-anime",
   "flux-3d", "any-dark", "flux-pro", "turbo"
 ];
+
+const availableThemes = 
+[
+  "fanatsy", "halloween", "structure", "crayon",
+  "space", "chromatic", "anime", "cyberpunk",
+  "landscape", "samurai", "wpap", "vintage",
+  "pixel", "normal", "synthwave", "special",
+]
+
+const availableRatios = 
+[
+  "16:9", "4:3", "1:1", "9:16", "3:2"
+]
 
 
 app.use((req, res, next) => {
@@ -54,6 +88,18 @@ app.use((req, res, next) => {
 
   next();
 });
+
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 3, // Limit each IP to 3 requests per `windowMs`
+  message: {
+    error: "Too many requests, please try again after a minute.",
+  },
+  keyGenerator: (req) => req.ip, // Use IP address as the key
+});
+
+
 
 async function processRequestQueue() {
   while (activeRequestWorkers < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
@@ -323,15 +369,43 @@ function generateRandomSeed() {
 }
 
 
+
+async function storeRequestDetails(userDetails, prompt, specifications) {
+  try {
+    const docId = `${Date.now()}-${uuidv4()}`; // Use timestamp + UUID for unique IDs
+    const data = 
+    {
+      ip: userDetails.ip,
+      userAgent: userDetails.userAgent || "Unknown",
+      referrer: userDetails.referrer || "Direct",
+      timestamp: userDetails.timestamp,
+      method: userDetails.method || "GET" ,
+      url: userDetails.url || "/",
+      prompt: prompt,
+      createdAt: new Date().toISOString(),
+      fullPrompt: prompt,
+      specifications: specifications
+    }
+
+    const requestsRef = ref(dbRef, "requests");
+    await push(requestsRef, data);
+    console.log("Request details stored successfully:", docId);
+  } catch (error) {
+    console.error("Error storing request details:", error);
+  }
+}
+
+
+
 async function processQueue() {
   while (activeQueueWorkers < MAX_CONCURRENT_REQUESTS && endPointRequestQueue.length > 0) {
-    const { res, prompt, queryParams } = endPointRequestQueue.shift(); // Remove the request from the queue
+    const { res, prompt, queryParams, req } = endPointRequestQueue.shift(); // Remove the request from the queue
     activeQueueWorkers++;
 
     (async () => {
       try {
         const { 
-          width, height, seed, model, enhance, privateMode 
+          width, height, seed, model, enhance, personal 
         } = queryParams;
 
         const finalWidth = width ? parseInt(width) : defaultWidth;
@@ -339,13 +413,28 @@ async function processQueue() {
         const finalSeed = seed || generateRandomSeed();
         const finalModel = model || defaultModel;
         const finalEnhance = enhance !== undefined ? enhance === 'true' : defaultEnhance;
-        const finalPrivate = privateMode !== undefined ? privateMode === 'true' : defaultPrivate;
+        const finalPrivate = personal !== undefined ? personal === 'true' : defaultPrivate;
 
         const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${finalWidth}&height=${finalHeight}&seed=${finalSeed}&model=${finalModel}&nologo=1&enhance=${finalEnhance}&private=${finalPrivate}`;
+        // const imageUrl = "https://m.media-amazon.com/images/I/61Rx9tHudUL.jpg"
+
+        let specifications = { width: finalWidth, height: finalHeight, seed: finalSeed, model: finalModel, enhance: finalEnhance, privateMode: finalPrivate };
+        let userDetails = { 
+          ip: (await axios.get('https://api.ipify.org?format=json')).data.ip,
+          userAgent: req.get('User-Agent'), 
+          referrer: req.get('Referrer'), 
+          timestamp: new Date().toISOString(),
+          method: req.method,
+          url: req.originalUrl
+        };
+        let fullPrompt = imageUrl
+
+        storeRequestDetails(userDetails, fullPrompt, specifications);
 
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
         res.set('Content-Type', 'image/png');
         res.send(response.data);
+        console.log(response.data)
 
       } catch (error) {
         if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
@@ -353,6 +442,10 @@ async function processQueue() {
         } else {
           res.status(500).json({ error: "Failed to generate image" });
         }
+        if (error.response && error.response.status === 504) {
+          res.status(504).json({ error: "Sorry the server is offline" });
+        } else 
+        console.log(error)
       } finally {
         activeQueueWorkers--;
         processQueue(); // Trigger the next task
@@ -364,7 +457,7 @@ async function processQueue() {
 
 
 
-app.get('/c/:prompt', async (req, res) => {
+app.get('/c/:prompt', limiter, async (req, res) => {
   try {
     const prompt = req.params.prompt;
 
@@ -379,7 +472,7 @@ app.get('/c/:prompt', async (req, res) => {
     } = req.query;
 
     // Add the request to the queue
-    endPointRequestQueue.push({ res, prompt, queryParams: req.query });
+    endPointRequestQueue.push({ res, prompt, queryParams: req.query, req });
 
     // If the queue is empty, start processing the first request
     if (endPointRequestQueue.length === 1) {
@@ -398,18 +491,25 @@ app.get('/models', (req, res) => {
   res.json(availableModels);
 });
 
+app.get('/themes', (req, res) => {
+  res.json(availableThemes);
+}); 
+
+app.get('/ratios', (req, res) => {
+  res.json(availableRatios);
+});
 
 app.post('/ping', (req, res) => {
   res.send('OK');
 });
 
 app.get('/', (req, res) => {
-	res.send('hello world');
+	res.send('Visit https://circuit-overtime.github.io/Elixpo_ai_pollinations/ for a better experience');
 });
 
 
-app.listen(PORT, '10.42.0.1', async () => {
-  console.log(`Server running on http://10.42.0.1:${PORT}`);
+app.listen(PORT, serverIP, async () => {
+  console.log(`Server running on http://${serverIP}:${PORT}`);
   // await initializeInstagramClient(); 
 });
 
