@@ -76,27 +76,34 @@ const availableRatios =
 
 
 app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    next();
-});
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-
-app.use((req, res, next) => {
+  // Add request to the queue
   requestQueue.push(req);
   console.log('Request added to queue:', req.originalUrl);
+  console.log('Request queue length:', requestQueue.length);
 
+  // Trigger processing if the queue length is within limits
   if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
     processRequestQueue(); // Trigger processing
   }
 
+  // Remove request from queue after processing
   res.on('finish', () => {
-    // Optional: Remove request from queue if no longer needed
+    requestQueue.shift(); // Remove request after it is finished
+    console.log('Request processed:', req.originalUrl);
   });
 
+  // Move to the next middleware
   next();
 });
+
+
+app.use(cors());
+app.use(express.json());
 
 
 const limiter = rateLimit({
@@ -170,8 +177,7 @@ const fallbackImageUrls = [
   'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(5).jpg?alt=media&token=89b88057-5f9e-452c-b7c4-05eb2d90a2d7'
 ];
 
-app.use(cors());
-app.use(express.json());
+
 
 let ig; // Instagram API client
 
@@ -211,16 +217,7 @@ const initializeInstagramClient = async () => {
 };
 
 // Middleware to track request queue length and log details
-app.use((req, res, next) => {
-  requestQueue.push(req);
-  console.log('Request queue length:', requestQueue.length);
 
-  res.on('finish', () => {
-    requestQueue.shift(); // Remove the request after it is finished
-  });
-
-  next();
-});
 
 // Function to check for NSFW content
 const containsNsfwWords = (text) => {
