@@ -6,23 +6,139 @@ import path from 'path';
 import axios from 'axios';
 import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getDatabase, ref, push, remove, set } from "firebase/database";
+import { v4 as uuidv4 } from "uuid";
+import {rateLimit} from 'express-rate-limit';
+import { EventSource } from 'eventsource';
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
+  authDomain: "elixpoai.firebaseapp.com",
+  databaseURL: "https://elixpoai-default-rtdb.firebaseio.com",
+  projectId: "elixpoai",
+  storageBucket: "elixpoai.appspot.com",
+  messagingSenderId: "718153866206",
+  appId: "1:718153866206:web:671c00aba47368b19cdb4f"
+};
+
+const FBapp = initializeApp(firebaseConfig);          
+const db = getFirestore(FBapp);
+const dbRef = getDatabase(FBapp);
 
 const app = express();
 const PORT = 3000;
 const requestQueue = [];
+let endPointRequestQueue = [];
+let feedClients = [];
 const MAX_QUEUE_LENGTH = 15;
 const maxRequests = 20;
 let activeRequests = 0;
 
+const defaultWidth = 1024;
+const defaultHeight = 576;
+const defaultModel = 'flux';
+const defaultEnhance = false;
+const defaultPrivate = false;
+
+const MAX_CONCURRENT_REQUESTS = 4;
+let activeQueueWorkers = 0;
+let activeRequestWorkers = 0;
 
 
-app.use(cors());
-
-// File paths for CSV log and Instagram session
+const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
 const sessionFilePath = './ig_session.json'
 
-// Create CSV writer
+
+const availableModels = [
+  "flux", "flux-realism", "flux-cablyai", "flux-anime",
+  "flux-3d", "any-dark", "flux-pro", "turbo"
+];
+
+const availableThemes = 
+[
+  "fanatsy", "halloween", "structure", "crayon",
+  "space", "chromatic", "anime", "cyberpunk",
+  "landscape", "samurai", "wpap", "vintage",
+  "pixel", "normal", "synthwave", "special",
+]
+
+const availableRatios = 
+[
+  "16:9", "4:3", 
+  "1:1", "9:16", 
+  "3:2"
+]
+
+
+
+app.use((req, res, next) => {
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Add request to the queue
+  requestQueue.push(req);
+  console.log('Request added to queue:', req.originalUrl);
+  console.log('Request queue length:', requestQueue.length);
+
+  // Trigger processing if the queue length is within limits
+  if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
+    processRequestQueue(); // Trigger processing
+  }
+
+  // Remove request from queue after processing
+  res.on('finish', () => {
+    requestQueue.shift(); // Remove request after it is finished
+    console.log('Request processed:', req.originalUrl);
+  });
+
+  // Move to the next middleware
+  next();
+});
+
+
+app.use(cors());
+app.use(express.json());
+
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 3, // Limit each IP to 3 requests per `windowMs`
+  message: {
+    error: "Too many requests, please try again after a minute.",
+  },
+  keyGenerator: (req) => req.ip, // Use IP address as the key
+});
+
+
+
+async function processRequestQueue() {
+  while (activeRequestWorkers < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
+    const req = requestQueue.shift(); 
+    activeRequestWorkers++;
+
+    (async () => {
+      try {
+        console.log("Processing request:", req.originalUrl);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error("Error processing request:", error);
+      } finally {
+        activeRequestWorkers--;
+        processRequestQueue(); 
+      }
+    })();
+  }
+}
+
+
+
+
 const csvWriter = createCsvWriter({
   path: logFilePath,
   header: [
@@ -61,8 +177,7 @@ const fallbackImageUrls = [
   'https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/QueueFullImages%2FQueueFullImages%20(5).jpg?alt=media&token=89b88057-5f9e-452c-b7c4-05eb2d90a2d7'
 ];
 
-app.use(cors());
-app.use(express.json());
+
 
 let ig; // Instagram API client
 
@@ -102,16 +217,7 @@ const initializeInstagramClient = async () => {
 };
 
 // Middleware to track request queue length and log details
-app.use((req, res, next) => {
-  requestQueue.push(req);
-  console.log('Request queue length:', requestQueue.length);
 
-  res.on('finish', () => {
-    requestQueue.shift(); // Remove the request after it is finished
-  });
-
-  next();
-});
 
 // Function to check for NSFW content
 const containsNsfwWords = (text) => {
@@ -258,14 +364,242 @@ const postCarouselToInsta = async (imageUrls, caption) => {
   }
 };
 
+
+function generateRandomSeed() {
+  return Math.floor(Math.random() * 1000000);
+}
+
+
+
+async function storeRequestDetails(userDetails, prompt, specifications) {
+  try {
+    const docId = `${Date.now()}-${uuidv4()}`; // Use timestamp + UUID for unique IDs
+    const data = 
+    {
+      ip: userDetails.ip,
+      userAgent: userDetails.userAgent || "Unknown",
+      referrer: userDetails.referrer || "Direct",
+      timestamp: userDetails.timestamp,
+      method: userDetails.method || "GET" ,
+      url: userDetails.url || "/",
+      prompt: prompt,
+      createdAt: new Date().toISOString(),
+      fullPrompt: prompt,
+      specifications: specifications
+    }
+
+    const requestsRef = ref(dbRef, "requests");
+    await push(requestsRef, data);
+    console.log("Request details stored successfully:", docId);
+  } catch (error) {
+    console.error("Error storing request details:", error);
+  }
+}
+
+
+
+async function processQueue() {
+  while (activeQueueWorkers < MAX_CONCURRENT_REQUESTS && endPointRequestQueue.length > 0) {
+    const { res, prompt, queryParams, req } = endPointRequestQueue.shift(); // Remove the request from the queue
+    activeQueueWorkers++;
+
+    (async () => {
+      try {
+        const { 
+          width, height, seed, model, enhance, personal 
+        } = queryParams;
+
+        const finalWidth = width ? parseInt(width) : defaultWidth;
+        const finalHeight = height ? parseInt(height) : defaultHeight;
+        const finalSeed = seed || generateRandomSeed();
+        const finalModel = model || defaultModel;
+        const finalEnhance = enhance !== undefined ? enhance === 'true' : defaultEnhance;
+        const finalPrivate = personal !== undefined ? personal === 'true' : defaultPrivate;
+
+        const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${finalWidth}&height=${finalHeight}&seed=${finalSeed}&model=${finalModel}&nologo=1&enhance=${finalEnhance}&private=${finalPrivate}`;
+        // const imageUrl = "https://m.media-amazon.com/images/I/61Rx9tHudUL.jpg"
+
+        let specifications = { width: finalWidth, height: finalHeight, seed: finalSeed, model: finalModel, enhance: finalEnhance, privateMode: finalPrivate };
+        let userDetails = { 
+          ip: (await axios.get('https://api.ipify.org?format=json')).data.ip,
+          userAgent: req.get('User-Agent'), 
+          referrer: req.get('Referrer'), 
+          timestamp: new Date().toISOString(),
+          method: req.method,
+          url: req.originalUrl
+        };
+        let fullPrompt = imageUrl
+
+        storeRequestDetails(userDetails, fullPrompt, specifications);
+
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        res.set('Content-Type', 'image/png');
+        res.send(response.data);
+        console.log(response.data)
+
+      } catch (error) {
+        if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
+          res.status(503).json({ error: "Connection error, please try again later." });
+        } else {
+          res.status(500).json({ error: "Failed to generate image" });
+        }
+        if (error.response && error.response.status === 504) {
+          res.status(504).json({ error: "Sorry the server is offline" });
+        } else 
+        console.log(error)
+      } finally {
+        activeQueueWorkers--;
+        processQueue(); // Trigger the next task
+      }
+    })();
+  }
+}
+
+
+
+
+app.get('/c/:prompt', limiter, async (req, res) => {
+  try {
+    const prompt = req.params.prompt;
+
+    // Check if prompt is missing or empty string
+    if (!prompt || prompt.trim() === '') {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    // Retrieve query parameters or use default values
+    const { 
+      width, height, seed, model, enhance, privateMode 
+    } = req.query;
+
+    // Add the request to the queue
+    endPointRequestQueue.push({ res, prompt, queryParams: req.query, req });
+
+    // If the queue is empty, start processing the first request
+    if (endPointRequestQueue.length === 1) {
+      processQueue();
+    }
+
+    // Instead of responding with a "pending" message, directly process the image
+
+  } catch (error) {
+    res.status(500).json({ error: "Failed to process your request" });
+  }
+});
+
+upstreamFeed.onmessage = (event) => {
+  let parsedData = JSON.parse(event.data);
+
+  // Only proceed if nologo is true
+  if (parsedData.nologo) {
+    const filteredData = {
+      width: parsedData.width,
+      height: parsedData.height,
+      seed: parsedData.seed,
+      model: parsedData.model,
+      enhance: parsedData.enhance,
+      nologo: parsedData.nologo,
+      negative_prompt: parsedData.negative_prompt,
+      nofeed: parsedData.nofeed,
+      safe: parsedData.safe,
+      prompt: parsedData.prompt,
+      ip: parsedData.ip,
+      status: parsedData.status,
+      concurrentRequests: parsedData.concurrentRequests,
+      timingInfo: parsedData.timingInfo,
+    };
+
+    // Broadcast the filtered data to all clients
+    feedClients.forEach((client) => client.res.write(`data: ${JSON.stringify(filteredData)}\n\n`));
+  }
+};
+
+
+upstreamFeed.onerror = (err) => {
+  console.error('Error with upstream feed', err);
+};
+
+
+
+app.get('/feed', async (req, res) => {
+  let publicIp = "";
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Keep the connection open
+  res.flushHeaders();
+
+  // Fetch public IP of the client
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    
+    // Split the IP by dots and join with hyphens
+    publicIp = data.ip.split('.').join('-');
+    
+    console.log(`Client public IP: ${publicIp}`);
+  } catch (error) {
+    console.error('Error fetching public IP:', error);
+    
+    // Fallback to request IP if the fetch fails
+    publicIp = req.ip.split('.').join('-');
+  }
+
+  const clientId = publicIp;
+  feedClients.push({ id: clientId, res });
+
+  try {
+    const db = getDatabase(); // Ensure you have the correct db reference
+    const clientRef = ref(db, `feedClients/${publicIp}`);
+    await set(clientRef, true); // Store the IP in Firebase
+    console.log(`Client connected: ${clientId}. Total feedClients: ${feedClients.length}`);
+  } catch (error) {
+    console.error("Error storing client IP in Firebase:", error);
+  }
+
+  // When the request is closed (client disconnects)
+  req.on('close', async () => {
+    feedClients = feedClients.filter((client) => client.id !== clientId);
+    console.log(`Client disconnected: ${clientId}. Total feedClients: ${feedClients.length}`);
+    
+    try {
+      const db = getDatabase(); // Ensure correct db reference
+      const clientRef = ref(db, `feedClients/${publicIp}`);
+      await remove(clientRef); // Remove the client IP from Firebase
+    } catch (error) {
+      console.log("Error removing client from feedClients:", error);
+    }
+  });
+});
+
+
+app.get('/models', (req, res) => {
+  res.json(availableModels);
+});
+
+app.get('/themes', (req, res) => {
+  res.json(availableThemes);
+}); 
+
+app.get('/ratios', (req, res) => {
+  res.json(availableRatios);
+});
+
 app.post('/ping', (req, res) => {
   res.send('OK');
 });
 
+app.get('/', (req, res) => {
+	res.send('Visit https://circuit-overtime.github.io/Elixpo_ai_pollinations/ for a better experience');
+});
 
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  await initializeInstagramClient(); 
+
+app.listen(PORT, '10.42.0.1', async () => {
+  console.log(`Server running on http://10.42.0.1:${PORT}`);
+  // await initializeInstagramClient(); 
 });
 
 
