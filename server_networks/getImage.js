@@ -8,9 +8,10 @@ import { IgApiClient } from 'instagram-private-api';
 import { createObjectCsvWriter as createCsvWriter } from 'csv-writer';
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { getDatabase, ref, push } from "firebase/database";
+import { getDatabase, ref, push, remove, set } from "firebase/database";
 import { v4 as uuidv4 } from "uuid";
 import {rateLimit} from 'express-rate-limit';
+import { EventSource } from 'eventsource';
 
 
 const firebaseConfig = {
@@ -29,9 +30,9 @@ const dbRef = getDatabase(FBapp);
 
 const app = express();
 const PORT = 3000;
-const serverIP = "10.42.0.1";
 const requestQueue = [];
 let endPointRequestQueue = [];
+let feedClients = [];
 const MAX_QUEUE_LENGTH = 15;
 const maxRequests = 20;
 let activeRequests = 0;
@@ -45,6 +46,11 @@ const defaultPrivate = false;
 const MAX_CONCURRENT_REQUESTS = 4;
 let activeQueueWorkers = 0;
 let activeRequestWorkers = 0;
+
+
+const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
+const logFilePath = path.join('/home/pi', 'promptLogger.csv');
+const sessionFilePath = './ig_session.json'
 
 
 const availableModels = [
@@ -62,8 +68,11 @@ const availableThemes =
 
 const availableRatios = 
 [
-  "16:9", "4:3", "1:1", "9:16", "3:2"
+  "16:9", "4:3", 
+  "1:1", "9:16", 
+  "3:2"
 ]
+
 
 
 app.use((req, res, next) => {
@@ -76,7 +85,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   requestQueue.push(req);
-  console.log('Request added to queue:', req.originalUrl);
+  // console.log('Request added to queue:', req.originalUrl);
 
   if (activeRequestWorkers < MAX_CONCURRENT_REQUESTS) {
     processRequestQueue(); // Trigger processing
@@ -103,31 +112,26 @@ const limiter = rateLimit({
 
 async function processRequestQueue() {
   while (activeRequestWorkers < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
-    const req = requestQueue.shift(); // Remove the request from the queue
+    const req = requestQueue.shift(); 
     activeRequestWorkers++;
 
     (async () => {
       try {
-        // Process your request logic here.
-        console.log("Processing request:", req.originalUrl);
-        // Simulate processing with a delay (replace with actual logic)
+        // console.log("Processing request:", req.originalUrl);
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
-        console.error("Error processing request:", error);
+        // console.error("Error processing request:", error);
       } finally {
         activeRequestWorkers--;
-        processRequestQueue(); // Trigger the next task
+        processRequestQueue(); 
       }
     })();
   }
 }
 
 
-// File paths for CSV log and Instagram session
-const logFilePath = path.join('/home/pi', 'promptLogger.csv');
-const sessionFilePath = './ig_session.json'
 
-// Create CSV writer
+
 const csvWriter = createCsvWriter({
   path: logFilePath,
   header: [
@@ -486,7 +490,95 @@ app.get('/c/:prompt', limiter, async (req, res) => {
   }
 });
 
-// Endpoint to list available models
+upstreamFeed.onmessage = (event) => {
+  let parsedData = JSON.parse(event.data);
+
+  // Only proceed if nologo is true
+  if (parsedData.nologo) {
+    const filteredData = {
+      width: parsedData.width,
+      height: parsedData.height,
+      seed: parsedData.seed,
+      model: parsedData.model,
+      enhance: parsedData.enhance,
+      nologo: parsedData.nologo,
+      negative_prompt: parsedData.negative_prompt,
+      nofeed: parsedData.nofeed,
+      safe: parsedData.safe,
+      prompt: parsedData.prompt,
+      ip: parsedData.ip,
+      status: parsedData.status,
+      concurrentRequests: parsedData.concurrentRequests,
+      timingInfo: parsedData.timingInfo,
+    };
+
+    // Broadcast the filtered data to all clients
+    feedClients.forEach((client) => client.res.write(`data: ${JSON.stringify(filteredData)}\n\n`));
+  }
+};
+
+
+upstreamFeed.onerror = (err) => {
+  console.error('Error with upstream feed', err);
+};
+
+
+
+app.get('/feed', async (req, res) => {
+  let publicIp = "";
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Keep the connection open
+  res.flushHeaders();
+
+  // Fetch public IP of the client
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    
+    // Split the IP by dots and join with hyphens
+    publicIp = data.ip.split('.').join('-');
+    
+    // console.log(`Client public IP: ${publicIp}`);
+  } catch (error) {
+    console.error('Error fetching public IP:', error);
+    
+    // Fallback to request IP if the fetch fails
+    publicIp = req.ip.split('.').join('-');
+  }
+
+  const clientId = publicIp;
+  feedClients.push({ id: clientId, res });
+
+  try {
+    const db = getDatabase(); // Ensure you have the correct db reference
+    const clientRef = ref(db, `feedClients/${publicIp}`);
+    await set(clientRef, true); // Store the IP in Firebase
+    // console.log(`Client connected: ${clientId}. Total feedClients: ${feedClients.length}`);
+  } catch (error) {
+    console.error("Error storing client IP in Firebase:", error);
+  }
+
+  // When the request is closed (client disconnects)
+  req.on('close', async () => {
+    feedClients = feedClients.filter((client) => client.id !== clientId);
+    // console.log(`Client disconnected: ${clientId}. Total feedClients: ${feedClients.length}`);
+    
+    try {
+      const db = getDatabase(); // Ensure correct db reference
+      const clientRef = ref(db, `feedClients/${publicIp}`);
+      await remove(clientRef); // Remove the client IP from Firebase
+    } catch (error) {
+      console.log("Error removing client from feedClients:", error);
+    }
+  });
+});
+
+
 app.get('/models', (req, res) => {
   res.json(availableModels);
 });
@@ -508,8 +600,8 @@ app.get('/', (req, res) => {
 });
 
 
-app.listen(PORT, serverIP, async () => {
-  console.log(`Server running on http://${serverIP}:${PORT}`);
+app.listen(PORT, '10.42.0.1', async () => {
+  console.log(`Server running on http://10.42.0.1:${PORT}`);
   // await initializeInstagramClient(); 
 });
 

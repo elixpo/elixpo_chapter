@@ -34,6 +34,7 @@ pre {
     border-radius: 10px;
     overflow-x: auto;
     overflow-y: auto;
+    min-height: 100px;
     max-height: 350px;
 }
 
@@ -57,21 +58,7 @@ code.shortCode
     font-family: 'Consolas';
     letter-spacing: 1px;
 }
-code.hljs  
-{
-    position: relative;
-    background: transparent;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    height: auto;
-    width: 100%;
-    top: -50px;
-}
-code.hljs::-webkit-scrollbar
-{
-    display: none;
-}
+
 pre > i
 {
     position: sticky;
@@ -79,6 +66,7 @@ pre > i
     left: 95%;
     cursor: pointer;
     font-size: 20px;
+    z-index: 10;
 }
 pre::-webkit-scrollbar {
     height: 6px;
