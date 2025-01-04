@@ -48,7 +48,7 @@ let activeQueueWorkers = 0;
 let activeRequestWorkers = 0;
 
 
-const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
+
 const logFilePath = path.join('/home/pi', 'promptLogger.csv');
 const sessionFilePath = './ig_session.json'
 
@@ -487,6 +487,9 @@ app.get('/c/:prompt', limiter, async (req, res) => {
   }
 });
 
+
+const upstreamFeed = new EventSource('https://image.pollinations.ai/feed');
+
 upstreamFeed.onmessage = (event) => {
   let parsedData = JSON.parse(event.data);
 
@@ -522,6 +525,7 @@ upstreamFeed.onerror = (err) => {
 
 
 app.get('/feed', async (req, res) => {
+  
   let publicIp = "";
 
   // Set headers for SSE
