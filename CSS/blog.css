@@ -335,6 +335,17 @@ strong {
     cursor: pointer;
 }
 
+.nav-icon-buymecoffee
+{
+    color: #ffd000;
+    font-size: 1.5rem;
+    margin: 0 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
 .nav-icon-theme {
     color: #000000;
     font-size: 1.5rem;
@@ -356,6 +367,11 @@ strong {
     transform: scale(1.1);
 }
 
+.nav-icon-buymecoffee:hover 
+{
+    color: #ecc020;
+    transform: scale(1.1);
+}
 
 .nav-icon-youtube:hover {
     color: #d84449;
@@ -436,6 +452,12 @@ strong {
     background-color: #a6a6a6;
     color: #000;
 }
+
+i.sponsors 
+{
+    font-size: 2em;
+}
+
 
 @media (max-width: 798px) {
     .container {
