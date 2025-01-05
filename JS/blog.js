@@ -73,3 +73,7 @@ window.addEventListener("load", function () {
                 document.querySelector(".cta-buttonnav").innerText = "Try Elixpo Art Now";
             } 
         });
+
+document.getElementById("redirectHome").addEventListener("click", function() {
+    redirectTo("");
+    });

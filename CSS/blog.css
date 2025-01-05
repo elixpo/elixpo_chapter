@@ -256,6 +256,16 @@ strong {
     z-index: 1000;
 }
 
+.nav-icon-house {
+    color: #17aadc;
+    font-size: 1.5rem;
+    margin: 0 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
 
 .nav-icon-instagram {
     color: #000000;
@@ -278,6 +288,7 @@ strong {
     border: none;
     cursor: pointer;
 }
+
 
 .nav-icon-linkedin {
     color: #000000;
