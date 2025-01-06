@@ -208,7 +208,9 @@
     <p>
         Server API Rate Limits are also implemented to ensure fair usage and prevent abuse of the system. Users can
         make a upto <code class="shortCode">3 Image Generation Request/Minute. </code>  This rate limit is enforced to maintain the stability and
-        performance of the API, ensuring that all users have equal access to the image generation service.
+        performance of the API, ensuring that all users have equal access to the image generation service. If the rate limit is 
+        exceeded then a <code class="shortCode">Err (429) Rate Limit Reached </code> will be thrown. It can be <b> caught </b> 
+        using <code class="shortCode"> try {()} .. catch {()} </code> and reflected back on the front-end.
 
     </p>
     <p>
