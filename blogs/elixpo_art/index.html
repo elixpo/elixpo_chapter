@@ -177,7 +177,7 @@
     import requests
 
     def download_image(prompt):
-        url = f"https://elixpo-server.vercel.app/c/{prompt}" 
+        url = f"https://imgelixpo.vercel.app/c/{prompt}" 
         response = requests.get(url)
         with open('generated_image.jpg', 'wb') as file:
             file.write(response.content)
@@ -228,7 +228,7 @@
 <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
 <code class="bash">
     #Endpoint to see the available models for prompting 
-    curl https://elixpo-server.vercel.app/models
+    curl https://imgelixpo.vercel.app/models
 </code>
 </pre>
 
@@ -242,7 +242,7 @@
 <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
 <code class="bash">
     #Endpoint to see the available themes for prompting
-    curl https://elixpo-server.vercel.app/themes
+    curl https://imgelixpo.vercel.app/themes
 </code>
 </pre>
     <p>
@@ -257,7 +257,7 @@
 <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
 <code class="bash">
     #Endpoint to see the available aspect ratios for prompting
-    curl https://elixpo-server.vercel.app/ratios
+    curl https://imgelixpo.vercel.app/ratios
 </code>
 </pre>
     </p>
@@ -270,7 +270,7 @@
         <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
 <code class="javascript">
     // Create a new EventSource to listen to the /feed endpoint
-    const eventSource = new EventSource('https://elixpo-server.vercel.app/feed'); // Replace with your server address
+    const eventSource = new EventSource('https://imgelixpo.vercel.app/feed'); // Replace with your server address
 
     // Listen for messages from the server
     eventSource.onmessage = function(event) {
