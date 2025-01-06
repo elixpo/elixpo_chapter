@@ -79,8 +79,8 @@ window.onload = function() {
     globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
     globalThis.specialDir = "";
     // document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
-    downloadUrl = "https://elixpo-server.vercel.app";
-    pingUrl = "https://elixpo-server.vercel.app";
+    downloadUrl = "https://imgelixpo.vercel.app";
+    pingUrl = "https://imgelixpo.vercel.app";
 
 
     document.getElementById("promptTextInput").focus();
