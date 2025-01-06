@@ -80,7 +80,6 @@ window.onload = function() {
     globalThis.specialDir = "";
     // document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
     downloadUrl = "https://elixpo-server.vercel.app";
-    // downloadUrl = "http://10.42.0.57:3000"
     pingUrl = "https://elixpo-server.vercel.app";
 
 
