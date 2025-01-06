@@ -508,6 +508,9 @@ app.get('/', (req, res) => {
 	res.send('Visit https://circuit-overtime.github.io/Elixpo_ai_pollinations/ for a better experience');
 });
 
+app.get('/bpm', (req, res) => {
+	res.send('Alive');
+});
 
 app.listen(PORT, '10.42.0.1', async () => {
   console.log(`Server running on http://10.42.0.1:${PORT}`);
