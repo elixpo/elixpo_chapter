@@ -18,6 +18,14 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                         localStorage.setItem("ElixpoAIUser", usernameSignIn);
                         setTimeout(() => {
                             localStorage.setItem("guestLogin", "false");
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if(urlParams.get('cmp'))
+                        {
+                            console.log(urlParams.get('cmp'));
+                            redirectTo(`blogs/elixpo_art/?cmp=${urlParams.get('cmp')}`);
+                            return;
+                        }
+                
                             redirectTo("src/create");
                         }, 2000);
 

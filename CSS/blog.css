@@ -19,6 +19,82 @@ body {
     padding: 0;
 }
 
+
+.savedMsg {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8) translateY(-250px);
+    cursor: pointer;
+    font-size: 1.6rem;
+    border-radius: 16px;
+    border: none;
+    padding: 2px;
+    background: radial-gradient(circle 80px at 80% -10%, #ffffff, #181b1b);
+    transition: 0.5s;
+    z-index: 100;
+    
+  }
+  .savedMsg.display 
+  {
+    transform: translateX(-50%) scale(1) translateY(0px);
+    z-index: 2000;
+  }
+  .savedMsg::after {
+    content: "";
+    position: absolute;
+    width: 65%;
+    height: 60%;
+    border-radius: 120px;
+    top: 0;
+    right: 0;
+    box-shadow: 0 0 20px #ffffff38;
+    z-index: -1;
+  }
+  
+  .blob1 {
+    position: absolute;
+    width: 70px;
+    height: 100%;
+    border-radius: 16px;
+    bottom: 0;
+    left: 0;
+    background: radial-gradient(
+      circle 60px at 0% 100%,
+      #3fe9ff,
+      #0000ff80,
+      transparent
+    );
+    box-shadow: -10px 10px 30px #0051ff2d;
+  }
+  
+  .inner {
+    padding: 14px 25px;
+    border-radius: 14px;
+    color: #fff;
+    z-index: 3;
+    position: relative;
+    background: radial-gradient(circle 80px at 80% -50%, #777777, #0f1111);
+    font-weight: 400;
+    font-family: 'Source Code Pro', monospace;
+    text-align: center;
+  }
+  .inner::before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    border-radius: 14px;
+    background: radial-gradient(
+      circle 60px at 0% 100%,
+      #00e1ff1a,
+      #0000ff11,
+      transparent
+    );
+    position: absolute;
+  }
+
 ::-webkit-scrollbar {
     width: 10px;
 }
@@ -254,7 +330,116 @@ strong {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     z-index: 1000;
+    transition: 0.5s;
 }
+.floating-navbar a, 
+.floating-navbar .home,
+.floating-navbar .commentsIcon,
+.floating-navbar .cta-buttonnav
+{
+    opacity: 1;
+    transform: scale(1);
+    transition: 0.5s;
+    pointer-events: all;
+}
+.floating-navbar .cta-commentsend,
+.floating-navbar .commentInput,
+.floating-navbar .cta-commentClose
+{
+    opacity: 0;
+    transform: scale(0);
+    position: absolute;
+    pointer-events: none;
+    transition: 0.5s;
+}
+
+.floating-navbar.comments
+{
+    top: 90%;
+    left: 50%;
+    border: 2px solid #6565bc;
+    transition: 0.25s;
+    transform: translateX(-50%);
+    pointer-events: all;
+}
+.floating-navbar.comments a, 
+.floating-navbar.comments .home,
+.floating-navbar.comments .commentsIcon,
+.floating-navbar.comments .cta-buttonnav
+{
+    opacity: 0;
+    transform: scale(0);
+    transition: 0.5s;
+    appearance: none;
+    position: absolute;
+    pointer-events: none;
+}
+.floating-navbar.comments .cta-commentsend
+{
+    opacity: 1;
+    font-size: 1.3em;
+    transform: scale(1);
+    position: relative;
+    pointer-events: all;
+    transition: 0.5s;
+    margin-right: 20px;
+    cursor: pointer;
+}
+.floating-navbar.comments .cta-commentsend:hover 
+{
+    color: #db6ac4;
+    transform: scale(1.1);
+}
+.floating-navbar.comments .cta-commentsend:active 
+{
+    color: #3c0030;
+    transform: scale(0.9);
+}
+.floating-navbar.comments .cta-commentClose
+{
+    opacity: 1;
+    font-size: 1.3em;
+    transform: scale(1);
+    position: relative;
+    pointer-events: all;
+    transition: 0.5s;
+    cursor: pointer;
+}
+.floating-navbar.comments .cta-commentClose:hover 
+{
+    color: #db6ac4;
+    transform: scale(1.1);
+}
+.floating-navbar.comments .cta-commentClose:active 
+{
+    color: #3c0030;
+    transform: scale(0.9);
+}
+.floating-navbar.comments .commentInput
+{
+    opacity: 1;
+    transform: scale(1);
+    transition: 0.5s;
+    appearance: none;
+    position: relative;
+    height: 90%;
+    border: none;
+    margin-right: 25px;
+    width: 850px;
+    font-size: 1.1em;
+    outline: none;
+    background: transparent;
+    color: #6565bc;
+    pointer-events: all;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.floating-navbar.comments .commentInput::placeholder
+{
+    color: #6565bc;
+    font-family: 'Open Sans', sans-serif;
+}
+
 
 .nav-icon-house {
     color: #17aadc;
@@ -267,6 +452,17 @@ strong {
     cursor: pointer;
 }
 
+.commentsIcon 
+{
+    color: #1096de;
+    font-size: 1.5rem;
+    margin: 0 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
 .nav-icon-github 
 {
     color: #000000;
@@ -392,6 +588,16 @@ strong {
     color: #555b5b;
     transform: scale(1.1);
 }
+.commentsIcon:hover 
+{
+    color: #066294;
+    transform: scale(1.1);
+}
+.commentsIcon:active 
+{
+    color: #066294;
+    transform: scale(0.9);
+}
 
 .cta-buttonnav {
     display: inline-block;
@@ -413,25 +619,8 @@ strong {
 }
 
 
-#back-to-top {
-    position: fixed;
-    bottom: 20px;
-    right: -60px;
-    z-index: 99;
-    border: none;
-    outline: none;
-    background-color: #000;
-    color: white;
-    cursor: pointer;
-    padding: 15px;
-    border-radius: 10px;
-    transition: right 0.3s, background-color 0.3s, color 0.3s;
-}
 
-#back-to-top:hover {
-    background-color: #a6a6a6;
-    color: #000;
-}
+
 
 #back-to-top {
     position: fixed;
@@ -445,7 +634,7 @@ strong {
     cursor: pointer;
     padding: 15px;
     border-radius: 10px;
-    transition: right 0.3s, background-color 0.3s, color 0.3s;
+    transition: all 0.25s;
 }
 
 #back-to-top:hover {
@@ -459,7 +648,146 @@ i.sponsors
 }
 
 
-@media (max-width: 798px) {
+#comments-section {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    overflow-y: hidden;
+    overflow-x: hidden;
+    max-height: 500px;
+}
+#comments-section::-webkit-scrollbar
+{
+    display: none;
+}   
+#comments-list
+{
+    background: transparent;
+    position: relative;
+    top: 50px;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    max-height: 500px;
+    overflow-x: hidden;
+    padding-bottom: 20px;
+
+}
+#comments-section h2 {
+    top: 10px;
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 20px;
+    position: sticky;
+}
+
+.comment {
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.comment-author {
+    font-weight: bold;
+    color: #555;
+}
+
+.comment-date {
+    font-size: 0.9rem;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.comment-text {
+    font-size: 1rem;
+    color: #333;
+    overflow-y: auto;
+    max-height: 150px;
+}
+.comment-text::-webkit-scrollbar
+{
+    display: none;
+}
+
+@media (max-width: 1108px) {
+
+    .floating-navbar {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        padding: 5px 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        z-index: 1000;
+        height: 6%;
+        width: 80%;
+    }
+
+
+    .floating-navbar.comments 
+    {
+        top: 91%;
+    }
+
+    .floating-navbar.comments ~ #back-to-top
+    {
+        bottom: 80px;
+        transition: 0.25s;
+    }
+
+
+}
+
+
+@media (max-width: 908px) {
+
+
+    .floating-navbar {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        padding: 5px 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        z-index: 1000;
+        height: 6%;
+        width: 80%;
+    }
+
+
+    .floating-navbar.comments 
+    {
+        top: 91%;
+    }
+
+    .floating-navbar.comments ~ #back-to-top
+    {
+        bottom: 80px;
+        transition: 0.25s;
+    }
+
+
+
     .container {
         padding: 20px;
         margin-top: 10%;
@@ -509,6 +837,17 @@ i.sponsors
         width: 80%;
     }
 
+
+    .floating-navbar.comments 
+    {
+        top: 91%;
+    }
+
+    .floating-navbar.comments ~ #back-to-top
+    {
+        bottom: 80px;
+        transition: 0.25s;
+    }
 
 
     .video-container iframe {
