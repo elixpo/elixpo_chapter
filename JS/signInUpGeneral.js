@@ -227,7 +227,14 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", async
         
                 document.getElementById("userNameGuest").style.display = "none";
                 document.getElementById("usernameGuestInput").style.pointerEvents = "none";
-        
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                if(urlParams.get('cmp'))
+                {
+                    console.log(urlParams.get('cmp'));
+                    redirectTo(`blogs/elixpo_art/?cmp=${urlParams.get('cmp')}`);
+                    return;
+                }
                 redirectTo("src/create");
             });
            
