@@ -15,9 +15,6 @@ const firebaseConfig = {
 
   hljs.highlightAll();
 
-    document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
-        redirectTo("src/create");
-        });
 
         
     backToTopButton.onclick = function () {
@@ -53,10 +50,7 @@ const firebaseConfig = {
         }
     };
 
-    backToTopButton.onclick = function () {
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
-    };
+
 
 
 function notify(msg) {
@@ -205,7 +199,7 @@ async function addComment(comment, hash)
     commentsRef.once("value", (snapshot) => {
         if (snapshot.exists()) {
             document.getElementById("noCommentsText").style.display = "none";
-            console.log(Object.keys(snapshot.val()).length);
+            // console.log(Object.keys(snapshot.val()).length);
             // Iterate over all comments
             const comments = snapshot.val();
             for (let key in comments) {
@@ -229,3 +223,5 @@ async function addComment(comment, hash)
         }
     });
 }
+
+

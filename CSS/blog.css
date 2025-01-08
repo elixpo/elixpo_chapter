@@ -306,6 +306,8 @@ strong {
     transition: all 0.3s ease;
     cursor: pointer;
     user-select: none;
+    outline: none;
+    border: none;
     z-index: 50;
 }
 
@@ -691,6 +693,8 @@ i.sponsors
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #003a8b;
+
 }
 
 .comment:last-child {
@@ -699,18 +703,18 @@ i.sponsors
 
 .comment-author {
     font-weight: bold;
-    color: #555;
+    color: #003a8b;
 }
 
 .comment-date {
     font-size: 0.9rem;
-    color: #999;
+    color: #6815b1;
     margin-bottom: 10px;
 }
 
 .comment-text {
     font-size: 1rem;
-    color: #333;
+    color: #00572d;
     overflow-y: auto;
     max-height: 150px;
 }
