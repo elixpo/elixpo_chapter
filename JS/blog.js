@@ -170,6 +170,18 @@ async function addComment(comment, hash)
         timestamp: new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
     });
     notify("Thanks for your comment!");
+    let commentNode = `
+    <div class="comment">
+        <div class="comment-author">${username}</div>
+        <div class="comment-date">${new Date().toLocaleString('en-GB', { 
+            day: '2-digit', month: '2-digit', year: '2-digit', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+        })}</div>
+        <div class="comment-text">${comment}</div>
+    </div>
+`;
+    document.getElementById("comments-list").innerHTML += commentNode;
+
     try 
     {
         sessionStorage.removeItem(hash);
@@ -181,48 +193,39 @@ async function addComment(comment, hash)
     document.getElementById("commentInput").value = "";
     document.querySelector(".floating-navbar").classList.remove("comments");
     document.getElementById("noCommentsText").style.display = "none";
-    let commentNode = `
-         <div class="comment">
-                    <div class="comment-author">${username}</div>
-                    <div class="comment-date">${new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
-                    <div class="comment-text">${comment}</div>
-                </div>
-    
-    `
-    document.getElementById("comments-list").innerHTML += commentNode;
     const url = new URL(window.location);
     url.searchParams.delete("cmp");
     window.history.replaceState({}, document.title, url.toString());
   }
 
-function fetchComments() {
+  function fetchComments() {
     const commentsRef = db.ref(`comments/`);
-    
+    const commentsContainer = document.getElementById("comments-list");
+    commentsContainer.innerHTML = ""; 
     commentsRef.once("value", (snapshot) => {
-        const commentsContainer = document.getElementById("comments-list");
-        commentsContainer.innerHTML = "";
-    
-        const comments = snapshot.val();
-        // console.log(comments);
-        if (comments) {
+        if (snapshot.exists()) {
             document.getElementById("noCommentsText").style.display = "none";
-            Object.keys(comments).forEach(key => {
-                const comment = comments[key];
-                const commentNode = `
-                    <div class="comment">
+            console.log(Object.keys(snapshot.val()).length);
+            // Iterate over all comments
+            const comments = snapshot.val();
+            for (let key in comments) {
+                if (comments.hasOwnProperty(key)) {
+                    const comment = comments[key];
+                    const commentNode = document.createElement("div");
+                    commentNode.classList.add("comment");
+                    commentNode.innerHTML = `
                         <div class="comment-author">${comment.username}</div>
                         <div class="comment-date">${comment.timestamp}</div>
                         <div class="comment-text">${comment.comment}</div>
-                    </div>
-                `;
-                commentsContainer.innerHTML += commentNode;
-            })
-        }
-            
-        if (comments == null) {
-            document.getElementById("noCommentsText").innerText= "You like being the first right? Be the first one to review please xD";
+                    `;
+                    commentsContainer.appendChild(commentNode);
+                }
+            }
+        } else {
+            // Handle case where there are no comments
+            document.getElementById("noCommentsText").innerText = 
+                "You like being the first right? Be the first one to review please xD";
             document.getElementById("noCommentsText").style.display = "block";
-
         }
     });
-    }
+}
