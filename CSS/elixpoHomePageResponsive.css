@@ -10,7 +10,7 @@
         left: 50%;
         transform: translate(-50%, -50%);
         height: 100%;
-        width: 375px;
+        width: 100%;
         transition: 0.5s;
         opacity: 1;
         overflow: hidden;
@@ -129,13 +129,13 @@
 }
 
 .aiArtCreate {
-  position: relative;
-  top: 30%;
+  position: absolute;
+  top: 55%;
   width: 190px;
   height: 60px;
   background: #fff;
   border-radius: 15px;
-  left: 25%;
+  left: 50%;
   transform: translateX(-50%) scale(0.9);
   overflow: hidden;
   /* Ensure the inner element doesn't overflow */
@@ -166,7 +166,7 @@
   height:60px;
   width:50%;
   position: absolute;
-  top: 57%;
+  top: 58%;
 left:2%;
   scale: 0.8;
   display: flex;
@@ -278,7 +278,7 @@ left:2%;
   height:60px;
   width:50%;
   position: absolute;
-  top: 57%;
+  top: 58%;
   left: 50%;
   scale: 0.8;
   display: flex;
