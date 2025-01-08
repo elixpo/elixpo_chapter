@@ -21,7 +21,7 @@ body {
 
 
 .savedMsg {
-    position: absolute;
+    position: fixed;
     top: 2%;
     left: 50%;
     transform: translateX(-50%) scale(0.8) translateY(-250px);
@@ -277,15 +277,16 @@ strong {
 }
 
 .call-to-action {
-    background-color: #e1e1e163;
+
     border-radius: 10px;
     padding: 10px;
     margin-top: 40px;
     text-align: center;
+    overflow: hidden;
 }
-
 .call-to-action h2 {
     margin-bottom: 20px;
+    color: #222;
 }
 
 .call-to-action ul {
@@ -647,34 +648,35 @@ i.sponsors
     font-size: 2em;
 }
 
-
 #comments-section {
     margin-top: 40px;
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 10px;
-    overflow-y: hidden;
-    overflow-x: hidden;
-    max-height: 500px;
+    overflow: hidden;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
 }
-#comments-section::-webkit-scrollbar
-{
+
+#comments-section::-webkit-scrollbar {
     display: none;
-}   
-#comments-list
-{
+}
+
+#comments-list {
     background: transparent;
     position: relative;
-    top: 50px;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    overflow-y: auto;
-    max-height: 500px;
+    flex-grow: 1; /* Ensures the list grows to fill available space */
+    overflow-y: auto; /* Enables vertical scrolling */
     overflow-x: hidden;
-    padding-bottom: 20px;
-
+    max-height: 650px;
+    padding-bottom: 20px; /* Slight gap below the last comment */
 }
+
+#comments-list::-webkit-scrollbar {
+    display: none;
+}
+
 #comments-section h2 {
     top: 10px;
     font-size: 2rem;
@@ -689,6 +691,10 @@ i.sponsors
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.comment:last-child {
+    margin-bottom: 20px; /* Extra gap below the last comment */
 }
 
 .comment-author {
@@ -708,10 +714,14 @@ i.sponsors
     overflow-y: auto;
     max-height: 150px;
 }
-.comment-text::-webkit-scrollbar
-{
+
+.comment-text::-webkit-scrollbar {
     display: none;
 }
+
+
+
+
 
 @media (max-width: 1108px) {
 
