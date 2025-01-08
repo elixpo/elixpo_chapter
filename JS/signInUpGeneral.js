@@ -119,6 +119,9 @@ document.getElementById("reDirectPage").addEventListener("click", () => {
     redirectTo("src/create");
 });
 
+document.getElementById("redirectHome").addEventListener("click", () => {
+    redirectTo("");
+});
 
 document.getElementById("passwordShowHideSignInPassword").addEventListener("click", (e) => {
    const passwordField = document.getElementById("signInPassword");

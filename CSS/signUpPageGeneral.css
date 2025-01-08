@@ -24,7 +24,7 @@ body{
     left: 87%;
     height: 40px;
     width: 40px;
-    background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/website%20logo.png?alt=media&token=e3409e2d-d827-430d-b0b8-1345567525d5);
+    background-image: url(https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1);
     background-size: cover;
 }
 .appName
@@ -36,6 +36,7 @@ body{
     color: #fff;
     margin-left: 10px;
     font-size: 20px;
+    font-weight: 700;
 }
 
 
@@ -243,4 +244,14 @@ body{
       transparent
     );
     position: absolute;
+  }
+
+  .redirectHome
+  {
+    position: absolute;
+    top: 90%;
+    font-size: 2em;
+    filter: drop-shadow(0 0 20px #0de165);
+    left: 95%;
+    color: #0de165;
   }
