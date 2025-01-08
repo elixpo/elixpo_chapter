@@ -36,15 +36,16 @@
     position: relative;
     text-align: center;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
-    font-size: 0.4em;
+    font-size: 0.2em;
     /* Smaller font size for mobile */
     justify-content: center;
     align-items: center;
-    left: 0%;
-    top: 13%;
+    left: 40%;
+    transform: translateX(-50%);
+    top: 15%;
   }
 
 
