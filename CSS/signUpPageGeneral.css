@@ -249,9 +249,9 @@ body{
   .redirectHome
   {
     position: absolute;
-    top: 93%;
+    top: 90%;
     font-size: 2em;
     filter: drop-shadow(0 0 20px #0de165);
-    left: 5%;
+    left: 95%;
     color: #0de165;
   }
