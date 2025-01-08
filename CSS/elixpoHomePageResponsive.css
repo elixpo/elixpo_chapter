@@ -130,7 +130,7 @@
 
 .aiArtCreate {
   position: relative;
-  top: 28%;
+  top: 30%;
   width: 190px;
   height: 60px;
   background: #fff;
@@ -166,7 +166,7 @@
   height:60px;
   width:50%;
   position: absolute;
-  top: 59%;
+  top: 57%;
 left:2%;
   scale: 0.8;
   display: flex;
@@ -221,7 +221,7 @@ left:2%;
   position: relative;
   left: 50%;
   z-index: 1;
-  font-size: 1.5em;
+  font-size: 1.2em;
   transform: translateX(-50%);
   transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -278,7 +278,7 @@ left:2%;
   height:60px;
   width:50%;
   position: absolute;
-  top: 59%;
+  top: 57%;
   left: 50%;
   scale: 0.8;
   display: flex;
