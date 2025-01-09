@@ -23,7 +23,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-let downloadUrl = '';
 let suffixPrompt = '';
 let queue = [];
 let isProcessing = false;
@@ -35,7 +34,7 @@ const client = new Client({
 client.on('ready', async () => {
 client.user.setActivity("Generating Images for You", { type: "WATCHING" });
   console.log('Bot is online and ready!');
-  downloadUrl = "https://direct-enhanced-glider.ngrok-free.app";
+
 });
 
 // Event listener: Handle slash command interactions
@@ -333,8 +332,8 @@ async function generateImage(interaction) {
     await updateDoc(doc(db, 'Server', 'totalGen'), { 
       value: nextImageNumber,
     });
-    const galleryUrl = `https://circuit-overtime.github.io/Elixpo_ai_pollinations/src/gallery?id=${imageGenId}`;
-    await interaction.channel.send(`${interaction.user} has created image(s) for the Elixpo-AI gallery! View it here: ${galleryUrl}`);
+    // const galleryUrl = `https://circuit-overtime.github.io/Elixpo_ai_pollinations/src/gallery?id=${imageGenId}`;
+    // await interaction.channel.send(`${interaction.user} has created image(s) for the Elixpo-AI gallery! View it here: ${galleryUrl}`);
 
   } catch (error) {
     console.error('Error fetching image:', error);
