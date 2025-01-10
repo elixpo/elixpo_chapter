@@ -5,6 +5,7 @@ let isLoading = false; // Flag to prevent multiple simultaneous loads
 
 // Function to render visible images only
 function renderVisibleImages() {
+ 
   const feedImageWrapper = document.getElementById('feedImageWrapper');
 
   // Render only the most recent VISIBLE_IMAGE_COUNT images
@@ -71,6 +72,11 @@ function startListening() {
 
   eventSource.onmessage = function (event) {
     const imageData = JSON.parse(event.data);
+
+    if(imageData.imageURL == undefined || imageData.nsfw == true || imageData.imageURL == "" || imageData.imageURL == null) {
+      return;
+    }
+  
       appendImage(imageData);
       imageCount++;
   
