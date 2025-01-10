@@ -108,28 +108,7 @@ async function gettotalGenOnServer() {
   return totalGen;
 }
 
-
-async function addToQueue(interaction) {
-  // Add the request to the queue
-  queue.push(interaction);
-  
-  const positionInQueue = queue.length;
-  const estimatedWaitTime = positionInQueue > 1 ? (positionInQueue - 1) * 20 : 0; // 20s for each additional request
-  
-  // Defer the interaction immediately
-  await interaction.deferReply();
-
-  // Notify the user of their position in the queue
-  await interaction.followUp(`🕒 Your request has been added to the queue. You are number ${positionInQueue} in the queue. Estimated wait time: ${Math.ceil(estimatedWaitTime)} seconds.`);
-
-  // Start processing if not already processing
-  if (!isProcessing) {
-    processQueue();
-  }
-}
-
-// Process queue
-async function processQueue() {
+async function processQueueDiscord() {
   if (queue.length === 0) {
     isProcessing = false;
     return;
@@ -138,17 +117,27 @@ async function processQueue() {
   isProcessing = true;
   const interaction = queue[0];
 
-  // Notify that processing is starting
-  await interaction.followUp('✨ Your request is now being processed...');
-  
-  // Generate image and wait for completion
-  await generateImage(interaction);
-  
-  // Remove the processed interaction from the queue
-  queue.shift();
-  
-  // Process the next request in the queue
-  processQueue();
+  try {
+    // Notify the user that processing is starting
+    await interaction.followUp('✨ Your request is now being processed...');
+    
+    // Generate the image
+    await generateImage(interaction);
+  } catch (error) {
+    console.error('Error processing queue:', error);
+    await interaction.followUp('⚠️ Something went wrong while processing your request. Please try again later.');
+  } finally {
+    // Remove the processed interaction and process the next
+    queue.shift();
+    setImmediate(processQueueDiscord); // Avoid blocking the event loop
+  }
+}
+
+function addToQueue(interaction) {
+  queue.push(interaction);
+  if (!isProcessing) {
+    processQueueDiscord(); // Start processing if not already in progress
+  }
 }
 
 // Generate image
