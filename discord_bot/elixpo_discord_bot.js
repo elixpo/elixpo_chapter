@@ -4,7 +4,6 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Client, AttachmentBuilder, EmbedBuilder } from 'discord.js';
 import dotenv from 'dotenv';
-import { createCanvas, loadImage } from 'canvas';
 
 dotenv.config();
 
@@ -244,9 +243,7 @@ async function generateImage(interaction) {
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
-      // Apply watermark
-      const modifiedBlob = await applyWatermark(buffer);
-      const attachment = new AttachmentBuilder(modifiedBlob, { name: `image${i + 1}.jpg` });
+      const attachment = new AttachmentBuilder(buffer, { name: `image${i + 1}.jpg` });
       images.push(attachment);
       blobs.push(modifiedBlob);
     }
@@ -327,28 +324,6 @@ async function generateImage(interaction) {
   } catch (error) {
     console.error('Error fetching image:', error);
     await interaction.followUp('Error fetching image. Please try again later.');
-  }
-}
-
-async function applyWatermark(blob) {
-  try {
-    const mainImage = await loadImage(blob);
-
-    if (!mainImage || !mainImage.width || !mainImage.height) {
-      throw new Error('Failed to load the main image for processing.');
-    }
-
-    const canvas = createCanvas(mainImage.width, mainImage.height);
-    const ctx = canvas.getContext('2d');
-
-    // Draw the main image onto the canvas
-    ctx.drawImage(mainImage, 0, 0);
-
-    // Return the processed image buffer
-    return canvas.toBuffer('image/jpeg');
-  } catch (error) {
-    console.error('Error in applyWatermark:', error.message);
-    throw error;
   }
 }
 
