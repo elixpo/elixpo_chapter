@@ -224,4 +224,6 @@ async function addComment(comment, hash)
     });
 }
 
-
+document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
+    redirectTo("src/create");
+});

@@ -45,7 +45,6 @@ let timeoutId;
 
 
 window.onload = function() {
-    document.querySelector(".patternContainer").classList.remove("hidden");
     globalThis.imageVarType = "Fantasy";
     globalThis.modelType = "Flux-Core";
     globalThis.RatioValue = "1:1";
@@ -128,6 +127,7 @@ async function pingServer() {
     }, 20000);
     // getServerURLs();
     // setInterval(getServerURLs, 30000);
+    document.querySelector(".patternContainer").classList.remove("hidden");
 };
 
 if(localStorage.getItem("guestLogin") == true)
