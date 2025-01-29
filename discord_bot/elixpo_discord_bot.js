@@ -267,9 +267,9 @@ async function generateImage(interaction) {
       .setDescription(`**Prompt:** ${prompt}\n` +
         `**Theme:** ${theme}\n` +
         `**Aspect Ratio:** ${aspectRatio}\n` +
-        `**Enhanced:** ${enhancement ? 'Yes' : 'No'}`)
-        `**Model:** ${model}\n`
-        `**Number of Images:** ${numberOfImages}\n`
+        `**Enhanced:** ${enhancement ? 'Yes' : 'No'} \n` +
+        `**Model:** ${model}\n` +
+        `**Number of Images:** ${numberOfImages}\n`)
       .setColor('#0099ff')
       .setFooter({ text: `Prompted by ${interaction.user.tag} | Created by Jackey`, iconURL: interaction.user.avatarURL({ dynamic: true }) });
 
