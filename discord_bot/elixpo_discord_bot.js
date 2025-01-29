@@ -82,15 +82,15 @@ client.on('interactionCreate', async interaction => {
     const helpMessage = `
     **Elixpo Discord Bot Commands:**
 
-- **\`/generate\`** - Generate images based on a prompt.
+  - **\`/generate\`** - Generate images based on a prompt.
 
-  **Options:**
-  - **Theme:** Choose from \`normal\`, \`fantasy\`, \`halloween\`, \`space\`, \`chromatic\`, \`anime\`, \`samurai\`, \`crayon\`, \`cyberpunk\`, \`landscape\`, \`wpap\`, \`vintage\`, \`pixel\`, \`synthwave\`.
-  - **Model:** Choose from \`flux\`, \`boltning\`.
-  - **Aspect Ratio:** Choose from \`16:9\`, \`9:16\`, \`1:1\`, \`4:3\`, \`3:2\`.
-  - **Enhancement:** \`true\` or \`false\`.
+    **Options:**
+    - **Theme:** Choose from \`normal\`, \`fantasy\`, \`halloween\`, \`space\`, \`chromatic\`, \`anime\`, \`samurai\`, \`crayon\`, \`cyberpunk\`, \`landscape\`, \`wpap\`, \`vintage\`, \`pixel\`, \`synthwave\`.
+    - **Model:** Choose from \`flux\`, \`flux-realism\`, \`flux-cablyai\`, \`flux-anime\`, \`flux-3d\`, \`any-dark\`, \`flux-pro\`, \`turbo\`.
+    - **Aspect Ratio:** Choose from \`16:9\`, \`9:16\`, \`1:1\`, \`4:3\`, \`3:2\`.
+    - **Enhancement:** \`true\` or \`false\`.
 
-- **\`/help\`** - Display this help message.
+  - **\`/help\`** - Display this help message.
     `;
     await interaction.reply(helpMessage);
   }
