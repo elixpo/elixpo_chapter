@@ -117,20 +117,34 @@ async function processQueueDiscord() {
   const interaction = queue[0];
 
   try {
-    // Notify the user that processing is starting
-    await interaction.followUp('✨ Your request is now being processed...');
-    
+    // Check if the interaction has been replied to
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.deferReply(); // Defer the reply if not already done
+    }
+
+    // Initial message: Let the user know the request is being processed
+    await interaction.editReply('✨ Your request is now being processed...');
+
     // Generate the image
-    await generateImage(interaction);
+    const imageUrl = await generateImage(interaction); // Assuming this function returns the image URL
+    await interaction.editReply("✨ I've painted the image for you. Thank you for your patience!");
+
   } catch (error) {
     console.error('Error processing queue:', error);
-    await interaction.followUp('⚠️ Something went wrong while processing your request. Please try again later.');
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.deferReply(); // Defer the reply if not already done
+    }
+    // Update the message to notify the user of the error
+    await interaction.editReply('⚠️ Something went wrong while processing your request. Please try again later.');
   } finally {
     // Remove the processed interaction and process the next
     queue.shift();
     setImmediate(processQueueDiscord); // Avoid blocking the event loop
   }
 }
+
+
+
 
 function addToQueue(interaction) {
   queue.push(interaction);
@@ -146,7 +160,7 @@ async function generateImage(interaction) {
   const aspectRatio = interaction.options.getString("aspect_ratio") || "3:2";
   const theme = interaction.options.getString("theme") || "normal";
   const enhancement = interaction.options.getBoolean("enhancement") || false;
-  const model = interaction.options.getString("model") || "flux";
+  const model = interaction.options.getString("model") || "flux-core";
   let width = 1024, height = 683;
 
   var currentTotalImageOnServer = await gettotalGenOnServer();
@@ -245,7 +259,7 @@ async function generateImage(interaction) {
       
       const attachment = new AttachmentBuilder(buffer, { name: `image${i + 1}.jpg` });
       images.push(attachment);
-      blobs.push(modifiedBlob);
+      blobs.push(buffer);
     }
 
     const embed = new EmbedBuilder()
@@ -254,6 +268,8 @@ async function generateImage(interaction) {
         `**Theme:** ${theme}\n` +
         `**Aspect Ratio:** ${aspectRatio}\n` +
         `**Enhanced:** ${enhancement ? 'Yes' : 'No'}`)
+        `**Model:** ${model}\n`
+        `**Number of Images:** ${numberOfImages}\n`
       .setColor('#0099ff')
       .setFooter({ text: `Prompted by ${interaction.user.tag} | Created by Jackey`, iconURL: interaction.user.avatarURL({ dynamic: true }) });
 
