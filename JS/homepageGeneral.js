@@ -1,45 +1,14 @@
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
-    authDomain: "elixpoai.firebaseapp.com",
-    projectId: "elixpoai",
-    storageBucket: "elixpoai.appspot.com",
-    messagingSenderId: "718153866206",
-    appId: "1:718153866206:web:671c00aba47368b19cdb4f"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const storage = firebase.storage();
-
-const prompts = [
-    "a cute crystal dog fakemon with glowing eyes",
-    "a dragon breathing fire in the night sky",
-    "a magical forest with glowing mushrooms",
-    "a cyberpunk city with flying cars",
-    "a samurai standing on a hill with cherry blossoms",
-    "a spaceship traveling through a wormhole",
-    "a robot with a holographic interface",
-    "a fantasy castle surrounded by waterfalls",
-    "a superhero flying over a futuristic city",
-    "a beach at sunset with bioluminescent waves",
-    "a mystical mountain with a dragon's lair",
-    "a steampunk airship sailing through the clouds",
-    "a witch casting a spell in a dark forest",
-    "a knight in shining armor riding a horse",
-    "a unicorn prancing in a magical meadow"
-];
-
 let promptIndex = 0;
 const typewriterElement = document.getElementById('searchText');
 
-window.addEventListener('resize', scaleContainer);
+window.addEventListener('resize', scaleContainer, generateAsciiArt);
 window.addEventListener('load', scaleContainer);
 
+setInterval(() => {
+    generateAsciiArt();
+}, 5000);
 
-
-document.getElementById("aiArtCreate").addEventListener("click", function() {
-    console.log("hello")
+document.getElementById("visitCreateArt").addEventListener("click", function() {
     if(localStorage.getItem("ElixpoAIUser") != null || localStorage.getItem("ElixpoAIUser") != undefined) {
         redirectTo("src/create");
     }
@@ -53,137 +22,27 @@ document.getElementById("aiArtCreate").addEventListener("click", function() {
     }
 });
   
-document.getElementById("galleryVisit").addEventListener("click", function() {
+document.getElementById("visitDocs").addEventListener("click", function() {
   
     redirectTo("blogs/elixpo_art");
 });
 
-document.getElementById("feedVisit").addEventListener("click", function() {
+document.getElementById("visitFeed").addEventListener("click", function() {
   
     redirectTo("src/feed");
 });
 
-
-  
-  
-  document.getElementById("aiArtCreateNavbar").addEventListener("click", function() {
-    
-    if(localStorage.getItem("ElixpoAIUser") !== null) {
-        redirectTo("src/create");
-    }
-    else 
-    {
-        redirectTo("src/auth");
-    }
-    
-  });
-  
-  document.getElementById("followWhatsapp").addEventListener("click", () => {
-  
-  location.href = "https://www.instagram.com/elixpo_ai/";
-  })
-
-
-
-function typeWriterEffect(text, i, callback) {
-    if (i < text.length) {
-        typewriterElement.innerHTML = text.substring(0, i + 1);
-        setTimeout(function() {
-            typeWriterEffect(text, i + 1, callback);
-        }, 20);
-    } else if (typeof callback === 'function') {
-        setTimeout(callback, 1200); // Wait 1200ms before clearing and moving to next prompt
-    }
-}
-
-function startTypewriterAnimation() {
-    typeWriterEffect(prompts[promptIndex], 0, function() {
-        setTimeout(function() {
-            typewriterElement.innerHTML = '';
-            promptIndex = (promptIndex + 1) % prompts.length;
-            startTypewriterAnimation();
-        }, 500); // Delay before erasing and starting next prompt
-    });
-}
-
-document.getElementById("sitecontent").scrollTop = 0;
-
-
-document.getElementById("sitecontent").addEventListener("scroll", function() {
-    scrollAmt = document.getElementById("sitecontent").scrollTop;
-    // console.log(scrollAmt)
-    if(scrollAmt >= 442)
-    {
-            document.getElementById("upperNavBar").classList.remove("hidden");
-
-            document.getElementById("aiArtCreate").classList.add("blur");
-            document.getElementById("galleryVisit").classList.add("blur");
-            document.getElementById("feedVisit").classList.add("blur");
-
-            
-            document.getElementById("elixpoOfficialLogoBacklit").classList.remove("hidden");
-            document.getElementById("elixpoOfficialLogoMask").classList.remove("hidden");
-    }
-    else if(scrollAmt <= 472)
-    {
-        document.getElementById("upperNavBar").classList.add("hidden");
-
-            document.getElementById("aiArtCreate").classList.remove("blur");
-            document.getElementById("galleryVisit").classList.remove("blur");
-            document.getElementById("feedVisit").classList.remove("blur");
-
-        document.getElementById("elixpoOfficialLogoBacklit").classList.add("hidden");
-        document.getElementById("elixpoOfficialLogoMask").classList.add("hidden");
-    }
+document.getElementById("integrationsIcon").addEventListener("click", () => {
+    redirectTo("integrations/")
 })
 
-startTypewriterAnimation();
+document.getElementById("visitIntegration").addEventListener("click", () => {
+    redirectTo("integrations/")
+})
 
-
-const scrollContent_right = document.getElementById('sampleImage_content_right');
-const images_right = scrollContent.children;
-const imageWidth_right = 200;
-const spacing_right = 20;
-const totalWidth_right = (imageWidth + spacing) * images.length;
-
-function scrollImages_right() {
-    scrollContent.style.transition = 'transform 1s linear';
-    scrollContent.style.transform = `translateX(${imageWidth + spacing}px)`;
-    
-    setTimeout(() => {
-        scrollContent.style.transition = 'none';
-        scrollContent.style.transform = 'translateX(0)';
-        const firstImage = scrollContent.firstElementChild;
-        scrollContent.appendChild(firstImage.cloneNode(true));
-        scrollContent.removeChild(firstImage);
-    }, 1000);
-}
-
-setInterval(scrollImages_right, 1000);
-
-
-const scrollContent_left = document.getElementById('sampleImage_content_left');
-const images_left = scrollContent.children;
-const imageWidth_left = 200;
-const spacing_left = 20;
-const totalWidth_left = (imageWidth + spacing) * images.length;
-
-function scrollImages_right() {
-    scrollContent.style.transition = 'transform 1s linear';
-    scrollContent.style.transform = `translateX(${imageWidth + spacing}px)`;
-    
-    setTimeout(() => {
-        scrollContent.style.transition = 'none';
-        scrollContent.style.transform = 'translateX(0)';
-        const firstImage = scrollContent.firstElementChild;
-        scrollContent.appendChild(firstImage.cloneNode(true));
-        scrollContent.removeChild(firstImage);
-    }, 1000);
-}
-
-setInterval(scrollImages_right, 1000);
-
-
+document.getElementById("visitGithub").addEventListener("click", () => {
+    window.open("https://github.com/Circuit-Overtime/elixpo_ai_chapter/", "_blank");
+})
 
 
 function scaleContainer() {
