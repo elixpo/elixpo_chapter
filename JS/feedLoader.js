@@ -121,5 +121,5 @@ document.getElementById("createArt").addEventListener("click", function () {
 });
 
 document.getElementById("closeStream").addEventListener("click", function () {
-  redirectTo("src/feed");
+  redirectTo("integrations");
 });

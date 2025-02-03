@@ -227,3 +227,7 @@ async function addComment(comment, hash)
 document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
     redirectTo("src/create");
 });
+
+document.getElementById("integrations").addEventListener("click", function() {
+    redirectTo("integrations");
+});
