@@ -1,0 +1,73 @@
+/* -- ↓ ↓ ↓ some responsiveness ↓ ↓ ↓ -- */
+  
+@media(max-width: 1000px) {
+    body {
+      align-items: flex-start;  
+      overflow: auto;
+    }
+    
+    #projectTiles {    
+      max-width: 1000px;
+      padding: 10px 0px;
+    }
+    
+    .projectTile {
+      flex-shrink: 1;
+      width: calc(50% - 4px);
+    }
+  }
+  
+  @media(max-width: 500px) {
+    .projectTile {
+      height: 180px;
+    }
+    
+    .projectTile-image {
+      height: 80px;  
+    }
+    
+    .projectTile-image > i {
+      font-size: 3em;
+    }
+      
+    .projectTile-info-wrapper {
+      padding: 0px 10px;
+    }
+    
+    .projectTile-info > i { 
+      font-size: 0.8em; 
+    }
+    
+    .projectTile-info-title > h3 {
+      font-size: 0.9em;
+    }
+  
+    .projectTile-info-title > h4 {
+      font-size: 0.8em;
+      margin-top: 4px;
+    }
+  }
+  
+  @media(max-width: 320px) {
+    .projectTile {
+      width: 100%;
+    }
+  }
+  
+  @media(max-width: 1000px) {
+    #projectTiles {
+        grid-template-columns: repeat(3, 1fr); /* 3 per row on medium screens */
+    }
+}
+
+@media(max-width: 768px) {
+    #projectTiles {
+        grid-template-columns: repeat(2, 1fr); /* 2 per row on tablets */
+    }
+}
+
+@media(max-width: 500px) {
+    #projectTiles {
+        grid-template-columns: repeat(1, 1fr); /* 1 per row on mobile */
+    }
+}
