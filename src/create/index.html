@@ -21,8 +21,6 @@
     
 </head>
 <body>
-  <!-- <img id="watermarkImage" src="https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20final.png?alt=media&token=4bdf46cb-c851-4638-a0ea-a2723c8d4038" style="display:none;" crossorigin="anonymous" referrerpolicy="no-referrer"> -->
-  <!-- <img id="watermarkImageInverted" src="https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20inverted%20final.png?alt=media&token=4a7b007d-e5dc-4b56-aa7f-acc6446b1bbe" style="display:none;" crossorigin="anonymous" referrerpolicy="no-referrer"> -->
   <canvas id="canvas" style="display:none;"></canvas>
 
     <div class="ParticleContainer" id="bg">  </div>
@@ -142,6 +140,9 @@
        
         <div class="samplePrompt" id="samplePrompt"> 
             <i class="fa-solid fa-dice-one" id="OneImage"></i>
+            <i class="fa-solid fa-dice-three" id="OneImageOpacityFirst"></i>
+            <i class="fa-solid fa-dice-five" id="OneImageOpacitySecond"></i>
+
             <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none" placeholder="Type in Your Prompt for Elixpo to Imagine"></textarea>
             <div class="searchButtonText" id="searchButtonText">
                 <button class="searchBtn">

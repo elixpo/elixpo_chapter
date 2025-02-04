@@ -777,6 +777,64 @@ overflow-x: hidden;
   font-size:  1.5em;
 }
 
+#OneImageOpacityFirst {
+  position: absolute;
+  top: 52%;
+  transform: translateY(-50%) scale(0.8) rotate(25deg);
+  color: #fff;
+  left: 4.6%;
+  cursor: pointer;
+  font-size: 1.5em;
+  z-index: -1;
+  opacity: 0.3;
+  filter: brightness(0.6);
+  animation: swapAnimationOne 1.5s ease-in-out infinite;
+}
+
+#OneImageOpacitySecond {
+  position: absolute;
+  top: 52%;
+  transform: translateY(-50%) scale(0.8) rotate(-25deg);
+  color: #fff;
+  left: 1.3%;
+  cursor: pointer;
+  font-size: 1.5em;
+  z-index: -1;
+  opacity: 0.3;
+  filter: brightness(0.6);
+  animation: swapAnimationTwo 1.5s ease-in-out infinite;
+}
+
+@keyframes swapAnimationTwo {
+  0%, 100% {
+    transform: translateY(-50%) scale(0.8);
+  }
+  25% 
+  {
+    transform: translateY(-50%) scale(0.9);
+  }
+  50% {
+    left: 4.6%;
+    transform: translateY(-50%) scale(0.8);
+  }
+}
+
+@keyframes swapAnimationOne {
+  0%, 100% {
+    transform: translateY(-50%) scale(0.8);
+  }
+  25% 
+  {
+    transform: translateY(-50%) scale(0.9);
+  }
+  50% {
+    left: 1.3%;
+    transform: translateY(-50%) scale(0.8);
+  }
+}
+
+
+
 @keyframes clickEffect {
   0% { transform: translateY(-50%) scale(1); }
   50% { transform: translateY(-50%) scale(0.8); }

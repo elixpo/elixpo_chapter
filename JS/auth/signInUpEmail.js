@@ -95,7 +95,7 @@ function registerUser() {
                     user_logo: "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FCoverPageSlidingImages%2F18_18_11zon.png?alt=media&token=2ae8d56e-6a51-4c1b-bfb1-7f291abfd655",
                     password : passwordSignUp
                 }).then(() => {
-                    RemovetileFlash();
+                    
                     localStorage.setItem("ElixpoAIUser", userSignUp.toLowerCase());
                     notify("Account Created Successfully!");
                     setTimeout(() => {
@@ -105,16 +105,16 @@ function registerUser() {
 
                         document.getElementById("form_register").style.pointerEvents = "all";
                         notify("Please Re Login!");
-                        RemovetileFlash();
+                        
                     }, 2200);
                     
                 })
                 .catch((err) => {
-                    RemovetileFlash();
+                    
                     console.error("Error adding document: ", err);
                     RegisterError("Some Error Occured!");
                     setTimeout(() => {
-                        RemovetileFlash();
+                        
                     }, 500);
                 });
     
@@ -126,16 +126,16 @@ function registerUser() {
         if(err.message == "The email address is already in use by another account.")
         {
             RegisterError("Email already registered");
-            RemovetileFlash();
+            
         }
         else 
         {
             RegisterError("Some Error Occured!");
-            RemovetileFlash();
+            
         }
-        RemovetileFlash();
+        
     });
-    RemovetileFlash();
+    
 }
 
 function loginUser() {
@@ -168,7 +168,7 @@ function loginUser() {
  
             } else {
                 LoginError("Invalid Credentials!");
-                RemovetileFlash();
+                
             }
         }
 })
@@ -215,18 +215,5 @@ function tileFlash() {
         }, delay);
     });
 
-}
-
-function RemovetileFlash() {
-
-    const tiles = document.querySelectorAll('.tile');
-    tiles.forEach((tile) => {
-        tile.classList.remove('flash');
-    });
-    setTimeout(() => {
-        tiles.forEach((tile) => {
-            tile.classList.remove('flash');
-        }); 
-    }, 2200);
 }
 
