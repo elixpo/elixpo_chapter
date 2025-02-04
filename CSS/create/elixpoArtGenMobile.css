@@ -93,9 +93,39 @@
       }
       #OneImage
       {
-        transform: scale(0.75) translateY(-50%);
+        transform: scale(0.85) translateY(-50%);
         left: 4.5%;
       }
+      #OneImageOpacityFirst, #OneImageOpacitySecond {
+        transform: scale(0.45) translateY(-50%);
+      }
+    
+      @keyframes swapAnimationOne {
+        0%, 100% {
+          transform: translateY(-50%) scale(0.45);
+        }
+        25% {
+          transform: translateY(-50%) scale(0.75);
+        }
+        50% {
+          left: -0.5vw;
+          transform: translateY(-50%) scale(0.45);
+        }
+      }
+    
+      @keyframes swapAnimationTwo {
+        0%, 100% {
+          transform: translateY(-50%) scale(0.45);
+        }
+        25% {
+          transform: translateY(-50%) scale(0.75);
+        }
+        50% {
+          left: 4.3vw;
+          transform: translateY(-50%) scale(0.45);
+        }
+      }
+      
       .samplePrompt
       {
         max-height: 72px;

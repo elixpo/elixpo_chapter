@@ -45,19 +45,19 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                     coins : 1000000,
                     user_logo: user.photoURL,
                 }).then(() => {
-                    RemovetileFlash();
+                    
                     localStorage.setItem("ElixpoAIUser", user.displayName);
                     localStorage.setItem("guestLogin", "false");
                     redirectTo("src/create");
                 })
                 .catch((err) => {
-                    RemovetileFlash();
+                    
                     console.error("Error adding document: ", err);
                     RegisterError("Some Error Occured!");
                 });
             }
         }).catch((err) => {
-            RemovetileFlash();
+            
             console.error("Error getting document:", err);
         });
     })
@@ -73,9 +73,9 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
         {
             RegisterError("Some Error Occured!");
         }
-        RemovetileFlash();
+        
     });
-    RemovetileFlash();
+    
 });
 
 function RegisterError(err) {
@@ -100,9 +100,3 @@ function tileFlash() {
 
 }
 
-function RemovetileFlash() {
-    const tiles = document.querySelectorAll('.tile');
-    tiles.forEach((tile) => {
-        tile.classList.remove('flash');
-    });
-}
