@@ -2,6 +2,7 @@
 body{
     overflow: hidden;
     background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
+    
 }
 .container
 {
@@ -49,6 +50,9 @@ body{
     top: 0;
     left: 0;
     background: linear-gradient(105deg, #2F2536 10%, #18191E 20%, #18191E 80%, #2E393C 100%);
+    background: #111;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url(../..//CSS/IMAGES/backdrop.webp);
+  filter: brightness(60%) blur(4px);
 }
 .backgroundTile
 {
@@ -127,7 +131,7 @@ body{
     left: 10%;
     width: 100%; /* Adjust width to your preference */
     background-size: contain;
-    background-image: url(IMAGES/vrglassGirl.png);
+    background-image: url(../IMAGES/vrglassGirl.png);
     opacity: 0.25;
     object-fit: cover;
     pointer-events: none;
