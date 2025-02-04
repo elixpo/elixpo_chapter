@@ -213,6 +213,28 @@
         # write the prompt you want to generate an image for
     </code>
     </pre>
+
+    <p> You can also generate the images using <code class="shortCode">Javascript</code> language for easy integration with your websites. Just paste the code 
+    below in your <code class="javascript"> &lt;script&gt; ... &lt;/script&gt; </code> of your HTML code to download a ready image from the prompt and also 
+    explore further. </p>
+    <pre>
+        <i class="bi bi-clipboard copyCode" onclick="copy(this)"></i>
+        <code class="javascript">
+    const prompt = "a beautiful garden";
+    const url = `https://imgelixpo.vercel.app/c/${prompt}`;
+    fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'generated_image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+        </code>
+    </pre>
     <p>
         <b>Here are the  query parameters that can be used to customize the image generation process:</b>
         <br>
@@ -233,7 +255,7 @@
     </p>
     <p>
         Server API Rate Limits are also implemented to ensure fair usage and prevent abuse of the system. Users can
-        make a upto <code class="shortCode">3 Image Generation Request/Minute. </code>  This rate limit is enforced to maintain the stability and
+        make a upto <code class="shortCode">10 Image Generation Request/Minute. </code>  This rate limit is enforced to maintain the stability and
         performance of the API, ensuring that all users have equal access to the image generation service. If the rate limit is 
         exceeded then a <code class="shortCode">Err (429) Rate Limit Reached </code> will be thrown. It can be <b> caught </b> 
         using <code class="shortCode"> try {()} .. catch {()} </code> and reflected back on the front-end.
