@@ -15,7 +15,7 @@ body {
 
 .ParticleContainer {
     background: #111;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url(../CSS/IMAGES/backdrop.webp);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url(../..//CSS/IMAGES/backdrop.webp);
     position: absolute;
     top: 0;
     left: 0;

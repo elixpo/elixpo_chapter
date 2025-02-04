@@ -180,7 +180,9 @@ overflow-x: hidden;
 .ParticleContainer
 {
   background: linear-gradient(105deg, #01473b 10%, #172a4f 20%, #1e343f 80%, #4a0e4d 100%);
-  filter: brightness(50%);
+  background: #111;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url(../..//CSS/IMAGES/backdrop.webp);
+  filter: brightness(40%) blur(4px);
   position: absolute;
   top: 0;
   left: 0;
@@ -336,8 +338,7 @@ overflow-x: hidden;
 }
 
 .typeOfImageTile > * {
-    opacity: 0.35;
-    
+    opacity: 0.75;
 }
 
 .typeOfImageTile span {
@@ -373,7 +374,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(1)
 {
-  background: url(./IMAGES/THEMES/fantasy.jpeg);
+  background: url(../IMAGES/THEMES/fantasy.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.0s;
@@ -382,7 +383,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(2)
 {
-  background: url(./IMAGES/THEMES/halloween.jpeg);
+  background: url(../IMAGES/THEMES/halloween.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.1s;
@@ -391,28 +392,28 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(3)
 {
-  background: url(./IMAGES/THEMES/structure.jpeg);
+  background: url(../IMAGES/THEMES/structure.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.2s;
 }
 .typeOfImageTile span:nth-child(4)
 {
-  background: url(./IMAGES/THEMES/crayon.jpeg);
+  background: url(../IMAGES/THEMES/crayon.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.3s;
 }
 .typeOfImageTile span:nth-child(5)
 {
-  background: url(./IMAGES/THEMES/space.jpeg);
+  background: url(../IMAGES/THEMES/space.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
 }
 .typeOfImageTile span:nth-child(6)
 {
-  background: url(./IMAGES/THEMES/chromatic.jpeg);
+  background: url(../IMAGES/THEMES/chromatic.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.0s;
@@ -420,28 +421,28 @@ overflow-x: hidden;
 }
 .typeOfImageTile span:nth-child(7)
 {
-  background: url(./IMAGES/THEMES/cyberpunk.jpeg);
+  background: url(../IMAGES/THEMES/cyberpunk.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.1s;
 }
 .typeOfImageTile span:nth-child(8)
 {
-  background: url(./IMAGES/THEMES/anime.jpeg);
+  background: url(../IMAGES/THEMES/anime.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.2s;
 }
 .typeOfImageTile span:nth-child(9)
 {
-  background: url(./IMAGES/THEMES/landscape.jpeg);
+  background: url(../IMAGES/THEMES/landscape.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.3s;
 }
 .typeOfImageTile span:nth-child(10)
 {
-  background: url(./IMAGES/THEMES/samurai.jpeg);
+  background: url(../IMAGES/THEMES/samurai.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -449,7 +450,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(11)
 {
-  background: url(./IMAGES/THEMES/wpap.jpeg);
+  background: url(../IMAGES/THEMES/wpap.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -457,7 +458,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(12)
 {
-  background: url(./IMAGES/THEMES/vintage.jpeg);
+  background: url(../IMAGES/THEMES/vintage.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -466,7 +467,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(13)
 {
-  background: url(./IMAGES/THEMES/Pixel.jpeg);
+  background: url(../IMAGES/THEMES/Pixel.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -475,7 +476,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(14)
 {
-  background: url(./IMAGES/THEMES/normal.jpeg);
+  background: url(../IMAGES/THEMES/normal.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -484,7 +485,7 @@ overflow-x: hidden;
 
 .typeOfImageTile span:nth-child(15)
 {
-  background: url(./IMAGES/THEMES/Synthwave.jpeg);
+  background: url(../IMAGES/THEMES/Synthwave.jpeg);
   background-size: cover;
   transition: 0.5s;
   transition-delay: 0.4s;
@@ -493,7 +494,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(1)
 {
-  background: url(./IMAGES/THEMES/fantasy.jpeg);
+  background: url(../IMAGES/THEMES/fantasy.jpeg);
   background-size: cover;
   transform: translateX(-370px) scale(0.7) translateY(20px);
   z-index: -1;
@@ -502,7 +503,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(2)
 {
-  background: url(./IMAGES/THEMES/halloween.jpeg);
+  background: url(../IMAGES/THEMES/halloween.jpeg);
   background-size: cover;
   transform: translateX(-470px) scale(0.7) translateY(20px);
   z-index: -1;
@@ -511,7 +512,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(3)
 {
-  background: url(./IMAGES/THEMES/structure.jpeg);
+  background: url(../IMAGES/THEMES/structure.jpeg);
   background-size: cover;
   transform: translateX(-570px) scale(0.7) translateY(20px);
   z-index: -1;
@@ -520,7 +521,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(4)
 {
-  background: url(./IMAGES/THEMES/crayon.jpeg);
+  background: url(../IMAGES/THEMES/crayon.jpeg);
   background-size: cover;
   transform: translateX(-680px) scale(0.7) translateY(20px);
   z-index: -1;
@@ -529,7 +530,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(5)
 {
-  background: url(./IMAGES/THEMES/space.jpeg);
+  background: url(../IMAGES/THEMES/space.jpeg);
   background-size: cover;
   transform: translateX(-790px) scale(0.7) translateY(20px);
   z-index: -1;
@@ -538,7 +539,7 @@ overflow-x: hidden;
 
 .typeOfImageTile.hidden span:nth-child(6)
 {
-  background: url(./IMAGES/THEMES/chromatic.png);
+  background: url(../IMAGES/THEMES/chromatic.png);
   background-size: cover;
   transform: translateX(-370px) scale(0.7) translateY(-130px);
   z-index: -1;
@@ -546,7 +547,7 @@ overflow-x: hidden;
 }
 .typeOfImageTile.hidden span:nth-child(7)
 {
-  background: url(./IMAGES/THEMES/cyberpunk.jpeg);
+  background: url(../IMAGES/THEMES/cyberpunk.jpeg);
   background-size: cover;
   transform: translateX(-470px) scale(0.7) translateY(-130px);
   z-index: -1;
@@ -554,7 +555,7 @@ overflow-x: hidden;
 }
 .typeOfImageTile.hidden span:nth-child(8)
 {
-  background: url(./IMAGES/THEMES/anime.jpeg);
+  background: url(../IMAGES/THEMES/anime.jpeg);
   background-size: cover;
   transform: translateX(-580px) scale(0.7) translateY(-130px);
   z-index: -1;
@@ -562,7 +563,7 @@ overflow-x: hidden;
 }
 .typeOfImageTile.hidden span:nth-child(9)
 {
-  background: url(./IMAGES/THEMES/landscape.jpeg);
+  background: url(../IMAGES/THEMES/landscape.jpeg);
   background-size: cover;
   transform: translateX(-690px) scale(0.7) translateY(-130px);
   z-index: -1;
@@ -570,7 +571,7 @@ overflow-x: hidden;
 }
 .typeOfImageTile.hidden span:nth-child(10)
 {
-  background: url(./IMAGES/THEMES/samurai.jpeg);
+  background: url(../IMAGES/THEMES/samurai.jpeg);
   background-size: cover;
   transform: translateX(-820px) scale(0.7) translateY(-130px);
   z-index: -1;
@@ -678,8 +679,9 @@ overflow-x: hidden;
   font-family: 'Source Code Pro', monospace;
   cursor: pointer;
   z-index: 15;
+  border-radius: 15px;
   transition: 0.25s;
-  opacity: 0.25;
+  opacity: 0.45;
 }
 .aspectRatioTile.active 
 {
@@ -887,6 +889,7 @@ z-index: -1;
     cursor: pointer;
     transition: 0.25s;
     z-index: 15;
+    display: none;
   }
   .isoImageType:hover
   {
@@ -937,6 +940,7 @@ z-index: -1;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    display: none;
     text-align: center;
 }
 

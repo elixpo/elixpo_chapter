@@ -921,7 +921,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // Remove active class from all tiles
             Array.from(tiles).forEach(t => {
                 t.classList.remove('active');
-                t.style.opacity = "0.25";
+                t.style.opacity = "0.35";
             });
 
             // Add active class to the clicked tile
