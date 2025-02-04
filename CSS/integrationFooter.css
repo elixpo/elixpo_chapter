@@ -10,16 +10,16 @@
     width: 90%;
     background: #191919;
     border-top: 2px solid rgba(255, 255, 204, 0.434);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .footerDesc 
 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%);
     color: rgba(255, 255, 204, 0.582);
     font-size: 1em;
     font-family: "Parkinsans", serif;
-    margin-top: 8px;
     background: #191919;
+    text-align: center;
+    width: 100%;
 }
