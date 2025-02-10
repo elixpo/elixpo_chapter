@@ -68,4 +68,29 @@ function scaleContainer() {
  }
 
 
- 
+ function createConfetti() {
+    const confetti = document.createElement('div');
+    confetti.classList.add('confetti');
+    document.body.appendChild(confetti);
+    
+    const size = Math.random() * 10 + 5;
+    confetti.style.width = `${size}px`;
+    confetti.style.height = `${size}px`;
+    confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    
+    confetti.style.left = `${Math.random() * window.innerWidth}px`;
+    confetti.style.top = `-${size}px`;
+    
+    const animation = confetti.animate([
+        { transform: `translateY(0px) rotate(0deg)` },
+        { transform: `translateY(${window.innerHeight + 50}px) rotate(${Math.random() * 360}deg)` }
+    ], {
+        duration: Math.random() * 3000 + 2000,
+        easing: 'linear',
+        iterations: 1
+    });
+    
+    animation.onfinish = () => confetti.remove();
+}
+
+setInterval(createConfetti, 200);

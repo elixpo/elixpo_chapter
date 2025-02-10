@@ -491,6 +491,13 @@ overflow-x: hidden;
   transition-delay: 0.4s;
 }
 
+.typeOfImageTile span:nth-child(16)
+{
+  background: url(../IMAGES/THEMES/birthday.jpeg);
+  background-size: cover;
+  transition: 0.5s;
+  transition-delay: 0.4s;
+}
 
 .typeOfImageTile.hidden span:nth-child(1)
 {
@@ -572,6 +579,14 @@ overflow-x: hidden;
 .typeOfImageTile.hidden span:nth-child(10)
 {
   background: url(../IMAGES/THEMES/samurai.jpeg);
+  background-size: cover;
+  transform: translateX(-820px) scale(0.7) translateY(-130px);
+  z-index: -1;
+   opacity: 0;
+}
+.typeOfImageTile.hidden span:nth-child(11)
+{
+  background: url(../IMAGES/THEMES/birthday.jpeg);
   background-size: cover;
   transform: translateX(-820px) scale(0.7) translateY(-130px);
   z-index: -1;

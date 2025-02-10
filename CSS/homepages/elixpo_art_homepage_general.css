@@ -267,6 +267,15 @@ body {
     background-image: url(../IMAGES/PARTNERS/pollinationsLogo.png);
 }
 
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+    opacity: 0.8;
+    border-radius: 50%;
+}
 
 @media screen and (max-width: 600px) {
 
