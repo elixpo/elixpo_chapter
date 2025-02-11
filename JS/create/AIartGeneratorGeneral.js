@@ -88,8 +88,7 @@ window.onload = function() {
             redirectTo("src/auth/?notify=true"); //root hompage redirect
         } else {
             document.querySelector(".patternContainer").classList.add("hidden");
-            // document.getElementById("accountMode").innerText = `Hi, ${localStorage.getItem("ElixpoAIUser").slice(0,1).toUpperCase() + localStorage.getItem("ElixpoAIUser").slice(1,20).slice(0,20)+"..."}`;
-            document.getElementById("accountMode").innerText = "New Birthday Theme"
+            document.getElementById("accountMode").innerText = `Hi, ${localStorage.getItem("ElixpoAIUser").slice(0,1).toUpperCase() + localStorage.getItem("ElixpoAIUser").slice(1,20).slice(0,20)+"..."}`;
         }
     }, 1000);
 
@@ -780,10 +779,6 @@ async function generatingModeHandle() {
         else if(imageVarType == "Synthwave")
         {
             suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
-        }
-        else if(imageVarType == "Birthday")
-        {
-            suffixPrompt = "with a festive birthday theme, balloons, and confetti";
         }
         
     let encodedPrompt = promptTextInput.value.trim() + " " + suffixPrompt;
