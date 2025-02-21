@@ -12,18 +12,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <link rel="stylesheet" href="./CSS/style.css">
-    <link rel="stylesheet" href="./CSS/hljs.css">
-    <link rel="stylesheet" href="../../CSS/blogs/blog.css">
-    <link rel="icon" type="image/x-icon" href="./CSS/IMAGES/Resume_ats.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="hljs.css">
+    <!-- <link rel="stylesheet" href="../../CSS/blogs/blog.css"> -->
+    <link rel="icon" type="image/x-icon" href="./Resume_ats.png">
 </head>
 
 <body>
     <div class="floating-navbar">
-        <div class="nav-icon-house home"><i class="bi bi-house" id="redirectHome"></i></div>
+        <!-- <div class="nav-icon-house home"><i class="bi bi-house" id="redirectHome"></i></div> -->
         <a href="https://www.instagram.com/elixpo_ai" target="_blank" class="nav-icon-instagram"><i class="bi bi-instagram"></i></a>
         <a href="https://github.com/Circuit-Overtime/elixpo_ai_chapter" target="_blank" class="nav-icon-github"><i class="bi bi-github"></i></a>
-        <a href="https://buymeacoffee.com/elixpo" target="_blank" class="nav-icon-buymecoffee"><i class="bi bi-cup-hot-fill"></i></a>
+        <!-- <a href="https://buymeacoffee.com/elixpo" target="_blank" class="nav-icon-buymecoffee"><i class="bi bi-cup-hot-fill"></i></a> -->
+        <div class="cta-buttonnav" id="elixpoArtRedirect" onclick="prepVerseRedirect()">Try Prepverse Now</div>
 
     </div>
 
@@ -382,11 +383,17 @@
         </article>
     </div>
 
+    <section class="call-to-action">
+            
+        <h2>Ready to Boost Your Interview preparation</h2>
+        <button class="cta-button" id="elixpoArtRedirect" onclick='prepVerseRedirect()'>Try Prepverse Now</button>
+    </section>
     <button id="back-to-top" title="Back to Top"><i class="bi bi-arrow-up"></i></button>
+   
 
     <script src="../../JS/linkRedirect.js"></script>
     <script src="../../JS/PatchContextMenu.js"></script>
-    <script src="JS/script.js"></script>
+    <script src="script.js"></script>
 </body>
 
 </html>
