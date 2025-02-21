@@ -43,3 +43,8 @@ hljs.highlightAll();
   {
     location.href = "https://prepverse.xyz/";
   }
+
+  function prepVerseResumeRedirect() 
+  {
+    location.href = "https://www.prepverse.xyz/resume-review";
+  }
