@@ -21,6 +21,29 @@ body {
     padding: 0;
 }
 
+
+
+#back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: -60px;
+    z-index: 99;
+    border: none;
+    outline: none;
+    background-color: #000;
+    color: white;
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 10px;
+    transition: all 0.25s;
+}
+
+#back-to-top:hover {
+    background-color: #a6a6a6;
+    color: #000;
+}
+
+
 ::-webkit-scrollbar {
     width: 10px;
 }
@@ -283,17 +306,7 @@ strong {
     pointer-events: all;
 }
 
-.floating-navbar.comments a,
-.floating-navbar.comments .home,
-.floating-navbar.comments .commentsIcon,
-.floating-navbar.comments .cta-buttonnav {
-    opacity: 0;
-    transform: scale(0);
-    transition: 0.5s;
-    appearance: none;
-    position: absolute;
-    pointer-events: none;
-}
+
 
 .nav-icon-github {
     color: #000000;
@@ -843,7 +856,7 @@ strong {
         font-size: 1.3rem;
     }
 
-    .cta-buttonnav {
+    /* .cta-buttonnav {
         height: 30px;
         width: 20px;
         border-radius: 32px;
@@ -855,5 +868,5 @@ strong {
 
     .cta-buttonnav>i {
         font-size: 1.5em;
-    }
+    } */
 }
