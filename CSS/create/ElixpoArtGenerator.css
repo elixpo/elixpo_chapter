@@ -2,6 +2,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Borel&family=Inconsolata:wght@200..900&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Pacifico&family=Raleway:ital,wght@0,100..900;1,100..900&family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 :root {  
   --purple: rgb(181, 19, 250);
   --violet: rgb(202, 173, 253);
@@ -30,14 +31,14 @@ body
     background-size: cover;
     display: none;
 }
-
 .userLogo
 {
   position: absolute;
-  top: 50%;
+  top: 5%;
   transform: translateY(-50%);
   z-index: 10;
-  left: 3%;
+  left: 95%;
+  transition: 0.5s;
   height: 40px;
   width: 40px;
   background-size: cover;
@@ -47,68 +48,6 @@ body
   border: 2px dashed #ffaad3;
 }
 
-.tokens
-{
-  position: absolute;
-  top: 3%;
-  left: 88%;
-  height: 40px;
-  width: 80px;
-  background-size: cover;
-  cursor: pointer;
-  padding: 5px 5px;
-  border-radius: 10px;
-  border: 2px solid #dca3ff;
-  background: #dca3ff7e;
-  display: none;
-  overflow: hidden;
-  justify-content: center;
-  align-items: center;
-}
-
-.tokens .tokenValue
-{
-  position: relative;
-  transform: translateY(-50%);
-  color: #fff;
-  font-size: 1.2em;
-  left: 0;
-  top: 50%;
-  font-family: 'Source Code Pro', monospace;
-  box-sizing: border-box;
-  margin-top: 5px; /* Add this line */
-}
-
-.tokens ion-icon
-{
-  position: relative;
-  top: 20%;
-  transform: translateY(-50%);
-  color: #fff;
-  font-size: 1.2em;
-  margin-left: 8px; /* Add this line */
-}
-
-
-.GalleryImageIcon
-{
-  position: absolute;
-  top: 3%;
-  left: 80%;
-  height: 40px;
-  width: 80px;
-  background-size: cover;
-  cursor: pointer;
-  padding: 5px 5px;
-  border-radius: 10px;
-  display: block;
-  overflow: hidden;
-  color: #ffd103;
-  justify-content: center;
-  align-items: center;
- transition: 0.25s;
-
-}
 .appName
 {
     position: absolute;
@@ -201,13 +140,13 @@ overflow-x: hidden;
   .enhancingMessage
   {
     position: absolute;
-    top: 83%;
+    top: 85%;
     height: 60px;
+    max-height: 40px;
     width: 60%;
     left: 20%;
-    border-bottom-right-radius: 12px;
-    border-bottom-left-radius: 12px;
-    background: #ffffff83;
+    border-left: 5px solid #555;
+    background: transparent;
     backdrop-filter: blur(12px);
     display: flex;
     overflow-y: auto;
@@ -215,49 +154,64 @@ overflow-x: hidden;
     transition: 0.5s;
     justify-content: center;
     align-items: center;
-  }
-  .enhancingMessage .flaahingLoadingText1
-  {
-    position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 82%;
-    height: 20%;
-    background: #494a4a;
-    background: linear-gradient(45deg, #494a4a, #6e6e6e, #494a4a);
-      animation: metallicLoading 1.5s linear infinite;
-      opacity: 0;
-      transition: .5s;
+    padding-top: 20px;
+    padding-bottom: 10px;
   }
 
-  .enhancingMessage .flaahingLoadingText2
+  .enhancingMessage > .enhancedPrompt {
+    position: relative;
+    left: 2%;
+    top: 0;
+    width: 100%;
+    font-family: "raleway", sans-serif;
+    flex-wrap: wrap;
+    flex-direction: column;
+    max-height: 80px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    color: #aab8bfbe;
+    font-size: 1em;
+    text-align: left; /* Change from justify to center */
+  }
+  .enhancingMessage > .enhancedPrompt::-webkit-scrollbar
   {
+    display: none;
+  }
+  .enhancingMessage.hidden
+  {
+    opacity: 0;
+  }
+  .enhancingMessage.noEnhancement
+  {
+    opacity: 1;
+  }
+
+
+  .enhancingMessage .flaahingLoadingText1,
+  .enhancingMessage .flaahingLoadingText2,
+  .enhancingMessage .flaahingLoadingText3 {
     position: absolute;
-    top: 40%;
-    left: 10%;
-    width: 82%;
+    left: 2%;
+    width: 100%;
     height: 20%;
     background: #494a4a;
     background: linear-gradient(45deg, #494a4a, #6e6e6e, #494a4a);
     background-size: 200% 200%;
-      animation: metallicLoading 1.5s linear infinite;
-      opacity: 0;
-      transition: .5s;
+    animation: metallicLoading 1.5s linear infinite;
+    opacity: 1;
+    transition: .5s;
   }
 
-  .enhancingMessage .flaahingLoadingText3
-  {
-    position: absolute;
-    top: 75%;
-    left: 10%;
-    width: 82%;
-    height: 20%;
-    background: #494a4a;
-    background: linear-gradient(45deg, #494a4a, #6e6e6e, #494a4a);
-    background-size: 200% 200%;
-      animation: metallicLoading 1.5s linear infinite;
-      opacity: 0;
-      transition: .5s;
+  .enhancingMessage .flaahingLoadingText1 {
+    top: 20%;
+  }
+
+  .enhancingMessage .flaahingLoadingText2 {
+    top: 55%;
+  }
+
+  .enhancingMessage .flaahingLoadingText3 {
+    top: 85%;
   }
 
 
@@ -275,42 +229,9 @@ overflow-x: hidden;
   {
     display: none;
   }
-  .enhancingMessage > .flashingDot
-  {
-    position: relative;
-    height: 15px;
-    width: 15px;
-    left: 5%;
-    top: 50%;
-    transform: translateX(-50%) translateY(-50%);
-    background: #443200;
-    border-radius: 50%;
-    flex-wrap: wrap;
-  }
-  .enhancingMessage > .enhancedPrompt {
-    position: absolute;
-    left: 50%;
-    top: 5%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    font-family: "Orbitron", sans-serif;
-    flex-wrap: wrap;
-    color: #001520;
-    font-size: 1.5em;
-    text-align: center; /* Change from justify to center */
-  }
-  .enhancingMessage.hidden
-  {
-    opacity: 0;
-  }
-  .enhancingMessage.noEnhancement
-  {
-    opacity: 1;
-  }
-  .enhancingMessage.noEnhancement .flashingDot
-  {
-    display: none;
-  }
+
+ 
+
   .enhancingMessage.noEnhancement .flaahingLoadingText1,
   .enhancingMessage.noEnhancement .flaahingLoadingText2,
   .enhancingMessage.noEnhancement .flaahingLoadingText3
@@ -376,8 +297,7 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/fantasy.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.0s;
+  transition: 02.5s;
 
 }
 
@@ -385,8 +305,7 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/halloween.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.1s;
+  transition: 0.52s;
   
 }
 
@@ -394,74 +313,64 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/structure.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.2s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(4)
 {
   background: url(../IMAGES/THEMES/crayon.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.3s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(5)
 {
   background: url(../IMAGES/THEMES/space.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(6)
 {
   background: url(../IMAGES/THEMES/chromatic.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.0s;
+  transition: 0.25s;
  
 }
 .typeOfImageTile span:nth-child(7)
 {
   background: url(../IMAGES/THEMES/cyberpunk.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.1s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(8)
 {
   background: url(../IMAGES/THEMES/anime.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.2s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(9)
 {
   background: url(../IMAGES/THEMES/landscape.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.3s;
+  transition: 0.25s;
 }
 .typeOfImageTile span:nth-child(10)
 {
   background: url(../IMAGES/THEMES/samurai.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 .typeOfImageTile span:nth-child(11)
 {
   background: url(../IMAGES/THEMES/wpap.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 .typeOfImageTile span:nth-child(12)
 {
   background: url(../IMAGES/THEMES/vintage.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 
@@ -469,8 +378,7 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/Pixel.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 
@@ -478,8 +386,7 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/normal.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 
@@ -487,8 +394,7 @@ overflow-x: hidden;
 {
   background: url(../IMAGES/THEMES/Synthwave.jpeg);
   background-size: cover;
-  transition: 0.5s;
-  transition-delay: 0.4s;
+  transition: 0.25s;
 }
 
 
@@ -764,84 +670,6 @@ overflow-x: hidden;
   margin: 0; /* Reset margin */
   color: white; /* Text color */
   font-size: 2.1em;
-}
-
-#OneImage
-{
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%) scale(1);
-  color: #fff;
-  left: 3%;
-  cursor: pointer;
-  font-size:  1.5em;
-}
-
-#OneImageOpacityFirst {
-  position: absolute;
-  top: 52%;
-  transform: translateY(-50%) scale(0.8) rotate(25deg);
-  color: #fff;
-  left: 4.6%;
-  cursor: pointer;
-  font-size: 1.5em;
-  z-index: -1;
-  opacity: 0.3;
-  filter: brightness(0.6);
-  animation: swapAnimationOne 1.5s ease-in-out infinite;
-}
-
-#OneImageOpacitySecond {
-  position: absolute;
-  top: 52%;
-  transform: translateY(-50%) scale(0.8) rotate(-25deg);
-  color: #fff;
-  left: 1.3%;
-  cursor: pointer;
-  font-size: 1.5em;
-  z-index: -1;
-  opacity: 0.3;
-  filter: brightness(0.6);
-  animation: swapAnimationTwo 1.5s ease-in-out infinite;
-}
-
-@keyframes swapAnimationTwo {
-  0%, 100% {
-    transform: translateY(-50%) scale(0.8);
-  }
-  25% 
-  {
-    transform: translateY(-50%) scale(0.9);
-  }
-  50% {
-    left: 4.6%;
-    transform: translateY(-50%) scale(0.8);
-  }
-}
-
-@keyframes swapAnimationOne {
-  0%, 100% {
-    transform: translateY(-50%) scale(0.8);
-  }
-  25% 
-  {
-    transform: translateY(-50%) scale(0.9);
-  }
-  50% {
-    left: 1.3%;
-    transform: translateY(-50%) scale(0.8);
-  }
-}
-
-
-
-@keyframes clickEffect {
-  0% { transform: translateY(-50%) scale(1); }
-  50% { transform: translateY(-50%) scale(0.8); }
-  100% { transform: translateY(-50%) scale(1); }
-}
-.click-effect {
-  animation: clickEffect 0.2s;
 }
 
 

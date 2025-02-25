@@ -1,5 +1,11 @@
 
-const promptTextInput = document.getElementById("promptTextInput");
+const textarea = document.querySelector(".samplePrompt .promptTextInput");
+const container = document.querySelector(".samplePrompt");
+const baseHeight = 130; // Default container height
+const maxHeight = 183;  // Maximum textarea height
+const baseTextareaHeight = 45; // Minimum textarea height
+
+
 const combinations = [
     { configuration: 1, roundness: 1 },
     { configuration: 1, roundness: 2 },
@@ -11,41 +17,42 @@ const combinations = [
   let prev = 0; //counts iteratiuons for the boxes
   const randomTile = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
-document.getElementById('enhanceSwitch').addEventListener('change', function() {
-    if (this.checked) {
-        document.getElementById("textForAIPrompt").innerHTML = "AI Prompt Enhancement is Active (Slower)";
-    } else {
-        document.getElementById("textForAIPrompt").innerHTML = "AI Prompt Enhancement is In-active (Faster)";
-    }
+
+
+
+
+textarea.addEventListener("input", function () {
+  textarea.style.height = "auto"; // Reset height
+  const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+
+  // Calculate the growth offset, but cap it to 53px.
+  const growthOffset = Math.min(newHeight - baseTextareaHeight, 53);
+
+  // If the textarea content shrinks below the base, reset container.
+  if (growthOffset <= 0) {
+    container.style.height = baseHeight + "px";
+    container.style.top = "80%";
+  } else {
+    // Adjust the container height based on the capped offset.
+    container.style.height = baseHeight + growthOffset + "px";
+    // Move the container upwards by the capped offset.
+    container.style.top = `calc(80% - ${growthOffset}px)`;
+  }
+  
+  // Apply the new height to the textarea.
+  textarea.style.height = newHeight + "px"; 
+
+setTimeout(() => {
+  if(textarea.value.trim().length == 0)
+  {
+    container.style.height = baseHeight + "px";
+    container.style.top = "80%";
+  }
+}, 1000)
 });
 
 
-document.getElementById('privateSwitch').addEventListener('change', function() {
-    if (this.checked) {
-        document.getElementById("privatePublicResultDesc").innerText = "The Image you Generate will be Displayed in the Server Gallery (Public)";
-    } else {
-        document.getElementById("privatePublicResultDesc").innerText = "The Image you Generate will not be Displayed in the Server Gallery (Private)";
-    }
-});
 
-promptTextInput.addEventListener("input", function() {
-    this.style.height = "auto";
-    this.style.height = (this.scrollHeight) + "px";
-    document.getElementById("samplePrompt").style.height = (this.scrollHeight + 12) + "px";
-    
-  });
-
-  setInterval(() => {
-      if (promptTextInput.value.length == 0)
-          {
-              promptTextInput.style.height = "45px";
-              document.getElementById("samplePrompt").style.height = "60px";
-          }
-  }, 1200);
-
-
-
-  const wrapper = document.getElementById("wrapper");
 
   document.getElementById("loginButton").addEventListener("click", function() {
     redirectTo("src/auth");
@@ -78,6 +85,22 @@ setInterval(() => {
   prev = index;
 },1000);
 
+
+document.getElementById("userLogo").addEventListener("click", function() {
+  if(document.getElementById("loginNavBar").classList.contains("hidden"))
+  {
+    document.getElementById("loginNavBar").classList.remove("hidden");
+    document.getElementById("userLogo").style.left = "5%";
+    document.getElementById("userLogo").style.zIndex = "100";
+  }
+  else 
+  {
+    document.getElementById("loginNavBar").classList.add("hidden");
+    document.getElementById("userLogo").style.left = "95%";
+    document.getElementById("userLogo").style.zIndex = "10";
+  }
+    
+});
 
 
 function scaleContainer() {
