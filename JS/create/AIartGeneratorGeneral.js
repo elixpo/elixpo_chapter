@@ -1,4 +1,5 @@
-
+let privateMode = false;
+let enhanceMode = false;
 const firebaseConfig = {
     apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
     authDomain: "elixpoai.firebaseapp.com",
@@ -44,6 +45,41 @@ let timeoutId;
   ]
 
 
+
+  document.getElementById("privateBtn").addEventListener("click", function() 
+  {
+    privateMode = !privateMode;
+    if (privateMode) {
+      document.getElementById("privateBtn").classList.add("selected");
+    }
+    else 
+    {
+      document.getElementById("privateBtn").classList.remove("selected");
+    }
+  });
+  document.getElementById("pimpPrompt").addEventListener("click", function()
+  {
+    enhanceMode = !enhanceMode;
+    if (enhanceMode) {
+      document.getElementById("pimpPrompt").classList.add("selected");
+    }
+    else 
+    {
+      document.getElementById("pimpPrompt").classList.remove("selected");
+    }
+  });
+  
+  document.getElementById("promptIdea").addEventListener("click", function() {
+    const randomIndex = Math.floor(Math.random() * prompts.length);
+    document.getElementById("promptTextInput").value = prompts[randomIndex];
+    const event = new Event("input", {bubbles: true});
+    document.getElementById("promptTextInput").dispatchEvent(event);
+    
+  });
+  
+
+  
+
 window.onload = function() {
     globalThis.imageVarType = "Fantasy";
     globalThis.modelType = "Flux-Core";
@@ -80,6 +116,7 @@ window.onload = function() {
     // document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
     downloadUrl = "https://imgelixpo.vercel.app";
     pingUrl = "https://imgelixpo.vercel.app";
+    enhanceUrl = "https://imgelixpo.vercel.app";
 
 
     document.getElementById("promptTextInput").focus();
@@ -87,7 +124,7 @@ window.onload = function() {
         if (localStorage.getItem("ElixpoAIUser") == null) {
             redirectTo("src/auth/?notify=true"); //root hompage redirect
         } else {
-            document.querySelector(".patternContainer").classList.add("hidden");
+            // document.querySelector(".patternContainer").classList.add("hidden");
             document.getElementById("accountMode").innerText = `Hi, ${localStorage.getItem("ElixpoAIUser").slice(0,1).toUpperCase() + localStorage.getItem("ElixpoAIUser").slice(1,20).slice(0,20)+"..."}`;
         }
     }, 1000);
@@ -127,7 +164,7 @@ async function pingServer() {
     }, 20000);
     // getServerURLs();
     // setInterval(getServerURLs, 30000);
-    document.querySelector(".patternContainer").classList.remove("hidden");
+    // document.querySelector(".patternContainer").classList.remove("hidden");
 };
 
 if(localStorage.getItem("guestLogin") == true)
@@ -162,10 +199,9 @@ let controller;
 async function generateImageAsync(prompt, width, height, seed, aspectRatio, theme, model, genNumber, numberOfImages, controller) {
     document.getElementById("NotifTxt").innerText = "Generating Images...";
     document.getElementById("savedMsg").classList.add("display");
-    var enhanceSwitch = document.getElementById("enhanceSwitch");
-    var privateImage = document.getElementById("privateSwitch").checked ? "false" : "true";
-    
-    if (enhanceSwitch.checked) {
+    var privateImage = privateMode;
+    console.log("private mode is ", privateImage);
+    if (enhanceMode) {
         imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=true&private=${privateImage}`;
     } else {
         imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false&private=${privateImage}`;
@@ -300,10 +336,11 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
     try {
         await Promise.all(promises);
         console.log("All images generated successfully.");
+        document.getElementById("stopGeneration").classList.add("hidden");
         generating = false;
         // tokenDeduct(aspectRatio, theme, numberOfImages);
         document.getElementById("rejectBtn").classList.remove("hidden");
-        if ((document.getElementById("privateSwitch").checked == false) || !serverReturnStatus) {
+        if ((privateMode) || !serverReturnStatus) {
             document.getElementById("acceptBtn").classList.add("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings - (Private Result)";
             setTimeout(() => {
@@ -313,7 +350,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
             document.getElementById("stopGeneration").classList.add("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings!";
         } 
-        else if ((document.getElementById("privateSwitch").checked == true) && serverReturnStatus) {
+        else if (!privateMode && serverReturnStatus) {
             document.getElementById("acceptBtn").classList.remove("hidden");
             document.getElementById("NotifTxt").innerText = "Greetings";
             setTimeout(() => {
@@ -376,8 +413,10 @@ function handleStaticMode(numberOfImages) {
         }
     }
     document.getElementById("samplePrompt").classList.remove("generating");
+    document.getElementById("samplePrompt").style.height = "130px";
     if (document.getElementById("samplePrompt").classList.contains("generated")) {
         document.getElementById("samplePrompt").classList.remove("generated");
+        document.getElementById("samplePrompt").classList.style.height = "130px";
     }
     document.getElementById("imageTiles").classList.add("hidden");
     setTimeout(() => {
@@ -387,8 +426,6 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("aspectRatioControls").classList.remove("hidden");
     document.getElementById("aiEnhancementDesc").classList.remove("hidden");
     document.getElementById("privatePublicResultDesc").classList.remove("hidden");
-    document.getElementById("privateResultSection").classList.remove("hidden");
-    document.getElementById("enhanceButton").classList.remove("hidden");
     document.getElementById("enhancingMessage").classList.remove("noEnhancement");
     document.getElementById("enhancedPrompt").innerText = "";
     document.getElementById("enhancingMessage").classList.add("hidden");
@@ -403,7 +440,6 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("savedMsg").classList.remove("display");
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
-    document.getElementById("hqlqcontainer").classList.remove("hidden");
     document.getElementById("statusImage1").innerHTML = "";
     document.getElementById("statusImage2").innerHTML = "";
     document.getElementById("statusImage3").innerHTML = "";
@@ -460,12 +496,12 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, spe
     generating = false;
     document.getElementById("NotifTxt").innerText = "Uploading Images...";
     document.getElementById("savedMsg").classList.add("display");
-    document.getElementById("samplePrompt").classList.add("generated");
     document.getElementById("progressBar").classList.remove("zeroProgress");
     document.getElementById("enhancingMessage").classList.add("hidden");
     document.getElementById("acceptBtn").classList.add("hidden");
     document.getElementById("rejectBtn").classList.add("hidden");
-    document.getElementById("hqlqcontainer").classList.add("hidden");
+    document.getElementById("enhancedPrompt").innerHTML = "";
+
     
     var currentTotalImageOnServer = await gettotalGenOnServer();
     console.log("Current Total Image on Server:", currentTotalImageOnServer);
@@ -480,7 +516,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, spe
             const uploadPromises = [];
             let imageUrls = [];  // To store image URLs for Instagram upload
 
-            if (enhanceSwitch.checked) {
+            if (enhanceMode) {
                 ai_enhanced_prompt = document.getElementById("enhancedPrompt").innerText;
             }
 
@@ -513,11 +549,9 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, spe
                                 user: localStorage.getItem("ElixpoAIUser"),
                                 prompt: promptTextInput.value,
                                 ratio: RatioValue,
-                                ai_enhanced: enhanceSwitch.checked,
-                                likes: 0,
+                                ai_enhanced: enhanceMode,
                                 total_gen_number: blobs.length,
                                 genNum: nextImageNumber,
-                                hq: document.getElementById("hqlqParent").checked,
                                 formatted_prompt: "",
                                 tags: "",
                                 hashtags: "",
@@ -601,6 +635,7 @@ function handleStaticModeExclusive(numberOfImages) {
 
     if (document.getElementById("samplePrompt").classList.contains("generated")) {
         document.getElementById("samplePrompt").classList.remove("generated");
+        document.getElementById("samplePrompt").style.height = "130px";
     }
 
     document.getElementById("imageTiles").classList.add("hidden");
@@ -612,8 +647,6 @@ function handleStaticModeExclusive(numberOfImages) {
     document.getElementById("aspectRatioControls").classList.remove("hidden");
     document.getElementById("aiEnhancementDesc").classList.remove("hidden");
     document.getElementById("privatePublicResultDesc").classList.remove("hidden");
-    document.getElementById("privateResultSection").classList.remove("hidden");
-    document.getElementById("enhanceButton").classList.remove("hidden");
     document.getElementById("enhancingMessage").classList.add("hidden");
     document.getElementById("enhancingMessage").classList.remove("noEnhancement");
     document.getElementById("enhancedPrompt").innerText = "";
@@ -624,7 +657,6 @@ function handleStaticModeExclusive(numberOfImages) {
     document.querySelector(".progressBar").classList.add("zeroProgress");
     document.querySelector("."+imageVarType).style.opacity = "1";
     document.querySelector("."+modelType).style.opacity = "1";
-    document.getElementById("hqlqcontainer").classList.remove("hidden");
     document.getElementById("statusImage1").innerHTML = "";
     document.getElementById("statusImage2").innerHTML = "";
     document.getElementById("statusImage3").innerHTML = "";
@@ -645,41 +677,46 @@ document.getElementById("searchButtonText").addEventListener("click", async () =
         generatingModeHandle();
     } else {
         // Handle case when prompt input is empty
-        document.getElementById("promptTextInput").setAttribute("placeholder", "Please Enter a Prompt to Generate an Image");
+        document.getElementById("promptTextInput").setAttribute("placeholder", "An Empty Thought? Tell me something!");
         setTimeout(() => {
-            document.getElementById("promptTextInput").setAttribute("placeholder", "Type in Your Prompt for Elixpo to Imagine");
+            document.getElementById("promptTextInput").setAttribute("placeholder", "What's on your mind?");
         }, 3000);
         document.getElementById("promptTextInput").focus();
     }
 });
 
-async function enhance(prompt) {
-            document.getElementById("textLoadingAnim1").style.opacity = "0";
-            document.getElementById("textLoadingAnim2").style.opacity = "0";
-            document.getElementById("textLoadingAnim3").style.opacity = "0";
-
+async function enhancePrompt() {
     try {
-        const model = await genAI.getGenerativeModel(modelConfig);
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = await response.text(); // Await the text extraction
+        document.getElementById("textLoadingAnim1").style.opacity = "1";
+        document.getElementById("textLoadingAnim2").style.opacity = "1";
+        document.getElementById("textLoadingAnim3").style.opacity = "1";
+        let prompt = document.getElementById("promptTextInput").value.trim();
+        const seed = Math.floor(Math.random() * 1000000);
+        const response = await fetch(`${enhanceUrl}/enhance-prompt`, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt, seed }),
+            mode: "cors"
+        });
 
-        setTimeout(() => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
             document.getElementById("textLoadingAnim1").style.opacity = "0";
             document.getElementById("textLoadingAnim2").style.opacity = "0";
             document.getElementById("textLoadingAnim3").style.opacity = "0";
-        }, 1200);
-        return text;
+        return data.enhancedPrompt;
+        
     } catch (error) {
-        document.getElementById("textLoadingAnim").style.opacity = "1"; // Ensure the loading animation is hidden in case of error
-        setTimeout(() => {
-            document.getElementById("textLoadingAnim1").style.opacity = "0";
-            document.getElementById("textLoadingAnim2").style.opacity = "0";
-            document.getElementById("textLoadingAnim3").style.opacity = "0";
-        }, 1200);
-        return prompt;
+        console.error('Error enhancing prompt:', error);
+        return prompt; // Return the original prompt in case of error
     }
 }
+
  
 async function generatingModeHandle() {
     generating = true;
@@ -692,149 +729,132 @@ async function generatingModeHandle() {
     document.getElementById("imageTiles").classList.remove("hidden");
     document.getElementById("stopGeneration").classList.remove("hidden");
     document.getElementById("isoAIEnhancement").classList.add("hidden");
-
-    const enhanceSwitch = document.getElementById("enhanceSwitch");
-
-    if (!enhanceSwitch.checked) {
-        document.getElementById("aiEnhancementDesc").classList.add("hidden");
-        document.getElementById("privatePublicResultDesc").classList.add("hidden");
-        document.getElementById("privateResultSection").classList.add("hidden");
-        document.getElementById("enhanceButton").classList.add("hidden");
-        document.getElementById("enhancingMessage").classList.contains("hidden") ? null : document.getElementById("isoAIEnhancement").classList.add("hidden");
-        document.getElementById("enhancementAI").classList.remove("hidden");
+  
+    if (enhanceMode) {
+      document.getElementById("aiEnhancementDesc").classList.add("hidden");
+      document.getElementById("privatePublicResultDesc").classList.add("hidden");
+      if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
         document.getElementById("isoAIEnhancement").classList.add("hidden");
-        document.getElementById("enhancingMessage").classList.add("noEnhancement");
-        document.getElementById("enhancedPrompt").innerText = " Image(s) are being Generated -- Pls StandBy! ";
-        document.getElementById("hqlqcontainer").classList.add("hidden");
+      }
+      document.getElementById("enhancementAI").classList.remove("hidden");
+      document.getElementById("isoAIEnhancement").classList.add("hidden");
+      document.getElementById("enhancingMessage").classList.add("noEnhancement");
+      // Instead of waiting for enhancePrompt(), trigger it and update when ready
+      enhancePrompt().then(result => {
+        document.getElementById("enhancedPrompt").innerText = result;
+      }).catch(error => {
+        console.error("Error enhancing prompt:", error);
+        document.getElementById("enhancedPrompt").innerText = "Enhancement failed";
+      });
     } else {
-        document.getElementById("aiEnhancementDesc").classList.add("hidden");   
-        document.getElementById("privatePublicResultDesc").classList.add("hidden");
-        document.getElementById("privateResultSection").classList.add("hidden");
-        document.getElementById("enhanceButton").classList.add("hidden");
-        document.getElementById("enhancingMessage").classList.contains("hidden") ? null : document.getElementById("isoAIEnhancement").classList.add("hidden");
-        document.getElementById("enhancingMessage").classList.add("noEnhancement");
-        document.getElementById("enhancementAI").classList.remove("hidden");
-        document.getElementById("hqlqcontainer").classList.add("hidden");
+      document.getElementById("aiEnhancementDesc").classList.add("hidden");
+      document.getElementById("privatePublicResultDesc").classList.add("hidden");
+      if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
         document.getElementById("isoAIEnhancement").classList.add("hidden");
-        document.getElementById("enhancedPrompt").innerText = " Image(s) are being Generated -- Pls StandBy! ";
+      }
+      document.getElementById("enhancingMessage").classList.add("noEnhancement");
+      document.getElementById("enhancementAI").classList.remove("hidden");
+      document.getElementById("isoAIEnhancement").classList.add("hidden");
+      // Set a default message immediately without waiting
+      document.getElementById("enhancedPrompt").innerText = "Diffusing Images... In Progress";
     }
-
+  
     const promptTextInput = document.getElementById("promptTextInput");
-    if(imageVarType == "Fantasy")
-        {
-            suffixPrompt = "in a magical fantasy setting, with mythical creatures and surreal landscapes";
-        }
-        else if(imageVarType == "Halloween")
-        {
-            suffixPrompt = "with spooky Halloween-themed elements, pumpkins, and eerie shadows";
-        }
-        else if(imageVarType == "Structure")
-        {
-            suffixPrompt = "in the style of monumental architecture, statues, or structural art";
-        }
-        else if(imageVarType == "Crayon")
-        {
-            suffixPrompt = "in the style of colorful crayon art with vibrant, childlike strokes";
-        }
-        else if(imageVarType == "Space")
-        {
-            suffixPrompt = "in a vast, cosmic space setting with stars, planets, and nebulae";
-        }
-        else if(imageVarType == "Chromatic")
-        {
-            suffixPrompt = "in a chromatic style with vibrant, shifting colors and gradients";
-        }
-        else if(imageVarType == "Cyberpunk")
-        {
-            suffixPrompt = "in a futuristic cyberpunk setting with neon lights and dystopian vibes";
-        }
-        else if(imageVarType == "Anime")
-        {
-            suffixPrompt = "in the style of anime, with detailed character designs and dynamic poses";
-        }
-        else if(imageVarType == "Landscape")
-        {
-            suffixPrompt = "depicting a breathtaking landscape with natural scenery and serene views";
-        }
-        else if(imageVarType == "Samurai")
-        {
-            suffixPrompt = "featuring a traditional samurai theme with warriors and ancient Japan";
-        }
-        else if(imageVarType == "Wpap")
-        {
-            suffixPrompt = "in the WPAP style with geometric shapes and vibrant pop-art colors";
-        }
-        else if(imageVarType == "Vintage")
-        {
-            suffixPrompt = "in a vintage, old-fashioned style with sepia tones and retro aesthetics";
-        }
-        else if(imageVarType == "Pixel")
-        {
-            suffixPrompt = "in a pixel art style with blocky, 8-bit visuals and retro game aesthetics";
-        }
-        else if(imageVarType == "Normal")
-        {
-            suffixPrompt = "in a realistic and natural style with minimal artistic exaggeration";
-        }
-        else if(imageVarType == "Synthwave")
-        {
-            suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
-        }
-        
+    if (imageVarType == "Fantasy") {
+      suffixPrompt = "in a magical fantasy setting, with mythical creatures and surreal landscapes";
+    } else if (imageVarType == "Halloween") {
+      suffixPrompt = "with spooky Halloween-themed elements, pumpkins, and eerie shadows";
+    } else if (imageVarType == "Structure") {
+      suffixPrompt = "in the style of monumental architecture, statues, or structural art";
+    } else if (imageVarType == "Crayon") {
+      suffixPrompt = "in the style of colorful crayon art with vibrant, childlike strokes";
+    } else if (imageVarType == "Space") {
+      suffixPrompt = "in a vast, cosmic space setting with stars, planets, and nebulae";
+    } else if (imageVarType == "Chromatic") {
+      suffixPrompt = "in a chromatic style with vibrant, shifting colors and gradients";
+    } else if (imageVarType == "Cyberpunk") {
+      suffixPrompt = "in a futuristic cyberpunk setting with neon lights and dystopian vibes";
+    } else if (imageVarType == "Anime") {
+      suffixPrompt = "in the style of anime, with detailed character designs and dynamic poses";
+    } else if (imageVarType == "Landscape") {
+      suffixPrompt = "depicting a breathtaking landscape with natural scenery and serene views";
+    } else if (imageVarType == "Samurai") {
+      suffixPrompt = "featuring a traditional samurai theme with warriors and ancient Japan";
+    } else if (imageVarType == "Wpap") {
+      suffixPrompt = "in the WPAP style with geometric shapes and vibrant pop-art colors";
+    } else if (imageVarType == "Vintage") {
+      suffixPrompt = "in a vintage, old-fashioned style with sepia tones and retro aesthetics";
+    } else if (imageVarType == "Pixel") {
+      suffixPrompt = "in a pixel art style with blocky, 8-bit visuals and retro game aesthetics";
+    } else if (imageVarType == "Normal") {
+      suffixPrompt = "in a realistic and natural style with minimal artistic exaggeration";
+    } else if (imageVarType == "Synthwave") {
+      suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
+    }
+    
     let encodedPrompt = promptTextInput.value.trim() + " " + suffixPrompt;
     let width, height;
-
-    const isHQorLQ = document.getElementById("hqlqParent").checked;
-    console.log("image is being generated under " + isHQorLQ)
-switch (RatioValue) {
-    case "1:1":
+    const isHQorLQ = false;
+    console.log("image is being generated under " + isHQorLQ);
+  
+    switch (RatioValue) {
+      case "1:1":
         width = isHQorLQ ? 2048 : 1024;
         height = isHQorLQ ? 2048 : 1024;
         break;
-    case "9:16":
+      case "9:16":
         width = isHQorLQ ? 1152 : 576;
         height = isHQorLQ ? 2048 : 1024;
         break;
-    case "16:9":
+      case "16:9":
         width = isHQorLQ ? 2048 : 1024;
         height = isHQorLQ ? 1152 : 576;
         break;
-    case "4:3":
+      case "4:3":
         width = isHQorLQ ? 2048 : 1024;
         height = isHQorLQ ? 1536 : 768;
         break;
-    case "3:2":
+      case "3:2":
         width = isHQorLQ ? 2048 : 1024;
         height = isHQorLQ ? 1365 : 683;
         break;
-    default:
+      default:
         width = isHQorLQ ? 2048 : 1024;
         height = isHQorLQ ? 2048 : 1024;
         break;
-}
-
-
+    }
+  
     const numberOfImages = currentIndex + 1;
     const seeds = generateSeeds(numberOfImages, 4, 6);
-    for(let i = 1; i <= numberOfImages; i++)
-    {
-        document.getElementById("statusImage"+i).innerText = isHQorLQ ? "In Progress" : "Generating";
+    for (let i = 1; i <= numberOfImages; i++) {
+      document.getElementById("statusImage" + i).innerText = isHQorLQ ? "In Progress" : "Generating";
     }
-    
+  
     controller = new AbortController();
-
+  
     try {
-        await generateMultipleImages(encodedPrompt, width, height, seeds, RatioValue, imageVarType, modelType, numberOfImages, controller);
+      await generateMultipleImages(
+        encodedPrompt,
+        width,
+        height,
+        seeds,
+        RatioValue,
+        imageVarType,
+        modelType,
+        numberOfImages,
+        controller
+      );
     } catch (error) {
-        console.error('Error fetching server URL:', error);
-        document.getElementById("NotifTxt").innerText = "Error fetching server URL";
-        document.getElementById("savedMsg").classList.add("display");
-        setTimeout(() => {
-            document.getElementById("savedMsg").classList.remove("display");
-        }, 1500);
-        document.getElementById("NotifTxt").innerText = "Greetings";
+      console.error("Error fetching server URL:", error);
+      document.getElementById("NotifTxt").innerText = "Error fetching server URL";
+      document.getElementById("savedMsg").classList.add("display");
+      setTimeout(() => {
+        document.getElementById("savedMsg").classList.remove("display");
+      }, 1500);
+      document.getElementById("NotifTxt").innerText = "Greetings";
     }
-}
+  }
+  
 
 
 
