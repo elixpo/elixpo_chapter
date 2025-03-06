@@ -124,7 +124,7 @@ window.onload = function() {
         if (localStorage.getItem("ElixpoAIUser") == null) {
             redirectTo("src/auth/?notify=true"); //root hompage redirect
         } else {
-            document.querySelector(".patternContainer").classList.add("hidden");
+            // document.querySelector(".patternContainer").classList.add("hidden");
             document.getElementById("accountMode").innerText = `Hi, ${localStorage.getItem("ElixpoAIUser").slice(0,1).toUpperCase() + localStorage.getItem("ElixpoAIUser").slice(1,20).slice(0,20)+"..."}`;
         }
     }, 1000);
@@ -164,7 +164,7 @@ async function pingServer() {
     }, 20000);
     // getServerURLs();
     // setInterval(getServerURLs, 30000);
-    document.querySelector(".patternContainer").classList.remove("hidden");
+    // document.querySelector(".patternContainer").classList.remove("hidden");
 };
 
 if(localStorage.getItem("guestLogin") == true)

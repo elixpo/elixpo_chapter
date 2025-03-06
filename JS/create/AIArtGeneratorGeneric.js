@@ -32,6 +32,7 @@ textarea.addEventListener("input", function () {
   if (growthOffset <= 0) {
     container.style.height = baseHeight + "px";
     container.style.top = "80%";
+  
   } else {
     // Adjust the container height based on the capped offset.
     container.style.height = baseHeight + growthOffset + "px";
@@ -47,6 +48,9 @@ setTimeout(() => {
   {
     container.style.height = baseHeight + "px";
     container.style.top = "80%";
+    if (window.innerWidth <= 700) {
+      container.style.top = "75%";
+    }
   }
 }, 1000)
 });
@@ -75,15 +79,15 @@ const uniqueRand = (min, max, prev) => {
 
 
 
-setInterval(() => {
-  const index = uniqueRand(0, combinations.length - 1, prev),
-        combination = combinations[index];
+// setInterval(() => {
+//   const index = uniqueRand(0, combinations.length - 1, prev),
+//         combination = combinations[index];
   
-  wrapper.dataset.configuration = combination.configuration;
-  wrapper.dataset.roundness = combination.roundness;
+//   wrapper.dataset.configuration = combination.configuration;
+//   wrapper.dataset.roundness = combination.roundness;
   
-  prev = index;
-},1000);
+//   prev = index;
+// },1000);
 
 
 document.getElementById("userLogo").addEventListener("click", function() {
