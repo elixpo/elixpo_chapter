@@ -91,6 +91,12 @@
     display: none;
 }
 
+.samplePrompt.generated 
+{
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.5s;
+}
 
 
 @keyframes swapAnimationTwo {
