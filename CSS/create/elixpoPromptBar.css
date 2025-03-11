@@ -48,7 +48,7 @@
     box-sizing: border-box;
     resize: none;
     padding-top: 10px;
-    overflow-y: hidden;
+    overflow-y: auto;
     line-height: 1.2em;
 }
 
