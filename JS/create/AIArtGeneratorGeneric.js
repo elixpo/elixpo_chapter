@@ -90,28 +90,13 @@ const uniqueRand = (min, max, prev) => {
 // },1000);
 
 
-document.getElementById("userLogo").addEventListener("click", function() {
-  if(document.getElementById("loginNavBar").classList.contains("hidden"))
-  {
-    document.getElementById("loginNavBar").classList.remove("hidden");
-    document.getElementById("userLogo").style.left = "5%";
-    document.getElementById("userLogo").style.zIndex = "100";
-  }
-  else 
-  {
-    document.getElementById("loginNavBar").classList.add("hidden");
-    document.getElementById("userLogo").style.left = "95%";
-    document.getElementById("userLogo").style.zIndex = "10";
-  }
-    
-});
 
 
 function scaleContainer() {
   if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
   {
 
-  
+    // the viewport is in phone
     const container = document.querySelector('.container');
     const containerWidth = 1519;
     const containerHeight = 730;
@@ -129,6 +114,42 @@ function scaleContainer() {
     container.style.transform = `translate(-50%, -50%) scale(${scale})`;
   }
 }
+
+
+document.getElementById("userLogo").addEventListener("click", function() {
+  if(navigator.userAgent.includes("Mobile"))
+  {
+    if(document.getElementById("loginNavBar").classList.contains("hidden"))
+      {
+        document.getElementById("loginNavBar").classList.remove("hidden");
+        document.getElementById("userLogo").style.left = "75%";
+        document.getElementById("userLogo").style.zIndex = "100";
+      }
+      else 
+      {
+        document.getElementById("loginNavBar").classList.add("hidden");
+        document.getElementById("userLogo").style.left = "75%";
+        document.getElementById("userLogo").style.zIndex = "10";
+      }
+  }
+  else if(navigator.userAgent.includes("Win"))
+  {
+    if(document.getElementById("loginNavBar").classList.contains("hidden"))
+      {
+        document.getElementById("loginNavBar").classList.remove("hidden");
+        document.getElementById("userLogo").style.left = "5%";
+        document.getElementById("userLogo").style.zIndex = "100";
+      }
+      else 
+      {
+        document.getElementById("loginNavBar").classList.add("hidden");
+        document.getElementById("userLogo").style.left = "95%";
+        document.getElementById("userLogo").style.zIndex = "10";
+      }
+  }
+  
+    
+});
 
 
 

@@ -17,6 +17,7 @@
     "instagram-private-api": "^1.46.1",
     "marked": "^14.1.1",
     "node-fetch": "^2.7.0",
+    "openai": "^4.86.2",
     "request-promise": "^4.2.6",
     "simple-git": "^3.25.0",
     "uuid": "^11.0.3"

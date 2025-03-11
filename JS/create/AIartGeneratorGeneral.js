@@ -336,6 +336,8 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
     try {
         await Promise.all(promises);
         console.log("All images generated successfully.");
+        (document.getElementById("samplePrompt").classList.add("generated"));
+
         document.getElementById("stopGeneration").classList.add("hidden");
         generating = false;
         // tokenDeduct(aspectRatio, theme, numberOfImages);
@@ -413,7 +415,7 @@ function handleStaticMode(numberOfImages) {
         }
     }
     document.getElementById("samplePrompt").classList.remove("generating");
-    document.getElementById("samplePrompt").style.height = "130px";
+    
     if (document.getElementById("samplePrompt").classList.contains("generated")) {
         document.getElementById("samplePrompt").classList.remove("generated");
         document.getElementById("samplePrompt").classList.style.height = "130px";
@@ -444,7 +446,7 @@ function handleStaticMode(numberOfImages) {
     document.getElementById("statusImage2").innerHTML = "";
     document.getElementById("statusImage3").innerHTML = "";
     document.getElementById("statusImage4").innerHTML = "";
-    
+    document.getElementById("samplePrompt").style.height = "130px";
     specialDir = "";
     encodedPrompt = "";
     },1500)
@@ -635,7 +637,6 @@ function handleStaticModeExclusive(numberOfImages) {
 
     if (document.getElementById("samplePrompt").classList.contains("generated")) {
         document.getElementById("samplePrompt").classList.remove("generated");
-        document.getElementById("samplePrompt").style.height = "130px";
     }
 
     document.getElementById("imageTiles").classList.add("hidden");
@@ -661,6 +662,7 @@ function handleStaticModeExclusive(numberOfImages) {
     document.getElementById("statusImage2").innerHTML = "";
     document.getElementById("statusImage3").innerHTML = "";
     document.getElementById("statusImage4").innerHTML = "";
+    document.getElementById("samplePrompt").style.height = "130px";
     encodedPrompt = "";
     specialDir = "";
     },1500)
