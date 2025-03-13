@@ -497,37 +497,6 @@
     }
   }
 
-  #privateBtn>span {
-    display: none;
-  }
-
-  #privateBtn {
-    margin-top: 7%;
-    right: 58px;
-  }
-
-  #pimpPrompt>span {
-    display: none;
-  }
-
-  #pimpPrompt {
-    margin-top: 7%;
-    right: 58px;
-  }
-
-  #promptIdea>span {
-    display: none;
-  }
-
-  #promptIdea {
-    margin-top: 7%;
-    right: 58px;
-
-  }
-
-  .searchBtn {
-    left: -10%;
-  }
 
   .searchBtn .text {
     display: none;

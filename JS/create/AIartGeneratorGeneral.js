@@ -1,198 +1,4 @@
-let privateMode = false;
-let enhanceMode = false;
-const firebaseConfig = {
-    apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
-    authDomain: "elixpoai.firebaseapp.com",
-    projectId: "elixpoai",
-    storageBucket: "elixpoai.appspot.com",
-    messagingSenderId: "718153866206",
-    appId: "1:718153866206:web:671c00aba47368b19cdb4f"
-  };
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  let generating = false;
-//   let tokens = 0;
-  let imageUrl = '';
-  let formatted_prompt = "";
-  let hashtags = "";
-  let tags = "";
-  let enhanceUrl = '';
-  let downloadUrl = '';
-  let pingUrl = '';
-  let tagUrl = '';
-  let ai_enhanced_prompt = '';
-  let suffixPrompt = "";
-  let serverReturnStatus = true;
-
-  
-let originalTitle = document.title;
-let timeoutId;
-
-  const randomLogos = 
-  [
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F1.jpeg?alt=media&token=01b96c7a-2ff4-4f7b-99e4-80f510315bb2",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F2.jpeg?alt=media&token=ace5b321-0c49-4b8c-912e-3d51ceb81545",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F3.jpeg?alt=media&token=41f1a76b-c1fc-476e-9156-570a8165d2c0",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F4.jpeg?alt=media&token=94e0f9b5-a1c3-4aa3-9fa7-239c1b08f983",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F5.jpeg?alt=media&token=d363bee4-01bc-4b8d-b90d-6e31a98c2bad",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F6.jpeg?alt=media&token=50c05867-0050-4d89-9c27-cb5040605d6d",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F7.jpeg?alt=media&token=4884744b-1c4d-46de-a245-5f96f344e268",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F8.jpeg?alt=media&token=6c50ad97-63ac-4bf8-9ac0-acf9c5ba0ca8",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F9.jpeg?alt=media&token=47923f1f-516a-4263-a613-d144e3ef6eb9",
-    "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F10.jpeg?alt=media&token=88686e4f-c02c-4937-af00-3a471b7cf574"
-  ]
-
-
-
-  document.getElementById("privateBtn").addEventListener("click", function() 
-  {
-    privateMode = !privateMode;
-    if (privateMode) {
-      document.getElementById("privateBtn").classList.add("selected");
-    }
-    else 
-    {
-      document.getElementById("privateBtn").classList.remove("selected");
-    }
-  });
-  document.getElementById("pimpPrompt").addEventListener("click", function()
-  {
-    enhanceMode = !enhanceMode;
-    if (enhanceMode) {
-      document.getElementById("pimpPrompt").classList.add("selected");
-    }
-    else 
-    {
-      document.getElementById("pimpPrompt").classList.remove("selected");
-    }
-  });
-  
-  document.getElementById("promptIdea").addEventListener("click", function() {
-    const randomIndex = Math.floor(Math.random() * prompts.length);
-    document.getElementById("promptTextInput").value = prompts[randomIndex];
-    const event = new Event("input", {bubbles: true});
-    document.getElementById("promptTextInput").dispatchEvent(event);
-    
-  });
-  
-
-  
-
-window.onload = function() {
-    globalThis.imageVarType = "Fantasy";
-    globalThis.modelType = "Flux-Core";
-    globalThis.RatioValue = "1:1";
-    if (document.getElementById("imageTiles").classList.contains("hidden")) {
-        document.querySelector("." + modelType).style.opacity = "1";
-        document.querySelector("." + modelType).style.border = "1px solid #f4bb00";
-    } else {
-        document.querySelector("." + modelType).style.opacity = "0";
-        document.querySelector("." + modelType).style.border = "none";
-    }
-
-    if (document.getElementById("imageTiles").classList.contains("hidden")) {
-        document.querySelector("." + imageVarType).style.opacity = "1";
-        document.querySelector("." + imageVarType).style.border = "1px solid #f4bb00";
-    } else {
-        document.querySelector("." + imageVarType).style.opacity = "0";
-        document.querySelector("." + imageVarType).style.border = "none";
-    }
-
-
-
-    globalThis.width = 2048;
-    globalThis.height = 2048;
-    globalThis.encodedPrompt = "";
-    globalThis.currentIndex = 0;
-    globalThis.websiteStaticMode = "Static";
-    globalThis.controller;
-    globalThis.blobs = [];
-    // localStorage.setItem("ElixpoAIUser", "circuit overtime");
-    globalThis.imgProg = 0;
-    globalThis.fileName = "ElixpoAI-Generated-Image.jpeg";
-    globalThis.specialDir = "";
-    // document.getElementById("logoutPopUpUsername").innerText = localStorage.getItem("ElixpoAIUser");
-    downloadUrl = "https://imgelixpo.vercel.app";
-    pingUrl = "https://imgelixpo.vercel.app";
-    enhanceUrl = "https://imgelixpo.vercel.app";
-
-
-    document.getElementById("promptTextInput").focus();
-    setInterval(() => {
-        if (localStorage.getItem("ElixpoAIUser") == null) {
-            redirectTo("src/auth/?notify=true"); //root hompage redirect
-        } else {
-            // document.querySelector(".patternContainer").classList.add("hidden");
-            document.getElementById("accountMode").innerText = `Hi, ${localStorage.getItem("ElixpoAIUser").slice(0,1).toUpperCase() + localStorage.getItem("ElixpoAIUser").slice(1,20).slice(0,20)+"..."}`;
-        }
-    }, 1000);
-
-
-    
-    globalThis.serverRef = db.collection('Server').doc('servers');
-
-
-async function pingServer() {
-    try {
-        const response = await fetch(`${pingUrl}/ping`, {
-            method: "POST", // Use POST if you prefer to simulate heartbeat requests
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: 'heartbeat' }), // Send a heartbeat signal
-            mode : "cors"
-        });
-
-        if (response.ok) {
-            console.log(`${pingUrl} is up`);
-            document.getElementById("serverStatus").classList.remove("offline");
-        } else {
-            console.log(`${pingUrl} is down`);
-            document.getElementById("serverStatus").classList.add("offline");
-        }
-    } catch (error) {
-        console.log(`${pingUrl} is down`);
-        document.getElementById("serverStatus").classList.add("offline");
-    }
-}
-
-    pingServer();
-    setInterval(() => {
-        // pingServer();
-    }, 20000);
-    // getServerURLs();
-    // setInterval(getServerURLs, 30000);
-    // document.querySelector(".patternContainer").classList.remove("hidden");
-};
-
-if(localStorage.getItem("guestLogin") == true)
-{
-    db.collection("users").doc(localStorage.getItem("ElixpoAIUser").toLowerCase()).get().then((doc) => {
-        if (doc.exists) {
-            // console.log("Document data:", doc.data());
-            document.getElementById("userLogo").style.backgroundImage = `url(${doc.data().user_logo})`;
-        } else {
-           console.log("No such document!");
-        }
-    }).catch((error) => {
-       location.reload();
-    });
-}
-else 
-{
-const randomIndex = Math.floor(Math.random() * randomLogos.length);
-const randomLogo = randomLogos[randomIndex];
-document.getElementById("userLogo").style.backgroundImage = `url(${randomLogo})`;
-}
-
-
-
-
-
-const diceIcon = document.getElementById('OneImage');
-const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four'];
 const promptTextInput = document.getElementById("promptTextInput");
 let controller;
 
@@ -337,9 +143,10 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
         await Promise.all(promises);
         console.log("All images generated successfully.");
         (document.getElementById("samplePrompt").classList.add("generated"));
-
+        cancelImageReference();
         document.getElementById("stopGeneration").classList.add("hidden");
         generating = false;
+        imageMode = false;
         // tokenDeduct(aspectRatio, theme, numberOfImages);
         document.getElementById("rejectBtn").classList.remove("hidden");
         if ((privateMode) || !serverReturnStatus) {
@@ -375,6 +182,7 @@ async function generateMultipleImages(encodedPrompt, width, height, seeds, aspec
             console.log("Image generation stopped.");
         } else {
             console.error("Error generating images:", error);
+            cancelImageReference();
             document.getElementById("NotifTxt").innerText = "Server Offline!";
             document.getElementById("savedMsg").classList.add("display"); 
             setTimeout(() => {
@@ -398,6 +206,7 @@ document.getElementById("stopGeneration").addEventListener("click", () => {
 function handleStaticMode(numberOfImages) {
     generating = false;
     blobs = [];
+    cancelImageReference();
     for (let i = 1; i <= numberOfImages; i++) {
         const imgElement = document.getElementById("imageRecieve" + i.toString());
 
@@ -418,7 +227,7 @@ function handleStaticMode(numberOfImages) {
     
     if (document.getElementById("samplePrompt").classList.contains("generated")) {
         document.getElementById("samplePrompt").classList.remove("generated");
-        document.getElementById("samplePrompt").classList.style.height = "130px";
+        document.getElementById("samplePrompt").style.height = "150px";
     }
     document.getElementById("imageTiles").classList.add("hidden");
     setTimeout(() => {
@@ -571,6 +380,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, spe
                             // Check if all uploads are complete
                             if (progress === blobs.length) {
                                 console.log("All images uploaded successfully.");
+                                cancelImageReference();
                                 generating = false;
                                 setTimeout(() => {
                                     document.getElementById("NotifTxt").innerText = "Uploading to Instagram @elixpo_ai";
@@ -616,6 +426,7 @@ async function handleStaticServerUpload(blobs, imageNumber, imgTheme, model, spe
 
 function handleStaticModeExclusive(numberOfImages) {
     blobs = [];
+    cancelImageReference();
     for (let i = 1; i <= numberOfImages; i++) {
         const imgElement = document.getElementById("imageRecieve" + i.toString());
 
@@ -675,10 +486,8 @@ document.getElementById("searchButtonText").addEventListener("click", async () =
     console.log("Search Button Clicked");
     const promptTextInput = document.getElementById("promptTextInput");
     if (promptTextInput.value.trim() !== "") {
-        // websiteStaticMode = "Generating";
         generatingModeHandle();
     } else {
-        // Handle case when prompt input is empty
         document.getElementById("promptTextInput").setAttribute("placeholder", "An Empty Thought? Tell me something!");
         setTimeout(() => {
             document.getElementById("promptTextInput").setAttribute("placeholder", "What's on your mind?");
@@ -687,12 +496,17 @@ document.getElementById("searchButtonText").addEventListener("click", async () =
     }
 });
 
-async function enhancePrompt() {
+
+
+async function enhancePrompt(instructionPrompt="") {
     try {
         document.getElementById("textLoadingAnim1").style.opacity = "1";
         document.getElementById("textLoadingAnim2").style.opacity = "1";
         document.getElementById("textLoadingAnim3").style.opacity = "1";
         let prompt = document.getElementById("promptTextInput").value.trim();
+        if (instructionPrompt) {
+            prompt = prompt+instructionPrompt;
+        }
         const seed = Math.floor(Math.random() * 1000000);
         const response = await fetch(`${enhanceUrl}/enhance-prompt`, {
             method: "POST",
@@ -719,7 +533,6 @@ async function enhancePrompt() {
     }
 }
 
- 
 async function generatingModeHandle() {
     generating = true;
     suffixPrompt = "";
@@ -731,24 +544,89 @@ async function generatingModeHandle() {
     document.getElementById("imageTiles").classList.remove("hidden");
     document.getElementById("stopGeneration").classList.remove("hidden");
     document.getElementById("isoAIEnhancement").classList.add("hidden");
-  
-    if (enhanceMode) {
-      document.getElementById("aiEnhancementDesc").classList.add("hidden");
-      document.getElementById("privatePublicResultDesc").classList.add("hidden");
-      if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
+
+    let finalPrompt = document.getElementById("promptTextInput").value.trim(); // Initial prompt
+    let enhancementProcessed = false;
+
+    if(imageMode)
+    {
+        document.getElementById("NotifTxt").innerText = "Just 2 mins! Trying to understand the image!";
+            document.getElementById("savedMsg").classList.add("display"); 
+           
+        document.getElementById("textLoadingAnim1").style.opacity = "0";
+        document.getElementById("textLoadingAnim2").style.opacity = "0";
+        document.getElementById("textLoadingAnim3").style.opacity = "0";
+        document.getElementById("enhancedPrompt").innerText = `Let's see what we can create from this image...`;
+        processedPrompt = await generatePromptFromImage(imageDataUrl);
+        console.log(processedPrompt);
+        document.getElementById("enhancedPrompt").innerText = processedPrompt;
+        document.getElementById("savedMsg").classList.remove("display"); 
+        document.getElementById("NotifTxt").innerText = "Greetings";
+
+        if (enhanceMode) {
+            enhancementProcessed = true;
+            document.getElementById("aiEnhancementDesc").classList.add("hidden");
+            document.getElementById("privatePublicResultDesc").classList.add("hidden");
+            if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
+                document.getElementById("isoAIEnhancement").classList.add("hidden");
+            }
+            document.getElementById("enhancementAI").classList.remove("hidden");
+            document.getElementById("isoAIEnhancement").classList.add("hidden");
+            document.getElementById("enhancingMessage").classList.add("noEnhancement");
+
+            try {
+                let combinedPrompt = `${finalPrompt} ${processedPrompt}`;
+                const result = await enhancePrompt(combinedPrompt);
+                document.getElementById("enhancedPrompt").innerText = result;
+                processedPrompt = result;
+            } catch (error) {
+                console.error("Error enhancing prompt:", error);
+                document.getElementById("enhancedPrompt").innerText = "Enhancement failed";
+            }
+
+            finalPrompt = `${processedPrompt}`; // Combine user input with enhanced prompt
+            console.log(finalPrompt);
+        } else {
+            finalPrompt = `${processedPrompt}`; // Combine user input with image-derived prompt
+            console.log(finalPrompt);
+        }
+
+
+    } else if (enhanceMode) {
+        document.getElementById("enhancedPrompt").innerText = "Thinking about what you just said...";
+        enhancementProcessed = true;
+        document.getElementById("aiEnhancementDesc").classList.add("hidden");
+        document.getElementById("privatePublicResultDesc").classList.add("hidden");
+        if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
+            document.getElementById("isoAIEnhancement").classList.add("hidden");
+        }
+        document.getElementById("enhancementAI").classList.remove("hidden");
         document.getElementById("isoAIEnhancement").classList.add("hidden");
-      }
-      document.getElementById("enhancementAI").classList.remove("hidden");
-      document.getElementById("isoAIEnhancement").classList.add("hidden");
-      document.getElementById("enhancingMessage").classList.add("noEnhancement");
-      // Instead of waiting for enhancePrompt(), trigger it and update when ready
-      enhancePrompt().then(result => {
-        document.getElementById("enhancedPrompt").innerText = result;
-      }).catch(error => {
-        console.error("Error enhancing prompt:", error);
-        document.getElementById("enhancedPrompt").innerText = "Enhancement failed";
-      });
-    } else {
+        document.getElementById("enhancingMessage").classList.add("noEnhancement");
+
+        try {
+            const result = await enhancePrompt();
+            document.getElementById("enhancedPrompt").innerText = result;
+            finalPrompt = result; // Use the enhanced prompt as the final prompt
+        } catch (error) {
+            console.error("Error enhancing prompt:", error);
+            document.getElementById("enhancedPrompt").innerText = "Enhancement failed";
+        }
+    }  else {
+          // Set a default message immediately without waiting
+          document.getElementById("aiEnhancementDesc").classList.add("hidden");
+          document.getElementById("privatePublicResultDesc").classList.add("hidden");
+          if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
+              document.getElementById("isoAIEnhancement").classList.add("hidden");
+          }
+          document.getElementById("enhancingMessage").classList.add("noEnhancement");
+          document.getElementById("enhancementAI").classList.remove("hidden");
+          document.getElementById("isoAIEnhancement").classList.add("hidden");
+
+           document.getElementById("enhancedPrompt").innerText = "Diffusing Images... In Progress";
+    }
+
+    if (!enhancementProcessed && !imageMode) {
       document.getElementById("aiEnhancementDesc").classList.add("hidden");
       document.getElementById("privatePublicResultDesc").classList.add("hidden");
       if (!document.getElementById("enhancingMessage").classList.contains("hidden")) {
@@ -761,7 +639,7 @@ async function generatingModeHandle() {
       document.getElementById("enhancedPrompt").innerText = "Diffusing Images... In Progress";
     }
   
-    const promptTextInput = document.getElementById("promptTextInput");
+  
     if (imageVarType == "Fantasy") {
       suffixPrompt = "in a magical fantasy setting, with mythical creatures and surreal landscapes";
     } else if (imageVarType == "Halloween") {
@@ -794,7 +672,7 @@ async function generatingModeHandle() {
       suffixPrompt = "in a retro-futuristic synthwave style with neon colors and 80s vibes";
     }
     
-    let encodedPrompt = promptTextInput.value.trim() + " " + suffixPrompt;
+    let encodedPrompt = String(finalPrompt.trim()) + " " + suffixPrompt;
     let width, height;
     const isHQorLQ = false;
     console.log("image is being generated under " + isHQorLQ);
@@ -829,7 +707,7 @@ async function generatingModeHandle() {
     const numberOfImages = currentIndex + 1;
     const seeds = generateSeeds(numberOfImages, 4, 6);
     for (let i = 1; i <= numberOfImages; i++) {
-      document.getElementById("statusImage" + i).innerText = isHQorLQ ? "In Progress" : "Generating";
+      document.getElementById("statusImage" + i).innerText = isHQorLQ ? "In Progress" : "Elixpo Generated";
     }
   
     controller = new AbortController();
@@ -856,10 +734,6 @@ async function generatingModeHandle() {
       document.getElementById("NotifTxt").innerText = "Greetings";
     }
   }
-  
-
-
-
 
 
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -902,92 +776,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
 });
 
-
-document.addEventListener('DOMContentLoaded', (event) => {
-    const aspectRatioControls = document.getElementById('aspectRatioControls');
-    const tiles = aspectRatioControls.getElementsByClassName('aspectRatioTile');
+function generateSeeds(numSeeds = 6, minDigits = 4, maxDigits = 6) {
+    const seeds = [];
     
-    // Set initial state
-    const defaultTile = document.getElementById('aspectRatioTile1_1');
-    defaultTile.classList.add('active');
-
-    Array.from(tiles).forEach(tile => {
-        tile.addEventListener('click', () => {
-            // Remove active class from all tiles
-            Array.from(tiles).forEach(t => {
-                t.classList.remove('active');
-                t.style.opacity = "0.35";
-            });
-
-            // Add active class to the clicked tile
-            tile.classList.add('active');
-            tile.style.opacity = "1";
-
-            RatioValue = tile.querySelector('p').innerText;
-            document.getElementById("selectedAspectRatio").innerText = RatioValue;
-        });
-    });
-}); 
-
-
-
-        diceIcon.addEventListener('click', () => {
-            diceIcon.classList.add('click-effect');
-            setTimeout(() => diceIcon.classList.remove('click-effect'), 200);
-
-            diceIcon.classList.remove(diceClasses[currentIndex]);
-            currentIndex = (currentIndex + 1) % diceClasses.length;
-            diceIcon.classList.add(diceClasses[currentIndex]);
-        });
-
-
-        function generateSeeds(numSeeds = 6, minDigits = 4, maxDigits = 6) {
-            const seeds = [];
-            
-            for (let i = 0; i < numSeeds; i++) {
-                const numDigits = Math.floor(Math.random() * (maxDigits - minDigits + 1)) + minDigits;
-                const min = Math.pow(10, numDigits - 1);
-                const max = Math.pow(10, numDigits) - 1;
-                const seed = Math.floor(Math.random() * (max - min + 1)) + min;
-                seeds.push(seed);   
-            }
-            
-            return seeds;
-        }
-
-
-        document.querySelectorAll(".tile").forEach((tile, index) => {
-            tile.addEventListener("click", () => {
-                if (tile.classList.contains("expand")) {
-                    document.getElementById("showImage").classList.remove("hidden");
-                    const whichClick = index + 1;
-                    expandImage(document.getElementById("maskImageTile" + whichClick).getAttribute("data-id"));
-                }
-            });
-        })
-
-
-document.getElementById("backButton").addEventListener("click" , () => {
-    document.getElementById("showImage").classList.add("hidden");
-})
-
-
-function expandImage(enc) {
-    document.getElementById("PromptDisplay").innerHTML = "";
-   let encodedEnteries = enc.split("###");
-    document.getElementById("showImage").classList.remove("hidden");
-    document.getElementById("showImage").querySelector("img").src = encodedEnteries[0];
-    // console.log(encodedEnteries[0]);
-    document.getElementById("downloadBox").setAttribute("data-id", encodedEnteries[0]);
-    setTimeout(() => {
-        document.getElementById("imgDisp").classList.add("loaded");
-    }, 1200);
-    document.getElementById("PromptDisplay").innerHTML = `<pre><code>${encodedEnteries[1]}</code></pre>`;
-    const user = encodedEnteries[2];
-    const genNumber = encodedEnteries[3];
-    // document.getElementById("singAcceptBtn").setAttribute("data-id", genNumber);
-    document.getElementById("genUserName").innerText = user;
+    for (let i = 0; i < numSeeds; i++) {
+        const numDigits = Math.floor(Math.random() * (maxDigits - minDigits + 1)) + minDigits;
+        const min = Math.pow(10, numDigits - 1);
+        const max = Math.pow(10, numDigits) - 1;
+        const seed = Math.floor(Math.random() * (max - min + 1)) + min;
+        seeds.push(seed);   
+    }
+    
+    return seeds;
 }
+
 
 
 document.getElementById("downloadBox").addEventListener("click", (e) => {
@@ -1010,78 +812,79 @@ function downloadBlob(blob) {
         document.getElementById("savedMsg").classList.remove("display");
     }, 1500);
 }
-//added the change to allow watermarkes here
-function downloadBlobWatermark(blob) {
-    const watermarkImage = new Image();
-    const watermarkImageInverted = new Image();
-    watermarkImage.crossOrigin = "Anonymous";
-    watermarkImageInverted.crossOrigin = "Anonymous";
-    watermarkImage.src = "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20final.png?alt=media&token=4bdf46cb-c851-4638-a0ea-a2723c8d4038"
-    watermarkImageInverted.src = "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20inverted%20final.png?alt=media&token=4a7b007d-e5dc-4b56-aa7f-acc6446b1bbe"
 
-    const mainImage = new Image();
-    const url = blob;
-    mainImage.crossOrigin = "Anonymous";
-    mainImage.src = url;
-    mainImage.onload = () => {
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+// //added the change to allow watermarkes here
+// function downloadBlobWatermark(blob) {
+//     const watermarkImage = new Image();
+//     const watermarkImageInverted = new Image();
+//     watermarkImage.crossOrigin = "Anonymous";
+//     watermarkImageInverted.crossOrigin = "Anonymous";
+//     watermarkImage.src = "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20final.png?alt=media&token=4bdf46cb-c851-4638-a0ea-a2723c8d4038"
+//     watermarkImageInverted.src = "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/officialDisplayImages%2FOfficial%20Asset%20Store%2Fwatermark%20inverted%20final.png?alt=media&token=4a7b007d-e5dc-4b56-aa7f-acc6446b1bbe"
 
-        // Set canvas dimensions to match the main image
-        canvas.width = mainImage.width;
-        canvas.height = mainImage.height;
+//     const mainImage = new Image();
+//     const url = blob;
+//     mainImage.crossOrigin = "Anonymous";
+//     mainImage.src = url;
+//     mainImage.onload = () => {
+//         const canvas = document.getElementById('canvas');
+//         const ctx = canvas.getContext('2d');
 
-        // Draw the main image onto the canvas
-        ctx.drawImage(mainImage, 0, 0);
+//         // Set canvas dimensions to match the main image
+//         canvas.width = mainImage.width;
+//         canvas.height = mainImage.height;
 
-        // Detect brightness in the bottom left corner
-        const sampleSize = 10; // Size of the sample area
-        const imageData = ctx.getImageData(0, canvas.height - sampleSize, sampleSize, sampleSize);
-        let totalBrightness = 0;
-        for (let i = 0; i < imageData.data.length; i += 4) {
-            const r = imageData.data[i];
-            const g = imageData.data[i + 1];
-            const b = imageData.data[i + 2];
-            // Calculate brightness using the formula
-            totalBrightness += 0.299 * r + 0.587 * g + 0.114 * b;
-        }
-        const averageBrightness = totalBrightness / (imageData.data.length / 4);
+//         // Draw the main image onto the canvas
+//         ctx.drawImage(mainImage, 0, 0);
 
-        // Choose the watermark based on the brightness
-        const selectedWatermark = averageBrightness < 128 ? watermarkImageInverted : watermarkImage;
+//         // Detect brightness in the bottom left corner
+//         const sampleSize = 10; // Size of the sample area
+//         const imageData = ctx.getImageData(0, canvas.height - sampleSize, sampleSize, sampleSize);
+//         let totalBrightness = 0;
+//         for (let i = 0; i < imageData.data.length; i += 4) {
+//             const r = imageData.data[i];
+//             const g = imageData.data[i + 1];
+//             const b = imageData.data[i + 2];
+//             // Calculate brightness using the formula
+//             totalBrightness += 0.299 * r + 0.587 * g + 0.114 * b;
+//         }
+//         const averageBrightness = totalBrightness / (imageData.data.length / 4);
 
-        selectedWatermark.onload = () => {
-            // Define the position for the watermark
-            const watermarkX = 10;
-            const watermarkY = canvas.height - selectedWatermark.height - 10;
+//         // Choose the watermark based on the brightness
+//         const selectedWatermark = averageBrightness < 128 ? watermarkImageInverted : watermarkImage;
 
-            const watermarkX_right = canvas.width - selectedWatermark.width - 10;
-            const watermarkY_right = 10;
+//         selectedWatermark.onload = () => {
+//             // Define the position for the watermark
+//             const watermarkX = 10;
+//             const watermarkY = canvas.height - selectedWatermark.height - 10;
 
-            // Draw the watermark onto the canvas
-            ctx.drawImage(selectedWatermark, watermarkX, watermarkY);
-            ctx.drawImage(selectedWatermark, watermarkX_right, watermarkY_right);
-            console.log("modified");
+//             const watermarkX_right = canvas.width - selectedWatermark.width - 10;
+//             const watermarkY_right = 10;
 
-            // Convert the canvas to a Blob and download it
-            canvas.toBlob(function(modifiedBlob) {
-                const downloadUrl = URL.createObjectURL(modifiedBlob);
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = "elixpo-ai-generated-image.jpg"; // Set the file name to "elixpo-ai-generated-image.jpg"
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(downloadUrl);
-            });
-        };
-    };
+//             // Draw the watermark onto the canvas
+//             ctx.drawImage(selectedWatermark, watermarkX, watermarkY);
+//             ctx.drawImage(selectedWatermark, watermarkX_right, watermarkY_right);
+//             console.log("modified");
 
-    document.getElementById("savedMsg").classList.add("display");
-    setTimeout(() => {
-        document.getElementById("savedMsg").classList.remove("display");
-    }, 1500);
-}
+//             // Convert the canvas to a Blob and download it
+//             canvas.toBlob(function(modifiedBlob) {
+//                 const downloadUrl = URL.createObjectURL(modifiedBlob);
+//                 const a = document.createElement('a');
+//                 a.href = downloadUrl;
+//                 a.download = "elixpo-ai-generated-image.jpg"; // Set the file name to "elixpo-ai-generated-image.jpg"
+//                 document.body.appendChild(a);
+//                 a.click();
+//                 document.body.removeChild(a);
+//                 URL.revokeObjectURL(downloadUrl);
+//             });
+//         };
+//     };
+
+//     document.getElementById("savedMsg").classList.add("display");
+//     setTimeout(() => {
+//         document.getElementById("savedMsg").classList.remove("display");
+//     }, 1500);
+// }
 
 
 
@@ -1113,15 +916,3 @@ function copyTextFromDiv() {
 } 
 document.getElementById('copyPrompt').addEventListener('click', copyTextFromDiv);
 
-
-
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        timeoutId = setTimeout(() => {
-            document.title = "We miss you! Come back soon!";
-        }, 800);
-    } else {
-        clearTimeout(timeoutId);
-        document.title = originalTitle;
-    }
-});

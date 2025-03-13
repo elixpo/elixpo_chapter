@@ -11,8 +11,8 @@
     width: 70%;
     left: 50%;
     transform: translateX(-50%);
-    top: 80%; /* Base position */
-    height: 130px;
+    top: 75%; /* Base position */
+    height: 150px;
     padding-top: 15px;
     padding-left: 60px;
     resize: none;
@@ -31,6 +31,72 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.samplePrompt.image 
+{
+    height: 180px;
+    padding-top: 15px;
+    padding-left: 60px;
+    resize: none;
+    top: 73%;
+    max-height: 180px; /* Adjust max height */
+    overflow-y: auto;
+    border: 1px solid rgba(114, 119, 116, 0.533);
+    font-size: 16px;
+    box-sizing: border-box;
+    overflow: hidden;
+    outline: none;
+    background: #131212;
+    border-radius: 25px;
+    font-size: 24px;
+    transition: 0.25s;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+
+.samplePrompt.image .promptTextInput
+{
+    width: 80%;
+    left: 10%;
+}
+
+.samplePrompt.image .imageHolder
+{
+    opacity: 1;
+    pointer-events: all;
+    transition: 0.5s;
+}
+.imageHolder
+{
+    position: absolute;
+    height: 70px;
+    width: 70px;
+    border-radius: 15px;
+    top: 5%;
+    left: 1%;
+    background-size: cover;
+    background-position: center center;
+    opacity: 0;
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.imageHolder > #cancelImageMode
+{
+    position: absolute;
+    top: -5%;
+    left: 75%;
+    color: #fff;
+    cursor: pointer;
+}
+.samplePrompt.image .controls #inputImage
+{
+    display: none;
 }
 
 .samplePrompt .promptTextInput {
@@ -272,7 +338,8 @@
 #privateBtn,
 #pimpPrompt,
 #promptIdea,
-#journalMode {
+#journalMode,
+#inputImage {
     position: relative;
     margin: 0;
     max-height: 60px;
@@ -297,7 +364,8 @@
 #privateBtn.selected,
 #pimpPrompt.selected,
 #promptIdea.selected,
-#journalMode.selected
+#journalMode.selected,
+#inputImage.selected
 
 {
     background: #3e3c3c;
@@ -322,13 +390,6 @@
     }
 }
 
-#privateBtn:active
-#pimpPrompt:active
-#promptIdea:active  
-{   
-    transform: scale(1.5);
-    transition: 0.3s;
-}
 
 
 #journalMode:hover
@@ -343,7 +404,8 @@
 #privateBtn span,
 #pimpPrompt span,
 #promptIdea span,
-#journalMode span {
+#journalMode span,
+#inputImage span {
     margin-left: 10px;
     text-transform: capitalize;
     font-weight: 200;
@@ -356,11 +418,28 @@
     font-weight: 700;
 }
 
+.samplePrompt.generating #imageHolder
+{
+    display: none;
+}
+
+.samplePrompt.image .searchButtonText
+{
+    left: 60%;
+}
 
 .searchButtonText {
     position: relative;
-    left: 60%;
+    left: 45%;
     top: 0%;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.searchButtonText.disabled 
+{
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 .searchBtn {
