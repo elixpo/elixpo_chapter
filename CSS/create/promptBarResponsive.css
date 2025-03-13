@@ -2,9 +2,35 @@
 
     .samplePrompt {
         max-height: 150px;
-        top: 75%;
+        width: 80%;
+        top: 73%;
       }
-    
+      .samplePrompt.image 
+      {
+        max-height: 150px;
+      }
+      .samplePrompt.image .promptTextInput
+      {
+        top: 0%;
+        width: 70%;
+        left: 25%;
+        max-height: 90px;
+      }
+      .imageHolder
+      {
+        left: 5%;
+        border-radius: 5px;
+        height: 40px;
+        width: 40px;
+      }
+      .samplePrompt.image #OneImage {
+        top: 10px;
+        transform: scale(0.7);
+      }
+      .imageHolder > #cancelImageMode
+      {
+        font-size: 0.8em;
+      }
       .samplePrompt .promptTextInput {
         font-size: 0.8em;
         margin-top: 1%;
@@ -48,6 +74,49 @@
         transform: scale(0);
         pointer-events: none;
     }
+
+    
+  #privateBtn>span {
+    display: none;
+  }
+
+  #privateBtn {
+    margin-top: 7%;
+    right: 70px;
+  }
+
+  #pimpPrompt>span {
+    display: none;
+  }
+
+  #pimpPrompt {
+    margin-top: 7%;
+    right: 70px;
+  }
+
+  #promptIdea>span {
+    display: none;
+  }
+
+  #promptIdea {
+    margin-top: 7%;
+    right: 70px;
+
+  }
+  #inputImage
+  {
+    margin-top: 7%;
+    right: 70px;
+  }
+
+  .samplePrompt.image .searchButtonText
+  {
+    left: -10%;
+  }
+  .searchBtn {
+    left: -15%;
+  }
+
       .enhancingMessage {
         position: absolute;
         top: 85%;

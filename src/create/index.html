@@ -193,9 +193,12 @@
 
       <div class="controls">
         <i class="fa-solid fa-dice-one" id="OneImage"></i>
+        <i class="fa-solid fa-image" id="inputImage"> </i>
         <i class="fa-solid fa-shield" id="privateBtn"> <span> Private </span> </i>
         <i class="fa-solid fa-lightbulb" id="pimpPrompt"> <span> Imagine </span> </i>
         <i class="fa-solid fa-shuffle" id="promptIdea"> <span> Random </span> </i>
+
+
         <!-- <i class="fa-solid fa-book" id="journalMode"> <span>  Aurora </span> </i>  -->
         <div class="searchButtonText" id="searchButtonText">
           <button class="searchBtn">
@@ -206,6 +209,9 @@
             <span class="text"></span>
           </button>
         </div>
+      </div>
+      <div class="imageHolder" id="imageHolder">
+        <i class="fa-solid fa-circle-xmark" id="cancelImageMode"></i>
       </div>
       <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none"
         placeholder="What's on your mind?"></textarea>
@@ -410,10 +416,14 @@
   <script src="../../JS/linkRedirect.js" defer></script>
   <script src="../../JS/particles.min.js"></script>
   <script src="../../JS/PatchContextMenu.js"></script>
+
+
   <script src="../../JS/create/promptscontainer.js"></script>
-  <script type="module" src="../../JS/create/AIArtGeneratorGeneric.js"></script>
+  <script src="../../JS/create/AIArtGeneratorGeneric.js" defer></script>
+  <script src="../../JS/create/imageProcessPrompt.js"></script>
   <script type="module" src="../../JS/create/AIartGeneratorGeneral.js" defer></script>
   <script src="../../JS/create/isoImagetypeParticle.js"></script>
+
   <script src="../../JS/create/AIImageEnhancementEffect.js"> </script>
   <script src="../../JS/create/navBar.js"></script>
 
