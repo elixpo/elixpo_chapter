@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hybrid Conversation Prototype</title>
+</head>
+<body>
+    <h1>Conversation</h1>
+    <button id="startButton">Start</button>
+    <div id="status">Status: Waiting...</div>
+    <audio id="audioPlayer" controls></audio>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
+        const audioPlayer = document.getElementById('audioPlayer');
+        let recognition;
+        let voice = 'nova'
+
+        async function textToSpeech(text) {
+            const inst = "my name is ayushman, you reply using umm to simulate natural response but in just 20 words";
+            const url = `https://text.pollinations.ai/${encodeURIComponent(text)}?model=openai-audio&voice=${voice}&system=${encodeURIComponent(inst)}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return URL.createObjectURL(await response.blob());
+            } catch (error) {
+                console.error("Text-to-speech error:", error);
+                return null;
+            }
+        }
+
+        async function generateResponse(userText) {
+            return `You said: ${userText}. This is a response.`;
+        }
+
+        async function playAudio(audioURL, callback) {
+            audioPlayer.src = audioURL;
+            audioPlayer.play();
+            statusDiv.textContent = "Status: Speaking...";
+            audioPlayer.onended = callback;
+        }
+
+        function startSpeechRecognition() {
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.onresult = async (event) => {
+                recognition.stop();
+                let transcript = event.results[0][0].transcript;
+                statusDiv.textContent = "Status: Processing...";
+                let responseText = await generateResponse(transcript);
+                let responseAudio = await textToSpeech(responseText);
+                if (responseAudio) playAudio(responseAudio, startSpeechRecognition);
+            };
+            recognition.start();
+            statusDiv.textContent = "Status: Listening...";
+        }
+
+        startButton.addEventListener('click', () => {
+            startButton.disabled = true;
+            startSpeechRecognition();
+        });
+    </script>
+</body>
+</html>

@@ -36,6 +36,10 @@ document.getElementById("integrationsIcon").addEventListener("click", () => {
     redirectTo("integrations/")
 })
 
+document.getElementById("kaizenIcon").addEventListener("click", () => {
+    location.href = "https://www.kaizenyumee.com/"
+})
+
 document.getElementById("visitIntegration").addEventListener("click", () => {
     redirectTo("integrations/")
 })
