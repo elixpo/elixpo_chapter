@@ -14,6 +14,10 @@ document.getElementById("inputImage").addEventListener("click", function () {
         await handleImageFile(event.target.files[0]);
     };
 
+    input.oncancel = function (event) { // Add oncancel handler
+        cancelImageReference();
+    };
+
     input.click();
 });
 
@@ -57,6 +61,8 @@ function cancelImageReference() {
     document.getElementById("samplePrompt").classList.remove("image");
     document.getElementById("imageHolder").style.background = "none";
     imageMode = false;
+    document.getElementById("searchButtonText").classList.remove("disabled"); // Re-enable if disabled
+    return;
 }
 
 document.getElementById("cancelImageMode").addEventListener("click", () => {
@@ -64,8 +70,9 @@ document.getElementById("cancelImageMode").addEventListener("click", () => {
 });
 
 // Function to generate prompt from image
-async function generatePromptFromImage(imageUrl) {
+async function generatePromptFromImage(imageUrl, controller) {
     const userGivenprompt = document.getElementById("promptTextInput").value;
+
     try {
         const response = await fetch("https://text.pollinations.ai/openai", {
             method: "POST",
@@ -79,34 +86,44 @@ async function generatePromptFromImage(imageUrl) {
                         content: [
                             {
                                 type: "text",
-                                text: `${instruction}`
+                                text: `Analyse the image and capture all the details, incudeing scene, facial expressions, looks and what not amnd and then try mixing with the taste of the user prompt too -- Prompt: ${userGivenprompt}`
                             },
-                            { type: "image_url", image_url: { url: imageUrl } },
-                            {
-                                type: "text",
-                                text: `Try mixing with the taste of the user prompt too -- Prompt: ${userGivenprompt}`
-                            }
+                            { type: "image_url", image_url: { url: imageUrl } }
                         ]
                     }
                 ],
                 model: "openai-large"
-            })
+            }),
+            signal: controller.signal // Attach the signal for aborting
         });
+
+        if (controller.signal.aborted) {
+            console.log("Generation was aborted.");
+            notify("Generation was aborted.");
+            handleStaticMode();
+        }
 
         const data = await response.json();
         if (data.choices && data.choices.length > 0) {
-            // console.log("Generated Prompt:", data.choices[0].message.content);
+            return data.choices[0].message.content;
         } else {
             console.error("No valid response received.");
             notify("Bruuh!, Couldn't Understand the Image");
             return userGivenprompt;
         }
-         return data.choices[0].message.content;
     } catch (error) {
+        if (controller.signal.aborted) {
+            console.log("Generation was aborted.");
+            notify("Generation was aborted.");
+            handleStaticMode();
+            return;
+        }
         console.error("Error generating prompt:", error);
-         return "Error generating prompt from image";
+        notify("Generation was aborted.");
+        handleStaticMode();
     }
 }
+
 
 
 document.getElementById("promptTextInput").addEventListener("paste", async (event) => {

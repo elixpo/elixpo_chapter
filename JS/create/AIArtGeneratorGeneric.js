@@ -360,10 +360,12 @@ window.addEventListener('load', scaleContainer);
 
 function initControls()
 {
+  const typeOfImageTile = document.getElementById('typeOfImageTile');
+  const children = typeOfImageTile.getElementsByTagName('span');
+  const typeofModels = document.getElementById('typeOfModelTile');
+  const models = typeofModels.getElementsByTagName('span');
   const aspectRatioControls = document.getElementById('aspectRatioControls');
   const tiles = aspectRatioControls.getElementsByClassName('aspectRatioTile');
-  
-  // Set initial state
   const defaultTile = document.getElementById('aspectRatioTile1_1');
   defaultTile.classList.add('active');
 
@@ -409,6 +411,37 @@ function initControls()
               }
           });
       })
+
+      Array.from(models).forEach(model => {
+        model.addEventListener('click', () => {
+            modelType = model.className;
+            Array.from(models).forEach(m => {
+                m.style.opacity = ".25";
+                m.style.border = "none"
+            });
+            model.style.opacity = "1";
+            model.style.border = "1px solid #f4bb00";
+        });
+    });
+
+    Array.from(children).forEach(child => {
+        child.addEventListener('click', () => {
+            imageVarType = child.className;
+            console.log(imageVarType);
+            Array.from(children).forEach(c => {
+                c.style.opacity = ".25";
+                c.style.border = "none";
+            });
+            child.style.opacity = "1";
+            child.style.border = "1px solid #f4bb00";
+            document.getElementById("isoImageType").style.background = 'url("../../CSS/IMAGES/THEMES/'+imageVarType.toLowerCase().trim()+'.jpeg")';
+            document.getElementById("isoImageType").style.backgroundSize = "cover";
+            document.getElementById("isoImageType").style.backgroundPosition = "50% 30%";
+            document.getElementById("themeNameIcon").innerHTML = imageVarType;
+          
+        });
+        
+    });
 
 
 document.getElementById("backButton").addEventListener("click" , () => {
