@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elixpo Active Voice</title>
+    <title>Elixpo Active Voice Models</title>
     <link rel="stylesheet" href="../CSS/voice/voices.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
 <body>
 
     <header>
+        <a href="../index.html" class="home-link"> <!-- Added Home Link -->
+            <i class='bx bx-home'></i> <!-- Home Icon -->
+        </a>
         <h1>Elixpo Active Voice Models</h1>
     </header>
 
@@ -21,7 +24,10 @@
                     <audio id="audio-Alloy" src="audio/alloy.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 1: Alloy</p>
-                <button class="upvote-button" aria-label="Upvote Alloy"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Alloy"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Alloy-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <!-- Voice Tile 2 -->
@@ -31,7 +37,10 @@
                     <audio id="audio-Amuch" src="audio/amuch.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 2: Amuch</p>
-                <button class="upvote-button" aria-label="Upvote Amuch"><i class='bx bx-heart'></i></button>
+               <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Amuch"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Amuch-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <!-- Voice Tile 3 -->
@@ -41,7 +50,10 @@
                     <audio id="audio-Ash" src="audio/ash.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 3: Ash</p>
-                <button class="upvote-button" aria-label="Upvote Ash"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Ash"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Ash-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Ballad">
@@ -50,7 +62,10 @@
                     <audio id="audio-Ballad" src="audio/ballad.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 4: Ballad</p>
-                <button class="upvote-button" aria-label="Upvote Ballad"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Ballad"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Ballad-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Coral">
@@ -59,7 +74,10 @@
                     <audio id="audio-Coral" src="audio/coral.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 5: Coral</p>
-                <button class="upvote-button" aria-label="Upvote Coral"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Coral"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Coral-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Dan">
@@ -68,7 +86,10 @@
                     <audio id="audio-Dan" src="audio/dan.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 6: Dan</p>
-                <button class="upvote-button" aria-label="Upvote Dan"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Dan"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Dan-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
             <div class="voice-tile" data-voice-id="Fable">
                 <div class="audio-player">
@@ -76,7 +97,10 @@
                     <audio id="audio-Fable" src="audio/fable.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 7: Fable</p>
-                <button class="upvote-button" aria-label="Upvote Fable"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Fable"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Fable-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
             <div class="voice-tile" data-voice-id="Nova">
                 <div class="audio-player">
@@ -84,7 +108,10 @@
                     <audio id="audio-Nova" src="audio/nova.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 8: Nova</p>
-                <button class="upvote-button" aria-label="Upvote Nova"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Nova"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Nova-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Onyx">
@@ -93,7 +120,10 @@
                     <audio id="audio-Onyx" src="audio/onyx.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 9: Onyx</p>
-                <button class="upvote-button" aria-label="Upvote Onyx"><i class='bx bx-heart'></i></button>
+                <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Onyx"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Onyx-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Sage">
@@ -102,7 +132,10 @@
                     <audio id="audio-Sage" src="audio/sage.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 10: Sage</p>
-                <button class="upvote-button" aria-label="Upvote Sage"><i class='bx bx-heart'></i></button>
+                 <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Sage"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Sage-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Shimmer">
@@ -111,7 +144,10 @@
                     <audio id="audio-Shimmer" src="audio/shimmer.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 11: Shimmer</p>
-                <button class="upvote-button" aria-label="Upvote Shimmer"><i class='bx bx-heart'></i></button>
+                 <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Shimmer"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Shimmer-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
             <div class="voice-tile" data-voice-id="Verse">
@@ -120,7 +156,10 @@
                     <audio id="audio-Verse" src="audio/verse.mp3"></audio>
                 </div>
                 <p class="voice-name">Voice 12: Verse</p>
-                <button class="upvote-button" aria-label="Upvote Verse"><i class='bx bx-heart'></i></button>
+                 <div class="vote-container">
+                    <button class="upvote-button" aria-label="Upvote Verse"><i class='bx bx-heart'></i></button>
+                    <span class="vote-count" id="Verse-votes">0</span> <!-- Vote Count -->
+                </div>
             </div>
 
         </div>

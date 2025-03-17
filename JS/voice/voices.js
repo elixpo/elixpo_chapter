@@ -34,7 +34,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const playButton = tile.querySelector('.play-button');
         const audio = tile.querySelector('audio');
         const upvoteButton = tile.querySelector('.upvote-button');
+        const voteCountSpan = tile.querySelector('.vote-count'); // Get the vote count span
         let isLiked = false;
+
+        // Load the initial vote count from Firebase
+        const initialLikes = await getInitialLikes(voiceName);
+        voteCountSpan.textContent = initialLikes;
 
         // Check if the user has already liked the voice
         const likedVoices = JSON.parse(localStorage.getItem('likedVoices')) || {};
@@ -82,7 +87,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     heartIcon.classList.remove('bx-heart');
                     heartIcon.classList.add('bx-heart', 'bxs-heart');
                     heartIcon.style.color = 'red';
-                    await updateLikes(voiceName, 1);
+                    const newLikes = await updateLikes(voiceName, 1);
+                    voteCountSpan.textContent = newLikes; // Update the vote count
                     // Store the liked voice and user IP in localStorage
                     const likedVoices = JSON.parse(localStorage.getItem('likedVoices')) || {};
                     likedVoices[voiceName] = userIP;
@@ -91,7 +97,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     heartIcon.classList.remove('bx-heart', 'bxs-heart');
                     heartIcon.classList.add('bx-heart');
                     heartIcon.style.color = '';
-                    await updateLikes(voiceName, -1);
+                    const newLikes = await updateLikes(voiceName, -1);
+                    voteCountSpan.textContent = newLikes;// Update the vote count
                     // Remove the liked voice from localStorage
                     const likedVoices = JSON.parse(localStorage.getItem('likedVoices')) || {};
                     delete likedVoices[voiceName];
@@ -103,22 +110,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Function to update the likes in Firestore
     async function updateLikes(voiceName, change) {
         const voiceRef = db.collection("voices").doc(voiceName);
 
         try {
+            let newLikes;
             await db.runTransaction(async (transaction) => {
                 const voiceDoc = await transaction.get(voiceRef);
                 if (!voiceDoc.exists) {
-                    transaction.set(voiceRef, { likes: Math.max(0, change) });
+                    newLikes = Math.max(0, change);
+                    transaction.set(voiceRef, { likes: newLikes });
                 } else {
-                    const newLikes = Math.max(0, (voiceDoc.data().likes || 0) + change);
+                    newLikes = Math.max(0, (voiceDoc.data().likes || 0) + change);
                     transaction.update(voiceRef, { likes: newLikes });
                 }
             });
             console.log("Likes updated successfully!");
+            return newLikes; // Return the new likes count
         } catch (error) {
             console.error("Error updating likes:", error);
+            throw error; // Re-throw the error to be caught by the caller
+        }
+    }
+
+        // Function to get initial likes from Firestore
+    async function getInitialLikes(voiceName) {
+        const voiceRef = db.collection("voices").doc(voiceName);
+        try {
+            const voiceDoc = await voiceRef.get();
+            if (voiceDoc.exists) {
+                return voiceDoc.data().likes || 0;
+            } else {
+                return 0; // Default to 0 if the document doesn't exist
+            }
+        } catch (error) {
+            console.error("Error getting initial likes:", error);
+            return 0; // Default to 0 if there's an error
         }
     }
 });

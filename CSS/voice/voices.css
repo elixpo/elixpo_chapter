@@ -99,3 +99,25 @@ footer {
 .upvote-button:hover {
     color: #007bff; /* Change color on hover */
 }
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the header content */
+    position: relative; /* Allows absolute positioning of the home link */
+}
+
+.home-link {
+    position: absolute;
+    left: 50px; /* Adjust as needed */
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff; /* Adjust color to match your header */
+    text-decoration: none; /* Remove underline */
+    font-size: 1.5em; /* Adjust size of the home icon */
+    transition: color 0.2s ease-in-out;
+}
+
+.home-link:hover {
+    color: #ddd; /* Lighter color on hover */
+}
