@@ -18,9 +18,9 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
     var privateImage = privateMode;
     console.log("private mode is ", privateImage);
     if (enhanceMode) {
-        imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=true&private=${privateImage}`;
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=true&private=${privateImage}`;
     } else {
-        imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false&private=${privateImage}`;
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=1&enhance=false&private=${privateImage}`;
     }
     
     const imageTile = document.querySelector(".imageTile" + genNumber);
@@ -43,12 +43,8 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
 
             try {
                 serverReturnStatus = true;
-                const response = await fetch(`${downloadUrl}/download-image`, {  // Stream image
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ imageUrl }),
+                const response = await fetch(`${imageUrl}`, {
+                    method: 'GET',
                     signal: controller.signal,
                     mode: "cors"
                 });
@@ -139,7 +135,7 @@ async function generateImageAsync(prompt, width, height, seed, aspectRatio, them
 
 
 function handleStaticMode(numberOfImages) {
-    console.log("aborting the image")
+    notify("Image generation aborted. We detected something unusual with the inputs");
     generating = false;
     blobs = [];
     cancelImageReference();
