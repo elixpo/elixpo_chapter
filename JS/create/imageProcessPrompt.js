@@ -1,7 +1,13 @@
-const instruction = `Analyze this image in detail and generate a highly descriptive AI art generation prompt that can recreate it. 
-Include details such as the subject, the gender, style, lighting, mood, colors, and composition. Ensure the description is structured to work well with AI art generators. 
-Create the prompt in max 30 words!`
 
+
+function notify(msg)
+{
+  document.getElementById("NotifTxt").innerText = `${msg}`;
+    document.getElementById("savedMsg").classList.add("display");
+    setTimeout(() => {
+      document.getElementById("savedMsg").classList.remove("display");
+    }, 1500);
+}
 
 
 document.getElementById("inputImage").addEventListener("click", function () {
@@ -72,7 +78,24 @@ document.getElementById("cancelImageMode").addEventListener("click", () => {
 // Function to generate prompt from image
 async function generatePromptFromImage(imageUrl, controller) {
     const userGivenprompt = document.getElementById("promptTextInput").value;
+    let systemInstructions = `
+    firstlty understand the gender of the subject if a human is deteced or if multiple are detected
+    secondly understand the if the image is a closeup or a long shot
+    1. understand what the image is trying to depict.
+    2. form a highly descriptive AI art generation prompt that can recreate it
+    3. Include details such as the environment and other minute details 
+    4. understand the mood, style, lighting, colors, and composition of the image
+    5. take the user prompt into consideration and generate a prompt that can work well with AI art generators
+    6. make the prompt as highly detailed as possible
+    User Prompt: ${userGivenprompt}
 
+    Decoded Prompt: "A beautiful sunset over the ocean with a silhouette of a palm tree in the foreground"
+    User Prompt: "use a coconut tree in the foreground now"
+    Output: "A beautiful sunset over the ocean with a silhouette of a coconut tree in the foreground with proper lighting and colors and a calm mood"
+
+    Just output the final perfect combined ai prompt, no need to include the instructions and inner thoughts.
+
+    `;
     try {
         const response = await fetch("https://text.pollinations.ai/openai", {
             method: "POST",
@@ -86,13 +109,13 @@ async function generatePromptFromImage(imageUrl, controller) {
                         content: [
                             {
                                 type: "text",
-                                text: `Analyse the image and capture all the details, incudeing scene, facial expressions, looks and what not amnd and then try mixing with the taste of the user prompt too -- Prompt: ${userGivenprompt}`
+                                text: `${systemInstructions}`
                             },
                             { type: "image_url", image_url: { url: imageUrl } }
                         ]
                     }
                 ],
-                model: "openai-large"
+                model: "claude-hybridspace"
             }),
             signal: controller.signal // Attach the signal for aborting
         });
@@ -105,11 +128,15 @@ async function generatePromptFromImage(imageUrl, controller) {
 
         const data = await response.json();
         if (data.choices && data.choices.length > 0) {
+            // console.log("Prompt generated:", data.choices[0].message.content);
             return data.choices[0].message.content;
         } else {
+
+            notify("Generation was aborted.");
+            handleStaticMode();
             console.error("No valid response received.");
-            notify("Bruuh!, Couldn't Understand the Image");
-            return userGivenprompt;
+           
+            
         }
     } catch (error) {
         if (controller.signal.aborted) {

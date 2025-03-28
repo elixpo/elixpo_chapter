@@ -2,10 +2,10 @@ let imageCount = 0; // Counter for the number of images received
 let imagesData = []; // Array to store all image data
 const VISIBLE_IMAGE_COUNT = 50; // Number of images to keep in the DOM at any time
 let isLoading = false; // Flag to prevent multiple simultaneous loads
+const LOAD_THRESHOLD = 450; // Distance from bottom to trigger load (in pixels)
 
 // Function to render visible images only
 function renderVisibleImages() {
- 
   const feedImageWrapper = document.getElementById('feedImageWrapper');
 
   // Render only the most recent VISIBLE_IMAGE_COUNT images
@@ -66,7 +66,7 @@ function appendImage(imageData) {
 function startListening() {
   if (isLoading) return; // Prevent multiple simultaneous loads
   isLoading = true; // Set loading flag
-  document.getElementById("loadMore").classList.add("hidden");
+  // document.getElementById("loadMore").classList.add("hidden"); // Keep hidden during loading
 
   const eventSource = new EventSource('https://image.pollinations.ai/feed');
 
@@ -85,7 +85,7 @@ function startListening() {
     // Stop listening after 30 images
     if (imageCount >= 30) {
       eventSource.close();
-      document.getElementById("loadMore").classList.remove("hidden");
+      // document.getElementById("loadMore").classList.remove("hidden");
       isLoading = false; // Reset loading flag
       imageCount = 0;
     }
@@ -95,18 +95,26 @@ function startListening() {
   eventSource.onerror = function () {
     eventSource.close();
     isLoading = false; // Reset loading flag
-    document.getElementById("loadMore").classList.remove("hidden");
+    // document.getElementById("loadMore").classList.remove("hidden"); // Show "load more" on error
   };
 }
 
-// Attach the button click event listener
-document.getElementById('loadMore').addEventListener('click', function (event) {
-  event.preventDefault();
-  startListening();
+// Function to check if we're near the bottom of the scrolling element
+function isNearBottom() {
+  const feedImageWrapper = document.getElementById('feedImageWrapper');
+  return (feedImageWrapper.scrollTop + feedImageWrapper.clientHeight) >= (feedImageWrapper.scrollHeight - LOAD_THRESHOLD);
+}
+
+// Event listener for scrolling on the feedImageWrapper
+document.getElementById('feedImageWrapper').addEventListener('wheel', function() {
+  if (isNearBottom() && !isLoading) {
+    console.log('Loading more images...');
+    startListening();
+  }
 });
 
 // Initial image load when the page loads
-// startListening();
+startListening(); // Call on page load
 
 document.getElementById("homePage").addEventListener("click", function () {
   redirectTo("");
