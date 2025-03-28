@@ -99,7 +99,7 @@ body {
     transform: rotate(10deg) scale(1.1);
     transition: 0.25s;
 }
-.integrationsIcon > ion-icon 
+.integrationsIcon > i
 {
     position: absolute;
     top: 50%;
@@ -131,7 +131,7 @@ body {
     transform: rotate(10deg) scale(1.1);
     transition: 0.25s;
 }
-.kaizenIcon > ion-icon 
+.kaizenIcon > i
 {
     position: absolute;
     top: 50%;

@@ -5,7 +5,7 @@ window.addEventListener('resize', scaleContainer, generateAsciiArt);
 window.addEventListener('load', scaleContainer);
 
 setInterval(() => {
-    generateAsciiArt();
+    // generateAsciiArt();
 }, 5000);
 
 document.getElementById("visitCreateArt").addEventListener("click", function() {
