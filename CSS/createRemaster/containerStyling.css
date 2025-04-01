@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Boldonse&display=swap');
+.container 
+{
+    position: absolute;
+    top: 0%;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.container::-webkit-scrollbar,
+.sectionContainer::-webkit-scrollbar
+{
+    display: none;
+}
+
+.backdropBG
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: url(/CSS/IMAGES/backdrop.webp);
+    background-size: cover;
+    pointer-events: none;
+    filter: brightness(0.25);
+    z-index: 1; 
+}
+
+.sectionContainer
+{
+    position: absolute;
+    top: 0;
+    left: 0%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+    z-index: 2; 
+    background: transparent;
+    backdrop-filter: blur(10px); 
+}
+.container::-webkit-scrollbar
+{
+ display: none;
+}
+
+#imageGenerator 
+{
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3; 
+    background: #04b00d;
+}
