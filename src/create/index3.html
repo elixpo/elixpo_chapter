@@ -42,7 +42,6 @@
 
             <section id="welcomePrompt">
                 <h1 class="welcomeMessage" id="welcomeMessage"></h1>
-                <h1 class="descMessage" id="descMessage"> </h1>
                 <div class="imageArray">
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/1_flux_bg.webp" alt="Flux background element 1" loading="lazy">
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/2_flux_bg.webp" alt="Flux background element 2" loading="lazy">
@@ -80,6 +79,19 @@
                       placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape"></textarea>
               
                     <ion-icon name="stop" class="stopGeneration hidden" id="stopGeneration"></ion-icon>
+                  </div>
+                  <div class="instructionsForUser">
+                    <span> use --pr to specify the prompt, --ar for aspect ratio, --th for theme --md for the model 
+                    --pv for private mode --hd for high-definition --sd for standard definition --en for prompt enhancement
+                    </span>
+                    <br>
+                    <span> 
+                    Example:- --pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --th landscape --md flux_core --pv --hd --en
+                  </span>
+                    <br> 
+                    <span> 
+                      OR click on the <i class='bx bxs-cog'></i> for specific customization! 
+                    </span>
                   </div>
                 
                   <!-- <div class="enhancementSphere" id="enhancementSphere"></div> -->

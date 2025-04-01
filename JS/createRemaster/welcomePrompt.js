@@ -40,36 +40,10 @@ function typeWelcomeWord(msg, wordIndex = 0, callback) {
     }
 }
 
-function typeDescWord(msg, wordIndex = 0, callback) {
-    const welcomeMessage = document.getElementById("descMessage");
-    const message = msg;
-    const words = message.split(" ");
-    
-    if (wordIndex < words.length) {
-        const span = document.createElement("span");
-        span.textContent = words[wordIndex] + " ";
-        span.style.opacity = 0;
-        span.style.transition = "opacity 0.5s ease-in";
-        welcomeMessage.appendChild(span);
-
-        setTimeout(() => {
-            span.style.opacity = 1;
-        }, 100);
-
-        setTimeout(() => typeDescWord(msg, wordIndex + 1, callback), 200);
-    }
-    else if(callback)
-    {
-        callback();
-    }
-}
 
 typeWelcomeWord("Hey Buddy, Good Evening!", 0, () => {
-    // startMorphing();
-    typeDescWord("What's on your mind today?", 0, () => {
         promptBoxAppear();
     });
-});
 
 function promptBoxAppear() 
 {

@@ -55,5 +55,5 @@ document.getElementById("customizePrompts").addEventListener("click", function()
 
 
 
-  let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
-  document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
+  // let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+  // document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});

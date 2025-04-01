@@ -177,3 +177,14 @@
       background-position: 20px 40px;
     }
   }
+
+  .instructionsForUser 
+  {
+    position: absolute;
+    top: 78%;
+    width: 70%;
+    left: 10%;
+    font-size: 1.1em;
+    color: #ffc;
+    opacity: 0.5;
+    }
