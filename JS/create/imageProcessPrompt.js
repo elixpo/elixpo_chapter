@@ -11,7 +11,7 @@ function notify(msg)
 
 
 document.getElementById("inputImage").addEventListener("click", function () {
-    document.getElementById("searchButtonText").classList.add("disabled");
+    document.getElementById("generateButton").classList.add("disabled");
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -49,13 +49,12 @@ async function handleImageFile(file) {
     reader.onload = async function () {
         console.log("File loaded successfully.");
         imageDataUrl = reader.result; // Get base64 data URL
-        document.getElementById("samplePrompt").classList.add("image");
+        document.getElementById("promptBox").classList.add("image");
         document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
         document.getElementById("imageHolder").style.backgroundSize = "cover";
         document.getElementById("imageHolder").style.backgroundPosition = "center center";
-        document.getElementById("searchButtonText").classList.remove("disabled");
+        document.getElementById("generateButton").classList.remove("disabled");
         imageMode = true;
-        document.getElementById("enhancedPrompt").innerText = processedPrompt;
 
     };
 
@@ -64,10 +63,10 @@ async function handleImageFile(file) {
 
 
 function cancelImageReference() {
-    document.getElementById("samplePrompt").classList.remove("image");
+    document.getElementById("promptBox").classList.remove("image");
     document.getElementById("imageHolder").style.background = "none";
     imageMode = false;
-    document.getElementById("searchButtonText").classList.remove("disabled"); // Re-enable if disabled
+    document.getElementById("generateButton").classList.remove("disabled"); // Re-enable if disabled
     return;
 }
 
