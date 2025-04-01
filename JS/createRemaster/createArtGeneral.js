@@ -53,20 +53,7 @@ document.getElementById("customizePrompts").addEventListener("click", function()
 });
 
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function(event) {
-    event.preventDefault();
-    const targetId = this.getAttribute('href').substring(1);
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  });
-});
 
 
-
-
-
-  // let imageCustomizationTop = document.getElementById("imageDisplay").getBoundingClientRect().top - 60;
-  // document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
+  let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+  document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});

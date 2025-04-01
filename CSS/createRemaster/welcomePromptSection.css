@@ -34,11 +34,11 @@
 }
 
 .imageArray img:nth-child(even) {
-    animation: moveUp 8s ease-in-out infinite;
+    /* animation: moveUp 8s ease-in-out infinite; */
 }
 
 .imageArray img:nth-child(odd) {
-    animation: moveDown 8s ease-in-out infinite;
+    /* animation: moveDown 8s ease-in-out infinite; */
 }
 
 @keyframes moveUp {

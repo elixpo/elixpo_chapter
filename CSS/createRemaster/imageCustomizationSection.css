@@ -136,6 +136,106 @@
     padding-bottom: 10px;
     overflow: hidden;
   }
+
+
+
+  .imageThemeSectionBackdropv-2 > .imageProcessingAnimation
+  {
+    opacity: 0;
+    scale: 0;
+    transition: 0.25s;
+  }
+
+  .imageThemeSectionBackdropv-2 > .imageProcessingAnimation.imageMode
+  {
+    position: absolute;
+    top: 30%;
+    left: 35%;
+    width: 30%;
+    height: 70%;
+    background: repeating-linear-gradient(45deg, 
+    #5b5a5a9c, #2e242471 2px,  
+    transparent 1px, transparent 27px  
+    );
+    border: 1px solid #555;
+    overflow: hidden;
+    transition: 0.25s;
+    transition-delay: 1.2s;
+  }
+
+  .imageThemeSectionBackdropv-2 > .imageProcessingAnimation > .userInputImageHolder
+  {
+    position: relative;
+    top: 2.5%;
+    height: 95%;
+    width: 95%;
+    border-top-right-radius: 15px;
+    border-top-left-radius: 15px;
+    background: #1D202A;
+    border: 1px solid #616678;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    margin: 10px;
+  }
+  .imageThemeSectionBackdropv-2 > .imageProcessingAnimation > .userInputImageHolder::before
+  {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    top: 2.5%;
+    left: 2.5%;
+    width: 95%;
+    height: 95%;
+    background: #030712;
+    background: url(../IMAGES/PREVIEW_IMAGES/crayon_preview.JPG);
+    background-size: cover;
+    z-index: 1;
+    border-top-right-radius: 15px;
+    border-top-left-radius: 15px;
+    animation: processingImage 3s ease infinite;
+    overflow: hidden;
+  }
+  .imageThemeSectionBackdropv-2 > .imageProcessingAnimation > .userInputImageHolder::after 
+  {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(125deg, #ff7eb3, #ff758c, #ff6e66, #ff6b3d, #ff6a00);
+    animation: blobEffect 1s infinite alternate;
+    z-index: 2;
+    filter: blur(85px) opacity(0.5);
+  }
+
+  @keyframes blobEffect {
+    0% {
+        transform: scale(1) translate(0, 0);
+    }
+    50% {
+        transform: scale(1.2) translate(10px, -10px);
+    }
+    100% {
+        transform: scale(1) translate(0, 0);
+    }
+}
+
+  @keyframes processingImage {
+    0%,100% {
+      filter: blur(3px) brightness(0.45) grayscale(1);
+    }
+    75% {
+        filter: blur(10px) brightness(0.8)  grayscale(0);
+    }
+    
+  }
+
+  
 .imageThemeSectionBackdropv-2 > .imageThemeContainer {
     position: absolute;
     top: 30%;
@@ -159,7 +259,10 @@
     padding-bottom: 10px;
 
 }
-
+.imageThemeSectionBackdropv-2 > .imageThemeContainer.imageMode
+{
+    width: 30%;
+}
 .imageThemeSectionBackdropv-2 > .themeShowCase > .imageHolderBackdrop
 {
     position: relative;
@@ -176,6 +279,7 @@
     
 
 }
+
 
 .imageThemeSectionBackdropv-2 > .themeShowCase > .imageHolderBackdrop::before 
 {
@@ -237,65 +341,11 @@
     color: #fff;
     font-weight: 500;
 }
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.normal {
-    background: url(../IMAGES/THEMES/normal.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.structure {
-    background: url(../IMAGES/THEMES/structure.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.crayon {
-    background: url(../IMAGES/THEMES/crayon.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.space {
-    background: url(../IMAGES/THEMES/space.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.chromatic {
-    background: url(../IMAGES/THEMES/chromatic.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.halloween {
-    background: url(../IMAGES/THEMES/halloween.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.cyberpunk {
-    background: url(../IMAGES/THEMES/cyberpunk.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.anime {
-    background: url(../IMAGES/THEMES/anime.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.landscape {
-    background: url(../IMAGES/THEMES/landscape.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.fantasy {
-    background: url(../IMAGES/THEMES/fantasy.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.samurai {
-    background: url(../IMAGES/THEMES/samurai.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.wpap {
-    background: url(../IMAGES/THEMES/wpap.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.vintage {
-    background: url(../IMAGES/THEMES/vintage.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.pixel {
-    background: url(../IMAGES/THEMES/pixel.jpeg);
-    background-size: cover;
-}
-.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes.synthwave {
-    background: url(../IMAGES/THEMES/synthwave.jpeg);
-    background-size: cover;
+.imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes > i 
+{
+    color: #fff;
+    font-size: 4em;
+    position: absolute;
 }
 .imageThemeSectionBackdropv-2 > .imageThemeContainer > .themes:hover 
 {

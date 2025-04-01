@@ -8,7 +8,7 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.css">
     <link rel="stylesheet" href="../../CSS/createRemaster/navbarStyling.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/containerStyling.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/welcomePromptSection.css" />
@@ -44,14 +44,14 @@
                 <h1 class="welcomeMessage" id="welcomeMessage"></h1>
                 <h1 class="descMessage" id="descMessage"> </h1>
                 <div class="imageArray">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/1_flux_bg.webp" alt="Flux background element 1">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/2_flux_bg.webp" alt="Flux background element 2">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/3_flux_bg.webp" alt="Flux background element 3">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/4_flux_bg.webp" alt="Flux background element 4">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/5_flux_bg.webp" alt="Flux background element 5">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/6_flux_bg.webp" alt="Flux background element 6">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/7_flux_bg.webp" alt="Flux background element 7">
-                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/8_flux_bg.webp" alt="Flux background element 8">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/1_flux_bg.webp" alt="Flux background element 1" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/2_flux_bg.webp" alt="Flux background element 2" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/3_flux_bg.webp" alt="Flux background element 3" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/4_flux_bg.webp" alt="Flux background element 4" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/5_flux_bg.webp" alt="Flux background element 5" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/6_flux_bg.webp" alt="Flux background element 6" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/7_flux_bg.webp" alt="Flux background element 7" loading="lazy">
+                    <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/8_flux_bg.webp" alt="Flux background element 8" loading="lazy">
                 </div>
 
                 <div class="promptBox" id="promptBox">
@@ -82,7 +82,7 @@
                     <ion-icon name="stop" class="stopGeneration hidden" id="stopGeneration"></ion-icon>
                   </div>
                 
-                  <div class="enhancementSphere" id="enhancementSphere"></div>
+                  <!-- <div class="enhancementSphere" id="enhancementSphere"></div> -->
             </section>
 
 
@@ -93,26 +93,29 @@
                         <i class='bx bxs-brush documentIcon'></i>
                         <div class="heading">Choose Amongst All Available Themes</div>
                         <div class="desc"> what do you want the style of your image to be? by default it's set to normal</div>
+                        <div class="imageProcessingAnimation">
+                            <div class="userInputImageHolder"></div>
+                        </div>
                         <div class="themeShowCase">
                             <div class="imageHolderBackdrop">
                             </div>
                         </div>
                         <div class="imageThemeContainer">
-                          <div class="themes structure"><span>Structure</span></div>
-                          <div class="themes crayon selected"><span>Crayon</span></div>
-                          <div class="themes normal "><span>Normal</span></div>
-                          <div class="themes space"><span>Space</span></div>
-                          <div class="themes chromatic"><span>Chromatic</span></div>
-                          <div class="themes halloween"><span>Halloween</span></div>
-                          <div class="themes cyberpunk"><span>Cyberpunk</span></div>
-                          <div class="themes anime"><span>Anime</span></div>
-                          <div class="themes landscape"><span>Landscape</span></div>
-                          <div class="themes fantasy"><span>Fantasy</span></div>
-                          <div class="themes samurai"><span>Samurai</span></div>
-                          <div class="themes wpap"><span>Wpap</span></div>
-                          <div class="themes vintage"><span>Vintage</span></div>
-                          <div class="themes pixel"><span>Pixel</span></div>
-                          <div class="themes synthwave"><span>Synthwave</span></div>
+                          <div class="themes structure">  <i class='bx bxs-buildings' ></i> <span>Structure</span></div>
+                          <div class="themes crayon selected"> <i class='bx bxs-pencil' ></i> <span>Crayon</span></div>
+                          <div class="themes normal "> <i class='bx bxs-face' ></i> <span>Normal</span></div>
+                          <div class="themes space"> <i class='bx bxs-planet'></i> <span>Space</span></div>
+                          <div class="themes chromatic"> <i class='bx bxs-adjust-alt'></i> <span>Chromatic</span></div>
+                          <div class="themes halloween"> <i class='bx bxs-ghost'  ></i> <span>Halloween</span></div>
+                          <div class="themes cyberpunk"> <i class='bx bxs-keyboard' ></i> <span>Cyberpunk</span></div>
+                          <div class="themes anime"> <i class='bx bxs-book-open'></i> <span>Anime</span></div>
+                          <div class="themes landscape"> <i class='bx bxs-landscape' ></i> <span>Landscape</span></div>
+                          <div class="themes fantasy"> <i class='bx bxs-cloud'></i> <span>Fantasy</span></div>
+                          <div class="themes samurai"> <i class='bx bx-layer'></i> <span> Ghibli </span></div>
+                          <div class="themes wpap"> <i class='bx bxs-sun'></i> <span>Wpap</span></div>
+                          <div class="themes vintage"> <i class='bx bxl-medium-old' ></i> <span>Vintage</span></div>
+                          <div class="themes pixel"> <i class='bx bxs-invader'></i>  <span>Pixel</span></div>
+                          <div class="themes synthwave"> <i class='bx bxl-deezer'  ></i> <span>Synthwave</span></div>
                         </div>
                     </div>
                 </div>
@@ -133,7 +136,7 @@
                     <div class="blob1"></div>
                     <div class="blob2"></div>
                     <div class="documentContainer" id="documentContainer">
-                       <div class="modelsTiles flux_core"><span> Flux Core </span></div>
+                       <div class="modelsTiles flux_core">  <span> Flux Core </span></div>
                       <div class="modelsTiles flux_realism selected"><span> Flux Realism </span></div>
                       <div class="modelsTiles flux_cablyai"><span> Flux Cablyai </span></div>
                       <div class="modelsTiles flux_anime"><span> Flux Anime </span></div>
@@ -299,10 +302,12 @@
         </div>
         
     </div>
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.js"></script>
     <script src="../../JS/create/imageProcessPrompt.js" ></script>
     <script src="../../JS/create/promptscontainer.js" ></script>
     <script src="../../JS/createRemaster/createArtGeneral.js"></script>
+    <script src="../../JS/createRemaster/locomotiveScroll.js"></script>
     <script src="../../JS/createRemaster/welcomePrompt.js"></script>
     <script src="../../JS/createRemaster/imageGeneration.js"></script>
    
