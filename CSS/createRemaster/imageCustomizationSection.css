@@ -28,8 +28,7 @@
   }
 
   .imageThemeSection::before,
-  .imageCustomizationPrompt::before,
-  .model_ratioSelectionZone::before
+  .imageCustomizationPrompt::before
   {
     content: "";
     position: absolute;
@@ -45,8 +44,7 @@
   }
 
     .imageThemeSection::after ,
-    .imageCustomizationPrompt::after,
-    .model_ratioSelectionZone::after
+    .imageCustomizationPrompt::after
     {
         content: "";
         position: absolute;
@@ -161,6 +159,8 @@
     overflow: hidden;
     transition: 0.25s;
     transition-delay: 1.2s;
+    opacity: 1;
+    scale: 1;
   }
 
   .imageThemeSectionBackdropv-2 > .imageProcessingAnimation > .userInputImageHolder
@@ -381,8 +381,9 @@
 
 .imageCustomizationPrompt {
   position: relative;
-  top: 16%;
-  height: 100px;
+  top: 22%;
+  height: 240px;
+  overflow: hidden;
   width: 100%;
   background: #030712;
 }
@@ -453,7 +454,7 @@
 
 .model_ratioSelectionZone {
     position: absolute;
-  top: 73%;
+  top: 0%;
   height: 120px;
   width: 100%;
   background: transparent;
@@ -469,7 +470,6 @@
     transform: translateX(-50%) translateY(-50%);
     height: 100%;
     width: 94%;
-    background: #1D202A;
     display: flex;
   }
   

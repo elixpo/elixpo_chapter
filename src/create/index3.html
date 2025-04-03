@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.css">
+
     <link rel="stylesheet" href="../../CSS/createRemaster/navbarStyling.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/containerStyling.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/welcomePromptSection.css" />
@@ -18,6 +19,7 @@
     <link rel="stylesheet" href="../../CSS/createRemaster/imageGeneratorSection.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/imageGeneratorControls.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/imageDisplaySection.css" />
+    
     <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1">
 
 
@@ -31,17 +33,19 @@
         <i class='bx bxl-blogger redirectBlogs'></i>
         <span class="pingStatus"><i class='bx bx-wifi serverPing' ></i><p> 10ms </p></span>
         <i class='bx bxs-photo-album'></i>
-
-
         <i class='bx bxl-github githubLogo'></i>
     </div>
 
     <div class="container">
+      <div class="notification" id="notification">
+        <div class="notifText" id="notifText">This is a notification </div>
+      </div>
         <div class="backdropBG"></div>
         <div class="sectionContainer">
 
             <section id="welcomePrompt">
                 <h1 class="welcomeMessage" id="welcomeMessage"></h1>
+                <h1 class="descMessage" id="descMessage"></h1>
                 <div class="imageArray">
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/1_flux_bg.webp" alt="Flux background element 1" loading="lazy">
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/2_flux_bg.webp" alt="Flux background element 2" loading="lazy">
@@ -52,59 +56,60 @@
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/7_flux_bg.webp" alt="Flux background element 7" loading="lazy">
                     <img class="animation-oscillating svelte-m635bu" src="https://canvas-generations-v1.s3.us-west-2.amazonaws.com/8_flux_bg.webp" alt="Flux background element 8" loading="lazy">
                 </div>
-
-                <div class="promptBox" id="promptBox">
-
-                    <div class="controls">
-                      <i class="fa-solid fa-dice-one" id="OneImage"></i>
-                      <i class="fa-solid fa-image" id="inputImage"> </i>
-                      <i class="fa-solid fa-shield" id="privateBtn"></i>
-                      <i class="fa-solid fa-lightbulb" id="pimpPrompt"></i>
-                      <i class="fa-solid fa-shuffle" id="promptIdea"></i>
-                      <i class='bx bxs-cog' id="customizePrompts"></i>
-              
-                      <div class="generateButton" id="generateButton">
-                        <button class="searchBtn">
-                          <span class="spark"></span>
-                          <span class="spark"></span>
-                          <span class="backdrop"></span>
-                          <i class='bx bxs-magic-wand'></i>
-                        </button>
-                      </div>
-                    </div>
-                    <div class="imageHolder" id="imageHolder">
-                      <i class="fa-solid fa-circle-xmark" id="cancelImageMode"></i>
-                    </div>
-                    <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none"
-                      placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape"></textarea>
-              
-                    <ion-icon name="stop" class="stopGeneration hidden" id="stopGeneration"></ion-icon>
-                  </div>
-                  <div class="instructionsForUser">
-                    <span> use --pr to specify the prompt, --ar for aspect ratio, --th for theme --md for the model 
-                    --pv for private mode --hd for high-definition --sd for standard definition --en for prompt enhancement
-                    </span>
-                    <br>
-                    <span> 
-                    Example:- --pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --th landscape --md flux_core --pv --hd --en
-                  </span>
-                    <br> 
-                    <span> 
-                      OR click on the <i class='bx bxs-cog'></i> for specific customization! 
-                    </span>
-                  </div>
                 
-                  <!-- <div class="enhancementSphere" id="enhancementSphere"></div> -->
-            </section>
 
+                <div class="instructionsForUser">
+                  <span> you can simply write the prompt or use special flags: <span class="notations">--pr</span> to specify the prompt, <span class="notations">--ar</span> for aspect ratio, <span class="notations">--th</span> for theme <span class="notations">--md</span> for the model 
+                  <span class="notations">--pv</span> for private mode <span class="notations">--hd</span> for high-definition <span class="notations">--sd</span> for standard definition <span class="notations">--en</span> for prompt enhancement
+                  </span>
+                  <br>
+                  <span> 
+                  Example:- <span class="notations">--pr</span> a rabbit sitting on an elephant, with a cricket bat in hand <span class="notations">--ar</span> 9:16 <span class="notations">--th</span> landscape <span class="notations">--md</span> flux_core <span class="notations">--pv</span> <span class="notations">--hd</span> <span class="notations">--en</span>
+                  </span>
+                </div>
+
+                  <button class="createBtn" id="createBtn">Create</button>
+                  <div class="enhancementSphere" id="enhancementSphere"></div>
+            </section>
+       
 
             <section id="imageCustomization">
               <div class="imageThemeSection">
                 <div class="imageThemeSectionBackdrop">
                     <div class="imageThemeSectionBackdropv-2">
-                        <i class='bx bxs-brush documentIcon'></i>
-                        <div class="heading">Choose Amongst All Available Themes</div>
-                        <div class="desc"> what do you want the style of your image to be? by default it's set to normal</div>
+
+                      <div class="model_ratioSelectionZone">
+                        <div class="model_ratioSelectionZoneBackdrop">
+                          <div class="model_ratioSelectionZoneBackdropv1" id="model_ratioSelectionZoneBackdropv1">
+                              <div class="documentIcon"></div>
+                              <div class="blob1"></div>
+                              <div class="blob2"></div>
+                              <div class="documentContainer" id="documentContainer">
+                                 <div class="modelsTiles flux_core">  <span> Flux Core </span></div>
+                                <div class="modelsTiles flux_realism selected"><span> Flux Realism </span></div>
+                                <div class="modelsTiles flux_cablyai"><span> Flux Cablyai </span></div>
+                                <div class="modelsTiles flux_anime"><span> Flux Anime </span></div>
+                                <div class="modelsTiles flux_3d"><span> Flux 3D </span></div>
+                                <div class="modelsTiles any_dark"><span> Any Dark </span></div>
+                                <div class="modelsTiles flux_pro"><span> Flux Pro </span></div>
+                                <div class="modelsTiles turbo"><span> Turbo </span></div>
+                              </div>
+                          </div>
+                      
+          
+                      <div class="model_ratioSelectionZoneBackdropv2">
+                          <div class="documentContainer">
+                            <div class="aspectRatioTiles one_one"><span> 1 : 1 </span></div>
+                            <div class="aspectRatioTiles nine_sixteen"><span> 9 : 16 </span></div>
+                            <div class="aspectRatioTiles sixteen_nine"><span> 16 : 9 </span></div>
+                            <div class="aspectRatioTiles four_three selected"><span> 4 : 3 </span></div>
+                            <div class="aspectRatioTiles three_two"><span> 3 : 2 </span></div>
+                          </div>
+                      </div>
+                  </div>
+                      </div>
+
+
                         <div class="imageProcessingAnimation">
                             <div class="userInputImageHolder"></div>
                         </div>
@@ -134,45 +139,34 @@
             </div>
             <div class="imageCustomizationPrompt">
               <div class="imageCustomizationPromptBackdrop">
-                <textarea class="customizationTextArea" id="customizationTextArea" spellcheck="false" autocomplete="off"
-                  placeholder=""></textarea>
-                  <i class='bx bxs-send sendPrompt'></i>
+                <div class="promptBox" id="promptBox">
+
+                  <div class="controls">
+                    <i class="fa-solid fa-dice-one" id="OneImage"></i>
+                    <i class="fa-solid fa-image" id="inputImage"> </i>
+                    <i class="fa-solid fa-shield" id="privateBtn"></i>
+                    <i class="fa-solid fa-lightbulb" id="pimpPrompt"></i>
+                    <i class="fa-solid fa-shuffle" id="promptIdea"></i>
+            
+                    <div class="generateButton" id="generateButton">
+                      <button class="searchBtn">
+                        <span class="spark"></span>
+                        <span class="spark"></span>
+                        <span class="backdrop"></span>
+                        <i class='bx bxs-magic-wand' id="createImageDirectly"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="imageHolder" id="imageHolder">
+                    <i class="fa-solid fa-circle-xmark" id="cancelImageMode"></i>
+                  </div>
+                  <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none"
+                    placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape"></textarea>
+            
+                  <ion-icon name="stop" class="stopGeneration hidden" id="stopGeneration"></ion-icon>
+                </div>
               </div>
             </div>
-
-
-            <div class="model_ratioSelectionZone">
-              <div class="model_ratioSelectionZoneBackdrop">
-                <div class="model_ratioSelectionZoneBackdropv1" id="model_ratioSelectionZoneBackdropv1">
-                    <div class="documentIcon"></div>
-                    <div class="blob1"></div>
-                    <div class="blob2"></div>
-                    <div class="documentContainer" id="documentContainer">
-                       <div class="modelsTiles flux_core">  <span> Flux Core </span></div>
-                      <div class="modelsTiles flux_realism selected"><span> Flux Realism </span></div>
-                      <div class="modelsTiles flux_cablyai"><span> Flux Cablyai </span></div>
-                      <div class="modelsTiles flux_anime"><span> Flux Anime </span></div>
-                      <div class="modelsTiles flux_3d"><span> Flux 3D </span></div>
-                      <div class="modelsTiles any_dark"><span> Any Dark </span></div>
-                      <div class="modelsTiles flux_pro"><span> Flux Pro </span></div>
-                      <div class="modelsTiles turbo"><span> Turbo </span></div>
-                    </div>
-                </div>
-            
-
-            <div class="model_ratioSelectionZoneBackdropv2">
-                <div class="documentContainer">
-                  <div class="aspectRatioTiles one_one"><span> 1 : 1 </span></div>
-                  <div class="aspectRatioTiles nine_sixteen"><span> 9 : 16 </span></div>
-                  <div class="aspectRatioTiles sixteen_nine"><span> 16 : 9 </span></div>
-                  <div class="aspectRatioTiles four_three selected"><span> 4 : 3 </span></div>
-                  <div class="aspectRatioTiles three_two"><span> 3 : 2 </span></div>
-                </div>
-            </div>
-        </div>
-            </div>
-
-
             </section>
 
 

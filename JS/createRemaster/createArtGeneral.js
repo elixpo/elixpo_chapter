@@ -32,6 +32,7 @@ document.getElementById("pimpPrompt").addEventListener("click", function()
   enhanceMode = !enhanceMode;
   if (enhanceMode) {
     document.getElementById("pimpPrompt").classList.add("selected");
+    notify("Pimped prompt mode enabled");
   }
   else 
   {
@@ -55,5 +56,13 @@ document.getElementById("customizePrompts").addEventListener("click", function()
 
 
 
-  // let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
-  // document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
+  let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+  document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
+
+
+  function notify(msg)
+  {
+    document.getElementById("notifText").innerText = msg;
+    document.getElementById("notification").classList.add("display");
+    setTimeout(() => document.getElementById("notification").classList.remove("display"), 3000);
+  }

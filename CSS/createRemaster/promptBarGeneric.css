@@ -1,9 +1,9 @@
 .promptBox {
     position: absolute;
-    width: 70%;
+    width: 80%;
     left: 10%;
-    top: 54%; /* Base position */
-    height: 150px;
+    top: 10%; /* Base position */
+    height: 200px;
     padding-top: 15px;
     padding-left: 60px;
     resize: none;
@@ -218,7 +218,7 @@
 
 .generateButton {
     position: relative;
-    left: 80%;
+    left: 120%;
     top: 0%;
     opacity: 1;
     pointer-events: all;

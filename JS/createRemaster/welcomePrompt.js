@@ -41,8 +41,34 @@ function typeWelcomeWord(msg, wordIndex = 0, callback) {
 }
 
 
+
+function typeDescWord(msg, wordIndex = 0, callback) {
+    const welcomeMessage = document.getElementById("descMessage");
+    const message = msg;
+    const words = message.split(" ");
+    
+    if (wordIndex < words.length) {
+        const span = document.createElement("span");
+        span.textContent = words[wordIndex] + " ";
+        span.style.opacity = 0;
+        span.style.transition = "opacity 0.5s ease-in";
+        welcomeMessage.appendChild(span);
+
+        setTimeout(() => {
+            span.style.opacity = 1;
+        }, 100);
+
+        setTimeout(() => typeDescWord(msg, wordIndex + 1, callback), 200);
+    } else if (callback) {
+        callback();
+    }
+}
+
+
 typeWelcomeWord("Hey Buddy, Good Evening!", 0, () => {
+    typeDescWord("What's on your mind?", 0, () => {
         promptBoxAppear();
+    })
     });
 
 function promptBoxAppear() 
@@ -110,3 +136,31 @@ function startMorphing() {
 
 
 
+document.getElementById("promptTextInput").addEventListener("keydown", (e) => {
+
+    if(e.ctrlKey && e.key === "Enter")
+    {
+        clearInterval(cyclePlaceholderPrompts);
+        const promptTextInput = document.getElementById("promptTextInput");
+        const promptText = promptTextInput.value;
+        console.log(promptText);
+    }
+
+    if (promptTextInput.value.includes("--en")) {
+        document.getElementById("pimpPrompt").classList.add("selected");
+        enhanceMode = true;
+    }
+    else if (promptTextInput.value.includes("--pv")) {
+        document.getElementById("privateBtn").classList.add("selected");
+        privateMode = true;
+    }
+    else if (!promptTextInput.value.includes("--pv")) {
+        document.getElementById("privateBtn").classList.remove("selected");
+        privateMode = false;
+    }
+    else if(!promptTextInput.value.includes("--en"))
+    {
+        document.getElementById("pimpPrompt").classList.remove("selected");
+        enhanceMode = false;
+    }
+})
