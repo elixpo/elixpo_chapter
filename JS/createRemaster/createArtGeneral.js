@@ -2,6 +2,7 @@ let enhanceMode = false;
 let privateMode = false;
 let isImageMode = false;
 let currentIndex = 0;
+let selectedImageQuality = "SD";
 let generationNumber = 2;
 const diceIcon = document.getElementById('OneImage');
 const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four'];
@@ -21,6 +22,7 @@ document.getElementById("privateBtn").addEventListener("click", function()
   privateMode = !privateMode;
   if (privateMode) {
     document.getElementById("privateBtn").classList.add("selected");
+    notify("Images will be now private! No Server Inference");
   }
   else 
   {
@@ -40,6 +42,16 @@ document.getElementById("pimpPrompt").addEventListener("click", function()
   }
 });
 
+document.querySelectorAll(".qualitySelection > .imageQuality").forEach(function(element) {
+  element.addEventListener("click", function() {
+    document.querySelectorAll(".imageQuality").forEach(function(el) {
+      el.classList.remove("selected");
+    });
+    this.classList.add("selected");
+    selectedImageQuality = this.getAttribute("data-quality");
+  });
+});
+
 document.getElementById("promptIdea").addEventListener("click", function() {
   const randomIndex = Math.floor(Math.random() * prompts.length);
   document.getElementById("promptTextInput").value = prompts[randomIndex];
@@ -48,16 +60,18 @@ document.getElementById("promptIdea").addEventListener("click", function() {
   
 });
 
-document.getElementById("customizePrompts").addEventListener("click", function() {
-  let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
-  document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop, behavior: 'smooth' });
-});
+
+
+let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+  document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
 
 
 
-
+document.getElementById("createBtn").addEventListener("click", function() {
+  
   let imageCustomizationTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
   document.querySelector(".sectionContainer").scrollTo({ top: imageCustomizationTop});
+});
 
 
   function notify(msg)

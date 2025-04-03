@@ -41,7 +41,7 @@
     padding-top: 15px;
     padding-left: 60px;
     resize: none;
-    top: 61%; /* Base position */
+    top: 10%;
     max-height: 180px; /* Adjust max height */
     overflow-y: auto;
     border: 1px solid rgba(114, 119, 116, 0.533);
@@ -104,15 +104,16 @@
 .promptBox .promptTextInput {
     position: absolute;
     min-height: 45px;
-    max-height: 110px; /* Adjust max */
+    max-height: 130px; /* Adjust max */
     width: 93%;
-    top: 3%;
+    top:  0%;
     left: 3%;
     font-size: 1em;
     border: none;
     outline: none;
     color: #f3cf74;
     background: transparent;
+    height: 100px;
     box-sizing: border-box;
     resize: none;
     padding-top: 10px;
@@ -218,7 +219,7 @@
 
 .generateButton {
     position: relative;
-    left: 120%;
+    left: 80%;
     top: 0%;
     opacity: 1;
     pointer-events: all;

@@ -64,45 +64,42 @@
     background: #04b00d;
 }
 
-
-.notification
-{
+.notification {
     opacity: 0;
     right: -100%;
     transition: 0.5s;
     scale: 0;
     filter: blur(10px);
     z-index: 100;
+    min-height: 45px;
+    max-height: 100px;
+    height: auto; /* Allows dynamic height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px; /* Ensures spacing */
 }
 
-
-.notification.display
-{
+.notification.display {
     position: absolute;
     top: 10%;
     right: 1%;
-    min-height: 40px;
-    max-height: 100px;
     width: 20%;
     background: #e6ce8676;
     backdrop-filter: blur(10px);
     border-radius: 10px;
     border-top-left-radius: 30px;
     border: 3px solid #e1aa07;
-    overflow-y: hidden;
-    align-items: center;
-    justify-content: center;
+    overflow-y: auto; /* Allows scrolling if content exceeds max height */
     overflow-x: hidden;
     z-index: 100;
-    padding-bottom: 10px;
     opacity: 1;
-    scale: 1;
-    filter: blur(0px);
     scale: 0.8;
+    filter: blur(0px);
     transition: 0.5s;
 }
-.notification::before
-{
+
+.notification::before {
     content: "";
     position: absolute;
     top: 5%;
@@ -114,28 +111,22 @@
     border-bottom-left-radius: 30px;
     z-index: -1;
 }
-.notification::-webkit-scrollbar
-{display: none;}
 
-.notification > .notifText
-{
-    position: absolute;
-    top: 60%;
-    transform: translateY(-50%);
-    left: 1%;
-    height: 80%;
-    width: 80%;
+.notification::-webkit-scrollbar {
+    display: none;
+}
+
+.notification > .notifText {
+    position: relative;
+    width: 90%;
     font-family: 'Boldonse', sans-serif;
-    text-align: left;
+    text-align: center;
     font-size: 1em;
     color: #000000;
-    text-align: center;
-    z-index: 1;
-    overflow-x: none;
     overflow-y: auto;
-    flex-wrap: wrap;
+    word-wrap: break-word;
 }
-.notification > .notifText::-webkit-scrollbar
-{
+
+.notification > .notifText::-webkit-scrollbar {
     display: none;
 }

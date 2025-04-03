@@ -16,8 +16,3 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Smooth scroll for image customization button
-document.getElementById("customizePrompts").addEventListener("click", function() {
-    let imageCustomizationTop = document.getElementById("imageCustomization").offsetTop - 60;
-    locoScroll.scrollTo(imageCustomizationTop);
-});
