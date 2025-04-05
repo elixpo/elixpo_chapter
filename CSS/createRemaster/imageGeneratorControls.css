@@ -1,6 +1,6 @@
 .GenerateImageControls {
     position: absolute;
-    top: 90%;
+    top: 80%;
     left: 0%;
     width: 100%;
     display: flex;
@@ -21,7 +21,18 @@
     -moz-transition: all 0.2s ease-in;
     transition: all 0.2s ease-in;
     cursor: pointer;
+    scale: 1;
+    opacity: 1;
+    pointer-events: all;
 
+}
+.acceptBtn.hidden, .rejectBtn.hidden {
+    scale: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease-in;
+    -webkit-transition: all 0.2s ease-in;
+    -moz-transition: all 0.2s ease-in;
 }
 .acceptBtn i, .rejectBtn i {
     font-size: 25px;

@@ -205,6 +205,24 @@
     font-weight: 700;
 }
 
+
+
+.generateButton {
+  position: relative;
+  left: 30%;
+  top: 0%;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.generateButton.disabled 
+{
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+
+
 .promptBox.generating #imageHolder
 {
     display: none;
@@ -212,7 +230,7 @@
 
 .promptBox.image .generateButton
 {
-    left: 100%;
+    left: 40%;
 }
 
 @keyframes clickEffect {

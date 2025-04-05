@@ -16,7 +16,7 @@
 
 .imageDisplaySection {
     position: absolute;
-    top: 0px;
+    top: 40px;
     height: 100%;
     width: 100%;
     background-color: transparent;
@@ -158,16 +158,18 @@
   .imageDisplaySectionBackdropv-2>.documentContainer>.imageDisplayHolder
   {
     position: relative;
-    height: 97%;
-    width: 97%;
+    height: 90%;
+    top: 2%;
+    width: 85%;
     background: url(/CSS/IMAGES/celeb3.jpg);
+    border: 2px solid rgba(255, 255, 204, 0.484);
     /* background: #1D202A; */
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
-    border-radius: 25px;
+    border-radius: 15px;
     overflow: hidden;
-    grid-column: span 7 / span 7;
+    grid-column: span 8 / span 8;
     grid-row: span 7 / span 7;
     grid-column-start: 2;
     grid-row-start: 2;

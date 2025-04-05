@@ -191,7 +191,7 @@
     width: 95%;
     height: 95%;
     background: #030712;
-    background: url(../IMAGES/PREVIEW_IMAGES/crayon_preview.JPG);
+    background: var(--before-background);
     background-size: cover;
     z-index: 1;
     border-top-right-radius: 15px;
@@ -210,7 +210,7 @@
     background: linear-gradient(125deg, #ff7eb3, #ff758c, #ff6e66, #ff6b3d, #ff6a00);
     animation: blobEffect 1s infinite alternate;
     z-index: 2;
-    filter: blur(85px) opacity(0.5);
+    filter: blur(25px) opacity(0.35);
   }
 
   @keyframes blobEffect {
@@ -257,11 +257,13 @@
     align-content: flex-start;
     padding-top: 10px;
     padding-bottom: 10px;
+    transition: 0.25s;
 
 }
 .imageThemeSectionBackdropv-2 > .imageThemeContainer.imageMode
 {
     width: 30%;
+    transition: 0.25s;
 }
 .imageThemeSectionBackdropv-2 > .themeShowCase > .imageHolderBackdrop
 {
@@ -281,21 +283,23 @@
 }
 
 
-.imageThemeSectionBackdropv-2 > .themeShowCase > .imageHolderBackdrop::before 
-{
-    content: "";
+.imageThemeSectionBackdropv-2 > .themeShowCase > .imageHolderBackdrop > .themeShowCaseHolder
+{ 
     position: absolute;
     top: 0;
     left: 0;
-    top: 2.5%;
+    top: -5%;
     left: 2.5%;
     width: 95%;
-    height: 95%;
+    height: 100%;
     background: #030712;
-    background: url(../IMAGES/PREVIEW_IMAGES/crayon_preview.JPG);
+    background: url(../IMAGES/PREVIEW_IMAGES/normal_preview.JPG);
+    transform: scale(0.8);
     background-size: cover;
+    background-position: top;
     z-index: 1;
-    border-radius: 15px;
+    border-top-right-radius: 15px;
+    border-top-left-radius: 15px;
     overflow: hidden;
 }
 
@@ -391,7 +395,7 @@
 {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 0%;
     height: 100%;
     width: 100%;
     background-color: transparent;

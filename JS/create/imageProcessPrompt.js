@@ -1,4 +1,4 @@
-
+let extractedBase64Data = null;
 
 function notify(msg)
 {
@@ -26,9 +26,8 @@ document.getElementById("inputImage").addEventListener("click", function () {
 
     input.click();
 });
-
 async function handleImageFile(file) {
-    if (!file) return; // If no file selected, exit
+    if (!file) return;
 
     if (file.size >= 10 * 1024 * 1024) {
         alert("Please select an image file smaller than 10 MB.");
@@ -48,24 +47,26 @@ async function handleImageFile(file) {
 
     reader.onload = async function () {
         console.log("File loaded successfully.");
-        imageDataUrl = reader.result; // Get base64 data URL
+        imageDataUrl = reader.result;
+        extractedBase64Data = imageDataUrl.split(",")[1]; // ✅ Save just the base64 part
+
         document.getElementById("promptBox").classList.add("image");
         document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
+        document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
         document.getElementById("imageHolder").style.backgroundSize = "cover";
         document.getElementById("imageHolder").style.backgroundPosition = "center center";
         document.getElementById("generateButton").classList.remove("disabled");
-        imageMode = true;
-
+        isImageMode = true;
     };
 
     reader.readAsDataURL(file);
 }
 
-
 function cancelImageReference() {
     document.getElementById("promptBox").classList.remove("image");
     document.getElementById("imageHolder").style.background = "none";
-    imageMode = false;
+    document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `none`);
+    isImageMode = false;
     document.getElementById("generateButton").classList.remove("disabled"); // Re-enable if disabled
     return;
 }
@@ -75,80 +76,97 @@ document.getElementById("cancelImageMode").addEventListener("click", () => {
 });
 
 // Function to generate prompt from image
-async function generatePromptFromImage(imageUrl, controller) {
-    const userGivenprompt = document.getElementById("promptTextInput").value;
-    let systemInstructions = `
-    firstlty understand the gender of the subject if a human is deteced or if multiple are detected
-    secondly understand the if the image is a closeup or a long shot
-    1. understand what the image is trying to depict.
-    2. form a highly descriptive AI art generation prompt that can recreate it
-    3. Include details such as the environment and other minute details 
-    4. understand the mood, style, lighting, colors, and composition of the image
-    5. take the user prompt into consideration and generate a prompt that can work well with AI art generators
-    6. make the prompt as highly detailed as possible
-    User Prompt: ${userGivenprompt}
+async function generatePromptFromImage(imageUrl, userGivenprompt, controller) {
+    console.log(userGivenprompt);
+    const systemInstructions = `
+You are an expert AI art prompt engineer.
 
-    Decoded Prompt: "A beautiful sunset over the ocean with a silhouette of a palm tree in the foreground"
-    User Prompt: "use a coconut tree in the foreground now"
-    Output: "A beautiful sunset over the ocean with a silhouette of a coconut tree in the foreground with proper lighting and colors and a calm mood"
+Your task is to deeply analyze a visual image and generate a high-quality, natural language prompt that would allow an AI art generator to accurately reconstruct it. Additionally, **blend in** the user’s creative request to enrich the final output.
 
-    Just output the final perfect combined ai prompt, no need to include the instructions and inner thoughts.
+### Instructions:
+1. Study the image carefully and describe:
+   - Human presence (how many, gender, appearance, expressions, clothing, ethnicity if relevant)
+   - **Age estimate** (child, teenager, adult, elderly)
+   - Camera angle (close-up, wide shot, aerial, etc.)
+   - Environment, setting, background elements
+   - Mood/emotion (from posture, color palette, lighting)
+   - Style (realism, anime, digital painting, 3D, etc.)
+   - Lighting (natural, cinematic, neon, golden hour, etc.)
+   - Composition (rule of thirds, depth, focus, framing)
 
-    `;
+2. **Preserve facial details**, accessories, gender identity, pose, and clothing if visible.
+
+3. After analyzing the image, **thoughtfully incorporate the user's request**  into the prompt — altering or enriching the environment, character, or details accordingly, while still preserving the image’s core.
+The user request is :- "${userGivenprompt}"
+Study the image and blend in the user request to create a unique, high-quality prompt.
+4. Merge all of the above into a single detailed AI prompt (50–100 words). Avoid lists or explanation.
+
+
+`;
+
     try {
+        const base64Image = imageUrl.split(",")[1];
+
         const response = await fetch("https://text.pollinations.ai/openai", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
+                model: "openai",
                 messages: [
+                    {
+                        role: "system",
+                        content: systemInstructions.trim()
+                    },
                     {
                         role: "user",
                         content: [
                             {
                                 type: "text",
-                                text: `${systemInstructions}`
+                                text: "Analyze this image and build a refined generation prompt."
                             },
-                            { type: "image_url", image_url: { url: imageUrl } }
+                            {
+                                type: "image_url",
+                                image_url: { url: `data:image/jpeg;base64,${base64Image}` }
+                            }
                         ]
                     }
                 ],
-                model: "claude-hybridspace"
-            }),
-            signal: controller.signal // Attach the signal for aborting
+                max_tokens: 250 // Slightly increased to fit the merged prompt better
+            })
         });
 
-        if (controller.signal.aborted) {
-            console.log("Generation was aborted.");
-            notify("Generation was aborted.");
-            handleStaticMode();
-        }
-
         const data = await response.json();
-        if (data.choices && data.choices.length > 0) {
-            // console.log("Prompt generated:", data.choices[0].message.content);
-            return data.choices[0].message.content;
-        } else {
 
-            notify("Generation was aborted.");
-            handleStaticMode();
-            console.error("No valid response received.");
-           
-            
+        if (!response.ok) {
+            notify("Failed to reach the prompt server.");
+            console.error("HTTP error:", response.status, await response.text());
+            return false;
         }
+        
+        // Check for valid structure
+        if (data?.choices?.length > 0 && data.choices[0]?.message?.content) {
+            return data.choices[0].message.content.trim();
+        } else {
+            notify("Invalid response format from server.");
+            console.error("Unexpected API response structure:", data);
+            return false;
+        }
+        
+
     } catch (error) {
         if (controller.signal.aborted) {
             console.log("Generation was aborted.");
             notify("Generation was aborted.");
-            handleStaticMode();
-            return;
+            return false;
         }
         console.error("Error generating prompt:", error);
-        notify("Generation was aborted.");
-        handleStaticMode();
+        notify("Generation failed.");
+        return false;
     }
 }
+
 
 
 
@@ -172,3 +190,29 @@ document.getElementById("promptTextInput").addEventListener("paste", async (even
         await handleImageFile(blob);
     }
 });
+
+
+async function loadHardcodedImage() {
+    const imageUrl = "../../CSS/IMAGES/normalBG.png";
+    try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "hardcoded_image.jpg", { type: "image/jpeg" });
+        await handleImageFile(file);
+        const reader = new FileReader();
+
+        reader.onload = async function () {
+            extractedBase64Data = reader.result.split(",")[1];
+        };
+
+        reader.readAsDataURL(file);
+    } catch (error) {
+        console.error("Error loading hardcoded image:", error);
+        notify("Failed to load hardcoded image.");
+    }
+}
+
+// window.onload = loadHardcodedImage;
+
+//image mode bug
+

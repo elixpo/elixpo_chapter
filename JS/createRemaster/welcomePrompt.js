@@ -46,7 +46,7 @@ function typeWelcomeWord(msg, wordIndex = 0, callback) {
             span.style.opacity = 1;
         }, 100);
 
-        setTimeout(() => typeWelcomeWord(msg, wordIndex + 1, callback), 200);
+        setTimeout(() => typeWelcomeWord(msg, wordIndex + 1, callback), 100);
     } else if (callback) {
         callback();
     }
@@ -145,72 +145,6 @@ function startMorphing() {
     });
 }
 
-
-document.getElementById("promptTextInput").addEventListener("input", debounce(handleInput, 100));
-
-function handleInput() {
-    const promptText = document.getElementById("promptTextInput").value;
-
-    // Handle "--en"
-    toggleClass(promptText.includes("--en"), "pimpPrompt", "selected");
-    enhanceMode = promptText.includes("--en");
-
-    // Handle "--pv"
-    toggleClass(promptText.includes("--pv"), "privateBtn", "selected");
-    privateMode = promptText.includes("--pv");
-
-    // Handle quality selection
-    const qualityMap = {
-        "--ld": "qualitySelection_LD",
-        "--sd": "qualitySelection_SD",
-        "--hd": "qualitySelection_HD"
-    };
-
-    let selectedQuality = Object.keys(qualityMap).find(flag => promptText.includes(flag)) || "--sd";
-    updateSelection(".imageQuality", qualityMap[selectedQuality]);
-
-    // Handle aspect ratio selection (default: "4:3")
-    handleSelection("--ar", ".aspectRatioTiles", "ratio", "4:3");
-
-    // Handle theme selection (default: "normal")
-    handleSelection("--th", ".themes", "theme", "normal");
-
-    // Handle model selection (default: "core")
-    handleSelection("--md", ".modelsTiles", "model", "core");
-}
-
-// Utility function to toggle class
-function toggleClass(condition, elementId, className) {
-    const element = document.getElementById(elementId);
-    if (element) element.classList.toggle(className, condition);
-}
-
-// Utility function to update selection, applying a default if no match is found
-function handleSelection(flag, selector, dataAttr, defaultValue) {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(el => el.classList.remove("selected"));
-
-    const match = document.getElementById("promptTextInput").value.match(new RegExp(`${flag}\\s([\\w-:]+)`));
-    const selectedValue = match ? match[1] : defaultValue;
-
-    const element = [...elements].find(el => el.dataset[dataAttr] === selectedValue);
-    if (element) element.classList.add("selected");
-}
-
-// Utility function to update quality selection
-function updateSelection(selector, selectedId) {
-    document.querySelectorAll(selector).forEach(el => el.classList.remove("selected"));
-    document.getElementById(selectedId).classList.add("selected");
-}
-
-// Debounce function to optimize input handling
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
 
 
 

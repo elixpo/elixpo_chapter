@@ -60,7 +60,6 @@
 }
 
 
-
 .promptBox.image .promptTextInput
 {
     width: 80%;
@@ -118,10 +117,63 @@
     resize: none;
     padding-top: 10px;
     overflow-y: auto;
+    transition: 0.5s;
+    filter: blur(0);
+    opacity: 1;
     line-height: 1.2em;
+    pointer-events: all;
+}
+.promptBox .promptTextInput.blur 
+{
+    filter: blur(40px);
+    opacity: 0;
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.promptBox .overlay 
+{
+    opacity: 0;
+    transition: 1;
+    position: absolute;
+    filter: blur(40px);
 }
 
 
+
+.promptBox .overlay.display
+{
+    position: absolute;
+    min-height: 45px;
+    max-height: 130px; /* Adjust max */
+    width: 93%;
+    top:  0%;
+    left: 3%;
+    font-size: 1em;
+    border: none;
+    outline: none;
+    color: #66f5ab;
+    overflow-y: auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    background: transparent;
+    height: 100px;
+    filter: blur(0);
+    opacity: 1;
+    transition: 1s;
+}
+
+.promptBox.image > .overlay.display
+{
+    width: 85%;
+    left: 8%;
+}
+
+
+.promptBox .overlay.display::-webkit-scrollbar
+{
+    display: none;
+}
 
 .promptBox .promptTextInput::-webkit-scrollbar {
     display: none;
@@ -216,20 +268,6 @@
     pointer-events: all;
 }
 
-
-.generateButton {
-    position: relative;
-    left: 80%;
-    top: 0%;
-    opacity: 1;
-    pointer-events: all;
-}
-
-.generateButton.disabled 
-{
-    pointer-events: none;
-    opacity: 0.5;
-}
 
 .searchBtn {
     --transition: 0.25s;
