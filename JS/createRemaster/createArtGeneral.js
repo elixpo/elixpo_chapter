@@ -74,14 +74,10 @@ let imageGeneratorTop = document.getElementById("imageCustomization").getBoundin
 document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
 
 
-
-document.getElementById("createBtn").addEventListener("click", function() {
-  
-  const imageGeneratorSection = document.getElementById("imageCustomization");
-  const offsetTop = imageGeneratorSection.offsetTop - 60;
-  const container = document.querySelector(".sectionContainer");
-  container.scrollTo({ top: offsetTop, behavior: "smooth" });
+document.querySelector(".sectionContainer").addEventListener("scroll", function(e) {
+  e.preventDefault();
 });
+
 
 
 function notify(msg, persist = false) {

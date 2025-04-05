@@ -77,11 +77,11 @@ function typeDescWord(msg, wordIndex = 0, callback) {
 }
 
 
-typeWelcomeWord("Hey Buddy, Good Evening!", 0, () => {
-    typeDescWord("What's on your mind?", 0, () => {
-        promptBoxAppear();
-    })
-    });
+// typeWelcomeWord("Hey Buddy, Good Evening!", 0, () => {
+//     typeDescWord("What's on your mind?", 0, () => {
+//         promptBoxAppear();
+//     })
+//     });
 
 function promptBoxAppear() 
 {
