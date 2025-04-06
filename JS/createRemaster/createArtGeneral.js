@@ -12,6 +12,34 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 
+window.onload = function() {
+  setInterval(() => {
+    if (localStorage.getItem("ElixpoAIUser") == null) {
+        redirectTo("src/auth/?notify=true"); //root hompage redirect
+    }
+  }, 1000);
+}
+
+
+let randomLogos = 
+[
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F1.jpeg?alt=media&token=01b96c7a-2ff4-4f7b-99e4-80f510315bb2",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F2.jpeg?alt=media&token=ace5b321-0c49-4b8c-912e-3d51ceb81545",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F3.jpeg?alt=media&token=41f1a76b-c1fc-476e-9156-570a8165d2c0",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F4.jpeg?alt=media&token=94e0f9b5-a1c3-4aa3-9fa7-239c1b08f983",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F5.jpeg?alt=media&token=d363bee4-01bc-4b8d-b90d-6e31a98c2bad",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F6.jpeg?alt=media&token=50c05867-0050-4d89-9c27-cb5040605d6d",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F7.jpeg?alt=media&token=4884744b-1c4d-46de-a245-5f96f344e268",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F8.jpeg?alt=media&token=6c50ad97-63ac-4bf8-9ac0-acf9c5ba0ca8",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F9.jpeg?alt=media&token=47923f1f-516a-4263-a613-d144e3ef6eb9",
+  "https://firebasestorage.googleapis.com/v0/b/elixpoai.appspot.com/o/Guest%20Logos%2F10.jpeg?alt=media&token=88686e4f-c02c-4937-af00-3a471b7cf574"
+]
+
+const userInfo = document.getElementById('userInfo');
+const randomLogo = randomLogos[Math.floor(Math.random() * randomLogos.length)];
+userInfo.style.backgroundImage = `url(${randomLogo})`;
+document.getElementById("username").innerText = localStorage.getItem("ElixpoAIUser").slice(0, 6)+".." || "Guest";
+
 const diceIcon = document.getElementById('OneImage');
 const diceClasses = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four'];
 
@@ -78,7 +106,21 @@ document.querySelector(".sectionContainer").addEventListener("scroll", function(
   e.preventDefault();
 });
 
-
+document.getElementById("redirectHome").addEventListener("click", function() {
+  redirectTo("");
+});
+document.getElementById("redirectBlogs").addEventListener("click", function() {
+  redirectTo("blogs/elixpo_art");
+});
+document.getElementById("redirectGitHub").addEventListener("click", function() {
+  location.href = ("https://github.com/Circuit-Overtime/elixpo_ai_chapter")
+});
+document.getElementById("userCell").addEventListener("click", function() {
+  redirectTo("src/auth");
+});
+document.getElementById("appName").addEventListener("click", function() {
+  location.reload();
+});
 
 function notify(msg, persist = false) {
   const notif = document.getElementById("notification");

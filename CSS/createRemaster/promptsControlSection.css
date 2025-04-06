@@ -1,14 +1,18 @@
 
 .promptBox .controls {
-    position: absolute;
-    bottom: -10%;
-    left: 3%;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: nowrap;
+  position: relative;
+  top: 40%;
+  left: -2%;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: left;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  box-sizing: border-box;
 }
+
 
 #OneImage {
     position: relative;
@@ -207,13 +211,6 @@
 
 
 
-.generateButton {
-  position: relative;
-  left: 30%;
-  top: 0%;
-  opacity: 1;
-  pointer-events: all;
-}
 
 .generateButton.disabled 
 {
@@ -240,5 +237,15 @@
   }
   .click-effect {
     animation: clickEffect 0.2s;
+  }
+  
+
+
+  .generateButton {
+    position: relative;
+    left: 10%;
+    top: 0%;
+    opacity: 1;
+    pointer-events: all;
   }
   

@@ -8,6 +8,8 @@ let imageTheme = "normal";
 let ratio = "4:3";
 let model = "realism";
 let controller = null;
+let imageTimeout = null;
+let imageController = null;
 let extractedDetails = {};
 let enhanceUrl = "https://imgelixpo.vercel.app";
 function manageTileNumbers()
@@ -130,7 +132,7 @@ document.getElementById("generateButton").addEventListener("click", function () 
     const promptText = promptBox.value.trim();
 
     if (promptText === "") {
-        notify("Wozaaa!! I see nothing, type something please!");
+        notify("Wozaaa!! I see nothing, type some instructions");
         promptBox.focus();
         return;
     }
@@ -221,69 +223,135 @@ document.getElementById("generateButton").addEventListener("click", function () 
 });
 
 
-
-async function preparePromptInput(generationNumber, prompt, ratio, model, selectedImageQuality, imageTheme, enhanceMode, privateMode, imageMode, controller)
-{
+async function preparePromptInput(generationNumber, prompt, ratio, model, selectedImageQuality, imageTheme, enhanceMode, privateMode, imageMode) {
     manageTileNumbers();
     document.getElementById("generateButton").setAttribute("disabled", "true");
-    console.log("entered func")
-    if(!controller) {
-        controller = new AbortController();
-    }
+    console.log("entered func");
+
+    // Initialize AbortController
+    controller = new AbortController();
     const { signal } = controller;
+
     const suffixPrompt = getSuffixPrompt(imageTheme);
     const aspectRatio = getAspectRatio(ratio);
     const imageSize = aspectRatio[selectedImageQuality];
-    console.log(imageSize);
-    const height = imageSize.split("x")[1];
-    const width = imageSize.split("x")[0];
+    const [width, height] = imageSize.split("x");
 
-    if(imageMode)
-    {
-            document.getElementById("promptTextInput").classList.add("blur");
-            document.getElementById("overlay").classList.add("display");
-            notify("Hmmm... What is this? Let's see...");
-            let imageUrl = document.getElementById("imageHolder").style.background.slice(5, -2);
-            document.getElementById("imageProcessingAnimation").classList.add("imageMode");
-            document.getElementById("imageThemeContainer").classList.add("imageMode");
+    if (imageMode) {
+        
+        imageController = new AbortController();
+        imageTimeout = setTimeout(() => {
+            notify("Image processing took too long. Please try again.");
+            if (imageController) imageController.abort();
+            resetAll();
+        }, 120000);
     
-            let generatedPrompt = await generatePromptFromImage(`data:image/jpeg;base64,${extractedBase64Data}`, prompt, controller);
-            if (!generatedPrompt) {
-                notify("well... seems like i faded out trying to understand the image! Sorry, try something else buddy....");
-                return
+        document.getElementById("promptTextInput").classList.add("blur");
+        document.getElementById("overlay").classList.add("display");
+        notify("Hmmm... What is this? Let's see... Can take a min.. please wait", true);
+    
+        const imageUrl = document.getElementById("imageHolder").style.background.slice(5, -2);
+        document.getElementById("imageProcessingAnimation").classList.add("imageMode");
+        document.getElementById("imageThemeContainer").classList.add("imageMode");
+    
+        let generatedPrompt;
+    
+        try {
+            generatedPrompt = await generatePromptFromImage(
+                `data:image/jpeg;base64,${extractedBase64Data}`,
+                prompt,
+                imageController
+            );
+        } catch (err) {
+            if (err.name === "AbortError") {
+                console.warn("Image analysis aborted.");
+                return;
+            } else {
+                console.error("Error during image analysis:", err);
+                notify("Oops! I crashed trying to analyze that image...");
+                resetAll();
+                return;
             }
-            typeEnhancedPrompt(generatedPrompt, 0, () => {
-                document.getElementById("promptTextInput").value = generatedPrompt;
-                document.getElementById("promptTextInput").classList.remove("blur");
-                document.getElementById("overlay").classList.remove("display");
-                document.getElementById("promptTextInput").focus();
-                document.getElementById("overlay").innerHTML = "";
-
-                setTimeout(() => {
-                    extractedDetails["Prompt"] = generatedPrompt;
-                    const imageGeneratorSection = document.getElementById("imageGenerator");
-                    const offsetTop = imageGeneratorSection.offsetTop - 60;
-                    const container = document.querySelector(".sectionContainer");
-                    container.scrollTo({ top: offsetTop, behavior: "smooth" });
-                    generateImage(generationNumber, extractedDetails["Prompt"], width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, controller);
-                }, 1000)
-            });
+        } finally {
+            clearTimeout(imageTimeout);
+        }
+    
+        if (!generatedPrompt) {
+            notify("Well... seems like I faded out trying to understand the image! Sorry, try something else buddy...");
+            setTimeout(() => {
+                resetAll();
+            }, 2000);
             return;
-           
+        }
+    
+        typeEnhancedPrompt(generatedPrompt, 0, () => {
+            document.getElementById("promptTextInput").value = generatedPrompt;
+            document.getElementById("promptTextInput").classList.remove("blur");
+            document.getElementById("overlay").classList.remove("display");
+            document.getElementById("promptTextInput").focus();
+            document.getElementById("overlay").innerHTML = "";
+    
+            setTimeout(() => {
+                extractedDetails["Prompt"] = generatedPrompt;
+                scrollToImageGenerator();
+                generateImage(
+                    generationNumber,
+                    generatedPrompt,
+                    width,
+                    height,
+                    model,
+                    suffixPrompt,
+                    selectedImageQuality,
+                    enhanceMode,
+                    privateMode,
+                    imageMode,
+                    signal
+                );
+            }, 1000);
+        });
+    
+        return;
     }
+    
 
-
-    else if(enhanceMode) 
-    {
+    if (enhanceMode) {
+        const pimpController = new AbortController();
+        const timeoutId = setTimeout(() => {
+            pimpController.abort();
+        }, 60000); // abort after 60 seconds
+    
         document.getElementById("promptTextInput").classList.add("blur");
         document.getElementById("generateButton").style.cssText = `
-                opacity: 0.5;
-                pointer-events: none;
-        `
+            opacity: 0.5;
+            pointer-events: none;
+        `;
         document.getElementById("overlay").classList.add("display");
         notify("Enhancing your prompt...", true);
-        console.log("Enhancing prompt:", prompt);
-        let pimpedPrompt = await promptEnhance(prompt);
+    
+        const startTime = Date.now();
+        let pimpedPrompt;
+    
+        try {
+            pimpedPrompt = await promptEnhance(prompt, pimpController);
+        } catch (err) {
+            if (err.name === "AbortError") {
+                notify("Prompt enhancement took too long. Proceeding with original prompt.");
+            } else {
+                console.error("Enhancer Error:", err);
+                notify("Enhancer crashed. Using original prompt.");
+            }
+            pimpedPrompt = prompt;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    
+        const endTime = Date.now();
+        const elapsedTime = (endTime - startTime) / 1000;
+    
+        if (elapsedTime > 15 && elapsedTime <= 60) {
+            notify("Taking longer than expected.");
+        }
+    
         typeEnhancedPrompt(pimpedPrompt, 0, () => {
             document.getElementById("promptTextInput").value = pimpedPrompt;
             document.getElementById("promptTextInput").classList.remove("blur");
@@ -291,55 +359,84 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
             document.getElementById("promptTextInput").focus();
             document.getElementById("overlay").innerHTML = "";
             dismissNotification();
+    
             setTimeout(() => {
                 extractedDetails["Prompt"] = pimpedPrompt;
-                const imageGeneratorSection = document.getElementById("imageGenerator");
-                const offsetTop = imageGeneratorSection.offsetTop - 60;
-                const container = document.querySelector(".sectionContainer");
-                container.scrollTo({ top: offsetTop, behavior: "smooth" });
-                generateImage(generationNumber, extractedDetails["Prompt"], width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, controller);
+                scrollToImageGenerator();
+                generateImage(
+                    generationNumber,
+                    pimpedPrompt,
+                    width,
+                    height,
+                    model,
+                    suffixPrompt,
+                    selectedImageQuality,
+                    enhanceMode,
+                    privateMode,
+                    imageMode,
+                    signal
+                );
             }, 1000);
-            
         });
-         return;
-    }
-    else 
-    {
-        const imageGeneratorSection = document.getElementById("imageGenerator");
-            const offsetTop = imageGeneratorSection.offsetTop - 60;
-            const container = document.querySelector(".sectionContainer");
-            container.scrollTo({ top: offsetTop, behavior: "smooth" });
-            const prompt = document.getElementById("promptTextInput").value;
-        generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, controller);
+    
         return;
     }
     
+
+    // Direct generation path
+    const finalPrompt = document.getElementById("promptTextInput").value;
+    scrollToImageGenerator();
+    generateImage(generationNumber, finalPrompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
 }
 
+// Scroll utility
+function scrollToImageGenerator() {
+    const imageGeneratorSection = document.getElementById("imageGenerator");
+    const offsetTop = imageGeneratorSection.offsetTop - 60;
+    const container = document.querySelector(".sectionContainer");
+    container.scrollTo({ top: offsetTop, behavior: "smooth" });
+}
 
-function generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, controller) {
-    notify("Trying to paint the image!", true)
-    let promptText = prompt + " " + suffixPrompt;
-    let generateUrl = "";
-    if(privateMode)
-    {
-         generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&private=true&referrer=elixpoart`;
+// Abort button handler
+document.getElementById("interruptButton").addEventListener("click", function () {
+    if (controller) {
+        controller.abort();
+        controller = null;
+        notify("Generation interrupted!");
+        document.getElementById("interruptButton").classList.add("hidden");
+        document.getElementById("generateButton").removeAttribute("disabled");
+        resetAll(); // Cleanup visuals and state
     }
-    else
-    {
-        generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=elixpoart`;
+});
+
+function generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal) {
+    document.getElementById("interruptButton").classList.remove("hidden");
+    notify("Trying to paint the image!", true);
+
+    const promptText = `${prompt} ${suffixPrompt}`;
+    let generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=pollinations.ai`;
+
+    if (privateMode) {
+        generateUrl += "&private=true";
     }
+
     const tilePromises = [];
+    const generationTimes = [];
 
     for (let i = 1; i <= generationNumber; i++) {
+        const startTime = performance.now(); 
+
         const tile = document.querySelector(`.tile${i}`);
         const loadingAnimation = tile.querySelector(".loadingAnimations");
         const downloadBtn = tile.querySelector(".inPictureControls > #downloadBtn");
         const copyBtn = tile.querySelector(".inPictureControls > #copyButton");
+        tile.style.pointerEvents = "none";
         loadingAnimation.classList.remove("hidden");
 
-        const seed = Math.floor(Math.random() * 10000); // Generate a random seed
-        const tilePromise = fetch(`${generateUrl}&seed=${seed}`)
+        const seed = Math.floor(Math.random() * 10000);
+        const imageRequestUrl = `${generateUrl}&seed=${seed}`;
+
+        const tilePromise = fetch(imageRequestUrl, { signal })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to generate image for tile${i}`);
@@ -347,33 +444,48 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
                 return response.blob();
             })
             .then(blob => {
-                generateURLS.push(generateUrl+`&seed=${seed}`);
+                const endTime = performance.now(); 
+                const generationTime = Math.round((endTime - startTime) / 1000); 
+                generationTimes.push(generationTime);
+                generateURLS.push(imageRequestUrl);
                 const imageUrl = URL.createObjectURL(blob);
                 tile.style.backgroundImage = `url(${imageUrl})`;
-                // tile.setAttribute("data-info", `prompt: ${prompt}, seed: ${seed}, height: ${height}, width: ${width}, model: ${model},  ratio: ${ratio}, image: ${imageUrl}`);
-                tile.addEventListener("click", function() {
-                    expandImage(imageUrl, prompt, seed, height, width, model, ratio);
-                })
+                tile.style.pointerEvents = "all";
+                tile.setAttribute("data-time", generationTime);
                 loadingAnimation.classList.add("hidden");
                 downloadBtn.setAttribute("data-id", imageUrl);
                 copyBtn.setAttribute("data-id", prompt);
+                tile.addEventListener("click", function () {
+                    expandImage(imageUrl, prompt, seed, height, width, model, ratio, generationTime);
+                });
             })
             .catch(error => {
-                console.error(`Error generating image for tile${i}:`, error);
                 loadingAnimation.classList.add("hidden");
+                if (error.name === "AbortError") {
+                    notify("Generation aborted!");
+                    console.warn(`Fetch aborted for tile${i}`);
+                } else {
+                    console.error(`Error generating image for tile${i}:`, error);
+                }
             });
 
         tilePromises.push(tilePromise);
     }
 
     Promise.all(tilePromises).then(() => {
+        if (signal.aborted) return; 
+
         notify("Generation complete");
         dismissNotification();
         document.getElementById("acceptBtn").classList.remove("hidden");
         document.getElementById("rejectBtn").classList.remove("hidden");
         document.getElementById("acceptBtn").setAttribute("data-prompt", prompt);
+        document.getElementById("interruptButton").classList.add("hidden");
+        const avg = Math.round(generationTimes.reduce((a, b) => a + b, 0) / generationTimes.length);
+        console.log(`Average generation time: ${avg}ms`);
     });
 }
+
 
 
 document.getElementById("acceptBtn").addEventListener("click", function() {
@@ -455,6 +567,7 @@ function resetAll(preserve=false)
     generateURLS = [];
     isImageMode = false;
     controller = null;
+    imageController = null;
     extractedDetails = {};
     cleanImageDisplay();
     cleanImageGenerator();
@@ -467,6 +580,7 @@ function resetAll(preserve=false)
     const imageGeneratorSection = document.getElementById("imageCustomization");
     document.querySelector(".imageProcessingAnimation ").classList.remove("imageMode");
     document.querySelector(".imageThemeContainer").classList.remove("imageMode");
+    document.getElementById("interruptButton").classList.add("hidden");
     document.getElementById("usernameDisplay").innerHTML = "";
     const offsetTop = imageGeneratorSection.offsetTop - 60;
     const container = document.querySelector(".sectionContainer");
@@ -544,7 +658,7 @@ async function gettotalGenOnServer() {
 
 
 
-function expandImage(imageUrl, prompt, seed, height, width, model, ratio) {
+function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) {
     const imageDisplayHolder = document.querySelector(".imageDisplayHolder");
     const promptDisplay = document.getElementById("promptDisplay");
     const aspectRatioDisplay = document.getElementById("aspectRatioDisplay");
@@ -564,23 +678,23 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio) {
     promptDisplay.innerHTML = `<span>${prompt}</span>`;
     aspectRatioDisplay.innerHTML = `<span>${ratio}</span>`;
     imageSpecs.innerHTML = `<span>${width} x ${height}</span><span>${model}</span>`;
-    timeTakenDisplay.innerHTML = `<span>~2.5s</span>`;
+    timeTakenDisplay.innerHTML = `<span>~${time > 60 ? "60+" : time}s</span>`;
     downloadButton.setAttribute("data-id", imageUrl);
 
-    document.getElementById("ImageDisplayDownloadBtn").addEventListener("click", function () {
-    const imageUrl = this.getAttribute("data-id");
-    if (imageUrl) {
-        const link = document.createElement("a");
-        link.href = imageUrl;
-        link.download = "Elixpo_Generated.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        notify("Image downloaded successfully!");
-    } else {
-        console.error("No image URL found for download.");
-    }
-});
+    downloadButton.onclick = function () {
+        const imageUrl = this.getAttribute("data-id");
+        if (imageUrl) {
+            const link = document.createElement("a");
+            link.href = imageUrl;
+            link.download = "Elixpo_Generated.png";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            notify("Image downloaded successfully!");
+        } else {
+            console.error("No image URL found for download.");
+        }
+    };
 
 
     document.getElementById("goUpBtn").addEventListener("click", function () {
@@ -654,7 +768,7 @@ function typeEnhancedPrompt(msg, wordIndex = 0, callback) {
 
 
 
-async function promptEnhance(userPrompt) {
+async function promptEnhance(userPrompt, pimpController) {
     console.log("Enhancing prompt:", userPrompt);
     const seed = Math.floor(Math.random() * 10000);     
 
@@ -677,6 +791,7 @@ async function promptEnhance(userPrompt) {
                 }
             ]
         }),
+        signal: pimpController.signal,
         mode: "cors"
     });
 
@@ -684,22 +799,19 @@ async function promptEnhance(userPrompt) {
         console.error("Enhancer Error:", response.statusText);
         notify("Oppsie! My brain hurts, bruuh.... i'll generate an image directly");
         return userPrompt;
-        
     }
 
     const data = await response.json();
-    
     if (data.error) {
         console.error("Enhancer Error:", data.error);
         notify("Oppsie! My brain hurts, bruuh.... i'll generate an image directly");
         return userPrompt;
-        
     }
 
     const enhanced = data.choices?.[0]?.message?.content || "";
-    // console.log("Enhanced Prompt:", enhanced);
     return enhanced.trim();
 }
+
 
 
 
@@ -739,5 +851,7 @@ const aspectRatioMap = {
 
 return aspectRatioMap[aspectRatio] || { SD: "1024x768", HD: "1280x960", LD: "512x384" };
 }
+
+
 
 manageTileNumbers();

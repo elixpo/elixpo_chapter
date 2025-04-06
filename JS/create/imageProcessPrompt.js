@@ -1,13 +1,6 @@
 let extractedBase64Data = null;
 
-function notify(msg)
-{
-  document.getElementById("NotifTxt").innerText = `${msg}`;
-    document.getElementById("savedMsg").classList.add("display");
-    setTimeout(() => {
-      document.getElementById("savedMsg").classList.remove("display");
-    }, 1500);
-}
+
 
 
 document.getElementById("inputImage").addEventListener("click", function () {
@@ -26,6 +19,8 @@ document.getElementById("inputImage").addEventListener("click", function () {
 
     input.click();
 });
+
+
 async function handleImageFile(file) {
     if (!file) return;
 
@@ -44,7 +39,9 @@ async function handleImageFile(file) {
             console.log(`Loading: ${percentLoaded}%`);
         }
     };
-
+    document.getElementById("cancelImageMode").classList.remove("hidden");
+    document.getElementById("pimpPrompt").style.opacity = "0.5";
+    document.getElementById("pimpPrompt").style.pointerEvents = "none";
     reader.onload = async function () {
         console.log("File loaded successfully.");
         imageDataUrl = reader.result;
@@ -68,6 +65,27 @@ function cancelImageReference() {
     document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `none`);
     isImageMode = false;
     document.getElementById("generateButton").classList.remove("disabled"); // Re-enable if disabled
+    document.getElementById("pimpPrompt").style.opacity = "1";
+    document.getElementById("pimpPrompt").style.pointerEvents = "all";
+    document.getElementById("imageHolder").style.opacity = "1";
+    document.getElementById("imageHolder").style.pointerEvents = "all";
+    document.querySelector(".imageProcessingAnimation ").classList.remove("imageMode");
+    document.querySelector(".imageThemeContainer").classList.remove("imageMode");
+    document.getElementById("cancelImageMode").classList.add("hidden");
+    document.getElementById("promptTextInput").classList.remove("blur");
+    document.getElementById("overlay").classList.remove("display");
+    document.getElementById("overlay").innerHTML = "";
+    document.getElementById("promptTextInput").value = "";
+    dismissNotification();
+    notify("Image reference removed.");
+    if (imageController) {
+        imageController.abort(); 
+        imageController = null;
+    }
+    if (imageTimeout) {
+        clearTimeout(imageTimeout); 
+        imageTimeout = null;
+    }
     return;
 }
 
