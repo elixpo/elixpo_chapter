@@ -10,7 +10,7 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-
+let lastPromptText = "";
 
 window.onload = function() {
   setInterval(() => {
@@ -98,8 +98,8 @@ document.getElementById("promptIdea").addEventListener("click", function() {
 });
 
 
-let imageGeneratorTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
-document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
+// let imageGeneratorTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+// document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
 
 
 document.querySelector(".sectionContainer").addEventListener("scroll", function(e) {
@@ -180,64 +180,80 @@ document.querySelectorAll(".models").forEach(function(element) {
 
 document.getElementById("promptTextInput").addEventListener("input", debounce(handleInput, 100));
 document.getElementById("promptTextInput").addEventListener("keydown", debounce(handleInput, 100));
-document.getElementById("promptTextInput").addEventListener("load", debounce(handleInput, 100));
 
 function handleInput() {
     const promptText = document.getElementById("promptTextInput").value;
 
-    // Handle "--en"
-    toggleClass(promptText.includes("--en"), "pimpPrompt", "selected");
-    enhanceMode = promptText.includes("--en");
+    // Check --en flag
+    if (promptText.includes("--en") || lastPromptText.includes("--en")) {
+        const isEnabled = promptText.includes("--en");
+        toggleClass(isEnabled, "pimpPrompt", "selected");
+        enhanceMode = isEnabled;
+    }
 
-    // Handle "--pv"
-    toggleClass(promptText.includes("--pv"), "privateBtn", "selected");
-    privateMode = promptText.includes("--pv");
+    // Check --pv flag
+    if (promptText.includes("--pv") || lastPromptText.includes("--pv")) {
+        const isPrivate = promptText.includes("--pv");
+        toggleClass(isPrivate, "privateBtn", "selected");
+        privateMode = isPrivate;
+    }
 
-    // Handle quality selection
-    const qualityMap = {
-        "--ld": "qualitySelection_LD",
-        "--sd": "qualitySelection_SD",
-        "--hd": "qualitySelection_HD"
-    };
+    // Quality flags: only update if any is present or was present
+    const qualityFlags = ["--ld", "--sd", "--hd"];
+    if (qualityFlags.some(flag => promptText.includes(flag)) || qualityFlags.some(flag => lastPromptText.includes(flag))) {
+        const qualityMap = {
+            "--ld": "qualitySelection_LD",
+            "--sd": "qualitySelection_SD",
+            "--hd": "qualitySelection_HD"
+        };
+        let selectedQuality = Object.keys(qualityMap).find(flag => promptText.includes(flag)) || "--sd";
+        updateSelection(".imageQuality", qualityMap[selectedQuality]);
+    }
 
-    let selectedQuality = Object.keys(qualityMap).find(flag => promptText.includes(flag)) || "--sd";
-    updateSelection(".imageQuality", qualityMap[selectedQuality]);
+    // Aspect ratio
+    handleSelectiveFlagUpdate("--ar", ".aspectRatioTiles", "ratio", "4:3");
 
-    // Handle aspect ratio selection (default: "4:3")
-    handleSelection("--ar", ".aspectRatioTiles", "ratio", "4:3");
+    // Theme
+    handleSelectiveFlagUpdate("--th", ".themes", "theme", "normal");
 
-    // Handle theme selection (default: "normal")
-    handleSelection("--th", ".themes", "theme", "normal");
+    // Model
+    handleSelectiveFlagUpdate("--md", ".modelsTiles", "model", "core");
 
-    // Handle model selection (default: "core")
-    handleSelection("--md", ".modelsTiles", "model", "core");
+    // Update last prompt
+    lastPromptText = promptText;
 }
 
-// Utility function to toggle class
+// Only update if new flag is added or removed
+function handleSelectiveFlagUpdate(flag, selector, dataAttr, defaultValue) {
+    const currentText = document.getElementById("promptTextInput").value;
+    const lastText = lastPromptText;
+
+    if (currentText.includes(flag) || lastText.includes(flag)) {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => el.classList.remove("selected"));
+
+        const match = currentText.match(new RegExp(`${flag}\\s([\\w-:]+)`));
+        const selectedValue = match ? match[1] : defaultValue;
+
+        const element = [...elements].find(el => el.dataset[dataAttr] === selectedValue);
+        if (element) element.classList.add("selected");
+    }
+}
+
+// Toggle helper
 function toggleClass(condition, elementId, className) {
     const element = document.getElementById(elementId);
     if (element) element.classList.toggle(className, condition);
 }
 
-// Utility function to update selection, applying a default if no match is found
-function handleSelection(flag, selector, dataAttr, defaultValue) {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(el => el.classList.remove("selected"));
-
-    const match = document.getElementById("promptTextInput").value.match(new RegExp(`${flag}\\s([\\w-:]+)`));
-    const selectedValue = match ? match[1] : defaultValue;
-
-    const element = [...elements].find(el => el.dataset[dataAttr] === selectedValue);
+// Selection update
+function updateSelection(selector, selectedId) {
+    document.querySelectorAll(selector).forEach(el => el.classList.remove("selected"));
+    const element = document.getElementById(selectedId);
     if (element) element.classList.add("selected");
 }
 
-// Utility function to update quality selection
-function updateSelection(selector, selectedId) {
-    document.querySelectorAll(selector).forEach(el => el.classList.remove("selected"));
-    document.getElementById(selectedId).classList.add("selected");
-}
-
-// Debounce function to optimize input handling
+// Debounce
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -245,5 +261,3 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
 }
-
-
