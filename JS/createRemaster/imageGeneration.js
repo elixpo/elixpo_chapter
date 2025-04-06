@@ -10,6 +10,7 @@ let model = "realism";
 let controller = null;
 let imageTimeout = null;
 let imageController = null;
+let isMouseOverImageDisplay = false;
 let extractedDetails = {};
 let enhanceUrl = "https://imgelixpo.vercel.app";
 function manageTileNumbers()
@@ -248,6 +249,7 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
     
         document.getElementById("promptTextInput").classList.add("blur");
         document.getElementById("overlay").classList.add("display");
+        
         notify("Hmmm... What is this? Let's see... Can take a min.. please wait", true);
     
         const imageUrl = document.getElementById("imageHolder").style.background.slice(5, -2);
@@ -577,6 +579,7 @@ function resetAll(preserve=false)
         document.getElementById("rejectBtn").classList.add("hidden");
     document.getElementById("acceptBtn").removeAttribute("data-prompt");
     document.getElementById("generateButton").removeAttribute("disabled");
+    document.getElementById("overlay").scrollTop = 0;
     const imageGeneratorSection = document.getElementById("imageCustomization");
     document.querySelector(".imageProcessingAnimation ").classList.remove("imageMode");
     document.querySelector(".imageThemeContainer").classList.remove("imageMode");
@@ -697,20 +700,34 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) 
     };
 
 
-    document.getElementById("goUpBtn").addEventListener("click", function () {
+   
+    
+   
+}
+
+document.getElementById("goUpBtn").addEventListener("click", function () {
+    const imageGeneratorSection = document.getElementById("imageGenerator");
+    const offsetTop = imageGeneratorSection.offsetTop - 60;
+    container.scrollTo({ top: offsetTop, behavior: "smooth" });
+});
+
+
+
+const imageDisplay = document.getElementById("imageDisplay");
+imageDisplay.addEventListener("mouseenter", () => {
+    isMouseOverImageDisplay = true;
+});
+imageDisplay.addEventListener("mouseleave", () => {
+    isMouseOverImageDisplay = false;
+});
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && isMouseOverImageDisplay) {
         const imageGeneratorSection = document.getElementById("imageGenerator");
         const offsetTop = imageGeneratorSection.offsetTop - 60;
+        const container = document.querySelector(".sectionContainer");
         container.scrollTo({ top: offsetTop, behavior: "smooth" });
-    });
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            const imageGeneratorSection = document.getElementById("imageGenerator");
-            const offsetTop = imageGeneratorSection.offsetTop - 60;
-            const container = document.querySelector(".sectionContainer");
-            container.scrollTo({ top: offsetTop, behavior: "smooth" });
-        }
-    });
-}
+    }
+});
 
 
 document.querySelectorAll("#downloadBtn").forEach(downloadBtn => {
@@ -746,7 +763,7 @@ function typeEnhancedPrompt(msg, wordIndex = 0, callback) {
     const welcomeMessage = document.getElementById("overlay");
     const message = msg;
     const words = message.split(" ");
-    
+    document.getElementById("overlay").scrollTop = document.getElementById("overlay").scrollHeight;
     if (wordIndex < words.length) {
         const span = document.createElement("span");
         span.textContent = words[wordIndex] + " ";
@@ -763,6 +780,7 @@ function typeEnhancedPrompt(msg, wordIndex = 0, callback) {
         setTimeout(() => typeEnhancedPrompt(msg, wordIndex + 1, callback), 100);
     } else if (callback) {
         callback();
+        document.getElementById("overlay").scrollTop = 0;
     }
 }
 

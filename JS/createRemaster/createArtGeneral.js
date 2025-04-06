@@ -98,7 +98,7 @@ document.getElementById("promptIdea").addEventListener("click", function() {
 });
 
 
-// let imageGeneratorTop = document.getElementById("imageCustomization").getBoundingClientRect().top - 60;
+// let imageGeneratorTop = document.getElementById("imageDisplay").getBoundingClientRect().top - 60;
 // document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
 
 
@@ -261,3 +261,18 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
 }
+
+const container = document.querySelector(".sectionContainer");
+
+// Prevent scroll via wheel (mouse wheel, trackpad, etc.)
+container.addEventListener("wheel", function (e) {
+  e.preventDefault();
+}, { passive: false }); // ⚠️ important: passive must be false to allow preventDefault
+
+// Prevent middle mouse button scroll
+container.addEventListener("mousedown", function (e) {
+  if (e.button === 1) { // Middle mouse button
+    e.preventDefault();
+    return false; // Just in case
+  }
+});
