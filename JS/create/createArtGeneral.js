@@ -18,6 +18,10 @@ window.onload = function() {
         redirectTo("src/auth/?notify=true"); //root hompage redirect
     }
   }, 1000);
+  setTimeout(() => {
+    document.getElementById("promptTextInput").focus();
+  }, 200)
+  
 }
 
 
@@ -264,15 +268,51 @@ function debounce(func, wait) {
 
 const container = document.querySelector(".sectionContainer");
 
-// Prevent scroll via wheel (mouse wheel, trackpad, etc.)
-container.addEventListener("wheel", function (e) {
-  e.preventDefault();
-}, { passive: false }); // ⚠️ important: passive must be false to allow preventDefault
+function isScrollable(el) {
+  const style = getComputedStyle(el);
+  const overflowY = style.overflowY;
+  return (overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+}
 
-// Prevent middle mouse button scroll
+function shouldAllowScroll(e) {
+  let el = e.target;
+
+  while (el && el !== container) {
+    if (isScrollable(el)) {
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight;
+      const clientHeight = el.clientHeight;
+      const isScrollingDown = e.deltaY > 0;
+      const isScrollingUp = e.deltaY < 0;
+
+      // Prevent bubbling if user is trying to scroll past top or bottom
+      if (
+        (isScrollingDown && scrollTop + clientHeight < scrollHeight) ||
+        (isScrollingUp && scrollTop > 0)
+      ) {
+        return true; // allow scroll, don't preventDefault
+      } else {
+        e.stopPropagation(); // stops it from bubbling up
+        e.preventDefault();  // just in case
+        return false; // block section scroll
+      }
+    }
+    el = el.parentElement;
+  }
+
+  return false;
+}
+
+container.addEventListener("wheel", function (e) {
+  if (!shouldAllowScroll(e)) {
+    e.preventDefault(); // block section scroll
+  }
+}, { passive: false });
+
 container.addEventListener("mousedown", function (e) {
-  if (e.button === 1) { // Middle mouse button
+  if (e.button === 1 && !shouldAllowScroll(e)) {
     e.preventDefault();
-    return false; // Just in case
+    return false;
   }
 });
+

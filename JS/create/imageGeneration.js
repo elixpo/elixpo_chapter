@@ -250,7 +250,7 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
         document.getElementById("promptTextInput").classList.add("blur");
         document.getElementById("overlay").classList.add("display");
         
-        notify("Hmmm... What is this? Let's see... Can take a min.. please wait", true);
+        notify("Hmmm... Let me take a look att this...  Can take a min! just be with me", true);
     
         const imageUrl = document.getElementById("imageHolder").style.background.slice(5, -2);
         document.getElementById("imageProcessingAnimation").classList.add("imageMode");
@@ -600,6 +600,7 @@ function resetAll(preserve=false)
     {
         notify("Anything more? Let's go!");
     }
+    document.getElementById("promptTextInput").focus();
 
 }
 

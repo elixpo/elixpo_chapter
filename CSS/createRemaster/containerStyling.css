@@ -44,6 +44,7 @@
     z-index: 2; 
     background: transparent;
     backdrop-filter: blur(10px); 
+    overscroll-behavior: none;
 }
 .container::-webkit-scrollbar
 {
@@ -128,5 +129,10 @@
 }
 
 .notification > .notifText::-webkit-scrollbar {
+    display: none;
+}
+
+#imageCustomization.blocked 
+{
     display: none;
 }
