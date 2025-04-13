@@ -81,7 +81,8 @@
     top: 50%;
     left: 50%;
     transform: translateX(-50%) translateY(-50%);
-    border-radius: 25px;
+    border-top-right-radius: 25px;
+    border-top-left-radius: 25px;
     height: 95%;
     width: 98%;
     background: #030712;
@@ -269,13 +270,13 @@
     position: absolute;
     top: 0;
     left: 0;
-    top: -5%;
+    top: 2.5%;
     left: 2.5%;
     width: 95%;
     height: 100%;
     background: #030712;
     background: url(../IMAGES/PREVIEW_IMAGES/normal_preview.JPG);
-    transform: scale(0.8);
+    transform: scale(1);
     background-size: cover;
     background-position: top;
     z-index: 1;
@@ -489,10 +490,25 @@
     overflow-x: auto; /* Enable horizontal scrolling */
     overflow-y: hidden; /* Prevent vertical scrolling */
 }
-.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar
-{
-    display: none;
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar {
+  height: 5px;
+  background: #555;
 }
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 3px;
+}
+
 .model_ratioSelectionZoneBackdropv1 > .documentContainer > .modelsTiles {
     position: relative;
     flex: 0 0 auto; /* Prevent shrinking and allow horizontal scrolling */

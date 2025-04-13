@@ -75,7 +75,6 @@ function cancelImageReference() {
     document.getElementById("promptTextInput").classList.remove("blur");
     document.getElementById("overlay").classList.remove("display");
     document.getElementById("overlay").innerHTML = "";
-    document.getElementById("promptTextInput").value = "";
     dismissNotification();
     notify("Image reference removed.");
     if (imageController) {
@@ -94,32 +93,59 @@ document.getElementById("cancelImageMode").addEventListener("click", () => {
 });
 
 // Function to generate prompt from image
-async function generatePromptFromImage(imageUrl, userGivenprompt, controller) {
-    console.log(userGivenprompt);
+async function generatePromptFromImage(imageUrl, userGivenPrompt, controller) {
+    console.log(userGivenPrompt);
     const systemInstructions = `
-You are an expert AI art prompt engineer.
+        AI Art Prompt Generator — Image Analysis + Creative Fusion
 
-Your task is to deeply analyze a visual image and generate a high-quality, natural language prompt that would allow an AI art generator to accurately reconstruct it. Additionally, **blend in** the user’s creative request to enrich the final output.
+        Developer Role: Expert AI prompt engineer for visual-to-text generation.
 
-### Instructions:
-1. Study the image carefully and describe:
-   - Human presence (how many, gender, appearance, expressions, clothing, ethnicity if relevant)
-   - **Age estimate** (child, teenager, adult, elderly)
-   - Camera angle (close-up, wide shot, aerial, etc.)
-   - Environment, setting, background elements
-   - Mood/emotion (from posture, color palette, lighting)
-   - Style (realism, anime, digital painting, 3D, etc.)
-   - Lighting (natural, cinematic, neon, golden hour, etc.)
-   - Composition (rule of thirds, depth, focus, framing)
+        Objective:
+        Analyze the provided input image in detail and generate a high-quality, natural language prompt 
+        suitable for AI art generation. The prompt must reflect all key elements from the image while 
+        thoughtfully merging the user’s creative request to produce a single, enriched prompt.
 
-2. **Preserve facial details**, accessories, gender identity, pose, and clothing if visible.
+        Inputs:
+        - image: The image to analyze (format: image file or image object)
+        - userGivenPrompt: A short natural language instruction from the user to creatively modify the image prompt
 
-3. After analyzing the image, **thoughtfully incorporate the user's request**  into the prompt — altering or enriching the environment, character, or details accordingly, while still preserving the image’s core.
-The user request is :- "${userGivenprompt}"
-Study the image and blend in the user request to create a unique, high-quality prompt.
-4. Merge all of the above into a single detailed AI prompt (50–100 words). Avoid lists or explanation.
+        Process:
+        1. Perform deep image analysis to extract the following elements:
+            - Human Presence:
+                - Count, gender, visible clothing, ethnicity (if visually apparent), accessories
+                - Facial features, pose, emotion, expression
+            - Age Estimate:
+                - Classify as child, teenager, adult, or elderly
+            - Camera Angle:
+                - Identify shot type (close-up, mid-shot, wide-angle, aerial, etc.)
+            - Environment:
+                - Detect setting (urban, forest, sci-fi, bedroom, battlefield, etc.)
+                - Include details like weather, background architecture, props, terrain
+            - Mood & Emotion:
+                - Derive from posture, lighting, color palette, and expressions
+            - Art Style:
+                - Determine (realism, anime, cyberpunk, 3D render, sketch, digital painting, etc.)
+            - Lighting:
+                - Describe (natural sunlight, cinematic, neon, soft glow, golden hour, moonlight, etc.)
+            - Composition:
+                - Note framing, depth, perspective, focus, rule of thirds usage
 
+        2. Preserve all core visual traits:
+            - Maintain identifiable features of subjects: clothing, gender identity, accessories, facial structure
+            - Retain environmental anchors and recognizable spatial layout
 
+        3. Merge the image analysis with the user’s request:
+            - Seamlessly incorporate elements from ${userGivenPrompt} into the visual scene
+            - Modify or extend setting, mood, characters, outfits, lighting, or style accordingly
+            - Ensure the merged prompt feels natural, coherent, and imaginative
+
+        4. Output:
+            - A single high-quality natural language prompt (approx. 50–100 words)
+            - Prompt should feel like a description ready for a text-to-image model
+            - Avoid lists or segmentation — write as flowing, immersive narrative text
+
+        Example Output Format:
+        "A serene Japanese street at golden hour with an elderly man in traditional kimono gazing at cherry blossoms. The soft pastel lighting gently highlights his wrinkled face, conveying peace. Now reimagined in a futuristic cyberpunk Tokyo, the blossoms replaced by glowing neon vines, and the man wears a mechanized exosuit — a fusion of tradition and tech."
 `;
 
     try {
