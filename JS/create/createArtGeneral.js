@@ -13,6 +13,14 @@ const db = firebase.firestore();
 let lastPromptText = "";
 
 window.onload = function() {
+  showSection("imageCustomization");
+  hideSection("imageGenerator");
+  hideSection("imageDisplay");
+  const container = document.querySelector(".sectionContainer"); 
+  const imageDisplaySection = document.getElementById("imageCustomization");
+  const offsetTop = imageDisplaySection.offsetTop;
+  container.scrollTo({ top: offsetTop, behavior: "smooth" });
+
   setInterval(() => {
     if (localStorage.getItem("ElixpoAIUser") == null) {
         redirectTo("src/auth/?notify=true"); //root hompage redirect
@@ -20,7 +28,8 @@ window.onload = function() {
   }, 1000);
   setTimeout(() => {
     document.getElementById("promptTextInput").focus();
-  }, 200)
+  }, 200);
+
   
 }
 
@@ -102,8 +111,8 @@ document.getElementById("promptIdea").addEventListener("click", function() {
 });
 
 
-// let imageGeneratorTop = document.getElementById("imageDisplay").getBoundingClientRect().top - 60;
-// document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
+
+
 
 
 document.querySelector(".sectionContainer").addEventListener("scroll", function(e) {
@@ -266,53 +275,11 @@ function debounce(func, wait) {
     };
 }
 
-const container = document.querySelector(".sectionContainer");
-
-function isScrollable(el) {
-  const style = getComputedStyle(el);
-  const overflowY = style.overflowY;
-  return (overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+function hideSection(sectionID)
+{
+  document.getElementById(sectionID).classList.add("sabotage");
 }
-
-function shouldAllowScroll(e) {
-  let el = e.target;
-
-  while (el && el !== container) {
-    if (isScrollable(el)) {
-      const scrollTop = el.scrollTop;
-      const scrollHeight = el.scrollHeight;
-      const clientHeight = el.clientHeight;
-      const isScrollingDown = e.deltaY > 0;
-      const isScrollingUp = e.deltaY < 0;
-
-      // Prevent bubbling if user is trying to scroll past top or bottom
-      if (
-        (isScrollingDown && scrollTop + clientHeight < scrollHeight) ||
-        (isScrollingUp && scrollTop > 0)
-      ) {
-        return true; // allow scroll, don't preventDefault
-      } else {
-        e.stopPropagation(); // stops it from bubbling up
-        e.preventDefault();  // just in case
-        return false; // block section scroll
-      }
-    }
-    el = el.parentElement;
-  }
-
-  return false;
+function showSection(sectionID)
+{
+  document.getElementById(sectionID).classList.remove("sabotage");
 }
-
-container.addEventListener("wheel", function (e) {
-  if (!shouldAllowScroll(e)) {
-    e.preventDefault(); // block section scroll
-  }
-}, { passive: false });
-
-container.addEventListener("mousedown", function (e) {
-  if (e.button === 1 && !shouldAllowScroll(e)) {
-    e.preventDefault();
-    return false;
-  }
-});
-

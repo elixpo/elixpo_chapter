@@ -9,7 +9,7 @@
     display: block;
     box-sizing: border-box;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
 }
 
 .container::-webkit-scrollbar,
@@ -35,7 +35,7 @@
 .sectionContainer
 {
     position: absolute;
-    top: 0;
+    top: 6%;
     left: 0%;
     overflow-x: hidden;
     overflow-y: auto;

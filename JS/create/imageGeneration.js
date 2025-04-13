@@ -393,10 +393,14 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
 
 // Scroll utility
 function scrollToImageGenerator() {
+    hideSection("imageCustomization");
+    hideSection("imageDisplay");
+    showSection("imageGenerator");
     const imageGeneratorSection = document.getElementById("imageGenerator");
     const offsetTop = imageGeneratorSection.offsetTop - 60;
     const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
+  
 }
 
 // Abort button handler
@@ -580,14 +584,19 @@ function resetAll(preserve=false)
     document.getElementById("acceptBtn").removeAttribute("data-prompt");
     document.getElementById("generateButton").removeAttribute("disabled");
     document.getElementById("overlay").scrollTop = 0;
-    const imageGeneratorSection = document.getElementById("imageCustomization");
     document.querySelector(".imageProcessingAnimation ").classList.remove("imageMode");
     document.querySelector(".imageThemeContainer").classList.remove("imageMode");
     document.getElementById("interruptButton").classList.add("hidden");
     document.getElementById("usernameDisplay").innerHTML = "";
-    const offsetTop = imageGeneratorSection.offsetTop - 60;
+    hideSection("imageDisplay");
+    hideSection("imageGenerator");
+    showSection("imageCustomization");
+    const imageCustomizationrSection = document.getElementById("imageCustomization");
+    const offsetTop = imageCustomizationrSection.offsetTop - 60;
     const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
+
+
     document.getElementById("generateButton").style.cssText = `
     opacity: 1;
     pointer-events: all;
@@ -671,11 +680,13 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) 
     const downloadButton = document.getElementById("ImageDisplayDownloadBtn");
     document.getElementById("usernameDisplay").innerHTML = `<span> by ${localStorage.getItem("ElixpoAIUser").slice(0, 11)+"..."}</span>`;
 
-    const container = document.querySelector(".sectionContainer"); // your scrollable container
+    
+    hideSection("imageCustomization");
+    hideSection("imageGenerator");
+    showSection("imageDisplay");
+    const container = document.querySelector(".sectionContainer"); 
     const imageDisplaySection = document.getElementById("imageDisplay");
-
-    // Scroll container to the image display section with a -60px offset
-    const offsetTop = imageDisplaySection.offsetTop;
+    const offsetTop = imageDisplaySection.offsetTop + 60;
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
 
     imageDisplayHolder.style.backgroundImage = `url(${imageUrl})`;
@@ -707,8 +718,12 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) 
 }
 
 document.getElementById("goUpBtn").addEventListener("click", function () {
+    hideSection("imageCustomization");
+    hideSection("imageDisplay");
+    showSection("imageGenerator");
     const imageGeneratorSection = document.getElementById("imageGenerator");
     const offsetTop = imageGeneratorSection.offsetTop - 60;
+    const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
 });
 
@@ -723,8 +738,11 @@ imageDisplay.addEventListener("mouseleave", () => {
 });
 document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && isMouseOverImageDisplay) {
+        hideSection("imageCustomization");
+        hideSection("imageDisplay");
+        showSection("imageGenerator");
         const imageGeneratorSection = document.getElementById("imageGenerator");
-        const offsetTop = imageGeneratorSection.offsetTop - 60;
+        const offsetTop = imageGeneratorSection.offsetTop - 20;
         const container = document.querySelector(".sectionContainer");
         container.scrollTo({ top: offsetTop, behavior: "smooth" });
     }
