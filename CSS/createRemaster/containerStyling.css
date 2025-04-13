@@ -25,7 +25,7 @@
     left: 0;
     height: 100%;
     width: 100%;
-    background: url(../IMAGES/backdrop.webp);
+    background: url(../IMAGES/backdrop.jpg);
     background-size: cover;
     pointer-events: none;
     filter: brightness(0.25);
