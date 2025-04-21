@@ -250,7 +250,7 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
         document.getElementById("promptTextInput").classList.add("blur");
         document.getElementById("overlay").classList.add("display");
         
-        notify("Hmmm... What is this? Let's see... Can take a min.. please wait", true);
+        notify("Hmmm... Let me take a look at this...  Can take a min! just be with me", true);
     
         const imageUrl = document.getElementById("imageHolder").style.background.slice(5, -2);
         document.getElementById("imageProcessingAnimation").classList.add("imageMode");
@@ -393,10 +393,14 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
 
 // Scroll utility
 function scrollToImageGenerator() {
+    hideSection("imageCustomization");
+    hideSection("imageDisplay");
+    showSection("imageGenerator");
     const imageGeneratorSection = document.getElementById("imageGenerator");
     const offsetTop = imageGeneratorSection.offsetTop - 60;
     const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
+  
 }
 
 // Abort button handler
@@ -415,7 +419,7 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
     document.getElementById("interruptButton").classList.remove("hidden");
     notify("Trying to paint the image!", true);
 
-    const promptText = `${prompt} ${suffixPrompt}`;
+    const promptText = `${prompt} remember the system instruction of ${suffixPrompt}`;
     let generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=pollinations.ai`;
 
     if (privateMode) {
@@ -458,7 +462,7 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
                 downloadBtn.setAttribute("data-id", imageUrl);
                 copyBtn.setAttribute("data-id", prompt);
                 tile.addEventListener("click", function () {
-                    expandImage(imageUrl, prompt, seed, height, width, model, ratio, generationTime);
+                    expandImage(imageUrl, promptText, seed, height, width, model, ratio, generationTime);
                 });
             })
             .catch(error => {
@@ -553,12 +557,8 @@ async function handleStaticServerUpload(generateURLS, imageNumber, imageTheme, m
     
 }
 
-function resetAll(preserve=false) 
+function resetAll(preserve) 
 {
-    if(!preserve)
-    {
-        document.getElementById("promptTextInput").value = "";
-    }
     document.getElementById("promptTextInput").classList.remove("blur");
     document.getElementById("overlay").classList.remove("display");
     document.getElementById("overlay").innerHTML = "";
@@ -580,14 +580,19 @@ function resetAll(preserve=false)
     document.getElementById("acceptBtn").removeAttribute("data-prompt");
     document.getElementById("generateButton").removeAttribute("disabled");
     document.getElementById("overlay").scrollTop = 0;
-    const imageGeneratorSection = document.getElementById("imageCustomization");
     document.querySelector(".imageProcessingAnimation ").classList.remove("imageMode");
     document.querySelector(".imageThemeContainer").classList.remove("imageMode");
     document.getElementById("interruptButton").classList.add("hidden");
     document.getElementById("usernameDisplay").innerHTML = "";
-    const offsetTop = imageGeneratorSection.offsetTop - 60;
+    hideSection("imageDisplay");
+    hideSection("imageGenerator");
+    showSection("imageCustomization");
+    const imageCustomizationrSection = document.getElementById("imageCustomization");
+    const offsetTop = imageCustomizationrSection.offsetTop - 60;
     const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
+
+
     document.getElementById("generateButton").style.cssText = `
     opacity: 1;
     pointer-events: all;
@@ -595,11 +600,14 @@ function resetAll(preserve=false)
     if(preserve)
     {
         notify("let's try again!");
+        
     }
     else 
     {
         notify("Anything more? Let's go!");
+        document.getElementById("promptTextInput").value = "";
     }
+    document.getElementById("promptTextInput").focus();
 
 }
 
@@ -670,11 +678,13 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) 
     const downloadButton = document.getElementById("ImageDisplayDownloadBtn");
     document.getElementById("usernameDisplay").innerHTML = `<span> by ${localStorage.getItem("ElixpoAIUser").slice(0, 11)+"..."}</span>`;
 
-    const container = document.querySelector(".sectionContainer"); // your scrollable container
+    
+    hideSection("imageCustomization");
+    hideSection("imageGenerator");
+    showSection("imageDisplay");
+    const container = document.querySelector(".sectionContainer"); 
     const imageDisplaySection = document.getElementById("imageDisplay");
-
-    // Scroll container to the image display section with a -60px offset
-    const offsetTop = imageDisplaySection.offsetTop;
+    const offsetTop = imageDisplaySection.offsetTop + 60;
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
 
     imageDisplayHolder.style.backgroundImage = `url(${imageUrl})`;
@@ -706,8 +716,12 @@ function expandImage(imageUrl, prompt, seed, height, width, model, ratio, time) 
 }
 
 document.getElementById("goUpBtn").addEventListener("click", function () {
+    hideSection("imageCustomization");
+    hideSection("imageDisplay");
+    showSection("imageGenerator");
     const imageGeneratorSection = document.getElementById("imageGenerator");
     const offsetTop = imageGeneratorSection.offsetTop - 60;
+    const container = document.querySelector(".sectionContainer");
     container.scrollTo({ top: offsetTop, behavior: "smooth" });
 });
 
@@ -722,8 +736,11 @@ imageDisplay.addEventListener("mouseleave", () => {
 });
 document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && isMouseOverImageDisplay) {
+        hideSection("imageCustomization");
+        hideSection("imageDisplay");
+        showSection("imageGenerator");
         const imageGeneratorSection = document.getElementById("imageGenerator");
-        const offsetTop = imageGeneratorSection.offsetTop - 60;
+        const offsetTop = imageGeneratorSection.offsetTop - 20;
         const container = document.querySelector(".sectionContainer");
         container.scrollTo({ top: offsetTop, behavior: "smooth" });
     }
@@ -836,21 +853,21 @@ async function promptEnhance(userPrompt, pimpController) {
 function getSuffixPrompt(theme)
 {
     const themeSuffixMap = {
-        "structure": "a detailed architectural masterpiece",
-        "crayon": "a vibrant crayon-style illustration",
-        "normal": "a realistic depiction",
-        "space": "a cosmic scene with stars and galaxies",
-        "chromatic": "a colorful chromatic artwork",
-        "halloween": "a spooky Halloween-themed design",
-        "cyberpunk": "a futuristic cyberpunk cityscape",
-        "anime": "an anime-style character or scene",
-        "landscape": "a breathtaking natural landscape",
-        "fantasy": "a magical fantasy world",
-        "ghibli": "a whimsical Studio Ghibli-inspired scene",
-        "wpap": "a WPAP-style geometric portrait",
-        "vintage": "a vintage retro-style artwork",
-        "pixel": "a pixelated retro game-style image",
-        "synthwave": "a neon-lit synthwave aesthetic"
+        "structure": "-- a stunning architectural masterpiece, carved from stone with intricate details and realistic textures",
+        "crayon": "-- a vibrant and playful crayon-style illustration, full of bold colors and childlike charm",
+        "normal": "-- a highly realistic and lifelike depiction, capturing fine details and natural tones",
+        "space": "-- a mesmerizing cosmic scene, featuring stars, galaxies, and the vastness of the universe",
+        "chromatic": "-- a vivid and colorful chromatic artwork, blending hues in a visually striking manner",
+        "halloween": "-- a spooky and atmospheric Halloween-themed design, with eerie lighting and haunting elements",
+        "cyberpunk": "-- a futuristic cyberpunk cityscape, glowing with neon lights and high-tech aesthetics",
+        "anime": "-- a beautifully crafted anime-style character or scene, with expressive features and dynamic composition",
+        "landscape": "-- a breathtaking natural landscape, showcasing majestic scenery and serene beauty",
+        "fantasy": "-- a magical and enchanting fantasy world, filled with mythical creatures and imaginative settings",
+        "ghibli": "-- a whimsical Studio Ghibli-inspired scene, brimming with charm and storytelling",
+        "wpap": "-- a bold and vibrant WPAP-style geometric portrait, with sharp lines and vivid colors",
+        "vintage": "-- a nostalgic vintage retro-style artwork, evoking the charm of a bygone era sepia themed browish",
+        "pixel": "-- a pixelated retro game-style image, reminiscent of classic 8-bit or 16-bit graphics",
+        "synthwave": "-- a neon-lit synthwave aesthetic, inspired by 80s retro-futurism and electronic music"
     };
 
     return themeSuffixMap[theme] || "a generic artistic creation";

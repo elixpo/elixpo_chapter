@@ -1,9 +1,9 @@
 #imageGenerator 
 {
     position: relative;
-    top: 0;
+    top: 0%;
     left: 0;
-    height: 95%;
+    height: 100%;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -11,8 +11,17 @@
     z-index: 3; 
     background: transparent;
     padding-top: 20px;
+    margin-top: 40px;
+    display: block;
+    opacity: 1;
 }
-
+#imageGenerator.sabotage 
+{
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.5s;
+    display: none;
+}
 #imageGenerator  > .imageTiles
 {
     position: absolute;
@@ -25,7 +34,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     width: 98%;
-    height: 75%;
+    height: 70%;
     border-bottom: 2px solid #e91e6241;
     padding: 10px 10px;
     display: grid;

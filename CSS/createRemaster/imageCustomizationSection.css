@@ -3,22 +3,29 @@
 {
     position: relative;
     left: 0;
-    height: 100%;
+    top: 3%;
+    height: 90%;
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 3; 
     background: transparent;
-    padding-top: 20px;
-    margin-top: 60px;
+    padding-top: 0px;
+    overflow: all;
 }
-
+#imageCustomization.sabotage 
+{
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.5s;
+    display: none;
+}
 
 .imageThemeSection {
     position: absolute;
     top: 0%;
-    height: 450px;
+    height: 70%;
     width: 100%;
     background-color: transparent;
     /* border-bottom: 5px solid #1D202A; */
@@ -74,40 +81,15 @@
     top: 50%;
     left: 50%;
     transform: translateX(-50%) translateY(-50%);
-    border-radius: 25px;
+    border-top-right-radius: 25px;
+    border-top-left-radius: 25px;
     height: 95%;
     width: 98%;
     background: #030712;
     border: 1px solid #616678;
     overflow: hidden;
   }
-  
-  .imageThemeSectionBackdropv-2>.documentIcon {
-    position: absolute;
-    top: 5%;
-    left: 5%;
-    font-size: 5em;
-    color: #fff;
-    font-weight: 500;
-  }
-  
-  .imageThemeSectionBackdropv-2>.heading {
-    position: absolute;
-    left: 12%;
-    top: 5%;
-    font-size: 1.8em;
-    color: #fff;
-  
-  }
-  
-  .imageThemeSectionBackdropv-2>.desc {
-    position: absolute;
-    top: 18%;
-    left: 12%;
-    color: #888;
-    width: 90%;
-    flex-wrap: wrap;
-  }
+
 
   .imageThemeSectionBackdropv-2 > .themeShowCase
   {
@@ -131,7 +113,7 @@
     justify-content: space-around;
     align-content: flex-start;
     padding-top: 10px;
-    padding-bottom: 10px;
+    padding-bottom: 40px;
     overflow: hidden;
   }
 
@@ -288,13 +270,13 @@
     position: absolute;
     top: 0;
     left: 0;
-    top: -5%;
+    top: 2.5%;
     left: 2.5%;
     width: 95%;
     height: 100%;
     background: #030712;
     background: url(../IMAGES/PREVIEW_IMAGES/normal_preview.JPG);
-    transform: scale(0.8);
+    transform: scale(1);
     background-size: cover;
     background-position: top;
     z-index: 1;
@@ -385,8 +367,8 @@
 
 .imageCustomizationPrompt {
   position: relative;
-  top: 22%;
-  height: 240px;
+  top: 35%;
+  height: 35%;
   overflow: hidden;
   width: 100%;
   background: #030712;
@@ -508,10 +490,25 @@
     overflow-x: auto; /* Enable horizontal scrolling */
     overflow-y: hidden; /* Prevent vertical scrolling */
 }
-.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar
-{
-    display: none;
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar {
+  height: 5px;
+  background: #555;
 }
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.model_ratioSelectionZoneBackdropv1>.documentContainer::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 3px;
+}
+
 .model_ratioSelectionZoneBackdropv1 > .documentContainer > .modelsTiles {
     position: relative;
     flex: 0 0 auto; /* Prevent shrinking and allow horizontal scrolling */

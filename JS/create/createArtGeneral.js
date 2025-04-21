@@ -13,11 +13,24 @@ const db = firebase.firestore();
 let lastPromptText = "";
 
 window.onload = function() {
+  showSection("imageCustomization");
+  hideSection("imageGenerator");
+  hideSection("imageDisplay");
+  const container = document.querySelector(".sectionContainer"); 
+  const imageDisplaySection = document.getElementById("imageCustomization");
+  const offsetTop = imageDisplaySection.offsetTop;
+  container.scrollTo({ top: offsetTop, behavior: "smooth" });
+
   setInterval(() => {
     if (localStorage.getItem("ElixpoAIUser") == null) {
         redirectTo("src/auth/?notify=true"); //root hompage redirect
     }
   }, 1000);
+  setTimeout(() => {
+    document.getElementById("promptTextInput").focus();
+  }, 200);
+
+  
 }
 
 
@@ -98,8 +111,8 @@ document.getElementById("promptIdea").addEventListener("click", function() {
 });
 
 
-// let imageGeneratorTop = document.getElementById("imageDisplay").getBoundingClientRect().top - 60;
-// document.querySelector(".sectionContainer").scrollTo({ top: imageGeneratorTop});
+
+
 
 
 document.querySelector(".sectionContainer").addEventListener("scroll", function(e) {
@@ -262,17 +275,11 @@ function debounce(func, wait) {
     };
 }
 
-const container = document.querySelector(".sectionContainer");
-
-// Prevent scroll via wheel (mouse wheel, trackpad, etc.)
-container.addEventListener("wheel", function (e) {
-  e.preventDefault();
-}, { passive: false }); // ⚠️ important: passive must be false to allow preventDefault
-
-// Prevent middle mouse button scroll
-container.addEventListener("mousedown", function (e) {
-  if (e.button === 1) { // Middle mouse button
-    e.preventDefault();
-    return false; // Just in case
-  }
-});
+function hideSection(sectionID)
+{
+  document.getElementById(sectionID).classList.add("sabotage");
+}
+function showSection(sectionID)
+{
+  document.getElementById(sectionID).classList.remove("sabotage");
+}

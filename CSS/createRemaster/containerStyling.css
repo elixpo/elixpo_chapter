@@ -9,7 +9,7 @@
     display: block;
     box-sizing: border-box;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
 }
 
 .container::-webkit-scrollbar,
@@ -25,7 +25,7 @@
     left: 0;
     height: 100%;
     width: 100%;
-    background: url(/CSS/IMAGES/backdrop.webp);
+    background: url(../IMAGES/backdrop.jpg);
     background-size: cover;
     pointer-events: none;
     filter: brightness(0.25);
@@ -35,7 +35,7 @@
 .sectionContainer
 {
     position: absolute;
-    top: 0;
+    top: 6%;
     left: 0%;
     overflow-x: hidden;
     overflow-y: auto;
@@ -44,6 +44,7 @@
     z-index: 2; 
     background: transparent;
     backdrop-filter: blur(10px); 
+    overscroll-behavior: none;
 }
 .container::-webkit-scrollbar
 {
@@ -128,5 +129,10 @@
 }
 
 .notification > .notifText::-webkit-scrollbar {
+    display: none;
+}
+
+#imageCustomization.blocked 
+{
     display: none;
 }
