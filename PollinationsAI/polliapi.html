@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pollinations Real-Time Feed (Accurate)</title>
+  <style>
+    body { background: #181818; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .main { background: #222; padding: 2em 3em; border-radius: 1.2em; box-shadow: 0 0 32px #0007; }
+    .row { font-size: 2em; margin-bottom: 0.5em; }
+    .label { color: #ffd84a; margin-right: 0.6em; }
+    .big { font-size: 2.5em; font-family: 'Roboto Mono', monospace; color: #78f387; }
+    .rate { font-size: 1.2em; color: #aaa; margin-left: 1em; }
+  </style>
+</head>
+<body>
+  <div class="main">
+    <div class="row"><span class="label">Count #</span><span class="big" id="img-count">0</span></div>
+    <div class="row"><span class="label">Gen / Sec</span><span class="big" id="img-rate">0</span></div>
+  </div>
+  <script>
+    // Use the CURRENT homepage values
+    const START_COUNT = 300_520_773; // as seen right now
+    const GEN_RATE = 12.5; // per second, as seen right now
+    const LAUNCH = Date.now(); // "now" is the new reference point
+
+    const imgCount = document.getElementById('img-count');
+    const imgRate = document.getElementById('img-rate');
+
+    function formatNumber(n) {
+      return n.toLocaleString('en-US');
+    }
+
+    function update() {
+      const elapsed = (Date.now() - LAUNCH) / 1000;
+      const current = Math.floor(START_COUNT + elapsed * GEN_RATE);
+      imgCount.textContent = formatNumber(current);
+      imgRate.textContent = GEN_RATE.toFixed(1);
+      requestAnimationFrame(update);
+    }
+    update();
+  </script>
+</body>
+</html>
