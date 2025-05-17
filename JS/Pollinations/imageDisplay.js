@@ -21,7 +21,7 @@ function toogleMode()
         document.getElementById("userPromptServer").classList.remove("hidden");
         document.getElementById("imagePrompt").classList.add("hidden");
         document.getElementById("generationInfo").classList.add("textMode");
-        connectToServer(displayMode);
+        // connectToServer(displayMode);
     }
     else 
     {
@@ -31,7 +31,7 @@ function toogleMode()
         document.getElementById("userPromptServer").classList.add("hidden");
         document.getElementById("imagePrompt").classList.remove("hidden");
         document.getElementById("generationInfo").classList.remove("textMode");
-        connectToServer(displayMode);
+        // connectToServer(displayMode);
     }
 }
 

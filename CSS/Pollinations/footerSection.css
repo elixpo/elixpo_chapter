@@ -1,0 +1,12 @@
+.footer
+{
+    position: relative; 
+    margin-top: 0px;
+    z-index: 3; 
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    /* background: #fff; */
+    min-height: 50vh;
+}
+
