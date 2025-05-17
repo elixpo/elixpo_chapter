@@ -1,13 +1,15 @@
 .topBoxesDesigns {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 5%;
     background: transparent;
-    height: 70%;
+    height: 60%;
     width: 30%;
     border-top-left-radius: 20px;
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 200px;
+    border-right: 3px solid #9240da6d;
+    border-width: 20px;
     display: grid;
     grid-auto-flow: row;
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));

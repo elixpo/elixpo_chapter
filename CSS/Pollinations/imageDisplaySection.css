@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Baumans&family=Lexend:wght@100..900&family=Nerko+One&family=Orbitron:wght@400..900&display=swap');
+#imageDisplay {
+    position: relative; 
+    margin-top: 50px;
+    z-index: 3; 
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    /* background: #fff; */
+    min-height: 100vh;
+}
+
+
+.imageDisplayBackdrop 
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        145deg,
+        rgba(255, 140, 0, 0.1),
+        rgba(0, 0, 0, 0.3)
+    );
+    border-radius: 24px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+    z-index: -1;
+}
+
+
+.imageFeedSection 
+{
+    position: absolute;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+}
+
+.imageFeedSection > .imageFeedText
+{
+  position: absolute;
+  top: 1%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Orbitron";
+  font-size: 5em;
+  font-weight: 700;
+}
+.imageFeedSection > .imageFeedDescription
+{
+    position: absolute;
+    top: 17%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "Lexend", sans-serif;
+    font-size: 1.3em;
+    font-weight: 400;
+    text-align: center;
+    display: flex;
+}
+
+
+.imageHolderBackdrop {
+    /* ...your existing styles... */
+    position: absolute;
+    top: 30%;
+    left: 3%;
+    height: 65%;
+    width: 60%;
+    display: block;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border: 2px dotted rgba(255, 140, 0, 0.5);
+    background: transparent;
+    border-radius: 16px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* .imageHolderBackdrop:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+} */
+
+.displayImage {
+    min-width: 100%;
+    min-height: 40%;
+    max-width: 100%;
+    max-height: 90%;
+    width: 100%;
+    height: 90%;
+    border-radius: 16px;
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+    background: url(../IMAGES/backdrop.jpg);
+}
+
+.imageHolderBackdrop > .pictureInfo 
+{
+    display: flex;
+    position: relative;
+    height: 60px;
+    width: 100%;
+    gap: 10px;
+    /* background: #fff; */
+    align-items: center;
+}
+.imageHolderBackdrop > .pictureInfo > .modelused
+{
+    position: relative;
+   color: #fff;
+   left: 2%;
+   font-size: 1.3em;
+    font-family: "Orbitron";
+    margin-right: 20px;
+    font-weight: 700;
+}
+
+.imageHolderBackdrop > .pictureInfo > .spacer
+ {
+    flex-grow: 1;
+    height: 1px;
+    background-color: rgba(255, 140, 0, 0.5);
+    margin: 0 10px;
+ }
+.imageHolderBackdrop > .pictureInfo > .referrer
+{
+    position: relative;
+   color: #fff;
+   left: 2%;
+   font-size: 1.3em;
+    font-family: "Orbitron";
+    margin-right: 20px;
+    font-style: italic;
+    font-weight: 700;
+}
+
+
+
+.imagePrompt {
+    position: absolute;
+    bottom: 40px; /* position from the bottom */
+    left: 80%;
+    transform: translateX(-50%); /* horizontal center only */
+    min-height: 80px;
+    max-height: 200px;
+    width: 30%;
+    background: linear-gradient(
+        145deg,
+        rgba(255, 140, 0, 0.1),
+        rgba(0, 0, 0, 0.3)
+    );
+    border-radius: 25px;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.imagePrompt::-webkit-scrollbar
+{
+    display: none;
+}
+.imagePrompt > span 
+{
+    font-family: "Baumans", cursive;
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.generationInfo {
+    position: absolute;
+    top: 30%;
+    left: 80%;
+    transform: translateX(-50%);
+    min-height: 80px;
+    height: 220px;
+    width: 30%;
+    background: #1e1e1e; /* Dark retro panel background */
+    border-radius: 25px;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+
+    /* Neumorphic inset shadows (dark theme) */
+    box-shadow:
+        inset 6px 6px 12px rgba(0, 0, 0, 0.7),
+        inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+
+    border: 2px solid rgba(255, 215, 0, 0.3); /* Subtle retro gold border */
+
+    color: #ffe580; /* Retro amber text */
+    font-family: "Orbitron", sans-serif; /* Retro-futuristic font */
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); /* Soft glow effect */
+    scrollbar-width: none; /* Hide scrollbar in Firefox */
+}
+
+.generationInfo::-webkit-scrollbar {
+    display: none; /* Hide scrollbar in WebKit browsers */
+}

@@ -11,50 +11,60 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="icon" href="https://pollinations.ai/favicon-32x32.png" type="image/png">
+    <link rel='stylesheet' href='../CSS/Pollinations/generalStyling.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/patternsDesigns.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/introSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/tipBtnStyle.css'>
+
+
+    <link rel='stylesheet' href='../CSS/Pollinations/imageDisplaySection.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/imageTextFeedToggle.css'>
+
+
     <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'>
+    
 </head>
 
 <body id="body">
     <div class="particles" id="particles"></div>
+    <div class="topBoxesDesigns" id="topBoxesDesigns">
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+        <div class="box"></div>
+    </div>
 
-    <div class="container">
-        <div class="topBoxesDesigns" id="topBoxesDesigns">
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
-            <div class="box"></div>
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="https://pollinations.ai/favicon-32x32.png">
+            </div>
         </div>
-        <nav class="navbar">
-            <div class="logo">
-                <div class="logo-icon">
-                    <img src="https://pollinations.ai/favicon-32x32.png">
-                </div>
-            </div>
-            <div class="appname">pollinations.ai</div>
-            <div class="navRedirects">
-                <ion-icon name="logo-linkedin"></ion-icon>
-                <ion-icon name="logo-discord"></ion-icon>
-                <ion-icon name="logo-github"></ion-icon>
-                <ion-icon name="logo-youtube"></ion-icon>
-                <ion-icon name="logo-instagram"></ion-icon>
-                <ion-icon name="logo-tiktok"></ion-icon>
-            </div>
-            
-            <div class="mobile-menu-btn">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </nav>
+        <div class="appname">pollinations.ai</div>
+        <div class="navRedirects">
+            <ion-icon name="logo-linkedin"></ion-icon>
+            <ion-icon name="logo-discord"></ion-icon>
+            <ion-icon name="logo-github"></ion-icon>
+            <ion-icon name="logo-youtube"></ion-icon>
+            <ion-icon name="logo-instagram"></ion-icon>
+            <ion-icon name="logo-tiktok"></ion-icon>
+        </div>
+        
+        <div class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+    <div class="container">
+        
+        
 
         <!-- Hero Section -->
         <section class="hero">
@@ -90,8 +100,42 @@
                   
               </div>
         </section>
+        
 
-        <!-- Features Section -->
+        <section id="imageDisplay">
+            <div class="imageDisplayBackdrop"></div>
+            <div class="imageFeedSection">
+                <div class="imageFeedText">Realtime Feed</div>
+                <div class="imageFeedDescription"> 
+                    <span>This is the realtime image </span>
+                    <label class="imageTextFeedToggle">
+                        <input type="checkbox" />
+                        <div class="toggle-button">
+                        <div class="glow"></div>
+                        <div class="flare"></div>
+                        </div>
+                    </label>
+                    <span> text feed of pollinations </span>
+                    </div>
+                    <div class="generationInfo">
+                            <div class="generationNumber"></div>
+                            <div class="generationTime"></div>
+                    </div>
+                    <div class="imageHolderBackdrop">
+                        <div class="displayImage"></div>
+                        <div class="pictureInfo">
+                            <div class="modelused">Flux </div>
+                            <div class="spacer"></div>
+                            <div class="referrer"> pollinations.ai</div>
+                        </div>
+                        
+                    </div>
+                    <div class="imagePrompt">
+                       <span> Lorem, ipsum dolor sit amet consectetur adipisicing elit. Vitae exercitationem, cupiditate magnam quo expedita placeat reprehenderit perspiciatis maiores omnis sequi pariatur assumenda architecto, et recusandae aliquam quasi illo facilis quos!</span>
+                    </div>
+                   
+            </div>
+          </section>
         
     </div>
 
