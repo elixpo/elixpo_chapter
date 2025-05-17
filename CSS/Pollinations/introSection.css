@@ -82,14 +82,14 @@
 
 .hero .subtitle {
     position: relative;
-    left: -3%;
+    left: -15%;
     display: flex;
     flex-wrap: wrap;
     font-size: 2em;
     font-family: "Baumans", system-ui;
     font-weight: 400;
     color: var(--text-secondary);
-    max-width: 85%;
+    max-width: 55%;
     text-align: left;
     justify-content: left;
 }
