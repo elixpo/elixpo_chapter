@@ -57,60 +57,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
-    // Add subtle parallax effect to hero section
-    const hero = document.querySelector('.hero');
-
-    window.addEventListener('scroll', function () {
-        const scrollPosition = window.scrollY;
-        if (scrollPosition < 500) {
-            hero.style.transform = `translateY(${scrollPosition * 0.1}px)`;
-        }
-    });
-
-    // Animate feature cards on scroll
-    const featureCards = document.querySelectorAll('.feature-card');
-
-    // Check if element is in viewport
-    function isInViewport(element) {
-        const rect = element.getBoundingClientRect();
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-        );
+    let box_node = `<div class="box"></div>`;
+    for (let i = 0; i < 25; i++) {
+        document.getElementById("topBoxesDesigns").innerHTML += box_node;
     }
+     });
 
-    // Add animation to elements in viewport
-    function animateOnScroll() {
-        featureCards.forEach((card, index) => {
-            if (isInViewport(card)) {
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
-            }
-        });
-    }
-
-    // Set initial state for animation
-    featureCards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-    });
-
-    // Run animation on load and scroll
-    window.addEventListener('load', animateOnScroll);
-    window.addEventListener('scroll', animateOnScroll);
-
-    // Add hover effect to navbar
-    const navItems = document.querySelectorAll('.nav-item a');
-
-    navItems.forEach(item => {
-        item.addEventListener('mouseenter', function () {
-            this.style.transition = 'all 0.3s ease';
-        });
-    });
-});
+   
