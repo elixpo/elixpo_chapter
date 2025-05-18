@@ -26,14 +26,25 @@ let suffixPrompt = '';
 let queue = [];
 let isProcessing = false;
 const client = new Client({
-  intents: ['Guilds', 'GuildMembers', 'GuildMessages', 'MessageContent'],
+  intents: ['Guilds','GuildMessages', 'MessageContent'],
 });
 
-// On bot ready
 client.on('ready', async () => {
-client.user.setActivity("Generating Images for You", { type: "WATCHING" });
-  console.log('Bot is online and ready!');
+  console.log(`${client.user.tag} is online and ready!`);
 
+  // Set an initial activity
+  client.user.setActivity("Generating Images for You", { type: "WATCHING" });
+
+  // Update activity every 10 minutes (optional)
+  setInterval(() => {
+    const activities = [
+      { name: "Generating Images for You", type: "WATCHING" },
+      { name: "AI Art Creation", type: "PLAYING" },
+      { name: "Your Commands", type: "LISTENING" },
+    ];
+    const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+    client.user.setActivity(randomActivity.name, { type: randomActivity.type });
+  }, 10 * 60 * 1000); // 10 minutes
 });
 
 // Event listener: Handle slash command interactions
@@ -277,67 +288,19 @@ async function generateImage(interaction) {
       embeds: [embed],
       files: images,
     });
-
-    const timestamp = Date.now();
-    const imgTheme = theme;
-    const imageUrls = [];
-    let specialDir = interaction.user.tag.toLowerCase() + "_" + timestamp;
-    const imageGenId = generateUniqueId(interaction.user.tag.toLowerCase());
-    const docRef = doc(db, "ImageGen", specialDir);
-    for (let [index, blob] of blobs.entries()) {
-      const imageRef = ref(storage, `generatedImages/${imgTheme}/image_${timestamp}_${index}.png`);
-      const uploadTask = uploadBytesResumable(imageRef, blob);
-      
-      // Wait for upload completion
-      await new Promise((resolve, reject) => {
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`Image ${index + 1} upload is ${progress}% done`);
-          },
-          (error) => {
-            console.error(`Error during upload of image ${index + 1}:`, error);
-            reject(error);
-          },
-          async () => {
-            const url = await getDownloadURL(imageRef);
-            console.log(`Download URL for image ${index + 1}:`, url);
-            imageUrls.push(url);
-  
-            await setDoc(docRef, {
-              theme: imgTheme,
-              timestamp,
-              user: interaction.user.tag,
-              prompt: prompt,
-              ratio: aspectRatio,
-              ai_enhanced: enhancement,
-              likes: 0,
-              total_gen_number: blobs.length,
-              genNum : nextImageNumber,
-              imgId: imageGenId,
-              creationFrom: "discord",
-            }, {merge : true});
-
-            await updateDoc(docRef, {
-              [`Imgurl${index}`]: url,
-            });
-
-
-
-
-            console.log(`Uploaded and metadata saved for image ${index + 1}`);
-            resolve(); // Resolve when done
-          }
-        );
+    }
+    catch
+  (error) {
+    console.error('Error generating image:', error);
+    await interaction.editReply('⚠️ Error generating image. Please try again later.');
+  }
+    try 
+    {
+      await updateDoc(doc(db, 'Server', 'totalGen'), { 
+        value: nextImageNumber,
       });
     }
-    await updateDoc(doc(db, 'Server', 'totalGen'), { 
-      value: nextImageNumber,
-    });
-    // const galleryUrl = `https://circuit-overtime.github.io/Elixpo_ai_pollinations/src/gallery?id=${imageGenId}`;
-    // await interaction.channel.send(`${interaction.user} has created image(s) for the Elixpo-AI gallery! View it here: ${galleryUrl}`);
-
-  } catch (error) {
+   catch (error) {
     console.error('Error fetching image:', error);
     await interaction.followUp('Error fetching image. Please try again later.');
   }
