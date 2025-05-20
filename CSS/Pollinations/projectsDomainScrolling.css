@@ -4,6 +4,7 @@
     position: relative;
     left: 80%; 
     top: 60%;
+    font-size: 1.3em;
     transform: translateY(-50%); 
     display: flex;
     align-items: center;
