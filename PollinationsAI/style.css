@@ -1,0 +1,107 @@
+/* Dark Theme Base */
+body {
+    margin: 0;
+    background-color: #1a1a1a; /* Very dark gray */
+    color: #eeeeee; /* Light gray/white */
+    font-family: 'Kalam', cursive; /* Hand-drawn style font */
+    overflow: hidden; /* Hide body scrollbar if UI is fixed */
+}
+
+/* Main container fixed to the right */
+.segment-scroll-container {
+    position: fixed;
+    right: 20px; /* Adjust distance from right edge */
+    top: 50%;
+    transform: translateY(-50%); /* Vertically center */
+    display: flex;
+    align-items: center;
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+/* Wrapper for the scrollable list to control dimensions and hide overflow */
+.segment-list-wrapper {
+    position: relative; /* Needed for fade overlays */
+    width: 250px; /* Adjust width as needed */
+    height: 400px; /* Adjust height to show desired number of segments */
+    overflow: hidden; /* Hide scrollbar */
+    border: 1px solid #3a3a3a; /* Subtle border around the wrapper */
+    border-radius: 8px;
+}
+
+/* The actual scrollable container */
+.segment-list {
+    width: 100%;
+    height: 100%; /* Take height of wrapper */
+    overflow-y: scroll; /* Keep scroll but hide scrollbar */
+    padding: 0; /* REMOVE or set minimal padding here - JS will calculate */
+    box-sizing: border-box; /* Include padding in height/width */
+    /* Hide scrollbar */
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    /* Prevent default touch/drag behavior that interferes with custom drag */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    touch-action: none; /* Disable default touch actions like pan/zoom */
+    -webkit-user-drag: none; /* Disable default browser drag behavior */
+    user-select: none; /* Prevent text selection during drag */
+    cursor: grab; /* Default cursor */
+}
+
+.segment-list::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Edge */
+}
+
+/* Individual segment item */
+.segment-item {
+    background-color: #2a2a2a;
+    border: 2px solid #555;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin: 10px 0; /* Only vertical margin */
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0.2;
+    transition: opacity 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    box-sizing: border-box;
+    transform: scale(0.85) translateX(0px);
+}
+
+/* Styles applied by JS based on proximity to center */
+.segment-item.most-fainted {
+    opacity: 0.3;
+    border-color: #444;
+    transform: scale(0.9) translateX(15px);
+}
+
+.segment-item.faint {
+    opacity: 0.6;
+    border-color: #777;
+    transform: scale(0.95) translateX(18px);
+}
+
+.segment-item.selected {
+    opacity: 1;
+    border-color: #eeeeee;
+    background-color: #3a3a3a;
+    font-weight: bold;
+    transform: scale(1.05) translateX(20px);
+}
+
+/* Gradient overlays for fading edges */
+.fade-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 80px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.fade-overlay.top {
+    top: 0;
+    background: linear-gradient(to bottom, #1a1a1a, rgba(26, 26, 26, 0));
+}
+
+.fade-overlay.bottom {
+    bottom: 0;
+    background: linear-gradient(to top, #1a1a1a, rgba(26, 26, 26, 0));
+}

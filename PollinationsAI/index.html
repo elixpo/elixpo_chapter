@@ -5,6 +5,10 @@
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Pollinations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/flaticon@latest/css/flaticon.css'>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css'>
@@ -21,6 +25,8 @@
     <link rel='stylesheet' href='../CSS/Pollinations/imageTextFeedToggle.css'>
 
     <link rel='stylesheet' href='../CSS/Pollinations/projectsSection.css'>
+    <link rel="stylesheet" href="../CSS/Pollinations/projectsDomainScrolling.css">
+
     <link rel='stylesheet' href='../CSS/Pollinations/integrateSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/contributeSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/supportersSection.css'>
@@ -147,6 +153,16 @@
             <div class="projectsSection">
                 <div class="projectsText">Projects</div>
                 <div class="projectsDescription">Here're some of the various implementations that our API is powering!</div>
+
+                <div class="segment-scroll-container">
+                  <div class="segment-list-wrapper">
+                      <div class="fade-overlay top"></div>
+                      <div class="fade-overlay bottom"></div>
+                      <div class="segment-list">
+                      </div>
+                  </div>
+              </div>
+
                 
           </section>
 
@@ -189,7 +205,11 @@
     <script src="../JS/Pollinations/progressShimmerParticleEffect.js"></script>
     <script src="../JS/Pollinations/imageDisplay.js"></script>
     <script src='../JS/Pollinations/genericScript.js'></script>
-    <script src="../JS/tipBtnHtml.js"></script>
+    <script src="../JS/Pollinations/tipBtnHtml.js"></script>
+    <script src="../JS/Pollinations/projectsListAppend.js"></script>
+
+
+
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js'></script>
