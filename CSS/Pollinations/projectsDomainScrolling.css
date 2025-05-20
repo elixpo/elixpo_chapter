@@ -2,7 +2,7 @@
 .segment-scroll-container {
     font-family: 'Kalam', cursive; /* Hand-drawn style font */
     position: relative;
-    left: 80%; 
+    left: 82%; 
     top: 60%;
     font-size: 1.3em;
     transform: translateY(-50%); 
@@ -17,6 +17,7 @@
     width: 250px; 
     height: 350px; 
     overflow: hidden; 
+    
     border-radius: 8px;
 }
 
@@ -33,6 +34,7 @@
     -webkit-user-drag: none;
     user-select: none;
     cursor: grab;
+    backdrop-filter: blur(10px);    
 }
 
 .segment-list::-webkit-scrollbar {

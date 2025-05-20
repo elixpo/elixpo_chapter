@@ -3,26 +3,123 @@
     position: absolute;
     top: 25%;
     left: 5%;
-    height: +70%;
-    width: 70%;
+    height: 73%;
+    width: 75%;
     background: transparent;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
-
+.projectDisplaySection::-webkit-scrollbar
+{
+    display: none;
+}
 .projectTile 
 {
     position: relative;
     width: 350px;
     height: 250px;
-    background: linear-gradient(
-        145deg,
-        rgba(140, 0, 255, 0.1),
-        rgba(0, 0, 0, 0.3)
-    );
+    background: #a9882eb9;
+    border: 2px solid #f1c657;
     border-radius: 24px;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
     transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+    flex-direction: column;
+    display: flex;
+    gap: 8px;
+}
+.projectTile > .projectLogoContainer {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    width: 80%;
+    height: 60px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: nowrap;
+    justify-content: flex-start; 
+    align-items: center;
+    overflow: hidden; 
+}
+
+.projectTile > .projectLogoContainer > .projectLogo {
+    flex-shrink: 0; 
+    height: 60px;
+    width: 60px;
+    background: url(../IMAGES/PARTNERS/pollinationsLogo.png) center/cover no-repeat;
+    border-radius: 50%;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.projectTile > .projectLogoContainer > .projectNameRedirect {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.3em;
+    color: #322503;
+    text-align: left;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-family: "Orbitron";
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(236, 183, 119, 0.5);
+}
+
+.projectTile > .projectDescription 
+{
+    position: relative;
+    top: 35%;
+    left: 10%;
+    width: 80%;
+    height: 40%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    font-family: "Lexend", sans-serif;
+    font-size: 1em;
+    font-weight: 400;
+    text-align: left;
+    color: #fefdff;
+    text-shadow: 0 0 5px rgba(236, 183, 119, 0.5);
+}
+.projectTile > .projectDescription::-webkit-scrollbar
+{
+    display: none;
+}
+
+.projectTile > .projectURLGithub 
+{
+    position: relative;
+    top: 35%;
+    height: 45px;
+    left: 8%;
+    width: 40%;
+    display: flex;
+    flex-wrap: wrap;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 1.3em;
+    color: #ffc;
+    text-align: left;
+    gap: 8px;
+    justify-content: center;
+    border: 2px solid #291e03;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #533903, #a9882e);
+    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.1);
+    align-items: center;
+    font-family: "Orbitron";
+    cursor: pointer;
+    transform: scale(0.9);
+    transition: all 400ms ease-in;
+}
+.projectTile > .projectURLGithub:hover 
+{
+    background: linear-gradient(145deg, #6b4a1e, #d1a34f);
+    box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.4), inset -3px -3px 8px rgba(255, 255, 255, 0.2);
+    transition: all 400ms ease-in;
 }
