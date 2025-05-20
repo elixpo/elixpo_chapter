@@ -2,79 +2,84 @@
 .segment-scroll-container {
     font-family: 'Kalam', cursive; /* Hand-drawn style font */
     position: relative;
-    left: 80%; /* Adjust distance from right edge */
+    left: 80%; 
     top: 60%;
-    transform: translateY(-50%); /* Vertically center */
+    transform: translateY(-50%); 
     display: flex;
     align-items: center;
-    z-index: 1000; /* Ensure it's above other content */
+    z-index: 1000; 
 }
 
 /* Wrapper for the scrollable list to control dimensions and hide overflow */
 .segment-list-wrapper {
-    position: relative; /* Needed for fade overlays */
-    width: 250px; /* Adjust width as needed */
-    height: 400px; /* Adjust height to show desired number of segments */
-    overflow: hidden; /* Hide scrollbar */
+    position: relative; 
+    width: 250px; 
+    height: 350px; 
+    overflow: hidden; 
     border-radius: 8px;
 }
 
-/* The actual scrollable container */
 .segment-list {
     width: 100%;
-    height: 100%; /* Take height of wrapper */
-    overflow-y: scroll; /* Keep scroll but hide scrollbar */
-    padding: 0; /* REMOVE or set minimal padding here - JS will calculate */
-    box-sizing: border-box; /* Include padding in height/width */
-    /* Hide scrollbar */
-    scrollbar-width: none;  /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    /* Prevent default touch/drag behavior that interferes with custom drag */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    touch-action: none; /* Disable default touch actions like pan/zoom */
-    -webkit-user-drag: none; /* Disable default browser drag behavior */
-    user-select: none; /* Prevent text selection during drag */
-    cursor: grab; /* Default cursor */
+    height: 100%;
+    overflow-y: scroll;
+    padding: 0;
+    box-sizing: border-box;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    cursor: grab;
 }
 
 .segment-list::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari, Edge */
+    display: none;  
 }
 
-/* Individual segment item */
 .segment-item {
-    background-color: #2a2a2a;
-    border: 2px solid #555;
+    background-color: #a9882e;
+    border: 2px solid #f1c657;
     border-radius: 6px;
     padding: 12px 15px;
-    margin: 10px 0; /* Only vertical margin */
+    margin: 10px 0;
     text-align: center;
     white-space: nowrap;
     opacity: 0.2;
-    transition: opacity 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    transition: all 0.3s ease;
     box-sizing: border-box;
-    transform: scale(0.85) translateX(0px);
+    transform-origin: center left;
+    transform: scale(0.75) translateX(60px);
+    z-index: 1;
 }
 
 .segment-item.most-fainted {
-    opacity: 0.3;
-    border-color: #444;
-    transform: scale(0.9) translateX(15px);
+    opacity: 0.4;
+    border-color: #ddbc58;
+    background-color: #947728;
+    transform: scale(0.85) translateX(40px);
+    z-index: 2;
 }
 
 .segment-item.faint {
-    opacity: 0.6;
-    border-color: #777;
-    transform: scale(0.95) translateX(18px);
+    opacity: 0.7;
+    border-color: #caa841;
+    background-color: #80621f;
+    transform: scale(0.93) translateX(20px);
+    z-index: 3;
 }
 
 .segment-item.selected {
     opacity: 1;
-    border-color: #eeeeee;
-    background-color: #3a3a3a;
+    border-color: #fff3c0;
+    background-color: #f1c657;
     font-weight: bold;
-    transform: scale(1.05) translateX(20px);
+    transform: scale(1) translateX(0px);
+    z-index: 4;
 }
+
+
 
 /* Gradient overlays for fading edges */
 .fade-overlay {
