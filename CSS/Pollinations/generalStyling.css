@@ -26,6 +26,7 @@ body {
         radial-gradient(circle at 10% 20%, rgba(100, 50, 200, 0.03) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(100, 50, 200, 0.03) 0%, transparent 20%);
     min-height: 100%;
+    overflow-x: hidden
 }
 
 .container {
@@ -36,11 +37,12 @@ body {
 }
 
 .navbar {
+    position: relative;
     display: flex;
-    /* justify-content: space-between; */
     align-items: center;
     padding: 15px 25px;
-    position: relative;
+    top: 3%;
+    transition: 0.3s ease;
     background-color: #222222d2;
     backdrop-filter: blur(5px);
     border-radius: 50px;
@@ -50,7 +52,35 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     z-index: 100;
 }
-
+/* .navbar.contract 
+{
+    position: sticky;
+    top: 5%;
+    left: -5%;
+    max-width: 5%;
+    padding: 10px 35px;
+    border-radius: 20px;
+    margin: none;
+    transform: translateX(-750px);
+    
+}
+.navbar.contract > .appname 
+{
+    font-size: 20px;
+    left: 0;
+    margin-left: 0;
+    transition: 0.25s;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+.navbar.contract > .navRedirects 
+{
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: 0.25s;
+} */
 .logo {
     display: flex;
     align-items: center;
@@ -88,6 +118,7 @@ body {
     display: flex;
     gap: 30px;
     margin-left: 20px;
+    transition: 0.25s;
 }
 .navRedirects ion-icon
 {

@@ -18,7 +18,6 @@
   position: relative;
   width: 228px;
   height: 64px;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
   border-radius: var(--radius);
   /* Add a state for when the animation should reset */
   &[data-reset-animation] {
@@ -144,9 +143,6 @@
   40% {
     transform: scale(1);
     opacity: 0;
-    box-shadow:
-      0 0 30px 10px black,
-      inset 0 0 30px rgba(255, 255, 255, 0.1);
   }
   60% {
     transform: scale(1.2, 1.5);
@@ -155,7 +151,6 @@
   100% {
     transform: scale(1.6, 2);
     opacity: 0;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -165,7 +160,6 @@
   border-radius: calc(var(--radius) * 1.35);
   z-index: 1;
   overflow: hidden;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
 }
 
 .bg::before,
@@ -176,13 +170,6 @@
   border-radius: calc(var(--radius) * 1.35);
 }
 
-.bg::after {
-  background: black;
-  box-shadow:
-    inset 0 0 0 1px rgba(82, 54, 92, 0.4), /* Adjusted shadow color */
-    inset -2px 0 0 -1px rgba(82, 54, 92, 1), /* Adjusted shadow color */
-    inset 0 -2px 0 -1px rgba(82, 54, 92, 0.1); /* Adjusted shadow color */
-}
 
 .bg .shine {
   transition: all 0.5s linear;
@@ -457,7 +444,6 @@
   background: #bfd842; /* Changed glyphs background */
   box-shadow:
     inset 0 0 16px 6px #fff, /* Kept white inset shadow */
-    0 0 10px 10px rgba(0, 0, 0, 0.2),
     inset 0 -10px 10px -8px rgb(255, 89, 0); /* Kept this orange shadow */
   transition: all 0.3s ease;
 }

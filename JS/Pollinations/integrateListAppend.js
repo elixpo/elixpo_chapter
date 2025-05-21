@@ -1,4 +1,7 @@
+import CODE_EXAMPLES from "./Config/codeExamplesText.js";
 let firstFocusSegmentIntegrate = 'API Cheatsheet';
+let currentSelectedMode = firstFocusSegmentIntegrate;
+const integrateCodeSegmentDetectionDelay = 50; 
 document.addEventListener('DOMContentLoaded', () => {
     const segmentList = document.querySelector('.segment-list-integrate');
     let dragEndedRecently = false;
@@ -42,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function getClosestElementIndexToCenter() {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
         if (segments.length === 0) return -1;
 
         let closestIndex = -1;
@@ -61,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getScrollTopToCenterElementIndex(index) {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
         if (index < 0 || index >= segments.length) return segmentList.scrollTop;
 
         const targetElement = segments[index];
@@ -72,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function updateStyles() {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
         if (segments.length === 0) return;
 
         const closestIndex = getClosestElementIndexToCenter();
@@ -91,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
      function setDynamicPadding() {
          if (itemFullHeight === 0) {
-              const firstItem = segmentList.querySelector('.segment-item');
+              const firstItem = segmentList.querySelector('.segment-item-integrate');
               if (firstItem) {
                   itemFullHeight = firstItem.offsetHeight + parseFloat(getComputedStyle(firstItem).marginBottom);
               } else {
@@ -109,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function scrollToSegment(index, duration, easing) {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
         if (index < 0 || index >= segments.length) return;
 
         const targetScrollTop = getScrollTopToCenterElementIndex(index);
@@ -133,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      clearTimeout(showDetailsTimeout);
                      const centeredIndex = getClosestElementIndexToCenter();
                       if (centeredIndex !== -1) {
-                           delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+                        delayedShowProjectDetails(` ${segmentContent[centeredIndex ]}`);
                       }
                 }
             });
@@ -143,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
              clearTimeout(showDetailsTimeout);
               const centeredIndex = getClosestElementIndexToCenter();
                if (centeredIndex !== -1) {
-                    delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+                    delayedShowProjectDetails(` ${segmentContent[centeredIndex ]}`);
                }
         }
     }
@@ -152,12 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(showDetailsTimeout);
 
         showDetailsTimeout = setTimeout(() => {
-            if (typeof showProjectDetails === 'function') {
-                showProjectDetails(modeName);
+            if (typeof showCodeDetails === 'function') {
+                showCodeDetails(modeName);
             } else {
-                 console.log("showProjectDetails placeholder called with:", modeName);
+                 console.log("integrate placeholder called with:", modeName);
             }
-        }, 1500);
+        }, integrateCodeSegmentDetectionDelay);
     }
 
 
@@ -178,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         segmentList.innerHTML = '';
         segmentContent.forEach((content, index) => {
             const segmentItem = document.createElement('div');
-            segmentItem.classList.add('segment-item');
+            segmentItem.classList.add('segment-item-integrate');
             segmentItem.textContent = content;
             segmentItem.dataset.index = index;
             segmentList.appendChild(segmentItem);
@@ -243,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
              return;
         }
 
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
         if (segments.length === 0) return;
 
         const closestIndex = getClosestElementIndexToCenter();
@@ -283,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const clickedSegment = e.target.closest('.segment-item');
+        const clickedSegment = e.target.closest('.segment-item-integrate');
         // Check if the click was on a segment item
         if (!clickedSegment) {
             return; // If not, do nothing
@@ -310,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {
          setDynamicPadding();
         const initialContentText = firstFocusSegmentIntegrate;
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-integrate');
 
         let segmentToCenter = null;
         let initialSelectedIndex = -1;
@@ -341,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStyles();
          const centeredIndex = getClosestElementIndexToCenter();
          if (centeredIndex !== -1) {
-             delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+            delayedShowProjectDetails(` ${segmentContent[centeredIndex ]}`);
          }
 
     });
@@ -352,8 +355,130 @@ document.addEventListener('DOMContentLoaded', () => {
          scrollTimeout = setTimeout(handleScrollStop, scrollStopDelay);
      }, 100));
 });
+const showCodeDetails = (modeName) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            currentSelectedMode = modeName;
+            let language = "";
+            console.log("Current selected mode:", currentSelectedMode);
 
-function showProjectDetails(modeName)
-{
-    console.log("showProjectDetails called with modeName:", modeName);
-}
+            let fetchedCode = "";
+
+            const codeBlock = document.getElementById("codeEditorZone");
+
+            // Reset class and opacity before setting new code
+            codeBlock.className = ''; // clear previous language classes
+            // codeBlock.parentElement.classList.remove("line-numbers"); // if added conditionally
+
+            switch (currentSelectedMode.trim()) {
+                case "API Cheatsheet":
+                    fetchedCode = CODE_EXAMPLES.api_cheatsheet.code();
+                    language = "language-" + CODE_EXAMPLES.api_cheatsheet.language;
+                    break;
+                case "LLM Prompts":
+                    fetchedCode = CODE_EXAMPLES.llm_prompt.code();
+                    language = "language-" + CODE_EXAMPLES.llm_prompt.language;
+                    break;
+                case "LLM Prompts Chat":
+                    fetchedCode = CODE_EXAMPLES.llm_prompt_chat.code();
+                    language = "language-" + CODE_EXAMPLES.llm_prompt_chat.language;
+                    break;
+                case "Markdown":
+                    fetchedCode = CODE_EXAMPLES.markdown.code({
+                        imageURL: "https://image.pollinations.ai/prompt/a%20cute%20girl?nologo=true&width=1280&height=1280&seed=12",
+                        prompt: "a cute girl",
+                        width: "1280",
+                        height: "1280",
+                        seed: "12",
+                        model: "flux"
+                    });
+                    language = "language-" + CODE_EXAMPLES.markdown.language;
+                    break;
+                case "React Hook":
+                    fetchedCode = CODE_EXAMPLES.react.code({
+                        prompt: "A beautiful landscape",
+                        width: "1280",
+                        height: "768",
+                        seed: "12",
+                        model: "flux"
+                    });
+                    language = "language-" + CODE_EXAMPLES.react.language;
+                    break;
+                case "HTML Mockup":
+                    fetchedCode = CODE_EXAMPLES.html.code({
+                        imageURL: "https://image.pollinations.ai/prompt/A%20beautiful%20landscape",
+                        prompt: "A beautiful landscape",
+                        width: "1280",
+                        height: "768",
+                        seed: "12",
+                        model: "turbo"
+                    });
+                    language = "language-" + CODE_EXAMPLES.html.language;
+                    break;
+                case "Rust Snippet":
+                    fetchedCode = CODE_EXAMPLES.rust.code({
+                        prompt: "A cute teddy bear",
+                        width: "1280",
+                        height: "768",
+                        seed: "12",
+                        model: "flux"
+                    });
+                    language = "language-" + CODE_EXAMPLES.rust.language;
+                    break;
+                case "Node.js":
+                    fetchedCode = CODE_EXAMPLES.nodejs.code({
+                        prompt: "A cute cat wearing a superman costume",
+                        width: "1280",
+                        height: "768",
+                        seed: "12",
+                        model: "flux"
+                    });
+                    language = "language-" + CODE_EXAMPLES.nodejs.language;
+                    break;
+                case "Python":
+                    fetchedCode = CODE_EXAMPLES.python.code({
+                        prompt: "A cute dog wearing a superman costume",
+                        width: "1280",
+                        height: "768",
+                        seed: "12",
+                        model: "flux"
+                    });
+                    language = "language-" + CODE_EXAMPLES.python.language;
+                    break;
+                case "Feed Endpoints":
+                    fetchedCode = CODE_EXAMPLES.feed_endpoints.code();
+                    language = "language-" + CODE_EXAMPLES.feed_endpoints.language;
+                    break;
+                case "Audio":
+                    fetchedCode = CODE_EXAMPLES.audio.code();
+                    language = "language-" + CODE_EXAMPLES.audio.language;
+                    break;
+                case "MCP Server":
+                    fetchedCode = CODE_EXAMPLES.mcp_server.code();
+                    language = "language-" + CODE_EXAMPLES.mcp_server.language;
+                    break;
+                default:
+                    break;
+            }
+
+            document.getElementById("language_label").textContent = language.split("-")[1];
+            codeBlock.classList.add(language);
+            codeBlock.textContent = fetchedCode.trim();
+            Prism.highlightElement(codeBlock);
+
+            // Animate with Anime.js (fade in + translate)
+            anime({
+                targets: codeBlock,
+                opacity: [0, 1],
+                translateY: [20, 0],
+                scale : [0.5, 1],
+                duration: 600,
+                easing: 'easeOutQuad'
+            });
+
+            resolve(fetchedCode);
+        }, 700);
+    });
+};
+
+

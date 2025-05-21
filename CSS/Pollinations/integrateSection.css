@@ -57,7 +57,7 @@
 .integrateSection > .integrateText
 {
   position: absolute;
-  top: 1%;
+  top: 0%;
   left: 50%;
   transform: translateX(-50%);
   font-family: "Orbitron";
@@ -67,11 +67,11 @@
 .integrateSection > .integrateDescription
 {
     position: absolute;
-    top: 17%;
+    top: 19%;
     left: 50%;
     transform: translateX(-50%);
     font-family: "Lexend", sans-serif;
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 400;
     text-align: center;
     display: flex;
@@ -82,7 +82,7 @@
     left: 3%;
     height: 65%;
     width: 75%;
-    background-color: #385F62;
+    background-color: #04272a;
     border-radius: 12px;
     color: #f4f4f4;
     font-family: 'Fira Code', monospace;
@@ -123,10 +123,87 @@
 
 .snippetSection .codeArea {
     position: absolute;
-    top: -10%;
+    top: 20%;
     padding: 16px;
-    overflow: auto;
+    max-height: 400px;
     font-size: 1.5em;
     line-height: 1.5em;
     white-space: pre;
+}
+
+pre 
+{
+    position: relative;
+    top: -120px;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    max-height: 400px;
+    font-size: 1.5em;
+    line-height: 1.5em;
+    white-space: pre;
+}
+
+pre::-webkit-scrollbar
+{
+    display: none;
+}
+
+pre[class*="language-"].line-numbers {
+    position: relative;
+    padding-left: 3.8em;
+    counter-reset: linenumber;
+    background: transparent;
+    overflow: auto;
+    max-height: 400px;
+    color: #fff;
+    pointer-events: all;
+}
+
+pre[class*="language-"].line-numbers::-webkit-scrollbar
+{
+    display: none;
+}
+
+code[class*="language-"], pre[class*="language-"] {
+    
+    color: #f8f8f2;
+    background: transparent;
+    font-family: "Fira Code", monospace;
+    font-size: 0.8em;
+    line-height: 1.5em;
+    white-space: pre;
+    text-shadow: none;
+}
+
+#codeEditorZone > .token.comment
+{
+    color: #6272a4;
+    background: none;
+    text-shadow: none;
+}
+#codeEditorZone > .token.constant
+{
+    color: #f3ca63;
+    background: none;
+    text-shadow: none;
+}
+
+#codeEditorZone > .token.operator
+{
+    color: #ff79c6;
+    background: none;
+    text-shadow: none;
+}
+
+#codeEditorZone > .token.template-string > .token.string
+{
+    color: #1bda74;
+    background: none;
+    text-shadow: none;
+}
+code::selection
+{
+    background: #ff79c6;
+    color: #282a36;
 }

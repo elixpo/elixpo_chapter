@@ -1,3 +1,5 @@
+import { projects, projectCategories } from "./Config/projectsList.js";
+const projectSegmentDetectionDelay = 50;
 let firstFocusSegmentProjects = 'Featured Section';
 document.addEventListener('DOMContentLoaded', () => {
     const segmentList = document.querySelector('.segment-list-projects');
@@ -38,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function getClosestElementIndexToCenter() {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
         if (segments.length === 0) return -1;
 
         let closestIndex = -1;
@@ -57,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getScrollTopToCenterElementIndex(index) {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
         if (index < 0 || index >= segments.length) return segmentList.scrollTop;
 
         const targetElement = segments[index];
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function updateStyles() {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
         if (segments.length === 0) return;
 
         const closestIndex = getClosestElementIndexToCenter();
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
      function setDynamicPadding() {
          if (itemFullHeight === 0) {
-              const firstItem = segmentList.querySelector('.segment-item');
+              const firstItem = segmentList.querySelector('.segment-item-project');
               if (firstItem) {
                   itemFullHeight = firstItem.offsetHeight + parseFloat(getComputedStyle(firstItem).marginBottom);
               } else {
@@ -105,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function scrollToSegment(index, duration, easing) {
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
         if (index < 0 || index >= segments.length) return;
 
         const targetScrollTop = getScrollTopToCenterElementIndex(index);
@@ -129,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      clearTimeout(showDetailsTimeout);
                      const centeredIndex = getClosestElementIndexToCenter();
                       if (centeredIndex !== -1) {
-                           delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+                        delayedShowProjectDetails(`${segmentContent[centeredIndex]}`);
                       }
                 }
             });
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
              clearTimeout(showDetailsTimeout);
               const centeredIndex = getClosestElementIndexToCenter();
                if (centeredIndex !== -1) {
-                    delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+                delayedShowProjectDetails(`${segmentContent[centeredIndex]}`);
                }
         }
     }
@@ -153,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                  console.log("showProjectDetails placeholder called with:", modeName);
             }
-        }, 1500);
+        }, projectSegmentDetectionDelay);
     }
 
 
@@ -174,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         segmentList.innerHTML = '';
         segmentContent.forEach((content, index) => {
             const segmentItem = document.createElement('div');
-            segmentItem.classList.add('segment-item');
+            segmentItem.classList.add('segment-item-project');
             segmentItem.textContent = content;
             segmentItem.dataset.index = index;
             segmentList.appendChild(segmentItem);
@@ -239,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
              return;
         }
 
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
         if (segments.length === 0) return;
 
         const closestIndex = getClosestElementIndexToCenter();
@@ -279,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const clickedSegment = e.target.closest('.segment-item');
+        const clickedSegment = e.target.closest('.segment-item-project');
         // Check if the click was on a segment item
         if (!clickedSegment) {
             return; // If not, do nothing
@@ -306,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {
          setDynamicPadding();
         const initialContentText = firstFocusSegmentProjects;
-        const segments = segmentList.querySelectorAll('.segment-item');
+        const segments = segmentList.querySelectorAll('.segment-item-project');
 
         let segmentToCenter = null;
         let initialSelectedIndex = -1;
@@ -337,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStyles();
          const centeredIndex = getClosestElementIndexToCenter();
          if (centeredIndex !== -1) {
-             delayedShowProjectDetails(`Segment ${centeredIndex + 1}`);
+             delayedShowProjectDetails(`${segmentContent[centeredIndex]}`);
          }
 
     });
@@ -349,7 +351,122 @@ document.addEventListener('DOMContentLoaded', () => {
      }, 100));
 });
 
-function showProjectDetails(modeName)
-{
-    console.log("showProjectDetails called with modeName:", modeName);
-}
+
+
+const showProjectDetails = (modeName) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const projectContainer = document.getElementById("projectDisplaySection");
+            if (!projectContainer) {
+                console.error("Projects container element not found");
+                return;
+            }
+
+            let categoryKey = "";
+            switch (modeName.trim()) {
+                case "Featured Section":
+                    categoryKey = "featured";
+                    break;
+                case "Vibe Coding":
+                    categoryKey = "vibeCoding";
+                    break;
+                case "Creative Apps":
+                    categoryKey = "creativeApps";
+                    break;
+                case "LLM Integrations":
+                    categoryKey = "llmIntegrations";
+                    break;
+                case "Tools and Interfaces":
+                    categoryKey = "toolsInterfaces";
+                    break;
+                case "Social Bots":
+                    categoryKey = "socialBots";
+                    break;
+                case "SDK & Libraries":
+                    categoryKey = "sdkLibraries";
+                    break;
+                case "Tutorials":
+                    categoryKey = "tutorials";
+                    break;
+                default:
+                    console.warn("Unknown category:", modeName);
+                    return;
+            }
+
+            // Find the selected category
+            const selectedCategory = projectCategories.find(cat => cat.key === categoryKey);
+            if (!selectedCategory) {
+                console.error("Category not found:", categoryKey);
+                return;
+            }
+
+            // Update the category title if you have an element for it
+            const categoryTitleElement = document.getElementById("categoryTitle");
+            if (categoryTitleElement) {
+                categoryTitleElement.textContent = selectedCategory.title;
+            }
+
+            // Clear and animate out existing content
+            anime({
+                targets: projectContainer,
+                opacity: [1, 0],
+                translateY: [0, -20],
+                duration: 300,
+                easing: 'easeOutQuad',
+                complete: () => {
+                    // Clear existing content
+                    projectContainer.innerHTML = '';
+                    
+                    // Get and sort projects for the selected category
+                    const categoryProjects = projects[categoryKey];
+                    if (!categoryProjects || categoryProjects.length === 0) {
+                        projectContainer.innerHTML = '<div class="no-projects">No projects found in this category</div>';
+                        return;
+                    }
+
+                    // Render each project
+                    categoryProjects.forEach(project => {
+                        let projectNode = `
+                            <div class="projectTile">
+                                <div class="projectLogoContainer">
+                                    <div class="projectLogo"></div>
+                                    <div class="projectNameRedirect" data-url=${project.url ? `${project.url}` : ""} id="projectNameRedirect">
+                                    ${project.name}
+                                    </div>
+                                </div>
+                                
+                                ${project.author ? `<div class="projectCreator">- by ${project.author}</div>` : ""}
+                                
+                                <div class="projectDescription">
+                                    ${project.description}
+                                </div>
+                                
+                                <div class="projectURLGithub" data-url="${project.repo ? `${project.repo}` : ""}" id="projectURLGithub">
+                                    <ion-icon name="logo-github" role="img" class="md hydrated"></ion-icon>
+                                    Source
+                                </div>
+
+                                ${project.isNew ? `<span class="new-badge">NEW</span>` : ""}
+                                ${project.stars ? `<span class="stars-badge">⭐ ${project.stars}</span>` : ""}
+                            </div>
+                            `;
+
+                            projectContainer.innerHTML += projectNode;
+                    });
+
+                    // Animate in new content
+                    anime({
+                        targets: projectContainer,
+                        opacity: [0, 1],
+                        translateY: [20, 0],
+                        duration: 600,
+                        easing: 'easeOutQuad'
+                    });
+
+                    resolve();
+                }
+            });
+        }, 700);
+    });
+};
+

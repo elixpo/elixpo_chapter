@@ -42,7 +42,7 @@
     display: none;  
 }
 
-.segment-item {
+.segment-item-integrate {
     background-color: #a9882e;
     border: 2px solid #f1c657;
     border-radius: 6px;
@@ -58,7 +58,7 @@
     z-index: 1;
 }
 
-.segment-item.most-fainted {
+.segment-item-integrate.most-fainted {
     opacity: 0.4;
     border-color: #ddbc58;
     background-color: #947728;
@@ -66,7 +66,7 @@
     z-index: 2;
 }
 
-.segment-item.faint {
+.segment-item-integrate.faint {
     opacity: 0.7;
     border-color: #caa841;
     background-color: #80621f;
@@ -74,7 +74,7 @@
     z-index: 3;
 }
 
-.segment-item.selected {
+.segment-item-integrate.selected {
     opacity: 1;
     border-color: #fff3c0;
     background-color: #f1c657;

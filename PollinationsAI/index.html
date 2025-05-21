@@ -14,6 +14,13 @@
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css'>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
     <link rel="icon" href="https://pollinations.ai/favicon-32x32.png" type="image/png">
     <link rel='stylesheet' href='../CSS/Pollinations/generalStyling.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/patternsDesigns.css'>
@@ -53,7 +60,7 @@
     <div class="topBoxesDesigns" id="topBoxesDesigns">
     </div>
 
-    <nav class="navbar">
+    <div class="navbar">
         <div class="logo">
             <div class="logo-icon">
                 <img src="https://pollinations.ai/favicon-32x32.png">
@@ -74,7 +81,10 @@
             <span></span>
             <span></span>
         </div>
-    </nav>
+    </div>
+
+
+
     <div class="backgroundOverlay">
         <div class="backgroundOverlayScreen"></div>
     </div>
@@ -181,17 +191,7 @@
                   </div>
               </div>
 
-              <div class="projectDisplaySection">
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
+              <div class="projectDisplaySection" id="projectDisplaySection">                
               </div>
                 
           </section>
@@ -221,16 +221,14 @@
                         <div class="dot yellow"></div>
                         <div class="dot green"></div>
                       </div>
-                      <div class="language-label">JavaScript</div>
+                      <div class="language-label" id="language_label">JavaScript</div>
                     </div>
                     <div class="codeArea">
-                  <pre>
-                    <code class="language-javascript">
-
-                   </code></pre>
+                      <pre class="line-numbers"><code class="language" id="codeEditorZone">
+                      </code>
+                    </pre>
                     </div>
                   </div>
-                
           </section>
 
 
@@ -344,14 +342,8 @@
                 <div class="supportersText">Supporters</div>
                 <div class="supportersDescription">We are grateful to our supporters for their contributions to our platform.</div>
 
-                <div class="supportersShowcase">
-                  <div class="supportersTile">
-                    <div class="supportersContainer"> 
-                        <div class="supportersLogo"></div> 
-                        <div class="supportersNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="supportersDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                </div>
+                <div class="supportersShowcase" id="supportersShowcase">
+                  
                 </div>
                 
           </section>
@@ -360,19 +352,9 @@
             <div class="footerBackdrop"></div>
             <div class="footer-container">
               <div class="footer-grid">
-                <!-- Logo & Intro -->
                 <div class="footer-col span-2">
                   <h2 class="footer-title">Pollinations - AI</h2>
                   <p class="footer-description">An open source innovation from Berlin</p>
-
-
-                  <!-- <ion-icon name="logo-linkedin"></ion-icon>
-                  <ion-icon name="logo-discord"></ion-icon>
-                  <ion-icon name="logo-github"></ion-icon>
-                  <ion-icon name="logo-youtube"></ion-icon>
-                  <ion-icon name="logo-instagram"></ion-icon>
-                  <ion-icon name="logo-tiktok"></ion-icon> -->
-
 
                   <div class="footer-socials">
                     <a href="#" class="footer-social" title="Visit Linkedin">
@@ -453,9 +435,22 @@
     <script src="../JS/Pollinations/imageDisplay.js"></script>
     <script src='../JS/Pollinations/genericScript.js'></script>
     <script src="../JS/Pollinations/tipBtnHtml.js"></script>
-    <script src="../JS/Pollinations/projectsListAppend.js"></script>
-    <script src="../JS/Pollinations/integrateListAppend.js"></script>
 
+    
+    
+
+    <script src="../JS/Pollinations/contributeListAppend.js"></script>
+    
+    
+    <script type="module" src="../JS/Pollinations/supporterListAppend.js"></script>
+    <script type="module" src="../JS/Pollinations/Config/supporterList.js"></script>
+
+    <script type="module" src="../JS/Pollinations/integrateListAppend.js"></script>
+    <script type="module" src="../JS/Pollinations/Config/codeExamplesText.js"></script>
+
+
+    <script type="module" src="../JS/Pollinations/Config/projectsList.js"></script>
+    <script type="module" src="../JS/Pollinations/projectsListAppend.js"></script>
 
 
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>

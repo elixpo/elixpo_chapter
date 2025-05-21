@@ -19,8 +19,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: url(../IMAGES/Pollinations/heroSectionPreview/bgHeroBakcground.jpg) no-repeat center center/cover;
-    filter: blur(5px);
+    background: url(../IMAGES/Pollinations/heroSectionPreview/bgHero.jpg) no-repeat center center/cover;
+    filter: blur(3px);
     z-index: -1;
 }
 .backgroundOverlayScreen 
