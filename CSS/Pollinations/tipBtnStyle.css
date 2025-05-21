@@ -130,12 +130,12 @@
   border-radius: 30px;
 }
 
-.button:focus .wave::before,
-.button:focus .wave::after {
+.button:hover .wave::before,
+.button:hover .wave::after {
   animation: wave 2.2s linear forwards; /* Changed to forwards */
 }
 
-.button:focus .wave::after {
+.button:hover .wave::after {
   animation-delay: 0.35s;
 }
 
@@ -341,11 +341,11 @@
   opacity: 0;
 }
 
-.button:focus .wrap:hover .circuit-path-1 {
+.button:hover .wrap:hover .circuit-path-1 {
   opacity: 1;
 }
 
-.button:focus .wrap:hover .circuit-path-2,
+.button:hover .wrap:hover .circuit-path-2,
 .button:active .wrap:hover .circuit-path-1 {
   opacity: 0;
 }
@@ -402,7 +402,7 @@
   }
 }
 
-.button:focus .content {
+.button:hover .content {
   animation: shake-out 1.9s ease forwards;
 }
 
@@ -504,7 +504,7 @@
   animation: char-out 0.7s ease calc(var(--i) * 0.03s) backwards;
 }
 
-.button:focus .text span {
+.button:hover .text span {
   animation: char-out-2 0.7s ease forwards calc((var(--i)) * -0.02s);
 }
 
@@ -599,7 +599,7 @@
   animation-delay: 1.5s;
 }
 
-.button:focus .icon-2 .cloud {
+.button:hover .icon-2 .cloud {
   animation-play-state: running;
 }
 
@@ -619,7 +619,7 @@
   }
 }
 
-.button:focus .icon-2 {
+.button:hover .icon-2 {
   animation: icon-2-in 1.5s cubic-bezier(0.5, -0.15, 0.3, 1) 0.8s forwards;
 }
 
@@ -636,7 +636,7 @@
   }
 }
 
-.button:focus .icon-2 .check {
+.button:hover .icon-2 .check {
   stroke-dasharray: 110;
   stroke-dashoffset: 110;
   animation: check 1.5s cubic-bezier(0.5, -0.15, 0.3, 1) forwards 1.2s;
@@ -701,7 +701,7 @@
   animation: none;
 }
 
-.button:focus .icon-1 {
+.button:hover .icon-1 {
   animation: icon-1-out 1.5s ease-in-out forwards;
 }
 
