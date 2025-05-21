@@ -1,17 +1,21 @@
-let firstFocusSegmentProjects = 'Featured Section';
+let firstFocusSegmentIntegrate = 'API Cheatsheet';
 document.addEventListener('DOMContentLoaded', () => {
-    const segmentList = document.querySelector('.segment-list-projects');
+    const segmentList = document.querySelector('.segment-list-integrate');
     let dragEndedRecently = false;
     let showDetailsTimeout;
     const segmentContent = [
-        'Vibe Coding',
-        'Creative Apps',
-        'LLM Integrations',
-        'Featured Section',
-        'Tools and Interfaces',
-        'Social Bots',
-        'SDK & Libraries',
-        'Tutorials',
+        'LLM Prompts',
+        'LLM Prompts Chat',
+        'Markdown',
+        'React Hook',
+        'HTML Mockup',
+        'API Cheatsheet',
+        'Rust Snippet',
+        'Node.js',
+        'Python',
+        'Feed Endpoints',
+        'Audio',
+        'MCP Server'
     ];
 
     let scrollTimeout;
@@ -305,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateSegments();
     requestAnimationFrame(() => {
          setDynamicPadding();
-        const initialContentText = firstFocusSegmentProjects;
+        const initialContentText = firstFocusSegmentIntegrate;
         const segments = segmentList.querySelectorAll('.segment-item');
 
         let segmentToCenter = null;

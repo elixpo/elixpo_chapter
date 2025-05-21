@@ -28,6 +28,22 @@
     transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
     z-index: -1;
 }
+
+.integrateBackdropOverlay 
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url(../IMAGES/Pollinations/heroSectionPreview/bgOverlay.jpeg);
+    background-position: center;
+    background-size: cover;
+    border-radius: 24px;
+    opacity: 0.5;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+}
 .integrateSection 
 {
     position: absolute;
@@ -59,4 +75,58 @@
     font-weight: 400;
     text-align: center;
     display: flex;
+}
+.integrateSection > .snippetSection {
+    position: absolute;
+    top: 30%;
+    left: 3%;
+    height: 65%;
+    width: 75%;
+    background-color: #385F62;
+    border-radius: 12px;
+    color: #f4f4f4;
+    font-family: 'Fira Code', monospace;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); /* very subtle border */
+}
+
+.snippetSection .snippetHeader {
+    height: 36px;
+    background-color: #2a2518;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: #d6d6d6;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.snippetSection .dots {
+    display: flex;
+    gap: 8px;
+}
+
+.snippetSection .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.snippetSection .dot.red { background-color: #ff5f56; }
+.snippetSection .dot.yellow { background-color: #ffbd2e; }
+.snippetSection .dot.green { background-color: #27c93f; }
+
+.snippetSection .codeArea {
+    position: absolute;
+    top: -10%;
+    padding: 16px;
+    overflow: auto;
+    font-size: 1.5em;
+    line-height: 1.5em;
+    white-space: pre;
 }

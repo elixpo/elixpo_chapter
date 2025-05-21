@@ -30,7 +30,13 @@
 
 
     <link rel='stylesheet' href='../CSS/Pollinations/integrateSection.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/integrateDomainScrolling.css'>
+
+
     <link rel='stylesheet' href='../CSS/Pollinations/contributeSection.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/contributeImageFrame.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/contributeRedirectButtons.css'>
+
     <link rel='stylesheet' href='../CSS/Pollinations/supportersSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/footerSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'>
@@ -161,11 +167,11 @@
                 <div class="projectsText">Projects</div>
                 <div class="projectsDescription">Here're some of the various implementations that our API is powering!</div>
 
-                <div class="segment-scroll-container">
-                  <div class="segment-list-wrapper">
-                      <div class="fade-overlay top"></div>
-                      <div class="fade-overlay bottom"></div>
-                      <div class="segment-list">
+                <div class="segment-scroll-container-projects">
+                  <div class="segment-list-wrapper-projects">
+                      <div class="fade-overlay-projects top"></div>
+                      <div class="fade-overlay-projects bottom"></div>
+                      <div class="segment-list-projects">
                       </div>
                   </div>
               </div>
@@ -181,93 +187,147 @@
                     <div class="projectCreator"></div>
                 </div>
 
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
-
-                <div class="projectTile">
-                    <div class="projectLogoContainer"> 
-                        <div class="projectLogo"></div> 
-                        <div class="projectNameRedirect"> Jackey - Discord Bot</div> 
-                    </div>
-                    <div class="projectDescription"> Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolorum earum itaque repellendus reiciendis voluptas? Recusandae cumque error beatae illo iusto aut consectetur at alias porro sed! Consequatur cum accusantium id. </div>
-                    <div class="projectURLGithub"> <ion-icon name="logo-github"></ion-icon> Source </div>
-                    <div class="projectCreator"></div>
-                </div>
               </div>
                 
           </section>
 
           <section id="integrate" class="integrate">
-            <div class="integrateBackdrop"></div>
+            <div class="integrateBackdrop">
+                <div class="integrateBackdropOverlay"></div>
+            </div>
             <div class="integrateSection">
                 <div class="integrateText">Integrate</div>
                 <div class="integrateDescription">Discover how to seamlessly integrate our free image and text generation API into your projects.</div>
+
+                <div class="segment-scroll-container-integrate">
+                    <div class="segment-list-wrapper-integrate">
+                        <div class="fade-overlay-integrate top"></div>
+                        <div class="fade-overlay-integrate bottom"></div>
+                        <div class="segment-list-integrate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="snippetSection">
+
+                    <div class="snippetHeader">
+                      <div class="dots">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                      </div>
+                      <div class="language-label">JavaScript</div>
+                    </div>
+                    <div class="codeArea">
+                  <pre>
+                    <code class="language-javascript">
+
+                   </code></pre>
+                    </div>
+                  </div>
                 
           </section>
 
 
           <section id="contribute" class="contribute">
-            <div class="contributeBackdrop"></div>
+            <div class="contributeBackdrop">
+                <div class="contributeBackdropOverlay"></div>
+            </div>
+            <div class="overlayBackground"></div>
             <div class="contributeSection">
+                
                 <div class="contributeText">Contribute</div>
                 <div class="contributeDescription">Welcome to our community driven approach. We're building a platform where developers, creators and AI enthusiasts can collaborate and innovate!</div>
+                
+                
+                <div class="redirectButtonsContribute">
+                  <button class="githubRedirect contribBtn" type="button">
+                    <div class="outline"></div>
+                    <div class="state state--default">
+                      <div class="icon">
+                        <ion-icon name="logo-github" style="font-size: 1.4em; filter: drop-shadow(0 1px 0.6px rgba(0,0,0,0.5));"></ion-icon>
+                      </div>
+                      <p>
+                        <span style="--i:0">S</span>
+                        <span style="--i:1">O</span>
+                        <span style="--i:2">U</span>
+                        <span style="--i:3">R</span>
+                        <span style="--i:4">C</span>
+                        <span style="--i:5">E</span>
+            
+                      </p>
+                    </div>
+                  
+                    <div class="state state--sent">
+                      <div class="icon">
+                        <ion-icon name="construct"></ion-icon>
+                      </div>
+                      <p>
+                        <span style="--i:0">g</span>
+                        <span style="--i:1">i</span>
+                        <span style="--i:2">t</span>
+                        <span style="--i:3"> </span>
+                        <span style="--i:4">c</span>
+                        <span style="--i:5">l</span>
+                        <span style="--i:6">o</span>
+                        <span style="--i:7">n</span>
+                        <span style="--i:8">e</span>
+                        <span style="--i:9">.</span>
+                        <span style="--i:10">.</span>
+                        <span style="--i:11">.</span>
+                        
+                      </p>
+                    </div>
+                  </button>
+
+                  <button class="discordRedirect contribBtn" type="button">
+                    <div class="outline"></div>
+                    <div class="state state--default">
+                      <div class="icon">
+                        <ion-icon name="logo-discord" style="font-size: 1.4em; filter: drop-shadow(0 1px 0.6px rgba(0,0,0,0.5));"></ion-icon>
+                      </div>
+                      <p>
+                        <span style="--i:0">D</span>
+                        <span style="--i:1">I</span>
+                        <span style="--i:2">S</span>
+                        <span style="--i:3">C</span>
+                        <span style="--i:4">O</span>
+                        <span style="--i:5">R</span>
+                        <span style="--i:6">D</span>
+            
+                      </p>
+                    </div>
+                  
+                    <div class="state state--sent">
+                      <div class="icon">
+                        <ion-icon name="person"></ion-icon>
+                      </div>
+                      <p>
+                        <span style="--i:0">h</span>
+                        <span style="--i:1">o</span>
+                        <span style="--i:2">l</span>
+                        <span style="--i:3">a</span>
+                        <span style="--i:4"> </span>
+                        <span style="--i:5">a</span>
+                        <span style="--i:6">m</span>
+                        <span style="--i:7">i</span>
+                        <span style="--i:8">g</span>
+                        <span style="--i:9">o</span>
+                        <span style="--i:10">s</span>
+                        <span style="--i:11">!</span>
+                        
+                      </p>
+                    </div>
+                  </button>
+
+                </div>
+                <div class="imageFrame" id="imageFrame">  
+                    <div class="particleContainerImageFrame" id="particleContainerImageFrame"></div>
+                    <div class="imageGithub"></div>
+                    <div class="redirectButtonContainer"></div>
+                    <div class="imageDiscord"></div>
+                </div>
+                
                 
           </section>
 
@@ -291,10 +351,12 @@
     <script src="../JS/particles.js"></script>
     <script src="../JS/Pollinations/particleEffect.js"></script>
     <script src="../JS/Pollinations/progressShimmerParticleEffect.js"></script>
+    <script src="../JS/Pollinations/contributeSectionPartcle.js"></script>
     <script src="../JS/Pollinations/imageDisplay.js"></script>
     <script src='../JS/Pollinations/genericScript.js'></script>
     <script src="../JS/Pollinations/tipBtnHtml.js"></script>
     <script src="../JS/Pollinations/projectsListAppend.js"></script>
+    <script src="../JS/Pollinations/integrateListAppend.js"></script>
 
 
 

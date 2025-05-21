@@ -1,5 +1,5 @@
 
-.segment-scroll-container-projects {
+.segment-scroll-container-integrate {
     font-family: 'Kalam', cursive; /* Hand-drawn style font */
     position: relative;
     left: 82%; 
@@ -13,16 +13,16 @@
 }
 
 /* Wrapper for the scrollable list to control dimensions and hide overflow */
-.segment-list-wrapper-projects {
+.segment-list-wrapper-integrate {
     position: relative; 
     width: 250px; 
-    height: 350px; 
+    height: 550px; 
     overflow: hidden; 
     
     border-radius: 8px;
 }
 
-.segment-list-projects {
+.segment-list-integrate {
     width: 100%;
     height: 100%;
     overflow-y: scroll;
@@ -38,7 +38,7 @@
     backdrop-filter: blur(10px);    
 }
 
-.segment-list-projects::-webkit-scrollbar {
+.segment-list-integrate::-webkit-scrollbar {
     display: none;  
 }
 
@@ -86,7 +86,7 @@
 
 
 /* Gradient overlays for fading edges */
-.fade-overlay-projects {
+.fade-overlay-integrate {
     position: absolute;
     left: 0;
     right: 0;
