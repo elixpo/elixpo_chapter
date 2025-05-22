@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Baumans&family=Lexend:wght@100..900&family=Nerko+One&family=Orbitron:wght@400..900&display=swap');
-#imageDisplay {
+#realtimeFeed {
     position: relative; 
     margin-top: 100px;
     z-index: 3; 
@@ -10,7 +10,7 @@
 }
 
 
-.imageDisplayBackdrop 
+.realtimeFeedBackdrop 
 {
     position: absolute;
     top: 0;
@@ -32,7 +32,7 @@
     transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
     z-index: -1;
 }
-.imageDisplayBackdropOverlay 
+.realtimeFeedBackdropOverlay 
 {
     position: absolute;
     top: 0;
@@ -312,6 +312,7 @@
     border-radius: 5px;
     margin-top: 10px;
     display: flex;
+    transition: 0.25s;
     overflow: hidden;
 }
 

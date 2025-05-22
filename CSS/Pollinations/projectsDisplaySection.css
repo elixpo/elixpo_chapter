@@ -2,9 +2,9 @@
 {
     position: absolute;
     top: 25%;
-    left: 5%;
+    left: 0%;
     height: 73%;
-    width: 75%;
+    width: 85%;
     background: transparent;
     display: flex;
     flex-direction: row;
@@ -18,7 +18,7 @@
     display: none;
 }.projectTile {
     position: relative;
-    width: 450px;
+    width: 400px;
     height: 250px;
     background: #a9882eb9; /* Preserve original */
     border: 2px solid #f1c657;
@@ -151,7 +151,7 @@
   .stars-badge {
     position: absolute;
     top: 80%;
-    left: 55%;
+    left: 50%;
     padding: 6px 14px;
     background: #4e3e01c2;
     color: #e4d314;

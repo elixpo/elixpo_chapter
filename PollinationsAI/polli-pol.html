@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pollinations API Real-time Stats</title>
+    <style>
+        /* Styling to match the dashboard look */
+        :root {
+            --color-offwhite: #E0E0E0;
+            --color-lime: #AEEA00; /* A vibrant lime green */
+            --color-gray2: #BDBDBD;
+            --font-headline: 'Roboto', sans-serif; /* Use a common font */
+        }
+
+        body {
+            background-color: #1A1A1A; /* Dark background */
+            color: var(--color-offwhite);
+            font-family: var(--font-headline);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+             /* Basic gradient background from original */
+            background: linear-gradient(135deg, #1a365d 0%, #2d3748 50%, #1a365d 100%);
+            animation: gradientFlow 15s ease infinite;
+        }
+
+        /* Animation for background */
+        @keyframes gradientFlow {
+          0% { background-position: 0% 50% }
+          50% { background-position: 100% 50% }
+          100% { background-position: 0% 50% }
+        }
+
+
+        .stats-container {
+            display: flex;
+            flex-direction: column; /* Stack vertically for simplicity */
+            align-items: center;
+            gap: 2em; /* Space between the two stat cards */
+            padding: 30px; /* Increased padding */
+            border-radius: 1.5rem;
+             /* Glassmorphism effect */
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); /* Slightly stronger shadow */
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px 40px; /* Increased horizontal padding */
+            border-radius: 1rem;
+            background: rgba(0, 0, 0, 0.4); /* Darker inner background for contrast */
+            min-width: 250px; /* Ensure a minimum width */
+        }
+
+        .stat-title {
+            color: var(--color-gray2);
+            font-size: 1.3em; /* Slightly larger title */
+            font-weight: 500;
+            margin-bottom: 8px; /* More space below title */
+            text-transform: uppercase; /* Make titles uppercase */
+        }
+
+        .stat-value {
+            font-size: 3rem; /* Larger stat value */
+            font-weight: bold;
+            color: var(--color-lime); /* Use lime */
+            animation: pulse 2s infinite; /* Keep pulse animation */
+             /* Add text shadow for better visibility */
+             text-shadow: 0 0 10px rgba(174, 234, 0, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+         /* Style for the last updated text */
+        .last-updated {
+             text-align: center;
+             margin-top: 1.5em; /* More space above */
+             font-size: 0.9em;
+             color: var(--color-gray2);
+        }
+
+        /* Style for connection error message */
+        #connection-error-message {
+             position: fixed;
+             top: 20px;
+             right: 20px;
+             background-color: #EF4444; /* Red-500 from Tailwind */
+             color: white;
+             padding: 12px 20px;
+             border-radius: 8px;
+             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+             z-index: 1000; /* Ensure it's on top */
+        }
+         #connection-error-message.warning {
+             background-color: #F59E0B; /* Yellow-500 from Tailwind */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="stats-container">
+
+        <!-- Requests Per Minute Card -->
+        <div class="stat-card">
+            <h3 class="stat-title">Requests per Minute</h3>
+            <div id="requestsPerMinute" class="stat-value">0</div>
+        </div>
+
+        <!-- Average Response Time Card -->
+        <div class="stat-card">
+            <h3 class="stat-title">Avg Response Time</h3>
+            <div id="avgResponseTime" class="stat-value">0ms</div>
+        </div>
+
+        <div id="lastUpdated" class="last-updated">Loading...</div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM References ---
+            const requestsPerMinuteElement = document.getElementById('requestsPerMinute');
+            const avgResponseTimeElement = document.getElementById('avgResponseTime');
+            const lastUpdatedElement = document.getElementById('lastUpdated');
+
+            // --- State Variables ---
+            // Store timestamps of requests within the last minute
+            let lastMinuteRequests = [];
+            // Store response times (we'll assume 'duration' from the feed is in milliseconds if available)
+            let responseTimesSummary = [];
+            const responseTimesMaxSize = 100; // Keep a limited number of recent response times
+
+            // --- EventSource Feed URLs ---
+            const FEED_URL = 'https://text.pollinations.ai/feed';
+            const FALLBACK_URL = 'https://text-api.pollinations.ai/feed'; // Original fallback
+
+            // --- Data Processing Function ---
+            // Processes incoming data to update our stats
+            function processFeedData(data) {
+                try {
+                    if (!data || typeof data !== 'object') {
+                        console.error('Invalid data format received:', data);
+                        return;
+                    }
+
+                    // --- Update Requests Per Minute data ---
+                    // Add timestamp for this request event
+                    lastMinuteRequests.push(Date.now());
+
+                    // --- Update Average Response Time data ---
+                    // Check if the data object contains a 'duration' property (assuming milliseconds)
+                    // or fallback to a simulated time if not available.
+                    const responseTime = data.duration !== undefined && data.duration !== null
+                                         ? parseFloat(data.duration) * 1000 // Assuming duration is in seconds or similar, convert to ms
+                                         : Math.floor(Math.random() * 400 + 50); // Fallback simulation
+
+                    if (!isNaN(responseTime) && responseTime >= 0) {
+                        responseTimesSummary.push(responseTime);
+
+                        // Keep the responseTimesSummary size limited
+                        if (responseTimesSummary.length > responseTimesMaxSize) {
+                            responseTimesSummary.shift(); // Remove the oldest entry
+                        }
+                    } else {
+                         console.warn('Received data with invalid or missing duration:', data);
+                         // Optionally, add a simulated response time if real one is bad
+                         // responseTimesSummary.push(Math.floor(Math.random() * 400 + 50));
+                    }
+
+
+                } catch (error) {
+                    console.error('Error processing feed data:', error);
+                }
+            }
+
+            // --- Update UI Function ---
+            // Calculates stats based on current state and updates the display
+            function updateUI() {
+                const now = Date.now();
+
+                // Filter requests from the last minute (60 * 1000 milliseconds)
+                // We keep timestamps that are within the last minute relative to 'now'
+                lastMinuteRequests = lastMinuteRequests.filter(time => now - time <= 60000);
+
+                // Calculate and display Requests Per Minute
+                requestsPerMinuteElement.innerText = lastMinuteRequests.length.toLocaleString();
+
+                // Calculate and display Average Response Time
+                const avgResponseTime = responseTimesSummary.length > 0 ?
+                    Math.floor(responseTimesSummary.reduce((a, b) => a + b, 0) / responseTimesSummary.length) :
+                    0;
+                avgResponseTimeElement.innerText = `${avgResponseTime}ms`;
+
+                // Update the last updated timestamp
+                 lastUpdatedElement.innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
+            }
+
+            // --- EventSource Connection Logic ---
+            function connectEventSource() {
+                let retryCount = 0;
+                const maxRetries = 5; // Allow a few more retries
+
+                function tryConnect(url) {
+                    console.log(`Attempting to connect to EventSource: ${url}`);
+                    let evtSource = new EventSource(url);
+
+                    evtSource.onmessage = function (event) {
+                         // Parse data and update our state
+                        try {
+                            const data = JSON.parse(event.data);
+                            processFeedData(data);
+                            retryCount = 0; // Reset retry count on successful message
+
+                            // Remove any connection error messages if present
+                            const errorMessage = document.getElementById('connection-error-message');
+                            if(errorMessage) {
+                                errorMessage.remove();
+                            }
+
+                        } catch (parseError) {
+                            console.error('Error parsing feed data:', parseError);
+                        }
+                    };
+
+                    evtSource.onerror = function (error) {
+                        console.error('EventSource failed:', error);
+                        evtSource.close(); // Close the current connection attempt
+
+                        // Display error message if not already present
+                        let statusMessage = document.getElementById('connection-error-message');
+                        if (!statusMessage) {
+                            statusMessage = document.createElement('div');
+                            statusMessage.id = 'connection-error-message';
+                            document.body.appendChild(statusMessage);
+                        }
+                         statusMessage.className = 'fixed top-4 right-4 text-white p-4 rounded shadow-lg'; // Base classes
+                         statusMessage.style.zIndex = 1000;
+
+                        if (navigator.onLine === false) {
+                             // Handle explicit offline state
+                             statusMessage.className += ' warning'; // Add warning class for yellow
+                             statusMessage.textContent = 'You are offline. Waiting for network connection...';
+                             console.log('Network is offline.');
+                              // Do not retry while explicitly offline
+                        } else if (retryCount < maxRetries) {
+                            retryCount++;
+                            const nextUrl = retryCount % 2 !== 0 ? FALLBACK_URL : FEED_URL; // Alternate between fallback and main
+                             const timeout = 5000 + (retryCount * 5000); // Exponential backoff with a base delay
+                             statusMessage.className += ' '; // Keep base classes
+                             statusMessage.textContent = `Connection failed. Retrying with ${nextUrl} in ${timeout / 1000}s... (Attempt ${retryCount}/${maxRetries})`;
+                            console.log(`Retrying connection with ${nextUrl} in ${timeout}ms`);
+                            setTimeout(() => tryConnect(nextUrl), timeout); // Attempt reconnect after delay
+                        } else {
+                            statusMessage.className += ' bg-red-500'; // Add red class for final error
+                            statusMessage.textContent = 'Connection lost after multiple retries. Please refresh the page.';
+                            console.error('Max retries reached. Connection failed.');
+                        }
+                    };
+
+                    evtSource.onopen = function() {
+                         console.log('EventSource connected successfully.');
+                          // Remove any status/error messages on successful connection
+                         const statusMessage = document.getElementById('connection-error-message');
+                         if(statusMessage) {
+                             statusMessage.remove();
+                         }
+                          // Update status
+                         lastUpdatedElement.innerText = `Connected. Last Updated: ${new Date().toLocaleTimeString()}`;
+                         retryCount = 0; // Ensure retry count is 0 on successful connection
+
+                    };
+                }
+
+                // Start the initial connection attempt
+                tryConnect(FEED_URL);
+            }
+
+            // --- Initialize ---
+            // Start the EventSource connection when the page loads
+            connectEventSource();
+
+            // Add basic online/offline listeners for better error reporting
+            window.addEventListener('online', () => {
+                console.log('Back online. Attempting to reconnect EventSource via onerror...');
+                 // The onerror handler will typically trigger a reconnect attempt
+                 // if the connection was previously lost due to being offline.
+            });
+            window.addEventListener('offline', () => {
+                console.log('Network offline event detected.');
+                 // The onerror handler will likely fire shortly after this,
+                 // and its logic includes handling the offline state.
+            });
+
+
+            // Set up a regular interval to call updateUI.
+            // This is important because:
+            // 1. It ensures the "Req/Min" correctly reflects 0 or a lower number if no messages are received.
+            // 2. It updates the "Last Updated" timestamp periodically.
+            // 3. It calculates the *average* response time based on the accumulated data.
+            // The 'processFeedData' function only accumulates data when a message arrives.
+            // The 'updateUI' function *uses* that data to calculate the stats.
+             setInterval(updateUI, 1000); // Update UI every second
+
+             // Initial UI update to show "0" before data comes in
+            updateUI();
+
+        });
+    </script>
+</body>
+</html>

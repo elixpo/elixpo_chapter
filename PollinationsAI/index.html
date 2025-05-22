@@ -28,8 +28,9 @@
     <link rel='stylesheet' href='../CSS/Pollinations/tipBtnStyle.css'>
 
 
-    <link rel='stylesheet' href='../CSS/Pollinations/imageDisplaySection.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/realtimeFeedSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/imageTextFeedToggle.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/tryitBtn.css'>
 
     <link rel='stylesheet' href='../CSS/Pollinations/projectsSection.css'>
     <link rel="stylesheet" href="../CSS/Pollinations/projectsDomainScrolling.css">
@@ -126,9 +127,9 @@
         </section>
         
 
-        <section id="imageDisplay">
-            <div class="imageDisplayBackdrop">
-                <div class="imageDisplayBackdropOverlay"></div>
+        <section id="realtimeFeed">
+            <div class="realtimeFeedBackdrop">
+                <div class="realtimeFeedBackdropOverlay"></div>
             </div>
             <div class="imageFeedSection">
                 <div class="imageFeedText">Realtime Feed</div>
@@ -143,20 +144,45 @@
                     </label>
                     <span> text feed of pollinations </span>
                     </div>
-                    <div class="generationInfo textMode" id="generationInfo">
+                    
+
+
+                    <div class="generationInfo" id="generationInfo">
                             <div class="generationNumber">
                                  <span class="countText">#</span>
-                                 <span class="countNumber">299,766,505</span>
+                                 <span class="countNumber" id="countNumber">299,766,505</span>
                                  <div class="progressBar" id="progressBar">
                                  </div>
                             </div>
                             <div class="generationTime">
-                                <span class="generationTime"> #/s</span>
-                                <span class="generationRate">12.5</span>
-                                <div class="serverLoadShower"></div>
+                                <span class="generationTime"> #/ms</span>
+                                <span class="generationRate" id="generationRate">12.5</span>
+                                <div class="serverLoadShower" id="serverLoadShower"></div>
                             </div>
                     </div>
-                    <div class="imageHolderBackdrop ">
+
+                    <button type="button" class="tryItBtn" id="tryItBtn">
+                      <span class="fold"></span>
+                    
+                      <div class="points_wrapper">
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                        <i class="point"></i>
+                      </div>
+                    
+                      <span class="inner" id="tryItBtnText">
+                        <ion-icon name="flash" class="icon"></ion-icon>
+                          Try Now?</span>
+                    </button>
+
+                    <div class="imageHolderBackdrop">
                         <div class="displayImage hidden" id="displayImage"></div>
                         <div class="userPromptServer hidden" id="userPromptServer"> </div>
                         <div class="aiRespondServer hidden" id="aiRespondServer"> </div>
@@ -388,7 +414,7 @@
                 <div class="footer-col">
                   <h3 class="footer-heading">About</h3>
                   <ul>
-                    <li><a href="#imageDisplay">Feed</a></li>
+                    <li><a href="#realtimeFeed">Feed</a></li>
                     <li><a href="#projects">Integrations</a></li>
                     <li><a href="#integrate">Snippets</a></li>
                     <li><a href="#contribute">Contribute</a></li>
@@ -432,7 +458,12 @@
     <script src="../JS/Pollinations/particleEffect.js"></script>
     <script src="../JS/Pollinations/progressShimmerParticleEffect.js"></script>
     <script src="../JS/Pollinations/contributeSectionPartcle.js"></script>
-    <script src="../JS/Pollinations/imageDisplay.js"></script>
+
+
+    <script src="../JS/Pollinations/realtimeFeed.js"></script>
+    <!-- <script src="../JS/Pollinations/feedStats.js"></script> -->
+     <script src="../JS/Pollinations/tryImageText.js"></script>
+
     <script src='../JS/Pollinations/genericScript.js'></script>
     <script src="../JS/Pollinations/tipBtnHtml.js"></script>
 

@@ -1,5 +1,5 @@
 import { projects, projectCategories } from "./Config/projectsList.js";
-const projectSegmentDetectionDelay = 50;
+const projectSegmentDetectionDelay = 20;
 let firstFocusSegmentProjects = 'Featured Section';
 document.addEventListener('DOMContentLoaded', () => {
     const segmentList = document.querySelector('.segment-list-projects');
@@ -459,6 +459,7 @@ const showProjectDetails = (modeName) => {
                         targets: projectContainer,
                         opacity: [0, 1],
                         translateY: [20, 0],
+                        scale: [0, 0.9],
                         duration: 600,
                         easing: 'easeOutQuad'
                     });
