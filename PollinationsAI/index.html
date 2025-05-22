@@ -31,6 +31,8 @@
     <link rel='stylesheet' href='../CSS/Pollinations/realtimeFeedSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/imageTextFeedToggle.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/tryitBtn.css'>
+    <link rel='stylesheet' href='../CSS/Pollinations/tryitMode.css'>
+    
 
     <link rel='stylesheet' href='../CSS/Pollinations/projectsSection.css'>
     <link rel="stylesheet" href="../CSS/Pollinations/projectsDomainScrolling.css">
@@ -132,9 +134,9 @@
                 <div class="realtimeFeedBackdropOverlay"></div>
             </div>
             <div class="imageFeedSection">
-                <div class="imageFeedText">Realtime Feed</div>
-                <div class="imageFeedDescription"> 
-                    <span>This is the realtime image </span>
+                <div class="imageFeedText tryitMode" id="imageFeedText">Realtime Feed</div>
+                <div class="imageFeedDescription tryitMode" id="imageFeedDescription"> 
+                    <span id="imageFeedSectionDescriptionLeft">This is the realtime image </span>
                     <label class="imageTextFeedToggle">
                         <input type="checkbox" id="imageOrTextCheckBox"/>
                         <div class="toggle-button" id="toggle-button">
@@ -142,12 +144,12 @@
                         <div class="flare"></div>
                         </div>
                     </label>
-                    <span> text feed of pollinations </span>
+                    <span id="imageFeedSectionDescriptionRight"> text feed of pollinations </span>
                     </div>
                     
 
 
-                    <div class="generationInfo" id="generationInfo">
+                    <div class="generationInfo tryitMode" id="generationInfo">
                             <div class="generationNumber">
                                  <span class="countText">#</span>
                                  <span class="countNumber" id="countNumber">299,766,505</span>
@@ -161,7 +163,7 @@
                             </div>
                     </div>
 
-                    <button type="button" class="tryItBtn" id="tryItBtn">
+                    <button type="button" class="tryItBtn tryitMode" id="tryItBtn" data-mode="watchMode">
                       <span class="fold"></span>
                     
                       <div class="points_wrapper">
@@ -182,20 +184,40 @@
                           Try Now?</span>
                     </button>
 
-                    <div class="imageHolderBackdrop">
+                    <div class="imageHolderBackdrop tryitMode" id="imageHolderBackdrop">
                         <div class="displayImage hidden" id="displayImage"></div>
                         <div class="userPromptServer hidden" id="userPromptServer"> </div>
                         <div class="aiRespondServer hidden" id="aiRespondServer"> </div>
-                        <div class="genInfo">
+
+                        <div class="genInfo tryitMode" id="genInfo">
                             <div class="modelused" id="modelused">Flux </div>
                             <div class="spacer"></div>
                             <div class="referrer" id="referrerMentioned"> pollinations.ai</div>
                         </div>
                         
                     </div>
-                    <div class="imagePrompt hidden" id="imagePrompt">
+                    <div class="imagePrompt hidden tryitMode" id="imagePrompt">
                        <span> </span>
                     </div>
+
+
+                    <div class="ImagePromptSection tryitMode" id="ImagePromptSection">
+                      <div class="topRow">
+                        <div class="enhanceButton" id="enhanceButton"><ion-icon name="color-wand"></ion-icon></div>
+                        <div class="privateButton" id="privateButton"><ion-icon name="shield"></ion-icon></div>
+                        <div class="logoButton logo" id="logoButton"><ion-icon name="golf"></ion-icon></div>
+                        <input type="text" class="promptInput" id="promptInput" placeholder="Type your prompt here...">
+                        <div class="sendButton" id="sendButton"><ion-icon name="send"></ion-icon></div>
+                      </div>
+                    
+                      <div class="bottomRow">
+                        <input type="text" class="heightImage" id="heightImage" placeholder="1024">
+                        <input type="text" class="widthImage" id="widthImage" placeholder="1024">
+                        <input type="text" class="seedImage" id="seedImage" placeholder="Seed">
+                        <div class="modelImage" id="modelImage"> <ion-icon name="shuffle"></ion-icon> Flux </div>
+                      </div>
+                    </div>
+                    
                    
             </div>
           </section>
@@ -433,7 +455,6 @@
                   </ul>
                 </div>
           
-                <!-- Legal Links -->
                 <div class="footer-col">
                   <h3 class="footer-heading">Legal</h3>
                   <ul>
@@ -442,7 +463,6 @@
                 </div>
               </div>
           
-              <!-- Bottom Bar -->
               <div class="footer-bottom">
                 <p>© 2025 pollinations.ai</p>
                 <span>Made with ❤️ in Berlin BE</span>
@@ -462,7 +482,7 @@
 
     <script src="../JS/Pollinations/realtimeFeed.js"></script>
     <!-- <script src="../JS/Pollinations/feedStats.js"></script> -->
-     <script src="../JS/Pollinations/tryImageText.js"></script>
+     <script src="../JS/Pollinations/tryitImageText.js"></script>
 
     <script src='../JS/Pollinations/genericScript.js'></script>
     <script src="../JS/Pollinations/tipBtnHtml.js"></script>

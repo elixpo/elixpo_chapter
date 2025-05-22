@@ -68,6 +68,8 @@
   font-family: "Orbitron";
   font-size: 5em;
   font-weight: 700;
+  transition: 0.5s;
+  transform-origin: center;
 }
 .imageFeedSection > .imageFeedDescription
 {
@@ -80,11 +82,12 @@
     font-weight: 400;
     text-align: center;
     display: flex;
+    transition: 0.5s;
+    transform-origin: center;
 }
 
 
 .imageHolderBackdrop {
-    /* ...your existing styles... */
     position: absolute;
     top: 30%;
     left: 3%;
@@ -141,6 +144,7 @@
     gap: 10px;
     /* background: #fff; */
     align-items: center;
+    transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
 }
 .imageHolderBackdrop > .genInfo > .modelused
 {
@@ -204,7 +208,8 @@
     display: inline-block;
     white-space: pre;
 }
-.imagePrompt.hidden 
+.imagePrompt.hidden,
+.imagePrompt.tryitMode 
 {
     opacity: 0;
     scale: 0;
