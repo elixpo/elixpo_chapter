@@ -4,36 +4,7 @@ let eventSourceText = null;
 let isDisplayingImage = false;
 let isDisplayingText = false;
 let typingSpeed = 50;
-document.getElementById("imageOrTextCheckBox").addEventListener("change", function() {
-    toogleMode();
-});
-document.addEventListener("DOMContentLoaded", function() {
-     toogleMode()
-});
 
-function toogleMode()
-{
-    if(document.getElementById("imageOrTextCheckBox").checked)
-    {
-        displayMode = "text";
-        document.getElementById("displayImage").classList.add("hidden");
-        document.getElementById("aiRespondServer").classList.remove("hidden");
-        document.getElementById("userPromptServer").classList.remove("hidden");
-        document.getElementById("imagePrompt").classList.add("hidden");
-        document.getElementById("generationInfo").classList.add("textMode");
-        // connectToServer(displayMode);
-    }
-    else 
-    {
-        displayMode = "image";
-        document.getElementById("displayImage").classList.remove("hidden");
-        document.getElementById("aiRespondServer").classList.add("hidden");
-        document.getElementById("userPromptServer").classList.add("hidden");
-        document.getElementById("imagePrompt").classList.remove("hidden");
-        document.getElementById("generationInfo").classList.remove("textMode");
-        // connectToServer(displayMode);
-    }
-}
 
 function connectToServer(mode) {
     const feedUrlImage = "https://image.pollinations.ai/feed";

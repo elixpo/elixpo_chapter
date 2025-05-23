@@ -26,15 +26,73 @@ body {
         radial-gradient(circle at 10% 20%, rgba(100, 50, 200, 0.03) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(100, 50, 200, 0.03) 0%, transparent 20%);
     min-height: 100%;
-    overflow-x: hidden
+    overflow-x: hidden;
 }
 
+
+.notificationCenter {
+    position: fixed;  /* Changed from absolute to fixed */
+    top: 5%;
+    right: 2%;       /* Changed from left: 65% to right: 5% for better positioning */
+    height: auto;
+    max-height: 150px;
+    width: 30%;
+    z-index: 200;
+    border-radius: var(--border-radius);
+    overflow-y: auto;
+
+}
+.notificationCenter::-webkit-scrollbar
+{
+    display: none;
+}
+
+.notificationCenter > .notification {
+    position: relative;  /* Add position relative for absolute child positioning */
+    height: auto;       /* Change from fixed height to auto */
+    min-height: 60px;   /* Set minimum height instead */
+    width: 90%;
+    margin: 10px auto;
+    background: linear-gradient(90deg, #004627bb, #006417);
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;  /* Change from center to flex-start */
+    font-family: 'Courier New', Courier, monospace;
+    overflow-y: auto;
+}
+
+.notificationCenter > .notification span {
+    position: sticky;   /* Make span stick to top */
+    top: 0;            /* Stick to top of container */
+    width: 100%;       /* Take full width */
+    padding: 15px 20px;  /* Add consistent padding */
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #fff;
+    box-sizing: border-box;
+    white-space: normal;  /* Allow text to wrap */
+    word-break: break-word;  /* Break long words if needed */
+}
+
+/* Update the before pseudo-element to match new layout */
+.notification::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #32e9698b;
+    border-radius: 12px 0 0 12px;
+}
 .container {
-    position: relative;
-    max-width: 100%;
+    position: absolute;
+    width: 100%;
     margin: 0 auto;
     padding: 0 20px;
 }
+
+
 
 .navbar {
     position: relative;
@@ -52,35 +110,7 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     z-index: 100;
 }
-/* .navbar.contract 
-{
-    position: sticky;
-    top: 5%;
-    left: -5%;
-    max-width: 5%;
-    padding: 10px 35px;
-    border-radius: 20px;
-    margin: none;
-    transform: translateX(-750px);
-    
-}
-.navbar.contract > .appname 
-{
-    font-size: 20px;
-    left: 0;
-    margin-left: 0;
-    transition: 0.25s;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-}
-.navbar.contract > .navRedirects 
-{
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-    transition: 0.25s;
-} */
+
 .logo {
     display: flex;
     align-items: center;
@@ -175,3 +205,4 @@ body {
     background-color: var(--text);
     transition: var(--transition);
 }
+

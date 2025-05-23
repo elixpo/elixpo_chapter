@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/flaticon@latest/css/flaticon.css'>
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css'>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.css">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
@@ -48,13 +48,8 @@
     <link rel='stylesheet' href='../CSS/Pollinations/contributeRedirectButtons.css'>
 
     <link rel='stylesheet' href='../CSS/Pollinations/supportersSection.css'>
-
-
-
     <link rel='stylesheet' href='../CSS/Pollinations/footerSection.css'>
-
-
-    <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'>
+    <!-- <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'> -->
     
 </head>
 
@@ -62,6 +57,9 @@
     <div class="particles" id="particles"></div>
     <div class="topBoxesDesigns" id="topBoxesDesigns">
     </div>
+
+    
+
 
     <div class="navbar">
         <div class="logo">
@@ -71,12 +69,12 @@
         </div>
         <div class="appname">pollinations.ai</div>
         <div class="navRedirects">
-            <ion-icon name="logo-linkedin"></ion-icon>
-            <ion-icon name="logo-discord"></ion-icon>
-            <ion-icon name="logo-github"></ion-icon>
-            <ion-icon name="logo-youtube"></ion-icon>
-            <ion-icon name="logo-instagram"></ion-icon>
-            <ion-icon name="logo-tiktok"></ion-icon>
+            <ion-icon name="logo-linkedin" id="linkedinRedirect"></ion-icon>
+            <ion-icon name="logo-discord" id="discordInvite"></ion-icon>
+            <ion-icon name="logo-github" id="githubRedirect"></ion-icon>
+            <ion-icon name="logo-youtube" id="youtubeRedirect"></ion-icon>
+            <ion-icon name="logo-instagram" id="instagramRedirect"></ion-icon>
+            <ion-icon name="logo-tiktok" id="tiktokRedirect"></ion-icon>
         </div>
         
         <div class="mobile-menu-btn">
@@ -86,13 +84,14 @@
         </div>
     </div>
 
-
+    <div class="notificationCenter" id="notificationCenter">
+      
+    </div>
 
     <div class="backgroundOverlay">
         <div class="backgroundOverlayScreen"></div>
     </div>
     <div class="container">
-        <!-- Hero Section -->
         <section class="hero">
             
             <div class="welcome-pill">
@@ -134,8 +133,8 @@
                 <div class="realtimeFeedBackdropOverlay"></div>
             </div>
             <div class="imageFeedSection">
-                <div class="imageFeedText tryitMode" id="imageFeedText">Realtime Feed</div>
-                <div class="imageFeedDescription tryitMode" id="imageFeedDescription"> 
+                <div class="imageFeedText tryit-target" id="imageFeedText">Realtime Feed</div>
+                <div class="imageFeedDescription tryit-target" id="imageFeedDescription"> 
                     <span id="imageFeedSectionDescriptionLeft">This is the realtime image </span>
                     <label class="imageTextFeedToggle">
                         <input type="checkbox" id="imageOrTextCheckBox"/>
@@ -149,7 +148,7 @@
                     
 
 
-                    <div class="generationInfo tryitMode" id="generationInfo">
+                    <div class="generationInfo tryit-target" id="generationInfo">
                             <div class="generationNumber">
                                  <span class="countText">#</span>
                                  <span class="countNumber" id="countNumber">299,766,505</span>
@@ -163,7 +162,7 @@
                             </div>
                     </div>
 
-                    <button type="button" class="tryItBtn tryitMode" id="tryItBtn" data-mode="watchMode">
+                    <button type="button" class="tryItBtn tryit-target" id="tryItBtn" data-mode="tryMode">
                       <span class="fold"></span>
                     
                       <div class="points_wrapper">
@@ -184,38 +183,56 @@
                           Try Now?</span>
                     </button>
 
-                    <div class="imageHolderBackdrop tryitMode" id="imageHolderBackdrop">
-                        <div class="displayImage hidden" id="displayImage"></div>
-                        <div class="userPromptServer hidden" id="userPromptServer"> </div>
-                        <div class="aiRespondServer hidden" id="aiRespondServer"> </div>
+                    <div class="imageHolderBackdrop tryit-target" id="imageHolderBackdrop">
+                        <div class="displayImage hidden tryit-target" id="displayImage">
+                          <div class="imageGenerationAnimation" id="imageGenerationAnimation">
+                            <div class="animation-blob blob-1"></div>
+                            <div class="animation-blob blob-2"></div>
+                            <div class="animation-blob blob-3"></div>
+                            <div class="animation-blob blob-4"></div>
+                          </div>
+                        </div>
+                        <div class="userPromptServer hidden tryit-target" id="userPromptServer"> </div>
+                        <div class="aiRespondServer hidden tryit-target" id="aiRespondServer"> </div>
 
-                        <div class="genInfo tryitMode" id="genInfo">
+                        <div class="genInfo tryit-target" id="genInfo">
                             <div class="modelused" id="modelused">Flux </div>
                             <div class="spacer"></div>
                             <div class="referrer" id="referrerMentioned"> pollinations.ai</div>
                         </div>
                         
                     </div>
-                    <div class="imagePrompt hidden tryitMode" id="imagePrompt">
+                    <div class="imagePrompt tryit-target" id="imagePrompt">
                        <span> </span>
                     </div>
 
 
-                    <div class="ImagePromptSection tryitMode" id="ImagePromptSection">
+                    <div class="ImagePromptSection tryit-target" id="ImagePromptSection">
                       <div class="topRow">
                         <div class="enhanceButton" id="enhanceButton"><ion-icon name="color-wand"></ion-icon></div>
                         <div class="privateButton" id="privateButton"><ion-icon name="shield"></ion-icon></div>
                         <div class="logoButton logo" id="logoButton"><ion-icon name="golf"></ion-icon></div>
-                        <input type="text" class="promptInput" id="promptInput" placeholder="Type your prompt here...">
-                        <div class="sendButton" id="sendButton"><ion-icon name="send"></ion-icon></div>
+                        <input type="text" class="promptInputImage" id="promptInputImage" value="a good looking car" placeholder="Type your prompt here..." autocomplete="off" spellcheck="false">
+                        <div class="generateImage" id="generateImage"><ion-icon name="send"></ion-icon></div>
                       </div>
                     
                       <div class="bottomRow">
-                        <input type="text" class="heightImage" id="heightImage" placeholder="1024">
-                        <input type="text" class="widthImage" id="widthImage" placeholder="1024">
-                        <input type="text" class="seedImage" id="seedImage" placeholder="Seed">
+                        <input type="text" class="heightImage" id="heightImage" value="1024" placeholder="Height" autocomplete="off" spellcheck="false">
+                        <input type="text" class="widthImage" id="widthImage" value="768" placeholder="Width" autocomplete="off" spellcheck="false">
+                        <input type="text" class="seedImage" id="seedImage" value="485152" placeholder="Seed" autocomplete="off" spellcheck="false">
                         <div class="modelImage" id="modelImage"> <ion-icon name="shuffle"></ion-icon> Flux </div>
                       </div>
+                    </div>
+
+                    <div class="textPromptSection tryit-target" id="textPromptSection">
+                      <div class="topRow">
+                        <textarea class="promptInputText" id="promptInputText" placeholder="Type your question here..." autocomplete="off" spellcheck="false" multiline>hii wassup??</textarea>
+                      <div class="generateText" id="generateText"><ion-icon name="send"></ion-icon></div>
+                      </div>
+                      <div class="bottomRow">
+                      <div class="modelText" id="modelText"> <ion-icon name="shuffle"></ion-icon> mistral- Mistral Small 3.1 24B </div>
+                    </div>
+
                     </div>
                     
                    
@@ -239,7 +256,7 @@
                   </div>
               </div>
 
-              <div class="projectDisplaySection" id="projectDisplaySection">                
+              <div class="projectDisplaySection" id="projectDisplaySection" data-scroll-section>                
               </div>
                 
           </section>
@@ -292,7 +309,7 @@
                 
                 
                 <div class="redirectButtonsContribute">
-                  <button class="githubRedirect contribBtn" type="button">
+                  <button class="githubRedirect contribBtn" type="button" id="githubRedirect">
                     <div class="outline"></div>
                     <div class="state state--default">
                       <div class="icon">
@@ -331,7 +348,7 @@
                     </div>
                   </button>
 
-                  <button class="discordRedirect contribBtn" type="button">
+                  <button class="discordRedirect contribBtn" type="button" id="discordRedirect">
                     <div class="outline"></div>
                     <div class="state state--default">
                       <div class="icon">
@@ -405,22 +422,22 @@
                   <p class="footer-description">An open source innovation from Berlin</p>
 
                   <div class="footer-socials">
-                    <a href="#" class="footer-social" title="Visit Linkedin">
+                    <a href="#" class="footer-social" title="Visit Linkedin" id="linkedinRedirect">
                       <ion-icon name="logo-linkedin"></ion-icon>
                     </a>
-                    <a href="#" class="footer-social" title="Join Discord">
+                    <a href="#" class="footer-social" title="Join Discord" id="discordInvite">
                       <ion-icon name="logo-discord"></ion-icon>
                     </a>
-                    <a href="#" class="footer-social" title="Visit Github">
+                    <a href="#" class="footer-social" title="Visit Github" id="githubRedirect">
                       <ion-icon name="logo-github"></ion-icon>
                     </a>
-                    <a href="#" class="footer-social" title="Visit Youtube">
+                    <a href="#" class="footer-social" title="Visit Youtube" id="youtubeRedirect">
                       <ion-icon name="logo-youtube"></ion-icon>
                     </a>
-                    <a href="#" class="footer-social" title="Visit Instagram">
+                    <a href="#" class="footer-social" title="Visit Instagram" id="instagramRedirect">
                       <ion-icon name="logo-instagram"></ion-icon>
                     </a>
-                    <a href="#" class="footer-social" title="Visit Tiktok">
+                    <a href="#" class="footer-social" title="Visit Tiktok" id="tiktokRedirect">
                       <ion-icon name="logo-tiktok"></ion-icon>
                     </a>
                   </div>
@@ -448,17 +465,17 @@
                 <div class="footer-col">
                   <h3 class="footer-heading">Startup</h3>
                   <ul>
-                    <li><a href="#blog">GitHub</a></li>
-                    <li><a href="/contact">Discord</a></li>
-                    <li><a href="/contact">Readme</a></li>
-                    <li><a href="/contact">API Docs</a></li>
+                    <li><a href="https://github.com/pollinations/pollinations">GitHub</a></li>
+                    <li><a href="https://discord.com/invite/k9F7SyTgqn">Discord</a></li>
+                    <li><a href="https://github.com/pollinations/pollinations/blob/master/README.md">Readme</a></li>
+                    <li><a href="https://github.com/pollinations/pollinations/blob/master/APIDOCS.md">API Docs</a></li>
                   </ul>
                 </div>
           
                 <div class="footer-col">
                   <h3 class="footer-heading">Legal</h3>
                   <ul>
-                    <li><a href="/terms">Terms & Conditions</a></li>
+                    <li><a href="#">Terms & Conditions</a></li>
                   </ul>
                 </div>
               </div>
@@ -474,40 +491,28 @@
     </div>
 
 
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.js"></script>
+    <!-- <script src='https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js'></script> -->
+
     <script src="../JS/particles.js"></script>
     <script src="../JS/Pollinations/particleEffect.js"></script>
     <script src="../JS/Pollinations/progressShimmerParticleEffect.js"></script>
-    <script src="../JS/Pollinations/contributeSectionPartcle.js"></script>
+    <script src="../JS/Pollinations/contributeSectionParticle.js"></script>
 
-
-    <script src="../JS/Pollinations/realtimeFeed.js"></script>
-    <!-- <script src="../JS/Pollinations/feedStats.js"></script> -->
+    <script src="../JS/Pollinations/genericFunction.js"></script>
+    <script src="../JS/Pollinations/feedStats.js"></script>
      <script src="../JS/Pollinations/tryitImageText.js"></script>
-
-    <script src='../JS/Pollinations/genericScript.js'></script>
     <script src="../JS/Pollinations/tipBtnHtml.js"></script>
-
-    
-    
-
     <script src="../JS/Pollinations/contributeListAppend.js"></script>
-    
-    
     <script type="module" src="../JS/Pollinations/supporterListAppend.js"></script>
     <script type="module" src="../JS/Pollinations/Config/supporterList.js"></script>
-
     <script type="module" src="../JS/Pollinations/integrateListAppend.js"></script>
     <script type="module" src="../JS/Pollinations/Config/codeExamplesText.js"></script>
-
-
     <script type="module" src="../JS/Pollinations/Config/projectsList.js"></script>
     <script type="module" src="../JS/Pollinations/projectsListAppend.js"></script>
 
-
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js'></script>
 </body>
 
 </html>

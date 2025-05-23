@@ -57,10 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-    let box_node = `<div class="box"></div>`;
-    for (let i = 0; i < 35; i++) {
-        document.getElementById("topBoxesDesigns").innerHTML += box_node;
-    }
+   
      });
 
    
