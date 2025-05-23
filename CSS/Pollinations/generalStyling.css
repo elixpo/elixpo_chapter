@@ -206,3 +206,15 @@ body {
     transition: var(--transition);
 }
 
+section.is-hidden > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: none;
+  }
+  
+  section.is-visible > * {
+    opacity: 1;
+    transform: translateY(0px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  

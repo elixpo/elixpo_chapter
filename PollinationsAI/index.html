@@ -16,6 +16,7 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.css" rel="stylesheet" />
@@ -50,16 +51,40 @@
     <link rel='stylesheet' href='../CSS/Pollinations/supportersSection.css'>
     <link rel='stylesheet' href='../CSS/Pollinations/footerSection.css'>
     <!-- <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'> -->
+
+    <link rel="stylesheet" href="../CSS/Pollinations/loaderView.css">
     
 </head>
 
 <body id="body">
+
+  <!-- Loader Overlay -->
+  <div id="welcomeLoader" class="loader-overlay">
+    <div class="loader-content">
+      <ion-icon id="loaderIcon" name="flash-outline"></ion-icon>
+      <p class="loader-text">Pollinations.ai</p>
+      <div class="progress-wrapper">
+        <div class="progress-bar" id="progressBar">
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+          <div class="bar-segment"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+
     <div class="particles" id="particles"></div>
     <div class="topBoxesDesigns" id="topBoxesDesigns">
     </div>
-
-    
-
 
     <div class="navbar">
         <div class="logo">
@@ -91,7 +116,7 @@
     <div class="backgroundOverlay">
         <div class="backgroundOverlayScreen"></div>
     </div>
-    <div class="container">
+    <div class="container" id="container">
         <section class="hero">
             
             <div class="welcome-pill">
@@ -512,6 +537,8 @@
     <script type="module" src="../JS/Pollinations/Config/codeExamplesText.js"></script>
     <script type="module" src="../JS/Pollinations/Config/projectsList.js"></script>
     <script type="module" src="../JS/Pollinations/projectsListAppend.js"></script>
+    <script type="module" src="../JS/Pollinations/scrollReveal.js"></script>
+    <script type="module" src="../JS/Pollinations/loaderAnimation.js"></script>
 
 </body>
 
