@@ -93,3 +93,27 @@ let box_node = `<div class="box"></div>`;
 for (let i = 0; i < 35; i++) {
     document.getElementById("topBoxesDesigns").innerHTML += box_node;
 }
+
+
+
+async function updateGithubStarCount(owner, repo) {
+    const starCountElem = document.getElementById('githubStarCount');
+    if (!starCountElem) return;
+  
+    try {
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+  
+      const repoData = await response.json();
+      const stars = repoData.stargazers_count ?? 0;
+  
+      starCountElem.textContent = stars.toLocaleString();
+    } catch (error) {
+      console.error('Failed to fetch GitHub stars:', error);
+      starCountElem.textContent = 'N/A';
+    }
+  }
+  
+  // Example usage:
+  updateGithubStarCount('pollinations', 'pollinations');
+  
