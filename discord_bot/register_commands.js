@@ -71,12 +71,6 @@ const commands = [
         required: false,
         choices: [
           { name: 'Flux', value: 'flux' },
-          { name: 'Flux-realism', value: 'flux-realism' },
-          { name: 'Flux-cablyai', value: 'flux-cablyai' },
-          { name: 'Flux-anime', value: 'flux-anime' },
-          { name: 'Flux-3d', value: 'flux-3d' },
-          { name: 'Any-dark', value: 'any-dark' },
-          { name: 'Flux-pro', value: 'flux-pro' },
           { name: 'Turbo', value: 'turbo' }
         ]
       }

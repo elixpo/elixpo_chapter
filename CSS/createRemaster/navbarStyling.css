@@ -56,13 +56,13 @@
 
 
   
-
   .githubLogo
 {
     position: absolute;
     left: 95%;
     color: #888;
     font-size: 2em;
+    cursor: pointer;
 }
 
 .redirectHome 
@@ -71,6 +71,7 @@
     left: 78%;
     color: #888;
     font-size: 2em;
+    cursor: pointer;
 }
 .redirectBlogs
 {
@@ -78,9 +79,10 @@
     left: 82%;
     color: #888;
     font-size: 2em;
+    cursor: pointer;
 }
 
-.pingStatus
+.userCell
 {
     position: absolute;
     left: 85%;
@@ -99,21 +101,29 @@
     padding-right: 5px;
     box-shadow: inset 0 0 10px #7f56f3;
     border: 2px solid #7f56f3;
+    overflow: hidden;
+    cursor: pointer;
 }
-.pingStatus > .serverPing 
+.userCell > .userInfo 
 {
-    position: relative;
-    top: 40%;
-    left: 5%;
+    position: absolute;
+    top: 50%;
+    left: 10%;
     transform: translateY(-50%);
     font-size: 2em;
-    color: #888;
+    height: 35px;
+    width: 35px;
+    border-radius: 50%;
+    background: #7f56f3;
+    background: url(../IMAGES/LOGOS/logo3.jpeg);
+    background-size: cover;
 }
 
-.pingStatus > p 
+.userCell > p 
 {
-    position: relative;
-    font-size: 1.5em;
-    color: #888;
-    margin-left: 5px;
+    position: absolute;
+    font-size: 1.2em;
+    color: #d8c8c8;
+    margin-left: 40px;
+    display: block;
 }
