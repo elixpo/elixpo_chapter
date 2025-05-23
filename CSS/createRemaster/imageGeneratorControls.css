@@ -1,9 +1,10 @@
 .GenerateImageControls {
     position: absolute;
-    top: 90%;
+    top: 100%;
     left: 0%;
     width: 100%;
     display: flex;
+    margin-top: 10px;
 }
 
 .acceptBtn, .rejectBtn {
@@ -21,7 +22,66 @@
     -moz-transition: all 0.2s ease-in;
     transition: all 0.2s ease-in;
     cursor: pointer;
+    scale: 1;
+    transform: scale(0.8);
+    opacity: 1;
+    pointer-events: all;
 
+}
+
+.interruptButton
+{
+  position: absolute;
+  top: 10%;
+  left: 2%;
+  font-size: 1.3em;
+  color: #f50a29;
+  text-shadow: 0 0 10px #f50a29;
+  display: flex;
+  cursor: pointer;
+  border-radius: 10px;
+    height: 40px;
+    padding: 0px 5px;
+ justify-content: center;
+ align-items: center;
+ border: 2px solid #f50a29;
+ transition: all 0.3s ease;
+}
+.interruptButton:hover 
+{
+    box-shadow: 0 0 10px #f50a29;
+    background: rgba(245, 10, 41, 0.2);
+    transition: all 0.3s ease;
+}
+.interruptButton:active{
+    box-shadow: 0 0 10px #f50a29;
+    background: rgba(245, 10, 41, 0.4);
+    transition: all 0.3s ease;
+}
+.interruptButton p 
+{
+    font-size: 0.8em;
+    margin-left: 5px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 10px #f50a29;
+}
+.interruptButton.hidden
+{
+  opacity: 0;
+  pointer-events: none;
+  scale: 0;
+}
+
+
+.acceptBtn.hidden, .rejectBtn.hidden {
+    scale: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease-in;
+    -webkit-transition: all 0.2s ease-in;
+    -moz-transition: all 0.2s ease-in;
 }
 .acceptBtn i, .rejectBtn i {
     font-size: 25px;
