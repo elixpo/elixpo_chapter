@@ -6,9 +6,9 @@ console.log(`%c
     ██║     ╚██████╔╝███████╗███████╗██║██║ ╚████║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║███████║
     ╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
     %c✨ Welcome to %cpollinations.ai%c – The free and no signup startup innitiative 🚀
-    %c🔗 GitHub: https://github.com/pollinations
-    %c📚 API Docs: https://pollinations.ai/api
-    %c💬 Discord: https://discord.gg/pollinations
+    %c🔗 GitHub: https://github.com/pollinations/pollinations/blob/master
+    %c📚 API Docs: https://github.com/pollinations/pollinations/blob/master/APIDOCS.md
+    %c💬 Discord: https://discord.com/invite/k9F7SyTgqn
     %c👀 Psst... developers who open the console are 200% more creative. Just saying.
     `,
     "color:rgb(243, 236, 239); font-weight: bold; font-size: 12px;",
