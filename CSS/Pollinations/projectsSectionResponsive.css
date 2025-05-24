@@ -51,6 +51,8 @@
     }
     .projectDisplaySection
     {
-        height: 77%;
+        top: 27%;
+        height: 73%;
+        scale: 0.9;
     }
 }

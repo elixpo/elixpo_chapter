@@ -92,4 +92,13 @@
         {
           margin-top: 30px;
         }
+
+        .notificationCenter
+        {
+          width: 70%;
+        }
+        .notificationCenter > .notification span 
+        {
+          font-size: 0.8em;
+        }
 }
