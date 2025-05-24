@@ -55,4 +55,8 @@
         height: 73%;
         scale: 0.9;
     }
+    .segment-list-wrapper-projects
+    {
+        height: 350px;
+    }
 }
