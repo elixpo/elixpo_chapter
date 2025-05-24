@@ -106,6 +106,21 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.snippetSection .snippetHeader .language-label {
+    font-weight: bold;
+}
+
+.snippetSection .snippetHeader ion-icon 
+{
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+.snippetSection .snippetHeader ion-icon:active 
+{
+    transform: scale(0.8);
+    transition: 0.25s;
+}
 .snippetSection .dots {
     display: flex;
     gap: 8px;

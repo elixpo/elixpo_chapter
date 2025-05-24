@@ -482,3 +482,15 @@ const showCodeDetails = (modeName) => {
 };
 
 
+document.getElementById("copyCodeSnippet").addEventListener("click", () => {
+    const codeBlock = document.getElementById("codeEditorZone");
+    const codeText = codeBlock.textContent;
+
+    navigator.clipboard.writeText(codeText).then(() => {
+        console.log("Code copied to clipboard");
+        createToastNotification("Code copied to clipboard successfully!");
+    }).catch(err => {
+        console.error("Failed to copy code: ", err);
+        createToastNotification("Failed to copy code.");
+    });
+});

@@ -37,18 +37,17 @@
     z-index: -1;
 }
 .welcome-pill {
-    left: -35%;
+    left: 0%;
     position: relative;
     background-color: rgba(44, 4, 59, 0.912);
     border: 2px solid #e4e5d8eb;
     border-radius: 8px;
-    border-top-left-radius: 20px;
     padding: 8px 20px;
     display: inline-block;
     gap: 8px;
-    transform: scale(1.2);
+    scale: 1.5;
     margin-bottom: 30px;
-    font-size: 14px;
+    font-size: 1.2em;
     color: var(--text);
     font-family: 'Orbitron', sans-serif;
     box-shadow: 0 0 10px #ebf87480;
@@ -80,10 +79,9 @@
     font-size: 6.5em;
     color: #ffc;
     position: relative;
-    left: -25%;
+    left: 0%;
     line-height: 1em;
     background-size: 400% 400%;
-    max-width: 600px;
     word-wrap: break-word;
 }
 
@@ -108,7 +106,7 @@
 
 .hero .subtitle {
     position: relative;
-    left: -15%;
+    left: 0%;
     display: flex;
     flex-wrap: wrap;
     font-size: 2em;
@@ -116,8 +114,8 @@
     font-weight: 400;
     color: var(--text-secondary);
     max-width: 55%;
-    text-align: left;
-    justify-content: left;
+    text-align: center;
+    justify-content: center;
 }
 
 /* Base highlight */
@@ -232,9 +230,9 @@
 }
 .reditectButtons 
 {
-    position: absolute;
-    top: 93%;
-    left: 60%;
+    position: relative;
+    top: 120px;
+    left: 30%;
     width: 40%;
     display: flex;
     justify-content: center;
