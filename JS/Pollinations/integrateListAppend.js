@@ -360,7 +360,7 @@ const showCodeDetails = (modeName) => {
         setTimeout(() => {
             currentSelectedMode = modeName;
             let language = "";
-            console.log("Current selected mode:", currentSelectedMode);
+            // console.log("Current selected mode:", currentSelectedMode);
 
             let fetchedCode = "";
 

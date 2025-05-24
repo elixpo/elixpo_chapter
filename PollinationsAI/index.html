@@ -3,7 +3,7 @@
 
 <head>
     <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=0'>
     <title>Pollinations</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <!-- <script src="https://mrdoob.github.io/stats.js/build/stats.min.js"></script> -->
 
     <link rel="icon" href="https://pollinations.ai/favicon-32x32.png" type="image/png">
     <link rel='stylesheet' href='../CSS/Pollinations/generalStyling.css'>
@@ -53,7 +54,13 @@
     <!-- <link rel='stylesheet' href='../CSS/Pollinations/mobileView.css'> -->
 
     <link rel="stylesheet" href="../CSS/Pollinations/loaderView.css">
-    
+
+    <link rel="stylesheet" href="../CSS/Pollinations/supportersSectionResponsive.css">
+    <link rel="stylesheet" href="../CSS/Pollinations/contributeSectionResponsive.css">
+    <link rel="stylesheet" href="../CSS/Pollinations/integrateSectionResponsive.css">
+    <link rel="stylesheet" href="../CSS/Pollinations/projectsSectionResponsive.css">
+    <link rel="stylesheet" href="../CSS/Pollinations/heroSectionResponsive.css">
+    <link rel="stylesheet" href="../CSS/Pollinations/realtimeFeedSectionResponsive.css">
 </head>
 
 <body id="body">
@@ -120,9 +127,9 @@
         <section class="hero">
 
             <h1 class="mainDesc"> Welcome to Pollinations</h1>
-            <div class="subtitle">
+            <p class="subtitle">
                 An open-source platform offering easy Text and Image generations APIs, no signup or keys needed!
-              </div>
+              </p>
 
               <div class="githubstats">
                 <div class="welcome-pill">
@@ -190,7 +197,7 @@
                                  </div>
                             </div>
                             <div class="generationTime">
-                                <span class="generationTime"> #/ms</span>
+                                <span class="generationTimeText"> #/ms</span>
                                 <span class="generationRate" id="generationRate">12.5</span>
                                 <div class="serverLoadShower" id="serverLoadShower"></div>
                             </div>
@@ -243,11 +250,11 @@
 
                     <div class="ImagePromptSection tryit-target" id="ImagePromptSection">
                       <div class="topRow">
-                        <div class="enhanceButton" id="enhanceButton"><ion-icon name="color-wand"></ion-icon></div>
-                        <div class="privateButton" id="privateButton"><ion-icon name="shield"></ion-icon></div>
-                        <div class="logoButton logo" id="logoButton"><ion-icon name="golf"></ion-icon></div>
+                        <div class="enhanceButton" id="enhanceButton"> <span> Enhance Prompt</span> <ion-icon name="color-wand"></ion-icon></div>
+                        <div class="privateButton" id="privateButton"> <span> Private Mode </span> <ion-icon name="shield"></ion-icon></div>
+                        <div class="logoButton logo" id="logoButton"> <span> Disable Logo </span> <ion-icon name="golf"></ion-icon></div>
                         <input type="text" class="promptInputImage" id="promptInputImage" value="a good looking car" placeholder="Type your prompt here..." autocomplete="off" spellcheck="false">
-                        <div class="generateImage" id="generateImage"><ion-icon name="send"></ion-icon></div>
+                        <div class="generateImage" id="generateImage"> <span> Generate Image</span> <ion-icon name="send"></ion-icon></div>
                       </div>
                     
                       <div class="bottomRow">
@@ -261,7 +268,7 @@
                     <div class="textPromptSection tryit-target" id="textPromptSection">
                       <div class="topRow">
                         <textarea class="promptInputText" id="promptInputText" placeholder="Type your question here..." autocomplete="off" spellcheck="false" multiline>hii wassup??</textarea>
-                      <div class="generateText" id="generateText"><ion-icon name="send"></ion-icon></div>
+                      <div class="generateText" id="generateText"> Generate Text <ion-icon name="send"></ion-icon></div>
                       </div>
                       <div class="bottomRow">
                       <div class="modelText" id="modelText"> <ion-icon name="shuffle"></ion-icon> mistral- Mistral Small 3.1 24B </div>
@@ -534,12 +541,12 @@
         
     </div>
 
-
+    
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.js"></script>
     <!-- <script src='https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js'></script> -->
-
+    <script src="../JS/Pollinations/stats.min.js"></script>
     <script src="../JS/particles.js"></script>
     <script src="../JS/Pollinations/particleEffect.js"></script>
     <script src="../JS/Pollinations/progressShimmerParticleEffect.js"></script>
@@ -558,7 +565,8 @@
     <script type="module" src="../JS/Pollinations/projectsListAppend.js"></script>
     <script type="module" src="../JS/Pollinations/scrollReveal.js"></script>
     <!-- <script type="module" src="../JS/Pollinations/loaderAnimation.js"></script> -->
-     <script src="../JS/Pollinations/githubContrib.js"></script>
+    <script src="../JS/Pollinations/githubContrib.js"></script>
+    <script src="../JS/Pollinations/consolePrint.js"></script>
 
 </body>
 

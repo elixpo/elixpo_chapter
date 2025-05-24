@@ -139,7 +139,14 @@
     -webkit-text-fill-color: var(--text-color) !important;
   }
   
-  
+  .enhanceButton span,
+  .privateButton span,
+  .logoButton span,
+  .generateImage span,
+  .generateText span
+  {
+    display: none;
+  }
   .enhanceButton,
   .privateButton,
   .logoButton,
@@ -421,7 +428,7 @@
 {
     flex: 1;
     padding: 12px 18px;
-    height: 100px;
+    height: 200px;
     border: none;
     border-radius: 14px;
     background: var(--bg-panel);
@@ -494,9 +501,9 @@
   
   .modelText {
     position: relative;
-    width: 90%;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 20px;
+    width: 80%;
+    left: 3%;
     height: 40px;
     border-radius: 10px;
     transition: all 0.25s ease;
@@ -523,7 +530,7 @@
       inset 8px 8px 16px var(--shadow-dark),
       inset -8px -8px 16px var(--shadow-light),
       0 0 10px var(--hover-glow);
-    transform: translateX(-50%) scale(1.05);
+    transform:scale(1.05);
     transition: 0.25s;
 }
 .modelText:active
@@ -531,7 +538,7 @@
     box-shadow:
       inset 8px 8px 16px var(--shadow-light),
       inset -8px -8px 16px var(--shadow-dark);
-    transform: translateX(-50%) scale(0.95);
+    transform: scale(0.95);
     transition: 0.25s;
 }
 
