@@ -10,21 +10,29 @@ const commands = [
     options: [
       {
         name: 'prompt',
-        type: 3, // STRING
+        type: 3, 
         description: 'The prompt to generate images from',
         required: true
       },
       {
         name: 'number_of_images',
-        type: 4, // INTEGER
+        type: 4, 
         description: 'The number of images to generate (1-4)',
         required: true,
         min_value: 1,
         max_value: 4
       },
       {
+        name: 'seed',
+        type: 4, 
+        description: 'The seed for random generation (optional)',
+        required: false,
+        min_value: 10,
+        max_value: 1000000
+      },
+      {
         name: 'aspect_ratio',
-        type: 3, // STRING
+        type: 3, 
         description: 'The aspect ratio of the image (16:9, 9:16, etc.)',
         required: false,
         choices: [
@@ -37,7 +45,7 @@ const commands = [
       },
       {
         name: 'theme',
-        type: 3, // STRING
+        type: 3, 
         description: 'The theme for the image (e.g., fantasy, normal)',
         required: false,
         choices: [
@@ -60,18 +68,19 @@ const commands = [
       },
       {
         name: 'enhancement',
-        type: 5, // BOOLEAN
+        type: 5, 
         description: 'Enhance the image quality (true/false)',
         required: false
       },
       {
         name: 'model',
-        type: 3, // STRING
+        type: 3, 
         description: 'The model used to generate the image (e.g., flux)',
         required: false,
         choices: [
           { name: 'Flux', value: 'flux' },
-          { name: 'Turbo', value: 'turbo' }
+          { name: 'Turbo', value: 'turbo' },
+          { name: "gptimage", value: 'gptimage' }
         ]
       }
     ]
