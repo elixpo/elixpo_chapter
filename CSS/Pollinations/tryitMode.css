@@ -250,6 +250,7 @@
     align-items: center;
     cursor: pointer;
     user-select: none;
+    color: #fff;
 }
 
   .modelImage ion-icon 
@@ -428,7 +429,7 @@
 {
     flex: 1;
     padding: 12px 18px;
-    height: 200px;
+    height: 100px;
     border: none;
     border-radius: 14px;
     background: var(--bg-panel);
@@ -478,7 +479,10 @@
   pointer-events: none;
   animation: flash 2s linear alternate infinite;
 }
-
+.generateText > span 
+{
+  display: none;
+}
 .generateText:hover {
   background: linear-gradient(to bottom, var(--orange-lighter), var(--orange-light));
   box-shadow:
@@ -514,6 +518,8 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    color: #fff;
+    font-size: 1.5em;
     user-select: none;
 }
 

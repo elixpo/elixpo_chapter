@@ -229,15 +229,11 @@
                             <div class="animation-blob blob-3"></div>
                             <div class="animation-blob blob-4"></div>
                           </div>
-                           <!-- Dynamic content loaded here. Ensure dynamically added images have alt attributes.
-                                Example: <img src="..." alt="Generated image based on user prompt"> -->
                         </div>
-                         <!-- Changed divs to p for semantic text content -->
                         <p class="userPromptServer hidden tryit-target" id="userPromptServer"> </p>
                         <p class="aiRespondServer hidden tryit-target" id="aiRespondServer"> </p>
 
                         <div class="genInfo tryit-target" id="genInfo">
-                            <!-- Changed divs to spans for semantic inline text -->
                             <span class="modelused" id="modelused">Flux </span>
                             <div class="spacer" aria-hidden="true"></div>
                             <span class="referrer" id="referrerMentioned"> pollinations.ai</span>
@@ -262,18 +258,15 @@
                         <input type="text" class="heightImage" id="heightImage" value="" placeholder="Height" autocomplete="off" spellcheck="false">
                         <input type="text" class="widthImage" id="widthImage" value="" placeholder="Width" autocomplete="off" spellcheck="false">
                         <input type="text" class="seedImage" id="seedImage" value="" placeholder="Seed" autocomplete="off" spellcheck="false">
-                        <!-- Changed div to button for semantic interactive element -->
                         <button class="modelImage" id="modelImage"> <ion-icon name="shuffle" aria-hidden="true"></ion-icon> Flux </button>
                       </div>
                     </div>
                     <div class="textPromptSection tryit-target" id="textPromptSection">
                       <div class="topRow">
                         <textarea class="promptInputText" id="promptInputText" placeholder="Type your question here..." autocomplete="off" spellcheck="false" multiline></textarea>
-                      <!-- Changed div to button for semantic interactive element -->
-                      <button class="generateText" id="generateText"> Generate Text <ion-icon name="send" aria-hidden="true"></ion-icon></button>
+                      <div class="generateText" id="generateText">  <ion-icon name="send" aria-hidden="true"></ion-icon> <span> Generate Text </span></div>
                       </div>
                       <div class="bottomRow">
-                      <!-- Changed div to button for semantic interactive element -->
                       <button class="modelText" id="modelText"> <ion-icon name="shuffle" aria-hidden="true"></ion-icon> mistral- Mistral Small 3.1 24B </button>
                     </div>
                     </div>
@@ -339,10 +332,9 @@
                         <div class="dot yellow"></div>
                         <div class="dot green"></div>
                       </div>
-                       <!-- Changed div to span for semantic inline text -->
+                       
                       <span class="language-label" id="language_label">JavaScript</span>
-                      <!-- Changed div to button for semantic interactive element -->
-                      <button class="copyButton" id="copyCodeSnippet" title="Copy code snippet" aria-label="Copy code snippet"><ion-icon name="copy" aria-hidden="true"></ion-icon></button>
+                      <div class="copyButton" id="copyCodeSnippet" title="Copy code snippet" aria-label="Copy code snippet"><ion-icon name="copy" aria-hidden="true"></ion-icon></div>
                     </div>
                     <div class="codeArea">
                       <pre class="line-numbers"><code class="language" id="codeEditorZone">
@@ -357,9 +349,7 @@
                 <div class="contributeBackdropOverlay"></div>
             </div>
             <div class="contributeSection">
-                <!-- Changed div to h2 for semantic section title -->
                 <h2 class="contributeText">Contribute</h2>
-                <!-- Changed div to p for semantic description -->
                 <p class="contributeDescription">Welcome to our community driven approach. We're building a platform where developers, creators and AI enthusiasts can collaborate and innovate!</p>
                 <div class="redirectButtonsContribute">
                   <button class="githubRedirect contribBtn" type="button" id="githubRedirect">
