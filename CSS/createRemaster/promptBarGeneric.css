@@ -1,9 +1,9 @@
 .promptBox {
     position: absolute;
-    width: 70%;
+    width: 80%;
     left: 10%;
-    top: 64%; /* Base position */
-    height: 150px;
+    top: 10%; /* Base position */
+    height: 80%;
     padding-top: 15px;
     padding-left: 60px;
     resize: none;
@@ -41,7 +41,7 @@
     padding-top: 15px;
     padding-left: 60px;
     resize: none;
-    top: 61%; /* Base position */
+    top: 10%;
     max-height: 180px; /* Adjust max height */
     overflow-y: auto;
     border: 1px solid rgba(114, 119, 116, 0.533);
@@ -49,7 +49,7 @@
     box-sizing: border-box;
     overflow: hidden;
     outline: none;
-    background: #131212;
+    background: #1312126b;
     border-radius: 25px;
     font-size: 24px;
     transition: 0.25s;
@@ -58,7 +58,6 @@
     flex-direction: column;
     align-items: center;
 }
-
 
 
 .promptBox.image .promptTextInput
@@ -95,6 +94,15 @@
     left: 75%;
     color: #fff;
     cursor: pointer;
+    opacity: 1;
+    pointer-events: all;
+    transition: 0.5s;
+}
+.imageHolder > #cancelImageMode.hidden 
+{
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.5s;
 }
 .promptBox.image .controls #inputImage
 {
@@ -104,23 +112,77 @@
 .promptBox .promptTextInput {
     position: absolute;
     min-height: 45px;
-    max-height: 110px; /* Adjust max */
+    max-height: 130px; /* Adjust max */
     width: 93%;
-    top: 3%;
+    top:  0%;
     left: 3%;
     font-size: 1em;
     border: none;
     outline: none;
     color: #f3cf74;
     background: transparent;
+    height: 100px;
     box-sizing: border-box;
     resize: none;
     padding-top: 10px;
     overflow-y: auto;
+    transition: 0.5s;
+    filter: blur(0);
+    opacity: 1;
     line-height: 1.2em;
+    pointer-events: all;
+}
+.promptBox .promptTextInput.blur 
+{
+    filter: blur(40px);
+    opacity: 0;
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.promptBox .overlay 
+{
+    opacity: 0;
+    transition: 1;
+    position: absolute;
+    filter: blur(40px);
 }
 
 
+
+.promptBox .overlay.display
+{
+    position: absolute;
+    min-height: 45px;
+    max-height: 130px; /* Adjust max */
+    width: 93%;
+    top:  0%;
+    left: 3%;
+    font-size: 1em;
+    border: none;
+    outline: none;
+    color: #66f5ab;
+    overflow-y: auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    background: transparent;
+    height: 100px;
+    filter: blur(0);
+    opacity: 1;
+    transition: 1s;
+}
+
+.promptBox.image > .overlay.display
+{
+    width: 85%;
+    left: 8%;
+}
+
+
+.promptBox .overlay.display::-webkit-scrollbar
+{
+    display: none;
+}
 
 .promptBox .promptTextInput::-webkit-scrollbar {
     display: none;
@@ -215,20 +277,6 @@
     pointer-events: all;
 }
 
-
-.generateButton {
-    position: relative;
-    left: 80%;
-    top: 0%;
-    opacity: 1;
-    pointer-events: all;
-}
-
-.generateButton.disabled 
-{
-    pointer-events: none;
-    opacity: 0.5;
-}
 
 .searchBtn {
     --transition: 0.25s;

@@ -300,7 +300,7 @@
     scale: 0.7;
   }
 
-  
+
 
   .logoutPopUp .logoutPopUpUsername {
     font-size: 1.3em;
@@ -365,15 +365,15 @@
   }
 
   .logo {
-    top: 6%;
-    left: 10%;
+    top: 20%;
+    left: 8%;
     opacity: .75;
+    font-size: 1.5rem;
   }
 
   .userLogo {
     left: 75%;
     top: 8%;
-
 
   }
 
@@ -692,8 +692,32 @@
   }
 
   .redirectHome {
-    top: 60%;
-    left: 51%;
+    top: 26px;
+    left: 27%;
     transform: scale(0.8) translateY(-50%);
+    font-size: 2.6rem;
   }
+
+  #redirectBlogs {
+    left: 38%;
+    font-size: 2.5rem;
+    top: 12px;
+  }
+
+  #userCell {
+    left: 63%;
+  }
+
+  #redirectGitHub {
+    left: 50%;  
+    font-size: 2.5rem;
+  }
+
+  .imageThemeSectionBackdropv-2 {
+    width: 90%;
+    left: 45%;
+
+  }
+ 
+  
 }
