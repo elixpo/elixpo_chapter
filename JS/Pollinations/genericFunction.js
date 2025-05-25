@@ -123,8 +123,8 @@ async function updateGithubStarCount(owner, repo) {
     }
   }
   
-  // Example usage:
-  updateGithubStarCount('pollinations', 'pollinations');
+  
+  
   
 
 
@@ -203,3 +203,7 @@ async function updateGithubStarCount(owner, repo) {
       }
     });
   });
+  
+
+  
+  updateGithubStarCount('pollinations', 'pollinations');

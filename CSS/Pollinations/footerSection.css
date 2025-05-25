@@ -112,3 +112,10 @@
     color: #ededed;
   }
   
+  @media screen and (max-width: 768px) {
+    .footer-badge img {
+      width: 100px;
+      height: auto;
+    }
+    
+  }
