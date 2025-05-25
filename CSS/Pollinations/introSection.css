@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Baumans&family=Orbitron:wght@400..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Baumans&family=Nerko+One&family=Orbitron:wght@400..900&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Baumans&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lexend:wght@100..900&family=Nerko+One&family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 .hero {
     position: relative;
@@ -162,8 +160,9 @@
     left: 0%;
     display: flex;
     flex-wrap: wrap;
-    font-size: 2em;
-    font-family: "Baumans", system-ui;
+    font-size: 1.5em;
+    font-family: "lexend", sans-serif;
+    font-style: italic;
     font-weight: 400;
     color: var(--text-secondary);
     max-width: 55%;

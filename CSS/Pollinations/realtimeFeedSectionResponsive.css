@@ -241,3 +241,25 @@
     }
 
 }
+@media only screen and (min-width: 601px) and (max-width: 1024px) {
+    .imageFeedSection>.imageFeedDescription {
+        position: absolute;
+        top: 15%;
+        margin-left: 15%;
+        font-size: 1em;
+        font-weight: 700;
+        width: 80%;
+    }
+
+    .imageFeedSection>.imageFeedText {
+        position: absolute;
+        top: 1%;
+        left: 50%;
+        transform: translateX(-50%, -50%);
+        font-family: "Orbitron";
+        font-size: 3em;
+        font-weight: 700;
+        width: 100%;
+        text-align: center;
+    }
+}
