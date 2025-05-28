@@ -980,16 +980,14 @@ function getSuffixPrompt(theme) {
   }
 }
 
-// --- Configuration Check ---
 if (!process.env.TOKEN) {
     console.error("FATAL ERROR: Discord bot token not found in environment variables (TOKEN).");
     process.exit(1); // Exit if token is missing
 }
 if (!process.env.POLLINATIONS_TOKEN) {
      console.warn("Pollinations API token not found in environment variables (POLLINATIONS_TOKEN). Using default 'elixpoart'.");
-     // The API might still work with the default, but a dedicated token is better.
 }
-// --- End Configuration Check ---
+
 
 
 client.login(process.env.TOKEN).catch(err => {

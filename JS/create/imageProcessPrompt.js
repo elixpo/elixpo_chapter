@@ -25,28 +25,25 @@ async function handleImageFile(file) {
     if (!file) return;
 
     if (file.size >= 10 * 1024 * 1024) {
-        alert("Please select an image file smaller than 10 MB.");
+        notify("Please select an image file smaller than 10 MB.");
         return;
     }
 
     console.log("File accepted:", file.name);
-
-    const reader = new FileReader();
-
-    reader.onprogress = function (event) {
-        if (event.lengthComputable) {
-            const percentLoaded = Math.round((event.loaded / event.total) * 100);
-            console.log(`Loading: ${percentLoaded}%`);
-        }
-    };
     document.getElementById("cancelImageMode").classList.remove("hidden");
     document.getElementById("pimpPrompt").style.opacity = "0.5";
     document.getElementById("pimpPrompt").style.pointerEvents = "none";
+
+    
+    const uploadedUrl = await uploadImageToUguu(file);
+    
+    // Read the file for preview regardless of upload success
+    const reader = new FileReader();
     reader.onload = async function () {
         console.log("File loaded successfully.");
-        imageDataUrl = reader.result;
-        extractedBase64Data = imageDataUrl.split(",")[1]; // ✅ Save just the base64 part
-
+        const imageDataUrl = reader.result;
+        extractedBase64Data = imageDataUrl.split(",")[1];
+        // let imageDataUrl = "https://d.uguu.se/tdWDmzKO.jpg"
         document.getElementById("promptBox").classList.add("image");
         document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
         document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
@@ -54,6 +51,14 @@ async function handleImageFile(file) {
         document.getElementById("imageHolder").style.backgroundPosition = "center center";
         document.getElementById("generateButton").classList.remove("disabled");
         isImageMode = true;
+        // document.getElementById("imageHolder").setAttribute("data-uploaded-url", imageDataUrl);
+        // console.log("Uploaded URL:", imageDataUrl);
+        if (uploadedUrl) {
+            document.getElementById("imageHolder").setAttribute("data-uploaded-url", uploadedUrl);
+            //https://d.uguu.se/tdWDmzKO.jpg
+            console.log("Uploaded URL:", uploadedUrl);
+            handleSelectiveFlagUpdate("--th", ".themes", "theme", "normal");
+        }
     };
 
     reader.readAsDataURL(file);
@@ -237,7 +242,7 @@ document.getElementById("promptTextInput").addEventListener("paste", async (even
 
 
 async function loadHardcodedImage() {
-    const imageUrl = "../../CSS/IMAGES/normalBG.png";
+    const imageUrl = "../../CSS/IMAGES/testImg.jpg";
     try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
@@ -259,4 +264,4 @@ async function loadHardcodedImage() {
 // window.onload = loadHardcodedImage;
 
 //image mode bug
-
+// handleImageFile();

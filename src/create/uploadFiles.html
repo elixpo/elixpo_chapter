@@ -1,0 +1,42 @@
+<input type="file" id="fileInput" />
+<button id="uploadBtn">Upload to uguu.se</button>
+<div id="result"></div>
+
+<script>
+  const input = document.getElementById('fileInput');
+  const btn = document.getElementById('uploadBtn');
+  const result = document.getElementById('result');
+
+  btn.onclick = async () => {
+    if (!input.files.length) {
+      alert('Please select a file first!');
+      return;
+    }
+
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('files[]', file); // Note the 'files[]' key is critical!
+
+    try {
+      const res = await fetch('https://uguu.se/upload.php', {
+        method: 'POST',
+        body: formData,
+        mode: 'cors'
+      });
+
+      if (!res.ok) {
+        result.textContent = `Upload failed: ${res.status} ${res.statusText}`;
+        return;
+      }
+
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        result.innerHTML = `✅ Uploaded! Temporary URL: <a href="${data.files[0].url}" target="_blank">${data.files[0].url}</a>`;
+      } else {
+        result.textContent = 'Upload succeeded but no URL returned.';
+      }
+    } catch (e) {
+      result.textContent = 'Upload error: ' + e.message;
+    }
+  };
+</script>

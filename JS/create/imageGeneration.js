@@ -1,7 +1,7 @@
 let generateURLS = [];
 let enhanceMode = false;
 let privateMode = false;
-let isImageMode = false;
+let isImageMode = true;
 let selectedImageQuality = "SD";
 let generationNumber = 1;
 let imageTheme = "normal";
@@ -13,6 +13,39 @@ let imageController = null;
 let isMouseOverImageDisplay = false;
 let extractedDetails = {};
 let enhanceUrl = "https://imgelixpo.vercel.app";
+
+
+async function uploadImageToUguu(file) {
+    notify("Uploading image...", true);
+    const formData = new FormData();
+    formData.append('files[]', file);
+
+    try {
+        const res = await fetch('https://uguu.se/upload.php', {
+            method: 'POST',
+            body: formData,
+            mode: 'cors'
+        });
+
+        if (!res.ok) {
+            throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+            notify("Image uploaded successfully!");
+            return data.files[0].url;
+        } else {
+            throw new Error('Upload succeeded but no URL returned');
+        }
+    } catch (e) {
+        notify("Failed to upload image. Falling back to direct processing...");
+        console.error('Upload error:', e);
+        return null;
+    }
+}
+
+
 function manageTileNumbers()
 {
     if(generationNumber == 1)
@@ -227,7 +260,7 @@ document.getElementById("generateButton").addEventListener("click", function () 
 async function preparePromptInput(generationNumber, prompt, ratio, model, selectedImageQuality, imageTheme, enhanceMode, privateMode, imageMode) {
     manageTileNumbers();
     document.getElementById("generateButton").setAttribute("disabled", "true");
-    console.log("entered func");
+    // console.log("entered func");
 
     // Initialize AbortController
     controller = new AbortController();
@@ -239,13 +272,33 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
     const [width, height] = imageSize.split("x");
 
     if (imageMode) {
+        const uploadedUrl = document.getElementById("imageHolder").getAttribute("data-uploaded-url");
         
-        imageController = new AbortController();
-        imageTimeout = setTimeout(() => {
-            notify("Image processing took too long. Please try again.");
-            if (imageController) imageController.abort();
-            resetAll();
-        }, 120000);
+        if (uploadedUrl) {
+            notify("Processing your image...", true);
+            scrollToImageGenerator();
+            generateImage(
+                generationNumber,
+                prompt,
+                width,
+                height,
+                "gptimage", 
+                suffixPrompt,
+                selectedImageQuality,
+                enhanceMode,
+                privateMode,
+                imageMode,
+                signal
+            );
+            return;
+        }
+
+        // imageController = new AbortController();
+        // imageTimeout = setTimeout(() => {
+        //     notify("Image processing took too long. Please try again.");
+        //     if (imageController) imageController.abort();
+        //     resetAll();
+        // }, 120000);
     
         document.getElementById("promptTextInput").classList.add("blur");
         document.getElementById("overlay").classList.add("display");
@@ -417,10 +470,26 @@ document.getElementById("interruptButton").addEventListener("click", function ()
 
 function generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal) {
     document.getElementById("interruptButton").classList.remove("hidden");
-    notify("Trying to paint the image!", true);
+    
+    let seed = Math.floor(Math.random() * 10000); 
+    // const promptText = `${prompt} remember the system instruction of ${suffixPrompt}`;
+     const promptText = `${prompt}`;
+    let generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}`;
 
-    const promptText = `${prompt} remember the system instruction of ${suffixPrompt}`;
-    let generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=pollinations.ai`;
+    if (imageMode) {
+        console.log("in image mode");
+        const uploadedUrl = document.getElementById("imageHolder").getAttribute("data-uploaded-url");
+        if (uploadedUrl) {
+            model = "gptimage";
+            generateUrl = `https://image.pollinations.ai/prompt/${prompt}?model=gptimage&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+            notify("Remixing with your request!! Would take a minute or so, hang on buddy!")
+        } else {
+            notify("Wowza, understanding your image.... this might take a while, hang on buddy!");
+        }
+    } else {
+        notify("Trying to paint the image!", true);
+        generateUrl += `?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=true&referrer=elixpoart&token=fEWo70t94146ZYgk`;
+    }
 
     if (privateMode) {
         generateUrl += "&private=true";
@@ -430,7 +499,7 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
     const generationTimes = [];
 
     for (let i = 1; i <= generationNumber; i++) {
-        const startTime = performance.now(); 
+        const startTime = performance.now();
 
         const tile = document.querySelector(`.tile${i}`);
         const loadingAnimation = tile.querySelector(".loadingAnimations");
@@ -440,18 +509,34 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
         loadingAnimation.classList.remove("hidden");
 
         const seed = Math.floor(Math.random() * 10000);
-        const imageRequestUrl = `${generateUrl}&seed=${seed}`;
+        let imageRequestUrl = `${generateUrl}&seed=${seed}`;
 
-        const tilePromise = fetch(imageRequestUrl, { signal })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to generate image for tile${i}`);
+        const tryGeneration = async (currentModel) => {
+            const response = await fetch(imageRequestUrl, { signal });
+            if (!response.ok) {
+                if (response.status === 429 && imageMode) {
+                    notify("Server busy. Falling back to alternative method...");
+                    return generatePromptFromImage(`data:image/jpeg;base64,${extractedBase64Data}`, prompt, signal)
+                        .then(generatedPrompt => {
+                            if (generatedPrompt) {
+                                return generateImage(generationNumber, generatedPrompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, false, signal);
+                            }
+                            throw new Error("Failed to generate alternative prompt");
+                        });
+                } else if ((response.status === 500 || !response.ok) && !imageMode && currentModel !== "flux") {
+                    notify("Model failed. Trying with flux model...");
+                    imageRequestUrl = imageRequestUrl.replace(`model=${currentModel}`, "model=flux");
+                    return tryGeneration("flux");
                 }
-                return response.blob();
-            })
+                throw new Error(`Failed to generate image for tile${i}`);
+            }
+            return response.blob();
+        };
+
+        const tilePromise = tryGeneration(model)
             .then(blob => {
-                const endTime = performance.now(); 
-                const generationTime = Math.round((endTime - startTime) / 1000); 
+                const endTime = performance.now();
+                const generationTime = Math.round((endTime - startTime) / 1000);
                 generationTimes.push(generationTime);
                 generateURLS.push(imageRequestUrl);
                 const imageUrl = URL.createObjectURL(blob);
@@ -472,6 +557,7 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
                     console.warn(`Fetch aborted for tile${i}`);
                 } else {
                     console.error(`Error generating image for tile${i}:`, error);
+                    notify("Failed to generate image. Please try again.");
                 }
             });
 
@@ -479,7 +565,7 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
     }
 
     Promise.all(tilePromises).then(() => {
-        if (signal.aborted) return; 
+        if (signal.aborted) return;
 
         notify("Generation complete");
         dismissNotification();

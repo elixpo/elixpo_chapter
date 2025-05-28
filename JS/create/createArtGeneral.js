@@ -230,7 +230,7 @@ function handleInput() {
     handleSelectiveFlagUpdate("--th", ".themes", "theme", "normal");
 
     // Model
-    handleSelectiveFlagUpdate("--md", ".modelsTiles", "model", "core");
+    handleSelectiveFlagUpdate("--md", ".modelsTiles", "model", "flux");
 
     // Update last prompt
     lastPromptText = promptText;

@@ -58,14 +58,9 @@
                               <div class="blob1"></div>
                               <div class="blob2"></div>
                               <div class="documentContainer" id="documentContainer">
-                                <div class="modelsTiles models flux_core" data-model="core"> <span> Core </span></div>
-                                <div class="modelsTiles models flux_realism selected" data-model="realism"><span> Realism </span></div>
-                                <div class="modelsTiles models flux_cablyai" data-model="cablyai"><span> Cablyai </span></div>
-                                <div class="modelsTiles models flux_anime" data-model="anime"><span> Anime </span></div>
-                                <div class="modelsTiles models flux_3d" data-model="3d"><span> 3D </span></div>
-                                <div class="modelsTiles models any_dark" data-model="dark"><span> Dark </span></div>
-                                <div class="modelsTiles models flux_pro" data-model="pro"><span> Pro </span></div>
+                                <div class="modelsTiles models flux selected" data-model="flux"> <span> Flux </span></div>
                                 <div class="modelsTiles models turbo" data-model="turbo"><span> Turbo </span></div>
+                                <div class="modelsTiles models gptimage" data-model="gptimage"><span> GptImage </span></div>
                               </div>
                           </div>
                       
@@ -140,7 +135,7 @@
                   </div>
 
                   <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none"
-                    placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape"></textarea>
+                    placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape">transform this image into a ghinli studio style, preseve the intricate details and reduce the overall warmth and make it look cute! generate the image in a potrait mode</textarea>
                   <div class="overlay" id="overlay">  </div>
                 </div>
               </div>
@@ -319,12 +314,12 @@
     <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.js"></script>
 
     <script src="../../JS/linkRedirect.js"></script>
-    <script src="../../JS/create/imageProcessPrompt.js" ></script>
     <script src="../../JS/create/promptscontainer.js" ></script>
     <script src="../../JS/create/createArtGeneral.js"></script>
     <script src="../../JS/create/locomotiveScroll.js"></script>
     <script src="../../JS/create/welcomePrompt.js"></script>
     <script src="../../JS/create/imageGeneration.js"></script>
+    <script src="../../JS/create/imageProcessPrompt.js" ></script>
    
 </body>
 </html>
