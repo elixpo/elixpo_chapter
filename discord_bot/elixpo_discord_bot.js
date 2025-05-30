@@ -8,9 +8,7 @@ import {
   PermissionsBitField
 } from 'discord.js';
 import dotenv from 'dotenv';
-// Use node-fetch explicitly as in your test.js, though discord.js might polyfill fetch
-// If using Node < 18, you need this explicit import and npm install node-fetch
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'; // Explicitly import node-fetch
 
 dotenv.config();
 
@@ -37,21 +35,28 @@ setInterval(cleanupCache, 10 * 60 * 1000);
 console.log("Cache cleanup scheduled.");
 
 // --- Define permission flags using their numeric values ---
-// Using hardcoded numeric values is the safest way to prevent
-// "Invalid bitfield flag or number: undefined" errors like RangeError [BitFieldInvalid].
-// These BigInt values are stable representations of the permission flags.
 const PERMISSIONS = {
-    ViewChannel: 4n,           // Allows viewing channels
-    SendMessages: 2048n,       // Allows sending messages
-    AttachFiles: 32768n,       // Allows uploading images/files
-    EmbedLinks: 16384n,        // Allows sending messages with embeds (for rich image replies)
-    ReadMessageHistory: 65536n,// Allows fetching past messages (needed for /edit command to fetch message by ID)
-    MessageContent: 4194304n,  // Allows reading message content (privileged intent, useful for reading original prompt/context)
+    ViewChannel: 4n,
+    SendMessages: 2048n,
+    AttachFiles: 32768n,
+    EmbedLinks: 16384n,
+    ReadMessageHistory: 65536n,
+    MessageContent: 4194304n,
+};
+
+// Helper function to map numeric flags back to names
+const getPermissionName = (flagValue) => {
+    const name = Object.keys(PERMISSIONS).find(key => PERMISSIONS[key] === flagValue);
+    if (!name) {
+         const discordjsName = Object.keys(PermissionsBitField.Flags).find(key => PermissionsBitField.Flags[key] === flagValue);
+         return discordjsName || 'Unknown Permission';
+    }
+    return name;
 };
 
 
 const client = new Client({
-  intents: ['Guilds', 'GuildMessages', 'MessageContent'], // MessageContent Intent required to read message content if you were to use it
+  intents: ['Guilds', 'GuildMessages', 'MessageContent'],
 });
 
 client.on('ready', async () => {
@@ -102,17 +107,6 @@ client.on('interactionCreate', async interaction => {
       } catch (e) { console.error("Error sending permissions check error:", e); }
       return;
   }
-
-   // Helper function to map numeric flags back to names (uses the PERMISSIONS object keys)
-   const getPermissionName = (flagValue) => {
-        const name = Object.keys(PERMISSIONS).find(key => PERMISSIONS[key] === flagValue);
-        // Fallback to discord.js Flags lookup if somehow not in our object (unlikely now with hardcoded)
-        if (!name) {
-             const discordjsName = Object.keys(PermissionsBitField.Flags).find(key => PermissionsBitField.Flags[key] === flagValue);
-             return discordjsName || 'Unknown Permission';
-        }
-        return name;
-   };
 
 
   // Handle simple commands first (/help, /ping)
@@ -188,8 +182,6 @@ client.on('interactionCreate', async interaction => {
        }
 
        // --- Non-Fatal Permissions Check (for warnings after deferral) ---
-       // MessageContent is needed to read the *content* of the referenced message, though your
-       // current /edit logic primarily relies on the embed footer ID. Still good to warn.
        let missingEmbeds = !botPermissions.has(PERMISSIONS.EmbedLinks);
        let missingMessageContent = interaction.commandName === 'edit' && !botPermissions.has(PERMISSIONS.MessageContent);
 
@@ -201,8 +193,10 @@ client.on('interactionCreate', async interaction => {
            return;
        }
 
+       // Store these flags on the interaction object temporarily for later use in processQueueDiscord
        interaction._missingEmbeds = missingEmbeds;
        interaction._missingMessageContent = missingMessageContent;
+
        addToQueue(interaction);
    }
 });
@@ -316,6 +310,13 @@ async function processQueueDiscord() {
     }
      initialStatusContent += interaction.commandName === 'generate' ? '✨ Wowza I see.. Your request is on the way!' : '🪄 Getting ready to remix your creation!';
 
+    // Check if interaction is still valid/editable before attempting to editReply
+    // This can happen if the user cancels the interaction or it times out before processing
+    if (!interaction.replied && !interaction.deferred) {
+        console.warn(`Interaction ${interaction.id} was not replied or deferred before processing queue. Skipping.`);
+        return; // Skip processing this interaction if it's not in an editable state
+    }
+
     await interaction.editReply(initialStatusContent);
 
     // Prompt is required for both commands per your config
@@ -367,11 +368,21 @@ async function processQueueDiscord() {
        let referencedMessage;
        try {
             // ReadMessageHistory permission was checked as fatal before queueing
-            console.log(`[processQueueDiscord][/edit] Attempting to fetch message with ID: ${targetMessageId} for user ${interaction.user.id}`);
-            referencedMessage = await interaction.channel.messages.fetch(targetMessageId);
-            console.log(`[processQueueDiscord][/edit] Successfully fetched message ID: ${targetMessageId}`);
+            console.log(`[processQueueDiscord][/edit] Attempting to fetch message with ID: ${targetMessageId} for user ${interaction.user.id} in channel ${interaction.channel?.id}`);
+            // Ensure the channel exists and has the messages property
+            if (interaction.channel && 'messages' in interaction.channel) {
+                 referencedMessage = await interaction.channel.messages.fetch(targetMessageId);
+                 console.log(`[processQueueDiscord][/edit] Successfully fetched message ID: ${targetMessageId}`);
+            } else {
+                 console.error(`[processQueueDiscord][/edit] Interaction channel is null or does not have a messages manager.`);
+                 finalContent = `${initialStatusContent}\n\n❌ Could not fetch message data. Invalid channel.`;
+                 if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+                 await interaction.editReply({ content: finalContent });
+                 return;
+            }
+
        } catch (fetchError) {
-            console.error(`Failed to fetch message ID ${targetMessageId} for user ${interaction.user.id}:`, fetchError);
+            console.error(`Failed to fetch message ID ${targetMessageId} for user ${interaction.user.id} in channel ${interaction.channel?.id}:`, fetchError);
             finalContent = `${initialStatusContent}\n\n❌ Could not find the message with ID \`${targetMessageId}\`. It might have been deleted, is too old, or I lack permissions (**${getPermissionName(PERMISSIONS.ReadMessageHistory)}**).`;
              if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
             await interaction.editReply({ content: finalContent });
@@ -425,21 +436,6 @@ async function processQueueDiscord() {
        const sourceImageItem = originalCacheEntry.data[requestedIndex - 1]; // Get the object for the specific image (0-indexed)
        const sourceImageUrl = sourceImageItem.url; // Get the URL of the image from the cache
 
-       // We need to ensure the sourceImageUrl used in the Pollinations API call
-       // is just the base URL and prompt, without any extra parameters that might
-       // have been added after the initial generation (like the token/referrer in the cached URL).
-       // Let's try to reconstruct the base URL or clean the cached one.
-       // A simple way might be to just take the part before the first '&', but this is fragile.
-       // A slightly better way is using URL object or regex if the format is consistent.
-       // Based on the test.js structure, the base image URL for remixing is usually just
-       // https://image.pollinations.ai/prompt/encoded_prompt - but this is not what's in your cache (it's the full generated URL).
-       // Let's stick to cleaning the cached URL assuming it's a base + params string.
-       // Removing specific known params seems the safest approach given the cached format.
-       // The test.js `generateImageURL` takes a prompt and optionally an image URL.
-       // This implies the API expects the *source image URL* itself as the `image` parameter.
-       // So we should pass the `sourceImageUrl` from the cache directly as the `image` parameter.
-       // The only cleaning needed might be if the URL somehow got corrupted, but let's assume it's fine.
-
        if (!sourceImageUrl) {
             finalContent = `${initialStatusContent}\n\n❌ Could not retrieve the URL for the selected image from the cache for message ID \`${targetMessageId}\`.`;
             if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
@@ -460,7 +456,7 @@ async function processQueueDiscord() {
     // --- Send the final reply with images, embed, text, and buttons ---
     if (generatedAttachments && generatedAttachments.length > 0) {
        const prompt = interaction.options.getString("prompt"); // Prompt is required for both commands
-       const numberOfImagesRequested = interaction.options.getInteger("number_of_images") || 1; // Default to 1 if somehow missing, but config says required
+       const numberOfImagesRequested = interaction.options.getInteger("number_of_images") || 1; // Default if somehow missing, but config says required
        const actualNumberOfImages = generatedAttachments.length;
        const aspectRatio = interaction.options.getString("aspect_ratio") || "3:2";
        const theme = interaction.options.getString("theme") || "normal";
@@ -662,7 +658,13 @@ async function processQueueDiscord() {
     }
 
   } finally {
-    queue.shift();
+    // IMPORTANT: Only shift and process the next item if the current interaction was processed
+    // This prevents infinite loops if an interaction fails *before* shifting
+    if (queue.length > 0 && queue[0].id === interaction.id) {
+       queue.shift();
+    } else {
+        console.warn(`Queue head does not match the interaction that just finished processing (${interaction.id}). Queue head: ${queue.length > 0 ? queue[0].id : 'empty'}. This might indicate a logic issue or multiple parallel processing attempts.`);
+    }
     setImmediate(processQueueDiscord); // Use setImmediate for async processing
   }
 }
@@ -850,7 +852,7 @@ async function generateImage(interaction) {
         enhance: enhancement.toString(),
         nologo: 'true',
         referrer: 'elixpoart', // Use the bot's referrer
-        token: process.env.POLLINATIONS_TOKEN || 'elixpoart', // Use environment variable for token, fallback to elixpoart
+        token: process.env.POLLINATIONS_TOKEN || 'fEWo70t94146ZYgk', // Use environment variable for token, fallback to elixpoart
         // No 'image' parameter for standard generation
     });
 
@@ -912,9 +914,10 @@ async function generateRemixImage(interaction, sourceImageUrl) {
       // Use the exact same parameters as test.js
       const queryParams = new URLSearchParams({
           model: 'gptimage',
-          token: 'mirexa',
-          private: 'true',
-          nologo: 'true'
+          token: process.env.POLLINATIONS_TOKEN || 'fEWo70t94146ZYgk', // Use environment variable for token
+          private: 'true', // Keep private true as in test.js
+          nologo: 'true',
+          referrer: 'elixpoart', // Use the bot's referrer
       });
 
       // Add source image URL last, exactly as test.js does
@@ -985,7 +988,7 @@ if (!process.env.TOKEN) {
     process.exit(1); // Exit if token is missing
 }
 if (!process.env.POLLINATIONS_TOKEN) {
-     console.warn("Pollinations API token not found in environment variables (POLLINATIONS_TOKEN). Using default 'elixpoart'.");
+     console.warn("Pollinations API token not found in environment variables (POLLINATIONS_TOKEN). Using default 'fEWo70t94146ZYgk'.");
 }
 
 
