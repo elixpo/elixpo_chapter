@@ -8,6 +8,7 @@ import { POLLINATIONS_TOKEN } from './config.js';
  * @param {object} interaction - Discord interaction object.
  * @returns {Promise<Array<{attachment: AttachmentBuilder, url: string}>>}
  */
+
 export async function generateImage(interaction) {
     const prompt = interaction.options.getString("prompt");
     const numberOfImages = interaction.options.getInteger("number_of_images") || 1;
@@ -51,7 +52,7 @@ export async function generateImage(interaction) {
             const buffer = await response.buffer();
             if (buffer.length > 500) {
                 const attachment = new AttachmentBuilder(buffer, { name: `elixpo_ai_image_${i + 1}.jpg` });
-                imagesWithUrls.push({ attachment, url: imgurl }); // url is always present and well-formed
+                imagesWithUrls.push({ attachment, url: imgurl }); 
             }
         } catch (error) {
             console.error(`[imageService] Error fetching image:`, error);
@@ -66,6 +67,7 @@ export async function generateImage(interaction) {
  * @param {string} aspectRatio - The aspect ratio for the remix.
  * @returns {Promise<Array<{attachment: AttachmentBuilder, url: string}>>}
  */
+
 export async function generateRemixImage(interaction, sourceImageUrl, aspectRatio) {
     const prompt = interaction.options.getString("prompt");
     const userProvidedSeed = interaction.options.getInteger("seed");
@@ -91,7 +93,7 @@ export async function generateRemixImage(interaction, sourceImageUrl, aspectRati
         const buffer = await response.buffer();
         if (buffer.length > 500) {
             const attachment = new AttachmentBuilder(buffer, { name: `elixpo_ai_remix.jpg` });
-            imagesWithUrls.push({ attachment, url: remixUrl }); // <-- Ensure url is present
+            imagesWithUrls.push({ attachment, url: remixUrl }); 
         }
     } catch (error) {
         console.error(`[imageService] Error fetching remix image:`, error);

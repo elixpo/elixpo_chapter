@@ -4,19 +4,15 @@ import { generateIntermediateText, generateConclusionText } from '../textService
 import { getPermissionName, PERMISSIONS, client } from '../bot.js';
 import { getCache, setCache, deleteCache } from '../cache.js'; // Correctly import deleteCache
 import { AttachmentBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { DEFAULT_ASPECT_RATIO, DEFAULT_THEME } from '../config.js';
+import { DEFAULT_ASPECT_RATIO, DEFAULT_THEME, DISCORD_LINK_BUTTON_MAX_URL_LENGTH } from '../config.js';
 import { createRemixButton, createDownloadButton, createMultipleDownloadButtons, buildActionRow } from '../components.js';
 
-// Define Discord's maximum URL length for Link buttons (documented limit is 512 characters)
-const DISCORD_LINK_BUTTON_MAX_URL_LENGTH = 512;
 
 /**
  * Handles the execution logic for the /edit command after it has been deferred and queued.
  * @param {import('discord.js').ChatInputCommandInteraction} interaction The interaction object.
  */
 export async function handleEdit(interaction) {
-    // Interaction is already deferred and initial permissions checked by elixpo_discord_bot.js
-    // Retrieve missingEmbeds flag stored by the main bot file
     const missingEmbeds = interaction._missingEmbeds || false;
 
     const prompt = interaction.options.getString("prompt");
@@ -28,31 +24,28 @@ export async function handleEdit(interaction) {
     const modelUsed = "gptimage"; 
     const seed = interaction.options.getInteger("seed");
 
-    let statusContent = ''; // Content string for status updates
-
-    // Initial status update (interaction was already deferred)
+    let statusContent = ''; 
     statusContent = `${missingEmbeds ? `⚠️ I am missing the **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission, so the rich embed won't display full details.\n\n` : ''}`;
     statusContent += '🪄 Getting ready to remix your creation!';
     try {
         await interaction.editReply(statusContent);
     } catch (e) {
         console.error(`Failed to edit initial reply for interaction ${interaction.id}:`, e);
-        // If we can't even edit the initial reply, we can't continue processing this interaction.
         return;
     }
 
 
-    // Generate intermediate text
+   
     let formattedIntermediateText = '';
     try {
        const intermediateText = sanitizeText(await generateIntermediateText(prompt));
        formattedIntermediateText = intermediateText ? `*${intermediateText.replace(/\.$/, '').trim()}*` : '';
     } catch (err) {
        console.error(`Error generating intermediate text for edit interaction ${interaction.id}:`, err);
-       formattedIntermediateText = `*Had trouble generating an intermediate thought.*`; // Provide a fallback
+       formattedIntermediateText = `*Had trouble generating an intermediate thought.*`; 
     }
 
-    // Update status with intermediate text
+
     statusContent = `${missingEmbeds ? `⚠️ I am missing the **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission, so the rich embed won't display full details.\n\n` : ''}`;
     if (formattedIntermediateText) {
         statusContent += `${statusContent ? '\n\n' : ''}${formattedIntermediateText}`;
@@ -62,35 +55,27 @@ export async function handleEdit(interaction) {
         await interaction.editReply(statusContent);
     } catch (e) {
         console.error(`Failed to edit status reply with intermediate text for interaction ${interaction.id}:`, e);
-        // Continue processing even if this status update fails, try to send the final reply later.
     }
 
 
-    // --- Fetch and Validate Source Image ---
+
     let referencedMessage;
     try {
         referencedMessage = await interaction.channel.messages.fetch(targetMessageId);
     } catch (fetchError) {
-        // Handle message not found error
         await interaction.editReply({
             content: `${statusContent}\n\n❌ Could not find the message with ID \`${targetMessageId}\`. It might have been deleted, is too old, or I lack permissions (**${getPermissionName(PERMISSIONS.ReadMessageHistory)}**).`
         });
-        return; // Stop processing this command
+        return;
     }
-
-    // Validate the referenced message structure
     if (referencedMessage.author.id !== client.user.id || !referencedMessage.embeds || referencedMessage.embeds.length === 0) {
         await interaction.editReply({
             content: `${statusContent}\n\n❌ The message with ID \`${targetMessageId}\` does not appear to be one of my image generation results (missing bot author or embed). Please provide the ID of one of my image messages.`
         });
         return;
     }
-
-    // Extract original interaction ID from embed footer
     const originalEmbed = referencedMessage.embeds[0];
     const footerText = originalEmbed?.footer?.text;
-    // Regex to find the Interaction ID within the footer text (adjust regex if footer format changes)
-    // It should match "Interaction ID: <numbers>"
     const idMatch = footerText?.match(/Interaction ID: (\d+)/);
     const originalInteractionId = idMatch ? idMatch[1] : null;
 
@@ -101,10 +86,7 @@ export async function handleEdit(interaction) {
         return;
     }
 
-    // Retrieve original image data from cache
     const originalCacheEntry = getCache(originalInteractionId);
-
-    // Validate the cache entry and index
     if (!originalCacheEntry || !originalCacheEntry.data || !Array.isArray(originalCacheEntry.data)) {
         await interaction.editReply({
             content: `${statusContent}\n\n❌ The data for the original image from message ID \`${targetMessageId}\` has expired or was not found in the cache, or its format is unexpected. Please try generating the original image again and then use the \`/edit\` command with the new message ID.`
@@ -112,8 +94,8 @@ export async function handleEdit(interaction) {
         return;
     }
 
-    const originalImageDataArray = originalCacheEntry.data; // Array of { attachment, url }
-    const zeroBasedIndex = requestedIndex - 1; // Convert user-facing index (1-based) to array index (0-based)
+    const originalImageDataArray = originalCacheEntry.data; 
+    const zeroBasedIndex = requestedIndex - 1; 
 
     if (zeroBasedIndex < 0 || zeroBasedIndex >= originalImageDataArray.length) {
          await interaction.editReply({
@@ -122,7 +104,7 @@ export async function handleEdit(interaction) {
          return;
     }
 
-    const sourceImageItem = originalImageDataArray[zeroBasedIndex]; // Get the specific item { attachment, url }
+    const sourceImageItem = originalImageDataArray[zeroBasedIndex]; 
 
     if (!sourceImageItem || typeof sourceImageItem.url !== 'string') {
         await interaction.editReply({
@@ -131,36 +113,27 @@ export async function handleEdit(interaction) {
         return;
     }
 
-    const sourceImageUrl = sourceImageItem.url; // The URL needed for remixing
-
-
-    // --- Generate Remix Image ---
+    const sourceImageUrl = sourceImageItem.url;
     let generatedImagesWithUrls = [];
     try {
         generatedImagesWithUrls = await generateRemixImage(interaction, sourceImageUrl, aspectRatio);
-        // If generation fails (e.g., API error 500), generateRemixImage might return an empty array or throw.
-        // The catch block below handles the throw. If it returns empty, the rest of the function proceeds with 0 images.
     } catch (imgError) {
         console.error(`Error during generateRemixImage for edit interaction ${interaction.id}:`, imgError);
-        // Provide specific error feedback to the user on the deferred reply
         await interaction.editReply({
             content: `${statusContent}\n\n❌ Failed to remix the image. The image service might be temporarily unavailable or returned no valid image data. Error details: ${imgError.message || 'Unknown error'}`
         });
-        // Important: Return here so the rest of the function (building success reply, caching) is skipped on error
         return;
     }
 
     const generatedAttachments = generatedImagesWithUrls.map(item => item.attachment).filter(att => att instanceof AttachmentBuilder);
     const actualNumberOfImages = generatedAttachments.length;
-
-    // --- Generate Conclusion Text ---
     let formattedConclusionText = '';
     try {
        const conclusionText = sanitizeText(await generateConclusionText(prompt));
        formattedConclusionText = conclusionText ? `*${conclusionText.replace(/\.$/, '').trim()}*` : '';
     } catch (err) {
        console.error(`Error generating conclusion text for edit interaction ${interaction.id}:`, err);
-       formattedConclusionText = `*Had trouble generating a concluding thought.*`; // Provide a fallback
+       formattedConclusionText = `*Had trouble generating a concluding thought.*`; 
     }
 
 
@@ -173,8 +146,6 @@ export async function handleEdit(interaction) {
     if (actualNumberOfImages > 0) {
         finalContent += `${finalContent ? '\n\n' : ''}✨ Your image(s) have been successfully remixed!`;
     } else {
-         // This block is now less likely to be reached if the try/catch above handles errors,
-         // but remains as a defensive fallback if generatedImagesWithUrls somehow ends up empty.
          finalContent += `${finalContent ? '\n\n' : ''}⚠️ Failed to remix the image. The image service might be temporarily unavailable or returned no valid image data.`;
     }
 
@@ -190,7 +161,7 @@ export async function handleEdit(interaction) {
         const embed = new EmbedBuilder()
             .setTitle('🔄 Image Remixed Successfully')
             .setDescription(`**🎨 Prompt:**\n> ${prompt}`)
-            .setColor('#E91E63') // Discord color for purple
+            .setColor('#E91E63') 
             .setAuthor({
                 name: interaction.user.tag,
                 iconURL: interaction.user.displayAvatarURL({ dynamic: true })
@@ -200,7 +171,7 @@ export async function handleEdit(interaction) {
                     name: '🛠️ Generation Parameters',
                     value:
                         `• **Theme**: \`${theme}\`\n` +
-                        `• **Model**: \`${modelUsed}\`\n` + // Model might be fixed for edits
+                        `• **Model**: \`${modelUsed}\`\n` + 
                         `• **Aspect Ratio**: \`${aspectRatio}\`\n` +
                         `• **Enhanced**: \`${enhancement ? 'Yes' : 'No'}\`\n` +
                         `• **Images**: \`${actualNumberOfImages}\`` +
@@ -210,7 +181,6 @@ export async function handleEdit(interaction) {
             )
             .setTimestamp()
             .setFooter({
-                // Use the current interaction ID for the footer
                 text: `Created by ElixpoArt | Interaction ID: ${interaction.id}`,
                 iconURL: client.user.displayAvatarURL()
             });
@@ -224,9 +194,6 @@ export async function handleEdit(interaction) {
             value: `Remixed from image **#${requestedIndex}** in ${targetMessageLink}.`,
             inline: false
         });
-
-        // REMOVED: embed.setImage(...)
-        // This ensures the attachment is sent alongside the embed, not within it.
 
         embedsToSend.push(embed);
     } else if (missingEmbeds && actualNumberOfImages > 0) {

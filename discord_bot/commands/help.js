@@ -6,14 +6,37 @@ export async function handleHelp(interaction) {
     const helpMessage = `
 **Elixpo Discord Bot Commands:**
 
-- **\`/generate\`** - Generate images based on a prompt.
-  **Options:** \`prompt\` (required), \`theme\`, \`model\`, \`aspect_ratio\`, \`enhancement\`, \`number_of_images\` (1-4), \`seed\`.
+- **\`/generate\`** — Generate an image based on a prompt.
+  **Options:** 
+    - \`prompt\` (required): The prompt to generate images from
+    - \`number_of_images\` (required): Number of images to generate (1-4)
+    - \`seed\`: Seed for random generation (10-1000000)
+    - \`aspect_ratio\`: Image aspect ratio (16:9, 9:16, 1:1, 4:3, 3:2)
+    - \`theme\`: Theme (fantasy, normal, halloween, structure, crayon, space, chromatic, cyberpunk, anime, landscape, samurai, wpap, vintage, pixel, synthwave)
+    - \`enhancement\`: Enhance image quality (true/false)
+    - \`model\`: Model used (flux, turbo, gptimage)
 
-- **\`/edit\`** - Remix or edit an existing image. **Use the \`original_picture_message_id\` and \`img_index_to_edit\` options to specify the image.**
-  **Options:** \`original_picture_message_id\` (required), \`prompt\` (required), \`img_index_to_edit\` (1-4, required), \`aspect_ratio\`, \`theme\`, \`enhancement\`, \`seed\`. Note: \`model\` is fixed to \`gptimage\` for remixing, and **\`number_of_images\` is fixed to 1 for edits.**
+- **\`/edit\`** — Edit an existing image.
+  **Options:** 
+    - \`prompt\` (required): New prompt to edit the image with
+    - \`original_picture_message_id\` (required): Message ID of the image to edit
+    - \`img_index_to_edit\` (required): Index of the image to edit (1-4)
+    - \`seed\`: Seed for random generation (10-1000000)
+    - \`aspect_ratio\`: Image aspect ratio (16:9, 9:16, 1:1, 4:3, 3:2)
+    - \`theme\`: Theme (fantasy, normal, halloween, structure, crayon, space, chromatic, cyberpunk, anime, landscape, samurai, wpap, vintage, pixel, synthwave)
+    - \`enhancement\`: Enhance image quality (true/false)
 
-- **\`/help\`** - Display this help message.
-- **\`/ping\`** - Check if the bot is online.
+- **\`/remix\`** — Remix existing images on user upload (max 3).
+  **Options:**
+    - \`prompt\` (required): How do you want the images to be remixed?
+    - \`image_1\` (required): The first image to remix
+    - \`image_2\`: The second image to remix (optional)
+    - \`image_3\`: The third image to remix (optional)
+    - \`seed\`: Seed for random generation (10-1000000)
+    - \`aspect_ratio\`: Image aspect ratio (16:9, 9:16, 1:1, 4:3, 3:2)
+    - \`theme\`: Theme (fantasy, normal, halloween, structure, crayon, space, chromatic, cyberpunk, anime, landscape, samurai, wpap, vintage, pixel, synthwave)
+
+- **\`/help\`** — Display this help message.
     `;
     try {
         await interaction.reply({ content: helpMessage, ephemeral: false });
