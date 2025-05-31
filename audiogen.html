@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Audio Generator</title>
+</head>
+<body>
+  <h1>Generate Speech with Hypnosis Tracy</h1>
+  <textarea id="textInput" rows="4" cols="60">
+        speak like you are tired and you need to rest and you are asking your friend to pass the bottle of water
+  </textarea><br/>
+  <button onclick="generateAudioPost()">Speak</button>
+
+  <script>
+    async function generateAudioPost() {
+      const text = document.getElementById("textInput").value.trim();
+      const voice = "alloy"; 
+
+      const payload = {
+        model: "hypnosis-tracy",
+        modalities: ["text", "audio"],
+        audio: {
+          voice: voice,
+          format: "mp3"
+        },
+        messages: [{ role: "user", content: text }]
+      };
+
+      const url = "https://text.pollinations.ai/openai";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+
+        const responseData = await response.json();
+        const audioBase64 = responseData.choices?.[0]?.message?.audio?.data;
+
+        if (!audioBase64) {
+          throw new Error("No audio data returned in response.");
+        }
+
+        const binaryString = atob(audioBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const audioBlob = new Blob([bytes], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        const audio = new Audio(audioUrl);
+        audio.play();
+        console.log(" Playing audio with voice:", voice);
+
+      } catch (error) {
+        console.error("Failed to generate or play audio:", error);
+      }
+    }
+  </script>
+</body>
+</html>

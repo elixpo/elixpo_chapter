@@ -18,7 +18,7 @@
 
     let fullURL = `${baseURL}${prompt}?${queryString}`;
     if (imageUrl) {
-        fullURL += `&image=${encodeURIComponent(imageUrl)}`;
+        fullURL += `&image=${encodeURIComponent(imageUrl), encodeURIComponent(imageUrl)}`;
     }
 
     return fullURL;
