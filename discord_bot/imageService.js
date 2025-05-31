@@ -73,7 +73,7 @@ export async function generateRemixImage(interaction, sourceImageUrl, aspectRati
         ? userProvidedSeed
         : Math.floor(Math.random() * 1000000000) + 1;
 
-    const baseURL = "https://image.pollinations.ai/remix/";
+    const baseURL = "https://image.pollinations.ai/prompt/";
     const promptParam = `${prompt.trim()} with the stric aspect ratio of ${aspectRatio}`;
     const queryParams = new URLSearchParams({
         seed: currentSeed.toString(),
