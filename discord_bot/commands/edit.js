@@ -228,7 +228,7 @@ export async function handleEdit(interaction) {
                     .setLabel('Download')
                     .setStyle(ButtonStyle.Link)
                     .setURL(firstImageUrl));
-                 console.log(`Added Link button for download for edit interaction ${interaction.id}.`);
+                //  console.log(`Added Link button for download for edit interaction ${interaction.id}.`);
             } else {
                 // Fallback to a Primary button if URL is invalid or too long
                  actionRow.addComponents(createDownloadButton(null, interaction.id, 0)); // Pass null URL, index 0
@@ -241,7 +241,7 @@ export async function handleEdit(interaction) {
              for (let i = 0; i < Math.min(actualNumberOfImages, maxButtonsPerMessage - actionRow.components.length); i++) {
                  actionRow.addComponents(createDownloadButton(null, interaction.id, i)); // Pass null URL, pass index i
              }
-             console.log(`Added ${actionRow.components.length - 1} Primary download buttons for multiple remixed images for interaction ${interaction.id}.`);
+            //  console.log(`Added ${actionRow.components.length - 1} Primary download buttons for multiple remixed images for interaction ${interaction.id}.`);
         }
     }
 
@@ -253,11 +253,11 @@ export async function handleEdit(interaction) {
           data: generatedImagesWithUrls,
           timestamp: Date.now()
         });
-        console.log(`Stored ${generatedImagesWithUrls.length} remixed images in cache for interaction ${interaction.id}.`);
+        // console.log(`Stored ${generatedImagesWithUrls.length} remixed images in cache for interaction ${interaction.id}.`);
     } else {
          // If no images were generated, ensure no partial cache entry is left
          deleteCache(interaction.id); // This call is now valid because deleteCache is imported
-         console.log(`No remixed images generated for interaction ${interaction.id}. Nothing cached.`);
+        //  console.log(`No remixed images generated for interaction ${interaction.id}. Nothing cached.`);
     }
 
     // Final editReply options
@@ -272,7 +272,7 @@ export async function handleEdit(interaction) {
          // Add a similar check as in generate.js to ensure something is being sent
          if (finalEditOptions.files.length > 0 || finalEditOptions.embeds.length > 0 || finalEditOptions.content.trim().length > 0) {
               await interaction.editReply(finalEditOptions);
-              console.log(`Edit command processing finished for interaction ${interaction.id}. Final reply sent.`);
+            //   console.log(`Edit command processing finished for interaction ${interaction.id}. Final reply sent.`);
          } else {
              // If no images, no embed, and no substantial content, send a basic error fallback
              // Use statusContent here as it contains initial warnings/messages

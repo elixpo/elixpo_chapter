@@ -54,7 +54,7 @@ export async function remixCommand(interaction) {
       const url = await uploadToUguu(buffer, file.name);
       if (url) {
         uploadedUrls.push(url);
-        console.log(`✅ Uploaded Image ${i + 1}: ${url}`);
+        // console.log(`✅ Uploaded Image ${i + 1}: ${url}`);
       } else {
         return interaction.editReply({
           content: `❌ Failed to upload Image ${i + 1} to Uguu.`

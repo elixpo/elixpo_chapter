@@ -45,7 +45,7 @@ export async function handleGenerate(interaction) {
     let generatedImagesWithUrls = [];
     try {
        generatedImagesWithUrls = await generateImage(interaction);
-       console.log("Generated Images With URLs:", generatedImagesWithUrls);
+    //    console.log("Generated Images With URLs:", generatedImagesWithUrls);
     } catch (imgError) {
        console.error(`Error during generateImage for interaction ${interaction.id}:`, imgError);
        await interaction.editReply({
@@ -138,7 +138,7 @@ export async function handleGenerate(interaction) {
                     .setLabel('Download')
                     .setStyle(ButtonStyle.Link)
                     .setURL(firstImageUrl.replace("&referrer=elixpoart&token=fEWo70t94146ZYgk", "")));
-                 console.log(`Added Link button for download for interaction ${interaction.id}.`);
+                //  console.log(`Added Link button for download for interaction ${interaction.id}.`);
             } else {
                  actionRow.addComponents(createDownloadButton(null, interaction.id, 0));
                  console.warn(`Image URL too long or invalid for Link button (${firstImageUrl?.length} chars, limit ${DISCORD_LINK_BUTTON_MAX_URL_LENGTH}). Added Primary download button for interaction ${interaction.id}.`);
@@ -148,7 +148,7 @@ export async function handleGenerate(interaction) {
              for (let i = 0; i < Math.min(actualNumberOfImages, maxButtonsPerMessage - actionRow.components.length); i++) {
                  actionRow.addComponents(createDownloadButton(null, interaction.id, i));
              }
-             console.log(`Added ${actionRow.components.length - 1} Primary download buttons for multiple images for interaction ${interaction.id}.`);
+            //  console.log(`Added ${actionRow.components.length - 1} Primary download buttons for multiple images for interaction ${interaction.id}.`);
         }
     }
 
@@ -157,10 +157,10 @@ export async function handleGenerate(interaction) {
           data: generatedImagesWithUrls,
           timestamp: Date.now()
         });
-        console.log(`Stored ${generatedImagesWithUrls.length} generated images in cache for interaction ${interaction.id}.`);
+        // console.log(`Stored ${generatedImagesWithUrls.length} generated images in cache for interaction ${interaction.id}.`);
     } else {
          deleteCache(interaction.id);
-         console.log(`No images generated for interaction ${interaction.id}. Nothing cached.`);
+        //  console.log(`No images generated for interaction ${interaction.id}. Nothing cached.`);
     }
 
     const finalEditOptions = {
@@ -173,7 +173,7 @@ export async function handleGenerate(interaction) {
     try {
         if (finalEditOptions.files.length > 0 || finalEditOptions.embeds.length > 0 || finalEditOptions.content.trim().length > 0) {
              await interaction.editReply(finalEditOptions);
-             console.log(`Generate command processing finished for interaction ${interaction.id}. Final reply sent.`);
+            //  console.log(`Generate command processing finished for interaction ${interaction.id}. Final reply sent.`);
         } else {
              await interaction.editReply({ content: `${statusContent}\n\n⚠️ Failed to generate images and could not construct a proper reply. Please try again.` });
              console.warn(`Generate command for interaction ${interaction.id} resulted in no files, no embeds, and empty content.`);

@@ -231,7 +231,7 @@ client.on('interactionCreate', async interaction => {
              ephemeral: true
            });
         }
-        console.log(`Successfully sent image #${imageIndex + 1} for interaction ${originalInteractionId} via button click.`);
+        // console.log(`Successfully sent image #${imageIndex + 1} for interaction ${originalInteractionId} via button click.`);
       } catch (e) {
         console.error(`Error replying with image #${imageIndex + 1} for interaction ${originalInteractionId}:`, e);
         try {
@@ -276,10 +276,10 @@ async function processQueueDiscord() {
     }
 
     if (interaction.commandName === 'generate') {
-        console.log(`Processing generate command for interaction ${interaction.id}`);
+        // console.log(`Processing generate command for interaction ${interaction.id}`);
         await handleGenerate(interaction);
     } else if (interaction.commandName === 'edit') {
-        console.log(`Processing edit command for interaction ${interaction.id}`);
+        // console.log(`Processing edit command for interaction ${interaction.id}`);
         await handleEdit(interaction);
     }
     else if(interaction.commandName === "remix")
@@ -345,10 +345,10 @@ function addToQueue(interaction) {
   queue.push(interaction);
   console.log(`Added interaction ${interaction.id} (Type: ${interaction.commandName}) to queue. Queue size: ${queue.length}`);
   if (!isProcessing) {
-    console.log("Queue is not processing, starting processQueueDiscord.");
+    // console.log("Queue is not processing, starting processQueueDiscord.");
     process.nextTick(processQueueDiscord);
   } else {
-    console.log("Queue is already processing.");
+    // console.log("Queue is already processing.");
   }
 }
 
