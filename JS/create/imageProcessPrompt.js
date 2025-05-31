@@ -33,8 +33,13 @@ async function handleImageFile(file) {
     document.getElementById("cancelImageMode").classList.remove("hidden");
     document.getElementById("pimpPrompt").style.opacity = "0.5";
     document.getElementById("pimpPrompt").style.pointerEvents = "none";
+    handleFlagUpdateAuto(".themes", "theme", "normal");
+    handleFlagUpdateAuto(".models", "model", "gptimage");
+    handleFlagUpdateAuto(".ratios", "ratio", "16:9");
+    document.querySelectorAll(".modelsTiles").forEach(tile => {
+       tile.style.pointerEvents = "none";
+    });
 
-    
     const uploadedUrl = await uploadImageToUguu(file);
     
     // Read the file for preview regardless of upload success
@@ -43,7 +48,6 @@ async function handleImageFile(file) {
         console.log("File loaded successfully.");
         const imageDataUrl = reader.result;
         extractedBase64Data = imageDataUrl.split(",")[1];
-        // let imageDataUrl = "https://d.uguu.se/tdWDmzKO.jpg"
         document.getElementById("promptBox").classList.add("image");
         document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
         document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
@@ -55,9 +59,7 @@ async function handleImageFile(file) {
         // console.log("Uploaded URL:", imageDataUrl);
         if (uploadedUrl) {
             document.getElementById("imageHolder").setAttribute("data-uploaded-url", uploadedUrl);
-            //https://d.uguu.se/tdWDmzKO.jpg
             console.log("Uploaded URL:", uploadedUrl);
-            handleSelectiveFlagUpdate("--th", ".themes", "theme", "normal");
         }
     };
 
@@ -69,7 +71,8 @@ function cancelImageReference() {
     document.getElementById("imageHolder").style.background = "none";
     document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `none`);
     isImageMode = false;
-    document.getElementById("generateButton").classList.remove("disabled"); // Re-enable if disabled
+    handleFlagUpdateAuto(".models", "model", "flux");
+    document.getElementById("generateButton").classList.remove("disabled"); 
     document.getElementById("pimpPrompt").style.opacity = "1";
     document.getElementById("pimpPrompt").style.pointerEvents = "all";
     document.getElementById("imageHolder").style.opacity = "1";
@@ -80,6 +83,9 @@ function cancelImageReference() {
     document.getElementById("promptTextInput").classList.remove("blur");
     document.getElementById("overlay").classList.remove("display");
     document.getElementById("overlay").innerHTML = "";
+    document.querySelectorAll(".modelsTiles").forEach(tile => {
+        tile.style.pointerEvents = "none";
+     });
     dismissNotification();
     notify("Image reference removed.");
     if (imageController) {

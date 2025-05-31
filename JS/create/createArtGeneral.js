@@ -236,20 +236,28 @@ function handleInput() {
     lastPromptText = promptText;
 }
 
+
+function handleFlagUpdateAuto(selector, dataAttr, providedValue) {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => el.classList.remove("selected"));
+        const element = [...elements].find(el => el.dataset[dataAttr] === providedValue);
+        if (element) element.classList.add("selected");
+}
+
 // Only update if new flag is added or removed
 function handleSelectiveFlagUpdate(flag, selector, dataAttr, defaultValue) {
     const currentText = document.getElementById("promptTextInput").value;
     const lastText = lastPromptText;
 
     if (currentText.includes(flag) || lastText.includes(flag)) {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => el.classList.remove("selected"));
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => el.classList.remove("selected"));
 
-        const match = currentText.match(new RegExp(`${flag}\\s([\\w-:]+)`));
-        const selectedValue = match ? match[1] : defaultValue;
+      const match = currentText.match(new RegExp(`${flag}\\s([\\w-:]+)`));
+      const selectedValue = match ? match[1] : defaultValue;
 
-        const element = [...elements].find(el => el.dataset[dataAttr] === selectedValue);
-        if (element) element.classList.add("selected");
+      const element = [...elements].find(el => el.dataset[dataAttr] === selectedValue);
+      if (element) element.classList.add("selected");
     }
 }
 
