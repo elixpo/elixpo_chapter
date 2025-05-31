@@ -7,12 +7,13 @@ import { handleEdit } from './commands/edit.js';
 import { handlePing } from './commands/ping.js';
 import { handleHelp } from './commands/help.js';
 import { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { Semaphore } from './semaphore.js';
 
 let queue = [];
 let isProcessing = false;
 
 setInterval(cleanupCache, 10 * 60 * 1000);
-
+const commandSemaphore = new Semaphore(5);
 client.on('interactionCreate', async interaction => {
   if (interaction.guildId !== TEST_GUILD_ID) {
     try {
@@ -52,55 +53,30 @@ client.on('interactionCreate', async interaction => {
       return;
     }
 
+    if (['generate', 'edit', 'remix'].includes(interaction.commandName)) {
+      await interaction.deferReply({ ephemeral: false }); // <-- FIXED
+      await commandSemaphore.acquire();
+      try {
+        if (interaction.commandName === 'generate') {
+          await handleGenerate(interaction);
+        } else if (interaction.commandName === 'edit') {
+          await handleEdit(interaction);
+        } else if (interaction.commandName === 'remix') {
+          await remixCommand(interaction);
+        }
+      } finally {
+        commandSemaphore.release();
+      }
+      return;
+    }
+  
+    // Other commands (help, ping, etc.) can run without limit
     if (interaction.commandName === 'help') {
-        await handleHelp(interaction);
-        return;
+      await handleHelp(interaction);
+      return;
     }
     if (interaction.commandName === 'ping') {
-        await handlePing(interaction);
-        return;
-    }
-
-    if (interaction.commandName === 'generate' || interaction.commandName === 'edit' || interaction.commandName === 'remix') {
-      const requiredCommandFlags = [
-          PERMISSIONS.ViewChannel,
-          PERMISSIONS.SendMessages,
-          PERMISSIONS.AttachFiles,
-          PERMISSIONS.UseExternalEmojis,
-      ];
-      if (interaction.commandName === 'edit') {
-           requiredCommandFlags.push(PERMISSIONS.ReadMessageHistory);
-      }
-      const missing = requiredCommandFlags.filter(flag => !botPermissions.has(flag));
-      if (missing.length > 0) {
-          const permissionNames = missing.map(getPermissionName).join(', ');
-          try {
-               await interaction.reply({
-                   content: `⚠️ I am missing the following **required** permissions in this channel to use \`${interaction.commandName}\`: **${permissionNames}**.\n\nPlease ensure I have them before using this command.`,
-                   ephemeral: true
-               });
-          } catch (e) { console.error(`Error sending missing permissions error for ${interaction.commandName}:`, e); }
-          return;
-      }
-
-      interaction._missingEmbeds = !botPermissions.has(PERMISSIONS.EmbedLinks);
-
-      try {
-        await interaction.deferReply({ ephemeral: false });
-      } catch (e) {
-        console.error("Failed to defer reply:", e);
-        try {
-             if (!interaction.replied && !interaction.deferred) {
-                 await interaction.reply({
-                     content: `An error occurred while preparing your request. Please try again later. (Failed to defer reply)`,
-                     ephemeral: true
-                 });
-             }
-        } catch (replyError) { console.error("Failed to send fallback reply after defer failed:", replyError); }
-        return;
-      }
-
-      addToQueue(interaction);
+      await handlePing(interaction);
       return;
     }
   }

@@ -44,11 +44,11 @@ export async function remixCommand(interaction) {
         content: `🚫 Image ${i + 1} must be a PNG or JPEG.`
       });
     }
-    if (file.size > 200 * 1024) {
-      return interaction.editReply({
-        content: `⚠️ Image ${i + 1} exceeds the 200KB limit.`
-      });
-    }
+    // if (file.size > 500 * 1024) {
+    //   return interaction.editReply({
+    //     content: `⚠️ Image ${i + 1} exceeds the 200KB limit.`
+    //   });
+    // }
     try {
       const buffer = await fetch(file.url).then(res => res.buffer());
       const url = await uploadToUguu(buffer, file.name);
@@ -70,7 +70,8 @@ export async function remixCommand(interaction) {
 
   const urlList = uploadedUrls.map((url, i) => `📷 Image ${i + 1}: ${url}`).join('\n');
   await interaction.editReply({
-    content: `✨ Well.. I have processed your media files... lemme **whirpool** them!`
+    content: `✨ Well.. I have processed your media files... lemme **whirpool** them! \n 
+    > Takes a couple of minutes, please standby!... \n `
   });
 
   await remixImageStyled(interaction, uploadedUrls, prompt, seed, aspectRatio, theme, model, missingEmbeds);
@@ -87,7 +88,7 @@ async function remixImageStyled(interaction, uploadedUrls, prompt, seed, aspectR
         token: POLLINATIONS_TOKEN,
     });
     const urls = uploadedUrls.join(',');
-    let imgurl = `${baseURL}${encodeURIComponent(promptParam)}?${queryParams.toString()}`;
+    let imgurl = `${baseURL}${promptParam}?${queryParams.toString()}`;
     if (urls) {
         imgurl += `&image=${encodeURIComponent(urls)}`;
     }
