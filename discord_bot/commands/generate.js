@@ -166,7 +166,7 @@ export async function handleGenerate(interaction) {
     const finalEditOptions = {
         content: finalContent,
         files: generatedAttachments,
-        components: actionRow.components.length > 0 ? [actionRow] : [],
+        // components: actionRow.components.length > 0 ? [actionRow] : [],
         embeds: embedsToSend.length > 0 ? embedsToSend : [],
     };
 

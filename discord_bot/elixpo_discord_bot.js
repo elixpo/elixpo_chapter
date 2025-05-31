@@ -15,17 +15,17 @@ let isProcessing = false;
 setInterval(cleanupCache, 10 * 60 * 1000);
 const commandSemaphore = new Semaphore(5);
 client.on('interactionCreate', async interaction => {
-  if (interaction.guildId !== TEST_GUILD_ID) {
-    try {
-      await interaction.reply({
-        content: "🚧 The bot is currently under development and only available in the test server.",
-        ephemeral: true
-      });
-    } catch (e) {
-      console.error("Error sending dev-only message:", e);
-    }
-    return;
-  }
+  // if (interaction.guildId !== TEST_GUILD_ID) {
+  //   try {
+  //     await interaction.reply({
+  //       content: "🚧 The bot is currently under development and only available in the test server.",
+  //       ephemeral: true
+  //     });
+  //   } catch (e) {
+  //     console.error("Error sending dev-only message:", e);
+  //   }
+  //   return;
+  // }
 
   if (interaction.isChatInputCommand()) {
     if (interaction.user.bot) return;
