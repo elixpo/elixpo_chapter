@@ -78,12 +78,12 @@ export async function generateRemixImage(interaction, sourceImageUrl, aspectRati
     const queryParams = new URLSearchParams({
         seed: currentSeed.toString(),
         model: 'gptimage',
-        source: sourceImageUrl,
         referrer: 'elixpoart',
-        token: POLLINATIONS_TOKEN
+        token: POLLINATIONS_TOKEN,
+        nologo: 'true',
     });
 
-    const remixUrl = `${baseURL}${promptParam}?${queryParams.toString()}`;
+    const remixUrl = `${baseURL}${promptParam}?${queryParams.toString()}&image=${encodeURIComponent(sourceImageUrl)}`;
     const imagesWithUrls = [];
     try {
         const response = await fetch(remixUrl, { method: 'GET' });
