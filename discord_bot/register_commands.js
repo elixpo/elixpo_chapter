@@ -71,7 +71,11 @@ const commands = [
         name: 'enhancement',
         type: 5, 
         description: 'Enhance the image quality (true/false)',
-        required: false
+        required: false,
+        choices: [
+          { name: 'True', value: true },
+          { name: 'False', value: false }
+        ]
       },
       {
         name: 'model',
@@ -101,24 +105,16 @@ const commands = [
         required: true
       },
       {
-        name: "message_id",
+        name: "original_picture_message_id",
         type: 3, 
-        description: "The ID of the message containing the image to edit(right click and select message id)",
+        description: "The ID of the message containing the image to edit (right click and copy message id)",
         required: true
       },
       {
-        name: "index",
+        name: "img_index_to_edit",
         type: 4,
         description: "The index of the image to edit (1-4)",
         required: true,
-      },
-      {
-        name: 'number_of_images',
-        type: 4, 
-        description: 'The number of images to generate (1-4)',
-        required: true,
-        min_value: 1,
-        max_value: 4
       },
       {
         name: 'seed',

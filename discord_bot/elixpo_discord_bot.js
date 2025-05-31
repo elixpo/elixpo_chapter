@@ -1,3 +1,4 @@
+import { client, PERMISSIONS, getPermissionName } from './bot.js';
 import {
   Client,
   AttachmentBuilder,
@@ -8,18 +9,31 @@ import {
   PermissionsBitField
 } from 'discord.js';
 import dotenv from 'dotenv';
-import fetch from 'node-fetch'; // Explicitly import node-fetch
+import fetch from 'node-fetch';
 
 dotenv.config();
 
 let queue = [];
 let isProcessing = false;
-
-// Cache structure: Map<interactionId, { data: [{ attachment: AttachmentBuilder, url: string }, ...], timestamp: number }>
 const imageCache = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 30 * 60 * 1000; 
 
-// Cleanup function for the cache
+
+
+const helpMessage = `
+    **Elixpo Discord Bot Commands:**
+
+  - **\`/generate\`** - Generate images based on a prompt.
+    **Options:** \`prompt\` (required), \`theme\`, \`model\`, \`aspect_ratio\`, \`enhancement\`, \`number_of_images\` (1-4), \`seed\`.
+
+  - **\`/edit\`** - Remix or edit an existing image. **Use the \`original_picture_message_id\` and \`img_index_to_edit\` options to specify the image.**
+    **Options:** \`original_picture_message_id\` (required), \`prompt\` (required), \`img_index_to_edit\` (1-4, required), \`aspect_ratio\`, \`theme\`, \`enhancement\`, \`seed\`. Note: \`model\` is fixed to \`gptimage\` for remixing, and **\`number_of_images\` is fixed to 1 for edits.**
+
+  - **\`/help\`** - Display this help message.
+  - **\`/ping\`** - Check if the bot is online.
+            `;
+
+
 function cleanupCache() {
     const now = Date.now();
     for (const [key, value] of imageCache) {
@@ -30,55 +44,14 @@ function cleanupCache() {
     }
 }
 
-// Run cache cleanup periodically (e.g., every 10 minutes)
 setInterval(cleanupCache, 10 * 60 * 1000);
 console.log("Cache cleanup scheduled.");
 
-// --- Define permission flags using their numeric values ---
-const PERMISSIONS = {
-    ViewChannel: 4n,
-    SendMessages: 2048n,
-    AttachFiles: 32768n,
-    EmbedLinks: 16384n,
-    ReadMessageHistory: 65536n,
-    MessageContent: 4194304n,
-};
-
-// Helper function to map numeric flags back to names
-const getPermissionName = (flagValue) => {
-    const name = Object.keys(PERMISSIONS).find(key => PERMISSIONS[key] === flagValue);
-    if (!name) {
-         const discordjsName = Object.keys(PermissionsBitField.Flags).find(key => PermissionsBitField.Flags[key] === flagValue);
-         return discordjsName || 'Unknown Permission';
-    }
-    return name;
-};
 
 
-const client = new Client({
-  intents: ['Guilds', 'GuildMessages', 'MessageContent'],
-});
-
-client.on('ready', async () => {
-  console.log(`${client.user.tag} is online and ready!`);
-  client.user.setActivity("Generating Images for You", { type: 4 }); // WATCHING
-
-  const activityInterval = setInterval(() => {
-    const activities = [
-      { name: "Generating Images for You", type: 4 }, // WATCHING
-      { name: "AI Art Creation", type: 0 }, // PLAYING
-      { name: "Your Commands", type: 3 }, // LISTENING
-    ];
-    const randomActivity = activities[Math.floor(Math.random() * activities.length)];
-    client.user.setActivity(randomActivity.name, { type: randomActivity.type });
-  }, 10 * 60 * 1000);
-});
-
-
-// --- Command Interaction Handler ---
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.user.bot) return; // Ignore bots
+  if (interaction.user.bot) return; 
 
   const channel = interaction.channel;
   const botMember = interaction.guild?.members.me;
@@ -108,13 +81,10 @@ client.on('interactionCreate', async interaction => {
       return;
   }
 
-
-  // Handle simple commands first (/help, /ping)
   if (interaction.commandName === 'help' || interaction.commandName === 'ping') {
-    // Essential permissions just to reply to simple commands
     const essentialPermissionsSimple = [
-      PERMISSIONS.SendMessages,
-      PERMISSIONS.ViewChannel
+      PERMISSIONS.ViewChannel,
+      PERMISSIONS.SendMessages
     ];
 
     const missingPerms = essentialPermissionsSimple.filter(perm => !botPermissions.has(perm));
@@ -131,18 +101,6 @@ client.on('interactionCreate', async interaction => {
     }
 
        if (interaction.commandName === 'help') {
-            const helpMessage = `
-    **Elixpo Discord Bot Commands:**
-
-  - **\`/generate\`** - Generate images based on a prompt.
-    **Options:** \`prompt\` (required), \`theme\`, \`model\`, \`aspect_ratio\`, \`enhancement\`, \`number_of_images\` (1-4), \`seed\`.
-
-  - **\`/edit\`** - Remix or edit an existing image. **Use the \`message_id\` and \`index\` options to specify the image.**
-    **Options:** \`message_id\` (required), \`prompt\` (required), \`index\` (1-4, required), \`number_of_images\` (1-4, required), \`seed\`, \`aspect_ratio\`, \`theme\`, \`enhancement\`, \`model\`. Note: \`model\` is fixed to \`gptimage\` for remixing.
-
-  - **\`/help\`** - Display this help message.
-  - **\`/ping\`** - Check if the bot is online.
-            `;
             try { await interaction.reply({ content: helpMessage, ephemeral: false }); } catch (e) { console.error("Error sending help message:", e); }
         } else if (interaction.commandName === 'ping') {
             try { await interaction.reply({ content: "Yooo! I'm ready to paint xD", ephemeral: false }); } catch (e) { console.error("Error sending ping message:", e); }
@@ -150,18 +108,14 @@ client.on('interactionCreate', async interaction => {
         return;
   }
 
-
-  // Handle commands that need queueing and processing (/generate, /edit)
   if (interaction.commandName === 'generate' || interaction.commandName === 'edit') {
 
-       // --- Fatal Permissions Check (MUST happen before deferring) ---
-       // These permissions are absolutely required for the command to function at all.
        const requiredFatalFlags = [
            PERMISSIONS.ViewChannel,
            PERMISSIONS.SendMessages,
            PERMISSIONS.AttachFiles,
        ];
-       // /edit requires reading the history to fetch the message by ID
+
        if (interaction.commandName === 'edit') {
            requiredFatalFlags.push(PERMISSIONS.ReadMessageHistory);
        }
@@ -181,38 +135,29 @@ client.on('interactionCreate', async interaction => {
             return;
        }
 
-       // --- Non-Fatal Permissions Check (for warnings after deferral) ---
        let missingEmbeds = !botPermissions.has(PERMISSIONS.EmbedLinks);
-       let missingMessageContent = interaction.commandName === 'edit' && !botPermissions.has(PERMISSIONS.MessageContent);
-
-
        try {
            await interaction.deferReply({ ephemeral: false });
        } catch (e) {
            console.error("Fatal: Could not defer interaction after permission check:", e);
            return;
        }
-
-       // Store these flags on the interaction object temporarily for later use in processQueueDiscord
        interaction._missingEmbeds = missingEmbeds;
-       interaction._missingMessageContent = missingMessageContent;
-
        addToQueue(interaction);
    }
 });
 
-// --- Button Interaction Handler ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 
     const customId = interaction.customId;
-
-    // Handle the Edit button click - Now points to command usage with ID/index
     if (customId === 'edit_image') {
         try {
-             if (interaction.channel && interaction.guild?.members.me && interaction.channel.permissionsFor(interaction.guild.members.me)?.has(PERMISSIONS.SendMessages)) {
-                // Inform the user to use the /edit command with options
-                await interaction.reply({ content: "To edit an image, use the `/edit` command and provide the Message ID and Image Index as options.", ephemeral: true });
+             // Check permissions before attempting to reply
+             const channel = interaction.channel;
+             const botMember = interaction.guild?.members.me;
+             if (channel && botMember && channel.permissionsFor(botMember)?.has(PERMISSIONS.SendMessages)) {
+                await interaction.reply({ content: "To edit an image, use the `/edit` command and provide the Message ID and Image img_index_to_edit as options.", ephemeral: true });
              } else {
                 console.warn(`Cannot reply to edit button interaction due to missing SendMessages permission in channel ${interaction.channel?.id}`);
              }
@@ -222,10 +167,12 @@ client.on('interactionCreate', async interaction => {
         return;
     }
 
-    // Handle Download buttons (using custom IDs for multiple images)
     if (customId.startsWith('download_')) {
-        if (!(interaction.channel && interaction.guild?.members.me && interaction.channel.permissionsFor(interaction.guild.members.me)?.has(PERMISSIONS.SendMessages, PERMISSIONS.AttachFiles))) {
-             console.warn(`Cannot reply to download button interaction due to missing SendMessages or AttachFiles permission in channel ${interaction.channel?.id}`);
+         const channel = interaction.channel;
+         const botMember = interaction.guild?.members.me;
+
+         if (!(channel && botMember && channel.permissionsFor(botMember)?.has(PERMISSIONS.SendMessages, PERMISSIONS.AttachFiles))) {
+             console.warn(`Cannot reply to download button interaction due to missing SendMessages or AttachFiles permission in channel ${channel?.id}`);
              try {
                  await interaction.reply({ content: "I do not have the necessary permissions (Send Messages, Attach Files) to provide the image file for download.", ephemeral: true });
              } catch (e) { console.error("Error sending fallback permission error for download button:", e); }
@@ -233,7 +180,6 @@ client.on('interactionCreate', async interaction => {
         }
 
         const parts = customId.split('_');
-        // Updated check: parts length should be 3 for download_interactionid_index
         if (parts.length !== 3 || parts[0] !== 'download' || isNaN(parseInt(parts[1], 10)) || isNaN(parseInt(parts[2], 10))) {
             console.error(`Invalid download button customId format: ${customId}`);
             try {
@@ -248,7 +194,7 @@ client.on('interactionCreate', async interaction => {
         const cacheEntry = imageCache.get(originalInteractionId);
 
         if (!cacheEntry || !cacheEntry.data || imageIndex < 0 || imageIndex >= cacheEntry.data.length) {
-            console.warn(`Image data not found in cache for interaction ${originalInteractionId} index ${imageIndex}. Cache keys: ${Array.from(imageCache.keys()).join(', ')}`);
+            console.warn(`Image data not found in cache for interaction ${originalInteractionId} img_index_to_edit ${imageIndex}. Cache keys: ${Array.from(imageCache.keys()).join(', ')}`);
             try {
                 await interaction.reply({ content: "Sorry, the image data for this download button has expired or was not found in the cache. Please try generating the image again.", ephemeral: true });
             } catch (e) { console.error("Error replying when image data not found:", e); }
@@ -258,16 +204,24 @@ client.on('interactionCreate', async interaction => {
         const imageItem = cacheEntry.data[imageIndex];
 
         try {
-            await interaction.reply({
-                content: `Here is image #${imageIndex + 1}:`,
-                files: [imageItem.attachment],
-                ephemeral: true // Sending files ephemeral is usually better
-            });
+             if (interaction.replied || interaction.deferred) {
+                 await interaction.editReply({
+                      content: `Here is image #${imageIndex + 1}:`,
+                      files: [imageItem.attachment],
+                  });
+             } else {
+                await interaction.reply({
+                    content: `Here is image #${imageIndex + 1}:`,
+                    files: [imageItem.attachment],
+                    ephemeral: true 
+                });
+             }
+
              console.log(`Successfully sent image #${imageIndex + 1} for interaction ${originalInteractionId} via button click.`);
         } catch (e) {
             console.error(`Error replying with image #${imageIndex + 1} for interaction ${originalInteractionId}:`, e);
             try {
-                await interaction.reply({ content: `Failed to send image #${imageIndex + 1}. An error occurred.`, ephemeral: true });
+                 await interaction.reply({ content: `Failed to send image #${imageIndex + 1}. An error occurred.`, ephemeral: true });
             } catch (e2) { console.error("Error sending fallback error for download button:", e2); }
         }
     }
@@ -282,18 +236,11 @@ async function processQueueDiscord() {
 
   isProcessing = true;
   const interaction = queue[0];
-
-  // Retrieve non-fatal permission flags stored earlier
   const missingEmbeds = interaction._missingEmbeds || false;
-  const missingMessageContent = interaction._missingMessageContent || false;
-
-  // --- Declare these variables BEFORE the try block ---
   let intermediateText = '';
   let conclusionText = '';
   let formattedIntermediateText = '';
   let formattedConclusionText = '';
-  // --- End variable declaration changes ---
-
   let generatedImagesWithUrls = [];
   let finalContent = '';
   const embedsToSend = [];
@@ -304,173 +251,131 @@ async function processQueueDiscord() {
     if (missingEmbeds) {
          initialStatusContent += `⚠️ I am missing the **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission, so the rich embed won't display full details.\n\n`;
     }
-     // Note: MessageContent is not strictly required by this /edit flow, but warning is okay
-    if (missingMessageContent) {
-         initialStatusContent += `⚠️ I am missing the **${getPermissionName(PERMISSIONS.MessageContent)}** permission, which might limit understanding of the original message's content.\n\n`;
-    }
      initialStatusContent += interaction.commandName === 'generate' ? '✨ Wowza I see.. Your request is on the way!' : '🪄 Getting ready to remix your creation!';
-
-    // Check if interaction is still valid/editable before attempting to editReply
-    // This can happen if the user cancels the interaction or it times out before processing
     if (!interaction.replied && !interaction.deferred) {
         console.warn(`Interaction ${interaction.id} was not replied or deferred before processing queue. Skipping.`);
-        return; // Skip processing this interaction if it's not in an editable state
+        queue.shift(); 
+        setImmediate(processQueueDiscord); 
+        return; 
     }
 
     await interaction.editReply(initialStatusContent);
-
-    // Prompt is required for both commands per your config
     const promptString = interaction.options.getString("prompt");
-    if (!promptString) { // Defensive check, should be guaranteed by command config
+    if (!promptString) { 
         finalContent = `${initialStatusContent}\n\n❌ Critical Error: Prompt option is missing. Please ensure the command is used correctly.`;
         await interaction.editReply({ content: finalContent });
         console.error(`[processQueueDiscord] Prompt option missing for interaction ${interaction.id}`);
+        queue.shift();
+        setImmediate(processQueueDiscord);
         return;
     }
 
-     // --- Generate text and format within the try block ---
      intermediateText = sanitizeText(await generateIntermediateText(promptString));
-     conclusionText = sanitizeText(await generateConclusionText(promptString));
-
      formattedIntermediateText = intermediateText ? `*${intermediateText.replace(/\.$/, '').trim()}*` : '';
-     formattedConclusionText = conclusionText ? `*${conclusionText.replace(/\.$/, '').trim()}*` : '';
-     // --- End text generation/formatting ---
 
-
-    let generationStatusContent = initialStatusContent;
+    let generationStatusContent = initialStatusContent; // Start from initial content
     if (formattedIntermediateText) {
         generationStatusContent += `${generationStatusContent ? '\n\n' : ''}${formattedIntermediateText}`;
     }
-    generationStatusContent += `${generationStatusContent ? '\n\n' : ''}${interaction.commandName === 'generate' ? '🎨 Generating your image(s)...' : '🔄 Remixing your image(s)...'}`;
-
+    generationStatusContent += `${generationStatusContent ? '\n\n' : ''}${interaction.commandName === 'generate' ? '> 🎨 Painting my canvas!' : '> 🔄 Tweaking Pixels, just a moment!'}`;
     await interaction.editReply(generationStatusContent);
 
 
     if (interaction.commandName === 'generate') {
        generatedImagesWithUrls = await generateImage(interaction);
     } else if (interaction.commandName === 'edit') {
-       // --- Handle /edit logic using Message ID and Index options ---
-
-       // Retrieve the required message_id and index options as defined in your command config
-       const targetMessageId = interaction.options.getString("message_id"); // Use "message_id" as per your config
-       const requestedIndex = interaction.options.getInteger("index"); // Use "index" as per your config
-       const numberOfImages = interaction.options.getInteger("number_of_images"); // Use "number_of_images" as per your config
-
-       // Check if required options are actually present (should be if command is defined correctly)
-       // prompt and number_of_images are also required according to your config
-       if (!targetMessageId || requestedIndex === null || promptString === null || numberOfImages === null) {
-            console.error(`[processQueueDiscord][/edit] Required options missing for interaction ${interaction.id}: message_id=${targetMessageId}, index=${requestedIndex}, prompt=${promptString}, numberOfImages=${numberOfImages}`);
-             finalContent = `${initialStatusContent}\n\n❌ Critical Error: Required options (\`message_id\`, \`index\`, \`prompt\`, \`number_of_images\`) were not provided or were invalid. Please ensure the command is used correctly.`;
+       const targetMessageId = interaction.options.getString("original_picture_message_id");
+       const requestedIndex = interaction.options.getInteger("img_index_to_edit");
+       const aspectRatio = interaction.options.getString("aspect_ratio") || "16:9";
+       if (!targetMessageId || requestedIndex === null) {
+            console.error(`[processQueueDiscord][/edit] Required options missing for interaction ${interaction.id}: original_picture_message_id=${targetMessageId}, img_index_to_edit=${requestedIndex}`);
+             finalContent = `${initialStatusContent}\n\n❌ Critical Error: Required options (\`original_picture_message_id\`, \`img_index_to_edit\`) were not provided or were invalid. Please ensure the command is used correctly.`;
              await interaction.editReply({ content: finalContent });
-             return;
+             queue.shift(); setImmediate(processQueueDiscord); return; 
        }
-
        let referencedMessage;
        try {
-            // ReadMessageHistory permission was checked as fatal before queueing
             console.log(`[processQueueDiscord][/edit] Attempting to fetch message with ID: ${targetMessageId} for user ${interaction.user.id} in channel ${interaction.channel?.id}`);
-            // Ensure the channel exists and has the messages property
             if (interaction.channel && 'messages' in interaction.channel) {
                  referencedMessage = await interaction.channel.messages.fetch(targetMessageId);
                  console.log(`[processQueueDiscord][/edit] Successfully fetched message ID: ${targetMessageId}`);
             } else {
                  console.error(`[processQueueDiscord][/edit] Interaction channel is null or does not have a messages manager.`);
-                 finalContent = `${initialStatusContent}\n\n❌ Could not fetch message data. Invalid channel.`;
-                 if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+                 finalContent = `${generationStatusContent}\n\n❌ Could not fetch message data. Invalid channel.`; 
                  await interaction.editReply({ content: finalContent });
-                 return;
+                 queue.shift(); setImmediate(processQueueDiscord); return; 
             }
 
        } catch (fetchError) {
             console.error(`Failed to fetch message ID ${targetMessageId} for user ${interaction.user.id} in channel ${interaction.channel?.id}:`, fetchError);
-            finalContent = `${initialStatusContent}\n\n❌ Could not find the message with ID \`${targetMessageId}\`. It might have been deleted, is too old, or I lack permissions (**${getPermissionName(PERMISSIONS.ReadMessageHistory)}**).`;
-             if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+            finalContent = `${generationStatusContent}\n\n❌ Could not find the message with ID \`${targetMessageId}\`. It might have been deleted, is too old, or I lack permissions (**${getPermissionName(PERMISSIONS.ReadMessageHistory)}**).`; // Use generationStatusContent
             await interaction.editReply({ content: finalContent });
-            return;
+            queue.shift(); setImmediate(processQueueDiscord); return; 
        }
 
-       // Basic validation of the fetched message
        if (referencedMessage.author.id !== client.user.id || !referencedMessage.embeds || referencedMessage.embeds.length === 0) {
-            finalContent = `${initialStatusContent}\n\n❌ The message with ID \`${targetMessageId}\` does not appear to be one of my image generation results (missing bot author or embed). Please provide the ID of one of my image messages.`;
-            if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+            finalContent = `${generationStatusContent}\n\n❌ The message with ID \`${targetMessageId}\` does not appear to be one of my image generation results (missing bot author or embed). Please provide the ID of one of my image messages.`; // Use generationStatusContent
             await interaction.editReply({ content: finalContent });
             console.warn(`/edit provided message ID ${targetMessageId} which is not a bot/image message by user ${interaction.user.id}`);
-            return;
+            queue.shift(); setImmediate(processQueueDiscord); return; 
        }
 
-       // Try to get the original interaction ID from the footer
        const originalEmbed = referencedMessage.embeds[0];
        const footerText = originalEmbed?.footer?.text;
-       // Assuming footer format is "Created by Elixpo AI | ID: <interaction_id>"
        const idMatch = footerText?.match(/ID: (\d+)/);
        const originalInteractionId = idMatch ? idMatch[1] : null;
 
        if (!originalInteractionId) {
-           finalContent = `${initialStatusContent}\n\n❌ Could not find the necessary information (original interaction ID) in the embed footer of message ID \`${targetMessageId}\`. The message format might be outdated or corrupted.`;
-           if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+           finalContent = `${generationStatusContent}\n\n❌ Could not find the necessary information (original interaction ID) in the embed footer of message ID \`${targetMessageId}\`. The message format might be outdated or corrupted.`; // Use generationStatusContent
            await interaction.editReply({ content: finalContent });
            console.warn(`Could not parse original interaction ID from footer "${footerText}" for user ${interaction.user.id} (message ID: ${targetMessageId})`);
-           return;
+            queue.shift(); setImmediate(processQueueDiscord); return; 
        }
-
-       // Retrieve the original image data from the cache using the original interaction ID
        const originalCacheEntry = imageCache.get(originalInteractionId);
 
        if (!originalCacheEntry || !originalCacheEntry.data) {
-           finalContent = `${initialStatusContent}\n\n❌ The data for the original image from message ID \`${targetMessageId}\` has expired from the cache. Please try generating the original image again and then use the \`/edit\` command with the new message ID.`;
-           if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+           finalContent = `${generationStatusContent}\n\n❌ The data for the original image from message ID \`${targetMessageId}\` has expired from the cache. Please try generating the original image again and then use the \`/edit\` command with the new message ID.`; // Use generationStatusContent
            await interaction.editReply({ content: finalContent });
            console.warn(`Original cache data not found for interaction ${originalInteractionId} (via message ID ${targetMessageId}). User ${interaction.user.id} requested edit.`);
-           return;
+            queue.shift(); setImmediate(processQueueDiscord); return; 
        }
-
-       // Validate the index against the available images in the cache
        if (requestedIndex < 1 || requestedIndex > originalCacheEntry.data.length) {
-            finalContent = `${initialStatusContent}\n\n❌ Invalid image index \`${requestedIndex}\` for message ID \`${targetMessageId}\`. Please provide an index between 1 and ${originalCacheEntry.data.length} for that message.`;
-            if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+            finalContent = `${generationStatusContent}\n\n❌ Invalid image img_index_to_edit \`${requestedIndex}\` for message ID \`${targetMessageId}\`. Please provide an img_index_to_edit between 1 and ${originalCacheEntry.data.length} for that message.`; // Use generationStatusContent
             await interaction.editReply({ content: finalContent });
-            console.warn(`Invalid image index ${requestedIndex} provided by user ${interaction.user.id} for message ID ${targetMessageId}. Max index was ${originalCacheEntry.data.length}`);
-            return;
+            console.warn(`Invalid image img_index_to_edit ${requestedIndex} provided by user ${interaction.user.id} for message ID ${targetMessageId}. Max img_index_to_edit was ${originalCacheEntry.data.length}`);
+            queue.shift(); setImmediate(processQueueDiscord); return; 
        }
 
-       const sourceImageItem = originalCacheEntry.data[requestedIndex - 1]; // Get the object for the specific image (0-indexed)
-       const sourceImageUrl = sourceImageItem.url; // Get the URL of the image from the cache
+       const sourceImageItem = originalCacheEntry.data[requestedIndex - 1];
+       const sourceImageUrl = sourceImageItem.url;
 
        if (!sourceImageUrl) {
-            finalContent = `${initialStatusContent}\n\n❌ Could not retrieve the URL for the selected image from the cache for message ID \`${targetMessageId}\`.`;
-            if (formattedConclusionText) finalContent += `\n\n${formattedConclusionText}`;
+            finalContent = `${generationStatusContent}\n\n❌ Could not retrieve the URL for the selected image from the cache for message ID \`${targetMessageId}\`.`; // Use generationStatusContent
             await interaction.editReply({ content: finalContent });
             console.warn(`Could not get URL for image ${requestedIndex} from cache for interaction ${originalInteractionId} (via message ID ${targetMessageId}).`);
-            return;
+             queue.shift(); setImmediate(processQueueDiscord); return; 
        }
 
-       console.log(`User ${interaction.user.tag} is editing image ${requestedIndex} from message ID ${targetMessageId} (original interaction ${originalInteractionId}) using source URL: ${sourceImageUrl}`);
-
-       // Generate the new image(s) using the remix function, passing the cleaned source URL
-       generatedImagesWithUrls = await generateRemixImage(interaction, sourceImageUrl); // Pass the URL fetched from cache
-       // --- End /edit logic ---
+       console.log(`User ${interaction.user.tag} is editing image ${requestedIndex} from message ID ${targetMessageId} (original interaction ${originalInteractionId}) using source URL: ${sourceImageUrl} with aspect ratio: ${aspectRatio}`);
+       generatedImagesWithUrls = await generateRemixImage(interaction, sourceImageUrl, aspectRatio); 
     }
+    // conclusionText = sanitizeText(await generateConclusionText(promptString));
+    // formattedConclusionText = conclusionText ? `*${conclusionText.replace(/\.$/, '').trim()}*` : '';
+
 
     const generatedAttachments = generatedImagesWithUrls.map(item => item.attachment);
-
-    // --- Send the final reply with images, embed, text, and buttons ---
     if (generatedAttachments && generatedAttachments.length > 0) {
-       const prompt = interaction.options.getString("prompt"); // Prompt is required for both commands
-       const numberOfImagesRequested = interaction.options.getInteger("number_of_images") || 1; // Default if somehow missing, but config says required
-       const actualNumberOfImages = generatedAttachments.length;
-       const aspectRatio = interaction.options.getString("aspect_ratio") || "3:2";
+       const prompt = interaction.options.getString("prompt");
+       const numberOfImagesRequested = interaction.commandName === 'generate' ? (interaction.options.getInteger("number_of_images") || 1) : 1;
+       const actualNumberOfImages = generatedAttachments.length; 
+       const aspectRatio = interaction.options.getString("aspect_ratio") || "16:9";
        const theme = interaction.options.getString("theme") || "normal";
        const enhancement = interaction.options.getBoolean("enhancement") || false;
-       const seed = interaction.options.getInteger("seed"); // Seed is optional
-       // Model for remix is always gptimage regardless of the 'model' option provided by the user
        const modelUsed = interaction.commandName === 'edit' ? "gptimage" : (interaction.options.getString("model") || "flux");
-
+       const seed = interaction.options.getInteger("seed"); 
 
        // Construct the final content string
-       finalContent = `${missingEmbeds ? `⚠️ Missing **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission, so the rich embed won't display full details.\n\n` : ''}` +
-                      `${missingMessageContent ? `⚠️ Missing **${getPermissionName(PERMISSIONS.MessageContent)}** permission.\n\n` : ''}` +
-                      (formattedIntermediateText || '');
-
+       finalContent = `${missingEmbeds ? `⚠️ Missing **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission, so the rich embed won't display full details.\n\n` : ''}` + (formattedIntermediateText || ''); 
        if (interaction.commandName === 'generate') {
             finalContent += `${finalContent ? '\n\n' : ''}✨ Your images have been successfully generated!`;
        } else if (interaction.commandName === 'edit') {
@@ -481,8 +386,6 @@ async function processQueueDiscord() {
            finalContent += `${finalContent ? '\n\n' : ''}${formattedConclusionText}`;
        }
 
-
-       // Build the enhanced embed *only if* EmbedLinks permission is present
        if (!missingEmbeds) {
            const embed = new EmbedBuilder()
               .setTitle(interaction.commandName === 'generate' ? '🖼️ Image Generated Successfully' : '🔄 Image Remixed Successfully')
@@ -500,21 +403,20 @@ async function processQueueDiscord() {
                     `• **Model**: \`${modelUsed}\`\n` +
                     `• **Aspect Ratio**: \`${aspectRatio}\`\n` +
                     `• **Enhanced**: \`${enhancement ? 'Yes' : 'No'}\`\n` +
-                    `• **Images**: \`${actualNumberOfImages}${numberOfImagesRequested !== actualNumberOfImages ? ` (Requested ${numberOfImagesRequested})` : ''}\`` +
-                    `${seed !== null ? `\n• **Seed**: \`${seed}\`` : ''}`,
+                    `• **Images**: \`${actualNumberOfImages}${interaction.commandName === 'generate' && numberOfImagesRequested !== actualNumberOfImages ? ` (Requested ${numberOfImagesRequested})` : ''}\`` +
+                    `${seed !== null && interaction.commandName === 'generate' && actualNumberOfImages === 1 ? `\n• **Seed**: \`${seed}\`` : ''}`, // Only show user seed if generate and n=1
                   inline: false
                 }
               )
               .setTimestamp()
               .setFooter({
-                text: `Created by Elixpo AI | ID: ${interaction.id}`, // IMPORTANT: Add the current interaction ID here
+                text: `Created by ElixpoArt | \n Interaction ID: ${interaction.id} \n Message ID: ${interaction.channel?.lastMessageId || "Oopsie!!"}`,
                 iconURL: client.user.displayAvatarURL()
               });
 
-            // For /edit, add a field showing the source using the options
             if (interaction.commandName === 'edit') {
-                 const targetMessageId = interaction.options.getString("message_id");
-                 const requestedIndex = interaction.options.getInteger("index");
+                 const targetMessageId = interaction.options.getString("original_picture_message_id");
+                 const requestedIndex = interaction.options.getInteger("img_index_to_edit");
                  const targetMessageLink = `[this message](https://discord.com/channels/${interaction.guild?.id || '@me'}/${interaction.channel?.id || 'unknown'}/${targetMessageId})`;
                  embed.addFields({
                      name: 'Source',
@@ -525,61 +427,61 @@ async function processQueueDiscord() {
 
            embedsToSend.push(embed);
        } else {
-            // If EmbedLinks is missing, add parameters to content instead
             finalContent += `${finalContent ? '\n\n' : ''}**🛠️ Generation Parameters:**\n` +
                             `• **Theme**: \`${theme}\`\n` +
                             `• **Model**: \`${modelUsed}\`\n` +
                             `• **Aspect Ratio**: \`${aspectRatio}\`\n` +
                             `• **Enhanced**: \`${enhancement ? 'Yes' : 'No'}\`\n` +
-                            `• **Images**: \`${actualNumberOfImages}${numberOfImagesRequested !== actualNumberOfImages ? ` (Requested ${numberOfImagesRequested})` : ''}\`` +
-                            `${seed !== null ? `\n• **Seed**: \`${seed}\`` : ''}`;
+                             `• **Images**: \`${actualNumberOfImages}${interaction.commandName === 'generate' && numberOfImagesRequested !== actualNumberOfImages ? ` (Requested ${numberOfImagesRequested})` : ''}\`` +
+                            `${seed !== null && interaction.commandName === 'generate' && actualNumberOfImages === 1 ? `\n• **Seed**: \`${seed}\`` : ''}`;
 
             if (interaction.commandName === 'edit') {
-                 const targetMessageId = interaction.options.getString("message_id");
-                 const requestedIndex = interaction.options.getInteger("index");
+                 const targetMessageId = interaction.options.getString("original_picture_message_id");
+                 const requestedIndex = interaction.options.getInteger("img_index_to_edit");
                  finalContent += `\n• **Source**: Remixed from image #${requestedIndex} in message ID \`${targetMessageId}\`.`;
             }
        }
 
-
-       // --- Add Buttons ---
-       // Add Edit button (always exists)
        const editButton = new ButtonBuilder()
-           .setLabel('Edit / Remix') // Updated label
+           .setLabel('Remix')
            .setStyle(ButtonStyle.Secondary)
-           .setCustomId('edit_image'); // Custom ID needed for interaction handling
+           .setCustomId('edit_image'); 
        actionRow.addComponents(editButton);
 
        // Add Download buttons based on the number of images generated *in this response*
        if (actualNumberOfImages === 1) {
-            const firstImageUrl = generatedImagesWithUrls[0]?.url;
-            // --- FIX: Check URL length before using Link button ---
-            const DISCORD_LINK_BUTTON_MAX_URL_LENGTH = 512; // Discord limit
-            if (firstImageUrl && firstImageUrl.length <= DISCORD_LINK_BUTTON_MAX_URL_LENGTH) {
-               // Use Link style button if it's a single image and URL is short enough
-               const downloadButton = new ButtonBuilder()
-                   .setLabel('Download')
-                   .setStyle(ButtonStyle.Link)
-                   .setURL(firstImageUrl);
-               actionRow.addComponents(downloadButton);
-               console.log(`[processQueueDiscord] Added Link button for single image (URL length: ${firstImageUrl.length}).`);
+        const firstImageUrl = generatedImagesWithUrls[0]?.url;
+        const DISCORD_LINK_BUTTON_MAX_URL_LENGTH = 512;
+        // Validate URL: must be a non-empty string, start with http, and not exceed Discord's limit
+        const isValidUrl = typeof firstImageUrl === 'string'
+            && firstImageUrl.startsWith('http')
+            && firstImageUrl.length <= DISCORD_LINK_BUTTON_MAX_URL_LENGTH;
+        if (isValidUrl) {
+            const downloadButton = new ButtonBuilder()
+                .setLabel('Download')
+                .setStyle(ButtonStyle.Link)
+                .setURL(firstImageUrl);
+            actionRow.addComponents(downloadButton);
+            console.log(`[processQueueDiscord] Added Link button for single image (URL length: ${firstImageUrl.length}).`);
+        } else {
+            // Always fallback to a customId button if URL is invalid
+            const downloadButton = new ButtonBuilder()
+                .setLabel('Download')
+                .setStyle(ButtonStyle.Primary)
+                .setCustomId(`download_${interaction.id}_0`);
+            actionRow.addComponents(downloadButton);
+            if (!firstImageUrl) {
+                console.log(`[processQueueDiscord] No valid URL for Link button, using Primary button with Custom ID.`);
             } else {
-                // Fallback to custom ID button if URL is too long or not available
-                 console.log(`[processQueueDiscord] URL too long (${firstImageUrl?.length || 'N/A'} > ${DISCORD_LINK_BUTTON_MAX_URL_LENGTH}) or unavailable for single image. Using Primary button with Custom ID.`);
-                 const downloadButton = new ButtonBuilder()
-                    .setLabel('Download')
-                    .setStyle(ButtonStyle.Primary)
-                    .setCustomId(`download_${interaction.id}_0`); // Use interaction.id and index 0
-                 actionRow.addComponents(downloadButton);
+                console.log(`[processQueueDiscord] URL too long or invalid (${firstImageUrl}), using Primary button with Custom ID.`);
             }
-             // --- End FIX ---
-
-       } else { // Multiple images require custom download buttons (already uses Primary style)
+        }
+       } else { // Multiple images require custom download buttons
             for (let i = 0; i < actualNumberOfImages; i++) {
                 const downloadButton = new ButtonBuilder()
                     .setLabel(`Download #${i + 1}`)
                     .setStyle(ButtonStyle.Primary)
-                    .setCustomId(`download_${interaction.id}_${i}`); // Use interaction.id and current index
+                    .setCustomId(`download_${interaction.id}_${i}`); // Use interaction.id and current img_index_to_edit
                  actionRow.addComponents(downloadButton);
             }
              console.log(`[processQueueDiscord] Added ${actualNumberOfImages} Primary buttons for multiple images.`);
@@ -589,12 +491,10 @@ async function processQueueDiscord() {
        const hasComponents = actionRow.components.length > 0;
 
        // Cache if any images were generated. This is necessary for download buttons on the *new* message
-       // and potentially for editing the result of this edit.
+       // and for editing the result of this generation.
        const needsCaching = generatedImagesWithUrls.length > 0;
 
        if (needsCaching) {
-               // Only cache if we generated *any* images
-               // Cache includes the generated attachments and their URLs
                imageCache.set(interaction.id, {
                    data: generatedImagesWithUrls,
                    timestamp: Date.now()
@@ -620,8 +520,7 @@ async function processQueueDiscord() {
     } else {
        // If no attachments were generated, send error message
        let errorContent = `${missingEmbeds ? `⚠️ Missing **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission.\n\n` : ''}` +
-                          `${missingMessageContent ? `⚠️ Missing **${getPermissionName(PERMISSIONS.MessageContent)}** permission.\n\n` : ''}` +
-                          (formattedIntermediateText || ''); // formattedIntermediateText is now accessible
+                          (formattedIntermediateText || '');
 
        if (interaction.commandName === 'generate') {
             errorContent += `${errorContent ? '\n\n' : ''}⚠️ Failed to generate images. The image service might be temporarily unavailable or returned no valid image data.`;
@@ -630,7 +529,7 @@ async function processQueueDiscord() {
        }
        errorContent += ` Please try again later.`;
 
-        if (formattedConclusionText) { // formattedConclusionText is now accessible
+        if (formattedConclusionText) {
            errorContent += `${errorContent ? '\n\n' : ''}${formattedConclusionText}`;
         }
 
@@ -643,27 +542,32 @@ async function processQueueDiscord() {
   } catch (error) {
     console.error('Error processing queue / generating/remixing image:', error);
     try {
-       //formattedIntermediateText and formattedConclusionText are now in scope here
+       // formattedIntermediateText and formattedConclusionText are now in scope here
        let errorContent = `${missingEmbeds ? `⚠️ Missing **${getPermissionName(PERMISSIONS.EmbedLinks)}** permission.\n\n` : ''}` +
-                          `${missingMessageContent ? `⚠️ Missing **${getPermissionName(PERMISSIONS.MessageContent)}** permission.\n\n` : ''}` +
                           (formattedIntermediateText || ''); // Use the potentially empty string
 
         errorContent += `${errorContent ? '\n\n' : ''}⚠️ An unexpected error occurred while processing your request. Please try again later.`;
         if (formattedConclusionText) { // Use the potentially empty string
            errorContent += `${errorContent ? '\n\n' : ''}${formattedConclusionText}`;
         }
-       await interaction.editReply({ content: errorContent });
+       // Check if interaction is still in a state where editReply is possible
+        if (!interaction.replied && !interaction.deferred) {
+             console.warn(`Interaction ${interaction.id} became invalid before sending final error message.`);
+        } else {
+            await interaction.editReply({ content: errorContent });
+        }
     } catch (editError) {
-       console.error("Failed to edit reply with error message:", editError);
+       console.error("Failed to edit reply with error message during main error handling:", editError);
     }
 
   } finally {
-    // IMPORTANT: Only shift and process the next item if the current interaction was processed
-    // This prevents infinite loops if an interaction fails *before* shifting
+    // IMPORTANT: Only shift and process the next item if the current interaction was processed successfully or failed *after* being the head of the queue
     if (queue.length > 0 && queue[0].id === interaction.id) {
        queue.shift();
     } else {
         console.warn(`Queue head does not match the interaction that just finished processing (${interaction.id}). Queue head: ${queue.length > 0 ? queue[0].id : 'empty'}. This might indicate a logic issue or multiple parallel processing attempts.`);
+         // If the queue head doesn't match, something is wrong, don't shift. Log the state.
+         // Consider adding more robust queue management if this warning occurs frequently.
     }
     setImmediate(processQueueDiscord); // Use setImmediate for async processing
   }
@@ -693,13 +597,15 @@ function sanitizeText(text) {
     sanitized = sanitized.replace(/^>.*$/gm, '');
      // Remove list markers
     sanitized = sanitized.replace(/^[\s]*[-+*][\s]+/gm, '');
-    // Remove extra asterisks/underscores that aren't part of valid markdown pairs
-    // simplified regex to be less aggressive but still clean common issues
-    sanitized = sanitized.replace(/([^\s\*\_])\*\*/g, '$1').replace(/\*\*([^\s\*\_])/g, '$1'); // ** not paired correctly
-    sanitized = sanitized.replace(/([^\s\*\_])\*/g, '$1').replace(/\*([^\s\*\_])/g, '$1');   // * not paired correctly
-    sanitized = sanitized.replace(/([^\s\*\_])__/g, '$1').replace(/__([^\s\*\_])/g, '$1'); // __ not paired correctly
-    sanitized = sanitized.replace(/([^\s\*\_])_/g, '$1').replace(/_([^\s\*\_])/g, '$1');   // _ not paired correctly
-    sanitized = sanitized.replace(/([^\s\*\_])~~/g, '$1').replace(/~~([^\s\*\_])/g, '$1');   // ~~ not paired correctly
+    // Remove extra asterisks/underscores that aren't part of valid markdown pairs or are at word boundaries
+    // Less aggressive regex, allows **bold** and *italics*
+    sanitized = sanitized.replace(/(?<!\s)\*\*([^\s*]+)\*\*(?!\s)/g, '**$1**'); // Protect **...** surrounded by non-space
+    sanitized = sanitized.replace(/(?<!\s)\*([^\s*]+)\*(?!\s)/g, '*$1*');   // Protect *...* surrounded by non-space
+    sanitized = sanitized.replace(/(?<!\s)__([^\s_]+)__(?!\s)/g, '__$1__'); // Protect __...__ surrounded by non-space
+    sanitized = sanitized.replace(/(?<!\s)_([^\s_]+)_(?!\s)/g, '_$1_');   // Protect _..._ surrounded by non-space
+    sanitized = sanitized.replace(/(?<!\s)~~([^\s~]+)~~(?!\s)/g, '~~$1~~'); // Protect ~~...~~ surrounded by non-space
+    // Then remove any remaining unpaired markdown characters
+    sanitized = sanitized.replace(/[\*_~`]/g, '');
 
 
     // Basic HTML entities (less likely but safe)
@@ -718,7 +624,7 @@ function sanitizeText(text) {
 async function generateIntermediateText(promptContent) {
   const textURL = "https://text.pollinations.ai/openai";
   const payload = {
-    model: "evil",
+    model: "evil", // Using 'evil' as requested, but consider if a different model is better for this task
     messages: [
       {
         role: "system",
@@ -729,7 +635,9 @@ async function generateIntermediateText(promptContent) {
         content: promptContent
       },
     ],
-    seed: 23, // Keep seed 23 for consistent text generation? Or use a different one?
+    // Use a fixed seed or a different one for text generation? Keep 23 or make random?
+    // Let's use a fixed seed (e.g., 42) for consistent text style, distinct from image seeds.
+    seed: 42,
     referrer: "elixpoart",
   };
 
@@ -745,24 +653,24 @@ async function generateIntermediateText(promptContent) {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Error generating intermediate text: ${response.status} ${response.statusText}`, errorBody);
-      return 'Summoning the creative spirits...';
+      return 'Summoning the creative spirits...'; // Fallback text
     }
 
     const textResult = await response.json();
     return textResult.choices && textResult.choices[0] && textResult.choices[0].message && textResult.choices[0].message.content
            ? textResult.choices[0].message.content
-           : 'Wooglie Boogliee.. Something is cooking!!';
+           : 'Wooglie Boogliee.. Something is cooking!!'; // Fallback text
 
   } catch (error) {
     console.error('Network or parsing error generating intermediate text:', error);
-    return 'The AI generators are whirring...';
+    return 'The AI generators are whirring...'; // Fallback text
   }
 }
 
 async function generateConclusionText(promptContent) {
   const textURL = "https://text.pollinations.ai/openai";
   const payload = {
-    model: "evil",
+    model: "evil", // Using 'evil' as requested
     messages: [
       {
         role: "system",
@@ -773,7 +681,8 @@ async function generateConclusionText(promptContent) {
         content: `The image based on "${promptContent}" is now complete.` // Use the prompt in the user message
       },
     ],
-    seed: 23, // Keep seed 23 for consistent text generation?
+    // Use a fixed seed (e.g., 43) for consistent text style, distinct from image seeds.
+    seed: 43,
     referrer: "elixpoart",
   };
 
@@ -789,30 +698,29 @@ async function generateConclusionText(promptContent) {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Error generating conclusion text: ${response.status} ${response.statusText}`, errorBody);
-      return null;
+      return null; // Allow null or provide a fallback like "Done!"
     }
 
     const textResult = await response.json();
     return textResult.choices && textResult.choices[0] && textResult.choices[0].message && textResult.choices[0].message.content
            ? textResult.choices[0].message.content
-           : 'Behold the creation!';
+           : 'Behold the creation!'; // Fallback text
   } catch (error) {
     console.error('Network or parsing error generating conclusion text:', error);
-    return null;
+    return null; // Allow null or provide a fallback
   }
 }
 
 
-// Modified to return objects containing { attachment, url }
+// Modified to return objects containing { attachment, url } and handle multiple seeds
 async function generateImage(interaction) {
   const prompt = interaction.options.getString("prompt");
-  const numberOfImages = interaction.options.getInteger("number_of_images") || 1; // Default if not provided, but check your command config
-  const aspectRatio = interaction.options.getString("aspect_ratio") || "3:2";
+  const numberOfImages = interaction.options.getInteger("number_of_images") || 1;
+  const aspectRatio = interaction.options.getString("aspect_ratio") || "16:9";
   const theme = interaction.options.getString("theme") || "normal";
   const enhancement = interaction.options.getBoolean("enhancement") || false;
-  const model = interaction.options.getString("model") || "flux"; // Default model for generate is flux
+  const model = interaction.options.getString("model") || "flux"; 
   const userProvidedSeed = interaction.options.getInteger("seed");
-  const baseSeed = userProvidedSeed !== null ? userProvidedSeed : Math.floor(Math.random() * 10000000) + 1000;
 
   let width = 1024, height = 683;
 
@@ -824,43 +732,47 @@ async function generateImage(interaction) {
     case '1:1': width = height = 1024; break;
     case '4:3': width = 1024; height = 768; break;
     case '3:2': width = 1024; height = 683; break;
-    default:
-      width = 1024; height = 683; break;
+    default: 
+      width = 1024; height = 576; break;
   }
 
   const suffixPrompt = getSuffixPrompt(theme);
-  const encodedPrompt = `${prompt.trim()} ${suffixPrompt}`.trim();
+  let encodedPrompt = `${prompt.trim()} ${suffixPrompt}`.trim();
 
   const imagesWithUrls = [];
   const errors = [];
 
   for (let i = 0; i < numImagesToGenerate; i++) {
-    // Use the base seed + index for multiple images if no specific seed was provided
-    // If a specific seed was provided, all images use that *same* seed.
-    const currentSeed = userProvidedSeed !== null ? baseSeed : baseSeed + i;
+    let currentSeed;
+    if (numImagesToGenerate === 1) {
+        currentSeed = userProvidedSeed !== null ? userProvidedSeed : Math.floor(Math.random() * 1000000000) + 1;
+    } else {
+        currentSeed = Math.floor(Math.random() * 1000000000) + 1;
+    }
 
-    // Construct the URL for standard generation
-    // Use URLSearchParams for cleaner parameter handling
+    if(model === 'gptimage') {
+        encodedPrompt = `${prompt.trim()} with the strict aspect ratio of ${aspectRatio}`;
+    }
+
     const baseURL = "https://image.pollinations.ai/prompt/";
     const promptParam = encodeURIComponent(encodedPrompt);
+
+
     const queryParams = new URLSearchParams({
         width: width.toString(),
         height: height.toString(),
-        // CONSIDER: Use currentSeed instead of hardcoded 23 here?
-        seed: '23', // Keeping hardcoded 23 as in original generateImage
-        model: model, // Use the selected model
+        seed: currentSeed.toString(), 
+        model: model,
         enhance: enhancement.toString(),
         nologo: 'true',
-        referrer: 'elixpoart', // Use the bot's referrer
-        token: process.env.POLLINATIONS_TOKEN || 'fEWo70t94146ZYgk', // Use environment variable for token, fallback to elixpoart
-        // No 'image' parameter for standard generation
+        referrer: 'elixpoart',
+        token: process.env.POLLINATIONS_TOKEN
     });
 
     const imgurl = `${baseURL}${promptParam}?${queryParams.toString()}`;
 
-
     try {
-      console.log(`[Generate] Fetching image ${i + 1}/${numImagesToGenerate} from: ${imgurl}`);
+      console.log(`[Generate] Fetching image ${i + 1}/${numImagesToGenerate} (Seed: ${currentSeed}) from: ${imgurl}`);
       const response = await fetch(imgurl, { method: 'GET' });
 
       if (!response.ok) {
@@ -870,11 +782,12 @@ async function generateImage(interaction) {
         continue;
       }
 
-      const buffer = await response.buffer(); // Use buffer() like in test.js
+      const buffer = await response.buffer();
 
-      if (buffer.length > 100) { // Basic check for minimal data size
+      // Pollinations returns a small HTML page on errors, check buffer size
+      if (buffer.length > 2000) { // Increased check size slightly to avoid small HTML responses
          const attachment = new AttachmentBuilder(buffer, { name: `elixpo_ai_image_${i + 1}.jpg` });
-         imagesWithUrls.push({ attachment: attachment, url: imgurl }); // Store both attachment and URL
+         imagesWithUrls.push({ attachment: attachment, url: imgurl });
          console.log(`[Generate] Successfully fetched image ${i + 1}. Buffer size: ${buffer.length}`);
       } else {
          console.error(`[Generate] Fetched data for image ${i + 1} is too small (${buffer.length} bytes), likely an error response payload.`);
@@ -897,37 +810,35 @@ async function generateImage(interaction) {
 }
 
 
-// New function for remixing/editing images, updated based on test.js URL format
-async function generateRemixImage(interaction, sourceImageUrl) {
+async function generateRemixImage(interaction, sourceImageUrl, aspectRatio) {
   const prompt = interaction.options.getString("prompt");
-  const numberOfImages = interaction.options.getInteger("number_of_images") || 1;
-  const numImagesToGenerate = Math.max(1, Math.min(4, numberOfImages));
-
+  const numImagesToGenerate = 1;
+  const userProvidedSeed = interaction.options.getInteger("seed");
+  const currentSeed = userProvidedSeed !== null ? userProvidedSeed : Math.floor(Math.random() * 1000000000) + 1;
   const imagesWithUrls = [];
   const errors = [];
 
+  // Loop runs only once because numImagesToGenerate is fixed at 1
   for (let i = 0; i < numImagesToGenerate; i++) {
-      // Simplify URL construction to match test.js
       const baseURL = "https://image.pollinations.ai/prompt/";
-      const promptParam = encodeURIComponent(prompt.trim());
+      const promptParam = `${prompt.trim()} with the stric aspect ratio of ${aspectRatio}`;
 
-      // Use the exact same parameters as test.js
       const queryParams = new URLSearchParams({
-          model: 'gptimage',
-          token: process.env.POLLINATIONS_TOKEN || 'fEWo70t94146ZYgk', // Use environment variable for token
-          private: 'true', // Keep private true as in test.js
+          seed: currentSeed.toString(), 
+          model: 'gptimage', 
+          token: process.env.POLLINATIONS_TOKEN,
+          private: 'true',
           nologo: 'true',
-          referrer: 'elixpoart', // Use the bot's referrer
+          referrer: 'elixpoart',
       });
 
-      // Add source image URL last, exactly as test.js does
       let imgurl = `${baseURL}${promptParam}?${queryParams.toString()}`;
       if (sourceImageUrl) {
           imgurl += `&image=${encodeURIComponent(sourceImageUrl)}`;
       }
 
       try {
-          console.log(`[Remix] Fetching image ${i + 1}/${numImagesToGenerate} from: ${imgurl}`);
+          console.log(`[Remix] Fetching image ${i + 1}/${numImagesToGenerate} (Seed: ${currentSeed}) from: ${imgurl}`);
           const response = await fetch(imgurl, { method: 'GET' });
 
           if (!response.ok) {
@@ -939,7 +850,8 @@ async function generateRemixImage(interaction, sourceImageUrl) {
 
           const buffer = await response.buffer();
 
-          if (buffer.length > 100) {
+          // Pollinations returns a small HTML page on errors, check buffer size
+          if (buffer.length > 2000) { // Increased check size slightly
               const attachment = new AttachmentBuilder(buffer, { name: `elixpo_ai_remix_${i + 1}.jpg` });
               imagesWithUrls.push({ attachment: attachment, url: imgurl });
               console.log(`[Remix] Successfully fetched image ${i + 1}. Buffer size: ${buffer.length}`);
@@ -979,7 +891,7 @@ function getSuffixPrompt(theme) {
     case "pixel": return "in a pixel art style with blocky, 8-bit visuals and retro game aesthetics";
     case "normal": return "realistic and natural style";
     case "synthwave": return "in a retro-futuristic synthwave style with neon colors and 80s vibes";
-    default: return "artistic style";
+    default: return "artistic style"; // Fallback
   }
 }
 
@@ -992,8 +904,24 @@ if (!process.env.POLLINATIONS_TOKEN) {
 }
 
 
+// Add event listener for unhandled promise rejections to catch potential issues
+process.on('unhandledRejection', error => {
+	console.error('Unhandled promise rejection:', error);
+});
+
 
 client.login(process.env.TOKEN).catch(err => {
     console.error("FATAL ERROR: Failed to login to Discord.", err);
     process.exit(1); // Exit if login fails
 });
+
+
+/*
+
+1. change in the edit command params [checked]
+2. fix the message id in the embeds  [checked]
+3. let 16:9 be the default ratio [checked]
+4. change the default model to flux [checked]
+5. change enhancement to type true/false  [checked]
+ 
+*/ 
