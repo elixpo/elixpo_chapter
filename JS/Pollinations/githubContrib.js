@@ -1,5 +1,5 @@
 
-  const GITHUB_TOKEN = "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";
+  const GITHUB_TOKEN = "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";
 
   async function getTopContributors(owner, repo, topN = 10) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${topN}`;
