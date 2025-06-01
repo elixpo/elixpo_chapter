@@ -32,7 +32,9 @@ document.getElementById("inputImage").addEventListener("click", function () {
             document.querySelectorAll(".modelsTiles").forEach(tile => {
                 tile.style.pointerEvents = "none";
             });
-            document.getElementById("OneImage").style.pointerEvents = "none"
+            document.getElementById("OneImage").style.pointerEvents = "none";
+            document.getElementById("OneImage").className = "fa-solid fa-dice-one";
+            generationNumber = 1;
 
         };
         reader.readAsDataURL(selectedImageFile);
