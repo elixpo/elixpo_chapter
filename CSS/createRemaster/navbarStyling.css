@@ -28,14 +28,14 @@
   border-bottom: 2px solid #1D202A;
   display: flex;
   align-items: center;
-  background-color: #030712; /* Ensure the header has a background color */
-  z-index: 1000; /* Ensure the header stays on top */
+  background-color: #030712; 
+  z-index: 1000; 
 }
 
 .appName {
     position: absolute;
     left: 5%;
-    font-size: 1.875rem; /* Equivalent to text-3xl */
+    font-size: 1.875548405255515109rem; 
     font-weight: 700;
     font-family: "Kanit", serif;
     color: #fff;
