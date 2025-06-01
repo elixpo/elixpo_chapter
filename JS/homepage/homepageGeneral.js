@@ -48,6 +48,17 @@ document.getElementById("visitGithub").addEventListener("click", () => {
     window.open("https://github.com/Circuit-Overtime/elixpo_ai_chapter/", "_blank");
 })
 
+document.getElementById("discordBotRedirect").addEventListener("click", () => {
+    window.open("https://discord.com/oauth2/authorize?client_id=1214916249222643752", "_blank");
+});
+
+document.getElementById("chromeExtentionRedirect").addEventListener("click", () => {
+    window.open("https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh", "_blank");
+});
+
+
+
+
 
 function scaleContainer() {
     if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
