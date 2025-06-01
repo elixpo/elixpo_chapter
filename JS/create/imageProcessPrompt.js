@@ -61,8 +61,6 @@ async function showAndUploadImageIfNeeded() {
             document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
             document.getElementById("imageHolder").style.backgroundSize = "cover";
             document.getElementById("imageHolder").style.backgroundPosition = "center center";
-            // Notify and animate while uploading
-            notify("Uploading image...", true);
             document.getElementById("overlay").classList.add("display");
             const uploadedUrl = await uploadImageToUguu(selectedImageFile);
             document.getElementById("overlay").classList.remove("display");
