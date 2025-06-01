@@ -197,6 +197,10 @@
     {
         left: 100%;
     }
+    .rejectBtn
+    {
+        left: 60%
+    }
     .interruptButton
     {
         top:  5px;
