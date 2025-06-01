@@ -13,6 +13,10 @@ const db = firebase.firestore();
 let lastPromptText = "";
 const MAX_NOTIFS = 3;
 const notifQueue = [];
+
+window.addEventListener('resize', scaleContainer);
+window.addEventListener('load', scaleContainer);
+
 window.onload = function() {
   showSection("imageCustomization");
   hideSection("imageDisplay");
@@ -373,4 +377,27 @@ function hideSection(sectionID)
 function showSection(sectionID)
 {
   document.getElementById(sectionID).classList.remove("sabotage");
+}
+
+
+function scaleContainer() {
+  if((!window.matchMedia("(max-width: 1080px) and (max-height: 1440px)").matches))
+  {
+
+  const container = document.querySelector('.container');
+  const containerWidth = 1480;
+  const containerHeight = 698;
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+
+  // Calculate scale factors for both width and height
+  const scaleWidth = windowWidth / containerWidth;
+  const scaleHeight = windowHeight / containerHeight;
+
+  // Use the smaller scale factor to ensure the container fits in the viewport
+  const scale = Math.min(scaleWidth, scaleHeight);
+
+  // Apply the scale transform
+  container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
 }
