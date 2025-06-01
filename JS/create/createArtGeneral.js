@@ -18,9 +18,9 @@ window.addEventListener('resize', scaleContainer);
 window.addEventListener('load', scaleContainer);
 
 window.onload = function() {
-  showSection("imageGenerator"); 
+  showSection("imageCustomization"); 
   hideSection("imageDisplay");
-  hideSection("imageCustomization");
+  hideSection("imageGenerator");
   const container = document.querySelector(".sectionContainer"); 
   const imageDisplaySection = document.getElementById("imageCustomization");
   const offsetTop = imageDisplaySection.offsetTop;
