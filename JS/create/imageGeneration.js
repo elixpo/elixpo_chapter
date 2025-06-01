@@ -16,35 +16,53 @@ let extractedDetails = {};
 
 
 async function uploadImageToUguu(file) {
-    notify("Uploading image...", true);
+    if (!file) {
+        notify("No file provided for upload.", false);
+        console.error("Upload Error: No file provided.");
+        return null; // Indicate failure
+    }
+
+
+    notify("Processing Media, just a min", false);
     const formData = new FormData();
-    formData.append('files[]', file);
+    formData.append('file', file);
 
     try {
-        const res = await fetch('https://uguu.se/upload.php', {
+        const res = await fetch(`https://imgelixpo.vercel.app/upload-to-uguu`, {
             method: 'POST',
             body: formData,
-            mode: 'cors'
         });
-
         if (!res.ok) {
-            throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+            // Attempt to read the response body, which might contain an error message from your backend
+            const errorData = await res.json().catch(() => ({ error: `HTTP error: ${res.status} ${res.statusText}` }));
+            const errorMessage = errorData.error || `Upload failed with status: ${res.status}`;
+            console.error('Upload failed at backend endpoint:', errorMessage);
+            notify(`Failed to process image!: ${errorMessage}`, false); // Notify user about the failure
+            return null; // Indicate failure
         }
 
+        // If the response status is OK, parse the JSON body
         const data = await res.json();
-        if (data.files && data.files.length > 0) {
-            notify("Image uploaded successfully!");
-            return data.files[0].url;
+        console.log('Response from backend upload endpoint:', data);
+
+        // Your backend returns { url: "..." } on success
+        if (data && data.url) {
+            notify("Image uploaded successfully!"); // Notify user about success
+            console.log("Image uploaded via backend, Uguu URL:", data.url);
+            return data.url; // Return the final Uguu URL received from your backend
         } else {
-            throw new Error('Upload succeeded but no URL returned');
+            // Handle cases where the backend returned 200 OK but the body was not as expected
+            console.error('Upload succeeded according to status, but invalid response body from backend:', data);
+            notify("Upload failed: Invalid response from server.", false);
+            return null; // Indicate failure
         }
     } catch (e) {
-        notify("Failed to upload image. Falling back to direct processing...");
-        console.error('Upload error:', e);
-        return null;
+        // Catch network errors (e.g., server is down) or errors during response processing (e.g., JSON parsing failed unexpectedly)
+        console.error('Error during image upload process:', e);
+        notify(`Failed to upload image: ${e.message || 'Network or server error'}`, false); // Notify user about the failure
+        return null; // Indicate failure
     }
 }
-
 function manageTileNumbers() {
     // Only apply this logic for large screens (≥1024px)
     
