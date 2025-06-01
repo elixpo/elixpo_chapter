@@ -101,6 +101,7 @@
     box-shadow: 0 0 20px #111,
     inset 0 0px 40px #000,
     0 0 5px #03a9f4; 
+    display: block;
 }
 
 #imageGenerator > .imageTiles > .tile.tile2
@@ -111,6 +112,7 @@
     box-shadow: 0 0 20px #111,
     inset 0 0px 40px #000,
     0 0 5px #f48403; 
+    display: block;
 }
 
 #imageGenerator > .imageTiles > .tile.tile3
@@ -121,6 +123,7 @@
     box-shadow: 0 0 20px #111,
     inset 0 0px 40px #000,
     0 0 5px #d803f4; 
+    display: block;
 }
 
 #imageGenerator > .imageTiles > .tile.tile4
@@ -131,6 +134,7 @@
     box-shadow: 0 0 20px #111,
     inset 0 0px 40px #000,
     0 0 5px #03f4a4; 
+    display: block;
 }
 
 #imageGenerator > .imageTiles > .tile.tile1.hidden,
@@ -143,6 +147,7 @@
     pointer-events: none;
     transition: 0.25s;
     filter: blur(10px);
+    display: none;
 }
 
 #imageGenerator > .imageTiles > .tile > .loadingAnimations
