@@ -104,10 +104,6 @@
     pointer-events: none;
     transition: 0.5s;
 }
-.promptBox.image .controls #inputImage
-{
-    display: none;
-}
 
 .promptBox .promptTextInput {
     position: absolute;
@@ -212,10 +208,7 @@
 }
 
 
-.promptBox.generating > .controls
-{
-    display: none;
-}
+
 .promptBox.generating > .generateButton
 {
     display: none;

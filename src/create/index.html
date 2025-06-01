@@ -4,27 +4,78 @@
     <meta charset="UTF-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
     <meta name="google-site-verification" content="mlhDmvvPHBB2pKRk9d2bpjw5CGsO_W7WdoNWS-SnlRY" />
-    <title>Elixpo Art Generator</title>
+
+    <title>Elixpo Art Generator - Create Stunning AI Art Online</title>
+    <meta name="description" content="Generate unique and stunning digital art instantly with Elixpo Art Generator. Transform your text prompts into amazing visuals using powerful AI models. Try our AI art tool now!">
+    <meta name="keywords" content="AI art generator, digital art, text to image, creative tools, online art tool, image generation, AI image, Elixpo Art, generate art from text, AI art tool">
+    <meta name="author" content="ElixpoArt">
+    <link rel="canonical" href="https://elixpoart.vercel.app/src/create"> 
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://elixpoart.vercel.app"> 
+    <meta property="og:title" content="Elixpo Art Generator - Create Stunning AI Art Online">
+    <meta property="og:description" content="Generate unique and stunning digital art instantly with Elixpo Art Generator. Transform your text prompts into amazing visuals using powerful AI models. Try our AI art tool now!">
+    <meta property="og:image" content="https://github.com/user-attachments/assets/20264cef-2833-4b42-8615-8e4280dd3a5e"> 
+    <meta property="og:image:alt" content="Screenshot of Elixpo Art Generator generating images">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://elixpoart.vercel.app"> 
+    <meta name="twitter:title" content="Elixpo Art Generator - Create Stunning AI Art Online">
+    <meta name="twitter:description" content="Generate unique and stunning digital art instantly with Elixpo Art Generator. Transform your text prompts into amazing visuals using powerful AI models. Try our AI art tool now!">
+    <meta name="twitter:image" content="https://private-user-images.githubusercontent.com/74301576/393297816-26dd6299-29c1-4149-889d-d590f34312e0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDg3NzQyNTYsIm5iZiI6MTc0ODc3Mzk1NiwicGF0aCI6Ii83NDMwMTU3Ni8zOTMyOTc4MTYtMjZkZDYyOTktMjljMS00MTQ5LTg4OWQtZDU5MGYzNDMxMmUwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjAxVDEwMzIzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTc2ZWRjM2I2MjYzYzkzMThmMDg1YjExZGQ0MDVkMWNkYjQ0YmIyY2JjMjcxZTYzNzZhYmVmN2ZjNjk1YThmMjcmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.uUrT10nuAbBZ-bdqCUT9rODxlKm3KcXYPTZ-WkhlPtU"> <!-- Replace with a compelling image URL for Twitter -->
+    <meta name="twitter:image:alt" content="Screenshot of Elixpo Art Generator generating images">
+    <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1">
+    <meta name="theme-color" content="#030712">
+
+  
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.css">
-
     <link rel="stylesheet" href="../../CSS/createRemaster/navbarStyling.css" />
+    <link rel="stylesheet" href="../../CSS/createRemaster/navbarStylingResponsive.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/containerStyling.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/welcomePromptSection.css" />
-
     <link rel="stylesheet" href="../../CSS/createRemaster/imageCustomizationSection.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/promptBarGeneric.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/promptsControlSection.css" />
-
+    <link rel="stylesheet" href="../../CSS/createRemaster/promptBarResponsive.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/imageGeneratorSection.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/imageGeneratorControls.css" />
-    
+    <link rel="stylesheet" href="../../CSS/createRemaster/imageGenResponsive.css" />
     <link rel="stylesheet" href="../../CSS/createRemaster/imageDisplaySection.css" />
-    
-    <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1">
+    <link rel="stylesheet" href="../../CSS/createRemaster/imageDisplayResponsive.css" />
 
+
+    <!-- Schema.org Markup (Structured Data for Search Engines) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Elixpo Art Generator",
+      "operatingSystem": "Any",
+      "applicationCategory": "MultimediaApplication",
+      "description": "Generate unique and stunning digital art instantly with Elixpo Art Generator. Transform your text prompts into amazing visuals using powerful AI models. Try our AI art tool now!",
+      "softwareVersion": "5.0",
+      "aggregateRating": { 
+        "@type": "AggregateRating",
+        "ratingValue": "4", // Replace with actual average rating
+        "ratingCount": "220" // Replace with actual number of ratings
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0", // Use "0" for free, or the actual price
+        "priceCurrency": "INR", // Or your currency
+      },
+      "screenshot": [ // Replace with URLs to screenshots of your application
+        "https://private-user-images.githubusercontent.com/74301576/393297816-26dd6299-29c1-4149-889d-d590f34312e0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDg3NzQyNTYsIm5iZiI6MTc0ODc3Mzk1NiwicGF0aCI6Ii83NDMwMTU3Ni8zOTMyOTc4MTYtMjZkZDYyOTktMjljMS00MTQ5LTg4OWQtZDU5MGYzNDMxMmUwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjAxVDEwMzIzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTc2ZWRjM2I2MjYzYzkzMThmMDg1YjExZGQ0MDVkMWNkYjQ0YmIyY2JjMjcxZTYzNzZhYmVmN2ZjNjk1YThmMjcmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.uUrT10nuAbBZ-bdqCUT9rODxlKm3KcXYPTZ-WkhlPtU",
+      ],
+      "url": "https://elixpoart.vercel.app",  // Replace with your actual page URL
+       "publisher": {
+            "@type": "Organization",
+            "name": "Elixpo" // Replace with your organization name
+        }
+    }
+    </script>
 
 </head>
 <body>
@@ -40,8 +91,7 @@
     </div>
 
     <div class="container">
-      <div class="notification" id="notification">
-        <div class="notifText" id="notifText">This is a notification </div>
+      <div class="notification display" id="notification">
       </div>
         <div class="backdropBG"></div>
         
@@ -69,8 +119,8 @@
                           <div class="documentContainer">
                             <div class="aspectRatioTiles ratios 1:1" data-ratio="1:1"><span> 1 : 1 </span></div>
                             <div class="aspectRatioTiles ratios 9:16" data-ratio="9:16"><span> 9 : 16 </span></div>
-                            <div class="aspectRatioTiles ratios 16:9" data-ratio="16:9"><span> 16 : 9 </span></div>
-                            <div class="aspectRatioTiles ratios 4:3 selected" data-ratio="4:3"><span> 4 : 3 </span></div>
+                            <div class="aspectRatioTiles ratios 16:9 selected" data-ratio="16:9"><span> 16 : 9 </span></div>
+                            <div class="aspectRatioTiles ratios 4:3" data-ratio="4:3"><span> 4 : 3 </span></div>
                             <div class="aspectRatioTiles ratios 3:2" data-ratio="3:2"><span> 3 : 2 </span></div>
                           </div>
                       </div>
@@ -123,20 +173,20 @@
                        <span class="selected imageQuality" id="qualitySelection_SD" data-quality="SD"> SD </span>
                        <span id="qualitySelection_HD" class="imageQuality" data-quality="HD"> HD </span>
                     </div>
-                    <div class="generateButton" id="generateButton">
-                      <button class="searchBtn">
-                        <i class='bx bxs-magic-wand' id="createImageDirectly"></i>
-                      </button>
-                    </div>
+                    
                   </div>
-
+                  <div class="generateButton" id="generateButton">
+                    <button class="searchBtn">
+                      <i class='bx bxs-magic-wand' id="createImageDirectly"></i>
+                    </button>
+                  </div>
                   <div class="imageHolder" id="imageHolder">
                     <i class="fa-solid fa-circle-xmark" id="cancelImageMode"></i>
                   </div>
 
                   <textarea name="" id="promptTextInput" class="promptTextInput" spellcheck="false" autocomplete="none"
-                    placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape">transform this image into a ghinli studio style, preseve the intricate details and reduce the overall warmth and make it look cute! generate the image in a potrait mode</textarea>
-                  <div class="overlay" id="overlay">  </div>
+                    placeholder="--pr a rabbit sitting on an elephant, with a cricket bat in hand --ar 9:16 --ld thematic --hd --th landscape"></textarea>
+                  <div class="overlay" id="overlay"> </div>
                 </div>
               </div>
             </div>
@@ -305,14 +355,17 @@
         
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
     <script src="https://unpkg.com/@barba/core"></script>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-auth.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll/dist/locomotive-scroll.min.js"></script>
-
+    <!-- Local JS files -->
     <script src="../../JS/linkRedirect.js"></script>
     <script src="../../JS/create/promptscontainer.js" ></script>
     <script src="../../JS/create/createArtGeneral.js"></script>
@@ -323,4 +376,3 @@
    
 </body>
 </html>
-

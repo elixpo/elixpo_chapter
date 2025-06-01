@@ -553,40 +553,42 @@
     overflow: hidden;
 }
 .model_ratioSelectionZoneBackdropv2 > .documentContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
+  position: absolute;
+    top: 00%;
     width: 100%;
+    left: 0%;
     height: 100%;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
-    background-size: 10px 10px;
-    background-position: -5px -5px;
     border: 1px solid #555;
     border-radius: 15px;
+    z-index: 10;
+    box-shadow: inset 0 20px 40px #030712,
+      inset -20px 10px 50px #030712;
     display: flex;
-    padding: 0 50px 0 0; /* Adjusted padding to remove gap from the right side */
+    padding-left: 25px;
+    padding-top: 10px;
     box-sizing: border-box;
     gap: 10px;
+    overflow-x: auto; 
+    overflow-y: hidden; 
 }
-
+.model_ratioSelectionZoneBackdropv2 > .documentContainer::-webkit-scrollbar
+{
+  display: none;
+}
 .model_ratioSelectionZoneBackdropv2 > .documentContainer > .aspectRatioTiles {
-    position: relative;
-    top: 5%;
-    left: 5%;
-    width: 80%;
-    height: 80%;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    border-radius: 12px;
-    border: 5px solid #1D202A;
-    background: #030712;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: 0.25s;
+  position: relative;
+  flex: 0 0 auto; /* Prevent shrinking and allow horizontal scrolling */
+  width: 100px; /* Fixed width for each tile */
+  height: 70px; /* Fixed height for each tile */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  border: 5px solid #1D202A;
+  background: #030712;
+  cursor: pointer;
+  transition: 0.25s;
+  margin-right: 10px; /* Add spacing between tiles */
 
 }
 .model_ratioSelectionZoneBackdropv2 > .documentContainer > .aspectRatioTiles:hover

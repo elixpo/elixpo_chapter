@@ -1,18 +1,18 @@
 let generateURLS = [];
 let enhanceMode = false;
 let privateMode = false;
-let isImageMode = true;
+let isImageMode = false;
 let selectedImageQuality = "SD";
-let generationNumber = 1;
+let generationNumber = 4;
 let imageTheme = "normal";
-let ratio = "4:3";
+let ratio = "16:9";
 let model = "realism";
 let controller = null;
 let imageTimeout = null;
 let imageController = null;
 let isMouseOverImageDisplay = false;
 let extractedDetails = {};
-let enhanceUrl = "https://imgelixpo.vercel.app";
+
 
 
 async function uploadImageToUguu(file) {
@@ -45,121 +45,116 @@ async function uploadImageToUguu(file) {
     }
 }
 
+function manageTileNumbers() {
+    // Only apply this logic for large screens (≥1024px)
+    
 
-function manageTileNumbers()
-{
-    if(generationNumber == 1)
-        {
-            document.querySelector(".tile1").classList.remove("hidden");
-            document.querySelector(".tile2").classList.add("hidden");
-            document.querySelector(".tile3").classList.add("hidden");
-            document.querySelector(".tile4").classList.add("hidden");
-        
-            document.querySelector(".tile1").style.cssText = `
-                 grid-column: span 6 / span 6;
-                grid-row: span 5 / span 5;
-            `
-        
-            document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
-                grid-template-columns: repeat(6, 1fr);
+    if (generationNumber == 1) {
+        document.querySelector(".tile1").classList.remove("hidden");
+        document.querySelector(".tile2").classList.add("hidden");
+        document.querySelector(".tile3").classList.add("hidden");
+        document.querySelector(".tile4").classList.add("hidden");
+        if (window.innerWidth < 1024) return;
+        document.querySelector(".tile1").style.cssText = `
+            grid-column: span 6 / span 6;
+            grid-row: span 5 / span 5;
+        `;
+
+        document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
+            grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(5, 1fr);
             gap: 8px;
-            `
-        }
-        
-        else if(generationNumber == 2)
-        {
-             
-            document.querySelector(".tile1").classList.remove("hidden");
-            document.querySelector(".tile2").classList.remove("hidden");
-            document.querySelector(".tile3").classList.add("hidden");
-            document.querySelector(".tile4").classList.add("hidden");
-        
-            document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
-                grid-template-columns: repeat(6, 1fr);
+        `;
+    }
+
+    else if (generationNumber == 2) {
+        document.querySelector(".tile1").classList.remove("hidden");
+        document.querySelector(".tile2").classList.remove("hidden");
+        document.querySelector(".tile3").classList.add("hidden");
+        document.querySelector(".tile4").classList.add("hidden");
+        if (window.innerWidth < 1024) return;
+        document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
+            grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(5, 1fr);
             gap: 8px;
-            `
-        
-            document.querySelector(".tile1").style.cssText = `
-                grid-column: span 3 / span 3;
+        `;
+
+        document.querySelector(".tile1").style.cssText = `
+            grid-column: span 3 / span 3;
             grid-row: span 5 / span 5;
-            `
-            document.querySelector(".tile2").style.cssText = `
-                grid-column: span 3 / span 3;
+        `;
+        document.querySelector(".tile2").style.cssText = `
+            grid-column: span 3 / span 3;
             grid-row: span 5 / span 5;
-            grid-column-start: 4;   
-            `
-        }
-        
-        else if(generationNumber == 3)
-        {
-        
-            document.querySelector(".tile1").classList.remove("hidden");
-            document.querySelector(".tile2").classList.remove("hidden");
-            document.querySelector(".tile3").classList.remove("hidden");
-            document.querySelector(".tile4").classList.add("hidden");
-        
-            document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
-                grid-template-columns: repeat(6, 1fr);
+            grid-column-start: 4;
+        `;
+    }
+
+    else if (generationNumber == 3) {
+        document.querySelector(".tile1").classList.remove("hidden");
+        document.querySelector(".tile2").classList.remove("hidden");
+        document.querySelector(".tile3").classList.remove("hidden");
+        document.querySelector(".tile4").classList.add("hidden");
+        if (window.innerWidth < 1024) return;
+        document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
+            grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(5, 1fr);
             gap: 8px;
-            `
-        
-            document.querySelector(".tile1").style.cssText = `
-                grid-column: span 2 / span 2;
+        `;
+
+        document.querySelector(".tile1").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 5 / span 5;
-            `
-            document.querySelector(".tile2").style.cssText = `
-               grid-column: span 2 / span 2;
+        `;
+        document.querySelector(".tile2").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 5 / span 5;
             grid-column-start: 3;
-            `
-            document.querySelector(".tile3").style.cssText = `
-                grid-column: span 2 / span 2;
+        `;
+        document.querySelector(".tile3").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 5 / span 5;
             grid-column-start: 5;
-            `
-        }
-        
-        else if(generationNumber == 4)
-        {
-            document.querySelector(".tile1").classList.remove("hidden");
-            document.querySelector(".tile2").classList.remove("hidden");
-            document.querySelector(".tile3").classList.remove("hidden");
-            document.querySelector(".tile4").classList.remove("hidden");
-        
-            document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
-                grid-template-columns: repeat(8, 1fr);
+        `;
+    }
+
+    else if (generationNumber == 4) {
+        document.querySelector(".tile1").classList.remove("hidden");
+        document.querySelector(".tile2").classList.remove("hidden");
+        document.querySelector(".tile3").classList.remove("hidden");
+        document.querySelector(".tile4").classList.remove("hidden");
+        if (window.innerWidth < 1024) return;
+        document.querySelector("#imageGenerator  > .imageTiles").style.cssText = `
+            grid-template-columns: repeat(8, 1fr);
             grid-template-rows: repeat(5, 1fr);
             gap: 8px;
-            `
-        
-        
-            document.querySelector(".tile1").style.cssText = `
-               grid-column: span 2 / span 2;
+        `;
+
+        document.querySelector(".tile1").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 3 / span 3;
-            `
-            document.querySelector(".tile2").style.cssText = `
-                grid-column: span 2 / span 2;
+        `;
+        document.querySelector(".tile2").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 3 / span 3;
             grid-column-start: 3;
             grid-row-start: 2;
-            `
-            document.querySelector(".tile3").style.cssText = `
-                grid-column: span 2 / span 2;
+        `;
+        document.querySelector(".tile3").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 3 / span 3;
             grid-column-start: 5;
             grid-row-start: 2;
-            `
-            document.querySelector(".tile4").style.cssText = `
-                grid-column: span 2 / span 2;
+        `;
+        document.querySelector(".tile4").style.cssText = `
+            grid-column: span 2 / span 2;
             grid-row: span 3 / span 3;
             grid-column-start: 7;
             grid-row-start: 3;
-            `
-        }
+        `;
+    }
 }
+
 
 document.getElementById("generateButton").addEventListener("click", function () {
     const promptBox = document.getElementById("promptTextInput");
@@ -260,9 +255,6 @@ document.getElementById("generateButton").addEventListener("click", function () 
 async function preparePromptInput(generationNumber, prompt, ratio, model, selectedImageQuality, imageTheme, enhanceMode, privateMode, imageMode) {
     manageTileNumbers();
     document.getElementById("generateButton").setAttribute("disabled", "true");
-    // console.log("entered func");
-
-    // Initialize AbortController
     controller = new AbortController();
     const { signal } = controller;
 
@@ -271,121 +263,21 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
     const imageSize = aspectRatio[selectedImageQuality];
     const [width, height] = imageSize.split("x");
 
-    if (imageMode) {
-        const uploadedUrl = document.getElementById("imageHolder").getAttribute("data-uploaded-url");
-        
-        if (uploadedUrl) {
-            notify("Processing your image...", true);
-            scrollToImageGenerator();
-            generateImage(
-                generationNumber,
-                prompt,
-                width,
-                height,
-                "gptimage", 
-                suffixPrompt,
-                selectedImageQuality,
-                enhanceMode,
-                privateMode,
-                imageMode,
-                signal
-            );
-            return;
-        }
-
-        // imageController = new AbortController();
-        // imageTimeout = setTimeout(() => {
-        //     notify("Image processing took too long. Please try again.");
-        //     if (imageController) imageController.abort();
-        //     resetAll();
-        // }, 120000);
-    
-        document.getElementById("promptTextInput").classList.add("blur");
-        document.getElementById("overlay").classList.add("display");
-        
-        notify("Hmmm... Let me take a look at this...  Can take a min! just be with me", true);
-        document.getElementById("imageProcessingAnimation").classList.add("imageMode");
-        document.getElementById("imageThemeContainer").classList.add("imageMode");
-    
-        let generatedPrompt;
-    
-        try {
-            generatedPrompt = await generatePromptFromImage(
-                `data:image/jpeg;base64,${extractedBase64Data}`,
-                prompt,
-                imageController
-            );
-        } catch (err) {
-            if (err.name === "AbortError") {
-                console.warn("Image analysis aborted.");
-                return;
-            } else {
-                console.error("Error during image analysis:", err);
-                notify("Oops! I crashed trying to analyze that image...");
-                resetAll();
-                return;
-            }
-        } finally {
-            clearTimeout(imageTimeout);
-        }
-    
-        if (!generatedPrompt) {
-            notify("Well... seems like I faded out trying to understand the image! Sorry, try something else buddy...");
-            setTimeout(() => {
-                resetAll();
-            }, 2000);
-            return;
-        }
-    
-        typeEnhancedPrompt(generatedPrompt, 0, () => {
-            document.getElementById("promptTextInput").value = generatedPrompt;
-            document.getElementById("promptTextInput").classList.remove("blur");
-            document.getElementById("overlay").classList.remove("display");
-            document.getElementById("promptTextInput").focus();
-            document.getElementById("overlay").innerHTML = "";
-    
-            setTimeout(() => {
-                extractedDetails["Prompt"] = generatedPrompt;
-                scrollToImageGenerator();
-                generateImage(
-                    generationNumber,
-                    generatedPrompt,
-                    width,
-                    height,
-                    model,
-                    suffixPrompt,
-                    selectedImageQuality,
-                    enhanceMode,
-                    privateMode,
-                    imageMode,
-                    signal
-                );
-            }, 1000);
-        });
-    
-        return;
-    }
-    
-
-    if (enhanceMode) {
+    // Helper to handle prompt enhancement
+    async function enhancePrompt(originalPrompt) {
         const pimpController = new AbortController();
-        const timeoutId = setTimeout(() => {
-            pimpController.abort();
-        }, 60000); // abort after 60 seconds
-    
+        const timeoutId = setTimeout(() => pimpController.abort(), 60000);
+
         document.getElementById("promptTextInput").classList.add("blur");
-        document.getElementById("generateButton").style.cssText = `
-            opacity: 0.5;
-            pointer-events: none;
-        `;
+        document.getElementById("generateButton").style.cssText = "opacity: 0.5; pointer-events: none;";
         document.getElementById("overlay").classList.add("display");
         notify("Enhancing your prompt...", true);
-    
+
+        let enhancedPrompt;
         const startTime = Date.now();
-        let pimpedPrompt;
-    
+
         try {
-            pimpedPrompt = await promptEnhance(prompt, pimpController);
+            enhancedPrompt = await promptEnhance(originalPrompt, pimpController);
         } catch (err) {
             if (err.name === "AbortError") {
                 notify("Prompt enhancement took too long. Proceeding with original prompt.");
@@ -393,54 +285,83 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
                 console.error("Enhancer Error:", err);
                 notify("Enhancer crashed. Using original prompt.");
             }
-            pimpedPrompt = prompt;
+            enhancedPrompt = originalPrompt;
         } finally {
             clearTimeout(timeoutId);
         }
-    
-        const endTime = Date.now();
-        const elapsedTime = (endTime - startTime) / 1000;
-    
+
+        const elapsedTime = (Date.now() - startTime) / 1000;
         if (elapsedTime > 15 && elapsedTime <= 60) {
             notify("Taking longer than expected.");
         }
-    
-        typeEnhancedPrompt(pimpedPrompt, 0, () => {
-            document.getElementById("promptTextInput").value = pimpedPrompt;
-            document.getElementById("promptTextInput").classList.remove("blur");
+
+        return enhancedPrompt;
+    }
+
+    // Helper to update UI after prompt enhancement
+    function finalizePromptUI(finalPrompt) {
+        document.getElementById("promptTextInput").value = finalPrompt;
+        document.getElementById("promptTextInput").classList.remove("blur");
+        document.getElementById("overlay").classList.remove("display");
+        document.getElementById("promptTextInput").focus();
+        document.getElementById("overlay").innerHTML = "";
+        dismissNotification();
+    }
+
+    // If image mode is enabled
+    if (imageMode) {
+        let finalPrompt = prompt;
+
+        if (enhanceMode) {
+            finalPrompt = await enhancePrompt(prompt);
+            await new Promise(resolve => {
+                typeEnhancedPrompt(finalPrompt, 0, resolve);
+            });
+            finalizePromptUI(finalPrompt);
+        }
+
+        const uploadedUrl = await window.showAndUploadImageIfNeeded();
+        console.log("Uploaded URL:", uploadedUrl);
+
+        if (uploadedUrl) {
+            document.getElementById("imageHolder").setAttribute("data-uploaded-url", uploadedUrl);
+            notify("Processing your image...", true);
             document.getElementById("overlay").classList.remove("display");
-            document.getElementById("promptTextInput").focus();
-            document.getElementById("overlay").innerHTML = "";
-            dismissNotification();
-    
-            setTimeout(() => {
-                extractedDetails["Prompt"] = pimpedPrompt;
-                scrollToImageGenerator();
-                generateImage(
-                    generationNumber,
-                    pimpedPrompt,
-                    width,
-                    height,
-                    model,
-                    suffixPrompt,
-                    selectedImageQuality,
-                    enhanceMode,
-                    privateMode,
-                    imageMode,
-                    signal
-                );
-            }, 1000);
-        });
-    
+            scrollToImageGenerator();
+            generateImage(generationNumber, finalPrompt, width, height, "gptimage", suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
+        } else {
+            notify("Failed to upload image. Please try again.");
+            document.getElementById("generateButton").removeAttribute("disabled");
+        }
+
         return;
     }
-    
 
-    // Direct generation path
+    // If only enhance mode (no image mode)
+    if (enhanceMode) {
+        const enhancedPrompt = await enhancePrompt(prompt);
+
+        await new Promise(resolve => {
+            typeEnhancedPrompt(enhancedPrompt, 0, resolve);
+        });
+
+        finalizePromptUI(enhancedPrompt);
+
+        setTimeout(() => {
+            extractedDetails["Prompt"] = enhancedPrompt;
+            scrollToImageGenerator();
+            generateImage(generationNumber, enhancedPrompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
+        }, 1000);
+
+        return;
+    }
+
+    // Final fallback: basic generation
     const finalPrompt = document.getElementById("promptTextInput").value;
     scrollToImageGenerator();
     generateImage(generationNumber, finalPrompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
 }
+
 
 // Scroll utility
 function scrollToImageGenerator() {
@@ -466,27 +387,25 @@ document.getElementById("interruptButton").addEventListener("click", function ()
     }
 });
 
-function generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal) {
+async function generateImage(generationNumber, prompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal) {
     document.getElementById("interruptButton").classList.remove("hidden");
-    
-    let seed = Math.floor(Math.random() * 10000); 
-    // const promptText = `${prompt} remember the system instruction of ${suffixPrompt}`;
-     const promptText = `${prompt}`;
-    let generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}`;
+    const promptText = `${prompt}`;
+    let generateUrl;
 
     if (imageMode) {
-        console.log("in image mode");
+        console.log("In image mode");
         const uploadedUrl = document.getElementById("imageHolder").getAttribute("data-uploaded-url");
         if (uploadedUrl) {
             model = "gptimage";
-            generateUrl = `https://image.pollinations.ai/prompt/${prompt}?model=gptimage&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
-            notify("Remixing with your request!! Would take a minute or so, hang on buddy!")
+            generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=gptimage&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+            notify("Remixing with your request!! Would take a minute or so, hang on buddy!");
         } else {
-            notify("Wowza, understanding your image.... this might take a while, hang on buddy!");
+            notify("Image not found. Please upload a valid image.");
+            return;
         }
     } else {
+        generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=elixpoart&token=fEWo70t94146ZYgk`;
         notify("Trying to paint the image!", true);
-        generateUrl += `?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=true&referrer=elixpoart&token=fEWo70t94146ZYgk`;
     }
 
     if (privateMode) {
@@ -497,55 +416,63 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
     const generationTimes = [];
 
     for (let i = 1; i <= generationNumber; i++) {
-        const startTime = performance.now();
-
         const tile = document.querySelector(`.tile${i}`);
         const loadingAnimation = tile.querySelector(".loadingAnimations");
         const downloadBtn = tile.querySelector(".inPictureControls > #downloadBtn");
         const copyBtn = tile.querySelector(".inPictureControls > #copyButton");
+
         tile.style.pointerEvents = "none";
         loadingAnimation.classList.remove("hidden");
 
-        const seed = Math.floor(Math.random() * 10000);
-        let imageRequestUrl = `${generateUrl}&seed=${seed}`;
+        const tileSeed = Math.floor(Math.random() * 10000);
+        let imageRequestUrl = `${generateUrl}&seed=${tileSeed}`;
+        const tryGeneration = async (currentModel, watchdogTimeout = 60000) => {
+            const controller = new AbortController();
+            const watchdog = setTimeout(() => controller.abort(), watchdogTimeout);
+            try {
+                const response = await fetch(imageRequestUrl, { signal: controller.signal });
+                clearTimeout(watchdog);
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                return response.blob();
+            } catch (error) {
+                clearTimeout(watchdog);
 
-        const tryGeneration = async (currentModel) => {
-            const response = await fetch(imageRequestUrl, { signal });
-            if (!response.ok) {
-                if (response.status === 429 && imageMode) {
-                    notify("Server busy. Falling back to alternative method...");
-                    return generatePromptFromImage(`data:image/jpeg;base64,${extractedBase64Data}`, prompt, signal)
-                        .then(generatedPrompt => {
-                            if (generatedPrompt) {
-                                return generateImage(generationNumber, generatedPrompt, width, height, model, suffixPrompt, selectedImageQuality, enhanceMode, privateMode, false, signal);
-                            }
-                            throw new Error("Failed to generate alternative prompt");
-                        });
-                } else if ((response.status === 500 || !response.ok) && !imageMode && currentModel !== "flux") {
-                    notify("Model failed. Trying with flux model...");
+                if (controller.signal.aborted && currentModel === "gptimage" && !imageMode) {
+                    notify("gptimage model took too long. Switching to flux...");
+                    const fallbackUrl = imageRequestUrl.replace("model=gptimage", "model=flux");
+                    imageRequestUrl = fallbackUrl;
+                    return tryGeneration("flux");
+                }
+
+                if ((error.message.includes("500") || error.message.includes("HTTP")) && currentModel !== "flux") {
+                    notify("Opps my brush broke! Trying  again");
                     imageRequestUrl = imageRequestUrl.replace(`model=${currentModel}`, "model=flux");
                     return tryGeneration("flux");
                 }
-                throw new Error(`Failed to generate image for tile${i}`);
+
+                throw error;
             }
-            return response.blob();
         };
 
         const tilePromise = tryGeneration(model)
             .then(blob => {
                 const endTime = performance.now();
-                const generationTime = Math.round((endTime - startTime) / 1000);
+                const generationTime = Math.round((endTime - performance.now()) / 1000);
                 generationTimes.push(generationTime);
-                generateURLS.push(imageRequestUrl);
+
                 const imageUrl = URL.createObjectURL(blob);
                 tile.style.backgroundImage = `url(${imageUrl})`;
                 tile.style.pointerEvents = "all";
                 tile.setAttribute("data-time", generationTime);
+
                 loadingAnimation.classList.add("hidden");
                 downloadBtn.setAttribute("data-id", imageUrl);
                 copyBtn.setAttribute("data-id", prompt);
-                tile.addEventListener("click", function () {
-                    expandImage(imageUrl, promptText, seed, height, width, model, ratio, generationTime);
+
+                tile.addEventListener("click", () => {
+                    expandImage(imageUrl, promptText, tileSeed, height, width, model, ratio, generationTime);
                 });
             })
             .catch(error => {
@@ -571,10 +498,12 @@ function generateImage(generationNumber, prompt, width, height, model, suffixPro
         document.getElementById("rejectBtn").classList.remove("hidden");
         document.getElementById("acceptBtn").setAttribute("data-prompt", prompt);
         document.getElementById("interruptButton").classList.add("hidden");
+
         const avg = Math.round(generationTimes.reduce((a, b) => a + b, 0) / generationTimes.length);
-        console.log(`Average generation time: ${avg}ms`);
+        console.log(`Average generation time: ${avg}s`);
     });
 }
+
 
 
 

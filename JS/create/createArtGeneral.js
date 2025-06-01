@@ -11,11 +11,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 let lastPromptText = "";
-
+const MAX_NOTIFS = 3;
+const notifQueue = [];
 window.onload = function() {
   showSection("imageCustomization");
-  hideSection("imageGenerator");
   hideSection("imageDisplay");
+  hideSection("imageGenerator");
   const container = document.querySelector(".sectionContainer"); 
   const imageDisplaySection = document.getElementById("imageCustomization");
   const offsetTop = imageDisplaySection.offsetTop;
@@ -135,24 +136,106 @@ document.getElementById("appName").addEventListener("click", function() {
   location.reload();
 });
 
+
 function notify(msg, persist = false) {
-  const notif = document.getElementById("notification");
-  const notifText = document.getElementById("notifText");
+  const notifContainer = document.getElementById("notification");
 
+  const notifText = document.createElement("div");
+  notifText.className = "notifText";
   notifText.innerText = msg;
-  notif.classList.add("display");
+  notifText.dataset.persist = persist;
+  notifText.dataset.removed = "false";
 
-  // If not persistent, auto-remove after 3 seconds
+  const currentNotifs = Array.from(notifContainer.querySelectorAll(".notifText"));
+
+  if (currentNotifs.length >= MAX_NOTIFS) {
+    const nonPersist = currentNotifs.find(n => n.dataset.persist === "false" && n.dataset.removed !== "true");
+
+    if (nonPersist && notifContainer.contains(nonPersist)) {
+      nonPersist.dataset.removed = "true";
+      anime({
+        targets: nonPersist,
+        opacity: 0,
+        translateX: 50,
+        scale: 0.5,
+        duration: 400,
+        easing: 'easeInOutQuad',
+        complete: () => {
+          if (notifContainer.contains(nonPersist)) {
+            notifContainer.removeChild(nonPersist);
+          }
+        }
+      });
+    } else {
+      console.warn("⚠️ Notification clash: all notifications are persistent.");
+      return;
+    }
+  }
+
+  notifContainer.classList.add("display");
+  notifContainer.appendChild(notifText);
+  notifQueue.push(notifText);
+
+  anime({
+    targets: notifText,
+    opacity: [0, 1],
+    translateX: [30, 0],
+    scale: [0.5, 1],
+    duration: 500,
+    easing: 'easeOutBack'
+  });
+
   if (!persist) {
-      setTimeout(() => {
-          notif.classList.remove("display");
-      }, 3000);
+    setTimeout(() => {
+      if (notifText.dataset.removed === "true") return;
+
+      notifText.dataset.removed = "true";
+      anime({
+        targets: notifText,
+        opacity: 0,
+        translateX: 50,
+        scale: 0.5,
+        duration: 400,
+        easing: 'easeInOutQuad',
+        complete: () => {
+          if (notifContainer.contains(notifText)) {
+            notifContainer.removeChild(notifText);
+            if (!notifContainer.querySelector(".notifText")) {
+              notifContainer.classList.remove("display");
+            }
+          }
+        }
+      });
+    }, 3000);
   }
 }
-function dismissNotification() {
-  document.getElementById("notification").classList.remove("display");
-}
 
+function dismissNotification() {
+  const notifContainer = document.getElementById("notification");
+  const currentNotifs = Array.from(notifContainer.querySelectorAll(".notifText"));
+
+  currentNotifs.forEach(el => {
+    if (el.dataset.removed === "true") return;
+
+    el.dataset.removed = "true";
+    anime({
+      targets: el,
+      opacity: 0,
+      translateX: 50,
+      scale: 0.5,
+      duration: 400,
+      easing: 'easeInOutQuad',
+      complete: () => {
+        if (notifContainer.contains(el)) {
+          notifContainer.removeChild(el);
+          if (!notifContainer.querySelector(".notifText")) {
+            notifContainer.classList.remove("display");
+          }
+        }
+      }
+    });
+  });
+}
 
 
 document.querySelectorAll(".themes").forEach(function(element) {
@@ -224,7 +307,7 @@ function handleInput() {
     }
 
     // Aspect ratio
-    handleSelectiveFlagUpdate("--ar", ".aspectRatioTiles", "ratio", "4:3");
+    handleSelectiveFlagUpdate("--ar", ".aspectRatioTiles", "ratio", "16:9");
 
     // Theme
     handleSelectiveFlagUpdate("--th", ".themes", "theme", "normal");
