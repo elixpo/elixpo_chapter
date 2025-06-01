@@ -6,7 +6,7 @@ let selectedImageQuality = "SD";
 let generationNumber = 1;
 let imageTheme = "normal";
 let ratio = "16:9";
-let model = "realism";
+let model = "flux";
 let controller = null;
 let imageTimeout = null;
 let imageController = null;
@@ -788,7 +788,7 @@ document.querySelectorAll(".inPictureControls > #copyButton").forEach(copyBtn =>
 
 
 
-// generateImage(2, "a beautiful kite", "512", "512", "realism", "a realistic depiction", "SD", false, false, false, null, new AbortController());
+// generateImage(2, "a beautiful kite", "512", "512", "flux", "a realistic depiction", "SD", false, false, false, null, new AbortController());
 function typeEnhancedPrompt(msg, wordIndex = 0, callback) {
     const welcomeMessage = document.getElementById("overlay");
     const message = msg;

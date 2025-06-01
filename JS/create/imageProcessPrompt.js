@@ -21,6 +21,7 @@ document.getElementById("inputImage").addEventListener("click", function () {
             extractedBase64Data = reader.result.split(",")[1];
             // Show preview in imageHolder immediately
             const imageDataUrl = reader.result;
+            isImageMode = true;
             document.getElementById("promptBox").classList.add("image");
             document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
             document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
