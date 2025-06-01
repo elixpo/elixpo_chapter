@@ -97,9 +97,9 @@
     }
     .GenerateImageControls
     {
-        top: 2%;
-        position: relative;
-        width: 60%;
+        top: 75%;
+        position: absolute;
+        width: 80%;
         justify-content: space-between;
     }
     .acceptBtn i,
@@ -109,17 +109,27 @@
     }
     .acceptBtn,
     .rejectBtn
+    
     {
-        position: relative;
+        position: absolute;
+        top: 5px;
         margin-right: 50px;
-        font-size: 1em;
+        font-size: 0.8em;
         padding: 10px 10px;
         width: 100px;
-        margin-bottom: 20px;
+    }
+    .rejectBtn
+    {
+        left: 80%
     }
     .acceptBtn
     {
         left: 100%;
+    }
+    .interruptButton
+    {
+        top:  5px;
+        scale: 0.8;
     }
     .interruptButton
     {
@@ -162,9 +172,9 @@
     }
     .GenerateImageControls
     {
-        top: 2%;
-        position: relative;
-        width: 60%;
+        top: 75%;
+        position: absolute;
+        width: 70%;
         justify-content: space-between;
     }
     .acceptBtn i,
@@ -177,7 +187,7 @@
     
     {
         position: absolute;
-        top: -5px;
+        top: 5px;
         margin-right: 50px;
         font-size: 0.8em;
         padding: 10px 10px;
@@ -189,6 +199,7 @@
     }
     .interruptButton
     {
+        top:  5px;
         scale: 0.8;
     }
     .promptBox .overlay.display
