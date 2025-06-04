@@ -39,6 +39,9 @@ export async function handleGenerate(interaction) {
     if (formattedIntermediateText) {
         statusContent += `${statusContent ? '\n\n' : ''}${formattedIntermediateText}`;
     }
+    if (modelUsed === 'gptimage') {
+        statusContent += `${statusContent ? '\n\n' : ''}> Wowza! Using **GPTImage** model, would take a bit longer than usual. Please be patient!`;
+    }
     statusContent += `${statusContent ? '\n\n' : ''}> 🎨 Painting my canvas!`;
     await interaction.editReply(statusContent);
 
