@@ -3,109 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search & Synthesize</title>
+    <title>Elixpo-Search</title>
     <style>
-        body {
-            font-family: sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f2f5f9;
+            color: #333;
+            padding: 30px 15px;
+        }
+
         .container {
-            max-width: 900px;
+            max-width: 960px;
             margin: auto;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 10px 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
         }
+
         h1 {
             text-align: center;
-            color: #0056b3;
+            color: #1d3557;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
         }
+
         form {
-            margin-bottom: 20px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #e9e9e9;
+            background-color: #f0f4f8;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #dbe2ea;
         }
+
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 10px;
+        }
+
         textarea {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box; /* Include padding in element's total width/height */
-            resize: vertical; /* Allow vertical resizing */
-            min-height: 100px;
-        }
-        button {
-            display: inline-block;
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 14px;
             font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 120px;
+            margin-bottom: 15px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #457b9d;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         button:hover {
-            background-color: #0056b3;
+            background-color: #1d3557;
         }
-         button:disabled {
-            background-color: #cccccc;
+
+        button:disabled {
+            background-color: #c0c0c0;
             cursor: not-allowed;
         }
+
         #status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            font-weight: bold;
-            min-height: 1.2em; /* Reserve space */
+            margin-top: 15px;
+            padding: 12px 15px;
+            font-weight: 600;
+            border-radius: 6px;
         }
+
         .status-loading {
+            background-color: #eaf4ff;
             color: #007bff;
-            background-color: #e9f7ff;
         }
+
         .status-error {
-            color: #dc3545;
-            background-color: #f8d7da;
+            background-color: #ffe6e6;
+            color: #c0392b;
         }
+
         #results-area {
-            margin-top: 20px;
-            padding: 20px;
+            margin-top: 30px;
+            padding: 25px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             background-color: #fff;
         }
-        /* Basic styling for markdown elements */
-        #results-area h2 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 20px; }
-        #results-area p { margin-bottom: 10px; }
-        #results-area ul, #results-area ol { margin-bottom: 10px; padding-left: 20px; }
-        #results-area pre {
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto; /* Horizontal scroll for code blocks */
+
+        #results-area h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 20px;
         }
+
+        #results-area p {
+            margin-bottom: 10px;
+        }
+
+        #results-area ul, #results-area ol {
+            margin-bottom: 10px;
+            padding-left: 20px;
+        }
+
+        #results-area pre {
+            background-color: #f6f8fa;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
         #results-area blockquote {
             border-left: 4px solid #ccc;
-            padding-left: 10px;
-            color: #666;
-            margin: 10px 0;
+            padding-left: 14px;
+            color: #555;
+            margin: 15px 0;
         }
+
         #results-area img {
-            max-width: 100%; /* Prevent images from overflowing */
+            max-width: 100%;
             height: auto;
             display: block;
-            margin: 10px auto;
+            margin: 20px auto;
         }
-        #results-area a { color: #007bff; text-decoration: none; }
-        #results-area a:hover { text-decoration: underline; }
 
+        #results-area a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        #results-area a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -113,22 +159,15 @@
         <h1>AI Search & Synthesize</h1>
 
         <form id="search-form">
-            <label for="query-input">Enter your query:</label><br>
-            <textarea id="query-input" placeholder="e.g., Summarize the latest news about AI from wikipedia.org and this youtube video https://www.youtube.com/watch?v=my_video_id">What's the latest weather of kolkata india?</textarea><br>
+            <label for="query-input">Enter your query:</label>
+            <textarea id="query-input" placeholder="e.g., Summarize the latest news about AI from wikipedia.org and a YouTube video link"></textarea>
 
-            <div>
-                <input type="checkbox" id="show-logs-checkbox" checked>
-                <label for="show-logs-checkbox">Show server logs in console (requires Flask app running with logs enabled)</label>
-            </div>
             <br>
-
             <button type="submit" id="submit-button">Search</button>
         </form>
 
         <div id="status-message"></div>
-
-        <div id="results-area">
-        </div>
+        <div id="results-area"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -138,14 +177,14 @@
         const resultsArea = document.getElementById('results-area');
         const statusMessage = document.getElementById('status-message');
         const submitButton = document.getElementById('submit-button');
-        const showLogsCheckbox = document.getElementById('show-logs-checkbox');
-
+        const POLLINATIONS_SEARCH_URL = "https://search.pollinations.ai/search"
+        const LOCAL_SEARCH_URL = "http://localhost:5000/search";
 
         searchForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent default form submission
+            event.preventDefault();
 
             const query = queryInput.value.trim();
-            const showLogs = showLogsCheckbox.checked;
+            const showLogs = true;
 
             if (!query) {
                 statusMessage.textContent = 'Please enter a query.';
@@ -153,14 +192,12 @@
                 return;
             }
 
-            // Show loading status
-            statusMessage.textContent = 'Searching...';
+            statusMessage.textContent = 'Surfing...';
             statusMessage.className = 'status-loading';
-            resultsArea.innerHTML = ''; // Clear previous results
-            submitButton.disabled = true; // Disable button
+            resultsArea.innerHTML = marked.parse("### Loading results... Please wait a couple of mins!");
+            submitButton.disabled = true;
 
-            // Use the Fetch API to send a POST request
-            fetch('http://10.42.0.56:5000/search', {
+            fetch(`${POLLINATIONS_SEARCH_URL}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -168,43 +205,30 @@
                 body: JSON.stringify({ query: query, show_logs: showLogs }),
             })
             .then(response => {
-                // Check if the response is OK (status 200-299)
+                resultsArea.innerHTML = '';
                 if (!response.ok) {
-                    // Attempt to read error message from JSON if available, otherwise use status text
                     return response.json().catch(() => Promise.resolve({ error: `HTTP error! status: ${response.status}` }))
                            .then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`); });
                 }
-                // The API returns text (Markdown), so read as text
                 return response.text();
             })
             .then(markdownText => {
-                // Render the Markdown text to HTML using Marked.js
-                // Use marked.parse (synchronous) for simplicity
-                const htmlOutput = marked.parse(markdownText);
-
-                // Display the rendered HTML
-                resultsArea.innerHTML = htmlOutput;
-
-                // Clear status message
+                resultsArea.innerHTML = marked.parse(markdownText);
                 statusMessage.textContent = '';
                 statusMessage.className = '';
             })
             .catch(error => {
-                // Handle any errors during the fetch or processing
                 console.error('Error:', error);
                 statusMessage.textContent = 'Error: ' + error.message;
                 statusMessage.className = 'status-error';
-                resultsArea.innerHTML = ''; // Clear any partial results
+                resultsArea.innerHTML = '';
             })
             .finally(() => {
-                 submitButton.disabled = false; // Re-enable button
+                submitButton.disabled = false;
             });
         });
 
-         // Optional: Add basic functionality to render initial placeholder markdown
-        resultsArea.innerHTML = marked.parse("### Welcome!\n\nEnter a query above and click 'Search' to get a synthesized answer based on web sources and your provided URLs.");
-
-
+        resultsArea.innerHTML = marked.parse("### Welcome!\n\nEnter a query above and click 'Search' to get a synthesized answer from web sources and URLs.");
     </script>
 </body>
 </html>

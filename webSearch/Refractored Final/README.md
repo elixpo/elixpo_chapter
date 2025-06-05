@@ -1,6 +1,6 @@
 # Web Search and Synthesis Module
 
-This repository contains a Python-based web search and synthesis module designed to process user queries, perform web searches, scrape content, and synthesize detailed answers in Markdown format. The module is built with extensibility and error handling in mind, leveraging APIs and libraries for efficient information retrieval.
+This repository contains a Python-based web search and synthesis module designed to process user queries, perform web searches, scrape content, and synthesize detailed answers in Markdown format. The module is built for extensibility, robust error handling, and efficient information retrieval using modern APIs and libraries.
 
 ---
 
@@ -27,115 +27,124 @@ This repository contains a Python-based web search and synthesis module designed
 - Uses AI models to plan query execution and synthesize final answers.
 - Supports both classification and synthesis tasks with different AI models.
 
+### 6. **REST API with Flask**
+- Exposes a `/search` endpoint for programmatic access.
+- Supports both GET and POST requests with query parameters.
+
+### 7. **Rate Limiting and CORS**
+- Protects the API with request limits using `Flask-Limiter`.
+- Enables cross-origin requests for web front-ends.
+
 ---
 
 ## File Structure
 
-### 1. `search_module.py`
-This file contains the core logic for the module, including:
-- **Configuration**: Adjustable parameters for search results, scraping limits, and retry logic.
-- **Helper Functions**: URL extraction, YouTube transcript fetching, and web scraping utilities.
-- **AI Integration**: Functions to query AI models for planning and synthesis.
-- **Main Functionality**: `search_and_synthesize` function that orchestrates the entire process.
+### 1. `ai_search_agent_prod.py`
+- **Main Backend Logic**: Implements the Flask API, search and synthesis orchestration, error handling, and AI integration.
+- **Configuration**: Adjustable parameters for search results, scraping limits, concurrency, and retry logic.
+- **Helper Functions**: URL extraction, YouTube transcript fetching, web scraping, and AI planning/synthesis utilities.
+- **Concurrency**: Uses a thread pool and semaphore to handle multiple requests efficiently.
 
-### 2. `search_test.py`
-This file demonstrates how to use the `search_module.py`:
-- Imports the `search_and_synthesize` function.
-- Provides a sample query to test the module.
-- Prints the synthesized Markdown output.
+### 2. `index.html`
+- **Front-End Interface**: Allows users to input queries, toggle server logs, and view synthesized Markdown responses rendered as HTML.
+- **Dynamic Results Display**: Uses `marked.js` for Markdown rendering and provides status messages for user feedback.
 
-### 3. `index.html`
-This file provides the front-end interface for the web search and synthesis module:
-- **User Input Form**: Allows users to input queries and toggle server logs.
-- **Dynamic Results Display**: Displays synthesized Markdown responses rendered as HTML using the `marked.js` library.
-- **Status Messages**: Provides feedback during the search process (e.g., loading, errors).
-- **Styling**: Includes a clean and responsive design with CSS for better user experience.
+### 3. `requirements.txt`
+- Lists all required Python dependencies.
 
-### 4. `ai_search_agent.py`
-This file contains the back-end logic for handling search and synthesis requests:
-- **Flask API**: Exposes an endpoint (`/search`) to process user queries via GET or POST requests.
-- **Search and Synthesis Logic**: Implements the `search_and_synthesize` function to orchestrate query processing, web scraping, and AI synthesis.
-- **Error Handling**: Includes retry mechanisms and logging for robust performance.
-- **AI Integration**: Utilizes AI models for query planning and response synthesis.
-- **YouTube and Web Support**: Fetches YouTube transcripts and metadata, scrapes websites, and integrates results into a cohesive response.
-- **Rate Limiting**: Protects the API with request limits using `Flask-Limiter`.
-- **Configuration**: Offers adjustable parameters for search, scraping, and AI behavior.
+### 4. `Dockerfile`
+- **Production-Ready Build**: Defines a minimal Python 3.12-based image.
+- **Installs System Dependencies**: Includes build tools and `ffmpeg` for YouTube processing.
+- **Copies Source Code and Installs Python Packages**.
+- **Exposes Port 5000** and sets up the Flask app to run with `waitress-serve`.
+
+### 5. `docker-compose.yml`
+- **Service Definition**: Builds the Docker image and runs the container as `elixpo-search-proxy`.
+- **Environment Variables**: Loads from `.env` and sets required Flask/Python settings.
+- **Volume Mounts**: Maps a local `logs` directory for persistent logging.
+- **Healthcheck**: Periodically checks the `/search` endpoint for readiness.
+- **Port Mapping**: Exposes the API on port 5000.
 
 ---
 
 ## Usage
 
 ### Prerequisites
-- Python 3.8 or higher
-- Required libraries: `requests`, `json`, `datetime`, `re`, `time`, `sys`, `urllib.parse`, `youtube_transcript_api`, `pytube`, `duckduckgo_search`, `beautifulsoup4`, `math`, `mimetypes`, `tqdm`, `random`, `flask`, `flask_cors`, `flask_limiter`
+- Python 3.8 or higher (Python 3.12 recommended for Docker)
+- Required libraries: see `requirements.txt`
+- Docker (optional, for containerized deployment)
 
 Install dependencies using:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Running the Module
-1. Modify the query in `search_test.py` to your desired input.
-2. Run the script:
+### Running Locally
+
+1. Start the Flask API:
     ```bash
-    python search_test.py
+    python ai_search_agent_prod.py
     ```
-3. View the synthesized Markdown output in the console.
+2. The server will start at `http://127.0.0.1:5000/search`.
+
+3. You can send queries via the front-end (`index.html`) or directly using tools like `curl` or Postman.
+
+#### Example Query via API
+```bash
+curl -X POST http://127.0.0.1:5000/search \
+-H "Content-Type: application/json" \
+-d '{"query": "What are the latest trends in AI research? Summarize this YouTube video https://www.youtube.com/watch?v=dQw4w9WgXcQ", "show_logs": false}'
+```
+
+### Running with Docker
+
+1. Build and run the service using Docker Compose:
+    ```bash
+    docker-compose up --build
+    ```
+2. The API will be available at `http://localhost:5000/search`.
 
 ---
 
 ## Configuration
-You can adjust the following parameters in `search_module.py`:
+
+You can adjust the following parameters in `ai_search_agent_prod.py`:
 - `MAX_SEARCH_RESULTS_PER_QUERY`: Number of search results to fetch.
 - `MAX_SCRAPE_WORD_COUNT`: Maximum word count per scraped page.
 - `MAX_IMAGES_TO_INCLUDE`: Number of images to include in the output.
+- `MAX_CONCURRENT_REQUESTS`: Maximum simultaneous requests handled by the API.
 - AI models for classification and synthesis.
+
+Environment variables can be set in a `.env` file for API tokens and other secrets.
 
 ---
 
 ## Example Query
+
 ```python
-query_simple = "What's the current weather in Kolkata, India? How's it different from the weather in Delhi, India right now?"
-markdown_no_sources = search_and_synthesize(query_simple, show_sources=True, scrape_images=False)
-print(markdown_no_sources)
+import requests
+
+query = "What's the current weather in Kolkata, India? How's it different from the weather in Delhi, India right now?"
+response = requests.post(
+    "http://localhost:5000/search",
+    json={"query": query, "show_logs": False}
+)
+print(response.text)
 ```
 
 ---
 
-### Updated Example Using `ai_search_agent.py` and `index.html`
-
-#### Running the Flask API
-1. Start the Flask server by running the `ai_search_agent.py` file:
-    ```bash
-    python ai_search_agent.py
-    ```
-2. The server will start at `http://127.0.0.1:5000/search`. You can now send queries via the front-end or directly using tools like `curl` or Postman.
-
-#### Using the Front-End (`index.html`)
-1. Open the `index.html` file in your browser.
-2. Enter a query in the text area (e.g., "Summarize the latest advancements in AI from https://openai.com and this YouTube video https://www.youtube.com/watch?v=dQw4w9WgXcQ").
-3. Click the **Search** button to send the query to the Flask API.
-4. The synthesized Markdown response will be rendered dynamically in the results area.
-
-#### Example Query via API
-You can also test the API directly using `curl`:
-```bash
-curl -X POST http://127.0.0.1:5000/search \
--H "Content-Type: application/json" \
--d '{"query": "What are the latest trends in AI research? Summarize this YouTube video https://www.youtube.com/watch?v=dQw4w9WgXcQ", "show_logs": true}'
-```
-
-
 ## Limitations
-- Relies on pollinations APIs as the only endpoint, and depends on their rate limits or restrictions for the ai model endpoints.
+
+- Relies on Pollinations APIs for AI model endpoints and is subject to their rate limits or restrictions.
 - Requires internet connectivity for web search and scraping.
+- Some features (e.g., YouTube transcript extraction) depend on third-party services and may be affected by their availability.
 
 ---
 
 ## License
+
 This project is licensed under the MIT License. See the `LICENSE` file for details.
 
----
 
-## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests to improve the module.
+
