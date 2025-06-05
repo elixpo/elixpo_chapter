@@ -907,6 +907,8 @@ def handle_search():
     elif request.method == 'GET':
         user_input_query = request.args.get('query')
         show_logs_param = request.args.get('show_logs', None)
+        show_image_param = request.args.get('show_images', None)
+        show_sources_param = request.args.get('show_sources', None)
 
     if not user_input_query or not isinstance(user_input_query, str):
         return jsonify({"error": "Query parameter 'query' is required and must be a string."}), 400

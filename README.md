@@ -93,7 +93,7 @@ pip install -r requirements.txt
 ```bash
 curl -X POST http://127.0.0.1:5000/search \
 -H "Content-Type: application/json" \
--d '{"query": "What are the latest trends in AI research? Summarize this YouTube video https://www.youtube.com/watch?v=dQw4w9WgXcQ", "show_logs": false}'
+-d '{"query": "What are the latest trends in AI research? Summarize this YouTube video https://www.youtube.com/watch?v=dQw4w9WgXcQ", "show_logs": false, "show_images": false, "show_sources": true}'
 ```
 
 ### Running with Docker
@@ -127,7 +127,7 @@ import requests
 query = "What's the current weather in Kolkata, India? How's it different from the weather in Delhi, India right now?"
 response = requests.post(
     "http://localhost:5000/search",
-    json={"query": query, "show_logs": False}
+    json={"query": query, "show_logs": False, "show_images": False, "show_sources": True}
 )
 print(response.text)
 ```
