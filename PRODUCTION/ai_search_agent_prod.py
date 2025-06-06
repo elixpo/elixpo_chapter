@@ -40,12 +40,12 @@ MAX_CONCURRENT_REQUESTS = 8
 CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "OpenAI GPT-4.1-nano")
 SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL", "openai-large")
 
-query_pollinations_ai_show_log = False
-get_youtube_transcript_show_log = False
-get_youtube_video_metadata_show_log = False
-scrape_website_show_log = False
-plan_execution_llm_show_log = False
-perform_duckduckgo_text_search_show_log = False
+query_pollinations_ai_show_log = True
+get_youtube_transcript_show_log = True
+get_youtube_video_metadata_show_log = True
+scrape_website_show_log = True
+plan_execution_llm_show_log = True
+perform_duckduckgo_text_search_show_log = True
 
 load_dotenv()
 
@@ -1151,20 +1151,34 @@ limiter = Limiter(
 
 process_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
+# Enable verbose logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', stream=sys.stdout)
+
+# Set Flask app logger to DEBUG level
+app.logger.setLevel(logging.DEBUG)
+
+# Also enable Werkzeug logger (Flask's underlying WSGI library) for request/response logs
+logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
 
 @limiter.limit("10 per minute")
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
-def handle_search():
+def handle_search(anything=None):
+    # Log the incoming request details
+    app.logger.debug(f"Request received: {request.method} {request.path}")
+    app.logger.debug(f"Request headers: {dict(request.headers)}")
+    if anything:
+        app.logger.debug(f"Path parameter 'anything': {anything}")
+    
     user_input_query = None
     output_format = 'markdown'
 
     if request.method == 'POST':
         try:
             data = request.get_json()
+            app.logger.debug(f"POST data received: {data}")
             if not isinstance(data, dict):
                  return jsonify({"error": "Invalid JSON payload."}), 400
 
