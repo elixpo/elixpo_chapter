@@ -57,15 +57,8 @@
             resize: vertical;
             min-height: 120px;
             margin-bottom: 15px;
-            font-family: inherit; /* Use body font */
+            font-family: inherit; 
         }
-
-        /* Checkbox styles removed as they are no longer in use */
-        /*
-        input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        */
 
         button {
             padding: 12px 24px;
@@ -92,7 +85,7 @@
             padding: 12px 15px;
             font-weight: 600;
             border-radius: 6px;
-            min-height: 1.5em; /* Prevent jumping when empty */
+            min-height: 1.5em; 
         }
 
         .status-loading {
@@ -113,11 +106,11 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             background-color: #fff;
-            min-height: 150px; /* Give it some initial height */
+            min-height: 150px; 
         }
 
         #results-area h2 {
-             /* Reset marked.js default margin-top for h2 */
+             
              margin-top: 1.5em;
              margin-bottom: 0.5em;
             border-bottom: 2px solid #eee;
@@ -131,17 +124,17 @@
 
 
         #results-area p {
-            margin-bottom: 1em; /* Space out paragraphs */
+            margin-bottom: 1em;
             line-height: 1.6;
         }
 
         #results-area ul, #results-area ol {
             margin-bottom: 1em;
-            padding-left: 25px; /* Increase list padding */
+            padding-left: 25px; 
         }
 
         #results-area li {
-             margin-bottom: 0.5em; /* Space out list items */
+             margin-bottom: 0.5em; 
         }
 
         #results-area pre {
@@ -149,7 +142,7 @@
             padding: 12px;
             border-radius: 6px;
             overflow-x: auto;
-            margin-bottom: 1em; /* Space after code blocks */
+            margin-bottom: 1em; 
         }
 
         #results-area code {
@@ -158,7 +151,7 @@
         }
 
         #results-area pre code {
-             padding: 0; /* Remove padding in pre-formatted code */
+             padding: 0; 
         }
 
 
@@ -175,8 +168,8 @@
             height: auto;
             display: block;
             margin: 20px auto;
-            border-radius: 4px; /* Slightly rounded corners for images */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
+            border-radius: 4px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
         }
 
         #results-area a {
@@ -188,7 +181,6 @@
             text-decoration: underline;
         }
 
-        /* Style for the manually added sources/images sections */
         #results-area .sources-section,
         #results-area .images-section {
             margin-top: 30px;
@@ -198,7 +190,7 @@
 
         #results-area .sources-section h2,
         #results-area .images-section h2 {
-            border-bottom: none; /* Remove double border */
+            border-bottom: none; 
             padding-bottom: 0;
         }
 
@@ -207,7 +199,7 @@
         }
 
          #results-area .sources-list li {
-             word-break: break-all; /* Prevent long URLs from overflowing */
+             word-break: break-all; 
              margin-bottom: 0.8em;
              font-size: 0.95em;
          }
@@ -220,9 +212,9 @@
          }
 
          #results-area .images-list img {
-             max-width: 150px; /* Limit size of images in the source list */
+             max-width: 150px; 
              height: auto;
-             margin: 0; /* Override center margin */
+             margin: 0; 
              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
          }
 
@@ -236,22 +228,6 @@
         <form id="search-form">
             <label for="query-input">Enter your query:</label>
             <textarea id="query-input" placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."></textarea>
-
-            <!-- Removed the checkbox div -->
-            <!--
-            <div style="margin: 15px 0;">
-                <label style="display: inline-block; margin-right: 20px;">
-                    <input type="checkbox" id="show-sources-checkbox" checked>
-                    Show Sources
-                </label>
-
-                <label style="display: inline-block;">
-                    <input type="checkbox" id="show-images-checkbox">
-                    Show Images
-                </label>
-            </div>
-            -->
-
             <button type="submit" id="submit-button">Search</button>
         </form>
 
@@ -259,15 +235,13 @@
         <div id="results-area"></div>
     </div>
 
-    <!-- Include marked.js - only once -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-    // Configure marked.js for better rendering
     marked.setOptions({
-        breaks: true, // Render GFM [newline] as <br>
-        gfm: true,    // Use GitHub flavored markdown
-        headerIds: false, // Disable default header IDs
-        headerPrefix: '', // Disable header prefix
+        breaks: true, 
+        gfm: true,    
+        headerIds: false,
+        headerPrefix: '', 
     });
 
 
@@ -276,12 +250,6 @@
     const resultsArea = document.getElementById('results-area');
     const statusMessage = document.getElementById('status-message');
     const submitButton = document.getElementById('submit-button');
-    // Removed checkbox element references
-    // const showSourcesCheckbox = document.getElementById('show-sources-checkbox');
-    // const showImagesCheckbox = document.getElementById('show-images-checkbox');
-
-    // Use the URL of your Flask backend
-    // IMPORTANT: Replace with your actual domain/IP if not running locally
     // const API_SEARCH_URL = "http://127.0.0.1:5000/search"; 
     const API_SEARCH_URL = "https://search.pollinations.ai/search"
 
@@ -293,14 +261,10 @@
         if (!query) {
             statusMessage.textContent = 'Please enter a query.';
             statusMessage.className = 'status-error';
-            resultsArea.innerHTML = ''; // Clear previous results on validation error
+            resultsArea.innerHTML = ''; 
             return;
         }
 
-        // Removed getting checkbox states
-        // const showSources = showSourcesCheckbox.checked;
-        // const showImages = showImagesCheckbox.checked;
-        // showLogs is typically for backend console, not user UI
         const showLogs = false;
 
         statusMessage.textContent = 'Surfing...';
@@ -308,69 +272,49 @@
         resultsArea.innerHTML = marked.parse("### Loading results...\n\nPlease wait a moment, this may take a couple of minutes depending on the query complexity and number of sources.");
         submitButton.disabled = true;
 
-        // Construct the OpenAI-style POST body
         const requestBody = {
             messages: [
                 { role: 'user', content: query }
             ],
-            // Removed show_sources and show_images parameters to allow backend deduction
-            // show_logs: showLogs // Can be omitted or set here if needed by the backend
         };
 
         fetch(API_SEARCH_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-                // Add Authorization header if your API requires a token
-                // 'Authorization': `Bearer ${YOUR_API_TOKEN}`
             },
             body: JSON.stringify(requestBody),
         })
         .then(response => {
-            // Check for HTTP errors first
             if (!response.ok) {
-                 // Attempt to read error details from response body if it's JSON
                  return response.json().then(errData => {
-                     // Prioritize 'error' key if present, otherwise use status text
                      const errorMsg = errData.error || response.statusText;
-                     // Add status code to the error message for clarity
                      throw new Error(`HTTP ${response.status}: ${errorMsg}`);
                  }).catch(() => {
-                     // If response body is not valid JSON or reading fails, throw generic error
                      throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
                  });
             }
-            // If response is OK, parse it as JSON
             return response.json();
         })
         .then(data => {
-            console.log("Received data:", data); // Log the full response for debugging
-
-            statusMessage.textContent = ''; // Clear loading status
+            console.log("Received data:", data); 
+            statusMessage.textContent = ''; 
             statusMessage.className = '';
 
             if (data.error) {
-                // Handle errors explicitly returned in the JSON body
                 statusMessage.textContent = 'API Error: ' + data.error;
                 statusMessage.className = 'status-error';
                 resultsArea.innerHTML = marked.parse(`### API Error\n\nAn error occurred:\n\n\`\`\`\n${escapeHTML(data.error)}\n\`\`\``);
             } else if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content !== undefined) {
-                // Process the successful response
                 const markdownText = data.choices[0].message.content;
-                let htmlOutput = marked.parse(markdownText); // Convert main answer markdown to HTML
-
-                // --- Append Sources if present in the response data ---
-                // Now we check if the 'sources' key exists in the response JSON
+                let htmlOutput = marked.parse(markdownText);
                 if (data.sources) {
                      let sourcesHtml = '<div class="sources-section"><h2>Sources</h2>';
-                     let hasSourcesContent = false; // Flag to track if anything was added to sourcesHtml
-
+                     let hasSourcesContent = false;
                      if (data.sources.native_knowledge && data.sources.native_knowledge !== 'None') {
                          sourcesHtml += `<p><strong>Answered Natively:</strong> ${escapeHTML(data.sources.native_knowledge)}</p>`;
                          hasSourcesContent = true;
                      }
-
-                     // Using optional chaining (?.) and nullish coalescing (?? []) for safer access
                      const scrapedWebsites = data.sources.scraped_websites ?? [];
                      if (scrapedWebsites.length > 0) {
                          sourcesHtml += '<h3>Text Sources (Scraped Websites)</h3><ul class="sources-list">';
@@ -398,65 +342,51 @@
                          sourcesHtml += '</p>';
                          hasSourcesContent = true;
                     }
-
-                    // Only append the sources section if there was any source data to display
                     if (hasSourcesContent) {
                          htmlOutput += sourcesHtml + '</div>';
                     } else {
-                        // If the sources key was present but contained no actual source data lists/native part
                          htmlOutput += '<div class="sources-section"><h2>Sources</h2><p>No source information available for this query.</p></div>';
                     }
                 }
-
-                // --- Append Images if present in the response data ---
-                // The API returns the 'images' key as an array if scraping was attempted and images found/not found
-                // We check if the 'images' key exists in the response JSON
-                if (data.images !== undefined) { // Check if the key exists, even if null or empty array
+                if (data.images !== undefined) { 
                     let imagesHtml = '<div class="images-section"><h2>Images Found on Processed Sources</h2>';
-                    if (data.images && data.images.length > 0) { // Check if the key exists AND the array is not empty
+                    if (data.images && data.images.length > 0) { 
                          imagesHtml += '<div class="images-list">';
                          data.images.forEach(imgUrl => {
                              imagesHtml += `<img src="${escapeHTML(imgUrl)}" alt="Image from source">`;
                          });
                          imagesHtml += '</div>';
                     } else {
-                         // If the 'images' key exists but is empty or null, it means no images were found within limits
                          imagesHtml += '<p>No relevant images found.</p>';
                     }
                     htmlOutput += imagesHtml + '</div>';
                 }
-
-
-                resultsArea.innerHTML = htmlOutput; // Set the combined HTML output
+                resultsArea.innerHTML = htmlOutput; 
 
             } else {
-                 // Handle cases where 'choices' or content is missing without a specific 'error' key
                  statusMessage.textContent = 'Error: Unexpected response format from API.';
                  statusMessage.className = 'status-error';
                  resultsArea.innerHTML = marked.parse(`### Error\n\nReceived an unexpected response format from the API.`);
                  console.error("Unexpected API response structure:", data);
             }
         })
-        .catch(error => { // This block catches any errors thrown in the promise chain (HTTP or processing)
+        .catch(error => { 
             console.error('Fetch Error:', error);
             statusMessage.textContent = 'Error: ' + error.message;
             statusMessage.className = 'status-error';
             resultsArea.innerHTML = marked.parse(`### Error\n\nAn error occurred:\n\n\`\`\`\n${escapeHTML(error.message)}\n\`\`\``); // Show error in results area too
         })
         .finally(() => {
-            submitButton.disabled = false; // Re-enable the button
+            submitButton.disabled = false; 
         });
     });
-
-    // Helper function to escape HTML characters for safety when injecting URLs into attributes
     function escapeHTML(str) {
-        if (typeof str !== 'string') return ''; // Handle non-string inputs
+        if (typeof str !== 'string') return ''; 
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
     }
 
-    // Initial message when the page loads
     resultsArea.innerHTML = marked.parse("### Welcome!\n\nEnter a query above (e.g., 'Explain AI show images and sources') and click 'Search' to get a synthesized answer from web sources and URLs.");
 
 </script>
