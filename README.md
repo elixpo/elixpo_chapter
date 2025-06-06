@@ -119,20 +119,78 @@ Environment variables can be set in a `.env` file for API tokens and other secre
 
 ---
 
-## Example Query
+## CURL Queries 
 
-```python
-import requests
-
-query = "What's the current weather in Kolkata, India? How's it different from the weather in Delhi, India right now?"
-response = requests.post(
-    "http://localhost:5000/search",
-    json={"query": query, "show_logs": False, "show_images": False, "show_sources": True}
-)
-print(response.text)
+### Root Endpoint / (GET)
+```bash
+curl https://search.pollinations.ai/
 ```
 
----
+### Search Endpoint /search (GET)
+```bash
+# Basic GET request with just the query
+curl "https://search.pollinations.ai/search?query=weather in London tomorrow"
+
+# GET request with specific parameters
+curl "https://search.pollinations.ai/search?query=latest news on AI&show_sources=false&show_images=true&show_logs=true"
+```
+
+### Search Endpoint /search (POST - Old/Custom JSON Format)
+```bash
+# Basic POST request with just the query JSON
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "how tall is mount everest"}'
+
+# POST request with specific parameters in JSON
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "explain quantum computing", "show_sources": true, "show_images": false}'
+```
+
+### Search Endpoint /search (POST - OpenAI-compatible JSON Format)
+```bash
+# Basic POST request with messages array
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "What is the capital of France?"}
+    ]
+  }'
+
+# POST request with messages and specific parameters in JSON
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Tell me about the history of the internet."}
+    ],
+    "show_sources": true,
+    "show_images": true
+  }'
+```
+
+### Special Query: `pollinations_test`
+```bash
+# Test via GET
+curl "https://search.pollinations.ai/search?query=pollinations_test"
+
+# Test via POST (Old/Custom JSON)
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "pollinations_test"}'
+
+# Test via POST (OpenAI-compatible JSON)
+curl -X POST https://search.pollinations.ai/search \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "pollinations_test"}
+    ]
+  }'
+```
 
 ## Limitations
 
