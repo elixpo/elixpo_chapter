@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from pytube import YouTube, exceptions
 from duckduckgo_search import DDGS
+from duckduckgo_search.exceptions import DuckDuckGoSearchException, TimeoutException, RatelimitException
 from bs4 import BeautifulSoup
 import math
 import mimetypes
@@ -25,37 +26,44 @@ import threading
 import logging
 import concurrent.futures
 
-MAX_SEARCH_RESULTS_PER_QUERY = 8
+MAX_SEARCH_RESULTS_PER_QUERY = 6
 MAX_SCRAPE_WORD_COUNT = 2000
 MAX_TOTAL_SCRAPE_WORD_COUNT = 8000
 MIN_PAGES_TO_SCRAPE = 3
 MAX_PAGES_TO_SCRAPE = 10
 MAX_IMAGES_TO_INCLUDE = 3
 MAX_TRANSCRIPT_WORD_COUNT = 6000
-DUCKDUCKGO_REQUEST_DELAY = 3
+DUCKDUCKGO_REQUEST_DELAY = 4
 REQUEST_RETRY_DELAY = 5
 MAX_REQUEST_RETRIES = 3
 MAX_DUCKDUCKGO_RETRIES = 5
 MAX_CONCURRENT_REQUESTS = 8
-CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "OpenAI GPT-4.1-nano")
-SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL", "openai-large")
 
-query_pollinations_ai_show_log = False
-get_youtube_transcript_show_log = False
-get_youtube_video_metadata_show_log = False
-scrape_website_show_log = False
-plan_execution_llm_show_log = False
-perform_duckduckgo_text_search_show_log = False
 
+CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "openai-fast")
+SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL", "openai-fast")
+DDGS_TIMEOUT = int(os.getenv("DDGS_TIMEOUT", "120"))  # 120 seconds default timeout (increased from 60)
+DDGS_PROXY = os.getenv("DDGS_PROXY", None)  # Optional proxy configuration
+DDGS_BACKEND = os.getenv("DDGS_BACKEND", "auto")
+
+query_pollinations_ai_show_log = True
+get_youtube_transcript_show_log = True
+get_youtube_video_metadata_show_log = True
+scrape_website_show_log = True
+plan_execution_llm_show_log = True
+perform_duckduckgo_text_search_show_log = True
 load_dotenv()
 
 class DummyContextManager:
+    def __init__(self, *args, **kwargs):
+        self.n = 0
+        self.total = 1
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         pass
     def set_postfix_str(self, *args, **kwargs): pass
-    def update(self, *args, **kwargs): pass
+    def update(self, n=1): self.n += n
     def close(self): pass
 
 def conditional_tqdm(iterable, show_logs, *args, **kwargs):
@@ -485,10 +493,9 @@ def perform_duckduckgo_text_search(query, max_results, retries=MAX_DUCKDUCKGO_RE
     def _search():
         time.sleep(DUCKDUCKGO_REQUEST_DELAY)
         try:
-            with DDGS() as ddgs:
+            with DDGS(timeout=DDGS_TIMEOUT, proxy=DDGS_PROXY) as ddgs:
                 search_results = [{k: result.get(k) for k in ['title', 'href', 'body']}
                                   for result in ddgs.text(query, max_results=max_results)]
-
             valid_results = [r for r in search_results if r and isinstance(r.get('href'), str) and r['href'].strip()]
 
             if not valid_results:
@@ -498,12 +505,27 @@ def perform_duckduckgo_text_search(query, max_results, retries=MAX_DUCKDUCKGO_RE
             conditional_print(f"DDGS search successful for query '{query}'. Found {len(valid_results)} results.", show_logs)
             return valid_results
 
+        except DuckDuckGoSearchException as e:
+            conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
+        except TimeoutException as e:
+            conditional_print(f"DDGS search timed out for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
+        except RatelimitException as e:
+            conditional_print(f"DDGS search rate limit exceeded for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
         except Exception as e:
-             conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
-             raise
+            conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
 
     try:
         return retry_operation(_search, retries=retries, show_logs=show_logs)
+    except TimeoutException as e:
+        conditional_print(f"DDGS search timed out for query '{query}' after {retries} retries: {e}. Consider increasing DDGS_TIMEOUT environment variable.", show_logs)
+        return []
+    except RatelimitException as e:
+        conditional_print(f"DDGS rate limit exceeded for query '{query}' after retries: {e}. Consider adding longer delays between requests.", show_logs)
+        return []
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code if e.response is not None else 'N/A'
         if status_code in [403, 429]:
@@ -1151,20 +1173,29 @@ limiter = Limiter(
 
 process_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', stream=sys.stdout)
+app.logger.setLevel(logging.DEBUG)
+logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
 
 @limiter.limit("10 per minute")
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
-def handle_search():
+def handle_search(anything=None):
+    # Log the incoming request details
+    app.logger.debug(f"Request received: {request.method} {request.path}")
+    app.logger.debug(f"Request headers: {dict(request.headers)}")
+    if anything:
+        app.logger.debug(f"Path parameter 'anything': {anything}")
+    
     user_input_query = None
     output_format = 'markdown'
 
     if request.method == 'POST':
         try:
             data = request.get_json()
+            app.logger.debug(f"POST data received: {data}")
             if not isinstance(data, dict):
                  return jsonify({"error": "Invalid JSON payload."}), 400
 
@@ -1243,7 +1274,7 @@ def handle_search():
         provided_youtube_urls,
         cleaned_query_text_for_planner,
         datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "", # Location fetching now happens inside search_and_synthesize if needed for prompt
+        "",
         show_logs=show_logs
     )
 
@@ -1332,6 +1363,72 @@ def handle_search():
         else:
              return Response(f"Error: {error_msg}\n---\nAn internal error prevented the request from completing.", mimetype='text/markdown', status=status_code)
 
+
+@app.route('/v1/chat/completions', methods=['POST'])
+def openai_chat_completions():
+    try:
+        data = request.get_json()
+        if not data or 'messages' not in data or not isinstance(data['messages'], list):
+            return jsonify({"error": "Invalid request: 'messages' array required."}), 400
+
+        # Extract user message (LangChain expects OpenAI format)
+        user_input_query = None
+        for message in reversed(data['messages']):
+            if message.get('role') == 'user':
+                user_input_query = message.get('content', '').strip()
+                break
+        if not user_input_query:
+            return jsonify({"error": "No user message found in 'messages'."}), 400
+
+        # Extract URLs and cleaned query
+        provided_website_urls, provided_youtube_urls, cleaned_query_text_for_planner = extract_urls_from_query(user_input_query)
+
+        # Get plan and flags
+        plan, ai_show_sources, ai_scrape_images = plan_execution_llm(
+            user_input_query,
+            provided_website_urls,
+            provided_youtube_urls,
+            cleaned_query_text_for_planner,
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "",
+            show_logs=False
+        )
+
+        # Run main logic
+        markdown_output, status_code, collected_data = search_and_synthesize(
+            user_input_query,
+            provided_website_urls,
+            provided_youtube_urls,
+            cleaned_query_text_for_planner,
+            show_sources=ai_show_sources,
+            scrape_images=ai_scrape_images,
+            show_logs=False,
+            output_format='json'
+        )
+
+        # OpenAI-compatible response
+        response_body = {
+            "id": "chatcmpl-langchain",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": SYNTHESIS_MODEL or "openai-large",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": html.unescape(markdown_output)
+                    },
+                    "finish_reason": "stop"
+                }
+            ]
+        }
+        return jsonify(response_body), status_code
+
+    except Exception as e:
+        logging.exception("LangChain-compatible endpoint error")
+        return jsonify({"error": f"Internal error: {type(e).__name__}: {e}"}), 500
+    
 @app.route('/', methods=['GET'])
 def index():
     return "Pollinations Search API is running.", 200
