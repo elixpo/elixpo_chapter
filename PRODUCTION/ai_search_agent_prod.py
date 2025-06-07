@@ -44,7 +44,7 @@ CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "openai-fast")
 SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL", "openai-fast")
 DDGS_TIMEOUT = int(os.getenv("DDGS_TIMEOUT", "120"))  # 120 seconds default timeout (increased from 60)
 DDGS_PROXY = os.getenv("DDGS_PROXY", None)  # Optional proxy configuration
-DDGS_BACKEND = os.getenv("DDGS_BACKEND", "auto")  
+DDGS_BACKEND = os.getenv("DDGS_BACKEND", "auto")
 
 query_pollinations_ai_show_log = True
 get_youtube_transcript_show_log = True
