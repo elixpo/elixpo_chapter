@@ -4,7 +4,6 @@ import { POLLINATIONS_TOKEN } from '../config.js';
 import { AttachmentBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getPermissionName, PERMISSIONS, client } from '../bot.js';
 import { sanitizeText } from '../utils.js';
-import { setCache, deleteCache } from '../cache.js';
 import { createDownloadButton } from '../components.js';
 
 const DISCORD_LINK_BUTTON_MAX_URL_LENGTH = 512;
@@ -159,11 +158,6 @@ async function remixImageStyled(interaction, uploadedUrls, prompt, seed, aspectR
                 actionRow.addComponents(createDownloadButton(null, interaction.id, 0));
             }
 
-            // Cache the remix image for download button
-            setCache(interaction.id, {
-                data: [{ attachment, url: imgurl }],
-                timestamp: Date.now()
-            });
 
             const finalEditOptions = {
                 content: finalContent,
