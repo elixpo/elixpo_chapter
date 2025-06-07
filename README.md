@@ -1,41 +1,117 @@
-# Image-generation-bot
+# Elixpo Discord Bot (Jackey)
 
-The Project Creds goes to Pollinations.ai for the AI model!
+A Discord bot for generating, remixing, and managing AI-generated images using slash commands. Built with [discord.js](https://discord.js.org/) and supports advanced image options, queueing, and permission checks.
 
-A complete code for a text-to-image bot 🖼
+---
 
+## Features
 
-### ⚡ Configuration
+- **/generate**: Create images from prompts with options for number, aspect ratio, theme, model, and more.
+- **/remix**: Remix up to 3 uploaded images with a new prompt and options.
+- **/help**: Get information about available commands.
+- **Queue system**: Handles multiple requests efficiently.
+- **Permission checks**: Ensures the bot has the correct permissions before replying or sending files.
+- **Download buttons**: Users can download generated images via interactive buttons.
+- **Cache management**: Temporary storage for generated images and cleanup.
 
-Open the configuration file located in the main folder `.env`.
+---
 
-```.env
-TOKEN = Bot Token
-MESSAGE_CHANNEL = CHANNEL ID
-GUILD_ID = SERVER ID
-PREFIX=/
-CLIENT_ID = CLIENT ID OF BOT
+## Setup
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/yourusername/elixpo-discord-bot.git
+cd elixpo-discord-bot
+npm install
 ```
 
-### 📑 Installation
-To use the project correctly you will need some tools.
+### 2. Environment Variables
 
-WARNING: You MUST use Node.js version under 18.17, otherwise, you will encounter major compatibility issues.
+Create a `.env` file or set these variables in your environment:
 
-[Node JS](https://nodejs.org/en/) (v18.17) or older for environment
+```
+DISCORD_TOKEN=your_discord_bot_token
+CLIENT_ID=your_discord_application_id
+POLLINATIONS_TOKEN=your_pollinations_api_token (optional)
+```
 
-[yarn](https://yarnpkg.com/getting-started/usage) for package management
+### 3. Register Slash Commands
 
+Run the command registration script to register or update slash commands:
 
-Now in your terminal run the following commands assuming you are in the same directory as the project.
+```bash
+node register_commands.js
+```
 
-`npm install`
- and then run the command 
-`node registerCommand.js`
-`node wandyFunc2.js`
+### 4. Start the Bot
 
-and Done, your bot should be running!
+```bash
+node elixpo_discord_bot.js
+```
 
-Made ❤️ by [Ayushman](https://github.com/circuit-overtime).
+---
 
-Please do not withdraw the license and keep the credits on this project. 
+## Slash Commands
+
+### `/generate`
+
+Generate images from a prompt.
+
+**Options:**
+
+- `prompt` (string, required): The prompt for image generation.
+- `number_of_images` (int, required): Number of images (1-4).
+- `seed` (int, optional): Random seed (10-1000000).
+- `aspect_ratio` (choice, optional): 16:9, 9:16, 1:1, 4:3, 3:2.
+- `theme` (choice, optional): fantasy, normal, halloween, structure, crayon, space, chromatic, cyberpunk, anime, landscape, samurai, wpap, vintage, pixel, synthwave.
+- `enhancement` (bool, optional): Enhance image quality.
+- `model` (choice, optional): flux, turbo, gptimage.
+
+### `/remix`
+
+Remix up to 3 uploaded images with a new prompt.
+
+**Options:**
+
+- `prompt` (string, required): How to remix the images.
+- `image_1` (attachment, required): First image.
+- `image_2` (attachment, optional): Second image.
+- `image_3` (attachment, optional): Third image.
+- `seed`, `aspect_ratio`, `theme`: Same as `/generate`.
+
+### `/help`
+
+Get information about the bot's commands.
+
+---
+
+## Permissions
+
+The bot requires the following permissions in your Discord server:
+
+- View Channels
+- Send Messages
+- Attach Files
+
+---
+
+## Development Notes
+
+- Commands are defined and registered in `register_commands.js`.
+- Main bot logic and event handling is in `elixpo_discord_bot.js`.
+- Uses a semaphore to limit concurrent image generation/remix requests.
+- Handles permission errors and missing cache gracefully.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Credits
+
+- Built with [discord.js](https://discord.js.org/)
+- Image generation via Pollinations API (optional)
