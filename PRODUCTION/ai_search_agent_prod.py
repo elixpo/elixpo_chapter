@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from pytube import YouTube, exceptions
 from duckduckgo_search import DDGS
+from duckduckgo_search.exceptions import DuckDuckGoSearchException, TimeoutException, RatelimitException
 from bs4 import BeautifulSoup
 import math
 import mimetypes
@@ -37,8 +38,13 @@ REQUEST_RETRY_DELAY = 5
 MAX_REQUEST_RETRIES = 3
 MAX_DUCKDUCKGO_RETRIES = 5
 MAX_CONCURRENT_REQUESTS = 8
-CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL")
-SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL")
+
+CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "openai-fast")
+SYNTHESIS_MODEL = os.getenv("SYNTHESIS_MODEL", "openai-fast")
+DDGS_TIMEOUT = int(os.getenv("DDGS_TIMEOUT", "120"))  # 120 seconds default timeout (increased from 60)
+DDGS_PROXY = os.getenv("DDGS_PROXY", None)  # Optional proxy configuration
+DDGS_BACKEND = os.getenv("DDGS_BACKEND", "auto")  # Backend preference: auto, html, lite
+
 
 query_pollinations_ai_show_log = True
 get_youtube_transcript_show_log = True
@@ -487,10 +493,9 @@ def perform_duckduckgo_text_search(query, max_results, retries=MAX_DUCKDUCKGO_RE
     def _search():
         time.sleep(DUCKDUCKGO_REQUEST_DELAY)
         try:
-            with DDGS() as ddgs:
+            with DDGS(timeout=DDGS_TIMEOUT, proxy=DDGS_PROXY) as ddgs:
                 search_results = [{k: result.get(k) for k in ['title', 'href', 'body']}
                                   for result in ddgs.text(query, max_results=max_results)]
-
             valid_results = [r for r in search_results if r and isinstance(r.get('href'), str) and r['href'].strip()]
 
             if not valid_results:
@@ -500,12 +505,27 @@ def perform_duckduckgo_text_search(query, max_results, retries=MAX_DUCKDUCKGO_RE
             conditional_print(f"DDGS search successful for query '{query}'. Found {len(valid_results)} results.", show_logs)
             return valid_results
 
+        except DuckDuckGoSearchException as e:
+            conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
+        except TimeoutException as e:
+            conditional_print(f"DDGS search timed out for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
+        except RatelimitException as e:
+            conditional_print(f"DDGS search rate limit exceeded for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
         except Exception as e:
-             conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
-             raise
+            conditional_print(f"DDGS search error during _search for '{query}': {type(e).__name__}: {e}", show_logs)
+            raise
 
     try:
         return retry_operation(_search, retries=retries, show_logs=show_logs)
+    except TimeoutException as e:
+        conditional_print(f"DDGS search timed out for query '{query}' after {retries} retries: {e}. Consider increasing DDGS_TIMEOUT environment variable.", show_logs)
+        return []
+    except RatelimitException as e:
+        conditional_print(f"DDGS rate limit exceeded for query '{query}' after retries: {e}. Consider adding longer delays between requests.", show_logs)
+        return []
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code if e.response is not None else 'N/A'
         if status_code in [403, 429]:
