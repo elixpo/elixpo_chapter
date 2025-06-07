@@ -13,16 +13,16 @@ const client = new Client({
     intents: ['Guilds', 'GuildMessages', 'MessageContent'],
 });
 
-// Activity cycling
+
 client.on('ready', async () => {
     console.log(`${client.user.tag} is online and ready!`);
-    client.user.setActivity("Pixels in the sky!", { type: 4 }); // WATCHING
+    client.user.setActivity("Pixels in the sky!", { type: 4 }); 
 
     const activityInterval = setInterval(() => {
         const activities = [
-            { name: "Pixels in the sky!", type: 4 }, // WATCHING
-            { name: "The Palette and Canvas", type: 0 }, // PLAYING
-            { name: "Synthwave of Pixels!", type: 3 }, // LISTENING
+            { name: "Pixels in the sky!", type: 4 }, 
+            { name: "The Palette and Canvas", type: 0 }, 
+            { name: "Synthwave of Pixels!", type: 3 }, 
         ];
         const randomActivity = activities[Math.floor(Math.random() * activities.length)];
         client.user.setActivity(randomActivity.name, { type: randomActivity.type });

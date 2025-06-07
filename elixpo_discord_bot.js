@@ -1,9 +1,7 @@
 import { client, PERMISSIONS, getPermissionName } from './bot.js';
 import { DISCORD_TOKEN, POLLINATIONS_TOKEN, TEST_GUILD_ID } from './config.js';
-import { setCache, getCache, deleteCache, cleanupCache, imageCache } from './cache.js';
 import { remixCommand } from './commands/remix.js';
 import { handleGenerate } from './commands/generate.js';
-import { handleEdit } from './commands/edit.js';
 import { handlePing } from './commands/ping.js';
 import { handleHelp } from './commands/help.js';
 import { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
@@ -12,7 +10,7 @@ import { Semaphore } from './semaphore.js';
 let queue = [];
 let isProcessing = false;
 
-setInterval(cleanupCache, 10 * 60 * 1000);
+
 const commandSemaphore = new Semaphore(5);
 client.on('interactionCreate', async interaction => {
   // if (interaction.guildId !== TEST_GUILD_ID) {
@@ -59,9 +57,8 @@ client.on('interactionCreate', async interaction => {
       try {
         if (interaction.commandName === 'generate') {
           await handleGenerate(interaction);
-        } else if (interaction.commandName === 'edit') {
-          await handleEdit(interaction);
-        } else if (interaction.commandName === 'remix') {
+        } 
+        else if (interaction.commandName === 'remix') {
           await remixCommand(interaction);
         }
       } finally {
@@ -81,176 +78,6 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
-  if (interaction.isButton()) {
-    const customId = interaction.customId;
-
-    if (customId === 'edit_image') {
-      try {
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.deferUpdate();
-        } else if (interaction.deferred) {
-            await interaction.followUp({ content: "Please use the `/edit` command.", ephemeral: true });
-            return;
-        }
-
-        const channel = interaction.channel;
-        const botMember = interaction.guild?.members.me;
-        if (channel && botMember && channel.permissionsFor(botMember)?.has(PERMISSIONS.SendMessages)) {
-            await interaction.followUp({
-              content: "To edit an image, use the `/edit` command and provide the Message ID and Image **index** (e.g., `1` for the first image) from the original message as options.",
-              ephemeral: true
-            });
-        } else {
-            console.warn(`Cannot reply to edit button interaction due to missing SendMessages permission in channel ${interaction.channel?.id}`);
-        }
-      } catch (e) {
-        console.error("Error handling edit button interaction:", e);
-      }
-      return;
-    }
-
-    if (customId.startsWith('download_')) {
-      try {
-          if (!interaction.replied && !interaction.deferred) {
-              await interaction.deferReply({ ephemeral: true });
-          }
-      } catch (e) {
-          console.error("Failed to deferReply for download button:", e);
-      }
-
-      const channel = interaction.channel;
-      const botMember = interaction.guild?.members.me;
-
-      const requiredDownloadFlags = [PERMISSIONS.ViewChannel, PERMISSIONS.SendMessages, PERMISSIONS.AttachFiles];
-      const missingDownload = requiredDownloadFlags.filter(flag => !botMember?.permissionsIn(channel).has(flag));
-
-      if (missingDownload.length > 0) {
-        const permissionNames = missingDownload.map(getPermissionName).join(', ');
-        try {
-          if (interaction.replied || interaction.deferred) {
-             await interaction.editReply({
-               content: `I do not have the necessary permissions (**${permissionNames}**) in this channel to provide the image file for download.`,
-             });
-          } else {
-             await interaction.reply({
-               content: `I do not have the necessary permissions (**${permissionNames}**) in this channel to provide the image file for download.`,
-               ephemeral: true
-             });
-          }
-        } catch (e) { console.error("Error sending fallback permission error for download button:", e); }
-        return;
-      }
-
-      const parts = customId.split('_');
-      if (parts.length !== 3 || parts[0] !== 'download' || !/^\d+$/.test(parts[1]) || isNaN(parseInt(parts[2], 10))) {
-        try {
-           if (interaction.replied || interaction.deferred) {
-                await interaction.editReply({
-                    content: "Could not process the download request due to an invalid button ID format.",
-                });
-           } else {
-               await interaction.reply({
-                   content: "Could not process the download request due to an invalid button ID format.",
-                   ephemeral: true
-               });
-           }
-        } catch (e) { console.error("Error replying to invalid download button:", e); }
-        return;
-      }
-
-      const originalInteractionId = parts[1];
-      const imageIndex = parseInt(parts[2], 10);
-
-      const cacheEntry = getCache(originalInteractionId);
-
-      if (!cacheEntry || !cacheEntry.data || !Array.isArray(cacheEntry.data)) {
-        try {
-            if (interaction.replied || interaction.deferred) {
-                await interaction.editReply({
-                    content: "Sorry, the image data for this download button has expired or was not found in the cache, or its format is unexpected. Please try generating or remixing the image again.",
-                });
-            } else {
-                await interaction.reply({
-                   content: "Sorry, the image data for this download button has expired or was not found in the cache, or its format is unexpected. Please try generating or remixing the image again.",
-                   ephemeral: true
-               });
-            }
-        } catch (e) { console.error("Error replying when image data not found:", e); }
-        return;
-      }
-
-      const cachedImages = cacheEntry.data;
-
-      if (imageIndex < 0 || imageIndex >= cachedImages.length) {
-         try {
-            if (interaction.replied || interaction.deferred) {
-                 await interaction.editReply({
-                     content: `Sorry, the image index (#${imageIndex + 1}) for this download button is invalid for the original message.`,
-                 });
-             } else {
-                 await interaction.reply({
-                    content: `Sorry, the image index (#${imageIndex + 1}) for this download button is invalid for the original message.`,
-                    ephemeral: true
-                });
-             }
-         } catch (e) { console.error("Error replying when image index is out of bounds:", e); }
-         return;
-      }
-
-      const imageItem = cachedImages[imageIndex];
-
-      if (!imageItem || !(imageItem.attachment instanceof AttachmentBuilder)) {
-         try {
-            if (interaction.replied || interaction.deferred) {
-                 await interaction.editReply({
-                     content: `Sorry, the attachment data for image #${imageIndex + 1} from the cache is missing or corrupted.`,
-                 });
-             } else {
-                 await interaction.reply({
-                   content: `Sorry, the attachment data for image #${imageIndex + 1} from the cache is missing or corrupted.`,
-                   ephemeral: true
-               });
-             }
-         } catch (e) { console.error("Error replying when attachment data is missing:", e); }
-         return;
-      }
-
-      const attachmentToSend = imageItem.attachment;
-
-      try {
-        if (interaction.replied || interaction.deferred) {
-          await interaction.editReply({
-            content: `Here is image #${imageIndex + 1}:`,
-            files: [attachmentToSend],
-            ephemeral: true
-          });
-        } else {
-           await interaction.reply({
-             content: `Here is image #${imageIndex + 1}:`,
-             files: [attachmentToSend],
-             ephemeral: true
-           });
-        }
-        // console.log(`Successfully sent image #${imageIndex + 1} for interaction ${originalInteractionId} via button click.`);
-      } catch (e) {
-        console.error(`Error replying with image #${imageIndex + 1} for interaction ${originalInteractionId}:`, e);
-        try {
-           if (interaction.replied || interaction.deferred) {
-              await interaction.editReply({
-                 content: `Failed to send image #${imageIndex + 1}. An error occurred.`,
-                 ephemeral: true
-              });
-           } else {
-              await interaction.reply({
-                 content: `Failed to send image #${imageIndex + 1}. An error occurred.`,
-                 ephemeral: true
-              });
-           }
-        } catch (e2) { console.error("Error sending fallback error for download button:", e2); }
-      }
-      return;
-    }
-  }
 });
 
 async function processQueueDiscord() {
@@ -278,10 +105,8 @@ async function processQueueDiscord() {
     if (interaction.commandName === 'generate') {
         // console.log(`Processing generate command for interaction ${interaction.id}`);
         await handleGenerate(interaction);
-    } else if (interaction.commandName === 'edit') {
-        // console.log(`Processing edit command for interaction ${interaction.id}`);
-        await handleEdit(interaction);
-    }
+    } 
+
     else if(interaction.commandName === "remix")
     {
       await remixCommand(interaction);

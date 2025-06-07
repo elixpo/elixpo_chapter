@@ -2,7 +2,6 @@ import { generateImage } from '../imageService.js';
 import { sanitizeText } from '../utils.js';
 import { generateIntermediateText, generateConclusionText } from '../textService.js';
 import { getPermissionName, PERMISSIONS, client } from '../bot.js';
-import { setCache, deleteCache } from '../cache.js';
 import { AttachmentBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { DEFAULT_ASPECT_RATIO, DEFAULT_MODEL, DEFAULT_THEME } from '../config.js';
 import { createRemixButton, createDownloadButton, createMultipleDownloadButtons, buildActionRow } from '../components.js';
@@ -155,16 +154,6 @@ export async function handleGenerate(interaction) {
         }
     }
 
-    if (generatedImagesWithUrls.length > 0) {
-        setCache(interaction.id, {
-          data: generatedImagesWithUrls,
-          timestamp: Date.now()
-        });
-        // console.log(`Stored ${generatedImagesWithUrls.length} generated images in cache for interaction ${interaction.id}.`);
-    } else {
-         deleteCache(interaction.id);
-        //  console.log(`No images generated for interaction ${interaction.id}. Nothing cached.`);
-    }
 
     const finalEditOptions = {
         content: finalContent,
