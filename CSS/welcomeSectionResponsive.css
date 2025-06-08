@@ -1,0 +1,122 @@
+/* @media screen and (max-width: 2560px) {
+    .welcomeText {
+        font-size: 3em;
+    }
+    .welcomePageCastsContainer {
+        width: 85%;
+    }
+    .castBoxes {
+        height: 850px;
+    }
+} */
+
+@media screen and (max-width: 1440px) {
+    .welcomeText {
+        font-size: 2em;
+    }
+    .welcomePageCastsContainer {
+        width: 85%;
+    }
+    .castBoxes {
+        height: 600px;
+    }
+    .contents .waveform
+    {
+        top: 10%;
+    }
+    .newsText
+    {
+        top: 15%;
+        font-size: 2em;
+    }
+    .dateDurationDesc 
+    {
+        top: 25%;
+        height: 100px;
+        font-size: 1.5em;
+    }
+    .playButton 
+    {
+        top: 50%;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .welcomePageCastsContainer {
+        width: 85%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .welcomeText {
+        font-size: 1.5em;
+    }
+    .welcomePageCastsContainer {
+        width: 85%;
+    }
+    .castBoxes {
+        height: 500px;
+    }
+    .dateDurationDesc 
+    {
+        top: 20%;
+        height: 150px;
+        font-size: 1.3em;
+    }
+    .playButton 
+    {
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.8em;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .welcomePageCastsContainer {
+        width: 85%;
+    }
+    .welcomeText {
+        font-size: 1.5em;
+    }
+    .castBoxes {
+        display: flex;
+        flex-direction: column;
+        height: 900px;
+    }
+    .castContainerBoxes > .castBox:nth-child(1) {
+        height: 350px;
+    }
+    .castContainerBoxes > .castBox:nth-child(2),
+    .castContainerBoxes > .castBox:nth-child(3) {
+        height: 200px;
+    }
+    .newsContainer 
+    {
+        height: 450px;
+        border-radius: 15px;
+        border: 2px solid #cccccc8f;
+    }
+    .contents .waveform
+    {
+        top: 10%;
+    }
+    .newsText
+    {
+        top: 15%;
+        font-size: 1.2em;
+    }
+    .dateDurationDesc 
+    {
+        top: 15%;
+        height: 100px;
+        font-size: 1em;
+    }
+    .playButton 
+    {
+        top: 18%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.8em;
+    }
+}
