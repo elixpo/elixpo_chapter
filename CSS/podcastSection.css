@@ -1,0 +1,160 @@
+.podCastSection
+{
+    background: #ffc;
+    z-index: 10;
+
+}
+.podCastSection > .centralImage
+{   
+    position: absolute;
+    top: 0%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 500px;
+    background: url(./IMAGES/backgroundOil.jpg);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+.podCastSection .maskBackground 
+{
+    position: absolute;
+    bottom: 0%;
+    height: 60%;
+    width: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.895), white);
+    filter: blur(50px);
+}
+.podcastName 
+{
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2em;
+    font-weight: 700;
+    z-index: 10;
+    font-family: 'Parkinsans', sans-serif;
+}
+.podcastDesc 
+{
+    position: absolute;
+    top: 68%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8em;
+    font-weight: 100;
+    z-index: 10;
+    width: 80%;
+    text-align: center;
+    font-family: 'Parkinsans', sans-serif;
+}
+.playBackZone
+{
+    position: absolute;
+    top: 75%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30%;
+    height: 140px;
+    border-radius: 25px;
+    z-index: 10;
+    background: #1111118a;
+    box-shadow: 0 12px 20px #1111116a;
+    user-select: none;
+    
+}
+.playBackRange 
+{
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 90%;
+    height: 40%;
+    left: 5%;
+    top: 10%;
+    gap: 20px;
+}
+.playBackSpeed 
+{
+    position: relative;
+    left: 2%;
+    top: 0%;
+    font-family: 'Parkinsans', sans-serif;
+    color: #ffc;
+    font-weight: 700;
+    margin-right: 10px;
+}
+.playBackSeek {
+    position: relative;
+    width: 75%;
+    height: 10px;
+    background: #ffc;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.playBackSeekHead {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: rgb(50, 40, 19);
+    border-radius: 50%;
+    top: -5px;
+    z-index: 1;
+    left: 22%;
+    transform: translateX(-50%); 
+    cursor: pointer;
+}
+
+.playBackSeekProgress {
+    position: absolute;
+    height: 10px;
+    background: #ddb581;
+    border-radius: 20px;
+    top: 0;
+    left: 0;
+    width: 20%; /* Dynamically increase this as progress increases */
+}
+.playBackTime 
+{
+    position: relative;
+    font-family: 'Parkinsans', sans-serif;
+    color: #ffc;
+    font-weight: 700;
+    margin-right: 10px;
+}
+
+.playBackControls 
+{
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 70%;
+    height: 40%;
+    left: 15%;
+    top: 10%;
+}
+
+.playBackControls > svg > path 
+{
+    fill: #ffc;
+    stroke: #ffc;
+    cursor: pointer;
+    transition: 0.25s;
+}
+.playBackControls > svg > path:hover 
+{
+    fill: #4a2a00;
+    stroke: #ddb581;
+}
+.playBackControls > svg > path:active 
+{
+    fill: #ddb581;
+    stroke: #4a2a00;
+}

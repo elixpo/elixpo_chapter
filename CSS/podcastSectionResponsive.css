@@ -1,0 +1,61 @@
+@media screen and (max-width: 1024px) {
+    .podcastName 
+    {
+        font-size: 3em;
+        width: 90%;
+        text-align: center;
+        top: 40%;
+    }
+    .podcastDesc
+    {
+        top: 55%;
+        width: 90%;
+        font-size: 1.2em;
+    }
+    .playBackZone
+    {
+        width: 50%;
+        height: 150px;
+        top: 65%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .podcastName 
+    {
+        font-size: 2.5em;
+        width: 90%;
+        text-align: center;
+        top: 45%;
+    }
+    .podcastDesc
+    {
+        top: 60%;
+        width: 90%;
+    }
+    .playBackZone
+    {
+        width: 50%;
+        height: 120px;
+        top: 70%;
+    }
+}
+@media screen and (max-width: 600px) {
+    .podcastName 
+    {
+        font-size: 2em;
+        width: 80%;
+        text-align: center;
+        top: 45%;
+    }
+    .podcastDesc
+    {
+        top: 65%;
+    }
+    .playBackZone
+    {
+        width: 80%;
+        height: 100px;
+        top: 75%;
+    }
+}
