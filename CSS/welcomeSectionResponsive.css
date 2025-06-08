@@ -93,6 +93,34 @@
         display: block;
         font-size: 1em;
     }
+
+    .hotPicks
+    {
+        box-shadow: inset 0 0 2px #ffc;
+    }
+    .hotPicks > .hotPickText 
+    {
+        text-shadow: none;
+        font-size: 1.5em;
+    }
+    .hotPickImageSmall 
+    {
+        width: 90%;
+        border-radius: 40px;
+    }
+    .hotPickTextSmall 
+    {
+        top: 10%;
+        left: 2%;
+        height: 80%;
+        white-space: wrap;
+        overflow: hidden;
+        width: 50%;
+        display: block;
+        font-size: 1.2em;
+        text-overflow: ellipsis;
+    }
+
 }
 
 @media screen and (max-width: 600px) {
@@ -167,6 +195,32 @@
         width: 100%;
         display: block;
         font-size: 0.8em;
+    }
+    .hotPicks
+    {
+        box-shadow: inset 0 0 2px #ffc;
+    }
+    .hotPicks > .hotPickText 
+    {
+        text-shadow: none;
+        font-size: 1em;
+    }
+    .hotPickImageSmall 
+    {
+        width: 90%;
+        border-radius: 40px;
+    }
+    .hotPickTextSmall 
+    {
+        top: 10%;
+        left: 2%;
+        height: 80%;
+        white-space: wrap;
+        overflow: hidden;
+        width: 50%;
+        display: block;
+        font-size: 1.2em;
+        text-overflow: ellipsis;
     }
 
 
