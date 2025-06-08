@@ -5,6 +5,24 @@
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+.welcomeSection::-webkit-scrollbar
+{
+    width: 10px;
+    background: #222;
+    border-radius: 8px;
+    }
+
+    .welcomeSection::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #ffc 0%, #ed9d3a 100%);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(237, 163, 78, 0.3);
+    }
+
+    .welcomeSection::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #ffe9a3 0%, #ed9d3a 100%);
+    }
+
 .welcomeText 
 {
     position: relative;
@@ -193,7 +211,7 @@
 }
 
 .dateDurationDesc > .desc {
-    font-size: 0.8em;
+    font-size: 1em;
     color: rgba(255, 255, 204, 0.65);
     flex-basis: 100%;
     margin-top: 5px;
