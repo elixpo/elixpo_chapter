@@ -70,6 +70,29 @@
         transform: translateX(-50%);
         font-size: 0.8em;
     }
+
+    .podCastContainer > .podcastThumbnail 
+    {
+        width: 50%;
+    }
+    .podCastContainer > .podCastDetailsHolder > .podCastHeader 
+    {
+        left: 30%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 70%;
+        display: block;
+    }
+    .podCastContainer > .podCastDetailsHolder > .podCastPunchline 
+    {
+        left: 20%;
+        white-space: wrap;
+        overflow: hidden;
+        width: 90%;
+        display: block;
+        font-size: 1em;
+    }
 }
 
 @media screen and (max-width: 600px) {
@@ -119,4 +142,33 @@
         transform: translateX(-50%);
         font-size: 0.8em;
     }
+    .weatherContainer > .contents > .weatherCredentials 
+    {
+        top: 40%
+    }
+    .podCastContainer > .podcastThumbnail 
+    {
+        width: 50%;
+    }
+    .podCastContainer > .podCastDetailsHolder > .podCastHeader 
+    {
+        left: 30%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 70%;
+        display: block;
+    }
+    .podCastContainer > .podCastDetailsHolder > .podCastPunchline 
+    {
+        left: 20%;
+        white-space: wrap;
+        overflow: hidden;
+        width: 100%;
+        display: block;
+        font-size: 0.8em;
+    }
+
+
+
 }
