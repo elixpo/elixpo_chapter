@@ -1,3 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Satisfy&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +11,9 @@
 html,
 body {
     height: 100%;
-     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     background-color: #0d1117;
     color: rgb(255, 250, 235);
     overflow: hidden;
@@ -18,7 +25,6 @@ body {
     position: relative;
 }
 
-/* Background Blobs */
 .bg-blob {
     position: absolute;
     border-radius: 50%;
@@ -63,9 +69,8 @@ body {
     animation: float 9s ease-in-out infinite reverse;
 }
 
-/* Sidebar */
 .sidebar {
-    width: 256px;
+    width: 60px;
     background: rgba(30, 41, 59, 0.15);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -75,7 +80,25 @@ body {
     flex-direction: column;
     position: relative;
     z-index: 10;
-    transition: all 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar:hover {
+    width: 256px;
+}
+
+.sidebar .logo-text,
+.sidebar .conversations-section {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    white-space: nowrap;
+}
+
+.sidebar:hover .logo-text,
+.sidebar:hover .conversations-section {
+    opacity: 1;
+    visibility: visible;
 }
 
 .sidebar.collapsed {
@@ -139,19 +162,22 @@ body {
 .logo-icon {
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
+    border-radius: 4px;
+}
+
+.logo-icon img {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1);
 }
 
 .logo-text {
     font-weight: 600;
     color: rgb(255, 250, 235);
+    font-size: 18px;
 }
 
 .header-actions {
@@ -238,8 +264,10 @@ body {
     font-weight: bold;
 }
 
-/* Main Content */
 .main-content {
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -264,26 +292,34 @@ body {
 
 .greeting-title {
     font-weight: 400;
+    font-size: 50px;
     color: rgb(255, 250, 235);
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 400;
+    font-style: normal;
 }
 
 .greeting-subtitle {
     font-size: 20px;
     color: rgba(255, 250, 235, 0.7);
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 400;
+    font-style: normal;
 }
 
 .suggestions-section {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-width: 800px; /* Increased from 512px */
+    max-width: 800px;
     width: 100%;
 }
 
 .suggestions-row {
     display: flex;
-    flex-wrap: nowrap; /* Prevent wrapping */
+    flex-wrap: nowrap;
     justify-content: center;
     gap: 12px;
     width: 100%;
@@ -294,17 +330,17 @@ body {
 }
 
 .suggestions-row:first-child .suggestion-button {
-    max-width: calc((100% - 48px) / 5); /* 48px accounts for 4 gaps between 5 buttons */
+    max-width: calc((100% - 48px) / 5);
     flex: 1 1 0;
 }
 
 .suggestions-row:last-child {
-    width: 90%; /* Slightly increased from 85% */
+    width: 90%;
     margin: 0 auto;
 }
 
 .suggestions-row:last-child .suggestion-button {
-    max-width: calc((100% - 36px) / 4); /* 36px accounts for 3 gaps between 4 buttons */
+    max-width: calc((100% - 36px) / 4);
     flex: 1 1 0;
 }
 
@@ -314,13 +350,13 @@ body {
     -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 24px;
-    padding: 12px 24px; /* Increased padding */
-    min-width: 140px; /* Add minimum width */
+    padding: 12px 24px;
+    min-width: 140px;
     font-size: 14px;
-    font-weight: 500; /* Added weight for better visibility */
+    font-weight: 500;
     white-space: nowrap;
     flex: 1;
-    max-width: none; /* Remove max-width constraint */
+    max-width: none;
     color: rgba(255, 250, 235, 0.8);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -355,7 +391,6 @@ body {
     box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15);
 }
 
-/* Input Area */
 .input-area {
     padding: 24px;
 }
@@ -468,7 +503,6 @@ body {
     text-decoration: underline;
 }
 
-/* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 6px;
 }
@@ -487,14 +521,14 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Animations */
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0px);
     }
+
     50% {
         transform: translateY(-20px);
     }
 }
-
-
