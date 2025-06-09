@@ -1,11 +1,9 @@
-.podCastSection
+.dailyNewsSection 
 {
     background: #ffc;
     z-index: 10;
-    display: block;
-
 }
-.podCastSection > .closeBtn
+.dailyNewsSection > .closeBtn
 {
     position: absolute;
     top: 3%;
@@ -14,30 +12,33 @@
     cursor: pointer;
     z-index: 20;
     font-size: 2em;
+    color: #222;
 }
-.podCastSection > .centralImage
-{   
+.backDropImage
+{
     position: absolute;
     top: 0%;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
-    height: 500px;
-    background: url(./IMAGES/backgroundOil.jpg);
+    height: 100%;
+    background: url(https://copilot.microsoft.com/th?id=OCR.Landscape_9&forceJpeg=1&o=6);
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
 }
-.podCastSection .maskBackground 
+
+.dailyNewsSection > .maskBackgroundNewsSection
 {
     position: absolute;
     bottom: 0%;
     height: 60%;
     width: 100%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.895), white);
-    filter: blur(50px);
+    background: linear-gradient(to bottom, rgba(56, 126, 134, 0.729), rgb(15, 109, 120));
+    filter: blur(10px);
+    z-index: 10;
 }
-.podcastName 
+.dailyNewsName 
 {
     position: absolute;
     top: 60%;
@@ -46,9 +47,11 @@
     font-size: 2em;
     font-weight: 700;
     z-index: 10;
+    color: #ffd;
     font-family: 'Parkinsans', sans-serif;
 }
-.podcastDesc 
+
+.dailyNewsNameDesc 
 {
     position: absolute;
     top: 68%;
@@ -59,25 +62,25 @@
     z-index: 10;
     width: 80%;
     text-align: center;
+    color: #fff;
     font-family: 'Parkinsans', sans-serif;
 }
-.playBackZone
-{
+
+.newsplayBackZone {
     position: absolute;
     top: 75%;
     left: 50%;
     transform: translateX(-50%);
     width: 30%;
-    height: 140px;
+    height: 104px;
     border-radius: 25px;
     z-index: 10;
-    background: #1111118a;
+    background: #11111169;
     box-shadow: 0 12px 20px #1111116a;
     user-select: none;
-    
 }
-.playBackRange 
-{
+
+.newsplayBackRange {
     position: relative;
     display: flex;
     flex-direction: row;
@@ -86,10 +89,10 @@
     height: 40%;
     left: 5%;
     top: 10%;
-    gap: 20px;
+    gap: 5px;
 }
-.playBackSpeed 
-{
+
+.newsplayBackSpeed {
     position: relative;
     left: 2%;
     top: 0%;
@@ -98,74 +101,91 @@
     font-weight: 700;
     margin-right: 10px;
 }
-.playBackSeek {
+
+.newsplayBackSeek {
     position: relative;
-    width: 75%;
-    height: 10px;
+    width: 6%;                 /* Small tick */
+    height: 6px;               /* Thinner height */
     background: #ffc;
     border-radius: 10px;
     cursor: pointer;
-    margin-right: 10px;
+    margin: 0 0px;
+    transition: 0.25s;
 }
 
-.playBackSeekHead {
+.newsplayBackSeek > .newsplayBackSeekHead,
+.newsplayBackSeek > .newsplayBackSeekProgress {
+    display: none;
+}
+
+/* === SELECTED SEEK BAR === */
+.newsplayBackSeek.selected {
+    width: 75%;                /* Main seek bar */
+    height: 6px;
+    background: #ffc;
+    border-radius: 10px;
+    transition: 0.25s;
+}
+
+.newsplayBackSeek.selected > .newsplayBackSeekHead {
+    display: block;
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
     background: rgb(50, 40, 19);
     border-radius: 50%;
     top: -5px;
     z-index: 1;
     left: 22%;
-    transform: translateX(-50%); 
+    transform: translateX(-50%);
     cursor: pointer;
 }
 
-.playBackSeekProgress {
+.newsplayBackSeek.selected > .newsplayBackSeekProgress {
+    display: block;
     position: absolute;
-    height: 10px;
+    height: 6px;
     background: #ddb581;
     border-radius: 20px;
     top: 0;
     left: 0;
-    width: 20%; /* Dynamically increase this as progress increases */
+    width: 20%; /* Dynamic width (you can adjust via JS) */
 }
-.playBackTime 
-{
+
+.newsplayBackTime {
     position: relative;
     font-family: 'Parkinsans', sans-serif;
     color: #ffc;
     font-weight: 700;
-    margin-right: 10px;
+    margin-left: auto;
 }
 
-.playBackControls 
-{
+.newsplayBackControls {
     position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    width: 70%;
+    width: 50%;
     height: 40%;
-    left: 15%;
+    left: 50%;
+    transform: translateX(-50%);
     top: 10%;
 }
 
-.playBackControls > svg > path 
-{
+.newsplayBackControls > svg > path {
     fill: #ffc;
     stroke: #ffc;
     cursor: pointer;
     transition: 0.25s;
 }
-.playBackControls > svg > path:hover 
-{
+
+.newsplayBackControls > svg > path:hover {
     fill: #4a2a00;
     stroke: #ddb581;
 }
-.playBackControls > svg > path:active 
-{
+
+.newsplayBackControls > svg > path:active {
     fill: #ddb581;
     stroke: #4a2a00;
 }

@@ -1,0 +1,69 @@
+
+@media screen and (max-width: 1024px) {
+    .dailyNewsName {
+        font-size: 2.5em;
+        width: 90%;
+        text-align: center;
+        top: 40%;
+    }
+    .dailyNewsNameDesc {
+        top: 55%;
+        width: 90%;
+        font-size: 1.1em;
+        text-align: center;
+    }
+    .newsplayBackZone {
+        width: 50%;
+        height: 150px;
+        top: 65%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dailyNewsName {
+        font-size: 2em;
+        width: 90%;
+        text-align: center;
+        top: 45%;
+    }
+    .dailyNewsNameDesc {
+        top: 60%;
+        width: 90%;
+        text-align: center;
+    }
+    .newsplayBackZone {
+        width: 50%;
+        height: 120px;
+        top: 70%;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .dailyNewsName {
+        font-size: 1.5em;
+        width: 80%;
+        text-align: center;
+        top: 45%;
+    }
+    .dailyNewsNameDesc {
+        top: 61%;
+        width: 90%;
+        font-size: 0.8em ;
+        text-align: center;
+    }
+    .newsplayBackZone {
+        width: 80%;
+        height: 100px;
+        top: 75%;
+        font-size: 0.8em;
+    }
+    .newsplayBackControls > svg
+    {
+        height: 20px;
+        width: 20px;
+    }
+    .newsplayBackSeek 
+    {
+        border-radius: 5px;
+    }
+}
