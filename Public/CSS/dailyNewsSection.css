@@ -1,3 +1,7 @@
+body 
+{
+    overflow-x: hidden;
+}
 .dailyNewsSection 
 {
     background: #ffc;
@@ -172,7 +176,11 @@
     transform: translateX(-50%);
     top: 10%;
 }
-
+.newsplayBackControls > svg
+{
+    height: 30px;
+    width: 30px;
+}
 .newsplayBackControls > svg > path {
     fill: #ffc;
     stroke: #ffc;

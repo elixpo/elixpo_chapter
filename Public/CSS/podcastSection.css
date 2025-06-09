@@ -1,3 +1,7 @@
+body 
+{
+    overflow-x: hidden;
+}
 .podCastSection
 {
     background: #ffc;
@@ -151,7 +155,11 @@
     left: 15%;
     top: 10%;
 }
-
+.playBackControls > svg
+{
+    height: 30px;
+    width: 30px;
+}
 .playBackControls > svg > path 
 {
     fill: #ffc;
