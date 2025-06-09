@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Elixpo | Home</title>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/flaticon@latest/css/flaticon.css'>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css'>
+    <script type='module' src='https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js'></script>
+    <script nomodule src='https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js'></script>
+    <link rel='stylesheet' href='CSS/search.css'>
+    <link rel='stylesheet' href='CSS/searchPageResponsive.css'>
+</head>
+
+<body>
+
+
+
+    <div class="app-container">
+        <!-- Background gradient blobs -->
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+        <div class="bg-blob blob-3"></div>
+        <div class="bg-blob blob-4"></div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <!-- Header -->
+            <div class="sidebar-header">
+                <div class="header-content">
+                    <div class="copilot-logo">
+                        <div class="logo-icon">E</div>
+                        <span class="logo-text">Elixpo Search</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="glass-button" id="sidebarToggle">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversations -->
+            <div class="conversations-section">
+                <div class="conversations-content">
+                    <h3 class="conversations-title">Conversations</h3>
+                    <div class="conversations-list">
+                        <div class="conversation-item">Order</div>
+                        <div class="conversation-item">Casual Greeting</div>
+                        <div class="conversation-item">Evocative Description of...</div>
+                        <div class="conversation-item">Understanding RAG and...</div>
+                        <div class="conversation-item">Imagining Indian Weddi...</div>
+                        <div class="conversation-item">Request for Interesting F...</div>
+                        <div class="conversation-item">Solving Statistical and R...</div>
+                        <div class="conversation-item">Math Problem Solving A...</div>
+                        <div class="conversation-item">Unable to Summarize Pa...</div>
+                        <div class="conversation-item">Automating Instagram I...</div>
+                        <div class="conversation-item">GitHub Projects for Doc...</div>
+                        <div class="conversation-item">Latest Code Editors Ove...</div>
+                        <div class="conversation-item">Zoology Lecture on Hum...</div>
+                        <div class="conversation-item">Summary of F1 Movie Tra...</div>
+                        <div class="conversation-item">HTML Boilerplate Gene...</div>
+                        <div class="conversation-item">How to Delete Skype Ac...</div>
+                        <div class="conversation-item">PDF Apps and Recomme...</div>
+                        <div class="conversation-item">Deleting Red Hat Config...</div>
+                        <div class="conversation-item">Generating and Managi...</div>
+                        <div class="conversation-item">Best Running Sneakers R...</div>
+                        <div class="conversation-item">Resources for Operating...</div>
+                        <div class="conversation-item">Latest Python Version</div>
+                        <div class="conversation-item">Introduction to Python P...</div>
+                        <div class="conversation-item">Latest Headlines Summary</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="user-profile">
+                <div class="user-avatar">V</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="greeting-section">
+                    <h1 class="greeting-title">Good afternoon, Vivek</h1>
+                    <p class="greeting-subtitle">What can I help you with today?</p>
+                </div>
+
+                <div class="suggestions-section">
+                    <div class="suggestions-row">
+                        <button class="suggestion-button">Write a first draft</button>
+                        <button class="suggestion-button">Get advice</button>
+                        <button class="suggestion-button">Learn something new</button>
+                        <button class="suggestion-button">Create an image</button>
+                        <button class="suggestion-button">Design something</button>
+                    </div>
+                    <div class="suggestions-row">
+                        <button class="suggestion-button">Make a plan</button>
+                        <button class="suggestion-button">Brainstorm ideas</button>
+                        <button class="suggestion-button">Practice a language</button>
+                        <button class="suggestion-button">Take a quiz</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <button class="input-action-button">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                        <input type="text" id="messageInput" placeholder="Message Elixpo Search" class="message-input">
+                        <div class="input-actions">
+                            <button class="input-action-button">
+                                <i class="bi bi-gear"></i>
+                            </button>
+                            <button class="input-action-button">
+                                <i class="bi bi-mic"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="disclaimer">
+                    Elixpo Search uses AI. Check for mistakes. Conversations are used to train AI and Elixpo Search can learn about
+                    your interests. Change this anytime in your settings or <span class="learn-more">learn more</span>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src='JS/search.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js'></script>
+</body>
+
+</html>

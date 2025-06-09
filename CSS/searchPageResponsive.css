@@ -1,0 +1,59 @@
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .sidebar.collapsed {
+        width: 0;
+        padding: 0;
+        border: none;
+    }
+
+    .sidebar-toggle {
+        right: -24px;
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .greeting-title {
+        font-size: 28px;
+    }
+
+    .greeting-subtitle {
+        font-size: 18px;
+    }
+
+    .suggestions-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .suggestion-button {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: 200px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .conversations-section {
+        display: none;
+    }
+
+    .content-area {
+        padding: 16px;
+    }
+
+    .input-area {
+        padding: 16px;
+    }
+}
