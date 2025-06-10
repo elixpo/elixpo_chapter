@@ -67,7 +67,29 @@
             </div>
 
             <div class="user-profile">
-                <div class="user-avatar">V</div>
+                <div class="user-profile-content">
+                    <div class="user-avatar">V</div>
+                    <div class="user-details">
+                        <div class="user-info">
+                            <h4 class="user-name">Vivek Kumar</h4>
+                            <span class="user-email">vivek@example.com</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <div class="action-icon">
+                        <i class="bi bi-person"></i>
+                        <span class="action-text">Account</span>
+                    </div>
+                    <div class="action-icon">
+                        <i class="bi bi-gear"></i>
+                        <span class="action-text">Settings</span>
+                    </div>
+                    <div class="action-icon signout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="action-text">Sign out</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -99,12 +121,37 @@
             <div class="input-area">
                 <div class="input-container">
                     <div class="input-wrapper">
-                        <input type="text" id="messageInput" placeholder="Message Elixpo Search" class="message-input">
+                        <div class="input-main">
+                            <input type="text" id="messageInput" placeholder="Message Elixpo Search"
+                                class="message-input">
+                            <button class="send-button">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </div>
+                        <div class="search-pills">
+                            <button class="pill-button">
+                                <i class="bi bi-globe"></i>
+                                Web search
+                            </button>
+                            <button class="pill-button">
+                                <i class="bi bi-image"></i>
+                                Image
+                            </button>
+                            <button class="pill-button">
+                                <i class="bi bi-paperclip"></i>
+                                Upload
+                            </button>
+                            <button class="pill-button">
+                                <i class="bi bi-mic"></i>
+                                Speech to text
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <p class="disclaimer">
-                    Elixpo Search uses AI. Check for mistakes. Conversations are used to train AI and Elixpo Search can learn about
+                    Elixpo Search uses AI. Check for mistakes. Conversations are used to train AI and Elixpo Search can
+                    learn about
                     your interests. Change this anytime in your settings or <span class="learn-more">learn more</span>.
                 </p>
             </div>
@@ -117,9 +164,9 @@
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js'></script>
     <script src='https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js'></script>
-    
+
     <script src='../public/JS/search.js'></script>
-    
+
 </body>
 
 </html>
