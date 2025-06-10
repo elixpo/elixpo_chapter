@@ -1,0 +1,195 @@
+.search-input-container {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.search-input-container:focus-within {
+    border-color: #444ce7;
+    box-shadow: 0 0 0 3px rgba(68, 76, 231, 0.1);
+}
+
+.search-input-container-small {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.search-input-container-small:focus-within {
+    border-color: #444ce7;
+    box-shadow: 0 0 0 2px rgba(68, 76, 231, 0.1);
+}
+
+.search-input-container-small textarea {
+    min-height: 40px;
+    max-height: 100px;
+}
+textarea::-webkit-scrollbar
+{   
+    display: none;
+}
+.search-btn {
+    position: relative;
+    top: 50px;
+    background: linear-gradient(135deg, #444ce7, #3a41c5);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(68, 76, 231, 0.3);
+}
+
+.search-btn-small {
+    background: linear-gradient(135deg, #444ce7, #3a41c5);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    padding: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.search-btn-small:hover {
+    background: linear-gradient(135deg, #3a41c5, #2e347a);
+}
+
+.result-card {
+    position: relative;
+    top: 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.result-card:hover {
+    border-color: rgba(68, 76, 231, 0.3);
+    transform: translateY(-2px);
+}
+
+.prose {
+    max-width: none;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    color: #ffffff;
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.3;
+}
+
+.prose h1 { font-size: 1.875rem; }
+.prose h2 { font-size: 1.5rem; }
+.prose h3 { font-size: 1.25rem; }
+
+.prose p {
+    margin-bottom: 1.25em;
+    line-height: 1.7;
+    color: #d1d5db;
+}
+
+.prose strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.prose em {
+    color: #f3f4f6;
+    font-style: italic;
+}
+
+.prose ul, .prose ol {
+    margin: 1.25em 0;
+    padding-left: 1.5em;
+}
+
+.prose li {
+    margin: 0.5em 0;
+    color: #d1d5db;
+}
+
+.prose blockquote {
+    border-left: 4px solid #444ce7;
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: rgba(68, 76, 231, 0.1);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: #e5e7eb;
+}
+
+.prose code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #fbbf24;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.prose pre {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1.25em;
+    margin: 1.5em 0;
+    overflow-x: auto;
+}
+
+.prose pre code {
+    background: none;
+    padding: 0;
+    color: #e5e7eb;
+}
+
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.prose th, .prose td {
+    padding: 0.75em 1em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+}
+
+.prose th {
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.prose td {
+    color: #d1d5db;
+}
+
+.prose a {
+    color: #444ce7;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.prose a:hover {
+    color: #3a41c5;
+    border-bottom-color: #3a41c5;
+}
+
+.prose hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+    margin: 2em 0;
+}

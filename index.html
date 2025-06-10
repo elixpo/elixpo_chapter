@@ -4,392 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elixpo-Search</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="CSS/searchAgent.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#444ce7',
+                        primaryHover: '#3a41c5',
+                        darkBg: '#18191a',
+                        darkBg2: '#212223',
+                        darkBg3: '#2a2b2d'
+                    }
+                },
+                fontFamily: {
+                    sans: ['Outfit', 'ui-sans-serif', 'system-ui']
+                }
+            }
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f2f5f9;
-            color: #333;
-            padding: 30px 15px;
-        }
-
-        .container {
-            max-width: 960px;
-            margin: auto;
-            background: #fff;
-            padding: 10px 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        h1 {
-            text-align: center;
-            color: #1d3557;
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-        }
-
-        form {
-            background-color: #f0f4f8;
-            padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border: 1px solid #dbe2ea;
-        }
-
-        label {
-            font-weight: 600;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            resize: vertical;
-            min-height: 120px;
-            margin-bottom: 15px;
-            font-family: inherit; 
-        }
-
-        button {
-            padding: 12px 24px;
-            font-size: 16px;
-            background-color: #457b9d;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #1d3557;
-        }
-
-        button:disabled {
-            background-color: #c0c0c0;
-            cursor: not-allowed;
-        }
-
-        #status-message {
-            margin-top: 15px;
-            padding: 12px 15px;
-            font-weight: 600;
-            border-radius: 6px;
-            min-height: 1.5em; 
-        }
-
-        .status-loading {
-            background-color: #eaf4ff;
-            color: #007bff;
-            border: 1px solid #b3d8ff;
-        }
-
-        .status-error {
-            background-color: #ffe6e6;
-            color: #c0392b;
-            border: 1px solid #ffcccc;
-        }
-
-        #results-area {
-            margin-top: 30px;
-            padding: 25px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #fff;
-            min-height: 150px; 
-        }
-
-        #results-area h2 {
-             
-             margin-top: 1.5em;
-             margin-bottom: 0.5em;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        #results-area h3 {
-            margin-top: 1em; /* Add space above h3 */
-            margin-bottom: 0.5em;
-        }
-
-
-        #results-area p {
-            margin-bottom: 1em;
-            line-height: 1.6;
-        }
-
-        #results-area ul, #results-area ol {
-            margin-bottom: 1em;
-            padding-left: 25px; 
-        }
-
-        #results-area li {
-             margin-bottom: 0.5em; 
-        }
-
-        #results-area pre {
-            background-color: #f6f8fa;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin-bottom: 1em; 
-        }
-
-        #results-area code {
-            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-            font-size: 0.9em;
-        }
-
-        #results-area pre code {
-             padding: 0; 
-        }
-
-
-        #results-area blockquote {
-            border-left: 4px solid #ccc;
-            padding: 10px 15px; /* Add padding */
-            color: #555;
-            margin: 15px 0;
-            font-style: italic;
-        }
-
-        #results-area img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 20px auto;
-            border-radius: 4px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        }
-
-        #results-area a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        #results-area a:hover {
-            text-decoration: underline;
-        }
-
-        #results-area .sources-section,
-        #results-area .images-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-
-        #results-area .sources-section h2,
-        #results-area .images-section h2 {
-            border-bottom: none; 
-            padding-bottom: 0;
-        }
-
-        #results-area .sources-list {
-             margin-top: 10px;
-        }
-
-         #results-area .sources-list li {
-             word-break: break-all; 
-             margin-bottom: 0.8em;
-             font-size: 0.95em;
-         }
-
-         #results-area .images-list {
-             display: flex;
-             flex-wrap: wrap;
-             gap: 15px;
-             margin-top: 15px;
-         }
-
-         #results-area .images-list img {
-             max-width: 150px; 
-             height: auto;
-             margin: 0; 
-             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-         }
-
-
-    </style>
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1>AI Search & Synthesize</h1>
-
-        <form id="search-form">
-            <label for="query-input">Enter your query:</label>
-            <textarea id="query-input" placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."></textarea>
-            <button type="submit" id="submit-button">Search</button>
-        </form>
-
-        <div id="status-message"></div>
-        <div id="results-area"></div>
+<body class="bg-darkBg text-white">
+    <div class="min-h-screen">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <div class="text-center mb-8">
+                <h1 class="text-5xl font-bold text-primary mb-4">Elixpo-Search</h1>
+                <p class="text-gray-300 text-xl mb-4">AI Search & Synthesize</p>
+            </div>
+            
+            <div class="search-input-container max-w-2xl mx-auto mb-8">
+                <div class="flex items-start p-4">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-gray-400 mt-3 mr-3 flex-shrink-0"></i>
+                    <textarea
+                        id="queryInput"
+                        class="flex-1 bg-transparent border-none outline-none resize-none text-white placeholder-gray-400 min-h-[60px] py-2"
+                        placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."
+                        rows="3"
+                    ></textarea>
+                    <button id="submitButton" class=" relative bottom-[10%] search-btn px-4 py-2 ml-3 text-white font-medium flex items-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Search
+                    </button>
+                </div>
+            </div>
+            
+            <div id="statusMessage" class="text-center mb-6 hidden"></div>
+            
+            <div id="resultsContainer">
+                <div class="result-card p-6 max-w-4xl mx-auto">
+                    <div class="prose prose-invert max-w-none">
+                        <h3 class="text-xl font-semibold mb-4 text-white">Welcome!</h3>
+                        <p class="text-gray-300">This is Elixpo Search, a realtime upto-date LLM + Langchain Supported Search Assistant (Open Source). 
+                            An intelligent search system that synthesizes information from multiple web sources, providing comprehensive answers with citations and relevant images.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-    marked.setOptions({
-        breaks: true, 
-        gfm: true,    
-        headerIds: false,
-        headerPrefix: '', 
-    });
-
-
-    const searchForm = document.getElementById('search-form');
-    const queryInput = document.getElementById('query-input');
-    const resultsArea = document.getElementById('results-area');
-    const statusMessage = document.getElementById('status-message');
-    const submitButton = document.getElementById('submit-button');
-    // const API_SEARCH_URL = "http://127.0.0.1:5000/search"; 
-    const API_SEARCH_URL = "https://search.pollinations.ai/search"
-
-    searchForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent default form submission
-
-        const query = queryInput.value.trim();
-
-        if (!query) {
-            statusMessage.textContent = 'Please enter a query.';
-            statusMessage.className = 'status-error';
-            resultsArea.innerHTML = ''; 
-            return;
-        }
-
-        const showLogs = false;
-
-        statusMessage.textContent = 'Surfing...';
-        statusMessage.className = 'status-loading';
-        resultsArea.innerHTML = marked.parse("### Loading results...\n\nPlease wait a moment, this may take a couple of minutes depending on the query complexity and number of sources.");
-        submitButton.disabled = true;
-
-        const requestBody = {
-            messages: [
-                { role: 'user', content: query }
-            ],
-        };
-
-        fetch(API_SEARCH_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody),
-        })
-        .then(response => {
-            if (!response.ok) {
-                 return response.json().then(errData => {
-                     const errorMsg = errData.error || response.statusText;
-                     throw new Error(`HTTP ${response.status}: ${errorMsg}`);
-                 }).catch(() => {
-                     throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-                 });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Received data:", data); 
-            statusMessage.textContent = ''; 
-            statusMessage.className = '';
-
-            if (data.error) {
-                statusMessage.textContent = 'API Error: ' + data.error;
-                statusMessage.className = 'status-error';
-                resultsArea.innerHTML = marked.parse(`### API Error\n\nAn error occurred:\n\n\`\`\`\n${escapeHTML(data.error)}\n\`\`\``);
-            } else if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content !== undefined) {
-                const markdownText = data.choices[0].message.content;
-                let htmlOutput = marked.parse(markdownText);
-                if (data.sources) {
-                     let sourcesHtml = '<div class="sources-section"><h2>Sources</h2>';
-                     let hasSourcesContent = false;
-                     if (data.sources.native_knowledge && data.sources.native_knowledge !== 'None') {
-                         sourcesHtml += `<p><strong>Answered Natively:</strong> ${escapeHTML(data.sources.native_knowledge)}</p>`;
-                         hasSourcesContent = true;
-                     }
-                     const scrapedWebsites = data.sources.scraped_websites ?? [];
-                     if (scrapedWebsites.length > 0) {
-                         sourcesHtml += '<h3>Text Sources (Scraped Websites)</h3><ul class="sources-list">';
-                         scrapedWebsites.forEach(url => {
-                             sourcesHtml += `<li><a href="${escapeHTML(url)}" target="_blank">${escapeHTML(url)}</a></li>`;
-                         });
-                         sourcesHtml += '</ul>';
-                         hasSourcesContent = true;
-                     }
-
-                     const processedYoutube = data.sources.processed_youtube ?? [];
-                     if (processedYoutube.length > 0) {
-                         sourcesHtml += '<h3>Transcript Sources (Processed YouTube Videos)</h3><ul class="sources-list">';
-                         processedYoutube.forEach(url => {
-                             sourcesHtml += `<li><a href="${escapeHTML(url)}" target="_blank">${escapeHTML(url)}</a></li>`;
-                         });
-                         sourcesHtml += '</ul>';
-                         hasSourcesContent = true;
-                     }
-
-                    const failedYoutube = data.sources.failed_youtube ?? [];
-                    if (failedYoutube.length > 0) {
-                         sourcesHtml += '<h3>Failed YouTube Sources</h3><p class="sources-list">';
-                         sourcesHtml += failedYoutube.map(url => `<a href="${escapeHTML(url)}" target="_blank">${escapeHTML(url)}</a>`).join(', ');
-                         sourcesHtml += '</p>';
-                         hasSourcesContent = true;
-                    }
-                    if (hasSourcesContent) {
-                         htmlOutput += sourcesHtml + '</div>';
-                    } else {
-                         htmlOutput += '<div class="sources-section"><h2>Sources</h2><p>No source information available for this query.</p></div>';
-                    }
-                }
-                if (data.images !== undefined) { 
-                    let imagesHtml = '<div class="images-section"><h2>Images Found on Processed Sources</h2>';
-                    if (data.images && data.images.length > 0) { 
-                         imagesHtml += '<div class="images-list">';
-                         data.images.forEach(imgUrl => {
-                             imagesHtml += `<img src="${escapeHTML(imgUrl)}" alt="Image from source">`;
-                         });
-                         imagesHtml += '</div>';
-                    } else {
-                         imagesHtml += '<p>No relevant images found.</p>';
-                    }
-                    htmlOutput += imagesHtml + '</div>';
-                }
-                resultsArea.innerHTML = htmlOutput; 
-
-            } else {
-                 statusMessage.textContent = 'Error: Unexpected response format from API.';
-                 statusMessage.className = 'status-error';
-                 resultsArea.innerHTML = marked.parse(`### Error\n\nReceived an unexpected response format from the API.`);
-                 console.error("Unexpected API response structure:", data);
-            }
-        })
-        .catch(error => { 
-            console.error('Fetch Error:', error);
-            statusMessage.textContent = 'Error: ' + error.message;
-            statusMessage.className = 'status-error';
-            resultsArea.innerHTML = marked.parse(`### Error\n\nAn error occurred:\n\n\`\`\`\n${escapeHTML(error.message)}\n\`\`\``); // Show error in results area too
-        })
-        .finally(() => {
-            submitButton.disabled = false; 
-        });
-    });
-    function escapeHTML(str) {
-        if (typeof str !== 'string') return ''; 
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-    }
-
-    resultsArea.innerHTML = marked.parse("### Welcome!\n\nEnter a query above (e.g., 'Explain AI show images and sources') and click 'Search' to get a synthesized answer from web sources and URLs.");
-
-</script>
-
+    <script src="JS/searchAgent.js"></script>
 </body>
 </html>
