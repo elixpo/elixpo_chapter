@@ -71,7 +71,7 @@ body {
 
 .sidebar {
     width: 60px;
-    background: rgba(30, 41, 59, 0.15);
+    background: rgba(30, 41, 59, 0.25);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -80,11 +80,17 @@ body {
     flex-direction: column;
     position: relative;
     z-index: 10;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 20px;
+    border-radius: 15px;
+    height: calc(100vh - 40px);
 }
 
 .sidebar:hover {
-    width: 256px;
+    width: 280px;
+    background: rgba(30, 41, 59, 0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(5px);
 }
 
 .sidebar .logo-text,
@@ -220,7 +226,11 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: rgb(255, 250, 235);
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
 }
 
 .conversations-list {
@@ -232,18 +242,23 @@ body {
 .conversation-item {
     font-size: 14px;
     color: rgba(255, 250, 235, 0.7);
-    padding: 6px 8px;
-    border-radius: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border: 1px solid transparent;
+    margin: 2px 0;
 }
 
 .conversation-item:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgb(255, 250, 235);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .user-profile {
@@ -253,17 +268,20 @@ body {
 }
 
 .user-profile-content {
-    padding: 8px;
+    padding: 12px;
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 8px;
-    border-radius: 8px;
+    border-radius: 12px;
     transition: all 0.3s ease;
+    border: 1px solid transparent;
 }
 
 .user-profile-content:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(3px);
 }
 
 .user-avatar {
@@ -313,11 +331,12 @@ body {
 .action-icon {
     display: flex;
     align-items: center;
-    padding: 8px;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     color: rgba(255, 250, 235, 0.8);
+    margin: 2px 0;
 }
 
 .action-icon i {
@@ -332,6 +351,7 @@ body {
 .action-icon:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgb(255, 250, 235);
+    transform: translateX(3px);
 }
 
 .action-text {
@@ -366,6 +386,14 @@ body {
     position: relative;
     z-index: 10;
     transition: margin-left 0.3s ease;
+    margin: 20px;
+    margin-left: 0;
+    background: rgba(30, 41, 59, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    height: calc(100vh - 40px);
 }
 
 .content-area {
