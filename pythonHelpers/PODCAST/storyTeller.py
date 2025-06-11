@@ -1,12 +1,12 @@
 import requests
-import datetime
+import base64
 # Load story content from file
 # with open("story.txt", "r", encoding="utf-8") as file:
 #     story_text = file.read().strip()
 
 voice = "shimmer"
 output_filename = "generated_audio_post.wav"
-def generate_podcast_audio(story_text, voice="shimmer", output_filename="generated_audio_post.wav"):
+def generate_podcast_audio(story_text, podCastID, voice="shimmer"):
     payload = {
         "model": "openai-audio",
         "modalities": ["text", "audio"],
@@ -18,15 +18,15 @@ def generate_podcast_audio(story_text, voice="shimmer", output_filename="generat
             {
                 "role": "developer",
                 "content": (
-                    "You are a lively, expressive, and emotionally intelligent voice AI. Your job is to narrate the provided podcast script like a natural human speaker — think fast-paced, energetic, and engaging, with the personality of a charming podcast host. "
-                    "Greet the listener at the start with a warm welcome to the 'Elixpo Podcast' and mention the topic being spoken. "
-                    "Speak quickly — keep your pace naturally fast, but not rushed — and change your tone dynamically to match emotions like suspense, curiosity, humor, and empathy. "
-                    "Don’t be afraid to sound a little human: it's okay to stumble slightly, rephrase something casually, or chuckle if appropriate. These imperfections make the narration feel alive. "
-                    "Throughout the narration, pause briefly at natural breaks to simulate breathing and maintain rhythm. "
-                    "Your goal is to keep the listener hooked. End with a soft but confident wrap-up that feels like a real podcast conclusion. "
-                    "Speak only the script provided — don’t invent unrelated details — but bring it to life with authentic energy and performance. "
-                    "Generate a 2–3 minute podcast experience for the topic provided!"
-                )
+                "Okay, here’s the vibe — you're an energetic, fast-talking podcast host for Elixpo Podcast! who’s naturally funny, curious, and a little playful. "
+                "Start *right away* with the topic — no intros, no greetings, no identity stuff. Just dive in like, ‘Oh wow, get this—’ and go. "
+                "Sound totally human: it’s okay to say things like ‘um’, ‘hmm’, or take a short breath before a big detail. Feel free to *slightly* stutter, casually reword something, or chuckle if the moment’s funny — that’s what makes it real. "
+                "Add light humor where it fits — just subtle, natural stuff. If something sounds ridiculous or cool, say it like you mean it. Imagine you’re on a podcast and your goal is to keep listeners smiling and hooked. "
+                "Speed up naturally — you’re excited to tell this story — but still clear. Use pauses for effect, like after a big stat, or before a surprising twist. Don’t rush, but don’t drag either. "
+                "Smile through your voice. Be curious, expressive, slightly sassy if it works. Bring real charm, like you’re sharing this over coffee with a friend. "
+                "No robotic reading. No filler. No fake facts. Just bring the script to life with humor, breath, warmth, and energy. "
+                "The whole thing should feel like a fun, punchy, real-person monologue that lasts 3 to 4 minutes, tops. Leave listeners grinning, curious, or saying ‘whoa’."
+            )
             },
             {
                 "role": "user",
@@ -40,18 +40,21 @@ def generate_podcast_audio(story_text, voice="shimmer", output_filename="generat
 
     try:
         response = requests.post(
-            "https://text.pollinations.ai",
+            "https://text.pollinations.ai/openai",
             headers={"Content-Type": "application/json"},
             json=payload
         )
         response.raise_for_status()
-
-        with open(output_filename, 'wb') as f:
-            f.write(response.content)
-            print(f"✅ Audio saved successfully as {output_filename}")
-
+        response_data = response.json()
+        audio_data_base64 = response_data['choices'][0]['message']['audio']['data']
+        audio_binary = base64.b64decode(audio_data_base64)
+        with open(f'podcast_{podCastID}.wav', 'wb') as f:
+            f.write(audio_binary)
+        print(f"Audio saved successfully as podcast_{podCastID}.wav")
+        return f"podcast_{podCastID}"
     except requests.exceptions.RequestException as e:
         print(f"❌ Error making TTS POST request: {e}")
+        return False
 
 # if __name__ == "__main__":
 #     generate_podcast_audio(story_text, voice, output_filename)

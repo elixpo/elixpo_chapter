@@ -29,7 +29,7 @@ def get_latest_info(topic_name):
 def generate_podcast_script(info_md, topic_name):
     api_url = "https://text.pollinations.ai/openai"
     headers = {"Content-Type": "application/json"}
-    system_prompt: (
+    system_prompt = (
         "You are a lively, expressive, and emotionally intelligent voice AI. Your job is to narrate the provided podcast script like a natural human speaker — think fast-paced, energetic, and engaging, with the personality of a charming podcast host. "
         "Greet the listener at the start with a warm welcome to the 'Elixpo Podcast' and mention the topic being spoken. "
         "Speak quickly — keep your pace naturally fast, but not rushed — and change your tone dynamically to match emotions like suspense, curiosity, humor, and empathy. "
@@ -37,10 +37,8 @@ def generate_podcast_script(info_md, topic_name):
         "Throughout the narration, pause briefly at natural breaks to simulate breathing and maintain rhythm. "
         "Your goal is to keep the listener hooked. End with a soft but confident wrap-up that feels like a real podcast conclusion. "
         "Speak only the script provided — don’t invent unrelated details — but bring it to life with authentic energy and performance. "
-        "Generate a 2–3 minute podcast experience for the topic provided!"
+        "Generate a 3-4 minute podcast experience for the topic provided!"
     )
-
-
 
     payload = {
         "model": "evil",
@@ -48,7 +46,7 @@ def generate_podcast_script(info_md, topic_name):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Based on this content about '{topic_name}':\n\n{info_md}\n\nWrite a podcast script of 1000–1500 words (3–4 mins)."}
         ],
-        "seed": 42,
+        "seed": 56,
         "token": "fEWo70t94146ZYgk",
         "referrer": "elixpoart"
     }
@@ -78,7 +76,7 @@ if __name__ == "__main__":
 
     try:
         info_markdown = get_latest_info(topic_name)
-        time.sleep(1)  # slight delay just to simulate pacing
+        time.sleep(1) 
 
         podcast = generate_podcast_script(info_markdown, topic_name)
         save_to_file(podcast)

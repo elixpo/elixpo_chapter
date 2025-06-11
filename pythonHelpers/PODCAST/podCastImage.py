@@ -1,7 +1,7 @@
 import requests
 import urllib.parse
 
-def generate_podcast_thumbnail(prompt, output_filename="podcast_thumbnail.jpg"):
+def generate_podcast_thumbnail(prompt, podcastID):
     modifiedThumbnailPrompt = (
     f'''
     Understand the theme of the provided topic .
@@ -20,7 +20,7 @@ def generate_podcast_thumbnail(prompt, output_filename="podcast_thumbnail.jpg"):
         "width": 512,
         "height": 512,
         "model": "turbo",
-        "seed": 42,
+        "seed": 56,
         "token": "fEWo70t94146ZYgk",
         "referrer": "elixpoart",
         "private": True,
@@ -32,13 +32,15 @@ def generate_podcast_thumbnail(prompt, output_filename="podcast_thumbnail.jpg"):
     try:
         response = requests.get(url, params=params, timeout=300)
         response.raise_for_status()
-        with open(output_filename, 'wb') as f:
+        with open(f'podcastThumbnail_{podcastID}.jpg', 'wb') as f:
             f.write(response.content)
-        print(f"✅ Thumbnail saved as {output_filename}")
+        print(f"✅ Thumbnail saved as podcastThumbnail_{podcastID}.jpg")
+        return f'podcastThumbnail_{podcastID}'
     except requests.exceptions.RequestException as e:
         print(f"❌ Error generating thumbnail: {e}")
+        return False
 
-def generate_podcast_banner(prompt, output_filename="podcast_banner.jpg"):
+def generate_podcast_banner(prompt, podcastID):
     banner_prompt = (
         f"""
         Create a cinematic oil painting-style landscape banner that visually expresses the theme of: {prompt}.
@@ -52,8 +54,8 @@ def generate_podcast_banner(prompt, output_filename="podcast_banner.jpg"):
     )
 
     params = {
-        "model": "gptimage",
-        "seed": 42,
+        "model": "turbo",
+        "seed": 56,
         "token": "fEWo70t94146ZYgk",
         "referrer": "elixpoart",
         "private": True,
@@ -67,13 +69,14 @@ def generate_podcast_banner(prompt, output_filename="podcast_banner.jpg"):
     try:
         response = requests.get(url, params=params, timeout=12000)
         response.raise_for_status()
-        with open(output_filename, 'wb') as f:
+        with open(f'podcastBanner_{podcastID}.jpg', 'wb') as f:
             f.write(response.content)
-        print(f"✅ Banner saved as {output_filename}")
+        print(f"✅ Banner saved as podcastBanner_{podcastID}.jpg")
+        return f'podcastBanner_{podcastID}'
     except requests.exceptions.RequestException as e:
         print(f"❌ Error generating banner: {e}")
 
 
 if __name__ == "__main__":
-    generate_podcast_banner("A Quater half of life")
+    generate_podcast_banner("Nintendo Switch 2: The new gaming era")
     # generate_podcast_thumbnail("A Quater half of life")
