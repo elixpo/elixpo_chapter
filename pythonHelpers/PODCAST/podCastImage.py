@@ -67,10 +67,10 @@ def generate_podcast_thumbnail(topic, podcastID):
     try:
         response = requests.get(url, params=params, timeout=300)
         response.raise_for_status()
-        filename = f'podcastThumbnail_{podcastID}.jpg'
-        with open(filename, 'wb') as f:
+        filename = f'podcastThumbnail_{podcastID}'
+        with open(f"{filename}.jpg", 'wb') as f:
             f.write(response.content)
-        print(f"✅ Thumbnail saved as {filename}")
+        print(f"✅ Thumbnail saved as {filename+".jpg"}")
         return filename
     except requests.exceptions.RequestException as e:
         print(f"❌ Error generating thumbnail: {e}")
@@ -100,16 +100,16 @@ def generate_podcast_banner(topic, podcastID):
     try:
         response = requests.get(url, params=params, timeout=600)
         response.raise_for_status()
-        filename = f'podcastBanner_{podcastID}.jpg'
-        with open(filename, 'wb') as f:
+        filename = f'podcastBanner_{podcastID}'
+        with open(f'{filename+".jpg"}', 'wb') as f:
             f.write(response.content)
-        print(f"✅ Banner saved as {filename}")
+        print(f"✅ Banner saved as {filename+".jpg"}")
         return filename
     except requests.exceptions.RequestException as e:
         print(f"❌ Error generating banner: {e}")
         return False
 
 
-if __name__ == "__main__":
-    generate_podcast_banner("Nintendo Switch 2: The new gaming era", "12345")
-    generate_podcast_thumbnail("Nintendo Switch 2: The new gaming era", "12345")
+# if __name__ == "__main__":
+#     generate_podcast_banner("Nintendo Switch 2: The new gaming era", "12345")
+#     generate_podcast_thumbnail("Nintendo Switch 2: The new gaming era", "12345")

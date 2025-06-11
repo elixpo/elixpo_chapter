@@ -39,14 +39,17 @@ def cleanup_files(podcast_id):
             os.remove(f)
         elif f.startswith(f"podcastThumbnail_{podcast_id}") or f.startswith(f"podcastBanner_{podcast_id}"):
             os.remove(f)
+        elif f.startswith(f"podcast_{podcast_id}") and f.endswith(".wav"):
+            os.remove(f)
         elif f == f"podcast_backup.txt":
             os.remove(f)
 
 def main():
     log("Starting podcast generation workflow...")
     backup = read_backup()
-
+    
     try:
+        time.sleep(2)
         # === Topic Fetch ===
         if backup.get("status") is None:
             log("Fetching trending topics...")
@@ -98,6 +101,7 @@ def main():
 
         # === Script Generation ===
         if backup["status"] == "topic_stored":
+            time.sleep(2)
             log("Generating podcast script...")
             info = get_latest_info(topic_name)
             podcast_script = generate_podcast_script(info, topic_name)
@@ -117,6 +121,7 @@ def main():
 
         # === Audio Generation ===
         if backup["status"] == "script_generated":
+            time.sleep(2)
             log("Generating podcast audio...")
             audio_name = generate_podcast_audio(podcast_script, podcast_id)
             if not audio_name:
@@ -142,12 +147,13 @@ def main():
 
         # === Thumbnail + Banner ===
         if backup["status"] == "audio_uploaded":
+            time.sleep(2)
             log("Generating thumbnail and banner images...")
             thumbnail = generate_podcast_thumbnail(topic_name, podcast_id)
             if not thumbnail:
                 log("Thumbnail generation failed.")
                 return
-            if thumbnail.split("_")[1] == podcast_id:
+            elif thumbnail.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{thumbnail+".jpg"}')
                 blob.upload_from_filename(thumbnail+".jpg")
                 blob.make_public()
@@ -159,19 +165,18 @@ def main():
             if not banner:
                 log("Banner generation failed.")
                 return
-            if banner.split("_")[1] == podcast_id:
+            elif banner.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{banner+"jpg"}')
                 blob.upload_from_filename(banner+".jpg")
                 blob.make_public()
                 banner_url = blob.public_url
                 doc_ref.update({'podcast_banner_url': banner_url})
                 log("Banner uploaded.")
-
-            doc_ref.update({'status': 'complete'})
-            backup.update({"status": "complete"})
-            write_backup(backup)
-            cleanup_files(podcast_id)
-            log("Podcast generation completed successfully. Cleanup done.")
+                doc_ref.update({'status': 'complete'})
+                backup.update({"status": "complete"})
+                write_backup(backup)
+                cleanup_files(podcast_id)
+                log("Podcast generation completed successfully. Cleanup done.")
 
     except Exception as e:
         log(f"❌ Error: {e}")

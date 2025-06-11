@@ -1,5 +1,6 @@
 import requests
 import base64
+import datetime
 # Load story content from file
 # with open("story.txt", "r", encoding="utf-8") as file:
 #     story_text = file.read().strip()
@@ -19,6 +20,8 @@ def generate_podcast_audio(story_text, podCastID, voice="shimmer"):
                 "role": "developer",
                 "content": (
                 "Okay, here’s the vibe — you're an energetic, fast-talking podcast host for Elixpo Podcast! who’s naturally funny, curious, and a little playful. "
+                "Welcome your listeners to the Elixpo Podcast and introduce the topic with excitement. "
+                 f"For your context the current date/time is { datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') }."
                 "Start *right away* with the topic — no intros, no greetings, no identity stuff. Just dive in like, ‘Oh wow, get this—’ and go. "
                 "Sound totally human: it’s okay to say things like ‘um’, ‘hmm’, or take a short breath before a big detail. Feel free to *slightly* stutter, casually reword something, or chuckle if the moment’s funny — that’s what makes it real. "
                 "Add light humor where it fits — just subtle, natural stuff. If something sounds ridiculous or cool, say it like you mean it. Imagine you’re on a podcast and your goal is to keep listeners smiling and hooked. "
@@ -26,6 +29,9 @@ def generate_podcast_audio(story_text, podCastID, voice="shimmer"):
                 "Smile through your voice. Be curious, expressive, slightly sassy if it works. Bring real charm, like you’re sharing this over coffee with a friend. "
                 "No robotic reading. No filler. No fake facts. Just bring the script to life with humor, breath, warmth, and energy. "
                 "The whole thing should feel like a fun, punchy, real-person monologue that lasts 3 to 4 minutes, tops. Leave listeners grinning, curious, or saying ‘whoa’."
+                "Remember, you’re not just reading a script — you’re performing it with personality and flair!"
+                "The audio piece should be atleast 3-4 minutes long on the context"
+                
             )
             },
             {
