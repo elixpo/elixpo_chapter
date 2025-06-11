@@ -39,6 +39,8 @@ def cleanup_files(podcast_id):
             os.remove(f)
         elif f.startswith(f"podcastThumbnail_{podcast_id}") or f.startswith(f"podcastBanner_{podcast_id}"):
             os.remove(f)
+        elif f == f"podcast_backup.txt":
+            os.remove(f)
 
 def main():
     log("Starting podcast generation workflow...")
@@ -47,6 +49,7 @@ def main():
     try:
         # === Topic Fetch ===
         if backup.get("status") is None:
+            log("Fetching trending topics...")
             topics = fetch_trending_topics()
             if not topics:
                 log("Failed to fetch trending topics.")
@@ -95,6 +98,7 @@ def main():
 
         # === Script Generation ===
         if backup["status"] == "topic_stored":
+            log("Generating podcast script...")
             info = get_latest_info(topic_name)
             podcast_script = generate_podcast_script(info, topic_name)
             doc_ref.update({
@@ -113,6 +117,7 @@ def main():
 
         # === Audio Generation ===
         if backup["status"] == "script_generated":
+            log("Generating podcast audio...")
             audio_name = generate_podcast_audio(podcast_script, podcast_id)
             if not audio_name:
                 log("Audio generation failed.")
@@ -137,7 +142,11 @@ def main():
 
         # === Thumbnail + Banner ===
         if backup["status"] == "audio_uploaded":
+            log("Generating thumbnail and banner images...")
             thumbnail = generate_podcast_thumbnail(topic_name, podcast_id)
+            if not thumbnail:
+                log("Thumbnail generation failed.")
+                return
             if thumbnail.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{thumbnail+".jpg"}')
                 blob.upload_from_filename(thumbnail+".jpg")
@@ -147,6 +156,9 @@ def main():
                 log("Thumbnail uploaded.")
 
             banner = generate_podcast_banner(topic_name, podcast_id)
+            if not banner:
+                log("Banner generation failed.")
+                return
             if banner.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{banner+"jpg"}')
                 blob.upload_from_filename(banner+".jpg")
