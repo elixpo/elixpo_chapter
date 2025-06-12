@@ -1,9 +1,9 @@
+MAX_NEWS_ITEMS = 1
+import random 
 import requests
 from bs4 import BeautifulSoup
-from collections import defaultdict
-import random
-
 def fetch_trending_topics():
+    print("🔍 Attempting to fetch trending topics...")
     categorized_feeds = {
         "tech": [
             "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en&gl=US&ceid=US:en"
@@ -53,11 +53,19 @@ def fetch_trending_topics():
     def extract_keywords(title):
         return set(word for word in title.lower().split() if len(word) > 3)
 
-    for category, feeds in categorized_feeds.items():
-        random.shuffle(feeds)  # In case we add more per category later
+    categories = list(categorized_feeds.keys())
+    random.shuffle(categories)
+
+    for category in categories:
+        feeds = categorized_feeds[category]
+        random.shuffle(feeds)
+        if len(headlines) >= MAX_NEWS_ITEMS:
+            break
+
         for feed_url in feeds:
             try:
-                response = requests.get(feed_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+                print(f"Fetching feed for '{category}': {feed_url}")
+                response = requests.get(feed_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.content, 'xml')
                 items = soup.find_all('item')
@@ -71,20 +79,22 @@ def fetch_trending_topics():
 
                         keywords = extract_keywords(title)
 
-                        # Check similarity with previous headlines
-                        if all(len(keywords & prev) < 2 for prev in seen_keywords):
+                        is_similar = False
+                        for prev_keywords in seen_keywords:
+                            if len(keywords & prev_keywords) >= 2:
+                                is_similar = True
+                                break
+
+                        if not is_similar:
                             seen_keywords.append(keywords)
                             headlines.append(raw_title)
-                            break  # Only 1 headline per category to ensure diversity
+                            print(f"  ✅ Added headline: {raw_title}")
+
+                if len(headlines) >= MAX_NEWS_ITEMS:
+                    break
 
             except requests.RequestException as e:
-                print(f"Error fetching {feed_url}: {e}")
-                continue
+                print(f"  ❌ Error fetching {feed_url}: {e}")
 
-    return headlines[:5]
-
-if __name__ == "__main__":
-    topics = fetch_trending_topics()
-    print("Trending Topics:" if topics else "No trending topics found.")
-    for topic in topics:
-        print(f"- {topic}")
+    print(f"✅ Finished fetching topics. Found {len(headlines)} suitable headlines.")
+    return headlines[:MAX_NEWS_ITEMS]
