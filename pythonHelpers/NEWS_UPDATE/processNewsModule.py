@@ -46,6 +46,10 @@ def upload_bytes_to_bucket(data_bytes, storage_path, content_type):
     blob.make_public()
     return blob.public_url
 
+def update_news_item(summary_doc_ref, index, data):
+    """ Update a specific index in the 'items' array """
+    summary_doc_ref.update({f"items.{index}": data})
+
 def main():
     backup_data = load_backup()
     processed_ids = {item['news_id']: item for item in backup_data if 'news_id' in item}
@@ -59,12 +63,13 @@ def main():
     overall_news_id = hashlib.sha256(now_str.encode()).hexdigest()[:16]
     summary_doc_ref = db.collection("news").document(overall_news_id)
 
+    # Create base document
     summary_doc_ref.set({
         "date": datetime.now(timezone.utc).isoformat(),
         "summary": "",
         "thumbnail_url": "",
         "status": "started",
-        "items": []
+        "items": [{} for _ in range(MAX_NEWS_ITEMS)]
     })
 
     print("🔁 Resuming from backup if any...")
@@ -76,7 +81,6 @@ def main():
             "news_id": news_id,
             "topic": topic,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "status": "started"
         }
 
         prev = processed_ids.get(news_id)
@@ -93,9 +97,13 @@ def main():
                 script_data = json.loads(script_response)
                 newsScript = script_data.get("script", "")
                 newsURL = script_data.get("source_link", "")
-                news_item.update({"script": newsScript, "source_link": newsURL, "status": "script_generated"})
+                news_item.update({
+                    "script": newsScript,
+                    "source_link": newsURL,
+                    "status": "script_generated"
+                })
                 log_backup(news_item)
-                summary_doc_ref.update({"items": firestore.ArrayUnion([news_item])})
+                update_news_item(summary_doc_ref, index, news_item)
                 time.sleep(1)
 
             # --- Step 2: Audio Generation ---
@@ -107,7 +115,7 @@ def main():
                     audio_url = upload_bytes_to_bucket(audio_bytes, audio_path, content_type="audio/wav")
                     news_item.update({"audio_url": audio_url, "status": "audio_uploaded"})
                     log_backup(news_item)
-                    summary_doc_ref.update({"items": firestore.ArrayUnion([news_item])})
+                    update_news_item(summary_doc_ref, index, news_item)
                     time.sleep(1)
 
             # --- Step 3: Banner Generation ---
@@ -118,39 +126,46 @@ def main():
                 banner_url = upload_bytes_to_bucket(banner_response.content, image_path, content_type="image/jpeg")
                 news_item.update({"image_url": banner_url, "status": "image_uploaded"})
                 log_backup(news_item)
-                summary_doc_ref.update({"items": firestore.ArrayUnion([news_item])})
+                update_news_item(summary_doc_ref, index, news_item)
                 time.sleep(1)
 
         except Exception as e:
             print(f"❌ Error for topic '{topic}': {e}")
             log_backup({**news_item, "status": "error", "error": str(e)})
 
-    # === Final Summary and Thumbnail ===
-    try:
-        print("🎨 Generating final thumbnail and summary...")
-        combined_topic = " | ".join(trending_topics[:MAX_NEWS_ITEMS])
-        thumbnail_prompt = create_combined_visual_prompt(combined_topic)
-        thumbnail_bytes = generate_vector_image(overall_news_id, thumbnail_prompt)
+        # === Final Summary and Thumbnail ===
+        try:
+            print("🎨 Generating final thumbnail and summary...")
+            combined_topic = " | ".join(trending_topics[:MAX_NEWS_ITEMS])
+            thumbnail_prompt = create_combined_visual_prompt(combined_topic)
+            thumbnail_bytes = generate_vector_image(overall_news_id, thumbnail_prompt)
 
-        thumb_path = f"news/{overall_news_id}/newsBanner.jpg"
-        thumb_url = upload_bytes_to_bucket(thumbnail_bytes, thumb_path, content_type="image/jpeg")
+            thumb_path = f"news/{overall_news_id}/newsBanner.jpg"
+            thumb_url = upload_bytes_to_bucket(thumbnail_bytes, thumb_path, content_type="image/jpeg")
 
-        summary_text = create_combined_news_summary(trending_topics[:MAX_NEWS_ITEMS])
-        summary_doc_ref.update({
-            "summary": summary_text,
-            "thumbnail_url": thumb_url,
-            "status": "complete"
-        })
-        print("✅ Final summary and thumbnail uploaded.")
+            # Generate summary
+            summary_text = create_combined_news_summary(trending_topics[:MAX_NEWS_ITEMS])
+            if not summary_text or "error" in summary_text.lower():
+                raise Exception("Summary generation failed or returned an invalid response.")
 
-        # 🔥 Cleanup backup if everything succeeded
-        if os.path.exists(backup_file):
-            os.remove(backup_file)
-            print("🧹 Deleted backup file.")
+            # Update final document
+            summary_doc_ref.update({
+                "summary": summary_text,
+                "thumbnail_url": thumb_url,
+                "status": "complete"
+            })
+            print("✅ Final summary and thumbnail uploaded.")
 
-    except Exception as e:
-        print(f"❌ Final summary/thumbnail error: {e}")
-        log_backup({"overall_id": overall_news_id, "status": "final_error", "error": str(e)})
+            # ✅ Only delete backup now that everything succeeded
+            if os.path.exists(backup_file):
+                os.remove(backup_file)
+                print("🧹 Deleted backup file.")
+
+        except Exception as e:
+            print(f"❌ Final summary/thumbnail error: {e}")
+            log_backup({"overall_id": overall_news_id, "status": "final_error", "error": str(e)})
+            print("⚠️ Backup NOT deleted — resume possible.")
+
 
 if __name__ == "__main__":
     main()

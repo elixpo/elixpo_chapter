@@ -3,6 +3,8 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from processNewsGeneral import MAX_NEWS_ITEMS
+
+
 def fetch_trending_topics():
     print("🔍 Attempting to fetch trending topics...")
     categorized_feeds = {

@@ -1,10 +1,6 @@
-from processNewsGeneral import POLLINATIONS_TOKEN, POLLINATIONS_REFERRER, MAX_NEWS_ITEMS, load_progress, save_progress
-from getNewsTopics import fetch_trending_topics
+from processNewsGeneral import POLLINATIONS_TOKEN, POLLINATIONS_REFERRER
 import requests
-import json
-import time
 from datetime import timezone, datetime
-import hashlib
 
 def generate_news_analysis(news_title):
     url = "https://text.pollinations.ai/openai"
