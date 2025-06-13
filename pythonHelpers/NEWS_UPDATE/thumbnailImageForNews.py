@@ -58,9 +58,7 @@ def generate_vector_image(news_id, prompt):
     try:
         response = requests.get(url, params=params, timeout=60)
         response.raise_for_status()
-        with open(f'thumbnail_{news_id}.jpg', 'wb') as f:
-            f.write(response.content)
-        print(f'Image saved as: thumbnail_{news_id}.jpg')
+        return response.content
 
         
     except requests.RequestException as e:

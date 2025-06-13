@@ -2,6 +2,7 @@ from getNewsTopics import fetch_trending_topics
 from getNewsInfo import generate_news_analysis, generate_news_script
 from newsVocieOver import generate_voiceover
 from bannerImageForNews import generate_visual_prompt, generate_overall_banner_image
+from thumbnailImageForNews import create_combined_visual_prompt, generate_vector_image
 from firebase_admin import credentials, firestore, storage
 import firebase_admin
 import json
@@ -56,6 +57,13 @@ def main():
             with open(f'banner_{news_id}.jpg', 'wb') as f:
                 f.write(image_response.content)
             print(f'banner_{news_id}.jpg')
+        #generate thumbnail for the overall news
+        combined_topic = " | ".join(trending_topics)
+        thumbnail_prompt = create_combined_visual_prompt(combined_topic)
+        thumbnail_image = generate_vector_image(overall_news_id, thumbnail_prompt)
+        with open(f'thumbnail_{overall_news_id}.jpg', 'wb') as f:
+            f.write(thumbnail_image)
+        print(f'Image saved as: thumbnail_{overall_news_id}.jpg')
     else:
         print("No trending topics found.")
 
