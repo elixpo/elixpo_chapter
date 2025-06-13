@@ -2,7 +2,7 @@
 from processNewsGeneral import POLLINATIONS_TOKEN, POLLINATIONS_REFERRER
 import requests
 import base64
-# from uploadToStorage import upload_to_storage
+
 
 def generate_voiceover(news_script, news_id, news_index, voice):
     url = "https://text.pollinations.ai/openai"

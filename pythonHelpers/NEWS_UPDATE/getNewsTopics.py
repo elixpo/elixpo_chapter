@@ -110,4 +110,3 @@ if __name__ == "__main__":
     else:
         print("No trending topics found.")
 
-# - Kevin Love extends heartfelt tribute to Beach Boys founding member Brian Wilson - ESPN

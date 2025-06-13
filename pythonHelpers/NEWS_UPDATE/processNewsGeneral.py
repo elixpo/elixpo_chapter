@@ -6,16 +6,14 @@ import random
 service_account_path = 'elixpoChatServiceKey.json'
 storage_bucket_name = "notes-89337.appspot.com"
 voices = ["shimmer", "dan"]
+
 BACKUP_FILE = "news_progress_backup.txt"
 POLLINATIONS_TOKEN = "fEWo70t94146ZYgk"
 POLLINATIONS_REFERRER = "elixpoart"
 MAX_NEWS_ITEMS = 1
 
-
 def generate_color_theme():
     return f"#{random.randint(0, 0xFFFFFF):06x}"
-
-
 
 def load_progress():
     if os.path.exists(BACKUP_FILE):
