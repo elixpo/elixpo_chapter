@@ -1,7 +1,8 @@
-MAX_NEWS_ITEMS = 1
+
 import random 
 import requests
 from bs4 import BeautifulSoup
+from processNewsGeneral import MAX_NEWS_ITEMS
 def fetch_trending_topics():
     print("🔍 Attempting to fetch trending topics...")
     categorized_feeds = {
@@ -64,7 +65,7 @@ def fetch_trending_topics():
 
         for feed_url in feeds:
             try:
-                print(f"Fetching feed for '{category}': {feed_url}")
+                # print(f"Fetching feed for '{category}': {feed_url}")
                 response = requests.get(feed_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.content, 'xml')
@@ -88,7 +89,7 @@ def fetch_trending_topics():
                         if not is_similar:
                             seen_keywords.append(keywords)
                             headlines.append(raw_title)
-                            print(f"  ✅ Added headline: {raw_title}")
+                            # print(f"  ✅ Added headline: {raw_title}")
 
                 if len(headlines) >= MAX_NEWS_ITEMS:
                     break
@@ -96,5 +97,17 @@ def fetch_trending_topics():
             except requests.RequestException as e:
                 print(f"  ❌ Error fetching {feed_url}: {e}")
 
-    print(f"✅ Finished fetching topics. Found {len(headlines)} suitable headlines.")
+    # print(f"✅ {headlines[:MAX_NEWS_ITEMS]}")
     return headlines[:MAX_NEWS_ITEMS]
+
+
+if __name__ == "__main__":
+    trending_topics = fetch_trending_topics()
+    if trending_topics:
+        print("Trending topics fetched successfully:")
+        for topic in trending_topics:
+            print(f"- {topic}")
+    else:
+        print("No trending topics found.")
+
+# - Kevin Love extends heartfelt tribute to Beach Boys founding member Brian Wilson - ESPN

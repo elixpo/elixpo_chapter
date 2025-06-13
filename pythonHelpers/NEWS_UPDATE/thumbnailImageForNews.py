@@ -1,32 +1,85 @@
-
-
 import requests
-from processNewsForTopics import POLLINATIONS_REFERRER, POLLINATIONS_TOKEN
-from uploadToStorage import upload_to_storage
-def generate_block_image(news_id, news_index, news_title):
-    prompt = ("A vibrant watercolor painting in news banner style, with vibrant colors and appealing look, "
-              "cinematic lighting and bright realistic outlook properly explaining a visual scene for the topic: "
-              f"{news_title}")
-    url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)} -- aspect ratio of 16:9 landscape mode"
+from processNewsGeneral import POLLINATIONS_REFERRER, POLLINATIONS_TOKEN
+
+
+def create_combined_visual_prompt(*topics):
+    """Takes 5 topics and combines them into a single artistic visual prompt."""
+    base_instruction = (
+        "You're an AI art prompt generator. Given multiple news topics, combine their essence into a single cohesive visual scene. "
+        "Generate a colored vector digital illustration (not realistic) in a 1:1 square format (512x512), suitable for icon or thumbnail use. "
+        "The style should be vibrant, minimal yet meaningful, and thematically unified — no text, no faces. Think in terms of abstract symbols, color harmony, and metaphor. "
+        "Output just one short prompt of 40-50 words, describing what the image should look like — in vector art terms."
+    )
+
+    combined_topic = " | ".join(topics)
+    payload = {
+        "model": "openai-fast",
+        "messages": [
+            {"role": "system", "content": base_instruction},
+            {"role": "user", "content": combined_topic}
+        ],
+        "token": "fEWo70t94146ZYgk",  
+        "referrer": "elixpoart",
+        "seed": 42,
+        "temperature": 0.4,
+        "top_p": 0.9,
+        "presence_penalty": 0.5,
+        "frequency_penalty": 0.5
+    }
+
+    try:
+        res = requests.post(
+            "https://text.pollinations.ai/openai",
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=60
+        )
+        res.raise_for_status()
+        return res.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    except requests.RequestException as e:
+        print(f"❌ Failed to get visual prompt: {e}")
+        return None
+
+def generate_vector_image(news_id, prompt):
+    """Generates a colored vector-style image from the prompt and uploads it."""
+    url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt)} -- vector digital art -- colorful -- 1:1 icon style"
     params = {
-        "height": 720,
-        "width": 1280,
+        "height": 512,
+        "width": 512,
         "model": "flux",
         "nologo": True,
         "private": True,
         "token": POLLINATIONS_TOKEN,
-        "referrer": POLLINATIONS_REFERRER
+        "referrer": POLLINATIONS_REFERRER,
+        "seed": 42,
     }
-    print(f"🖼️ Generating block image for topic {news_index}: '{news_title}'...")
+
+    print(f"🎨 Generating combined vector image for prompt: {prompt}")
     try:
         response = requests.get(url, params=params, timeout=60)
         response.raise_for_status()
-        img_data = response.content
-        path = f"news/{news_id}/newsID{news_index}/newsBackground.jpg"
-        return upload_to_storage(img_data, path, "image/jpeg")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Block image gen failed for topic {news_index}: {e}")
+        with open(f'thumbnail_{news_id}.jpg', 'wb') as f:
+            f.write(response.content)
+        print(f'Image saved as: thumbnail_{news_id}.jpg')
+
+        
+    except requests.RequestException as e:
+        print(f"❌ Failed to generate or upload vector image: {e}")
         return None
     except Exception as e:
-        print(f"❌ An unexpected error occurred during block image generation for topic {news_index}: {e}")
+        print(f"❌ Unexpected error during vector image generation: {e}")
         return None
+
+if __name__ == "__main__":
+
+    topic1 = "SpaceX launches new Starship for orbital flight test"
+    topic2 = "Breakthrough in coral reef restoration using AI drones"
+    topic3 = "Olympics 2025 to feature climate-neutral venues"
+    topic4 = "New electric air taxis approved for urban use"
+    topic5 = "Nobel Prize awarded for quantum computing research"
+
+    visual_prompt = create_combined_visual_prompt(topic1, topic2, topic3, topic4, topic5)
+    print("🧠 Visual Prompt:", visual_prompt)
+    
+    if visual_prompt:
+        result_url = generate_vector_image("combined_2025_01", visual_prompt)

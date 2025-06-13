@@ -1,6 +1,6 @@
 storage_bucket_name = "notes-89337.appspot.com"
 from firebase_admin import credentials, firestore, storage
-from processNewsForTopics import bucket, db
+from processNewsGeneral import bucket, db
 
 def upload_to_storage(data, destination_blob_path, content_type):
     try:

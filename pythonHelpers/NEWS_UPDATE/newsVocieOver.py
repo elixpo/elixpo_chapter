@@ -1,8 +1,8 @@
 
-from processNewsForTopics import POLLINATIONS_TOKEN, POLLINATIONS_REFERRER
+from processNewsGeneral import POLLINATIONS_TOKEN, POLLINATIONS_REFERRER
 import requests
 import base64
-from uploadToStorage import upload_to_storage
+# from uploadToStorage import upload_to_storage
 
 def generate_voiceover(news_script, news_id, news_index, voice):
     url = "https://text.pollinations.ai/openai"
@@ -31,7 +31,8 @@ def generate_voiceover(news_script, news_id, news_index, voice):
         ],
         "private": True,
         "token": POLLINATIONS_TOKEN,
-        "referrer": POLLINATIONS_REFERRER
+        "referrer": POLLINATIONS_REFERRER,
+        "seed": 42
     }
     print(f"🎙️ Generating voiceover for topic {news_index}...")
     try:
@@ -39,14 +40,7 @@ def generate_voiceover(news_script, news_id, news_index, voice):
         response.raise_for_status()
         response_json = response.json()
         audio_data_base64 = response_json.get('choices', [{}])[0].get('message', {}).get('audio', {}).get('data')
-        if audio_data_base64:
-            audio_data = base64.b64decode(audio_data_base64)
-            path = f"news/{news_id}/newsID{news_index}/news{news_index}.wav"
-            return upload_to_storage(audio_data, path, "audio/wav")
-        else:
-             print("❌ Voiceover API returned no audio data.")
-             print(f"Partial response: {response_json}")
-             return None
+        return audio_data_base64
     except requests.exceptions.RequestException as e:
         print(f"❌ Voiceover gen failed for topic {news_index}: {e}")
         return None
@@ -56,3 +50,9 @@ def generate_voiceover(news_script, news_id, news_index, voice):
     except Exception as e:
         print(f"❌ An unexpected error occurred during voiceover generation for topic {news_index}: {e}")
         return None
+    
+if __name__ == "__main__":
+    newsScript = '''
+    Well, folks, the 125th U.S. Open is off to a roaring start at the legendary Oakmont Country Club, and let me tell you, this place is living up to its reputation as one of the toughest tests in golf. The rough is so thick, even Bryson DeChambeau is calling it 'cooked beyond belief.' But amidst the chaos, one man has emerged as the early leader, and it's not who you might think. J.J. Spaun, that's right, J.J. Spaun, has surged to a 4-under-par 66, making him the solo leader and the only player to go significantly below par on this beast of a course. The scoring average for the day was over four shots above par, folks. That's how tough Oakmont is playing. Brooks Koepka, representing LIV Golf, is right on his tail, quietly positioning himself among the contenders. Jon Rahm is in the hunt, but he's not in the top echelon just yet. And Rory McIlroy? Well, he's had a rough start, reminding us all of the relentless challenge that Oakmont presents. But it's not all doom and gloom. We've seen some historic shots already. Patrick Reed made only the fourth recorded albatross in U.S. Open history, and Shane Lowry notched a shot never seen before at Oakmont. Now, experts and players alike are suggesting that even par could be good enough to win this championship, given Thursday’s carnage and the USGA’s reputation for making the weekend even tougher. So, buckle up, folks. We're in for a wild ride. For up-to-date scores and highlights, tune into the scheduled TV coverage throughout the weekend. It's going to be a thrilling finish, that's for sure. https://www.usatoday.com/story/sports/golf/2025/06/09/us-open-2025-time-tv-odds-live-stream/84070189007/
+    '''
+    generate_voiceover(newsScript, "12345", 0, "shimmer")
