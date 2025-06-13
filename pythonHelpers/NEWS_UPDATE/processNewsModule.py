@@ -9,10 +9,10 @@ import json
 import base64
 from datetime import timezone, datetime
 import hashlib
+
 service_account_path = 'elixpoChatServiceKey.json'
 storage_bucket_name = "notes-89337.appspot.com"
 voices = ["shimmer", "dan"]
-
 try:
     cred = credentials.Certificate(service_account_path)
     firebase_admin.initialize_app(cred, {"storageBucket": storage_bucket_name})
