@@ -15,8 +15,22 @@
     .playBackZone
     {
         width: 50%;
-        height: 150px;
-        top: 65%;
+        height: 100px;
+        top: 80%;
+    }
+    .sourceSection {
+        position: absolute;
+        top: 64%;
+        width: 550px;
+    }
+    .sourceSection > .sourcePill > .sourceName
+    {
+        font-size: 0.9em;
+    }
+    .sourceSection > .sourcePill > .sourceLogo
+    {
+        width: 22px;
+        height: 22px;
     }
 }
 
@@ -37,7 +51,21 @@
     {
         width: 50%;
         height: 120px;
+        top: 80%;
+    }
+    .sourceSection {
+        position: absolute;
         top: 70%;
+        width: 550px;
+    }
+    .sourceSection > .sourcePill > .sourceName
+    {
+        font-size: 0.9em;
+    }
+    .sourceSection > .sourcePill > .sourceLogo
+    {
+        width: 22px;
+        height: 22px;
     }
 }
 @media screen and (max-width: 600px) {
@@ -50,7 +78,7 @@
     }
     .podcastDesc
     {
-        top: 60%;
+        top: 58%;
         font-size: 1em;
     }
     .playBackZone
@@ -63,5 +91,19 @@
     {
         width: 25px;
         height: 25px;
+    }
+    .sourceSection {
+        position: absolute;
+        top: 64%;
+        width: 550px;
+    }
+    .sourceSection > .sourcePill > .sourceName
+    {
+        font-size: 0.9em;
+    }
+    .sourceSection > .sourcePill > .sourceLogo
+    {
+        width: 22px;
+        height: 22px;
     }
 }

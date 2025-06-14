@@ -82,6 +82,30 @@ function prepareNews(items) {
         updatePlayButton(audioElements[idx].paused ? "pause" : "play");
         audioElements[idx].onplay = () => updatePlayButton("play");
         audioElements[idx].onpause = () => updatePlayButton("pause");
+        const sourceSection = document.getElementById("sourceSection");
+        const sourceLink = items[idx].source_link;
+        let domain = '';
+        try {
+            const urlObj = new URL(sourceLink);
+            domain = urlObj.hostname.replace(/^www\./, '');
+        } catch (e) {
+            domain = sourceLink;
+        }
+        const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        sourceSection.innerHTML = `
+            <div class="sourcePill" style="opacity:0; transform:translateY(20px);" onclick="window.open('${sourceLink}', '_blank')">
+                <div class="sourceLogo" style="background-image: url('${logoUrl}');"></div>
+                <div class="sourceName">${domain.split(".")[0]}</div>
+            </div>
+        `;
+        anime({
+            targets: '#sourceSection .sourcePill',
+            opacity: [0, 1],
+            translateY: [20, 0],
+            duration: 600,
+            delay: 700,
+            easing: 'easeOutExpo'
+        });
         document.getElementById("dailyNewsName").textContent = items[idx].topic?.slice(0, 80) + "..." || "Your Elixpo Daily";
         document.getElementById("backDropImage").style.backgroundImage = `url('${items[idx].image_url}')`;
         fetch(`/api/getDominantColor?imageUrl=${encodeURIComponent(items[idx].image_url)}`)
@@ -270,5 +294,9 @@ function prepareNews(items) {
     updateUI(0);
 }
 
+
+document.getElementById("closeBtn").addEventListener("click", () => {
+    window.location.href = "/";
+});
 getNewsFromDatabase();
 updateNewsHeadline();

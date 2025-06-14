@@ -8,17 +8,40 @@ body
     background: #ffc;
     z-index: 10;
 }
+
+
 .dailyNewsSection > .closeBtn
 {
     position: absolute;
     top: 3%;
     right: 3%;
-    border-radius: 50%;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     z-index: 20;
     font-size: 2em;
-    color: #222;
+    background-color: #ffffff97;
+    backdrop-filter: blur(10px);
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    transition: 0.25s;
 }
+.dailyNewsSection > .closeBtn:hover 
+{
+    background-color: #ffffffb3;
+    box-shadow: 0 2px 12px 0 #00000055;
+    transition: 0.25s;
+}
+.dailyNewsSection > .closeBtn:active 
+{
+    background-color: #ffffffd9;
+    box-shadow: 0 2px 12px 0 #00000088;
+    transition: 0.25s;
+}
+
 .backDropImage
 {
     position: absolute;
@@ -60,10 +83,10 @@ body
 .dailyNewsNameDesc 
 {
     position: absolute;
-    top: 68%;
+    top: 66%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.8em;
+    font-size: 1em;
     font-weight: 100;
     z-index: 10;
     width: 80%;
@@ -74,7 +97,7 @@ body
 
 .newsplayBackZone {
     position: absolute;
-    top: 75%;
+    top: 83%;
     left: 50%;
     transform: translateX(-50%);
     width: 30%;
@@ -217,4 +240,72 @@ body
     opacity: 1;
     transition: all 1s ease;
     pointer-events: auto;
+}
+
+
+.sourceSection {
+    position: absolute;
+    top: 73%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 80px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 10;
+}
+
+.sourceSection > .sourcePill {
+    position: relative;
+    width: 20%;
+    height: 40px;
+    background: rgb(38, 37, 39);
+    border-radius: 50px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-left: 38px; /* offset for logo */
+    cursor: pointer;
+    font-family: 'Parkinsans', sans-serif;
+    font-weight: 700;
+    color: #4a2a00;
+    transition: background 0.35s cubic-bezier(0.4,0,0.2,1), color 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+
+.sourceSection > .sourcePill:hover {
+    background: #ddb581;
+    color: #4a2a00;
+    box-shadow: 0 2px 12px 0 #ddb58155;
+}
+
+.sourceSection > .sourcePill > .sourceLogo {
+    position: absolute;
+    left: 20px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.sourceSection > .sourcePill > .sourceName {
+    width: 100%;
+    margin-left: 15px;
+    padding-right: 10px;
+    text-align: center;
+    font-size: 1em;
+    font-weight: 700;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'Parkinsans', sans-serif;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
 }

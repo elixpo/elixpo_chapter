@@ -4,7 +4,7 @@ async function getDominantColor(imageUrl) {
     const image = await Jimp.read(imageUrl);
     let r = 0, g = 0, b = 0, count = 0;
     image.scan(0, 0, image.bitmap.width, image.bitmap.height, function(x, y, idx) {
-        // Sample every 10th pixel for performance
+
         if ((x + y * image.bitmap.width) % 10 === 0) {
             r += this.bitmap.data[idx + 0];
             g += this.bitmap.data[idx + 1];

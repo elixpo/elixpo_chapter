@@ -26,9 +26,46 @@ function preparePodCast(podcastName, podcastAudio, podcastSource, podcastBanner,
     const playBackSpeed = document.querySelector('.playBackSpeed');
     const speeds = [1, 1.5, 2, 4];
     let speedIndex = 0;
+    let domain = '';
+    try {
+        const urlObj = new URL(podcastSource);
+        domain = urlObj.hostname.replace(/^www\./, '');
+    } catch (e) {
+        domain = podcastSource;
+    }
 
+    // Try to get the favicon from the podcastSource domain
+    const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    document.getElementById("sourceSection").innerHTML = `
+        <div class="sourcePill" style="opacity:0; transform:translateY(20px);" onclick="window.open('${podcastSource}', '_blank')">
+            <div class="sourceLogo" style="background-image: url('${logoUrl}');"></div>
+            <div class="sourceName">${domain.split(".")[0]}</div>
+        </div>
+    `;
+
+    // Animate the source pill in
+    anime({
+        targets: '#sourceSection .sourcePill',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        delay: 700,
+        easing: 'easeOutExpo'
+    });
     const centralImage = document.getElementById("centralImage");
     centralImage.style.backgroundImage = `url(${podcastBanner})`;
+
+    centralImage.style.filter = "blur(20px)";
+    anime({
+        targets: centralImage,
+        opacity: [0, 1],
+        filter: ["blur(20px)", "blur(0px)"],
+        duration: 1000,
+        easing: 'easeOutExpo',
+        complete: () => {
+            centralImage.style.filter = "none";
+        }
+    });
     centralImage.style.backgroundSize = "cover";
     centralImage.style.backgroundPosition = "center";
 
@@ -171,4 +208,8 @@ function preparePodCast(podcastName, podcastAudio, podcastSource, podcastBanner,
     });
 }
 
+
+document.getElementById("closeBtn").addEventListener("click", () => {
+    window.location.href = "/";
+});
 getPodCastDetails();

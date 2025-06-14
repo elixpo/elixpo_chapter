@@ -5,7 +5,8 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "concurrently \"nodemon server.js --ignore public/**/*.*\" \"browser-sync start --proxy http://localhost:3000 --files public/**/*.* --no-open --no-ui --port 3001\""
+        "dev": "concurrently \"nodemon server.js --ignore public/**/*.*\" \"browser-sync start --proxy http://localhost:3000 --files public/**/*.* --no-open --no-ui --port 3001\"",
+        "prod": "NODE_ENV=production node server.js"
     },
     "dependencies": {
         "express": "^4.18.2",
