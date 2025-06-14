@@ -1,4 +1,3 @@
-import { getGenerativeModel } from 'firebase/ai';
 import app from './firebaseConfig.js';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 const db = getFirestore(app);
