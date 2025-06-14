@@ -1,11 +1,12 @@
 {
-    "builds": [
-      { "src": "server.js", "use": "@vercel/node" }
-    ],
-    "rewrites": [
-      { "source": "/api/(.*)", "destination": "/server.js" },
-      { "source": "/daily", "destination": "/daily.html" },
-      { "source": "/podcast", "destination": "/podcast.html" },
-      { "source": "/c", "destination": "/search.html" }
-    ]
-  }
+  "builds": [
+    { "src": "api/index.js", "use": "@vercel/node" }
+  ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/daily", "destination": "/daily.html" },
+    { "source": "/podcast", "destination": "/podcast.html" },
+    { "source": "/c", "destination": "/search.html" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}

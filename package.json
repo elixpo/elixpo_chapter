@@ -9,6 +9,8 @@
         "prod": "NODE_ENV=production node server.js"
     },
     "dependencies": {
+        "@vendia/serverless-express": "^4.12.6",
+        "@vercel/node": "^5.2.2",
         "express": "^4.18.2",
         "firebase": "^11.9.1",
         "jimp": "^1.6.0"
