@@ -8,5 +8,12 @@
     { "source": "/podcast", "destination": "/podcast.html" },
     { "source": "/c", "destination": "/search.html" },
     { "source": "/", "destination": "/index.html" }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/oopsie.html"
+    }
   ]
 }

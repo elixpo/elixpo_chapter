@@ -14,12 +14,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/c', (req, res) => res.sendFile(path.join(__dirname, 'public', 'search.html')));
-app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, 'public', 'daily.html')));
-app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, 'public', 'podcast.html')));
+// app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// app.get('/c', (req, res) => res.sendFile(path.join(__dirname, 'public', 'search.html')));
+// app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, 'public', 'daily.html')));
+// app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, 'public', 'podcast.html')));
 
 // In-memory cache
 let newsCache = null;
@@ -113,9 +113,9 @@ app.get('/api/newsDetails', async (req, res) => {
 
 
 
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));
-});
+// app.use((req, res) => {
+//   res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));
+// });
 
 if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
