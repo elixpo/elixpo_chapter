@@ -4,9 +4,9 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/daily", "destination": "/daily.html" },
-    { "source": "/podcast", "destination": "/podcast.html" },
-    { "source": "/c", "destination": "/search.html" },
-    { "source": "/", "destination": "/index.html" }
+    { "source": "/daily", "destination": "/api/index.js" },
+    { "source": "/podcast", "destination": "/api/index.js" },
+    { "source": "/c", "destination": "/api/index.js" },
+    { "source": "/", "destination": "/api/index.js" }
   ]
 }

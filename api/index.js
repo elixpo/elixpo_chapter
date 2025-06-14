@@ -1,123 +1,106 @@
+// api/index.js
 import express from 'express';
+import serverless from 'serverless-http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getTodaysPodcasts, getTodaysPodcastDetails } from './BackendNode/podCastDetailsFetch.js';
-import { getTodaysNews, getTodaysNewsDetails } from './BackendNode/newsDetailsFetch.js';
-import { getDominantColor } from './BackendNode/getDominantColor.js';
 import cors from 'cors';
-import serverless from 'serverless-http';
-
+import { getTodaysPodcasts, getTodaysPodcastDetails } from '../BackendNode/podCastDetailsFetch.js';
+import { getTodaysNews, getTodaysNewsDetails } from '../BackendNode/newsDetailsFetch.js';
+import { getDominantColor } from '../BackendNode/getDominantColor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.join(__dirname, '..');
 
 const app = express();
-const PORT = 3000;
-app.use(cors());
-app.use(express.static(path.join(__dirname, '..', 'public'))); 
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
-app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'daily.html')));
-app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'podcast.html')));
-app.get('/c', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'search.html')));
-app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, '..', 'public', 'oopsie.html'));
-  });
-// In-memory cache
+app.use(cors());
+app.use(express.static(path.join(rootDir, 'public')));
+
+app.get('/', (req, res) => res.sendFile(path.join(rootDir, 'public', 'index.html')));
+app.get('/daily', (req, res) => res.sendFile(path.join(rootDir, 'public', 'daily.html')));
+app.get('/podcast', (req, res) => res.sendFile(path.join(rootDir, 'public', 'podcast.html')));
+app.get('/c', (req, res) => res.sendFile(path.join(rootDir, 'public', 'search.html')));
+
+// In-memory caching
 let newsCache = null;
 let newsCacheTime = 0;
 let podcastCache = null;
 let podcastCacheTime = 0;
 let podcastDetailsCache = null;
 let podcastDetailsCacheTime = 0;
-
-// Set cache expiry duration (in milliseconds)
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 min
 
 app.get('/api/news', async (req, res) => {
   const now = Date.now();
-  if (newsCache && now - newsCacheTime < CACHE_DURATION) {
-    return res.json(newsCache);
-  }
+  if (newsCache && now - newsCacheTime < CACHE_DURATION) return res.json(newsCache);
 
   try {
     const news = await getTodaysNews();
     newsCache = news;
     newsCacheTime = now;
-    console.log("News cache updated");
     res.json(news);
-  } catch (error) {
-    console.error("Error fetching news:", error);
-    res.status(500).json({ error: "Failed to fetch news details" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch news" });
   }
 });
 
 app.get('/api/podcast', async (req, res) => {
   const now = Date.now();
-  if (podcastCache && now - podcastCacheTime < CACHE_DURATION) {
-    return res.json(podcastCache);
-  }
+  if (podcastCache && now - podcastCacheTime < CACHE_DURATION) return res.json(podcastCache);
 
   try {
-    const podcast = await getTodaysPodcasts();
-    podcastCache = podcast;
+    const data = await getTodaysPodcasts();
+    podcastCache = data;
     podcastCacheTime = now;
-    console.log("Podcast cache updated");
-    res.json(podcast);
-  } catch (error) {
-    console.error("Error fetching podcast:", error);
-    res.status(500).json({ error: "Failed to fetch podcast details" });
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch podcast" });
   }
 });
 
 app.get('/api/podcastDetails', async (req, res) => {
   const now = Date.now();
-  if (podcastDetailsCache && now - podcastDetailsCacheTime < CACHE_DURATION) {
-    return res.json(podcastDetailsCache);
-  }
+  if (podcastDetailsCache && now - podcastDetailsCacheTime < CACHE_DURATION) return res.json(podcastDetailsCache);
 
   try {
-    const podcastDetails = await getTodaysPodcastDetails();
-    podcastDetailsCache = podcastDetails;
+    const data = await getTodaysPodcastDetails();
+    podcastDetailsCache = data;
     podcastDetailsCacheTime = now;
-    console.log("Podcast details cache updated");
-    res.json(podcastDetails);
-  } catch (error) {
-    console.error("Error fetching podcast details:", error);
+    res.json(data);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch podcast details" });
-  }
-});
-
-app.get('/api/getDominantColor', async (req, res) => {
-  const { imageUrl } = req.query;
-  if (!imageUrl) {
-    return res.status(400).json({ error: "Missing imageUrl query parameter" });
-  }
-
-  try {
-    const color = await getDominantColor(imageUrl);
-    res.json({ color });
-  } catch (error) {
-    console.error("Error processing image:", error);
-    res.status(500).json({ error: "Failed to process image" });
   }
 });
 
 app.get('/api/newsDetails', async (req, res) => {
   try {
-    const newsDetails = await getTodaysNewsDetails();
-    res.json(newsDetails);
-  } catch (error) {
-    console.error("Error fetching news details:", error);
+    const data = await getTodaysNewsDetails();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch news details" });
   }
 });
 
+app.get('/api/getDominantColor', async (req, res) => {
+  const { imageUrl } = req.query;
+  if (!imageUrl) return res.status(400).json({ error: "Missing imageUrl" });
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-  });
-}
+  try {
+    const color = await getDominantColor(imageUrl);
+    res.json({ color });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to process image" });
+  }
+});
+
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(rootDir, 'public', 'oopsie.html'));
+});
 
 export default serverless(app);
