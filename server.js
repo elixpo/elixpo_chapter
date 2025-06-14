@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {getTodaysPodcasts, getTodaysPodcastDetails} from './BackendNode/podCastDetailsFetch.js';
+import {getTodaysNews} from './BackendNode/newsDetailsFetch.js';
+import {getDominantColor} from './BackendNode/getDominantColor.js';
 import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,7 +53,35 @@ app.get('/api/podcastDetails', async (req, res) => {
   }
 });
 
+app.get('/api/news', async (req, res) => {
+    try 
+    {
+        const news = await getTodaysNews();
+        console.log("Response sent successfully");
+        res.json(news);
+    }
+    catch
+    {
+        console.error("Error fetching news:", error);
+        res.status(500).json({ error: "Failed to fetch news details" });
+    }
+})
 
+app.get('/api/getDominantColor', async (req, res) => {
+  const { imageUrl } = req.query;
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Missing imageUrl query parameter" });
+  }
+
+  try {
+    // Call the getDominantColor function from getDominantColor.js
+    const color = await getDominantColor(imageUrl);
+    res.json({ color });
+  } catch (error) {
+    console.error("Error processing image:", error);
+    res.status(500).json({ error: "Failed to process image" });
+  }
+});
 
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));

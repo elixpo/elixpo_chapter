@@ -83,6 +83,7 @@ def main():
         save_backup_meta(overall_news_id, trending_topics)
 
     summary_doc_ref = db.collection("news").document(overall_news_id)
+    newsDocGeneral = db.collection("genStats").document("news")
     if not backup_meta:
         summary_doc_ref.set({
             "date": datetime.now(timezone.utc).isoformat(),
@@ -171,7 +172,7 @@ def main():
         print("🎨 Generating final thumbnail and summary...")
         thumbnail_prompt = create_combined_visual_prompt(" | ".join(trending_topics[:MAX_NEWS_ITEMS]))
         thumbnail_bytes = generate_vector_image(overall_news_id, thumbnail_prompt)
-        thumb_path = f"news/{overall_news_id}/newsBanner.jpg"
+        thumb_path = f"news/{overall_news_id}/newsThumbnail.jpg"
         thumb_url = upload_bytes_to_bucket(thumbnail_bytes, thumb_path, content_type="image/jpeg")
 
         summary_text = create_combined_news_summary(trending_topics[:MAX_NEWS_ITEMS])
@@ -185,7 +186,16 @@ def main():
         })
 
         print("✅ Final summary and thumbnail uploaded.")
-
+        log_backup({"overall_id": overall_news_id, "status": "complete", "summary": summary_text, "thumbnail_url": thumb_url})
+        gen_number_doc = newsDocGeneral.get()
+        gen_number = gen_number_doc.to_dict().get("genNumber", 0)
+        newsDocGeneral.update({"genNumber": gen_number + 1})
+        newsDocGeneral.update({
+            "latestNewsId": overall_news_id,
+            "latestNewsThumbnail": thumb_url,
+            "latestNewsSummary": summary_text,
+            "latestNewsDate": datetime.now(timezone.utc).isoformat()
+        })
         all_items_complete = True
         for i in range(MAX_NEWS_ITEMS):
             item = summary_doc_ref.get().to_dict().get("items", [])[i]

@@ -1,6 +1,7 @@
 body 
 {
     overflow-x: hidden;
+    overflow: hidden;
 }
 .dailyNewsSection 
 {
@@ -35,23 +36,24 @@ body
 .dailyNewsSection > .maskBackgroundNewsSection
 {
     position: absolute;
-    bottom: 0%;
-    height: 60%;
-    width: 100%;
+    bottom: -20%;
+    height: 70%;
+    width: 200%;
     background: linear-gradient(to bottom, rgba(56, 126, 134, 0.729), rgb(15, 109, 120));
-    filter: blur(10px);
+    filter: blur(70px);
     z-index: 10;
 }
 .dailyNewsName 
 {
     position: absolute;
-    top: 60%;
+    top: 50%;
     left: 50%;
     transform: translateX(-50%);
     font-size: 2em;
     font-weight: 700;
     z-index: 10;
     color: #ffd;
+    text-align: center;
     font-family: 'Parkinsans', sans-serif;
 }
 
@@ -96,15 +98,7 @@ body
     gap: 5px;
 }
 
-.newsplayBackSpeed {
-    position: relative;
-    left: 2%;
-    top: 0%;
-    font-family: 'Parkinsans', sans-serif;
-    color: #ffc;
-    font-weight: 700;
-    margin-right: 10px;
-}
+
 
 .newsplayBackSeek {
     position: relative;
@@ -114,6 +108,7 @@ body
     border-radius: 10px;
     cursor: pointer;
     margin: 0 0px;
+    margin-right: 3px;
     transition: 0.25s;
 }
 
@@ -140,8 +135,8 @@ body
     border-radius: 50%;
     top: -5px;
     z-index: 1;
-    left: 22%;
-    transform: translateX(-50%);
+    left: 0%;
+    transform: translateX(5px);
     cursor: pointer;
 }
 
@@ -161,7 +156,8 @@ body
     font-family: 'Parkinsans', sans-serif;
     color: #ffc;
     font-weight: 700;
-    margin-left: auto;
+    margin-right: 10px;
+    margin-left: 10px;
 }
 
 .newsplayBackControls {
@@ -181,6 +177,7 @@ body
     height: 30px;
     width: 30px;
 }
+
 .newsplayBackControls > svg > path {
     fill: #ffc;
     stroke: #ffc;
@@ -196,4 +193,28 @@ body
 .newsplayBackControls > svg > path:active {
     fill: #ddb581;
     stroke: #4a2a00;
+}
+.newsplayBackControls > #rewindNews
+{
+    transform:  rotateY(-180deg);
+}
+
+[data-loading="true"] #dailyNewsName,
+[data-loading="true"] #backDropImage,
+[data-loading="true"] .newsplayBackSeek,
+[data-loading="true"] .newsplayBackControls {
+    filter: blur(8px);
+    opacity: 0.3;
+    transition: none;
+    pointer-events: none;
+}
+
+[data-loading="false"] #dailyNewsName,
+[data-loading="false"] #backDropImage,
+[data-loading="false"] .newsplayBackSeek,
+[data-loading="false"] .newsplayBackControls {
+    filter: blur(0px);
+    opacity: 1;
+    transition: all 1s ease;
+    pointer-events: auto;
 }

@@ -40,13 +40,13 @@
 
 @media screen and (max-width: 600px) {
     .dailyNewsName {
-        font-size: 1.5em;
+        font-size: 1.2em;
         width: 80%;
         text-align: center;
         top: 45%;
     }
     .dailyNewsNameDesc {
-        top: 61%;
+        top: 63%;
         width: 90%;
         font-size: 0.8em ;
         text-align: center;
