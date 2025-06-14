@@ -5,7 +5,7 @@ import { getTodaysPodcasts, getTodaysPodcastDetails } from './BackendNode/podCas
 import { getTodaysNews, getTodaysNewsDetails } from './BackendNode/newsDetailsFetch.js';
 import { getDominantColor } from './BackendNode/getDominantColor.js';
 import cors from 'cors';
-import { createServerlessExpress } from '@vercel/node';
+import serverless from 'serverless-http';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,13 +14,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 app.use(cors());
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public'))); 
 
-// app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-// app.get('/c', (req, res) => res.sendFile(path.join(__dirname, 'public', 'search.html')));
-// app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, 'public', 'daily.html')));
-// app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, 'public', 'podcast.html')));
-
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
+app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'daily.html')));
+app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'podcast.html')));
+app.get('/c', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'search.html')));
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '..', 'public', 'oopsie.html'));
+  });
 // In-memory cache
 let newsCache = null;
 let newsCacheTime = 0;
@@ -112,15 +114,10 @@ app.get('/api/newsDetails', async (req, res) => {
 });
 
 
-
-// app.use((req, res) => {
-//   res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));
-// });
-
 if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
-export default createServerlessExpress(app);
+export default serverless(app);
