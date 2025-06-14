@@ -50,7 +50,26 @@ def main():
     
     try:
         time.sleep(2)
+        #delete existing podcast details 
+        log("Cleaning up existing podcast details in Storage...")
+        podcastDoc = db.collection("genStats").document("podcast").get()
+        if podcastDoc.exists:
+            latest_podcast_id = podcastDoc.to_dict().get("latestPodcastID")
+            if latest_podcast_id:
+                log(f"Found latestPodcastID in Firestore: {latest_podcast_id}")
+                blobs = list(bucket.list_blobs(prefix=f'podcast/{latest_podcast_id}/'))
+                if blobs:
+                    for blob in blobs:
+                        blob.delete()
+                    log(f"Deleted storage folder for podcast ID: {latest_podcast_id}")
+                else:
+                    log(f"No storage folder found for podcast ID: {latest_podcast_id}")
+            else:
+                log("No latestPodcastID found in Firestore.")
+        else:
+            log("No podcast document found in Firestore. Skipping storage cleanup.")
         # === Topic Fetch ===
+        
         if backup.get("status") is None:
             log("Fetching trending topics...")
             topics = fetch_trending_topics()
@@ -70,11 +89,12 @@ def main():
                 content_dict = content
 
             topic_name = content_dict.get("podcast_title", "")
+            topic_name = str(topic_name)
+            topic_name = topic_name.replace(",", " ").strip()
             topic_source = content_dict.get("source_url", "")
             podcast_id = generatePodcastID(topic_name)
-
-            timestamp = str(int(time.time()))
             doc_ref = db.collection('podcasts').document(podcast_id)
+            timestamp = str(int(time.time()))   
             doc_ref.set({
                 'podcast_name': topic_name,
                 'timestamp': timestamp,
@@ -172,6 +192,23 @@ def main():
                 banner_url = blob.public_url
                 doc_ref.update({'podcast_banner_url': banner_url})
                 log("Banner uploaded.")
+                doc_ref.update({'status': 'thumbnail_uploaded'})
+                backup.update({"status": "thumbnail_uploaded"})
+                
+        # === Update Podcast Details ===
+        if backup["status"] == "thumbnail_uploaded":
+                podcastDoc_ref = db.collection("genStats").document("podcast")
+                podcastDoc = podcastDoc_ref.get()
+                if podcastDoc.exists:
+                    genNumber = podcastDoc.to_dict()["genNumber"]
+                    podcastDoc_ref.update({"genNumber": genNumber + 1})
+                    podcastDoc_ref.update({"latestPodcastID": podcast_id})
+                    podcastDoc_ref.update({"latestPodcastName": topic_name})
+                    podcastDoc_ref.update({"latestPodcastThumbnail": thumbnail_url})
+                else:
+                    print("Document does not exist.")
+
+                log("Podcast details updated successfully.")
                 doc_ref.update({'status': 'complete'})
                 backup.update({"status": "complete"})
                 write_backup(backup)
