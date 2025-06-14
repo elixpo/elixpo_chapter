@@ -43,19 +43,25 @@
 @media screen and (max-width: 600px) {
     .podcastName 
     {
-        font-size: 2em;
+        font-size: 1.5em;
         width: 80%;
         text-align: center;
         top: 45%;
     }
     .podcastDesc
     {
-        top: 65%;
+        top: 60%;
+        font-size: 1em;
     }
     .playBackZone
     {
         width: 80%;
         height: 100px;
         top: 75%;
+    }
+    .playBackControls svg
+    {
+        width: 25px;
+        height: 25px;
     }
 }

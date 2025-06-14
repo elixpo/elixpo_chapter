@@ -4,16 +4,16 @@
     "type": "module",
     "main": "server.js",
     "scripts": {
-      "start": "node server.js",
-      "dev": "concurrently \"nodemon server.js --ignore public/**/*.*\" \"browser-sync start --proxy http://localhost:3000 --files public/**/*.* --no-open --no-ui\""
+        "start": "node server.js",
+        "dev": "concurrently \"nodemon server.js --ignore public/**/*.*\" \"browser-sync start --proxy http://localhost:3000 --files public/**/*.* --no-open --no-ui --port 3001\""
     },
     "dependencies": {
-      "express": "^4.18.2"
+        "express": "^4.18.2",
+        "firebase": "^11.9.1"
     },
     "devDependencies": {
-      "browser-sync": "^3.0.4",
-      "concurrently": "^9.1.2",
-      "nodemon": "^3.1.10"
+        "browser-sync": "^3.0.4",
+        "concurrently": "^9.1.2",
+        "nodemon": "^3.1.10"
     }
-  }
-  
+}

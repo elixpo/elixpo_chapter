@@ -1,6 +1,7 @@
 body 
 {
     overflow-x: hidden;
+    overflow-y: hidden;
 }
 .podCastSection
 {
@@ -9,6 +10,7 @@ body
     display: block;
 
 }
+
 .podCastSection > .closeBtn
 {
     position: absolute;
@@ -35,11 +37,13 @@ body
 .podCastSection .maskBackground 
 {
     position: absolute;
-    bottom: 0%;
+    bottom: -5%;
     height: 60%;
-    width: 100%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.895), white);
-    filter: blur(50px);
+    left: -10%;
+    width: 200%;
+    background: linear-gradient(to bottom, rgb(255, 255, 255), white);
+    filter: blur(60px);
+    border-radius: 550px;
 }
 .podcastName 
 {
@@ -51,6 +55,7 @@ body
     font-weight: 700;
     z-index: 10;
     font-family: 'Parkinsans', sans-serif;
+    text-align: center;
 }
 .podcastDesc 
 {
@@ -100,12 +105,21 @@ body
     font-family: 'Parkinsans', sans-serif;
     color: #ffc;
     font-weight: 700;
+    transition: background 0.35s cubic-bezier(0.4,0,0.2,1), color 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
     margin-right: 10px;
+    border-radius: 8px;
+    padding: 2px 8px;
+}
+.playBackSpeed:active,
+.playBackSpeed.active {
+    background: #ddb581;
+    color: #4a2a00;
+    box-shadow: 0 2px 12px 0 #ddb58155;
 }
 .playBackSeek {
     position: relative;
     width: 75%;
-    height: 10px;
+    height: 5px;
     background: #ffc;
     border-radius: 10px;
     cursor: pointer;
@@ -114,8 +128,8 @@ body
 
 .playBackSeekHead {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
     background: rgb(50, 40, 19);
     border-radius: 50%;
     top: -5px;
@@ -127,7 +141,7 @@ body
 
 .playBackSeekProgress {
     position: absolute;
-    height: 10px;
+    height: 5px;
     background: #ddb581;
     border-radius: 20px;
     top: 0;
@@ -150,9 +164,10 @@ body
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    width: 70%;
+    width: 50%;
     height: 40%;
-    left: 15%;
+    left: 50%;
+    transform: translateX(-50%);
     top: 10%;
 }
 .playBackControls > svg

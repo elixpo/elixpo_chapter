@@ -1,4 +1,4 @@
-document.querySelector(".welcomeSection").scroll(0, 1126.4000244140625 )
+// document.querySelector(".welcomeSection").scroll(0, 1126.4000244140625 )
 const seekBars = document.querySelectorAll('.newsplayBackSeek');
 
 seekBars.forEach((bar) => {
