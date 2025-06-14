@@ -8,3 +8,4 @@ seekBars.forEach((bar) => {
         bar.classList.add('selected');
     });
 });
+

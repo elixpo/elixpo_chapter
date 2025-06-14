@@ -15,7 +15,7 @@ async function getPodCastDetails() {
         let podcastBanner = data[0].podcast_banner_url;
         let podcastID = data[0].podcast_id;
         preparePodCast(podcastName, podcastAudio, podcastSource, podcastBanner, podcastID);
-        return data;
+        return;
     } catch (error) {
         console.error('Error fetching podcast details:', error);
         return null;

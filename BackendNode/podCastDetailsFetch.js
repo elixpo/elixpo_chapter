@@ -1,3 +1,4 @@
+import { getGenerativeModel } from 'firebase/ai';
 import app from './firebaseConfig.js';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 const db = getFirestore(app);
@@ -21,5 +22,18 @@ async function getTodaysPodcasts() {
 }
 
 
+async function getTodaysPodcastDetails() 
+{
+    const podcastDocRef = collection(db, 'genStats');
+    const snapshot = await getDocs(podcastDocRef);
+    let podcastDetails = null;
+    snapshot.forEach(doc => {
+        if (doc.id === "podcast") {
+            podcastDetails = { id: doc.id, ...doc.data() };
+        }
+    });
+    return podcastDetails;
+}
 
-export default getTodaysPodcasts;
+
+export  {getTodaysPodcasts, getTodaysPodcastDetails};

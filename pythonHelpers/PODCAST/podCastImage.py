@@ -3,7 +3,6 @@ import urllib.parse
 import json
 import random
 
-
 def generate_visual_prompt(topic, image_type):
     import requests, json, random
 
@@ -12,15 +11,18 @@ def generate_visual_prompt(topic, image_type):
 
     if image_type == "thumbnail":
         system_prompt = (
-            "You're a visual prompt generator for AI art. Given a podcast topic, produce a vivid, punchy image description in a short sentence suitable for a thumbnail (512x512). "
-            "Use words like 'illustration', 'vector art', 'contrast', and 'vibrant'. Avoid all text, symbols, or logos. Focus on making it visually striking and relevant to the topic."
-            "Produce a single, clear image description in 30 words, no markdown formatting or overheads"
+            "You're a prompt engineer for AI image generation. Given a podcast title or topic, craft a striking thumbnail description in a short sentence. "
+            "The output should be visually bold and conceptually relevant to the topic. "
+            "Avoid generic robotic faces or tech blobs. Instead, understand the topic and hint at metaphors or symbols like colorful microphones, headphones, "
+            "scenes from the theme (e.g., astronomy, gaming), or artistic interpretations that would attract a viewer. "
+            "Make it pop: use vivid adjectives, 'illustration', 'vector art', 'vibrant colors', and strong contrast. Avoid all text or logos. "
+            "Output only a single sentence, about 30 words, no formatting or lists."
         )
     elif image_type == "banner":
         system_prompt = (
             "You're a visual prompt generator for AI art. Given a podcast topic, produce a realistic, serene, oil-painting-style scene in a short sentence suitable for a cinematic banner (1280x720). "
-            "Focus on atmosphere, lighting, and visual clarity — avoid clutter or text. Use phrases like 'oil painting', 'cinematic lighting', 'soft focus', or 'Tyndall effect'."
-            "Produce a single, clear image description in 30 words, no markdown formatting or overheads"
+            "Focus on atmosphere, lighting, and visual clarity — avoid clutter or text. Use phrases like 'oil painting', 'cinematic lighting', 'soft focus', or 'Tyndall effect'. "
+            "Produce a single, clear image description in 30 words, no markdown formatting or overheads."
         )
     else:
         return None
@@ -111,5 +113,5 @@ def generate_podcast_banner(topic, podcastID):
 
 
 # if __name__ == "__main__":
-#     generate_podcast_banner("Nintendo Switch 2: The new gaming era", "12345")
+    # generate_podcast_thumbnail("Fake AI Podcasts Your Search Results", "12345")
 #     generate_podcast_thumbnail("Nintendo Switch 2: The new gaming era", "12345")

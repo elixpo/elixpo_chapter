@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import getTodaysPodcasts from './BackendNode/podCastDetailsFetch.js';
+import {getTodaysPodcasts, getTodaysPodcastDetails} from './BackendNode/podCastDetailsFetch.js';
 import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,7 +40,16 @@ app.get('/api/podcast', async (req, res) => {
     }
 });
 
-
+app.get('/api/podcastDetails', async (req, res) => {
+  try {
+      const podcast = await getTodaysPodcastDetails();
+      console.log("Response sent successfully");
+      res.json(podcast);
+  } catch (error) {
+      console.error("Error fetching podcast:", error);
+      res.status(500).json({ error: "Failed to fetch podcast details" });
+  }
+});
 
 
 

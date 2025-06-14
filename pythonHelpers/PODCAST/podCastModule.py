@@ -192,13 +192,18 @@ def main():
                 banner_url = blob.public_url
                 doc_ref.update({'podcast_banner_url': banner_url})
                 log("Banner uploaded.")
-                doc_ref.update({'status': 'thumbnail_uploaded'})
+                doc_ref.update({
+                    'status': 'thumbnail_uploaded',
+                    'podcast_thumbnail_url': thumbnail_url,
+                    'podcast_banner_url': banner_url
+                        })
                 backup.update({"status": "thumbnail_uploaded"})
-                
+
         # === Update Podcast Details ===
         if backup["status"] == "thumbnail_uploaded":
                 podcastDoc_ref = db.collection("genStats").document("podcast")
                 podcastDoc = podcastDoc_ref.get()
+                banner_url = backup.get("banner_url", "")
                 if podcastDoc.exists:
                     genNumber = podcastDoc.to_dict()["genNumber"]
                     podcastDoc_ref.update({"genNumber": genNumber + 1})
