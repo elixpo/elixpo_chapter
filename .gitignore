@@ -5,5 +5,5 @@
 *.png
 *.wav
 *.mp3
-*.json
+elixpoChatServiceKey.json
 *.txt
