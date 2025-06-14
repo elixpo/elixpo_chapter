@@ -200,7 +200,7 @@ body
 }
 
 .dateDurationDesc > .date,
-.dateDurationDesc > .duration {
+.dateDurationDesc > .year {
     font-size: 1em;
     font-weight: 500;
     margin-right: 10px;
@@ -220,7 +220,16 @@ body
     flex-basis: 100%;
     margin-top: 5px;
 }
-
+#date,
+#year,
+#desc,
+#centralLogo,
+#newsText,
+#backgroundBlur,
+.podCastPunchline,
+#podcastThumbnail {
+    opacity: 0;
+}
 .playButton 
 {
     background: #fff;
@@ -333,8 +342,14 @@ body
     position: relative;
     box-shadow: inset 0 0 10px #111;
     overflow: hidden;
+    cursor: pointer;
+    transition: 0.25s ease-in-out;
 }
-
+.podCastContainer:hover 
+{
+    box-shadow: inset 0 0 20px rgb(50, 50, 49);
+    transition: 0.25s ease-in-out;
+}
 .podCastContainer > .podcastThumbnail 
 {
     position: absolute;

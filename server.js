@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getTodaysPodcasts, getTodaysPodcastDetails } from './BackendNode/podCastDetailsFetch.js';
-import { getTodaysNews } from './BackendNode/newsDetailsFetch.js';
+import { getTodaysNews, getTodaysNewsDetails } from './BackendNode/newsDetailsFetch.js';
 import { getDominantColor } from './BackendNode/getDominantColor.js';
 import cors from 'cors';
 
@@ -98,6 +98,18 @@ app.get('/api/getDominantColor', async (req, res) => {
     res.status(500).json({ error: "Failed to process image" });
   }
 });
+
+app.get('/api/newsDetails', async (req, res) => {
+  try {
+    const newsDetails = await getTodaysNewsDetails();
+    res.json(newsDetails);
+  } catch (error) {
+    console.error("Error fetching news details:", error);
+    res.status(500).json({ error: "Failed to fetch news details" });
+  }
+});
+
+
 
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));

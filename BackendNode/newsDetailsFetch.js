@@ -27,4 +27,18 @@ async function getTodaysNews() {
 //     console.log(JSON.stringify(todaysNews, null, 2));
 // })();
 
-export { getTodaysNews };
+
+
+async function getTodaysNewsDetails() {
+    const db = getFirestore(app);
+    const newsDetailsRef = collection(db, 'genStats');
+    const snapshot = await getDocs(newsDetailsRef);
+    let newsDetails = null;
+    snapshot.forEach(doc => {
+        if (doc.id === "news") {
+            newsDetails = { id: doc.id, ...doc.data() };
+        }
+    });
+    return newsDetails;
+}
+export { getTodaysNews, getTodaysNewsDetails };
