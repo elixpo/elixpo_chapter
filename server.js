@@ -115,8 +115,10 @@ app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', 'oopsie.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
 
 export default app;
