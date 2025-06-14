@@ -3,10 +3,6 @@
     { "src": "api/index.js", "use": "@vercel/node" }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/daily", "destination": "/api/index.js" },
-    { "source": "/podcast", "destination": "/api/index.js" },
-    { "source": "/c", "destination": "/api/index.js" },
-    { "source": "/", "destination": "/api/index.js" }
+    { "source": "/api/(.*)", "destination": "/api/index.js" }
   ]
 }

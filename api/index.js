@@ -8,19 +8,19 @@ import { getTodaysPodcasts, getTodaysPodcastDetails } from '../BackendNode/podCa
 import { getTodaysNews, getTodaysNewsDetails } from '../BackendNode/newsDetailsFetch.js';
 import { getDominantColor } from '../BackendNode/getDominantColor.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.join(__dirname, '..');
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// const rootDir = path.join(__dirname, '..');
 
 const app = express();
 
 app.use(cors());
-app.use(express.static(path.join(rootDir, 'public')));
+// app.use(express.static(path.join(rootDir, 'public')));
 
-app.get('/', (req, res) => res.sendFile(path.join(rootDir, 'public', 'index.html')));
-app.get('/daily', (req, res) => res.sendFile(path.join(rootDir, 'public', 'daily.html')));
-app.get('/podcast', (req, res) => res.sendFile(path.join(rootDir, 'public', 'podcast.html')));
-app.get('/c', (req, res) => res.sendFile(path.join(rootDir, 'public', 'search.html')));
+// app.get('/', (req, res) => res.sendFile(path.join(rootDir, 'public', 'index.html')));
+// app.get('/daily', (req, res) => res.sendFile(path.join(rootDir, 'public', 'daily.html')));
+// app.get('/podcast', (req, res) => res.sendFile(path.join(rootDir, 'public', 'podcast.html')));
+// app.get('/c', (req, res) => res.sendFile(path.join(rootDir, 'public', 'search.html')));
 
 // In-memory caching
 let newsCache = null;
