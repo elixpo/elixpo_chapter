@@ -50,6 +50,7 @@
         height: 330px;
         padding: 10px;
         border-radius: 30px;
+        font-size: 1em;
     }
     .forecast
     {
@@ -77,14 +78,19 @@
     {
         width: 700px;
         height: 150px;
+        font-size: 1em;
     } 
+    .weather-card
+    {
+        font-size: 1em;
+    }
     .weatherSection > .closeBtn
     {
         top: 2%;
         right: 8%;
         width: 36px;
         height: 36px;
-        font-size: 1.5em;
+        font-size: 1.2em;
     }
 }
 
@@ -94,9 +100,11 @@
     {
         width: 300px;
         height: 200px;
+        font-size: 1em;
     }
     .weather-card
     {
+        font-size: 1em;
         width: 90%;
         height: 300px;
         padding: 10px;
