@@ -7,7 +7,7 @@ async function getPodCastDetails() {
     document.querySelector('.playBackSpeed').style.opacity = 0;
     
     try {
-        const response = await fetch("http://10.42.0.56:3000/api/podcast");
+        const response = await fetch("/api/podcast");
         const data = await response.json();
         let podcastName = data[0].podcast_name;
         let podcastAudio = data[0].podcast_audio_url;

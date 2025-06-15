@@ -78,3 +78,6 @@ gsap.to("#glassShine", {
   delay: 2
 });
 
+document.getElementById("homepageRedirect").addEventListener("click", function() {
+  window.location.href = "/";
+});

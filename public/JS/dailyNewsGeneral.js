@@ -25,7 +25,7 @@ function updateNewsHeadline() {
 
 async function getNewsFromDatabase() {
     try {
-        const response = await fetch("http://10.42.0.56:3000/api/news");
+        const response = await fetch("/api/news");
         let data = await response.json();
         data = data[0];
         const newsItems = Array.isArray(data.items) ? data.items : Object.values(data.items);

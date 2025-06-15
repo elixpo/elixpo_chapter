@@ -7,3 +7,4 @@
 *.mp3
 elixpoChatServiceKey.json
 *.txt
+.vercel

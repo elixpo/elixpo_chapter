@@ -2,7 +2,7 @@
 const seekBars = document.querySelectorAll('.newsplayBackSeek');
 async function getNews() {
     try {
-        const response = await fetch("http://10.42.56:3000/api/newsDetails");
+        const response = await fetch("/api/newsDetails");
         const data = await response.json();
         console.log('News Data:', data);
         let date = data.latestNewsDate.split("T")[0];
@@ -91,7 +91,7 @@ async function getNews() {
 
 async function getPodCast() {
     try {
-        const response = await fetch("http://10.42.0.56:3000/api/podcastDetails");
+        const response = await fetch("/api/podcastDetails");
         const data = await response.json();
         var podcastName = data.latestPodcastName || "Fake AI Podcasts  Your Search Results";
         var podcast_thumbnail = data.latestPodcastThumbnail || "https://storage.googleapis.com/notes-89337.appspot.com/podcast/3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17/podcastThumbnail_3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17.jpg";
@@ -156,6 +156,7 @@ document.getElementById("playButton").addEventListener("click", function() {
 document.getElementById("podCastContainer").addEventListener("click", function() {
     window.location.href = "/podcast";
 });
+
 
 
 
