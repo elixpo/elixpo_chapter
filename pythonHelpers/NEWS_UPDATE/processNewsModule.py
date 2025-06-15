@@ -90,7 +90,8 @@ def main():
             "summary": "",
             "thumbnail_url": "",
             "status": "started",
-            "items": [{} for _ in range(MAX_NEWS_ITEMS)]
+            "items": [{} for _ in range(MAX_NEWS_ITEMS)],
+            "overall_id": overall_news_id
         })
 
     processed = {item['news_id']: item for item in backup_data if 'news_id' in item}
@@ -187,6 +188,19 @@ def main():
 
         print("✅ Final summary and thumbnail uploaded.")
         log_backup({"overall_id": overall_news_id, "status": "complete", "summary": summary_text, "thumbnail_url": thumb_url})
+
+        prev_latest_id = newsDocGeneral.get().to_dict().get("latestNewsId")
+        if prev_latest_id:
+            prefix = f"news/{prev_latest_id}/"
+            blobs = list(bucket.list_blobs(prefix=prefix))
+            if blobs:
+                print(f"🗑️ Deleting previous news folder: {prefix}")
+                for blob in blobs:
+                    blob.delete()
+                print(f"✅ Deleted {len(blobs)} files from {prefix}")
+            else:
+                print(f"ℹ️ No previous news folder found for {prefix}")
+                
         gen_number_doc = newsDocGeneral.get()
         gen_number = gen_number_doc.to_dict().get("genNumber", 0)
         newsDocGeneral.update({"genNumber": gen_number + 1})

@@ -179,4 +179,5 @@ function showWeather(condition, location, temperature, windSpeed, date, time, fo
 document.getElementById("closeBtn").addEventListener("click", () => {
     window.location.href = "/";
 });
+
 getWeatherLocation();

@@ -148,7 +148,7 @@ app.get('/api/weather', async (req, res) => {
       return res.json(cached.data);
     }
 
-    console.log(`Detected Location: ${locationName}, ${region} (${lat},${lon})`);
+    // console.log(`Detected Location: ${locationName}, ${region} (${lat},${lon})`);
 
     const structuredWeather = await getStructuredWeather(lat, lon, locationName);
     if (!structuredWeather) {
@@ -157,7 +157,7 @@ app.get('/api/weather', async (req, res) => {
 
     const aiSummary = await generateAISummary(structuredWeather);
     const bannerLink = generateAIImage(structuredWeather.current.condition); // fix: do not await, function is synchronous
-    console.log("Banner Link:", bannerLink);
+    // console.log("Banner Link:", bannerLink);
 
     const responseData = { structuredWeather, aiSummary, bannerLink };
 

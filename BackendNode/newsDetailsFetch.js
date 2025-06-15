@@ -4,21 +4,32 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 async function getTodaysNews() {
     const db = getFirestore(app);
 
-    const today = new Date().toISOString().split('T')[0];
-    const newsCol = collection(db, 'news');
-    const snapshot = await getDocs(newsCol);
-
-    const news = [];
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        if (
-            data.date &&
-            data.date.split('T')[0] === today
-        ) {
-            news.push({ id: doc.id, ...data });
+    // Get the latestNewsId from genStats/news
+    const genStatsRef = collection(db, 'genStats');
+    const genStatsSnapshot = await getDocs(genStatsRef);
+    let latestNewsId = null;
+    genStatsSnapshot.forEach(doc => {
+        if (doc.id === "news") {
+            const data = doc.data();
+            latestNewsId = data.latestNewsId;
         }
     });
-    return news; 
+
+    if (!latestNewsId) {
+        return null;
+    }
+
+    // Get the news document with id latestNewsId
+    const newsCol = collection(db, 'news');
+    const newsSnapshot = await getDocs(newsCol);
+    let latestNews = null;
+    newsSnapshot.forEach(doc => {
+        if (doc.id === latestNewsId) {
+            latestNews = { id: doc.id, ...doc.data() };
+        }
+    });
+
+    return latestNews;
 }
 
 // Example usage:

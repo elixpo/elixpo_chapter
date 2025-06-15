@@ -5,6 +5,7 @@ async function getNews() {
         const response = await fetch("/api/newsDetails");
         const data = await response.json();
         console.log('News Data:', data);
+        animateNewsContainer();
         let date = data.latestNewsDate.split("T")[0];
         const monthNames = [
             "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -56,9 +57,7 @@ async function getNews() {
                 opacity: [0, 1],
                 filter: ['blur(25px)', 'blur(0px)'],
                 filter: "invert(1)",
-                scale: [0.95, 1],
-                translateY: "-50%",
-                translateX: "-50%",
+                transform: ['scale(0.95) translateX(-50%) translateY(-50%)', 'scale(1) translateX(-50%) translateY(-50%)'],
                 duration: 900,
                 easing: 'easeOutCubic'
             });
@@ -96,6 +95,7 @@ async function getPodCast() {
         var podcastName = data.latestPodcastName || "Fake AI Podcasts  Your Search Results";
         var podcast_thumbnail = data.latestPodcastThumbnail || "https://storage.googleapis.com/notes-89337.appspot.com/podcast/3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17/podcastThumbnail_3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17.jpg";
         await displayPodcast(podcastName, podcast_thumbnail);
+        animatePodcastContainer();
     } catch (error) {
         console.error('Error fetching podcast details:', error);
     }
@@ -149,55 +149,111 @@ async function displayPodcast(podcastName, podcast_thumbnail) {
     };
 }
 
-function getWeather() 
-{
-    
+function getWeather() {
     fetch('/api/weather')
         .then(response => response.json())
         .then(data => {
             if (data.error) return;
-
+            animateWeatherContainer();
             const { structuredWeather, aiSummary, aiImageLink } = data;
-            console.log(data.bannerLink)
             const {
                 location,
                 current: { condition, temperature },
                 forecast
             } = structuredWeather;
 
-            // Update location
             const locationElem = document.querySelector('.weatherContainer .location');
-            if (locationElem) locationElem.textContent = location;
-
             const tempElem = document.querySelector('.weatherContainer .temperature');
-            if (tempElem) tempElem.textContent = `${Math.round(temperature * 9/5 + 32)}°F`;
-
-            // Update weather description
             const descElem = document.querySelector('.weatherContainer .typeOfWeather');
-            if (descElem) descElem.textContent = condition;
-
-            // Update weather background image
+            const highLowElem = document.querySelector('.weatherContainer .highAndLow');
             const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
+
+            // Apply content
+            if (locationElem) locationElem.textContent = location;
+            if (tempElem) tempElem.textContent = `${Math.round(temperature * 9/5 + 32)}°F`;
+            if (descElem) descElem.textContent = condition;
+            if (highLowElem && forecast && forecast.length > 0) {
+                const today = forecast[0];
+                if (today.max && today.min) {
+                    highLowElem.textContent = `H ${today.max}° L ${today.min}°`;
+                }
+            }
+
             if (bannerElem && data.bannerLink) {
                 bannerElem.style.backgroundImage = `url(${data.bannerLink})`;
                 bannerElem.style.backgroundSize = "cover";
                 bannerElem.style.backgroundPosition = "center";
-                bannerElem.style.opacity = 1;
             }
-            // Update high/low
-            const highLowElem = document.querySelector('.weatherContainer .highAndLow');
-            if (highLowElem && forecast && forecast.length > 0) {
-                const today = forecast[0];
-                if (today.max && today.min) {
-                    highLowElem.textContent = `H ${today.max}° L ${today.min})}°`;
-                }
-            }
+
+            anime({
+                targets: [
+                    '.weatherContainer .location',
+                    '.weatherContainer .temperature',
+                    '.weatherContainer .typeOfWeather',
+                    '.weatherContainer .highAndLow'
+                ],
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100),
+                duration: 700,
+                easing: 'easeOutCubic'
+            });
+
+            anime({
+                targets: '.weatherContainer .weatherBackground',
+                opacity: [0, 0.6],
+                filter: ['blur(10px) brightness(0.1)', 'blur(3px) brightness(0.6)'],
+                duration: 1000,
+                easing: 'easeOutCubic'
+            });
         })
         .catch(err => {
-            // Optionally show error in weather section
             console.error('Weather fetch error:', err);
         });
 }
+
+
+function animateNewsContainer() {
+    const container = document.querySelector('.newsContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
+// Animate Podcast Container
+function animatePodcastContainer() {
+    const container = document.querySelector('.podCastContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
+// Animate Weather Container
+function animateWeatherContainer() {
+    const container = document.querySelector('.weatherContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
 
 document.getElementById("playButton").addEventListener("click", function() {
     window.location.href = "/daily";

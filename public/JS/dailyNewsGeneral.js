@@ -27,7 +27,7 @@ async function getNewsFromDatabase() {
     try {
         const response = await fetch("/api/news");
         let data = await response.json();
-        data = data[0];
+        data = data;
         const newsItems = Array.isArray(data.items) ? data.items : Object.values(data.items);
         prepareNews(newsItems);
         setTimeout(() => {

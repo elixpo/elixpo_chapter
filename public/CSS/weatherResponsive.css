@@ -1,38 +1,4 @@
-@media screen and (max-width: 2560px)
-{
-    .markdownRender 
-    {
-        width: 90%;
-        max-height: 700px;
-        height: 700px;
-        font-size: 3em;
-    } 
-    .weather-card
-    {
-        width: 90%;
-        height: 900px;
-        padding: 10px;
-        border-radius: 30px;
-        font-size: 3.5em ;
-    }
 
-    .forecast
-    {
-        position: relative;
-        gap: 20px;
-        padding: 10px 25px;
-        top: -10px;
-        gap: 150px;
-    }
-    .weatherSection > .closeBtn
-    {
-        top: 4%;
-        right: 8%;
-        width: 96px;
-        height: 96px;
-        font-size: 4em;
-    }
-}
 @media screen and (max-width: 1440px)
 {
     .markdownRender 
@@ -68,6 +34,9 @@
         font-size: 1.5em;
     }
 }
+
+
+
 @media screen and (max-width: 1024px)
 {
     .markdownRender 
@@ -99,6 +68,9 @@
         font-size: 1.5em;
     }
 }
+
+
+
 @media screen and (max-width: 768px)
 {
     .markdownRender 
@@ -115,6 +87,7 @@
         font-size: 1.5em;
     }
 }
+
 @media screen and (max-width: 600px)
 {
     .markdownRender 
@@ -145,3 +118,41 @@
         font-size: 1.5em;
     }
 }
+
+
+/* 
+@media screen and (max-width: 2560px)
+{
+    .markdownRender 
+    {
+        width: 90%;
+        max-height: 700px;
+        height: 700px;
+        font-size: 3em;
+    } 
+    .weather-card
+    {
+        width: 90%;
+        height: 900px;
+        padding: 10px;
+        border-radius: 30px;
+        font-size: 3.5em ;
+    }
+
+    .forecast
+    {
+        position: relative;
+        gap: 20px;
+        padding: 10px 25px;
+        top: -10px;
+        gap: 150px;
+    }
+    .weatherSection > .closeBtn
+    {
+        top: 4%;
+        right: 8%;
+        width: 96px;
+        height: 96px;
+        font-size: 4em;
+    }
+}  */

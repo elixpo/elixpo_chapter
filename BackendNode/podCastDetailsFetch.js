@@ -3,21 +3,32 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 const db = getFirestore(app);
 
 async function getTodaysPodcasts() {
-    const today = new Date().toISOString().split('T')[0];
-    const podcastsCol = collection(db, 'podcasts');
-    const snapshot = await getDocs(podcastsCol);
-
-    const podcasts = [];
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        if (
-            data.time_generated &&
-            data.time_generated.split(' ')[0] === today
-        ) {
-            podcasts.push({ id: doc.id, ...data });
+    // Step 1: Get the 'podcast' document from 'genStats'
+    const genStatsCol = collection(db, 'genStats');
+    const genStatsSnapshot = await getDocs(genStatsCol);
+    let latestPodcastID = null;
+    genStatsSnapshot.forEach(doc => {
+        if (doc.id === "podcast") {
+            const data = doc.data();
+            latestPodcastID = data.latestPodcastID;
         }
     });
-    return podcasts;
+
+    if (!latestPodcastID) {
+        return null;
+    }
+
+    // Step 2: Get the podcast document from 'podcasts' collection
+    const podcastsCol = collection(db, 'podcasts');
+    const podcastsSnapshot = await getDocs(podcastsCol);
+    let latestPodcast = null;
+    podcastsSnapshot.forEach(doc => {
+        if (doc.id === latestPodcastID) {
+            latestPodcast = { id: doc.id, ...doc.data() };
+        }
+    });
+
+    return latestPodcast;
 }
 
 

@@ -50,24 +50,6 @@ def main():
     
     try:
         time.sleep(2)
-        #delete existing podcast details 
-        log("Cleaning up existing podcast details in Storage...")
-        podcastDoc = db.collection("genStats").document("podcast").get()
-        if podcastDoc.exists:
-            latest_podcast_id = podcastDoc.to_dict().get("latestPodcastID")
-            if latest_podcast_id:
-                log(f"Found latestPodcastID in Firestore: {latest_podcast_id}")
-                blobs = list(bucket.list_blobs(prefix=f'podcast/{latest_podcast_id}/'))
-                if blobs:
-                    for blob in blobs:
-                        blob.delete()
-                    log(f"Deleted storage folder for podcast ID: {latest_podcast_id}")
-                else:
-                    log(f"No storage folder found for podcast ID: {latest_podcast_id}")
-            else:
-                log("No latestPodcastID found in Firestore.")
-        else:
-            log("No podcast document found in Firestore. Skipping storage cleanup.")
         # === Topic Fetch ===
         
         if backup.get("status") is None:
@@ -199,8 +181,29 @@ def main():
                         })
                 backup.update({"status": "thumbnail_uploaded"})
 
-        # === Update Podcast Details ===
+        #delete existing podcast details 
         if backup["status"] == "thumbnail_uploaded":
+            log("Cleaning up existing podcast details in Storage...")
+            podcastDoc = db.collection("genStats").document("podcast").get()
+            if podcastDoc.exists:
+                latest_podcast_id = podcastDoc.to_dict().get("latestPodcastID")
+                if latest_podcast_id:
+                    log(f"Found latestPodcastID in Firestore: {latest_podcast_id}")
+                    blobs = list(bucket.list_blobs(prefix=f'podcast/{latest_podcast_id}/'))
+                    if blobs:
+                        for blob in blobs:
+                            blob.delete()
+                        log(f"Deleted storage folder for podcast ID: {latest_podcast_id}")
+                    else:
+                        log(f"No storage folder found for podcast ID: {latest_podcast_id}")
+                else:
+                    log("No latestPodcastID found in Firestore.")
+            else:
+                log("No podcast document found in Firestore. Skipping storage cleanup.")
+            backup.update({"status": "backup_cleaned"})
+
+        # === Update Podcast Details ===
+        if backup["status"] == "backup_cleaned":
                 podcastDoc_ref = db.collection("genStats").document("podcast")
                 podcastDoc = podcastDoc_ref.get()
                 banner_url = backup.get("banner_url", "")

@@ -9,11 +9,12 @@ async function getPodCastDetails() {
     try {
         const response = await fetch("/api/podcast");
         const data = await response.json();
-        let podcastName = data[0].podcast_name;
-        let podcastAudio = data[0].podcast_audio_url;
-        let podcastSource = data[0].topic_source;
-        let podcastBanner = data[0].podcast_banner_url;
-        let podcastID = data[0].podcast_id;
+        console.log("Podcast data fetched:", data);
+        let podcastName = data.podcast_name;
+        let podcastAudio = data.podcast_audio_url;
+        let podcastSource = data.topic_source;
+        let podcastBanner = data.podcast_banner_url;
+        let podcastID = data.podcast_id;
         preparePodCast(podcastName, podcastAudio, podcastSource, podcastBanner, podcastID);
         return;
     } catch (error) {
