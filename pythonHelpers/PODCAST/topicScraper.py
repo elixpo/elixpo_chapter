@@ -7,7 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, initialize_app, firestore
 import hashlib
 import time
-
+import random
 
 def fetch_trending_topics():
     feeds = [
@@ -44,14 +44,15 @@ def fetch_trending_topics():
                         not any(excl in title.lower() for excl in exclusion_keywords)):
                     headlines.append(title)
 
-                if len(headlines) >= 5:
-                    return headlines
-
         except requests.RequestException as e:
             print(f"Error fetching {feed_url}: {e}")
             continue
 
-    return headlines
+    random.shuffle(headlines)
+    num_headlines = min(5, len(headlines))
+    if num_headlines > 0:
+        return random.sample(headlines, num_headlines)
+    return []
 
 def send_topic_to_api(topics):
     api_url = "https://text.pollinations.ai/openai"
@@ -78,7 +79,7 @@ def send_topic_to_api(topics):
                 "content": f"These are the available topics:\n{topics}"
             }
         ],
-        "seed": 552,
+        "seed": random.randint(1, 1000),
         "token": "fEWo70t94146ZYgk",
         "referrer": "elixpoart",
         "json": True

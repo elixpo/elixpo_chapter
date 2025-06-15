@@ -2,15 +2,20 @@ import requests
 import json
 import time
 import datetime 
+import random
 # Step 1: Get topic info from ElixpoSearch model
 def get_latest_info(topic_name):
     url = "https://text.pollinations.ai/"
     headers = {"Content-Type": "application/json"}
     payload = {
         "model": "elixposearch",
+        "seed" : random.randint(1, 1000),
+        "token": "fEWo70t94146ZYgk",
+        "referrer": "elixpoart",
         "messages": [
             {"role": "user", "content": f'Find me the detailed latest news on this topic: {topic_name}'}
-        ]
+        ],
+        
     }
 
     print(f"Fetching latest info for: {topic_name}")
@@ -48,7 +53,7 @@ def generate_podcast_script(info_md, topic_name):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Based on this content about '{topic_name}':\n\n{info_md}\n\nWrite a podcast script of 1000–1500 words (3–4 mins)."}
         ],
-        "seed": 56,
+        "seed": random.randint(1, 1000),
         "token": "fEWo70t94146ZYgk",
         "referrer": "elixpoart"
     }
