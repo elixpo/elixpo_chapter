@@ -72,12 +72,14 @@ async function getNearestLocationName(lat, lon) {
 
 // Step 3: Fetch weather data
 async function getStructuredWeather(lat, lon, city) {
+  // console.log(`Fetching weather for ${city} at coordinates (${lat}, ${lon})`);
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=auto`;
     const res = await fetch(url);
     const data = await res.json();
 
     const current = data.current_weather;
+    // console.log("Current weather data:", current);
     const daily = data.daily;
 
     const weatherCodes = {
@@ -114,7 +116,6 @@ async function getStructuredWeather(lat, lon, city) {
         condition: weatherCodes[daily.weathercode[i]] || "Unknown"
       });
     }
-
     return structured;
   } catch (err) {
     console.error("Error fetching weather data:", err);
@@ -178,4 +179,5 @@ function generateAIImage(condition) {
   return imageUrl;
 }
 
+// getStructuredWeather("22.5643", "88.3693", "Kolkata")
 export { getLocation, getNearestLocationName, getStructuredWeather, generateAISummary, generateAIImage}

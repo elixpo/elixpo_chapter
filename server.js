@@ -121,10 +121,9 @@ function getWeatherCacheKey(lat, lon, locationName) {
   if (lat && lon) return `${lat},${lon}`;
   return 'unknown';
 }
-
 app.get('/api/weather', async (req, res) => {
   try {
-    // Optionally accept lat/lon as query params for flexibility
+    // Accept lat/lon as query params if provided
     let lat = req.query.lat;
     let lon = req.query.lon;
     let locationName = null;
@@ -148,18 +147,15 @@ app.get('/api/weather', async (req, res) => {
       return res.json(cached.data);
     }
 
-    // console.log(`Detected Location: ${locationName}, ${region} (${lat},${lon})`);
-
     const structuredWeather = await getStructuredWeather(lat, lon, locationName);
     if (!structuredWeather) {
       return res.status(500).json({ error: "Failed to fetch weather data" });
     }
 
     const aiSummary = await generateAISummary(structuredWeather);
-    const bannerLink = generateAIImage(structuredWeather.current.condition); // fix: do not await, function is synchronous
-    // console.log("Banner Link:", bannerLink);
+    const aiImageLink = generateAIImage(structuredWeather.current.condition);
 
-    const responseData = { structuredWeather, aiSummary, bannerLink };
+    const responseData = { structuredWeather, aiSummary, aiImageLink, bannerLink: aiImageLink };
 
     // Save to cache
     weatherCacheByLocation[cacheKey] = {

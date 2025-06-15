@@ -2,39 +2,82 @@
 
 function getWeatherLocation() {
     showSkeletons(); 
-    fetch('/api/weather')
-        .then(response => response.json())
-        .then(data => {
-            hideSkeletons(); 
-            if (data.error) {
-                document.getElementById("markdownRender").textContent = data.error;
-                return;
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const { latitude, longitude } = position.coords;
+                // Pass lat/lon to backend via query params
+                fetch(`/api/weather?lat=${latitude}&lon=${longitude}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        hideSkeletons();
+                        if (data.error) {
+                            document.getElementById("markdownRender").textContent = data.error;
+                            return;
+                        }
+                        const { structuredWeather, aiSummary, aiImageLink } = data;
+                        console.log(data);
+                        typeMarkdownFormatted("markdownRender", aiSummary, {
+                            delay: 200,
+                            initialDelay: 0,
+                            clear: true
+                        });
+
+                        const {
+                            location,
+                            current: { condition, temperature, wind_speed, datetime },
+                            forecast
+                        } = structuredWeather;
+
+                        const [weatherDate, weatherTime] = datetime.split("T");
+                        showWeather(condition, location, temperature, wind_speed, weatherDate, weatherTime.split(".")[0], forecast, data.bannerLink);
+
+                        setTimeout(animateWeatherUI, 100);
+                    })
+                    .catch(err => {
+                        hideSkeletons();
+                        document.getElementById("markdownRender").textContent = "Failed to fetch weather.";
+                        console.error(err);
+                    });
+            },
+            error => {
+                // If user denies or error, fallback to default fetch
+                fetch('/api/weather')
+                    .then(response => response.json())
+                    .then(data => {
+                        hideSkeletons();
+                        if (data.error) {
+                            document.getElementById("markdownRender").textContent = data.error;
+                            return;
+                        }
+                        const { structuredWeather, aiSummary, aiImageLink } = data;
+                        console.log(data);
+                        typeMarkdownFormatted("markdownRender", aiSummary, {
+                            delay: 200,
+                            initialDelay: 0,
+                            clear: true
+                        });
+
+                        const {
+                            location,
+                            current: { condition, temperature, wind_speed, datetime },
+                            forecast
+                        } = structuredWeather;
+
+                        const [weatherDate, weatherTime] = datetime.split("T");
+                        showWeather(condition, location, temperature, wind_speed, weatherDate, weatherTime.split(".")[0], forecast, data.bannerLink);
+
+                        setTimeout(animateWeatherUI, 100);
+                    })
+                    .catch(err => {
+                        hideSkeletons();
+                        document.getElementById("markdownRender").textContent = "Failed to fetch weather.";
+                        console.error(err);
+                    });
             }
-            const { structuredWeather, aiSummary, aiImageLink } = data;
-            console.log(data);
-            typeMarkdownFormatted("markdownRender", aiSummary, {
-                delay: 200,
-                initialDelay: 0,
-                clear: true
-            });
-
-            const {
-                location,
-                current: { condition, temperature, wind_speed, datetime },
-                forecast
-            } = structuredWeather;
-
-            const [weatherDate, weatherTime] = datetime.split("T");
-            showWeather(condition, location, temperature, wind_speed, weatherDate, weatherTime.split(".")[0], forecast, data.bannerLink);
-
-            // Animate the UI after rendering
-            setTimeout(animateWeatherUI, 100);
-        })
-        .catch(err => {
-            hideSkeletons();
-            document.getElementById("markdownRender").textContent = "Failed to fetch weather.";
-            console.error(err);
-        });
+        );
+    }
+    
 }
 
 function animateWeatherUI() {
