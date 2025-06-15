@@ -11,7 +11,8 @@
     "dependencies": {
         "express": "^4.18.2",
         "firebase": "^11.9.1",
-        "jimp": "^1.6.0"
+        "jimp": "^1.6.0",
+        "node-fetch": "^3.3.2"
     },
     "devDependencies": {
         "browser-sync": "^3.0.4",
