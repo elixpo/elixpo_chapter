@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elixpo Weather</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons-wind.min.css">
+   <link rel="stylesheet" href="CSS/weather.css">
+    <link rel="stylesheet" href="CSS/weatherMarkdown.css">
+    <link rel="stylesheet" href="CSS/weatherResponsive.css">
+    <link rel="stylesheet" href="CSS/typeWriter_and_skletonLoader.css">
+</head>
+<body>
+    <section class="weatherSection relative h-screen w-screen justify-center">
+    <div class="closeBtn" id="closeBtn"> <ion-icon name="close"></ion-icon> </div>
+    <div class="weather-card">
+        <div class="weatherBackground" id="weatherBackground"></div>
+        <div class="weather-content">
+            <div class="location-info">
+            </div>
+            <div class="weather-type">
+            </div>
+            <div class="current-weather">
+                <span class="temp-unit"></span>
+            </div>
+            <div class="temp-wind-container">
+                <div class="wind-speed-detail"></div>
+            </div>
+            
+            <div class="forecast">
+                
+            </div>
+        </div>
+    </div>
+
+
+    <div class="markdownRender" id="markdownRender">
+
+    </div>
+</section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="JS/typeWriter_and_skletonLoader.js"></script>
+    <script src="JS/weatherGeneral.js"></script>
+</body>
+</html>

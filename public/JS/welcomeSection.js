@@ -149,6 +149,55 @@ async function displayPodcast(podcastName, podcast_thumbnail) {
     };
 }
 
+function getWeather() 
+{
+    
+    fetch('/api/weather')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) return;
+
+            const { structuredWeather, aiSummary, aiImageLink } = data;
+            console.log(data.bannerLink)
+            const {
+                location,
+                current: { condition, temperature },
+                forecast
+            } = structuredWeather;
+
+            // Update location
+            const locationElem = document.querySelector('.weatherContainer .location');
+            if (locationElem) locationElem.textContent = location;
+
+            const tempElem = document.querySelector('.weatherContainer .temperature');
+            if (tempElem) tempElem.textContent = `${Math.round(temperature * 9/5 + 32)}°F`;
+
+            // Update weather description
+            const descElem = document.querySelector('.weatherContainer .typeOfWeather');
+            if (descElem) descElem.textContent = condition;
+
+            // Update weather background image
+            const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
+            if (bannerElem && data.bannerLink) {
+                bannerElem.style.backgroundImage = `url(${data.bannerLink})`;
+                bannerElem.style.backgroundSize = "cover";
+                bannerElem.style.backgroundPosition = "center";
+                bannerElem.style.opacity = 1;
+            }
+            // Update high/low
+            const highLowElem = document.querySelector('.weatherContainer .highAndLow');
+            if (highLowElem && forecast && forecast.length > 0) {
+                const today = forecast[0];
+                if (today.max && today.min) {
+                    highLowElem.textContent = `H ${today.max}° L ${today.min})}°`;
+                }
+            }
+        })
+        .catch(err => {
+            // Optionally show error in weather section
+            console.error('Weather fetch error:', err);
+        });
+}
 
 document.getElementById("playButton").addEventListener("click", function() {
     window.location.href = "/daily";
@@ -156,10 +205,13 @@ document.getElementById("playButton").addEventListener("click", function() {
 document.getElementById("podCastContainer").addEventListener("click", function() {
     window.location.href = "/podcast";
 });
-
+document.getElementById("weatherContainer").addEventListener("click", function() {
+    window.location.href = "/weather";
+});
 
 
 
 hidePodcastElements();
 getPodCast();
 getNews();
+getWeather();

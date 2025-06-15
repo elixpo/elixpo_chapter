@@ -2,6 +2,7 @@
 body 
 {
     overflow-x: hidden;
+    user-select: none;
 }
 .welcomeSection
 {
@@ -33,10 +34,15 @@ body
     left: 50%;
     transform: translateX(-50%);
     font-family: 'Parkinsans', sans-serif;
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     color: #ffc;
     text-align: center;
-    margin-top: 20px;
+    margin-top: 40px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    padding-bottom: 10px;
+    width: max-content;
 }
 .welcomePageCastsContainer 
 {
@@ -103,9 +109,15 @@ body
     position: relative;
     overflow: hidden;
     box-shadow: inset 0 0 10px #111;
+    transition: 0.25s ease-in-out;
     
 }
-
+.newsContainer:hover 
+{
+    box-shadow: inset 0 0 20px rgba(255, 255, 204, 0.5);
+    transform: scale(1.02);
+    transition: 0.25s ease-in-out;
+}
 
 .newsContainer > .backgroundBlur {
     position: absolute;
@@ -119,7 +131,7 @@ body
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    filter: blur(50px) brightness(0.3);
+    filter: blur(40px) brightness(0.3);
     box-shadow: inset 0 0 20px #111;
    
 }
@@ -225,7 +237,7 @@ body
 #desc,
 #centralLogo,
 #newsText,
-#backgroundBlur,
+#weatherBackground,
 .podCastPunchline,
 #podcastThumbnail {
     opacity: 0;
@@ -265,9 +277,15 @@ body
     position: relative;
     box-shadow: inset 0 0 10px #111;
     overflow: hidden;
+    cursor: pointer;
+    transition: 0.25s ease-in-out;
 }
-
-.weatherContainer > .backgroundBlur {
+.weatherContainer:hover 
+{
+    transform: scale(1.02);
+    transition: 0.25s ease-in-out;
+}
+.weatherContainer > .weatherBackground {
     position: absolute;
     top: 0;
     left: 0;
@@ -279,7 +297,7 @@ body
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    filter: blur(20px) brightness(0.5);
+    filter: blur(5px) brightness(0.5);
 }
 
 .weatherContainer .contents {
@@ -348,6 +366,7 @@ body
 .podCastContainer:hover 
 {
     box-shadow: inset 0 0 20px rgb(50, 50, 49);
+    scale: 1.02;
     transition: 0.25s ease-in-out;
 }
 .podCastContainer > .podcastThumbnail 

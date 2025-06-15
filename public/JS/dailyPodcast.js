@@ -63,7 +63,10 @@ function preparePodCast(podcastName, podcastAudio, podcastSource, podcastBanner,
         duration: 1000,
         easing: 'easeOutExpo',
         complete: () => {
+            setTimeout(() => {
             centralImage.style.filter = "none";
+            }, 1000);
+
         }
     });
     centralImage.style.backgroundSize = "cover";

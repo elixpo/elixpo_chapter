@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { getTodaysPodcasts, getTodaysPodcastDetails } from './BackendNode/podCastDetailsFetch.js';
 import { getTodaysNews, getTodaysNewsDetails } from './BackendNode/newsDetailsFetch.js';
 import { getDominantColor } from './BackendNode/getDominantColor.js';
+import { getLocation, getNearestLocationName, getStructuredWeather, generateAISummary, generateAIImage } from './BackendNode/locationWeather.js';
 import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,10 +19,12 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 app.get('/c', (req, res) => res.sendFile(path.join(__dirname, 'public', 'search.html')));
 app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, 'public', 'daily.html')));
 app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, 'public', 'podcast.html')));
+app.get('/weather', (req, res) => res.sendFile(path.join(__dirname, 'public', 'weather.html')));
 
 // In-memory cache
 let newsCache = null;
 let newsCacheTime = 0;
+let weatherCacheByLocation = {};
 let podcastCache = null;
 let podcastCacheTime = 0;
 let podcastDetailsCache = null;
@@ -109,6 +112,67 @@ app.get('/api/newsDetails', async (req, res) => {
   }
 });
 
+
+
+// Helper to build cache key from lat/lon or location name
+function getWeatherCacheKey(lat, lon, locationName) {
+  // Prefer locationName if available, else lat,lon
+  if (locationName) return locationName.toLowerCase();
+  if (lat && lon) return `${lat},${lon}`;
+  return 'unknown';
+}
+
+app.get('/api/weather', async (req, res) => {
+  try {
+    // Optionally accept lat/lon as query params for flexibility
+    let lat = req.query.lat;
+    let lon = req.query.lon;
+    let locationName = null;
+
+    if (!lat || !lon) {
+      // If not provided, auto-detect
+      [lat, lon] = await getLocation();
+      if (!lat || !lon) {
+        return res.status(400).json({ error: "Unable to determine location" });
+      }
+    }
+
+    const [city, region] = await getNearestLocationName(lat, lon);
+    locationName = city;
+    const cacheKey = getWeatherCacheKey(lat, lon, locationName);
+
+    // Serve from cache if available and not expired
+    const now = Date.now();
+    const cached = weatherCacheByLocation[cacheKey];
+    if (cached && now - cached.time < CACHE_DURATION) {
+      return res.json(cached.data);
+    }
+
+    console.log(`Detected Location: ${locationName}, ${region} (${lat},${lon})`);
+
+    const structuredWeather = await getStructuredWeather(lat, lon, locationName);
+    if (!structuredWeather) {
+      return res.status(500).json({ error: "Failed to fetch weather data" });
+    }
+
+    const aiSummary = await generateAISummary(structuredWeather);
+    const bannerLink = generateAIImage(structuredWeather.current.condition); // fix: do not await, function is synchronous
+    console.log("Banner Link:", bannerLink);
+
+    const responseData = { structuredWeather, aiSummary, bannerLink };
+
+    // Save to cache
+    weatherCacheByLocation[cacheKey] = {
+      data: responseData,
+      time: now
+    };
+
+    res.json(responseData);
+  } catch (error) {
+    console.error("Error fetching weather:", error);
+    res.status(500).json({ error: "Failed to fetch weather" });
+  }
+});
 
 
 app.use((req, res) => {
