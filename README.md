@@ -1,5 +1,7 @@
 # Web Search and Synthesis Module
 
+![image](https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283)
+
 This repository contains a Python-based web search and synthesis module designed to process user queries, perform web searches, scrape content, and synthesize detailed answers in Markdown format. The module is built for extensibility, robust error handling, and efficient information retrieval using modern APIs and libraries.
 
 ---
