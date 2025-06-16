@@ -61,7 +61,7 @@ def generate_news_script(analysis_content):
     }
     print("📝 Generating news script from analysis...")
     try:
-        response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
+        response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=180)
         response.raise_for_status()
         response_json = response.json()
         script_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")

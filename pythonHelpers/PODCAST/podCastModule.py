@@ -23,14 +23,14 @@ def log(msg):
     print(f"[Elixpo] {msg}")
 
 def write_backup(data):
-    with open(local_cache_file, "w") as f:
+    with open(local_cache_file, "w", encoding="utf-8") as f:
         for k, v in data.items():
             f.write(f"{k}={v}\n")
 
 def read_backup():
     if not os.path.exists(local_cache_file):
         return {}
-    with open(local_cache_file, "r") as f:
+    with open(local_cache_file, "r", encoding="utf-8") as f:
         return dict(line.strip().split("=", 1) for line in f.readlines() if "=" in line)
 
 def cleanup_files(podcast_id):
