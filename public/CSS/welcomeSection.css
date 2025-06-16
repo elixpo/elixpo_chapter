@@ -337,7 +337,7 @@ body
     font-weight: 500;
     flex: 1;
 }
-.weatherContainer > .contents > .weatherCredentials > .weatherDesc > .highAndLow
+.weatherContainer > .contents > .weatherCredentials > .weatherDesc > .wind-speed-detail
 {
     font-size: 1em;
     font-family: 'Parkinsans', sans-serif;
@@ -348,7 +348,7 @@ body
 .weatherContainer .location,
 .weatherContainer .temperature,
 .weatherContainer .typeOfWeather,
-.weatherContainer .highAndLow {
+.weatherContainer .wind-speed-detail {
     opacity: 0;
     transform: translateY(20px);
 }

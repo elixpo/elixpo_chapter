@@ -160,7 +160,7 @@ async function getWeather() {
         const data = await response.json();
         if (data.error) return;
         animateWeatherContainer();
-        const { structuredWeather, aiSummary, aiImageLink, bannerLink } = data;
+        const { structuredWeather, aiSummary, bannerLink } = data;
         const {
             location,
             current: { condition, temperature, wind_speed, datetime },
@@ -170,7 +170,6 @@ async function getWeather() {
         const locationElem = document.querySelector('.weatherContainer .location');
         const tempElem = document.querySelector('.weatherContainer .temperature');
         const descElem = document.querySelector('.weatherContainer .typeOfWeather');
-        const highLowElem = document.querySelector('.weatherContainer .highAndLow');
         const windElem = document.querySelector('.weatherContainer .wind-speed-detail');
         const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
 
@@ -182,11 +181,7 @@ async function getWeather() {
 
         // Wind speed
         let windDetailElem = windElem;
-        if (!windDetailElem) {
-            windDetailElem = document.createElement('div');
-            windDetailElem.className = 'wind-speed-detail';
-            if (highLowElem) highLowElem.after(windDetailElem);
-        }
+        console.log(wind_speed)
         windDetailElem.textContent = `Wind: ${wind_speed} km/h`;
 
         // Weather background
