@@ -2,7 +2,7 @@
 .env
 *.tldr
 *.jpg
-*.png
+/*.png
 *.wav
 *.mp3
 elixpoChatServiceKey.json
