@@ -12,7 +12,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 40012;
-app.use(cors());
+app.use(cors({
+  origin: 'https://chat.elixpo.com'
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

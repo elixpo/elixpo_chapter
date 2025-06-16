@@ -92,8 +92,8 @@ async function getPodCast() {
     try {
         const response = await fetch("/api/podcastDetails");
         const data = await response.json();
-        var podcastName = data.latestPodcastName || "Fake AI Podcasts  Your Search Results";
-        var podcast_thumbnail = data.latestPodcastThumbnail || "https://storage.googleapis.com/notes-89337.appspot.com/podcast/3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17/podcastThumbnail_3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17.jpg";
+        var podcastName = data.latestPodcastName ;
+        var podcast_thumbnail = data.latestPodcastThumbnail ;
         await displayPodcast(podcastName, podcast_thumbnail);
         animatePodcastContainer();
     } catch (error) {
@@ -109,8 +109,6 @@ function hidePodcastElements() {
 }
 
 async function displayPodcast(podcastName, podcast_thumbnail) {
-    // let podcastName = "Fake AI Podcasts  Your Search Results"
-    // let podcast_thumbnail = "https://storage.googleapis.com/notes-89337.appspot.com/podcast/3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17/podcastThumbnail_3691ca4503dad62489d848b0027c6478e9007df0e779e6bdf4fd699cbbdc5d17.jpg"
     const podcastTitle = document.querySelector('.podCastPunchline');
     const podcastImage = document.getElementById("podcastThumbnail");
 
