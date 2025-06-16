@@ -263,6 +263,9 @@ function animateWeatherContainer() {
 }
 
 
+document.getElementById("newsContainer").addEventListener("click", function() {
+    window.location.href = "/daily";
+});
 document.getElementById("playButton").addEventListener("click", function() {
     window.location.href = "/daily";
 });

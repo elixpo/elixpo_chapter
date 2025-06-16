@@ -1,4 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap');
+*
+{
+    -webkit-tap-highlight-color: transparent;
+}
 body 
 {
     overflow-x: hidden;
@@ -110,6 +114,7 @@ body
     overflow: hidden;
     box-shadow: inset 0 0 10px #111;
     transition: 0.25s ease-in-out;
+    cursor: pointer;
     
 }
 
@@ -194,10 +199,10 @@ body
     height: 120px;
     display: flex;
     flex-wrap: wrap;
-    overflow-y: auto;
     padding: 5px;
     box-sizing: border-box;
     color: #fff;
+    overflow: hidden;
     pointer-events: all;
 }
 
@@ -221,10 +226,13 @@ body
 }
 
 .dateDurationDesc > .desc {
-    font-size: 1em;
+    font-size: 0.9em;
     color: rgba(255, 255, 204, 0.65);
     flex-basis: 100%;
-    margin-top: 5px;
+    margin-top: 0px;
+    max-height: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 #date,
 #year,
