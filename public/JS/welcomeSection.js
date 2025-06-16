@@ -149,67 +149,80 @@ async function displayPodcast(podcastName, podcast_thumbnail) {
     };
 }
 
-function getWeather() {
-    fetch('/api/weather')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) return;
-            animateWeatherContainer();
-            const { structuredWeather, aiSummary, aiImageLink } = data;
-            const {
-                location,
-                current: { condition, temperature },
-                forecast
-            } = structuredWeather;
+async function getWeather() {
+    try {
+        // Get user's IP-based location using ipapi.co
+        const ipRes = await fetch('https://ipapi.co/json/');
+        const ipData = await ipRes.json();
+        const locationQuery = [ipData.city, ipData.latitude, ipData.longitude].filter(Boolean).join(', ');
+        // console.log(locationQuery);
+        const response = await fetch(`/api/weather?location=${encodeURIComponent(locationQuery)}`);
+        const data = await response.json();
+        if (data.error) return;
+        animateWeatherContainer();
+        const { structuredWeather, aiSummary, aiImageLink, bannerLink } = data;
+        const {
+            location,
+            current: { condition, temperature, wind_speed, datetime },
+            forecast
+        } = structuredWeather;
 
-            const locationElem = document.querySelector('.weatherContainer .location');
-            const tempElem = document.querySelector('.weatherContainer .temperature');
-            const descElem = document.querySelector('.weatherContainer .typeOfWeather');
-            const highLowElem = document.querySelector('.weatherContainer .highAndLow');
-            const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
+        const locationElem = document.querySelector('.weatherContainer .location');
+        const tempElem = document.querySelector('.weatherContainer .temperature');
+        const descElem = document.querySelector('.weatherContainer .typeOfWeather');
+        const highLowElem = document.querySelector('.weatherContainer .highAndLow');
+        const windElem = document.querySelector('.weatherContainer .wind-speed-detail');
+        const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
 
-            // Apply content
-            if (locationElem) locationElem.textContent = location;
-            if (tempElem) tempElem.textContent = `${Math.round(temperature * 9/5 + 32)}°F`;
-            if (descElem) descElem.textContent = condition;
-            if (highLowElem && forecast && forecast.length > 0) {
-                const today = forecast[0];
-                if (today.max && today.min) {
-                    highLowElem.textContent = `H ${today.max}° L ${today.min}°`;
-                }
-            }
+        // Format temperature as °C
+        if (tempElem) tempElem.innerHTML = `${temperature}<span class="temp-unit">°C</span>`;
+        if (locationElem) locationElem.textContent = location;
+        if (descElem) descElem.textContent = condition;
 
-            if (bannerElem && data.bannerLink) {
-                bannerElem.style.backgroundImage = `url(${data.bannerLink})`;
-                bannerElem.style.backgroundSize = "cover";
-                bannerElem.style.backgroundPosition = "center";
-            }
 
+        // Wind speed
+        let windDetailElem = windElem;
+        if (!windDetailElem) {
+            windDetailElem = document.createElement('div');
+            windDetailElem.className = 'wind-speed-detail';
+            if (highLowElem) highLowElem.after(windDetailElem);
+        }
+        windDetailElem.textContent = `Wind: ${wind_speed} km/h`;
+
+        // Weather background
+        if (bannerElem && bannerLink) {
+            bannerElem.style.backgroundImage = `url('${bannerLink}')`;
+            bannerElem.style.backgroundSize = "cover";
+            bannerElem.style.backgroundPosition = "center";
+            bannerElem.style.backgroundRepeat = "no-repeat";
+            bannerElem.style.opacity = "0.7";
             anime({
-                targets: [
-                    '.weatherContainer .location',
-                    '.weatherContainer .temperature',
-                    '.weatherContainer .typeOfWeather',
-                    '.weatherContainer .highAndLow'
-                ],
-                opacity: [0, 1],
-                translateY: [20, 0],
-                delay: anime.stagger(100),
-                duration: 700,
-                easing: 'easeOutCubic'
+                targets: bannerElem,
+                opacity: [0, 0.8],
+                filter: ['blur(10px)', 'blur(5px)'],
+                filter: "brightness(0.4)",
+                duration: 800,
+                easing: 'easeInOutQuad'
             });
+        }
 
-            anime({
-                targets: '.weatherContainer .weatherBackground',
-                opacity: [0, 0.6],
-                filter: ['blur(10px) brightness(0.1)', 'blur(3px) brightness(0.6)'],
-                duration: 1000,
-                easing: 'easeOutCubic'
-            });
-        })
-        .catch(err => {
-            console.error('Weather fetch error:', err);
+        anime({
+            targets: [
+                '.weatherContainer .location',
+                '.weatherContainer .temperature',
+                '.weatherContainer .typeOfWeather',
+                '.weatherContainer .highAndLow',
+                '.weatherContainer .wind-speed-detail'
+            ],
+            opacity: [0, 1],
+            translateY: [20, 0],
+            delay: anime.stagger(100),
+            duration: 700,
+            easing: 'easeOutCubic'
         });
+    } catch (err) {
+        console.error('Weather fetch error:', err);
+    }
 }
 
 

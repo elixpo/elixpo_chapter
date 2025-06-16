@@ -121,23 +121,36 @@ function getWeatherCacheKey(lat, lon, locationName) {
   if (lat && lon) return `${lat},${lon}`;
   return 'unknown';
 }
+
 app.get('/api/weather', async (req, res) => {
   try {
-    // Accept lat/lon as query params if provided
-    let lat = req.query.lat;
-    let lon = req.query.lon;
+  
+    let lat = "";
+    let lon = "";
     let locationName = null;
-
-    if (!lat || !lon) {
-      // If not provided, auto-detect
-      [lat, lon] = await getLocation();
+    // console.log("The location is" + req.query.location);
+   
+    if (req.query.location) {
+      
+      lat = parseFloat(req.query.location.split(',')[1]);
+      lon = parseFloat(req.query.location.split(',')[2]);
+      locationName = req.query.location.split(',')[0]
+      if (!lat || !lon) {
+        return res.status(400).json({ error: "Unable to resolve location" });
+      }
+    } 
+    
+    else {
+      // If nothing provided, fallback to auto-detect (server-side)
+      const locationResult = await getLocation();
+      lat = locationResult[0];
+      lon = locationResult[1];
+      locationName = locationResult[2];
       if (!lat || !lon) {
         return res.status(400).json({ error: "Unable to determine location" });
       }
     }
 
-    const [city, region] = await getNearestLocationName(lat, lon);
-    locationName = city;
     const cacheKey = getWeatherCacheKey(lat, lon, locationName);
 
     // Serve from cache if available and not expired
@@ -146,8 +159,10 @@ app.get('/api/weather', async (req, res) => {
     if (cached && now - cached.time < CACHE_DURATION) {
       return res.json(cached.data);
     }
+    // console.log(`Fetching weather for ${locationName} (${lat}, ${lon})`);
 
     const structuredWeather = await getStructuredWeather(lat, lon, locationName);
+    // console.log(structuredWeather);
     if (!structuredWeather) {
       return res.status(500).json({ error: "Failed to fetch weather data" });
     }
