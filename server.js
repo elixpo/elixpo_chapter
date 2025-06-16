@@ -140,16 +140,16 @@ app.get('/api/weather', async (req, res) => {
       }
     } 
     
-    else {
-      // If nothing provided, fallback to auto-detect (server-side)
-      const locationResult = await getLocation();
-      lat = locationResult[0];
-      lon = locationResult[1];
-      locationName = locationResult[2];
-      if (!lat || !lon) {
-        return res.status(400).json({ error: "Unable to determine location" });
-      }
-    }
+    // else {
+    //   // If nothing provided, fallback to auto-detect (server-side)
+    //   const locationResult = await getLocation();
+    //   lat = locationResult[0];
+    //   lon = locationResult[1];
+    //   locationName = locationResult[2];
+    //   if (!lat || !lon) {
+    //     return res.status(400).json({ error: "Unable to determine location" });
+    //   }
+    // }
 
     const cacheKey = getWeatherCacheKey(lat, lon, locationName);
 
