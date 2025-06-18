@@ -195,7 +195,20 @@
         </div>
     </section>
 
-    
+    <section class="py-24 px-6" id="support">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="section-title mb-6">Found a bug? Feedback?</h2>
+            <p class="section-subtitle mb-12">
+                For technical questions, feature requests, or to join the conversation, visit our GitHub Discussions.
+            </p>
+            <a href="https://github.com/Circuit-Overtime/jackeyBot/discussions/1" target="_blank" rel="noopener" class="btn-hero-secondary inline-flex items-center gap-2">
+                <i data-lucide="github" class="w-5 h-5"></i>
+                Go to GitHub Discussions
+            </a>
+        </div>
+    </section>
+
+
     <section class="py-24 px-6">
         <div class="max-w-4xl mx-auto text-center">
             <h2 class="section-title mb-6">Ready to Transform Your Discord Server?</h2>
@@ -238,16 +251,16 @@
                 <div>
                     <h4 class="font-semibold mb-4">Support</h4>
                     <ul class="space-y-2 text-gray-400 text-sm">
-                        <li><a href="https://discord.gg/b6H9Wwtbpn" class="hover:text-white transition-colors">Discord Server</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Status Page</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors" id="discordRedirect">Discord Server</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors" id="statusPageRedirect">Status Page</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h4 class="font-semibold mb-4">Legal</h4>
                     <ul class="space-y-2 text-gray-400 text-sm">
-                        <li><a href="privacy-policy" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                        <li><a href="terms-of-service" class="hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a id="privacyPage" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a id="termsPage" class="hover:text-white transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>
@@ -257,7 +270,7 @@
             </div>
         </div>
     </footer>
-
+    <script src="JS/linkRedirect.js"></script>
     <script src="JS/app.js"></script>
     <script>
         

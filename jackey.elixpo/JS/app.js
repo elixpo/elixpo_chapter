@@ -222,4 +222,14 @@ document.addEventListener('DOMContentLoaded', () => {
             el.style.transform = 'translateY(0)';
         });
     }, 100);
+
+    document.getElementById("statusPageRedirect").addEventListener("click", () => {
+      showNotification("Status Page yet to be setup!", "info");  
+    })
+    document.getElementById("discordRedirect").addEventListener("click", () => {
+        showNotification("Discord server yet to be setup!", "info");  
+      })
+      document.getElementById("termsPage").addEventListener("click", () => {
+        redirectTo("/terms")
+        });
 });

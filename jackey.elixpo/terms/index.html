@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Givwy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="Jackey — Jackey is a simple and reliable Discord giveaway bot that makes hosting giveaways easy and fun!" />
+    <meta name="keywords" content="discord, image, simple, fast, reliable, bot, image generation, python" />
+
+
+    <meta property="og:title" content="Jackey" />
+    <meta property="og:description" content="Jackey is a reliable discord bot, allowing you to generate or remix images from prompts all according to your choice!" />
+    <meta property="og:image" content="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024" /> 
+    <meta property="og:url" content="https://jackey.elixpo.com" />
+    <meta name="theme-color" content="#312442" />
+    <link rel="icon" type="image/png" href="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024">
+    <link rel="stylesheet" href="../CSS/terms.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5865F2',
+                        primaryHover: '#4752C4',
+                        darkBg: '#18191a',
+                        darkBg2: '#212223',
+                        darkBg3: '#2a2b2d',
+                        discord: '#5865F2',
+                        discordHover: '#4752C4'
+                    }
+                },
+                fontFamily: {
+                    sans: ['Outfit', 'ui-sans-serif', 'system-ui']
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-white">
+    <!-- Navigation -->
+    <nav class="flex items-center justify-between p-6 border-b border-gray-700">
+        <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <img src="/4c1e5976-bb6c-4d8a-b87c-9bb03321d94a.png" alt="Elixpo Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold text-white">Elixpo</span>
+            </a>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <a href="/#features" class="nav-link">Features</a>
+            <a href="/#support" class="nav-link">Support</a>
+            <button id="inviteBtn" class="btn-primary">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Invite to Discord
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold mb-4">Terms and Conditions for Jackey</h1>
+            <p class="text-gray-400">Last updated: June 2025</p>
+        </div>
+
+        <div class="prose prose-invert max-w-none">
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">1. Acceptance of Terms</h2>
+                <p class="text-gray-300">By inviting, installing, or using the Jackey, the Bot - in your Discord server, you agree to these Terms and Conditions. If you do not agree, do not use the Bot.</p>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">2. Description of Service</h2>
+                <p class="text-gray-300">The Bot provides AI-generated image creation, remixing, and management features via Discord slash commands. It uses third-party APIs (such as Pollinations) for image generation.</p>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">3. Usage Requirements</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>You must have the necessary permissions to add bots to your Discord server.</li>
+                    <li>The Bot requires permissions to view channels, send messages, and attach files.</li>
+                    <li>You are responsible for ensuring the Bot is used in accordance with Discord’s Terms of Service and Community Guidelines.</li>
+                </ul>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">4. User Content</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Prompts and images submitted to the Bot may be processed by third-party APIs.</li>
+                    <li>You are solely responsible for the content you submit and generate.</li>
+                    <li>Do not use the Bot to generate or share illegal, harmful, or offensive content.</li>
+                </ul>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">5. Data and Privacy</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>The Bot may temporarily store generated images and related data for processing and queue management.</li>
+                    <li>No personal data is intentionally collected or stored long-term.</li>
+                    <li>For more information on third-party API data handling, refer to their respective privacy policies.</li>
+                </ul>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">6. Limitations and Availability</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>The Bot may limit concurrent requests and queue commands to ensure fair usage and stability.</li>
+                    <li>Service availability is not guaranteed and may be interrupted for maintenance or technical reasons.</li>
+                </ul>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">7. Disclaimer</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>The Bot is provided "as is" without warranties of any kind.</li>
+                    <li>The developers are not liable for any damages or losses resulting from the use or inability to use the Bot.</li>
+                </ul>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">8. Changes to Terms</h2>
+                <p class="text-gray-300">These Terms may be updated at any time. Continued use of the Bot after changes constitutes acceptance of the new Terms.</p>
+            </div>
+
+            <div class="bg-darkBg2 border border-gray-700 rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-white">9. Contact</h2>
+                <p class="text-gray-300 mb-4">For questions or concerns, please open an issue on the <a href="https://github.com/Circuit-Overtime/jackeyBot" class="text-primary underline">GitHub repository</a>.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 border-t border-gray-700 mt-16">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <img src="/4c1e5976-bb6c-4d8a-b87c-9bb03321d94a.png" alt="Elixpo Logo" class="w-8 h-8 rounded-full">
+                <span class="text-xl font-bold text-white">Elixpo</span>
+            </div>
+            <p class="text-gray-400 text-sm">&copy; 2025 Elixpo. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Discord invite functionality
+        const DISCORD_INVITE_URL = 'https://discord.com/oauth2/authorize?client_id=1382751815921045625&permissions=268954688&integration_type=0&scope=bot';
+        
+        const inviteBtn = document.getElementById('inviteBtn');
+        if (inviteBtn) {
+            inviteBtn.addEventListener('click', () => {
+                window.open(DISCORD_INVITE_URL, '_blank');
+            });
+        }
+    </script>
+</body>
+</html>
