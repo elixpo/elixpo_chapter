@@ -8,12 +8,18 @@ function getBasePath() {
     return "/jackeyBot/jackey.elixpo";
   }
   else if (hostname.endsWith(".vercel.app")) {
-    return "/jackey.elixpo";  
+    return "/jackey.elixpo";  // Vercel serves from this folder
   }
   else if (hostname.endsWith(".com")) {
-    return "/jackey.elixpo"; 
+    return "/jackey.elixpo";  // Your .com also serves from this folder
   }
   else {
-    return "/jackey.elixpo";  
+    return "/jackey.elixpo";  // Fallback
   }
 }
+
+  
+  function redirectTo(path) {
+    const basePath = getBasePath();
+    location.replace(`${basePath}/${path}`);
+  }
