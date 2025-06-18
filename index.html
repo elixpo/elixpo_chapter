@@ -1,0 +1,267 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jackey - Discord Image Generation Bot</title>
+    <link rel="icon" type="image/x-icon" href="/a/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="Jackey — Jackey is a simple and reliable Discord giveaway bot that makes hosting giveaways easy and fun!" />
+    <meta name="keywords" content="discord, image, simple, fast, reliable, bot, image generation, python" />
+
+
+    <meta property="og:title" content="Jackey" />
+    <meta property="og:description" content="Jackey is a reliable discord bot, allowing you to generate or remix images from prompts all according to your choice!" />
+    <meta property="og:image" content="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024" /> 
+    <meta property="og:url" content="https://jackey.elixpo.com" />
+    <meta name="theme-color" content="#312442" />
+    <link rel="icon" type="image/png" href="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024">
+    <link rel="stylesheet" href="CSS/styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5865F2',
+                        primaryHover: '#4752C4',
+                        darkBg: '#18191a',
+                        darkBg2: '#212223',
+                        darkBg3: '#2a2b2d',
+                        discord: '#5865F2',
+                        discordHover: '#4752C4'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.8s ease-out',
+                        'fade-in': 'fadeIn 1s ease-out'
+                    }
+                },
+                fontFamily: {
+                    sans: ['Outfit', 'ui-sans-serif', 'system-ui']
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-white overflow-x-hidden">
+    <div class="min-h-screen flex flex-col">
+        <nav class="flex items-center justify-between p-6 relative z-10">
+            <div class="flex items-center gap-3">
+                <img src="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024" alt="Jackey Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold text-white">Jackey</span>
+            </div>
+            
+            <button id="mobileMenuBtn" class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-gray-800 text-white">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="hidden md:flex items-center gap-6">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#support" class="nav-link">Support</a>
+                <button id="inviteBtn" class="btn-primary">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Invite to Discord
+                </button>
+            </div>
+            
+
+            <div id="mobileMenu" class="fixed inset-0 bg-darkBg z-50 transform translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+                <div class="flex items-center justify-between p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <img src="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024" alt="Jackey Logo" class="w-8 h-8 rounded-full">
+                        <span class="text-xl font-bold text-white">Jackey</span>
+                    </div>
+                    <button id="closeMobileMenu" class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-800 text-white">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <a href="#features" class="mobile-nav-link block">Features</a>
+                    <a href="#support" class="mobile-nav-link block">Support</a>
+                    <button id="mobileInviteBtn" class="btn-primary w-full justify-center">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Invite to Discord
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+
+        <div class="flex-1 flex items-center justify-center px-6">
+            <div class="max-w-6xl mx-auto text-center">
+                <div class="hero-badge mb-8">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>Trusted by unknown+ Discord servers</span>
+                </div>
+                
+                <h1 class="hero-title mb-6">
+                    Your Discord Bot for
+                    <span class="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                        Generative Images
+                    </span>
+                </h1>
+                
+                <p class="hero-subtitle mb-12">
+                    Create stunning images from text prompts, remix existing images, and engage your community like never before.
+                    Jackey is the ultimate Discord bot for image generation, designed to be simple, fast, and reliable.
+                </p>
+
+                <div class="flex flex-col md:flex-row items-center justify-center gap-6 mb-16">
+                    <button id="mainInviteBtn" class="btn-hero-primary">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        Add to Discord
+                        <div class="btn-glow"></div>
+                    </button>
+                </div>
+
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div class="feature-preview-card">
+                        <div class="feature-preview-icon bg-green-500/20">
+                            <i data-lucide="zap" class="w-6 h-6 text-green-400"></i>
+                        </div>
+                        <h3>Instant Setup</h3>
+                        <p>Get started in seconds with just an install</p>
+                    </div>
+                    <div class="feature-preview-card">
+                        <div class="feature-preview-icon bg-blue-500/20">
+                            <i data-lucide="settings" class="w-6 h-6 text-blue-400"></i>
+                        </div>
+                        <h3>Data Privacy</h3>
+                        <p>None of the user data / requests are saved for future use</p>
+                    </div>
+                    <div class="feature-preview-card">
+                        <div class="feature-preview-icon bg-purple-500/20">
+                            <i data-lucide="crown" class="w-6 h-6 text-purple-400"></i>
+                        </div>
+                        <h3>Image Remix</h3>
+                        <p>Advance Contextual Image Remix powered by gptimage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="floating-elements">
+            <div class="floating-element floating-element-1">
+                <i data-lucide="image" class="w-8 h-8 text-primary/30"></i>
+            </div>
+            <div class="floating-element floating-element-2">
+                <i data-lucide="brush" class="w-6 h-6 text-yellow-400/40 relative left-[20px] top-[-150px]"></i>
+            </div>
+            <div class="floating-element floating-element-3">
+                <i data-lucide="heart" class="w-7 h-7 text-pink-400/35 relative top-[150px]"></i>
+            </div>
+        </div>
+    </div>
+
+
+    <section id="features" class="py-24 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="section-title mb-6">Commands Under Operation</h2>
+                <p class="section-subtitle"> The discord commands which the users can use for operating the bot and for the usage</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="feature-card">
+                    <div class="feature-card-icon bg-blue-500/20">
+                        <i data-lucide="timer" class="w-8 h-8 text-blue-400"></i>
+                    </div>
+                    <h3>/generate</h3>
+                    <p>Takes up the prompt and the number of images as the required params and generates images directly</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-icon bg-green-500/20">
+                        <i data-lucide="users" class="w-8 h-8 text-green-400"></i>
+                    </div>
+                    <h3>/remix</h3>
+                    <p>Takes in the prompt with an image to edit, or upto 3 images to remix the images with a given prompt</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-icon bg-cyan-500/20">
+                        <i data-lucide="bell" class="w-8 h-8 text-cyan-400"></i>
+                    </div>
+                    <h3>/ping & /help</h3>
+                    <p>Utilities to show the bot active status and command pallet.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <section class="py-24 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="section-title mb-6">Ready to Transform Your Discord Server?</h2>
+            <p class="section-subtitle mb-12">Join thousands of communities already using Jackey to create amazing giveaway experiences</p>
+            
+            <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+                <button id="finalCtaBtn" class="btn-hero-primary">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Add Jackey to Discord
+                    <div class="btn-glow"></div>
+                </button>
+                <a href="https://discord.gg/b6H9Wwtbpn" class="btn-hero-secondary">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    Join Support Server
+                </a>
+            </div>
+        </div>
+    </section>
+
+    
+    <footer id="support" class="py-12 px-6 border-t border-gray-700">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=1024" alt="Jackey Logo" class="w-8 h-8 rounded-full">
+                        <span class="text-xl font-bold text-white">Jackey</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">The most powerful Discord giveaway bot for growing communities.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#support" class="hover:text-white transition-colors">Support</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="https://discord.gg/b6H9Wwtbpn" class="hover:text-white transition-colors">Discord Server</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Status Page</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="privacy-policy" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="terms-of-service" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2025 Jackey. All rights reserved. Made with ❤️ for Discord communities.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="JS/app.js"></script>
+    <script>
+        
+        lucide.createIcons();
+    </script>
+</body>
+</html>
