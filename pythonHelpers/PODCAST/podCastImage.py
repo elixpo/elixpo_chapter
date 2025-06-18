@@ -70,7 +70,7 @@ def generate_podcast_thumbnail(topic, podcastID):
         response = requests.get(url, params=params, timeout=300)
         response.raise_for_status()
         filename = f'podcastThumbnail_{podcastID}'
-        with open(f"{filename}.jpg", 'wb') as f:
+        with open(f"tmp/{filename}.jpg", 'wb') as f:
             f.write(response.content)
         print(f"✅ Thumbnail saved as {filename+".jpg"}")
         return filename
@@ -103,7 +103,7 @@ def generate_podcast_banner(topic, podcastID):
         response = requests.get(url, params=params, timeout=600)
         response.raise_for_status()
         filename = f'podcastBanner_{podcastID}'
-        with open(f'{filename+".jpg"}', 'wb') as f:
+        with open(f'tmp/{filename+".jpg"}', 'wb') as f:
             f.write(response.content)
         print(f"✅ Banner saved as {filename+".jpg"}")
         return filename

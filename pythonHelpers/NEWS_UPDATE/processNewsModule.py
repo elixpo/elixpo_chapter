@@ -15,11 +15,12 @@ from firebase_admin import credentials, firestore, storage
 import firebase_admin
 
 # === Firebase Setup ===
-
+if not os.path.exists("tmp"):
+    os.makedirs("tmp")
 service_account_path = 'elixpoChatServiceKey.json'
 storage_bucket_name = "notes-89337.appspot.com"
 voices = ["shimmer", "dan"]
-backup_file = "newsBackup.txt"
+backup_file = "tmp/newsBackup.txt"
 
 try:
     cred = credentials.Certificate(service_account_path)

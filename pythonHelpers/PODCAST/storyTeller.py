@@ -54,7 +54,7 @@ def generate_podcast_audio(story_text, podCastID, voice="shimmer"):
         response_data = response.json()
         audio_data_base64 = response_data['choices'][0]['message']['audio']['data']
         audio_binary = base64.b64decode(audio_data_base64)
-        with open(f'podcast_{podCastID}.wav', 'wb') as f:
+        with open(f'tmp/podcast_{podCastID}.wav', 'wb') as f:
             f.write(audio_binary)
         print(f"Audio saved successfully as podcast_{podCastID}.wav")
         return f"podcast_{podCastID}"

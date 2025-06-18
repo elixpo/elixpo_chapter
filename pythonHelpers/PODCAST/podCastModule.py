@@ -17,7 +17,13 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 bucket = storage.bucket()
-local_cache_file = "podcast_backup.txt"
+local_cache_file = "tmp/podcast_backup.txt"
+
+def ensure_tmp_dir():
+    if not os.path.exists("tmp"):
+        os.makedirs("tmp")
+        print("[Elixpo] Created tmp directory.")
+
 
 def log(msg):
     print(f"[Elixpo] {msg}")
@@ -34,18 +40,21 @@ def read_backup():
         return dict(line.strip().split("=", 1) for line in f.readlines() if "=" in line)
 
 def cleanup_files(podcast_id):
-    for f in os.listdir():
+    tmp_dir = "tmp"
+    for f in os.listdir(tmp_dir):
+        full_path = os.path.join(tmp_dir, f)
         if f.startswith(f"elixpoNews_{podcast_id}") and f.endswith(".wav"):
-            os.remove(f)
+            os.remove(full_path)
         elif f.startswith(f"podcastThumbnail_{podcast_id}") or f.startswith(f"podcastBanner_{podcast_id}"):
-            os.remove(f)
+            os.remove(full_path)
         elif f.startswith(f"podcast_{podcast_id}") and f.endswith(".wav"):
-            os.remove(f)
-        elif f == f"podcast_backup.txt":
-            os.remove(f)
+            os.remove(full_path)
+        elif f == "podcast_backup.txt":
+            os.remove(full_path)
 
 def main():
     log("Starting podcast generation workflow...")
+    ensure_tmp_dir()
     backup = read_backup()
     
     try:
@@ -131,7 +140,7 @@ def main():
                 return
             if audio_name.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{audio_name+".wav"}')
-                blob.upload_from_filename(audio_name+".wav")
+                blob.upload_from_filename(f"tmp/{audio_name}.wav")
                 blob.make_public()
                 audio_url = blob.public_url
                 doc_ref.update({
@@ -157,7 +166,7 @@ def main():
                 return
             elif thumbnail.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{thumbnail+".jpg"}')
-                blob.upload_from_filename(thumbnail+".jpg")
+                blob.upload_from_filename(f"tmp/{thumbnail}.jpg")
                 blob.make_public()
                 thumbnail_url = blob.public_url
                 doc_ref.update({'podcast_thumbnail_url': thumbnail_url})
@@ -169,7 +178,7 @@ def main():
                 return
             elif banner.split("_")[1] == podcast_id:
                 blob = bucket.blob(f'podcast/{podcast_id}/{banner+"jpg"}')
-                blob.upload_from_filename(banner+".jpg")
+                blob.upload_from_filename(f"tmp/{banner}.jpg")
                 blob.make_public()
                 banner_url = blob.public_url
                 doc_ref.update({'podcast_banner_url': banner_url})
