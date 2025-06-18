@@ -238,4 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById("privacyPage").addEventListener("click", () => {
             redirectTo("privacy")
             });
+            document.getElementById("githubRedirect").addEventListener("click", () => {
+                window.location.href = ("https://github.com/Circuit-Overtime/jackeyBot");
+            })
 });
