@@ -10,7 +10,11 @@ function getBasePath() {
     else if (window.location.hostname.endsWith(".vercel.app")) 
     {
       return ""; 
-    } 
+    }
+    else if (window.location.hostname.endsWith(".com"))
+    {
+      return ""
+    }  
     else 
     {
       return "jackey.elixpo"; 
