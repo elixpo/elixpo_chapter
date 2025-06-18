@@ -13,7 +13,7 @@ function getBasePath() {
     }
     else if (window.location.hostname.endsWith(".com"))
     {
-      return ""
+      return "jackey.elixpo.com"
     }  
     else 
     {
