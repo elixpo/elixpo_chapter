@@ -233,9 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showNotification("Support Server yet to be setup!", "info");  
       });
       document.getElementById("termsPage").addEventListener("click", () => {
-        redirectTo("/terms")
+        redirectTo("terms")
         });
         document.getElementById("privacyPage").addEventListener("click", () => {
-            redirectTo("/privacy")
+            redirectTo("privacy")
             });
 });
