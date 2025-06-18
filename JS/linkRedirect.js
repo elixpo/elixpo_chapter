@@ -11,7 +11,7 @@ function getBasePath() {
     return "/jackey.elixpo";  // Vercel serves from this folder
   }
   else if (hostname.endsWith(".com")) {
-    return "/jackey.elixpo";  // Your .com also serves from this folder
+    return "jackey.elixpo.com";  // Your .com also serves from this folder
   }
   else {
     return "/jackey.elixpo";  // Fallback
