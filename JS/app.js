@@ -229,7 +229,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById("discordRedirect").addEventListener("click", () => {
         showNotification("Discord server yet to be setup!", "info");  
       })
+      document.getElementById("supportServer").addEventListener("click", () => {
+        showNotification("Support Server yet to be setup!", "info");  
+      });
       document.getElementById("termsPage").addEventListener("click", () => {
         redirectTo("/terms")
         });
+        document.getElementById("privacyPage").addEventListener("click", () => {
+            redirectTo("/privacy")
+            });
 });

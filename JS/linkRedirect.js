@@ -2,7 +2,7 @@ function getBasePath() {
     // Determine the base path dynamically
     if(window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
     {
-      return "jackey.elixpo"; 
+      return "/jackey.elixpo"; 
     }
     else if (window.location.hostname === "circuit-overtime.github.io") {
       return "/jackeyBot/jackey.elixpo"; 
