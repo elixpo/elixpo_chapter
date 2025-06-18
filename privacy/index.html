@@ -45,15 +45,15 @@
     <!-- Navigation -->
     <nav class="flex items-center justify-between p-6 border-b border-gray-700">
         <div class="flex items-center gap-3">
-            <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <a href="" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <img src="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=512" alt="Jackey Logo" class="w-10 h-10 rounded-full">
-                <span class="text-2xl font-bold text-white cursor-pointer">Jackey</span>
+                <span class="text-2xl font-bold text-white cursor-pointer" id="homeRedirect">Jackey</span>
             </a>
         </div>
         
         <div class="flex items-center gap-6">
-            <a href="/jackey.elixpo/index.html#features" class="nav-link">Features</a>
-            <a href="/jackey.elixpo/index.html#support" class="nav-link">Support</a>
+            <a href="/#features" class="nav-link" id="featureBtn">Features</a>
+            <a href="/#support" class="nav-link" id="supportBtn">Support</a>
             <button id="inviteBtn" class="btn-primary">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 Invite to Discord
@@ -154,8 +154,22 @@
             <p class="text-gray-400 text-sm">&copy; 2025 Jackey. All rights reserved.</p>
         </div>
     </footer>
+    <script src="../JS/linkRedirect.js"></script>
     <script src="../JS/botInvite.js"></script>
     <script>
+        document.getElementById("featureBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            redirectTo("/#features");
+        });
+        document.getElementById("supportBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            redirectTo("/#support");
+        });
+        document.getElementById("homeRedirect").addEventListener("click", function(event) {
+            event.preventDefault();
+            redirectTo("")
+        });
+        
         lucide.createIcons();
     </script>
 </body>

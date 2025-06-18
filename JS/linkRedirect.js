@@ -14,7 +14,9 @@ function getBasePath() {
 
 
   
-  function redirectTo(path) {
-    const basePath = getBasePath();
-    location.replace(`${basePath}/${path}`);
-  }
+function redirectTo(path) {
+  const basePath = getBasePath().replace(/\/$/, ""); 
+  path = path.replace(/^\//, "");                    
+  const target = path ? `${basePath}/${path}` : `${basePath}/`;
+  location.replace(target);
+}
