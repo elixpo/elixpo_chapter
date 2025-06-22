@@ -1,3 +1,10 @@
+@media (max-width: 2560px) {
+  .appHeader 
+  {
+    height: 550px;
+  }
+}
+
 @media (max-width: 768px) {
   * {
     -webkit-tap-highlight-color: transparent;

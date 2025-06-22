@@ -1,4 +1,41 @@
 
+@media (min-width: 2560px)
+{
+    .appHeader 
+    {
+        height: 150px;
+    }
+    .appName {
+        font-size: 5em;
+        left: 5%;
+    }
+    .logo 
+    {
+        transform: scale(2) rotate(-25deg);
+    }
+    .githubLogo
+    {
+        font-size: 5em;
+    }
+    .redirectHome
+    {
+        font-size: 5em;
+        left: 70%;
+    }
+    .redirectBlogs
+    {
+        font-size: 5em;
+        left: 75%;
+    }
+    .userCell
+    {
+        scale: 2;
+        left: 83%;
+        width: 150px;
+    }
+}
+
+
 @media (max-width: 768px) {
     
     .appName {
@@ -90,3 +127,5 @@
         width: 30px;
     }
 }
+
+

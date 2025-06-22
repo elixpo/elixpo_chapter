@@ -14,8 +14,8 @@ let lastPromptText = "";
 const MAX_NOTIFS = 3;
 const notifQueue = [];
 
-window.addEventListener('resize', scaleContainer);
-window.addEventListener('load', scaleContainer);
+// window.addEventListener('resize', scaleContainer);
+// window.addEventListener('load', scaleContainer);
 
 window.onload = function() {
   showSection("imageCustomization"); 
