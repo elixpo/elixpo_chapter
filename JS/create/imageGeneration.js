@@ -414,8 +414,14 @@ async function generateImage(generationNumber, prompt, width, height, model, suf
         console.log("In image mode");
         const uploadedUrl = document.getElementById("imageHolder").getAttribute("data-uploaded-url");
         if (uploadedUrl) {
-            model = "gptimage";
-            generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=gptimage&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+            if(model == "gptimage") 
+            {
+                generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+            }
+            else if(model == "kontext")
+            {
+                generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&image=[${uploadedUrl}]&nologo=true&token=fEWo70t94146ZYgk`;
+            }
             notify("Remixing with your request!! Would take a minute or so, hang on buddy!");
         } else {
             notify("Image not found. Please upload a valid image.");
@@ -457,9 +463,9 @@ async function generateImage(generationNumber, prompt, width, height, model, suf
             } catch (error) {
                 clearTimeout(watchdog);
 
-                if (controller.signal.aborted && currentModel === "gptimage" && !imageMode) {
+                if (controller.signal.aborted && (currentModel === "gptimage" || currentModel == "kontext") && !imageMode) {
                     notify("gptimage model took too long. Switching to flux...");
-                    const fallbackUrl = imageRequestUrl.replace("model=gptimage", "model=flux");
+                    const fallbackUrl = imageRequestUrl.replace(`model=${currentModel}`, "model=flux");
                     imageRequestUrl = fallbackUrl;
                     return tryGeneration("flux");
                 }

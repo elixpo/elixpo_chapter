@@ -27,10 +27,12 @@ document.getElementById("inputImage").addEventListener("click", function () {
             document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
             document.getElementById("imageHolder").style.backgroundSize = "cover";
             document.getElementById("imageHolder").style.backgroundPosition = "center center";
-            handleFlagUpdateAuto(".models", "model", "gptimage");
+            handleFlagUpdateAuto(".models", "model", "kontext");
             handleFlagUpdateAuto(".themes", "theme", "normal");
             document.querySelectorAll(".modelsTiles").forEach(tile => {
-                tile.style.pointerEvents = "none";
+                if ((tile.getAttribute("data-model") === "flux") || (tile.getAttribute("data-model") === "turbo")) {
+                    tile.style.pointerEvents = "none";
+                }
             });
             document.getElementById("OneImage").style.pointerEvents = "none";
             document.getElementById("OneImage").className = "fa-solid fa-dice-one";
