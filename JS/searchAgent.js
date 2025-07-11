@@ -16,8 +16,8 @@ const queryInput = document.getElementById('queryInput');
 const submitButton = document.getElementById('submitButton');
 const statusMessage = document.getElementById('statusMessage');
 const resultsContainer = document.getElementById('resultsContainer');
-const API_SEARCH_URL = "https://search.pollinations.ai/search";
-// const API_SEARCH_URL = "http://10.42.0.56:5000/search";
+// const API_SEARCH_URL = "https://search.pollinations.ai/search";
+const API_SEARCH_URL = "http://192.168.2.72:5000/search";
 
 
 function performSearch(query) {

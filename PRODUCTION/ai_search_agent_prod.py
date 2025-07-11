@@ -171,13 +171,11 @@ def get_youtube_transcript(video_id, show_logs=True):
         return None
 
     try:
-        # Try to get English transcript directly
         try:
             entries = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
             conditional_print(f"Found English ('en') transcript for video ID: {video_id}", show_logs)
         except NoTranscriptFound:
             conditional_print(f"No 'en' transcript found. Trying other available languages.", show_logs)
-            # Fetch list and get first available transcript
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
             available = list(transcript_list._manually_created_transcripts.values()) + list(transcript_list._generated_transcripts.values())
             if not available:
@@ -187,12 +185,14 @@ def get_youtube_transcript(video_id, show_logs=True):
             conditional_print(f"Using transcript in '{transcript.language_code}'", show_logs)
             entries = transcript.fetch()
 
-        # Assemble full text from entries
         if not entries:
             raise ValueError("Transcript fetch returned no entries.")
         full_text = " ".join(entry['text'] for entry in entries)
+        
+        # Only truncate if the transcript is excessively long based on MAX_TRANSCRIPT_WORD_COUNT
         words = full_text.split()
         if len(words) > MAX_TRANSCRIPT_WORD_COUNT:
+            conditional_print(f"Transcript length ({len(words)} words) exceeds MAX_TRANSCRIPT_WORD_COUNT ({MAX_TRANSCRIPT_WORD_COUNT}). Truncating.", show_logs)
             return " ".join(words[:MAX_TRANSCRIPT_WORD_COUNT]) + "..."
         return full_text
 
@@ -569,13 +569,14 @@ def search_and_synthesize(original_query, provided_website_urls, provided_youtub
     except Exception:
         location = ""
 
-    is_summarize_request = (len(provided_youtube_urls) == 1 and len(provided_website_urls) == 0 and original_query.strip().upper().startswith("SUMMARIZE"))
-    is_summarizew_request = (len(provided_youtube_urls) == 1 and original_query.strip().upper().startswith("SUMMARIZEW"))
+    # Check for special YouTube summarization requests
+    is_summarize_request = (len(provided_youtube_urls) == 1 and len(provided_website_urls) == 0 and cleaned_query_text.strip().upper().startswith("SUMMARIZE"))
+    is_summarizew_request = (len(provided_youtube_urls) == 1 and cleaned_query_text.strip().upper().startswith("SUMMARIZEW"))
 
     if is_summarize_request or is_summarizew_request:
         keyword = "SUMMARIZEW" if is_summarizew_request else "SUMMARIZE"
         youtube_url_for_summary = provided_youtube_urls[0]
-        extra_query_text = cleaned_query_text
+        extra_query_text = cleaned_query_text.replace(keyword, "", 1).strip() # Remove the keyword
 
         video_id = get_youtube_video_id(youtube_url_for_summary)
 
@@ -638,9 +639,9 @@ def search_and_synthesize(original_query, provided_website_urls, provided_youtub
                  if url and urlparse(url).scheme in ['http', 'https'] and not is_likely_search_result_url(url) and url not in unique_search_urls:
                      unique_search_urls.append(url)
 
-             pages_to_scrape_count = min(MAX_PAGES_TO_SCRAPE // 2, len(unique_search_urls))
-             pages_to_scrape_count = max(pages_to_scrape_count, 1) if unique_search_urls else 0
-
+             # For SUMMARIZEW, scrape a reasonable number of pages from search results
+             pages_to_scrape_count = min(MAX_PAGES_TO_SCRAPE // 2, len(unique_search_urls)) # Half the max, up to available
+             pages_to_scrape_count = max(pages_to_scrape_count, 1) if unique_search_urls else 0 # At least 1 if URLs exist
 
              if unique_search_urls and pages_to_scrape_count > 0 and total_scraped_words < MAX_TOTAL_SCRAPE_WORD_COUNT:
                  conditional_print(f"Scraping up to {pages_to_scrape_count} pages from search results for additional query...", show_logs)
@@ -746,7 +747,7 @@ def search_and_synthesize(original_query, provided_website_urls, provided_youtub
 
         if keyword == "SUMMARIZE":
             if youtube_content_for_synthesis and transcript:
-                synthesis_prompt_special += "Please summarize the provided YouTube transcript in detail."
+                synthesis_prompt_special += "Please provide the full YouTube transcript. If it was truncated, mention that it was truncated due to length limits. Do not summarize or alter the content beyond truncation."
             elif youtube_content_for_synthesis and metadata:
                  synthesis_prompt_special += "No full transcript was retrieved. Please summarize the provided YouTube video metadata."
             else:
@@ -1190,7 +1191,6 @@ logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 @app.route('/search/', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
 def handle_search(anything=None):
-    # Log the incoming request details
     app.logger.debug(f"Request received: {request.method} {request.path}")
     app.logger.debug(f"Request headers: {dict(request.headers)}")
     if anything:
@@ -1208,9 +1208,8 @@ def handle_search(anything=None):
 
             if 'messages' in data and isinstance(data['messages'], list):
                 output_format = 'json'
-                messages = data['messages']
                 user_message_content = None
-                for message in reversed(messages):
+                for message in reversed(data['messages']):
                     if isinstance(message, dict) and message.get('role') == 'user':
                         content = message.get('content')
                         if isinstance(content, str):
@@ -1274,22 +1273,34 @@ def handle_search(anything=None):
     conditional_print(f"Provided Websites: {provided_website_urls}", show_logs)
     conditional_print(f"Provided YouTube: {provided_youtube_urls}", show_logs)
 
-    # Get the plan and flags from the AI planner
-    plan, ai_show_sources, ai_scrape_images = plan_execution_llm(
-        user_input_query,
-        provided_website_urls,
-        provided_youtube_urls,
-        cleaned_query_text_for_planner,
-        datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "",
-        show_logs=show_logs
-    )
+    # Determine show_sources and scrape_images flags based on query analysis or AI plan
+    # Default to True for now, will be updated by the planner
+    final_show_sources = True
+    final_scrape_images = True
 
-    # Use the flags determined by the AI
-    final_show_sources = ai_show_sources
-    final_scrape_images = ai_scrape_images
+    # If it's a special SUMMARIZE or SUMMARIZEW request, we handle flags internally
+    is_summarize_request = (len(provided_youtube_urls) == 1 and len(provided_website_urls) == 0 and cleaned_query_text_for_planner.strip().upper().startswith("SUMMARIZE"))
+    is_summarizew_request = (len(provided_youtube_urls) == 1 and cleaned_query_text_for_planner.strip().upper().startswith("SUMMARIZEW"))
 
-    conditional_print(f"AI Determined Flags: show_sources={final_show_sources}, scrape_images={final_scrape_images}", show_logs)
+    if not (is_summarize_request or is_summarizew_request):
+        # Get the plan and flags from the AI planner for general queries
+        plan, ai_show_sources, ai_scrape_images = plan_execution_llm(
+            user_input_query,
+            provided_website_urls,
+            provided_youtube_urls,
+            cleaned_query_text_for_planner,
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "",
+            show_logs=show_logs
+        )
+        final_show_sources = ai_show_sources
+        final_scrape_images = ai_scrape_images
+    else:
+        # For SUMMARIZE/SUMMARIZEW, force show_sources and scrape_images based on assumption that user wants all info
+        final_show_sources = True
+        final_scrape_images = True # Even if not explicitly asked, it's good to provide if found
+
+    conditional_print(f"Final Determined Flags: show_sources={final_show_sources}, scrape_images={final_scrape_images}", show_logs)
 
     future = process_executor.submit(
         search_and_synthesize,
@@ -1378,7 +1389,6 @@ def openai_chat_completions():
         if not data or 'messages' not in data or not isinstance(data['messages'], list):
             return jsonify({"error": "Invalid request: 'messages' array required."}), 400
 
-        # Extract user message (LangChain expects OpenAI format)
         user_input_query = None
         for message in reversed(data['messages']):
             if message.get('role') == 'user':
@@ -1387,33 +1397,38 @@ def openai_chat_completions():
         if not user_input_query:
             return jsonify({"error": "No user message found in 'messages'."}), 400
 
-        # Extract URLs and cleaned query
         provided_website_urls, provided_youtube_urls, cleaned_query_text_for_planner = extract_urls_from_query(user_input_query)
 
-        # Get plan and flags
-        plan, ai_show_sources, ai_scrape_images = plan_execution_llm(
-            user_input_query,
-            provided_website_urls,
-            provided_youtube_urls,
-            cleaned_query_text_for_planner,
-            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-            "",
-            show_logs=False
-        )
+        is_summarize_request = (len(provided_youtube_urls) == 1 and len(provided_website_urls) == 0 and cleaned_query_text_for_planner.strip().upper().startswith("SUMMARIZE"))
+        is_summarizew_request = (len(provided_youtube_urls) == 1 and cleaned_query_text_for_planner.strip().upper().startswith("SUMMARIZEW"))
 
-        # Run main logi
+        if not (is_summarize_request or is_summarizew_request):
+            plan, ai_show_sources, ai_scrape_images = plan_execution_llm(
+                user_input_query,
+                provided_website_urls,
+                provided_youtube_urls,
+                cleaned_query_text_for_planner,
+                datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+                "",
+                show_logs=False
+            )
+            final_show_sources = ai_show_sources
+            final_scrape_images = ai_scrape_images
+        else:
+            final_show_sources = True
+            final_scrape_images = True
+
         markdown_output, status_code, collected_data = search_and_synthesize(
             user_input_query,
             provided_website_urls,
             provided_youtube_urls,
             cleaned_query_text_for_planner,
-            show_sources=ai_show_sources,
-            scrape_images=ai_scrape_images,
+            show_sources=final_show_sources,
+            scrape_images=final_scrape_images,
             show_logs=False,
             output_format='json'
         )
 
-        # OpenAI-compatible response
         response_body = {
             "id": "chatcmpl-langchain",
             "object": "chat.completion",
@@ -1440,5 +1455,5 @@ def openai_chat_completions():
 def index():
     return "Pollinations Search API is running.", 200
 
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=5000, debug=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
