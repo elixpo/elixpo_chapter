@@ -1,0 +1,172 @@
+
+import requests
+import json
+from clean_query import cleanQuery 
+from search import google_search, ddgs_search, mojeek_form_search 
+from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+from scrape import fetch_full_text
+
+
+url = "https://text.pollinations.ai/openai"
+headers = {"Content-Type": "application/json"}
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "cleanQuery",
+            "description": "Takes in a query, and returns a json object with the following keys: 'websites', 'youtube', and 'cleaned_query'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The initial raw query mentioned made by the user"},
+                },
+                "required": ["query"]
+            }
+        }
+    }
+]
+
+sample_query = "Check out this website https://example.com and this YouTube video https://youtu.be/dQw4w9WgXcQ for more info."
+messages = [{"role": "user", "content": sample_query}]
+response = requests.post(
+    url,
+    headers=headers,
+    json={
+        "model": "openai",
+        "messages": messages,
+        "tools": tools,
+        "tool_choice": "auto"  
+    }
+
+)
+response.raise_for_status()
+response_data = response.json()
+if response_data.get("choices", [{}])[0].get("message", {}).get("tool_calls"):
+    tool_call = response_data["choices"][0]["message"]["tool_calls"][0]
+    function_name = tool_call["function"]["name"]
+    function_args = json.loads(tool_call["function"]["arguments"])
+    if function_name == "cleanQuery":
+        cleaned_query = cleanQuery(function_args.get("query"))
+        print("Cleaned Query Result:", cleaned_query)
+
+        messages.append(response_data["choices"][0]["message"]) 
+        messages.append(
+                {
+                    "tool_call_id": tool_call["id"], 
+                    "role": "tool",
+                    "name": function_name,
+                    "content": cleaned_query, 
+                }
+            )
+        second_payload = {
+                 "model": "openai",
+                 "messages": messages
+            }
+        second_response = requests.post(
+            url,
+            headers=headers,
+            json=second_payload
+        )
+        second_response.raise_for_status()
+        cleanedFinalQuery = second_response.json()
+        print(json.dumps(cleanedFinalQuery, indent=2))
+        print("\nFinal Assistant Message:", cleanedFinalQuery['choices'][0]['message']['content'])
+
+
+
+
+
+
+
+ OK THE FINAL PIPELINE IS -- 
+1. AI WILL DETERMINE IF THE MSG CAN BE PARSED NATIVELY, IF SO THEN RESPOND RIGHT AWAY
+2. IF THE RESPONSE CONTAINS URLS AND YOUTUBE LINKS THEN CLEAN THE URL AND GET THE QUERY AND THEN UNDERSTAND THE INTENT OF THE USER
+3. IF NOT THEN IT WILL PLAN IF THE MSG CAN BE GOOGLE SEARCHED, OR HAS SOME LINKS TO BE SCRAPED ACCORDING TO THE USER INTENT 
+(example if the user says 
+"What's the content of this website <url>")
+then return the summaried scraped content 
+"what's the content of this website <url> and what's a related youtube video about this"
+then summarie content and search web for related videos )
+
+4. AI CAN MAKE A FUNCTION CALL TO GET THE DETAILS FROM THE WEB SCRAPING TOO 
+5. IF NEEDED AI CAN MAKE CALLS TO GET DETAILS FROM YOUTUBE TRANSCRIPTS TOO 
+example:- 
+"whats's the transcript of this youtube video" 
+(directrly pass the youtube url to get the transcript and return it)
+"whats the purpoise of this youtibe videoi, suggest me research"
+(get the transcript, apply NLP to get the purpoise, search to get the latest research)
+
+6.AFTER ALL DONE, COLLECTIVELY GIVE A DETAILED INFO BACK TO THE USER WITH THE SOURCES ATTACHED
+(all this is happening in the conversational pipeline alright buddy)
+
+
+NOW HERE'S THE LIST OF FUNCTIONS WE HAVE 
+cleanQuery -- 
+
+"""
+Extracts website and YouTube URLs from the input query string, removes them from the query, 
+and returns a tuple containing a list of website URLs, a list of YouTube URLs, and the cleaned query string.
+Args:
+    query (str): The input string potentially containing URLs.
+Returns:
+    tuple: A tuple containing:
+        - website_urls (list): List of extracted website URLs (excluding YouTube).
+        - youtube_urls (list): List of extracted YouTube URLs.
+        - cleaned_query (str): The input query string with URLs removed and whitespace cleaned.
+"""
+
+
+"""
+from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+Functions:
+    get_youtube_video_id(url):  # Extracts the YouTube video ID from a given URL, returns a text response.
+    get_youtube_metadata(url):  # Retrieves the title and duration of a YouTube video, returns dict response.
+    get_youtube_transcript(url):  # Fetches the transcript of a YouTube video, returns a text response"""
+
+
+
+from search import google_search, ddgs_search, mojeek_form_search 
+
+"""
+Perform a Google search for the given query using Playwright, filter out blacklisted domains, and return up to 7 result URLs.
+Args:
+    query (str): The search query string.
+Returns:
+    list: A list of up to 7 filtered result URLs from Google search.
+"""
+# Uses Playwright to scrape Google search results, filtering out blacklisted domains.
+"""
+Perform a search on Mojeek for the given query and return up to 5 result URLs.
+Args:
+    query (str): The search query string.
+Returns:
+    list: A list of up to 5 result URLs from Mojeek search.
+"""
+# Uses requests and BeautifulSoup to scrape Mojeek search results.
+"""
+Perform a search on DuckDuckGo (HTML version) for the given query and return up to 5 result URLs.
+Args:
+    query (str): The search query string.
+Returns:
+    list: A list of up to 5 result URLs from DuckDuckGo search.
+"""
+
+
+"""
+Fetches the full text content, title, and up to three main images from a given web page URL.
+Args:
+    url (str): The URL of the web page to fetch.
+Returns:
+    dict: A dictionary containing:
+        - 'url' (str): The original URL.
+        - 'title' (str): The page title, if available.
+        - 'text' (str): The concatenated text content from selected HTML tags.
+        - 'images' (list): A list of up to three image URLs extracted from the page.
+        - 'error' (str, optional): Error message if an exception occurred.
+"""
+
+
+
+OK SO NOW WRITE ME THE FINAL SCRIPT WHICH WILL UTILIZE THIS FUNCTIONS TOGETHER AND MAKE A WORKOUT, NOW KEEP A  __NAME__ == __MAIN__ PART WHICH WILL HAVE ALL THE, 
+TESTING, AND PASS ONLY ONE QUERY TO THE ENTRY POINT, ALL THE IMPORTED FUNCTIONS ARE DEFINED
