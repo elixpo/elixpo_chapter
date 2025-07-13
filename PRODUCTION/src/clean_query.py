@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 
 
 def cleanQuery(query):
+    print("[INFO] Cleaning User Query")
     urls = re.findall(r'(https?://[^\s]+)', query)
     cleaned_query = query
     website_urls = []

@@ -20,6 +20,7 @@ MAX_TRANSCRIPT_WORD_COUNT = 5000
 
 
 def get_youtube_video_id(url):
+    print("[INFO] Getting Youtube video ID")
     parsed_url = urlparse(url)
     if "youtube.com" in parsed_url.netloc:
         video_id = parse_qs(parsed_url.query).get('v')
@@ -39,6 +40,7 @@ def get_youtube_video_id(url):
 
 
 def get_youtube_metadata(url, show_logs=get_youtube_video_metadata_show_log):
+    print("[INFO] Getting Youtube Metadata")
     video_id = get_youtube_video_id(url)
     if not video_id:
         conditional_print(f"[yt-dlp] Invalid URL provided for metadata: {url}", show_logs)
@@ -64,6 +66,7 @@ def get_youtube_metadata(url, show_logs=get_youtube_video_metadata_show_log):
 
 
 def get_youtube_transcript(url, show_logs=True):
+    print("[INFO] Getting Youtube Transcript")
     video_id = get_youtube_video_id(url)
     if not video_id:
         conditional_print("Attempted to get transcript with no video ID.", show_logs)

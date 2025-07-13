@@ -10,3 +10,5 @@ pytube
 youtube-transcript-api
 waitress
 selectolax
+timezonefinder
+geopy
