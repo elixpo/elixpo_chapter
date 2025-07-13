@@ -1,10 +1,19 @@
 from urllib.parse import urlparse, parse_qs
+"""
+This module provides utilities to extract metadata and transcripts from YouTube videos.
+Functions:
+    get_youtube_video_id(url):  # Extracts the YouTube video ID from a given URL.
+    get_youtube_metadata(url, show_logs=False):  # Retrieves the title and duration of a YouTube video.
+    get_youtube_transcript(url, show_logs=True):  # Fetches the transcript of a YouTube video, truncated if too long.
+"""
 import re
 from conditional_print import conditional_print
 from pytube import YouTube, exceptions
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
 from youtube_transcript_api.formatters import TextFormatter
+import yt_dlp
+
 
 get_youtube_video_metadata_show_log = False
 MAX_TRANSCRIPT_WORD_COUNT = 5000
@@ -29,45 +38,33 @@ def get_youtube_video_id(url):
     return None
 
 
-def get_youtube_video_metadata(url, show_logs=get_youtube_video_metadata_show_log):
+def get_youtube_metadata(url, show_logs=get_youtube_video_metadata_show_log):
     video_id = get_youtube_video_id(url)
     if not video_id:
-        conditional_print(f"[Pytube] Invalid URL provided for metadata: {url}", show_logs)
+        conditional_print(f"[yt-dlp] Invalid URL provided for metadata: {url}", show_logs)
         return None
-
-    try:
-        yt = YouTube(url)
-        metadata = {
-            "title": yt.title if hasattr(yt, 'title') else "Unknown",
-            "author": yt.author if hasattr(yt, 'author') else "Unknown",
-            "publish_date": yt.publish_date.strftime("%Y-%m-%d %H:%M:%S") if hasattr(yt, 'publish_date') and yt.publish_date else "Unknown",
-            "length": f"{yt.length // 60}m {yt.length % 60}s" if hasattr(yt, 'length') and yt.length is not None else "Unknown",
-            "views": f"{yt.views:,}" if hasattr(yt, 'views') and yt.views is not None else "Unknown",
-            "description": (
-                yt.description[:500] + "..." if hasattr(yt, 'description') and yt.description and len(yt.description) > 500
-                else getattr(yt, 'description', "No description available") or "No description available"
-            ),
-            "thumbnail_url": yt.thumbnail_url if hasattr(yt, 'thumbnail_url') else None,
-            "url": url
+    url = f"https://youtu.be/{video_id}" 
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'skip_download': True,
+        'simulate': True,
+        'extract_flat': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        title = info.get('title')
+        duration = info.get('duration', 0)
+        duration_m, duration_s = divmod(duration, 60)
+        return {
+            "title": title,
+            "duration": f"{duration_m}m {duration_s}s"
         }
-        conditional_print(f"[Pytube] Fetched metadata for {url}", show_logs)
-        return metadata
-
-    except exceptions.VideoUnavailable:
-        conditional_print(f"[Pytube] VideoUnavailable: {url}", show_logs)
-    except exceptions.LiveStreamError:
-        conditional_print(f"[Pytube] LiveStreamError (likely a live stream or not fully processed yet): {url}", show_logs)
-    except exceptions.RegexMatchError:
-        conditional_print(f"[Pytube] RegexMatchError: Invalid or malformed URL - {url}", show_logs)
-    except exceptions.ExtractError:
-        conditional_print(f"[Pytube] ExtractError: Could not extract data for - {url}", show_logs)
-    except Exception as e:
-        conditional_print(f"[Pytube] Unexpected error for {url}: {type(e).__name__} - {e}", show_logs)
-
-    return None
 
 
-def get_youtube_transcript(video_id, show_logs=True):
+
+def get_youtube_transcript(url, show_logs=True):
+    video_id = get_youtube_video_id(url)
     if not video_id:
         conditional_print("Attempted to get transcript with no video ID.", show_logs)
         return None
@@ -105,4 +102,14 @@ def get_youtube_transcript(video_id, show_logs=True):
         conditional_print(f"Unexpected error while fetching transcript for {video_id}: {type(e).__name__} - {e}", show_logs)
 
     return None
+
+
+
+if __name__ == "__main__":
+    metadata = get_youtube_metadata("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
+    print("Metadata:", metadata)
+    transcript = get_youtube_transcript("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
+    print("Transcript:", transcript)
+
+
 

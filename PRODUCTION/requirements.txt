@@ -1,7 +1,6 @@
 Flask
 flask-cors
 flask-limiter
-gunicorn
 python-dotenv
 requests
 tqdm
@@ -10,3 +9,4 @@ duckduckgo-search
 pytube
 youtube-transcript-api
 waitress
+selectolax
