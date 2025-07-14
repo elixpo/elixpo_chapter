@@ -13,3 +13,4 @@ quart
 uvicorn
 quart-cors
 slowapi
+yt-dlp
