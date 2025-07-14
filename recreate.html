@@ -192,7 +192,7 @@
                     placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."
                     rows="3"
                     aria-label="Enter your search query" 
-                ></textarea>
+                >what's 1+1?</textarea>
                 <button id="submitButton" class="relative bottom-[10%] search-btn px-4 py-2 ml-3 text-white font-medium flex items-center gap-2 rounded-lg shadow">
                     <i data-lucide="send" class="w-4 h-4"></i>
                     Search
@@ -213,136 +213,144 @@
     </main>
     <script>
 
-        SERVER_URL = "http://127.0.0.1:5000"
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+const SERVER_URL = "http://127.0.0.1:5000";
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+});
 
-        const input = document.getElementById('queryInput');
-        const submitButton = document.getElementById('submitButton');
-        const sseFeed = document.getElementById('sseFeed');
-        const finalOutput = document.getElementById('finalOutput');
-        const sseToggle = document.getElementById('sseToggle');
+const input = document.getElementById('queryInput');
+const submitButton = document.getElementById('submitButton');
+const sseFeed = document.getElementById('sseFeed');
+const finalOutput = document.getElementById('finalOutput');
+const sseToggle = document.getElementById('sseToggle');
 
-        function clearOutputs() {
-            sseFeed.innerHTML = '';
-            finalOutput.innerHTML = '';
-            sseFeed.style.display = sseToggle.checked ? 'block' : 'none';
-        }
+function clearOutputs() {
+    sseFeed.innerHTML = '';
+    finalOutput.innerHTML = '';
+    sseFeed.style.display = sseToggle.checked ? 'block' : 'none';
+}
 
-        function showResult(label, data) {
-            finalOutput.innerHTML = '';
-            let div = document.createElement('div');
-            if (typeof data === 'object' && data !== null && data.error) {
-                div.innerText = `[${label}] ERROR: ${data.error}`;
-                div.className = 'text-red-400';
-            } else if (typeof data === 'object' && data !== null && data.result !== undefined) {
-                div.innerHTML = marked.parse(data.result);
-            } else {
-                div.innerText = `[${label}] ${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
-            }
-            finalOutput.appendChild(div);
-        }
+function showResult(label, data) {
+    finalOutput.innerHTML = '';
+    let div = document.createElement('div');
+    if (typeof data === 'object' && data !== null && data.error) {
+        div.innerText = `[${label}] ERROR: ${data.error}`;
+        div.className = 'text-red-400';
+    } else if (typeof data === 'object' && data !== null && data.result !== undefined) {
+        div.innerHTML = marked.parse(data.result);
+    } else {
+        div.innerText = `[${label}] ${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+    }
+    finalOutput.appendChild(div);
+}
 
-        function doSearch() {
-            clearOutputs();
-            if (sseToggle.checked) {
-                sseFeed.style.display = 'block';
-                let finalChunks = [];
-                fetch(`${SERVER_URL}/search/sse`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: input.value })
-                }).then(response => {
-                    const reader = response.body.getReader();
-                    let decoder = new TextDecoder();
-                    let buffer = '';
-                    function read() {
-                        reader.read().then(({ done, value }) => {
-                            if (done) {
-                                // On stream end, join all final-part chunks if any
-                                if (finalChunks.length > 0) {
-                                    finalOutput.innerHTML = marked.parse(finalChunks.join(''));
-                                }
-                                return;
-                            }
-                            buffer += decoder.decode(value, { stream: true });
-                            let parts = buffer.split('\n\n');
-                            buffer = parts.pop();
-                            for (let part of parts) {
-                                let lines = part.trim().split('\n');
-                                let event = '', data = '';
-                                for (let line of lines) {
-                                    if (line.startsWith('event:')) event = line.replace('event:', '').trim();
-                                    if (line.startsWith('data:')) data += line.replace('data:', '').trim() + '\n';
-                                }
-                                data = data.trim();
-                                if (event === 'final-part') {
-                                    finalChunks.push(data);
-                                } 
-                                
-                                if (event === 'final') {
-                                    finalChunks.push(data);
-                                    let html = marked.parse(finalChunks.join(''));
+function doSearch() {
+    clearOutputs();
 
-                        
-                                    const tempDiv = document.createElement('div');
-                                    tempDiv.innerHTML = html;
+    if (sseToggle.checked) {
+        sseFeed.style.display = 'block';
+        const finalChunks = [];
 
-                                    const images = Array.from(tempDiv.querySelectorAll('img'));
-                                    if (images.length > 0) {
-                                        const imageGrid = document.createElement('div');
-                                        imageGrid.className = 'image-grid overflow-x-auto flex-nowrap';
-                                        images.forEach(img => {
-                                            imageGrid.appendChild(img);
-                                        });
-                                        tempDiv.querySelectorAll('img').forEach(img => img.remove());
-                                        tempDiv.appendChild(imageGrid);
-                                    }
-                                    finalOutput.innerHTML = tempDiv.innerHTML;
-                                    finalChunks = [];
-                                }
+        fetch(`${SERVER_URL}/search/sse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: input.value })
+        }).then(response => {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-                                else if (event === 'error') {
-                                    finalOutput.innerHTML = `<span class="text-red-400">${data}</span>`;
-                                } else if (event) {
-                                    let div = document.createElement('div');
-                                    div.className = 'mb-1';
-                                    div.innerHTML = `<span class="text-blue-400 font-mono">[${event}]</span> ${data}`;
-                                    sseFeed.appendChild(div);
-                                    sseFeed.scrollTop = sseFeed.scrollHeight;
-                                }
-                            }
-                            read();
-                        });
+            function readStream() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        if (finalChunks.length > 0) {
+                            renderFinalOutput(finalChunks.join(''));
+                        }
+                        return;
                     }
-                    read();
+                    buffer += decoder.decode(value, { stream: true });
+                    let parts = buffer.split('\n\n');
+                    buffer = parts.pop();
+                    parts.forEach(handleSSEPart);
+                    readStream();
                 });
-            } else {
-                sseFeed.style.display = 'none';
-                sseFeed.innerHTML = '';
-                finalOutput.innerHTML = '<span class="text-gray-400">Loading...</span>';
-                fetch(`${SERVER_URL}/search`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: input.value })
-                })
-                .then(r => r.json())
-                .then(data => showResult('POST', data))
-                .catch(e => showResult('POST', {error: e.toString()}));
             }
-        }
 
-        submitButton.onclick = (e) => { e.preventDefault(); doSearch(); };
-        sseToggle.onchange = () => { clearOutputs(); };
+            function handleSSEPart(part) {
+                let lines = part.trim().split('\n');
+                let event = '', data = '';
+                for (let line of lines) {
+                    if (line.startsWith('event:')) event = line.replace('event:', '').trim();
+                    if (line.startsWith('data:')) data += line.replace('data:', '').trim() + '\n';
+                }
+                data = data.trim();
 
-        // Optional: Enter submits
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                doSearch();
+                if (event === 'final-part') {
+                    finalChunks.push(data);
+                } else if (event === 'final') {
+                    finalChunks.push(data);
+                    renderFinalOutput(finalChunks.join(''));
+                } else if (event === 'error') {
+                    finalOutput.innerHTML = `<span class="text-red-400">${data}</span>`;
+                } else if (event) {
+                    const div = document.createElement('div');
+                    div.className = 'mb-1';
+                    div.innerHTML = `<span class="text-blue-400 font-mono">[${event}]</span> ${data}`;
+                    sseFeed.appendChild(div);
+                    sseFeed.scrollTop = sseFeed.scrollHeight;
+                }
             }
+
+            function renderFinalOutput(markdown) {
+                let html = marked.parse(markdown);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                const images = Array.from(tempDiv.querySelectorAll('img'));
+                if (images.length > 0) {
+                    const imageGrid = document.createElement('div');
+                    imageGrid.className = 'image-grid overflow-x-auto flex-nowrap';
+                    images.forEach(img => imageGrid.appendChild(img));
+                    tempDiv.querySelectorAll('img').forEach(img => img.remove());
+                    tempDiv.appendChild(imageGrid);
+                }
+
+                finalOutput.innerHTML = tempDiv.innerHTML;
+            }
+
+            readStream();
         });
+    } else {
+        sseFeed.style.display = 'none';
+        finalOutput.innerHTML = '<span class="text-gray-400">Loading...</span>';
+
+        fetch(`${SERVER_URL}/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: input.value })
+        })
+        .then(r => r.json())
+        .then(data => showResult('POST', data))
+        .catch(e => showResult('POST', { error: e.toString() }));
+    }
+}
+
+submitButton.onclick = (e) => {
+    e.preventDefault();
+    doSearch();
+};
+
+sseToggle.onchange = () => {
+    clearOutputs();
+};
+
+input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        doSearch();
+    }
+});
+
     </script>
 </body>
 </html>
