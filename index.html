@@ -3,45 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    
     <title>Elixpo-Search: AI Search & Synthesize with Citations & Images</title>
     <meta name="description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
     <meta name="keywords" content="AI search, information synthesis, LLM, Langchain, web search, citations, images, YouTube summary, open source, search assistant, realtime search">
     <meta name="author" content="Elixpo-Search Project">
     <meta name="robots" content="index, follow"> 
-
-    
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://search.elixpo.com"> 
     <meta property="og:title" content="Elixpo-Search: AI Search & Synthesize with Citations & Images">
     <meta property="og:description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
-    
     <meta property="og:image" content="https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283">
-
-    
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://search.elixpo.com"> 
     <meta property="twitter:title" content="Elixpo-Search: AI Search & Synthesize with Citations & Images">
     <meta property="twitter:description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
-     
     <meta property="twitter:image" content="https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283">
-
-    
     <link rel="icon" type="image/png" href="CSS/IMAGES/ElixpoSearchIcon.png"> 
-
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="CSS/searchAgent.css">
-
-    <!-- Scripts -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
             theme: {
@@ -60,6 +44,212 @@
             }
         }
     </script>
+    <style>
+        #sseFeed {
+            background: #212223;
+            color: #b4b4b4;
+            border-radius: 0.5rem;
+            padding: 1em;
+            min-height: 80px;
+            margin-bottom: 1.5em;
+            font-size: 0.98em;
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            white-space: pre-wrap;
+            max-height: 180px;
+            overflow-y: auto;
+            display: none;
+        }
+        #finalOutput {
+            background: #2a2b2d;
+            color: #fff;
+            border-radius: 0.5rem;
+            padding: 1.5em;
+            min-height: 120px;
+            font-size: 1.1em;
+            margin-bottom: 1.5em;
+            box-shadow: 0 2px 8px #0002;
+        }
+        .search-btn {
+            background: #444ce7;
+            transition: background 0.2s;
+        }
+        .search-btn:hover {
+            background: #3a41c5;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            font-size: 1em;
+            color: #b4b4b4;
+            margin-left: 0.5em;
+            cursor: pointer;
+        }
+        .checkbox-label input[type="checkbox"] {
+            accent-color: #444ce7;
+            width: 1.1em;
+            height: 1.1em;
+        }
+        #finalOutput h1, #finalOutput h2, #finalOutput h3 {
+    font-weight: 600;
+    color: #ffffff;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    }
+
+    #finalOutput h1 { font-size: 1.8rem; border-bottom: 1px solid #444ce7; padding-bottom: 0.2rem; }
+    #finalOutput h2 { font-size: 1.4rem; color: #b4b4b4; }
+    #finalOutput h3 { font-size: 1.2rem; color: #888; }
+
+    #finalOutput p {
+        color: #cfcfcf;
+        margin-bottom: 0.75rem;
+        line-height: 1.6;
+    }
+
+    #finalOutput blockquote {
+        border-left: 4px solid #444ce7;
+        background: #212223;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        color: #b4b4b4;
+        font-style: italic;
+        border-radius: 0.5rem;
+    }
+
+    #finalOutput ul, #finalOutput ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+        color: #b4b4b4;
+    }
+
+    #finalOutput ul li::marker {
+        color: #444ce7;
+    }
+    #finalOutput code {
+        background: #18191a;
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+        color: #58a6ff;
+        font-family: 'Fira Mono', 'Consolas', monospace;
+        font-size: 0.95em;
+    }
+
+    #finalOutput pre {
+        background: #1e1f20;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        color: #ccc;
+        font-family: 'Fira Mono', 'Consolas', monospace;
+        margin-bottom: 1rem;
+    }
+
+    /* Link Styling */
+    #finalOutput a {
+        color: #444ce7;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    #finalOutput a:hover {
+        color: #3a41c5;
+    }
+
+    /* Images Grid */
+    #finalOutput img {
+        width: 250px;
+        height: 250px;
+        object-fit: cover;
+        border-radius: 0.75rem;
+        margin: 0.5rem;
+        box-shadow: 0 2px 5px #0003;
+    }
+
+    #finalOutput .image-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-top: 1rem;
+    }
+    .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 22px;
+}
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #3a3b3c;
+    transition: .4s;
+    border-radius: 34px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background-color: #444ce7;
+}
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+.api-toggle {
+    background: #212223;
+    color: #b4b4b4;
+    padding: 0.5em 1em;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    border: 1px solid #333;
+    transition: all 0.2s;
+    user-select: none;
+}
+.api-toggle:hover {
+    background: #2a2b2d;
+    color: #fff;
+    border-color: #444ce7;
+}
+
+.api-toggle.active {
+    background: #444ce7;
+    color: #fff;
+    border-color: transparent;
+}
+
+/* Modern Scrollbars */
+#sseFeed, #finalOutput {
+    scrollbar-width: thin;
+    scrollbar-color: #444ce7 #18191a;
+}
+#sseFeed::-webkit-scrollbar, #finalOutput::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+#sseFeed::-webkit-scrollbar-thumb, #finalOutput::-webkit-scrollbar-thumb {
+    background-color: #444ce7;
+    border-radius: 4px;
+}
+#sseFeed::-webkit-scrollbar-track, #finalOutput::-webkit-scrollbar-track {
+    background: #18191a;
+}
+
+    </style>
 </head>
 <body class="bg-darkBg text-white min-h-screen flex items-center justify-center"> 
     <main class="max-w-4xl mx-auto px-6 py-8 w-full"> 
@@ -67,9 +257,8 @@
             <h1 class="text-5xl font-bold text-primary mb-4">Elixpo-Search</h1>
             <p class="text-gray-300 text-xl mb-4">AI Search & Synthesize</p>
         </header>
-
         <section class="search-input-container max-w-2xl mx-auto mb-8"> 
-            <div class="flex items-start p-4">
+            <div class="flex items-start p-4 bg-darkBg2 rounded-lg shadow">
                 <i data-lucide="message-circle" class="w-5 h-5 text-gray-400 mt-3 mr-3 flex-shrink-0"></i>
                 <textarea
                     id="queryInput"
@@ -77,36 +266,217 @@
                     placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."
                     rows="3"
                     aria-label="Enter your search query" 
-                ></textarea>
-                <button id="submitButton" class="relative bottom-[10%] search-btn px-4 py-2 ml-3 text-white font-medium flex items-center gap-2">
+                >what's 1+1?</textarea>
+                <button id="submitButton" class="relative bottom-[10%] search-btn px-4 py-2 ml-3 text-white font-medium flex items-center gap-2 rounded-lg shadow">
                     <i data-lucide="send" class="w-4 h-4"></i>
                     Search
                 </button>
             </div>
-        </section>
-
-        <div id="statusMessage" class="text-center mb-6 hidden"></div> 
-
-        <section id="resultsContainer"> 
-             
-            <article class="result-card p-6 max-w-4xl mx-auto"> 
-                <div class="prose prose-invert max-w-none">
-                    <h3 class="text-xl font-semibold mb-4 text-white">Welcome!</h3>
-                    <p class="text-gray-300">This is Elixpo Search, a realtime upto-date LLM + Langchain Supported Search Assistant (Open Source).
-                        An intelligent search system that synthesizes information from multiple web sources, providing comprehensive answers with citations and relevant images.
-                    </p>
+            <div class="flex items-center justify-between gap-4 mt-4 py-3 px-5">
+                <label class="flex items-center gap-3">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="sseToggle">
+                        <span class="slider"></span>
+                    </div>
+                    <span class="text-gray-400 text-sm">Stream (SSE)</span>
+                </label>
+            
+                <div class="flex gap-2">
+                    <button id="classicBtn" class="api-toggle active">Classic</button>
+                    <button id="chatBtn" class="api-toggle">Chat API</button>
                 </div>
-            </article>
-            <!-- Search results will be appended here -->
+            </div>            
+        </section>
+        <div id="statusMessage" class="text-center mb-6 hidden"></div> 
+        <section id="resultsContainer"> 
+            <div id="sseFeed" class="mb-4"></div>
+            <div id="finalOutput" class="mb-4"></div>
         </section>
     </main>
-
-    <script src="JS/searchAgent.js"></script>
     <script>
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+
+const SERVER_URL = "http://127.0.0.1:5000";
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+});
+
+const input = document.getElementById('queryInput');
+const submitButton = document.getElementById('submitButton');
+const sseFeed = document.getElementById('sseFeed');
+const finalOutput = document.getElementById('finalOutput');
+const sseToggle = document.getElementById('sseToggle');
+const classicBtn = document.getElementById('classicBtn');
+const chatBtn = document.getElementById('chatBtn');
+let useChatApi = false;
+
+function clearOutputs() {
+    sseFeed.innerHTML = '';
+    finalOutput.innerHTML = '';
+    sseFeed.style.display = sseToggle.checked ? 'block' : 'none';
+}
+
+classicBtn.addEventListener('click', () => {
+    useChatApi = false;
+    classicBtn.classList.add('active');
+    chatBtn.classList.remove('active');
+    clearOutputs();
+});
+
+chatBtn.addEventListener('click', () => {
+    useChatApi = true;
+    chatBtn.classList.add('active');
+    classicBtn.classList.remove('active');
+    clearOutputs();
+});
+
+function showResult(label, data) {
+    finalOutput.innerHTML = '';
+    let div = document.createElement('div');
+    if (typeof data === 'object' && data !== null && data.error) {
+        div.innerText = `[${label}] ERROR: ${data.error}`;
+        div.className = 'text-red-400';
+    } else if (typeof data === 'object' && data !== null && data.result !== undefined) {
+        div.innerHTML = marked.parse(data.result);
+    } else {
+        div.innerText = `[${label}] ${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+    }
+    finalOutput.appendChild(div);
+}
+
+function doSearch() {
+    clearOutputs();
+
+    if (sseToggle.checked) {
+        sseFeed.style.display = 'block';
+        const finalChunks = [];
+
+        fetch(`${SERVER_URL}/search/sse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: input.value })
+        }).then(response => {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            function readStream() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        if (finalChunks.length > 0) {
+                            renderFinalOutput(finalChunks.join(''));
+                        }
+                        return;
+                    }
+                    buffer += decoder.decode(value, { stream: true });
+                    let parts = buffer.split('\n\n');
+                    buffer = parts.pop();
+                    parts.forEach(handleSSEPart);
+                    readStream();
+                });
+            }
+
+            function handleSSEPart(part) {
+                let lines = part.trim().split('\n');
+                let event = '', data = '';
+                for (let line of lines) {
+                    if (line.startsWith('event:')) event = line.replace('event:', '').trim();
+                    if (line.startsWith('data:')) data += line.replace('data:', '').trim() + '\n';
+                }
+                data = data.trim();
+
+                if (event === 'final-part') {
+                    finalChunks.push(data);
+                } else if (event === 'final') {
+                    finalChunks.push(data);
+                    renderFinalOutput(finalChunks.join(''));
+                } else if (event === 'error') {
+                    finalOutput.innerHTML = `<span class="text-red-400">${data}</span>`;
+                } else if (event) {
+                    const div = document.createElement('div');
+                    div.className = 'mb-1';
+                    div.innerHTML = `<span class="text-blue-400 font-mono">[${event}]</span> ${data}`;
+                    sseFeed.appendChild(div);
+                    sseFeed.scrollTop = sseFeed.scrollHeight;
+                }
+            }
+
+            function renderFinalOutput(markdown) {
+                let html = marked.parse(markdown);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                const images = Array.from(tempDiv.querySelectorAll('img'));
+                if (images.length > 0) {
+                    const imageGrid = document.createElement('div');
+                    imageGrid.className = 'image-grid overflow-x-auto flex-nowrap';
+                    images.forEach(img => imageGrid.appendChild(img));
+                    tempDiv.querySelectorAll('img').forEach(img => img.remove());
+                    tempDiv.appendChild(imageGrid);
+                }
+
+                finalOutput.innerHTML = tempDiv.innerHTML;
+            }
+
+            readStream();
         });
+    } 
+
+    else if (useChatApi) {
+    finalOutput.innerHTML = '<span class="text-gray-400">Loading (Chat API)...</span>';
+    fetch(`${SERVER_URL}/search/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            messages: [{ role: "user", content: input.value }]
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.choices && data.choices[0]) {
+            showResult('Chat API', { result: data.choices[0].message.content });
+        } else {
+            showResult('Chat API', data);
+        }
+    })
+    .catch(e => showResult('Chat API', { error: e.toString() }));
+    return;
+}
+    
+    else {
+        sseFeed.style.display = 'none';
+        finalOutput.innerHTML = '<span class="text-gray-400">Loading...</span>';
+
+        fetch(`${SERVER_URL}/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: input.value })
+        })
+        .then(r => r.json())
+        .then(data => showResult('POST', data))
+        .catch(e => showResult('POST', { error: e.toString() }));
+    }
+
+
+    
+
+}
+
+submitButton.onclick = (e) => {
+    e.preventDefault();
+    doSearch();
+};
+
+sseToggle.onchange = () => {
+    clearOutputs();
+};
+
+input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        doSearch();
+    }
+});
+
     </script>
 </body>
 </html>
