@@ -79,7 +79,7 @@ async def search_json():
     app.logger.debug(f"Returning response for /search: {final_response}")
     return jsonify({"result": final_response})
 
-@app.route("/search/v1/chat/completions", methods=["GET", "POST"])
+@app.route("/v1/chat/completions", methods=["GET", "POST"])
 async def openai_chat_completions():
     if request.method == "POST":
         data = await request.get_json(force=True, silent=True) or {}
