@@ -161,7 +161,7 @@ def run_elixposearch_pipeline(user_query: str, event_id: str = None):
         },
         {
             "role": "user",
-            "content": f"Answer my query with sources and proper markdown. For most questions, give a moderately detailed answer; only provide extra detail if the question is complex or requires special attention. Max characters = 4500. Query: {user_query}"
+            "content": f"Answer my query with sources and proper markdown. Query: {user_query}"
         }
     ]
 
