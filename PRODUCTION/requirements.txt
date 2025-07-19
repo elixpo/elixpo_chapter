@@ -3,7 +3,7 @@ requests
 tqdm
 beautifulsoup4
 playwright
-duckduckgo-search
+ddgs
 pytube
 youtube-transcript-api
 selectolax

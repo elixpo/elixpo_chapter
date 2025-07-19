@@ -11,8 +11,8 @@ marked.setOptions({
     }
 });
 
-const SERVER_URL = "http://127.0.0.1:5000";
-// const SERVER_URL = "https://search.pollinations.ai";
+// const SERVER_URL = "http://127.0.0.1:5000";
+const SERVER_URL = "https://search.pollinations.ai";
 const input = document.getElementById('queryInput');
 const submitButton = document.getElementById('submitButton');
 const sseFeed = document.getElementById('sseFeed');
