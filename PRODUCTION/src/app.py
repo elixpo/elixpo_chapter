@@ -15,8 +15,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 app.logger.setLevel(logging.INFO)
 
 # Increased concurrency settings
-request_queue = asyncio.Queue(maxsize=100)  # Larger queue
-processing_semaphore = asyncio.Semaphore(15)  # Increased from 10 to 15
+request_queue = asyncio.Queue(maxsize=100) 
+processing_semaphore = asyncio.Semaphore(15)  
 active_requests = {}
 
 # Global stats for monitoring
