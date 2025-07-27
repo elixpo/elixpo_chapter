@@ -7,6 +7,8 @@ import logging
 import sys
 import uuid
 from searchPipeline import run_elixposearch_pipeline
+import hypercorn.asyncio
+from hypercorn.config import Config
 
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
@@ -118,8 +120,18 @@ async def startup():
 
 @app.route("/search/sse", methods=["POST"])
 async def search_sse():
-    data = await request.get_json()
-    user_query = data.get("query", "")
+    data = await request.get_json(force=True, silent=True) or {}
+    # Extract user_query from messages (OpenAI format) or fallback to query/message/prompt
+    user_query = ""
+    messages = data.get("messages", [])
+    if messages and isinstance(messages, list):
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                user_query = msg.get("content", "").strip()
+                break
+    if not user_query:
+        user_query = data.get("query") or data.get("message") or data.get("prompt") or ""
+
     request_id = f"sse-{uuid.uuid4().hex[:8]}"
     event_id = f"elixpo-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
     
@@ -133,26 +145,36 @@ async def search_sse():
 
     async def event_stream():
         try:
-            # Add to active requests for monitoring
             active_requests[request_id] = {
                 "type": "sse",
                 "query": user_query[:50],
                 "start_time": time.time()
             }
-            
-            # Acquire semaphore to limit concurrent SSE requests
             async with processing_semaphore:
                 # Stream directly from pipeline - REAL-TIME
                 async for chunk in run_elixposearch_pipeline(user_query, event_id):
-                    yield chunk
-                    # Small delay to prevent overwhelming the client
+                    # Parse chunk for event/data lines
+                    lines = chunk.splitlines()
+                    event_type = None
+                    data_lines = []
+                    for line in lines:
+                        if line.startswith("event:"):
+                            event_type = line.replace("event:", "").strip()
+                        elif line.startswith("data:"):
+                            data_lines.append(line.replace("data:", "").strip())
+                    data_text = "\n".join(data_lines)
+                    # Only stream non-empty data as OpenAI-style SSE chunk
+                    if data_text:
+                        yield f'data: {json.dumps({"choices":[{"delta":{"content":data_text}}]})}\n\n'
+                    # Optionally, send [DONE] marker at end
+                    if event_type == "final":
+                        yield 'data: [DONE]\n\n'
+                        break
                     await asyncio.sleep(0.01)
-                    
         except Exception as e:
-            yield f"event: error\ndata: Error: {e}\n\n"
+            yield f'data: {json.dumps({"error": str(e)})}\n\n'
             app.logger.error(f"SSE error for {request_id}: {e}")
         finally:
-            # Clean up
             active_requests.pop(request_id, None)
             global_stats["successful_requests"] += 1
             return
@@ -294,8 +316,6 @@ async def health():
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    import hypercorn.asyncio
-    from hypercorn.config import Config
     config = Config()
     config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False

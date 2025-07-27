@@ -153,6 +153,8 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
     - Provide reliable sources when external data is used
     - Mention date relevance if information is time-sensitive
 
+    **Answer in english, unless mentioned explicitly to use another language.**
+
     Tone:
     Detailed response -- professional, clear, confident. No unnecessary tool usage for basic questions, but ALWAYS search for current/political information.
     """
