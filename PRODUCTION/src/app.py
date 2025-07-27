@@ -192,7 +192,6 @@ async def search_sse():
 
 
 
-
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
 async def search_json(anything=None):
@@ -200,9 +199,10 @@ async def search_json(anything=None):
     request_id = f"json-{uuid.uuid4().hex[:8]}"
     
     update_request_stats()
-    
+
     if request.method == "POST":
         data = await request.get_json(force=True, silent=True) or {}
+        stream_flag = data.get("stream", False)
         user_query = ""
         messages = data.get("messages", [])
         if messages and isinstance(messages, list):
@@ -215,7 +215,13 @@ async def search_json(anything=None):
         if not user_query:
             user_query = data.get("query") or data.get("message") or data.get("prompt") or ""
     else:
-        user_query = request.args.get("query", "").strip()
+        args = request.args
+        stream_flag = args.get("stream", "false").lower() == "true"
+        user_query = args.get("query", "").strip()
+
+
+    if stream_flag:
+        return await search_sse()
 
     if not user_query:
         return jsonify({"error": "Missing query"}), 400
@@ -231,9 +237,7 @@ async def search_json(anything=None):
         return jsonify({"error": "Server overloaded, try again later"}), 503
     
     try:
-        # Wait for result with shorter timeout
         final_response = await asyncio.wait_for(task.result_future, timeout=180)  # 3 min
-        
     except asyncio.TimeoutError:
         final_response = "Request timed out"
         app.logger.error(f"Request {request_id} timed out")
@@ -245,6 +249,9 @@ async def search_json(anything=None):
         return jsonify([{"message": {"role": "assistant", "content": final_response}}])
     else:
         return jsonify({"result": final_response})
+
+
+
 
 @app.route("/v1/chat/completions", methods=["GET", "POST"])
 async def openai_chat_completions():

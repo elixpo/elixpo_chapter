@@ -11,8 +11,8 @@ marked.setOptions({
     }
 });
 
-// const SERVER_URL = "http://127.0.0.1:5000";
-const SERVER_URL = "https://search.pollinations.ai";
+const SERVER_URL = "http://127.0.0.1:5000";
+// const SERVER_URL = "https://search.pollinations.ai";
 const input = document.getElementById('queryInput');
 const submitButton = document.getElementById('submitButton');
 const sseFeed = document.getElementById('sseFeed');
@@ -78,14 +78,19 @@ function doSearch() {
     const query = input.value;
     input.value = '';
 
+    const chatPayload = {
+        stream: sseToggle.checked,
+        messages: [{ role: "user", content: query }]
+    };
+
     if (sseToggle.checked) {
         sseFeed.style.display = 'block';
         const finalChunks = [];
 
-        fetch(`${SERVER_URL}/search/sse`, {
+        fetch(`${SERVER_URL}/search`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify(chatPayload)
         })
         .then(response => {
             if (!response.ok) throw new Error("Network error");
@@ -115,7 +120,6 @@ function doSearch() {
                                 sseFeed.scrollTop = sseFeed.scrollHeight;
                                 finalChunks.push(content);
                             } catch {
-                                // Not JSON, just show raw
                                 const div = document.createElement('div');
                                 div.className = 'mb-1';
                                 div.innerHTML = `<span class="text-blue-400 font-mono">[message]</span> ${marked.parse(data)}`;
@@ -143,12 +147,10 @@ function doSearch() {
 
     else if (useChatApi) {
         finalOutput.innerHTML = '<span class="text-gray-400">Loading (Chat API)...</span>';
-        fetch(`${SERVER_URL}/search/v1/chat/completions`, {
+        fetch(`${SERVER_URL}/v1/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: query }]
-            })
+            body: JSON.stringify(chatPayload)
         })
         .then(r => r.json())
         .then(data => showResult('Chat API', data))
@@ -161,13 +163,15 @@ function doSearch() {
         fetch(`${SERVER_URL}/search`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify(chatPayload)
         })
         .then(r => r.json())
         .then(data => showResult('POST', data))
         .catch(e => showResult('POST', { error: e.toString() }));
     }
 }
+
+
 
 submitButton.onclick = (e) => {
     e.preventDefault();
