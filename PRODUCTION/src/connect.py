@@ -1,41 +1,46 @@
-import aiohttp
-import asyncio
-import sys
+import requests
+import json
+import sseclient 
 
-SERVER_URL = "http://127.0.0.1:5000/search/sse"
+url = "http://localhost:5000/search/sse"
+payload = {
+    "model": "openai",
+    "messages": [
+        {"role": "user", "content": "what is the capital of France?"},
+    ],
+    "stream": True
+}
+headers = {
+    "Content-Type": "application/json",
+    "Accept": "text/event-stream"
+}
 
-async def sse_search(query):
-    async with aiohttp.ClientSession() as session:
-        async with session.post(SERVER_URL, json={"query": query}) as resp:
-            if resp.status != 200:
-                print(f"Error: {resp.status}")
-                print(await resp.text())
-                return
-            buffer = ""
-            async for line in resp.content:
-                decoded = line.decode("utf-8")
-                buffer += decoded
-                while "\n\n" in buffer:
-                    part, buffer = buffer.split("\n\n", 1)
-                    handle_sse_part(part)
+try:
+    response = requests.post(url, headers=headers, json=payload, stream=True)
+    response.raise_for_status()
 
-def handle_sse_part(part):
-    lines = part.strip().split("\n")
-    event = ""
-    data = ""
-    for line in lines:
-        if line.startswith("event:"):
-            event = line.replace("event:", "").strip()
-        elif line.startswith("data:"):
-            data += line.replace("data:", "").strip() + "\n"
-    data = data.strip()
-    if event == "final" or event == "final-part":
-        print(f"[{event}] {data}")
-    elif event == "error":
-        print(f"[ERROR] {data}")
-    elif event:
-        print(f"[{event}] {data}")
+    client = sseclient.SSEClient(response)
+    full_response = ""
+    print("Streaming response:")
+    for event in client.events():
+        if event.data:
+            try:
+                # Handle potential '[DONE]' marker
+                if event.data.strip() == '[DONE]':
+                     print("\nStream finished.")
+                     break
+                chunk = json.loads(event.data)
+                content = chunk.get('choices', [{}])[0].get('delta', {}).get('content')
+                if content:
+                    print(content, end='', flush=True)
+                    full_response += content
+            except json.JSONDecodeError:
+                 print(f"\nReceived non-JSON data (or marker other than [DONE]): {event.data}")
 
-if __name__ == "__main__":
-    query = "what's the latest news from india?"
-    asyncio.run(sse_search(query))
+    print("\n--- End of Stream ---")
+    # print("Full streamed response:", full_response)
+
+except requests.exceptions.RequestException as e:
+    print(f"\nError during streaming request: {e}")
+except Exception as e:
+    print(f"\nError processing stream: {e}")

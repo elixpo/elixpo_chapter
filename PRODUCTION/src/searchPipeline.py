@@ -79,7 +79,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
 
     try:
         await google_agent.start()
-        google_req_count = 0  # Track number of Google searches
+        google_req_count = 0  
 
         current_utc_datetime = datetime.now(timezone.utc)
         current_utc_time = current_utc_datetime.strftime("%H:%M UTC")
@@ -215,7 +215,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
                 function_args = json.loads(tool_call["function"]["arguments"])
                 if event_id:
                     print(f"[INFO] Tool call detected: {function_name} with args: {function_args}")
-                    yield format_sse("INFO", f" Execution In Progress ")
+                    yield format_sse("INFO", f" Execution In Progress \n")
                 
                 tool_result = "[Tool execution failed or returned no data.]"
 
@@ -241,7 +241,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
                         tool_result = convert_utc_to_local(utc_dt_obj, utc_offset).strftime('%Y-%m-%d %H:%M:%S')
 
                     elif function_name == "web_search":
-                        web_event = emit_event("INFO", f" Surfing Internet ")
+                        web_event = emit_event("INFO", f" Surfing Internet \n")
                         if web_event:
                             yield web_event
                         print(f"[INFO] Performing web search")
@@ -277,7 +277,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
                     elif function_name == "get_youtube_transcript":
                         print(f"[INFO] Getting YouTube transcripts for URLs")
                         if event_id:
-                            yield format_sse("INFO", f" Watching Youtube ")
+                            yield format_sse("INFO", f" Watching Youtube \n")
                         urls = [function_args.get("url")]
                         results = fetch_youtube_parallel(urls, mode='transcript')
                         for url, transcript in results.items():
@@ -288,7 +288,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
                     elif function_name == "fetch_full_text":
                         print(f"[INFO] Fetching full text for URLs")
                         if event_id:
-                            yield format_sse("INFO", f" Writing Script ")
+                            yield format_sse("INFO", f" Writing Script \n")
                         urls = [function_args.get("url")]
                         parallel_results = fetch_url_content_parallel(urls)
                         for url, (text_content, image_urls) in parallel_results.items():
@@ -311,7 +311,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
                 })
                 if event_id:
                     print(f"[INFO] Tool {function_name} executed successfully.")
-                    yield format_sse("INFO", f" Execution Completed! ")
+                    yield format_sse("INFO", f" Execution Completed! \n")
 
         # Handle final response
         if final_message_content:
@@ -333,7 +333,7 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
             print(f"[INFO] Preparing final response with sources and images")
             
             if event_id:
-                yield format_sse("INFO", " SUCCESS ")
+                yield format_sse("INFO", " SUCCESS")
                 chunk_size = 5000 
                 for i in range(0, len(response_with_sources), chunk_size):
                     chunk = response_with_sources[i:i+chunk_size]

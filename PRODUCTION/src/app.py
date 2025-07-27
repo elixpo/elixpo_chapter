@@ -8,6 +8,7 @@ import sys
 import uuid
 from searchPipeline import run_elixposearch_pipeline
 import hypercorn.asyncio
+import json
 from hypercorn.config import Config
 
 app = Quart(__name__)
@@ -47,9 +48,7 @@ async def process_request_worker():
         try:
             task = await asyncio.wait_for(request_queue.get(), timeout=1.0)
             
-            
             if task.request_type == 'sse':
-                # This shouldn't happen anymore, but just in case
                 task.result_future.set_exception(Exception("SSE requests should not be queued"))
                 continue
             
@@ -118,10 +117,11 @@ async def startup():
         asyncio.create_task(process_request_worker())
     app.logger.info("Started 8 request processing workers")
 
+
 @app.route("/search/sse", methods=["POST"])
 async def search_sse():
     data = await request.get_json(force=True, silent=True) or {}
-    # Extract user_query from messages (OpenAI format) or fallback to query/message/prompt
+
     user_query = ""
     messages = data.get("messages", [])
     if messages and isinstance(messages, list):
@@ -134,14 +134,15 @@ async def search_sse():
 
     request_id = f"sse-{uuid.uuid4().hex[:8]}"
     event_id = f"elixpo-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-    
+
     update_request_stats()
     app.logger.info(f"SSE request {request_id}: {user_query[:50]}...")
 
-    # Check if server is overloaded
     if len(active_requests) >= 15:
-        return Response("event: error\ndata: Server overloaded, try again later\n\n", 
-                       content_type="text/event-stream")
+        return Response(
+            'data: {"error": "Server overloaded, try again later"}\n\n',
+            content_type="text/event-stream"
+        )
 
     async def event_stream():
         try:
@@ -150,36 +151,47 @@ async def search_sse():
                 "query": user_query[:50],
                 "start_time": time.time()
             }
+
             async with processing_semaphore:
-                # Stream directly from pipeline - REAL-TIME
                 async for chunk in run_elixposearch_pipeline(user_query, event_id):
-                    # Parse chunk for event/data lines
                     lines = chunk.splitlines()
                     event_type = None
                     data_lines = []
+
                     for line in lines:
                         if line.startswith("event:"):
                             event_type = line.replace("event:", "").strip()
                         elif line.startswith("data:"):
                             data_lines.append(line.replace("data:", "").strip())
+
                     data_text = "\n".join(data_lines)
-                    # Only stream non-empty data as OpenAI-style SSE chunk
                     if data_text:
-                        yield f'data: {json.dumps({"choices":[{"delta":{"content":data_text}}]})}\n\n'
-                    # Optionally, send [DONE] marker at end
+                        json_data = {
+                            "choices": [
+                                {"delta": {"content": data_text}}
+                            ]
+                        }
+                        yield f'data: {json.dumps(json_data)}\n\n'
+
                     if event_type == "final":
-                        yield 'data: [DONE]\n\n'
                         break
+
                     await asyncio.sleep(0.01)
+
+            yield 'data: [DONE]\n\n'
+
         except Exception as e:
+            app.logger.error(f"SSE error for {request_id}: {e}", exc_info=True)
             yield f'data: {json.dumps({"error": str(e)})}\n\n'
-            app.logger.error(f"SSE error for {request_id}: {e}")
         finally:
             active_requests.pop(request_id, None)
             global_stats["successful_requests"] += 1
-            return
 
     return Response(event_stream(), content_type="text/event-stream")
+
+
+
+
 
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
