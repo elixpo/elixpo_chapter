@@ -343,28 +343,23 @@ async def run_elixposearch_pipeline(user_query: str, event_id: str = None):
             return  
 
 # Fix the main block:
+import asyncio
+
 if __name__ == "__main__":
-    user_query = "Who developed elixpo art?"
+    user_query = "https://youtu.be/u8s9hpjN25Y?si=MD0a3hY3NvQwd-qM what's about this video?"
     event_id = None
-    
-    if event_id:
-        # Handle generator case
-        generator = run_elixposearch_pipeline(user_query, event_id=event_id)
+
+    async def main():
         answer = None
-        try:
-            while True:
-                next(generator)  
-        except StopIteration as e:
-            answer = e.value  
-    else:
-        # Handle non-generator case
-        result = run_elixposearch_pipeline(user_query, event_id=None)
-        # Consume the generator to get the return value
-        answer = None
-        try:
-            while True:
-                next(result)
-        except StopIteration as e:
-            answer = e.value
-    
-    print(f"\n--- Final Answer ---\n{answer}")
+        if event_id:
+            # Handle generator case (SSE)
+            async for _ in run_elixposearch_pipeline(user_query, event_id=event_id):
+                pass  # In real usage, you would process each yielded event
+        else:
+            # Handle non-SSE case: collect all output
+            async for output in run_elixposearch_pipeline(user_query, event_id=None):
+                answer = output  # The last yielded value is the final answer
+
+        print(f"\n--- Final Answer ---\n{answer}")
+
+    asyncio.run(main())

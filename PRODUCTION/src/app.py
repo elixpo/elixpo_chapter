@@ -7,6 +7,11 @@ import logging
 import sys
 import uuid
 from searchPipeline import run_elixposearch_pipeline
+import hypercorn.asyncio
+from hypercorn.config import Config
+from getYoutubeDetails import get_youtube_transcript
+from collections import deque
+from datetime import datetime, timedelta
 
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
@@ -28,6 +33,13 @@ global_stats = {
     "last_request_time": None,
     "avg_processing_time": 0.0
 }
+
+transcript_rate_limit = {
+    "window": 60, 
+    "limit": 20,
+    "requests": deque()
+}
+
 
 class RequestTask:
     def __init__(self, request_id: str, user_query: str, request_type: str, event_id: str = None):
@@ -289,13 +301,49 @@ async def status():
         "max_concurrent": 15
     })
 
+
+@app.route("/transcript", methods=["GET"])
+async def transcript():
+    # --- Rate limiting logic ---
+    now = datetime.utcnow()
+    window = transcript_rate_limit["window"]
+    limit = transcript_rate_limit["limit"]
+    reqs = transcript_rate_limit["requests"]
+
+    # Remove requests outside the window
+    while reqs and (now - reqs[0]).total_seconds() > window:
+        reqs.popleft()
+    if len(reqs) >= limit:
+        return jsonify({"error": "Rate limit exceeded. Max 20 requests per minute."}), 429
+    reqs.append(now)
+    # --- End rate limiting logic ---
+
+    video_url = request.args.get("url") or request.args.get("video_url")
+    video_id = request.args.get("id") or request.args.get("video_id")
+    if not video_url and not video_id:
+        return jsonify({"error": "Missing 'url' or 'id' parameter"}), 400
+
+    if not video_url and video_id:
+        video_url = f"https://youtu.be/{video_id}"
+
+    # Fetch transcript (sync function, so run in executor)
+    loop = asyncio.get_event_loop()
+    transcript_text = await loop.run_in_executor(
+        None, lambda: get_youtube_transcript(video_url)
+    )
+
+    if not transcript_text:
+        return jsonify({"error": "Transcript not available"}), 404
+
+    return jsonify({"transcript": transcript_text})
+
+
+
 @app.route("/health", methods=["GET"])
 async def health():
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    import hypercorn.asyncio
-    from hypercorn.config import Config
     config = Config()
     config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False
