@@ -160,5 +160,19 @@ tools = [
                 "required": ["image_path_or_pil"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "image_search",
+            "description": "Performs an image search using Google and returns up to 10 image URLs and their sources as lists.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "image_query": {"type": "string", "description": "The search query string for images."}
+                },
+                "required": ["image_query"]
+            }
+        }
     }
 ]

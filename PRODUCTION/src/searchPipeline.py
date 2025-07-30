@@ -1,7 +1,7 @@
 import requests
 import json
 from clean_query import cleanQuery
-from search import web_search, GoogleSearchAgent
+from search import web_search, GoogleSearchAgent, image_search
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from scrape import fetch_full_text
 from getImagePrompt import generate_prompt_from_image, image_url_to_base64
@@ -274,6 +274,34 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             collected_images.extend(image_urls)
                         tool_result = summaries
 
+                    elif function_name == "generate_prompt_from_image":
+                        base64ImageResult = image_url_to_base64(function_args.get("image_url"))
+                        getPrompt = generate_prompt_from_image(base64ImageResult)
+                        tool_result = f"Generated Search Query: {getPrompt}"
+                    
+                    elif function_name == "image_search":
+                        image_query = function_args.get("image_query")
+                        google_req_count += 1
+                        if google_req_count > 50:
+                            print("[INFO] Restarting GoogleSearchAgent after 50 requests.")
+                            await google_agent.close()
+                            google_agent = GoogleSearchAgent()
+                            await google_agent.start()
+                            google_req_count = 1  # Reset count for new agent
+
+                        search_results_raw, sources = await image_search(image_query, google_agent)
+                        print(f"[INFO] Image search returned {len(search_results_raw)} results")
+
+                    
+                    elif function_name == "find_similarity":
+                        image1_url = function_args.get("image1_url")
+                        image2_url = function_args.get("image2_url")
+                        image1 = load_image(image1_url)
+                        image2 = load_image(image2_url)
+                        similarity_score = find_similarity(image1, image2)
+                        tool_result = f"Similarity Score: {similarity_score:.2f}"
+
+                    
                     elif function_name == "get_youtube_metadata":
                         print(f"[INFO] Getting YouTube metadata for URLs")
                         urls = [function_args.get("url")]

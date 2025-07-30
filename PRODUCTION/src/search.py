@@ -110,6 +110,7 @@ class GoogleSearchAgent:
         
     async def search_images(self, query, max_images):
         cleaned_links = []
+        cleaned_sources = []
         os.makedirs(self.save_dir, exist_ok=True)
         search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
         page = self.browser.pages[0] if self.browser.pages else await self.browser.new_page()
@@ -118,28 +119,43 @@ class GoogleSearchAgent:
         await page.wait_for_selector('.ob5Hkd', timeout=15000)
         await page.wait_for_timeout(2000)
 
-        elements = await page.query_selector_all('.ob5Hkd > a > div > div > div > g-img > img')
-
-        for i, el in enumerate(elements):
+        # Get all result blocks
+        blocks = await page.query_selector_all('.ob5Hkd')
+        for i, block in enumerate(blocks):
             if i >= max_images:
                 break
 
             try:
-                await el.scroll_into_view_if_needed()
-                await el.click()
+                await block.scroll_into_view_if_needed()
+                await block.click()
                 await page.wait_for_timeout(1000)
 
-                link_el = await page.query_selector('.ob5Hkd a')
+                link_el = await block.query_selector('a')
                 if link_el:
                     link_href = await link_el.get_attribute('href')
                     cleaned_href = extract_imgurl(link_href)
-                    if cleaned_href:
+                    if cleaned_href and cleaned_href not in cleaned_links:
                         cleaned_links.append(cleaned_href)
+
             except Exception as e:
                 print(f"[!] Error processing image {i}: {e}")
                 continue
 
-        return cleaned_links
+        extra_blocks = await page.query_selector_all('[jscontroller="N8Q1ib"]')
+        for i, block in enumerate(extra_blocks):
+            if i >= max_images:
+                break
+            try:
+                anchor = await block.query_selector('a')
+                if anchor:
+                    href = await anchor.get_attribute('href')
+                    img_source = extract_imgurl(href)
+                    if img_source and img_source not in cleaned_sources:
+                        cleaned_sources.append(img_source)
+            except Exception as e:
+                print(f"[!] Error extracting from jscontroller block: {e}")
+
+        return cleaned_links, cleaned_sources
 
     async def close(self):
         if self.context:
@@ -283,15 +299,13 @@ async def web_search(query, google_agent):
 
 
 
-async def imageSearch(query, google_agent):
+async def image_search(query, google_agent):
     print(f"[INFO] Running image search for: {query}")
-    await google_agent.start()
-
     try:
-        results = await google_agent.search_images(query, max_images=10)
+        results, sources = await google_agent.search_images(query, max_images=10)
         if results:
             print(f"[INFO] Image search returned {len(results)} images.")
-            return results
+            return results, sources
         else:
             print("[INFO] No images found.")
             return []
@@ -321,9 +335,11 @@ if __name__ == "__main__":
         queries = ["ballet dancer"]
         for query in queries:
             print(f"\nResults for: {query}")
-            results = await agent.search_images(query, 10)
+            results, sources = await agent.search_images(query, 10)
             for link in results:
                 print(link)
+            for link in sources:
+                print(sources)
         await agent.close()
     
     asyncio.run(main())
