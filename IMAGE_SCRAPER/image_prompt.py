@@ -1,14 +1,15 @@
 import base64
 import requests
 
-def image_to_base64(image_path):
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-    return base64.b64encode(image_bytes).decode('utf-8')
+def image_url_to_base64(image_url):
+    response = requests.get(image_url)
+    response.raise_for_status()
+    return base64.b64encode(response.content).decode('utf-8')
 
-def generate_image_query(image_path):
-    image_base64 = image_to_base64(image_path)
-    url = "https://text.pollinations.ai/openai"
+
+def generate_image_query(url):
+    image_base64 = image_url_to_base64(url)
+    api_url = "https://text.pollinations.ai/openai"
     headers = {
         "Content-Type": "application/json"
     }
@@ -36,12 +37,12 @@ def generate_image_query(image_path):
         "max_tokens": 100
     }
 
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(api_url, headers=headers, json=data)
     response.raise_for_status()
 
     return response.json()
 
 # Example usage
 if __name__ == "__main__":
-    result = generate_image_query("test.jpg")
+    result = generate_image_query("https://example.com/test.jpg")
     print("Generated Search Query:\n", result['choices'][0]['message']['content'].strip())

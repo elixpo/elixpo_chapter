@@ -1,171 +1,102 @@
 import asyncio
+import os
+import base64
+import shutil
 from urllib.parse import quote
 from playwright.async_api import async_playwright
-import json
-import base64
-import requests
-
-async def scrape_bing_images(page, query, max_images):
-    await page.goto(f"https://www.bing.com/images/search?q={quote(query)}", timeout=60000)
-    await page.wait_for_timeout(3000)
-
-    for _ in range(3):
-        await page.mouse.wheel(0, 2000)
-        await page.wait_for_timeout(1000)
-
-    images = await page.query_selector_all("img")
-    results = []
-    for img in images[:max_images]:
-        try:
-            src = await img.get_attribute("src")
-            if src and src.startswith("http"):
-                results.append({"image_url": src, "source_page": page.url})
-        except:
-            continue
-    return results
+import stat
 
 class GoogleImageSearchAgent:
     def __init__(self):
         self.playwright = None
         self.browser = None
-        self.context = None
-        self.query_count = 0
+        self.user_data_dir = "playwright_user_data"
+        self.save_dir = "downloaded_images"
         print("[INFO] GoogleImageSearchAgent initialized.")
+
+    def clear_user_data(self):
+        if os.path.exists(self.user_data_dir):
+            os.remove(self.user_data_dir)
+            print(f"[INFO] Removed existing user data directory: {self.user_data_dir}")
+            print(f"[INFO] Cleared existing user data at: {self.user_data_dir}")
 
     async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
+        self.browser = await self.playwright.chromium.launch_persistent_context(
+            user_data_dir=self.user_data_dir,
             headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
-        )
-        self.context = await self._new_context()
-
-    async def _new_context(self):
-        context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                       "AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/114.0.0.0 Safari/537.36",
+            args=[
+                "--remote-debugging-port=9222",
+                "--disable-blink-features=AutomationControlled"
+            ],
             viewport={'width': 1280, 'height': 800},
-            java_script_enabled=True,
-            locale="en-US"
+            locale="en-US",
         )
-        await context.add_init_script(
-            """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
-        )
-        return context
 
-    async def search_images(self, query, max_images=30):
+    def save_base64_image(self, base64_str, filename):
         try:
-            if self.query_count >= 50:
-                print("[INFO] Resetting browser context.")
-                await self.context.close()
-                self.context = await self._new_context()
-                self.query_count = 0
-
-            self.query_count += 1
-            results = []
-
-            search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
-            page = await self.context.new_page()
-            await page.goto(search_url, timeout=60000)
-            await page.wait_for_selector("img", state="attached", timeout=10000)
-
-            for _ in range(3):  # Scroll to load more
-                await page.mouse.wheel(0, 2000)
-                await page.wait_for_timeout(1000)
-
-            images = await page.query_selector_all("img")
-            for img in images:
-                src = await img.get_attribute("src")
-                if src and src.startswith("http") and not src.startswith("data:"):
-                    results.append({
-                        "image_url": src,
-                        "source_page": search_url
-                    })
-                    if len(results) >= max_images:
-                        break
-
-            await page.close()
-            return results
+            if base64_str.startswith("data:image"):
+                _, encoded = base64_str.split(",", 1)
+                img_data = base64.b64decode(encoded)
+                with open(filename, "wb") as f:
+                    f.write(img_data)
+                print(f"[✓] Saved image: {filename}")
+            else:
+                print("[!] Skipped non-base64 image.")
         except Exception as e:
-            print("❌ Google image search failed:", e)
-            return []
+            print("❌ Error saving image:", e)
+
+    async def search_and_save_images(self, query, max_images=10):
+        os.makedirs(self.save_dir, exist_ok=True)
+        search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
+        page = self.browser.pages[0] if self.browser.pages else await self.browser.new_page()
+
+        await page.goto(search_url, timeout=60000)
+        await page.wait_for_selector('.ob5Hkd', timeout=15000)
+
+        await page.mouse.wheel(0, 2000)
+        await page.wait_for_timeout(2000)
+
+        elements = await page.query_selector_all('.ob5Hkd > a > div > div > div > g-img > img')
+
+        print(f"[INFO] Found {len(elements)} matching <img> nodes.")
+        count = 0
+
+        for i, el in enumerate(elements):
+            data_id = await el.get_attribute("data-id")
+            src = await el.get_attribute("src")
+
+            print(f"{i+1}. data-id: {data_id}, src: {'[base64]' if src and src.startswith('data:image') else src}")
+
+            if src and src.startswith("data:image"):
+                filename = os.path.join(self.save_dir, f"{query.replace(' ', '_')}_{i+1}.jpg")
+                self.save_base64_image(src, filename)
+                count += 1
+                if count >= max_images:
+                    break
 
     async def close(self):
-        if self.context:
-            await self.context.close()
         if self.browser:
             await self.browser.close()
         if self.playwright:
             await self.playwright.stop()
         print("[INFO] GoogleImageSearchAgent closed.")
 
-async def scrape_all_images(query, max_images=20):
-    all_results = {"bing": [], "google": [], "duckduckgo": []}
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
+# ---------------------------------------------
 
-        print("Scraping Bing...")
-        all_results["bing"] = await scrape_bing_images(page, query, max_images)
+async def run():
+    agent = GoogleImageSearchAgent()
+    agent.clear_user_data()  # Remove old session
+    await agent.start()
 
-        print("Scraping Google...")
-        google_agent = GoogleImageSearchAgent()
-        google_agent.playwright = p
-        google_agent.browser = browser
-        google_agent.context = context
-        all_results["google"] = await google_agent.search_images(query, max_images)
+    await agent.search_and_save_images("wooden trail in forest", max_images=5)
 
-        await browser.close()
-    return all_results
+    await agent.close()
+    def remove_readonly(func, path, excinfo):
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
 
-
-def image_to_base64(image_path):
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-    return base64.b64encode(image_bytes).decode('utf-8')
-
-def generate_image_query(image_path):
-    image_base64 = image_to_base64(image_path)
-    url = "https://text.pollinations.ai/openai"
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    detailed_instruction = (
-        "Describe the contents of this image in the form of a natural, short human-like search query. "
-        "Include as much detail as possible: setting, objects, people, text, signs, brands, logos, style "
-        "would type into a search engine to find similar images. Prioritize clarity, descriptive precision, and keywords "
-        "likely to improve search relevance."
-        "Keep the prompt short and relevant, no need for huge long descriptions, just focus on the key elements that would help in searching for similar images."
-    )
-
-    data = {
-        "model": "openai",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": detailed_instruction},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                ]
-            }
-        ],
-        "token": "fEWo70t94146ZYgk",
-        "max_tokens": 100
-    }
-
-    response = requests.post(url, headers=headers, json=data)
-    response.raise_for_status()
-
-    return response.json()
-
+    if os.path.exists(agent.user_data_dir):
+        shutil.rmtree(agent.user_data_dir, onerror=remove_readonly)
 if __name__ == "__main__":
-    query = "wooden boardwalk trail in marsh with trees"
-    all_image_results = asyncio.run(scrape_all_images(query, max_images=20))
-
-    for engine, images in all_image_results.items():
-        print(f"\n--- {engine.upper()} RESULTS ---")
-        for i, img in enumerate(images):
-            print(f"{i+1}. Image URL: {img['image_url']}\n   Source Page: {img['source_page']}\n")
+    asyncio.run(run())
