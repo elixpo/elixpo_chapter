@@ -4,8 +4,8 @@ import json
 
 # === Configuration ===
 url = "http://localhost:5000/search"
-text_query = "whats the latest news of this airlines from india?"  
-image_path = "https://upload.wikimedia.org/wikipedia/commons/4/45/VT-JRF_%40_JFK%2C_2024-11-04.png"  
+text_query = "whats 1+1?"  
+image_path = None
 
 
 
