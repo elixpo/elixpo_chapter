@@ -1,19 +1,7 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
-  authDomain: "elixpoai.firebaseapp.com",
-  projectId: "elixpoai",
-  storageBucket: "elixpoai.appspot.com",
-  messagingSenderId: "718153866206",
-  appId: "1:718153866206:web:671c00aba47368b19cdb4f"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 let lastPromptText = "";
 const MAX_NOTIFS = 3;
 const notifQueue = [];
-
+let serverURL = "https://imgelixpo.vercel.app"; 
 // window.addEventListener('resize', scaleContainer);
 // window.addEventListener('load', scaleContainer);
 

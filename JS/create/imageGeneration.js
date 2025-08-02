@@ -346,7 +346,7 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
             notify("Processing your image...", true);
             document.getElementById("overlay").classList.remove("display");
             scrollToImageGenerator();
-            generateImage(generationNumber, finalPrompt, width, height, "gptimage", suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
+            generateImage(generationNumber, finalPrompt, width, height, "kontext", suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
         } else {
             notify("Failed to upload image. Please try again.");
             document.getElementById("generateButton").removeAttribute("disabled");
@@ -416,7 +416,8 @@ async function generateImage(generationNumber, prompt, width, height, model, suf
         if (uploadedUrl) {
             if(model == "gptimage") 
             {
-                generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+                // generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&nologo=true&token=fEWo70t94146ZYgk&image=${encodeURIComponent(uploadedUrl)}`;
+                notify("oops! gptimage model is not supported anymore, switch to kontext please!");
             }
             else if(model == "kontext")
             {
@@ -545,21 +546,19 @@ document.getElementById("rejectBtn").addEventListener("click", function() {
 });
 
 async function handleStaticServerUpload(generateURLS, imageNumber, imageTheme, model, ratio, specialDir, index, private) {
-    if(!private)
-    {
+    if (!private) {
         notify("Just a sec! Saving...");
-    document.getElementById("acceptBtn").classList.add("hidden");
-    document.getElementById("rejectBtn").classList.add("hidden");
-    var currentTotalImageOnServer = await gettotalGenOnServer();
-    console.log("Current Total Image on Server:", currentTotalImageOnServer);
-    var nextImageNumber = currentTotalImageOnServer + 1;
-    console.log("Next Image Number:", nextImageNumber);
-    let prompt = document.getElementById("acceptBtn").getAttribute("data-prompt");
-    const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
-    const timestamp = Date.now();
+        document.getElementById("acceptBtn").classList.add("hidden");
+        document.getElementById("rejectBtn").classList.add("hidden");
+        var currentTotalImageOnServer = await gettotalGenOnServer();
+        console.log("Current Total Image on Server:", currentTotalImageOnServer);
+        var nextImageNumber = currentTotalImageOnServer + 1;
+        console.log("Next Image Number:", nextImageNumber);
+        let prompt = document.getElementById("acceptBtn").getAttribute("data-prompt");
+        const imageGenId = generateUniqueId(localStorage.getItem("ElixpoAIUser").toLowerCase());
+        const timestamp = Date.now();
 
-    const uploadPromises = generateURLS.map(async (imageUrl, index) => {
-        await db.collection("ImageGen").doc(specialDir).set({
+        const mainData = {
             theme: imageTheme,
             model: model,
             timestamp: timestamp,
@@ -571,23 +570,43 @@ async function handleStaticServerUpload(generateURLS, imageNumber, imageTheme, m
             genNum: nextImageNumber,
             date: new Date().toDateString(),
             imgId: imageGenId
+        };
+
+        // Prepare image URLs as Imgurl0, Imgurl1, ...
+        generateURLS.forEach((imageUrl, idx) => {
+            mainData[`Imgurl${idx}`] = imageUrl;
         });
-        await db.collection("ImageGen").doc(specialDir).update({
-            [`Imgurl${index}`]: imageUrl,
-        });
-    });
 
-    await Promise.all(uploadPromises);
+        try {
+            // Write image generation data
+            await fetch(`${serverURL}/firebase-write`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    collection: "ImageGen",
+                    doc: specialDir,
+                    data: mainData
+                })
+            });
 
-    await db.collection("Server").doc("totalGen").update({
-        value: nextImageNumber,
-    });
+            // Update total generation count
+            await fetch(`${serverURL}/firebase-write`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    collection: "Server",
+                    doc: "totalGen",
+                    data: { value: nextImageNumber }
+                })
+            });
 
-    notify("Saved successfully!");
-    resetAll();
-    }
-    else 
-    {
+            notify("Saved successfully!");
+            resetAll();
+        } catch (err) {
+            notify("Failed to save to server: " + (err.message || "Unknown error"), false);
+            resetAll();
+        }
+    } else {
         notify("Well... that's it then...");
         resetAll();
     }
@@ -694,9 +713,21 @@ function generateUniqueId(inputString) {
 
 async function gettotalGenOnServer() {
     try {
-        const snapshot = await db.collection('Server').doc("totalGen").get();
-        console.log("Total Gen:", snapshot.data().value);
-        let totalGen = parseInt(snapshot.data().value);
+        const response = await fetch(`${serverURL}/firebase-read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                collection: "Server",
+                doc: "totalGen",
+                field: "value"
+            })
+        });
+        if (!response.ok) {
+            throw new Error("Failed to fetch total generation count");
+        }
+        const data = await response.json();
+        let totalGen = parseInt(data.value);
+        console.log("Total Gen:", totalGen);
         return totalGen;
     } catch (error) {
         console.error("Error getting total generation count:", error);

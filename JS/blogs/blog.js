@@ -1,18 +1,9 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyAlwbv2cZbPOr6v3r6z-rtch-mhZe0wycM",
-    authDomain: "elixpoai.firebaseapp.com",
-    projectId: "elixpoai",
-    storageBucket: "elixpoai.appspot.com",
-    messagingSenderId: "718153866206",
-    appId: "1:718153866206:web:671c00aba47368b19cdb4f"
-  };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
 
 
   let backToTopButton = document.getElementById("back-to-top");
-
+// let serverURL = "http://localhost:3000"; 
+let serverURL = "https://imgelixpo.vercel.app"; 
   hljs.highlightAll();
 
 
@@ -155,14 +146,24 @@ async function addComment(comment, hash)
     sessionStorage.setItem(hashHex, encryptedComment);    
     redirectTo(`src/auth/?notify=true&cmp=${hashHex}`);
     }
-    
-  
-    const commentsRef = db.ref(`comments/`);
-    await commentsRef.push({
-        username,
-        comment,
-        timestamp: new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
-    });
+
+
+await fetch(`${serverURL}/db-write`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+        path: "comments",
+        value: {
+            username,
+            comment,
+            timestamp: new Date().toLocaleString('en-GB', { 
+                day: '2-digit', month: '2-digit', year: '2-digit', 
+                hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            }),
+        }
+    })
+});
+
     notify("Thanks for your comment!");
     let commentNode = `
     <div class="comment">
@@ -192,19 +193,24 @@ async function addComment(comment, hash)
     window.history.replaceState({}, document.title, url.toString());
   }
 
-  function fetchComments() {
-    const commentsRef = db.ref(`comments/`);
+async function fetchComments() {
     const commentsContainer = document.getElementById("comments-list");
-    commentsContainer.innerHTML = ""; 
-    commentsRef.once("value", (snapshot) => {
-        if (snapshot.exists()) {
+    commentsContainer.innerHTML = "";
+    try {
+        const response = await fetch(`${serverURL}/db-read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                path: "comments"
+            })
+        });
+        const result = await response.json();
+        if (result.value && typeof result.value === "object") {
             document.getElementById("noCommentsText").style.display = "none";
-            // console.log(Object.keys(snapshot.val()).length);
-            // Iterate over all comments
-            const comments = snapshot.val();
-            for (let key in comments) {
-                if (comments.hasOwnProperty(key)) {
-                    const comment = comments[key];
+            // Loop through each child in comments
+            Object.values(result.value).forEach(child => {
+                if (child && child.comment) {
+                    const comment = child;
                     const commentNode = document.createElement("div");
                     commentNode.classList.add("comment");
                     commentNode.innerHTML = `
@@ -214,14 +220,24 @@ async function addComment(comment, hash)
                     `;
                     commentsContainer.appendChild(commentNode);
                 }
+            });
+            // If no comments found, show noCommentsText
+            if (commentsContainer.children.length === 0) {
+                document.getElementById("noCommentsText").innerText =
+                    "You like being the first right? Be the first one to review please xD";
+                document.getElementById("noCommentsText").style.display = "block";
             }
         } else {
-            // Handle case where there are no comments
-            document.getElementById("noCommentsText").innerText = 
+            document.getElementById("noCommentsText").innerText =
                 "You like being the first right? Be the first one to review please xD";
             document.getElementById("noCommentsText").style.display = "block";
         }
-    });
+    } catch (err) {
+        document.getElementById("noCommentsText").innerText =
+            "Failed to load comments. Please try again later.";
+        document.getElementById("noCommentsText").style.display = "block";
+        console.error("Error fetching comments:", err);
+    }
 }
 
 document.getElementById("elixpoArtRedirect").addEventListener("click", function() {
