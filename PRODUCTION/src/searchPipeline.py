@@ -212,6 +212,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - Professional, clear, and confident.
         - Balance detail and brevity.
         - **Answer in English**, unless told otherwise.
+        - Don't reveal any internal working and don't mention anything which is not relevant
         """
     },
     {
