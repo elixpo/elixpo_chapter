@@ -49,7 +49,6 @@
     <main class="max-w-4xl mx-auto px-6 py-8 w-full"> 
         <header class="text-center mb-8"> 
             <h1 class="text-5xl font-bold text-primary mb-4">Elixpo-Search</h1>
-            <p class="text-gray-300 text-xl mb-4">AI Search & Synthesize</p>
         </header>
         <section class="search-input-container max-w-2xl mx-auto mb-8"> 
             <div class="flex items-start p-4 bg-darkBg2 rounded-lg shadow">
@@ -65,6 +64,10 @@
                     <i data-lucide="send" class="w-4 h-4"></i>
                     Search
                 </button>
+            </div>
+            <div id="imageUrlPlaceholder" class="image-url-placeholder mt-3 px-4 py-2 rounded-lg">
+                <label for="imageUrlInput" class="text-gray-400 text-sm mr-2">Image URL (optional):</label>
+                <input type="text" id="imageUrlInput" class="image-url-input" placeholder="Paste image URL here...">
             </div>
             <div class="flex items-center justify-between gap-4 mt-4 py-3 px-5">
                 <label class="flex items-center gap-3">
@@ -83,7 +86,9 @@
         </section>
         <div id="statusMessage" class="text-center mb-6 hidden"></div> 
         <section id="resultsContainer"> 
-            <div id="sseFeed" class="mb-4"></div>
+            <div id="sseFeed" class="mb-4">
+                
+            </div>
             <div id="finalOutput" class="mb-4"></div>
         </section>
     </main>

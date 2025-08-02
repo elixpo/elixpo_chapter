@@ -1,4 +1,4 @@
-from timezonefinder import TimezoneFinder
+from timezonefinderL import TimezoneFinder
 from geopy.geocoders import Nominatim
 from datetime import datetime, timedelta, timezone
 import pytz
@@ -49,6 +49,6 @@ def convert_utc_to_local(utc_datetime: datetime, offset_str: str):
 
 
 if __name__ == "__main__":
-    location = "Kolkata"
-    timezone, utc_offset = get_timezone_and_offset(location)
+    location = "Kolkata/Asia"
+    utc_offset = get_timezone_and_offset(location)
     print(f"[DEBUG] Timezone for {location}: {timezone}, Offset: {utc_offset}")

@@ -70,7 +70,9 @@ async def process_request_worker():
                 try:
                     # For JSON/Chat, collect final result
                     final_result_content = []
-                    async for chunk in run_elixposearch_pipeline(task.user_query, event_id=None):
+                    # Unpack user_query and user_image for the pipeline
+                    uq, ui = task.user_query if isinstance(task.user_query, tuple) else (task.user_query, None)
+                    async for chunk in run_elixposearch_pipeline(uq, ui, event_id=None):
                         lines = chunk.splitlines()
                         event_type = None
                         data_lines = []
@@ -128,19 +130,63 @@ async def startup():
     app.logger.info("Started 8 request processing workers")
 
 
-@app.route("/search/sse", methods=["POST"])
-async def search_sse():
-    data = await request.get_json(force=True, silent=True) or {}
 
+
+def extract_query_and_image(data: dict) -> tuple[str, str | None, bool]:
+    """
+    Extracts user_query and user_image from request data. Returns (query, image_url, is_openai_format).
+    """
     user_query = ""
+    user_image = None
+    is_openai_chat = False
+    image_count = 0
+
     messages = data.get("messages", [])
     if messages and isinstance(messages, list):
         for msg in reversed(messages):
             if msg.get("role") == "user":
-                user_query = msg.get("content", "").strip()
+                content = msg.get("content", "")
+                if isinstance(content, list):  # OpenAI-style with multiple parts
+                    for part in content:
+                        if part.get("type") == "text":
+                            user_query += part.get("text", "").strip() + " "
+                        elif part.get("type") == "image_url" and not user_image:
+                            user_image = part.get("image_url", {}).get("url", None)
+                    user_query = user_query.strip()
+                else:  # Old style: plain string content
+                    user_query = content.strip()
+                is_openai_chat = True
                 break
+
     if not user_query:
-        user_query = data.get("query") or data.get("message") or data.get("prompt") or ""
+        user_query = data.get("query") or ""
+        if user_image:
+            image_count += 1
+
+    if not user_image:
+        user_image = data.get("image") or None
+    
+    if image_count > 1:
+        return user_query.strip(), "__MULTIPLE_IMAGES__", is_openai_chat
+
+    return user_query.strip(), user_image, is_openai_chat
+
+
+
+@app.route("/search/sse", methods=["POST", "GET"])
+async def search_sse(forwarded_data=None):
+    if forwarded_data is not None:
+        data = forwarded_data
+    elif request.method == "GET":
+        args = request.args
+        stream_flag = args.get("stream", "true").lower() == "true"
+        user_query = args.get("query", "").strip()
+        user_image = args.get("image") or args.get("image_url") or None
+        data = {"query": user_query, "image": user_image}
+    else:
+        data = await request.get_json(force=True, silent=True) or {}
+
+    user_query, user_image, _ = extract_query_and_image(data)
 
     request_id = f"sse-{uuid.uuid4().hex[:8]}"
     event_id = f"elixpo-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
@@ -149,10 +195,8 @@ async def search_sse():
     app.logger.info(f"SSE request {request_id}: {user_query[:50]}...")
 
     if len(active_requests) >= 15:
-        return Response(
-            'data: {"error": "Server overloaded, try again later"}\n\n',
-            content_type="text/event-stream"
-        )
+        return Response('data: {"error": "Server overloaded, try again later"}\n\n',
+                        content_type="text/event-stream")
 
     async def event_stream():
         try:
@@ -163,7 +207,7 @@ async def search_sse():
             }
 
             async with processing_semaphore:
-                async for chunk in run_elixposearch_pipeline(user_query, event_id):
+                async for chunk in run_elixposearch_pipeline(user_query, user_image, event_id):
                     lines = chunk.splitlines()
                     event_type = None
                     data_lines = []
@@ -177,22 +221,20 @@ async def search_sse():
                     data_text = "\n".join(data_lines)
                     if data_text:
                         json_data = {
-                            "choices": [
-                                {"delta": {"content": data_text}}
-                            ]
+                            "choices": [{"delta": {"content": data_text}}]
                         }
-                        yield f'data: {json.dumps(json_data)}\n\n'
+                        yield f"data: {json.dumps(json_data)}\n\n"
 
                     if event_type == "final":
                         break
 
                     await asyncio.sleep(0.01)
 
-            yield 'data: [DONE]\n\n'
+            yield "data: [DONE]\n\n"
 
         except Exception as e:
             app.logger.error(f"SSE error for {request_id}: {e}", exc_info=True)
-            yield f'data: {json.dumps({"error": str(e)})}\n\n'
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
             active_requests.pop(request_id, None)
             global_stats["successful_requests"] += 1
@@ -200,54 +242,70 @@ async def search_sse():
     return Response(event_stream(), content_type="text/event-stream")
 
 
-
-
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
 async def search_json(anything=None):
-    is_openai_chat = False
     request_id = f"json-{uuid.uuid4().hex[:8]}"
-    
     update_request_stats()
 
-    if request.method == "POST":
-        data = await request.get_json(force=True, silent=True) or {}
-        stream_flag = data.get("stream", False)
-        user_query = ""
-        messages = data.get("messages", [])
-        if messages and isinstance(messages, list):
-            for msg in reversed(messages):
-                if msg.get("role") == "user":
-                    user_query = msg.get("content", "").strip()
-                    is_openai_chat = True
-                    break
-
-        if not user_query:
-            user_query = data.get("query") or data.get("message") or data.get("prompt") or ""
-    else:
+    if request.method == "GET":
         args = request.args
         stream_flag = args.get("stream", "false").lower() == "true"
         user_query = args.get("query", "").strip()
+        user_image = args.get("image") or args.get("image_url") or None
+        data = {"query": user_query, "image": user_image}
+    else:
+        data = await request.get_json(force=True, silent=True) or {}
+        stream_flag = data.get("stream", False)
 
+    user_query, user_image, is_openai_chat = extract_query_and_image(data)
 
     if stream_flag:
-        return await search_sse()
+        # Forward to SSE
+        sse_data = {
+            "messages": [{"role": "user", "content": user_query}] if user_query else [],
+            "image": user_image,
+            "stream": True
+        }
 
-    if not user_query:
-        return jsonify({"error": "Missing query"}), 400
+        return await search_sse(forwarded_data=sse_data)
+    if user_image == "__MULTIPLE_IMAGES__":
+        return jsonify({"error": "Only one image can be processed per request. Please submit a single image."}), 400
+    
+    if not user_query and not user_image:
+        return jsonify({"error": "Missing query or image"}), 400
 
     app.logger.info(f"JSON request {request_id}: {user_query[:50]}...")
+    task = RequestTask(request_id, (user_query, user_image), 'json')
 
-    # Create task and add to queue
-    task = RequestTask(request_id, user_query, 'json')
-    
     try:
         await asyncio.wait_for(request_queue.put(task), timeout=5.0)
     except asyncio.TimeoutError:
         return jsonify({"error": "Server overloaded, try again later"}), 503
-    
+
     try:
-        final_response = await asyncio.wait_for(task.result_future, timeout=180)  # 3 min
+        async def run_pipeline():
+            uq, ui = task.user_query if isinstance(task.user_query, tuple) else (task.user_query, None)
+            final_result_content = []
+            async for chunk in run_elixposearch_pipeline(uq, ui, event_id=None):
+                lines = chunk.splitlines()
+                event_type = None
+                data_lines = []
+
+                for line in lines:
+                    if line.startswith("event:"):
+                        event_type = line.replace("event:", "").strip()
+                    elif line.startswith("data:"):
+                        data_lines.append(line.replace("data:", "").strip())
+
+                data_text = "\n".join(data_lines)
+                if data_text and event_type in ["final", "final-part"]:
+                    final_result_content.append(data_text)
+
+            return "\n".join(final_result_content).strip() or "No results found"
+
+        final_response = await asyncio.wait_for(run_pipeline(), timeout=180)
+
     except asyncio.TimeoutError:
         final_response = "Request timed out"
         app.logger.error(f"Request {request_id} timed out")
@@ -260,58 +318,6 @@ async def search_json(anything=None):
     else:
         return jsonify({"result": final_response})
 
-
-
-
-@app.route("/v1/chat/completions", methods=["GET", "POST"])
-async def openai_chat_completions():
-    request_id = f"chat-{uuid.uuid4().hex[:8]}"
-    update_request_stats()
-    
-    if request.method == "POST":
-        data = await request.get_json(force=True, silent=True) or {}
-        messages = data.get("messages", [])
-    else:
-        query = request.args.get("query") or request.args.get("message") or ""
-        messages = [{"role": "user", "content": query}] if query else []
-
-    if not messages or not isinstance(messages, list):
-        return jsonify({"error": "Missing or invalid messages"}), 400
-
-    user_query = ""
-    for msg in reversed(messages):
-        if msg.get("role") == "user":
-            user_query = msg.get("content", "")
-            break
-
-    if not user_query:
-        return jsonify({"error": "No user message found"}), 400
-
-    task = RequestTask(request_id, user_query, 'chat')
-    
-    try:
-        await asyncio.wait_for(request_queue.put(task), timeout=5.0)
-    except asyncio.TimeoutError:
-        return jsonify({"error": "Server overloaded, try again later"}), 503
-    
-    try:
-        final_response = await asyncio.wait_for(task.result_future, timeout=180)
-    except asyncio.TimeoutError:
-        final_response = "Request timed out"
-    except Exception as e:
-        final_response = f"Error: {e}"
-
-    return jsonify({
-        "id": f"chatcmpl-{request_id}",
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": "elixpo-search",
-        "choices": [{
-            "index": 0,
-            "message": {"role": "assistant", "content": final_response},
-            "finish_reason": "stop"
-        }]
-    })
 
 # Ultra-fast status endpoint
 @app.route("/status", methods=["GET"])

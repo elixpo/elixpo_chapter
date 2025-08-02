@@ -11,8 +11,8 @@ marked.setOptions({
     }
 });
 
-// const SERVER_URL = "http://127.0.0.1:5000";
-const SERVER_URL = "https://search.pollinations.ai";
+const SERVER_URL = "http://127.0.0.1:5000";
+// const SERVER_URL = "https://search.pollinations.ai";
 const input = document.getElementById('queryInput');
 const submitButton = document.getElementById('submitButton');
 const sseFeed = document.getElementById('sseFeed');
@@ -20,12 +20,26 @@ const finalOutput = document.getElementById('finalOutput');
 const sseToggle = document.getElementById('sseToggle');
 const classicBtn = document.getElementById('classicBtn');
 const chatBtn = document.getElementById('chatBtn');
+const imageUrlInput = document.getElementById('imageUrlInput');
+const statusMessage = document.getElementById('sseFeed');
+
 let useChatApi = false;
+let hasReachedSuccess = false;
+
 
 function clearOutputs() {
     sseFeed.innerHTML = '';
     finalOutput.innerHTML = '';
-    sseFeed.style.display = sseToggle.checked ? 'block' : 'none';
+    statusMessage.innerHTML = '';
+    statusMessage.classList.add('hidden');
+    sseFeed.style.display = sseToggle.checked ? 'flex' : 'none';
+}
+
+function updateStatus(msg, type = "info") {
+    let msgNode = `<span> <span class="information_type"> [INFO] </span> ${msg}  </span>`;
+    statusMessage.innerHTML += msgNode;
+    statusMessage.classList.remove('hidden');
+    statusMessage.className = `text-center mb-6 ${type === "error" ? "text-red-400" : "text-blue-400"}`;
 }
 
 classicBtn.addEventListener('click', () => {
@@ -73,18 +87,43 @@ function renderFinalOutput(markdown) {
     finalOutput.innerHTML = tempDiv.innerHTML;
 }
 
+
 function doSearch() {
     clearOutputs();
     const query = input.value;
+    const imageUrl = imageUrlInput.value.trim();
     input.value = '';
+    imageUrlInput.value = '';
 
-    const chatPayload = {
-        stream: sseToggle.checked,
-        messages: [{ role: "user", content: query }]
-    };
+    let chatPayload;
+    if (useChatApi) {
+        chatPayload = {
+            stream: sseToggle.checked,
+            messages: [{ role: "user", content: query }]
+        };
+        if (imageUrl) {
+            chatPayload.image = imageUrl;
+        }
+    } else {
+        chatPayload = {
+            stream: sseToggle.checked,
+            messages: [{
+                role: "user",
+                content: [
+                    { type: "text", text: query }
+                ]
+            }]
+        };
+        if (imageUrl) {
+            chatPayload.messages[0].content.push({
+                type: "image_url",
+                image_url: { url: imageUrl }
+            });
+        }
+    }
 
     if (sseToggle.checked) {
-        sseFeed.style.display = 'block';
+        sseFeed.style.display = 'flex';
         const finalChunks = [];
 
         fetch(`${SERVER_URL}/search`, {
@@ -102,45 +141,55 @@ function doSearch() {
                 if (done) return;
                 buffer += decoder.decode(value, { stream: true });
                 let lines = buffer.split('\n');
-                buffer = lines.pop(); // Save incomplete line
-
+                buffer = lines.pop();
+            
                 lines.forEach(line => {
                     if (line.startsWith('data:')) {
                         let data = line.slice(5).trim();
+            
                         if (data === '[DONE]') {
                             esClose();
                         } else {
                             try {
-                                let json = JSON.parse(data);
-                                let content = json.choices?.[0]?.delta?.content || data;
-                                const div = document.createElement('div');
-                                div.className = 'mb-1';
-                                div.innerHTML = `<span class="text-blue-400 font-mono">[message]</span> ${marked.parse(content)}`;
-                                sseFeed.appendChild(div);
-                                sseFeed.scrollTop = sseFeed.scrollHeight;
-                                finalChunks.push(content);
-                            } catch {
-                                const div = document.createElement('div');
-                                div.className = 'mb-1';
-                                div.innerHTML = `<span class="text-blue-400 font-mono">[message]</span> ${marked.parse(data)}`;
-                                sseFeed.appendChild(div);
-                                sseFeed.scrollTop = sseFeed.scrollHeight;
-                                finalChunks.push(data);
+                                const parsed = JSON.parse(data);
+                                const delta = parsed?.choices?.[0]?.delta?.content;
+            
+                                if (delta) {
+                                    if (!hasReachedSuccess) {
+                                        if (delta.trim() === 'SUCCESS') {
+                                            hasReachedSuccess = true;
+                                        } else {
+                                            updateStatus(delta, 'info');
+                                        }
+                                    } else {
+                                        finalChunks.push(delta);
+                                    }
+                                } else {
+                                    updateStatus(data, 'info'); // fallback
+                                }
+                            } catch (e) {
+                                updateStatus(data, 'info'); // fallback for raw
                             }
                         }
                     }
                 });
-
+            
                 return reader.read().then(processChunk);
             }
-
+            
             function esClose() {
-                renderFinalOutput(finalChunks.join('\n\n'));
+                statusMessage.classList.add('hidden');
+                const joined = finalChunks.join('');
+                if (joined.trim()) {
+                    renderFinalOutput(joined);
+                }
             }
 
+            
             return reader.read().then(processChunk);
         })
         .catch(e => {
+            updateStatus(`[ERROR] ${e.toString()}`, "error");
             finalOutput.innerHTML = `<span class="text-red-400">[ERROR] ${e.toString()}</span>`;
         });
     }
@@ -170,7 +219,6 @@ function doSearch() {
         .catch(e => showResult('POST', { error: e.toString() }));
     }
 }
-
 
 
 submitButton.onclick = (e) => {

@@ -364,6 +364,24 @@
             background: #2a2b2d;
         }
 
+        #sseFeed 
+        {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            justify-items: left;
+            justify-content: left;
+            text-align: left;
+            max-height: 100px;
+        }
+        #sseFeed > span 
+        {
+            text-align: left;
+        }
+        #sseFeed > span > .information_type
+        {
+            color: #bbbefa;
+        }
         /* Enhanced Modern Scrollbars */
         #sseFeed, #finalOutput, #finalOutput .image-grid, #finalOutput pre {
             scrollbar-width: thin;
@@ -420,4 +438,39 @@
             0%, 20% { opacity: 0; }
             50% { opacity: 1; }
             100% { opacity: 0; }
+        }
+
+
+        .image-url-placeholder {
+            background: linear-gradient(135deg, #212223 0%, #2a2b2d 100%);
+            border: 1px solid #444ce7;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            font-size: 1em;
+            margin-bottom: 0.5em;
+            box-shadow: 0 2px 8px rgba(68, 76, 231, 0.08);
+        }
+        
+        .image-url-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 1em;
+            padding: 0.5em 1em;
+            border-radius: 0.5em;
+            width: 100%;
+            transition: background 0.2s, border 0.2s;
+        }
+        
+        .image-url-input::placeholder {
+            color: #888;
+            opacity: 1;
+        }
+        
+        .image-url-input:focus {
+            background: #18191a;
+            border: 1px solid #444ce7;
         }

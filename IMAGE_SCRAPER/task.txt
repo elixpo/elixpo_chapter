@@ -1,0 +1,11 @@
+1. [Input Image]
+       ↓
+2. [Image-to-Text Query Generation]
+       ↓
+3. [Text Query-Based Web Scraping via Playwright]
+       ↓
+4. [Thumbnail Download + Embedding (CLIP/DINO)]
+       ↓
+5. [Similarity Scoring with Original Image Embedding]
+       ↓
+6. [Return Ranked Images with URLs + Context + Suggestions]

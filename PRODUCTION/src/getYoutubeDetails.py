@@ -1,4 +1,5 @@
 from urllib.parse import urlparse, parse_qs
+from typing import Optional, Iterable
 import re
 from conditional_print import conditional_print
 from pytube import YouTube, exceptions
@@ -53,7 +54,7 @@ def get_youtube_metadata(url, show_logs=get_youtube_video_metadata_show_log):
 
 
 
-def get_youtube_transcript(url, show_logs=True):
+def get_youtube_transcript(url, show_logs=True, languages: Iterable[str] = ("en",),preserve_formatting: bool = False,):
     print("[INFO] Getting Youtube Transcript")
     video_id = get_youtube_video_id(url)
     if not video_id:
@@ -62,7 +63,7 @@ def get_youtube_transcript(url, show_logs=True):
 
     try:
         try:
-            entries = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            entries = YouTubeTranscriptApi().list(video_id).find_transcript(languages).fetch(preserve_formatting=preserve_formatting)
             conditional_print(f"Found English ('en') transcript for video ID: {video_id}", show_logs)
         except NoTranscriptFound:
             conditional_print(f"No 'en' transcript found. Trying other available languages.", show_logs)
@@ -77,13 +78,15 @@ def get_youtube_transcript(url, show_logs=True):
 
         if not entries:
             raise ValueError("Transcript fetch returned no entries.")
-        full_text = " ".join(entry['text'] for entry in entries)
+        full_text = " ".join(entry.text for entry in entries)
         
         words = full_text.split()
         if len(words) > MAX_TRANSCRIPT_WORD_COUNT:
             conditional_print(f"Transcript length ({len(words)} words) exceeds MAX_TRANSCRIPT_WORD_COUNT ({MAX_TRANSCRIPT_WORD_COUNT}). Truncating.", show_logs)
             return " ".join(words[:MAX_TRANSCRIPT_WORD_COUNT]) + "..."
         return full_text
+        
+        
 
     except NoTranscriptFound:
         conditional_print(f"No transcript available for video ID: {video_id}", show_logs)
@@ -97,8 +100,8 @@ def get_youtube_transcript(url, show_logs=True):
 
 
 if __name__ == "__main__":
-    metadata = get_youtube_metadata("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
-    print("Metadata:", metadata)
+    # metadata = get_youtube_metadata("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
+    # print("Metadata:", metadata)
     transcript = get_youtube_transcript("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
     print("Transcript:", transcript)
 

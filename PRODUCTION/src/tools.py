@@ -103,5 +103,49 @@ tools = [
             "required": ["utc_datetime", "offset_str"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_prompt_from_image",
+            "description": "Generates a search-friendly prompt from an image in base64 format.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "imageURL": {"type": "string", "description": "The URL of the image"}
+                },
+                "required": ["imageURL"]
+            }
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "replyFromImage",
+            "description": "Generates a friendly response based on an image and a user query.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "imageURL": {"type": "string", "description": "The URL of the image"},
+                    "query": {"type": "string", "description": "The user's query related to the image."}
+                },
+                "required": ["imageURL", "query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "image_search",
+            "description": "Performs an image search using Google and returns up to 10 image URLs and their sources as lists.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "image_query": {"type": "string", "description": "The search query string for images."},
+                    "max_images" : {"type": "integer", "description": "The maximum number of images to return."}
+                },
+                "required": ["image_query"]
+            }
+        }
     }
 ]
