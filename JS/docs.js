@@ -701,18 +701,43 @@ editor.addEventListener('keydown', (e) => {
       return;
     }
 
-    if (currentLine && currentLine.tagName === 'H1') {
-      const hasDefaultText = currentLine.querySelector('.default-text-not-editable');
-      const isEmpty = currentLine.textContent === '\u00A0' || currentLine.textContent === '';
+    if (currentLine && (currentLine.tagName == "H1" || currentLine.tagName === 'H2' || currentLine.tagName === 'H3' || 
+    currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6')) {
+  const isEmpty = currentLine.textContent.trim() === '' || currentLine.textContent === '\u00A0';
+  
+  if (isEmpty) {
+    e.preventDefault();
+    
+    const section = currentLine.closest('section');
+    const paragraphs = section.querySelectorAll('p');
+    
+    currentLine.remove();
+    
+    if (paragraphs.length > 0) {
+      const lastP = paragraphs[paragraphs.length - 1];
 
-      if (hasDefaultText || isEmpty) {
-        e.preventDefault();
-        currentLine.innerHTML = '\u00A0<span class="default-text-not-editable" contenteditable="false">Untitled File</span>';
-        placeCaretAtStart(currentLine);
-        return;
+      const defaultSpans = lastP.querySelectorAll('span.default-text:not(.default-text-not-editable)');
+      
+      if (defaultSpans.length > 0) {
+        const lastDefaultSpan = defaultSpans[defaultSpans.length - 1];
+        placeCaretAtEnd(lastDefaultSpan);
+      } else {
+
+        const newSpan = document.createElement('span');
+        newSpan.className = 'default-text';
+        newSpan.innerHTML = '\u00A0';
+        lastP.appendChild(newSpan);
+        placeCaretAtEnd(newSpan);
       }
-      return;
+    } else {
+      const newP = createParagraph();
+      section.appendChild(newP);
+      placeCaretAtStart(newP);
     }
+    return;
+  }
+  return;
+}
 
     if (currentLine && currentLine.tagName === 'LI') {
       const parentList = currentLine.parentElement;
@@ -1036,7 +1061,7 @@ editor.addEventListener('keydown', (e) => {
       enterPressCount = 0;
     }
   }
-  
+
   else if (e.key === 'Tab') {
     e.preventDefault();
     if (currentLine && currentLine.tagName === 'LI') {
