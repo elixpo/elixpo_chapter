@@ -121,9 +121,10 @@ function createNewLineElement() {
 function handleBlockFormatting(lineEl) {
   const text = lineEl.textContent;
   const section = lineEl.parentNode;
-
+  console.log(lineEl.tagName)
   if (lineEl.tagName === 'P') {
-    if (text === '```\u00A0' || text === '```  ' || text === '\u00A0\u00A0') {
+    if (text === '```\u00A0' || text === '```  ' || text === '```\u00A0\u00A0') {
+      console.log("inside code creation")
       const hexID = generateHexID();
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = createCodeBlock(hexID);
@@ -167,6 +168,38 @@ function handleBlockFormatting(lineEl) {
       const hashCount = (text.match(/#/g) || []).length;
       const content = text.replace(/^(?:\s|\u00A0)*#{1,6}(?:\s|\u00A0)*/, '').trim() || '\u00A0';
       
+      // Always create a new section for H1 headings
+      if (hashCount === 1) {
+        // Create a new section
+        const newSection = document.createElement('section');
+        const h1 = document.createElement('h1');
+        h1.id = `heading_${hexID}`;
+        
+        // Process inline markdown in heading content
+        if (content !== '\u00A0' && hasMarkdownPattern(content)) {
+          processMarkdownInText(content, h1);
+        } else {
+          h1.textContent = content;
+        }
+        
+        newSection.appendChild(h1);
+        
+        // Insert the new section after the current section
+        const currentSection = lineEl.closest('section');
+        currentSection.parentNode.insertBefore(newSection, currentSection.nextSibling);
+        
+        // Remove the paragraph that was converted to H1
+        lineEl.remove();
+        
+        // Add a new paragraph to the new section
+        const newP = createParagraph();
+        newSection.appendChild(newP);
+        
+        placeCaretAtStart(newSection);
+        return true;
+      }
+      
+      // For H2-H6, create heading in current section
       const heading = document.createElement(`h${Math.min(hashCount, 6)}`);
       heading.id = `heading_${hexID}`;
       
@@ -185,6 +218,7 @@ function handleBlockFormatting(lineEl) {
       return true;
     }
 
+    // ...existing code for lists and blockquotes...
     const unorderedListMatch = text.match(/^[\*\-\+]\s(.*)/);
     const orderedListMatch = text.match(/^\d+\.\s(.*)/);
 
@@ -381,7 +415,6 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
   return { addedTrailingSpan: true };
 }
 
-
 function processEntireLineContent(node) {
   const existingStyledSpans = node.querySelectorAll('span:not(.default-text)');
   const allSpans = Array.from(node.querySelectorAll('span'));
@@ -390,11 +423,27 @@ function processEntireLineContent(node) {
     let hasChanges = false;
     let addedTrailingSpan = false;
 
+    // Process all default-text spans that contain markdown
     for (const span of allSpans) {
       if (span.classList.contains('default-text')) {
         const spanText = span.textContent;
         if (spanText && hasMarkdownPattern(spanText)) {
-          const result = processMarkdownInText(spanText, span.parentNode, span);
+          // Get the parent and position before processing
+          const parent = span.parentNode;
+          const nextSibling = span.nextSibling;
+          
+          // Process the markdown and create new spans
+          const tempDiv = document.createElement('div');
+          const result = processMarkdownInText(spanText, tempDiv);
+          
+          // Insert all the new spans from tempDiv before the original span
+          while (tempDiv.firstChild) {
+            parent.insertBefore(tempDiv.firstChild, span);
+          }
+          
+          // Remove the original span
+          span.remove();
+          
           if (result && result.addedTrailingSpan) {
             addedTrailingSpan = true;
           }
@@ -402,9 +451,24 @@ function processEntireLineContent(node) {
         }
       }
     }
+    
     if (hasChanges) {
       cleanupEmptySpans(node);
+      
+      // If we added trailing spans, find the last default-text span and position cursor there
+      if (addedTrailingSpan) {
+        const spans = node.querySelectorAll('span.default-text');
+        
+        const lastDefaultSpan = spans[spans.length - 1];
+        
+        if (lastDefaultSpan) {
+          setTimeout(() => {
+            placeCaretAtStart(lastDefaultSpan);
+          }, 0);
+        }
+      }
     }
+    
     return { addedTrailingSpan };
   }
 
@@ -413,6 +477,7 @@ function processEntireLineContent(node) {
 
   return processMarkdownInText(lineText, node);
 }
+
 
 function cleanupEmptySpans(node) {
   const spans = node.querySelectorAll('span');
@@ -529,33 +594,48 @@ editor.addEventListener('input', (e) => {
     removeDefaultTextIfPresent(currentLine);
   }
 
-  if (currentLine.tagName === 'P') {
+  // Ensure we're always typing in a span for styled block elements
+  if (currentLine.tagName === 'H1' || currentLine.tagName === 'H2' || currentLine.tagName === 'H3' || 
+      currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6' || 
+      currentLine.tagName === 'P' || currentLine.tagName === 'BLOCKQUOTE' || currentLine.tagName === 'LI') {
+    
     const currentNode = range.startContainer;
-
+    
+    // If we're typing directly in the block element (not in a span)
     if (currentNode === currentLine) {
-      let targetSpan = currentLine.querySelector('span');
+      let targetSpan = currentLine.querySelector('span.default-text');
       if (!targetSpan) {
+        // Create a new default span if none exists
         targetSpan = document.createElement('span');
         targetSpan.className = 'default-text';
-        targetSpan.innerHTML = ' ';
+        targetSpan.innerHTML = '\u00A0';
         currentLine.appendChild(targetSpan);
       }
       placeCaretAtEnd(targetSpan);
       return;
     }
-
+    
+    // If we have a text node directly in the block element, wrap it in a span
     if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentNode === currentLine) {
       const span = document.createElement('span');
       span.className = 'default-text';
+      span.id = `span_${generateHexID()}`;
+      
+      // Insert the span before the text node
       currentNode.parentNode.insertBefore(span, currentNode);
+      // Move the text node into the span
       span.appendChild(currentNode);
+      
+      // Restore cursor position within the span
       const newRange = document.createRange();
       newRange.setStart(currentNode, range.startOffset);
       newRange.collapse(true);
-      sel.removeAllRananges();
+      sel.removeAllRanges();
       sel.addRange(newRange);
     }
+  }
 
+  if (currentLine.tagName === 'P') {
     setTimeout(() => {
       cleanupEmptySpans(currentLine);
     }, 0);
