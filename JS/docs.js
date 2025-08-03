@@ -6,6 +6,24 @@ function generateHexID() {
   return Math.random().toString(16).substr(2, 8);
 }
 
+function createSection() {
+  const section = document.createElement('section');
+  const h1 = document.createElement('h1');
+  h1.innerHTML = '<span class="default-text">Heading</span>';
+  const p = document.createElement('p');
+  p.innerHTML = '<span class="default-text">Start typing...</span>';
+  
+  section.appendChild(h1);
+  section.appendChild(p);
+  return section;
+}
+
+function createParagraph() {
+  const p = document.createElement('p');
+  p.innerHTML = '<span class="default-text">\u200B</span>';
+  return p;
+}
+
 function createCodeBlock(hexID) {
   return `
     <pre data-slate-node="element" contenteditable="false">
@@ -39,6 +57,9 @@ function getCurrentLineElement() {
 
   while (node && node !== editor) {
     if (node.parentNode === editor) {
+      return node;
+    }
+    if (node.tagName === 'H1' || node.tagName === 'P') {
       return node;
     }
     if (node.tagName === 'LI') {
@@ -82,64 +103,19 @@ function placeCaretAtEnd(el) {
 }
 
 function createNewLineElement() {
-  const div = document.createElement('div');
-  div.appendChild(document.createElement('br'));
-  return div;
-}
-
-function replaceLine(oldLineEl, newEl, placeCaretStrategy = 'end', caretOffset = 0, currentRange = null) {
-  const parent = oldLineEl.parentNode;
-  if (parent) {
-    parent.replaceChild(newEl, oldLineEl);
-  } else {
-    editor.appendChild(newEl);
-  }
-
-  if (currentRange && currentRange.startContainer && newEl.contains(currentRange.startContainer)) {
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(currentRange);
-  } else if (placeCaretStrategy === 'start') {
-    placeCaretAtStart(newEl);
-  } else if (placeCaretStrategy === 'end') {
-    placeCaretAtEnd(newEl);
-  } else if (placeCaretStrategy === 'offset') {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    const textNode = newEl.firstChild;
-    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-      range.setStart(textNode, Math.min(caretOffset, textNode.length));
-    } else if (newEl.childNodes.length > 0) {
-      range.setStart(newEl, 0);
-    } else {
-      range.setStart(newEl, 0);
-    }
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-}
-
-function applyBlockStyle(lineEl, tag, pattern, caretOffset = 0) {
-  const text = lineEl.textContent;
-  const match = text.match(pattern);
-  if (!match) return false;
-
-  const newEl = document.createElement(tag);
-  newEl.textContent = match[1] || '\u200B';
-
-  const sel = window.getSelection();
-  const currentRange = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
-
-  replaceLine(lineEl, newEl, 'offset', caretOffset, currentRange);
-  return true;
+  const p = document.createElement('p');
+  p.innerHTML = '<span class="default-text">\u200B</span>';
+  return p;
 }
 
 function handleBlockFormatting(lineEl) {
   const text = lineEl.textContent;
   let handled = false;
 
-  if (lineEl.tagName === 'DIV' || lineEl.tagName === 'P') {
+  if (lineEl.tagName === 'P') {
+    const section = lineEl.parentNode;
+    
+    // Check for code block
     if (text === '```\u00A0') {
       const hexID = generateHexID();
       const tempDiv = document.createElement('div');
@@ -156,47 +132,98 @@ function handleBlockFormatting(lineEl) {
         setTimeout(() => copyButton.classList.remove('copied'), 1500);
       });
 
-      replaceLine(lineEl, pre, 'end');
+      // Replace current p with pre
+      section.replaceChild(pre, lineEl);
+      
+      // Add new paragraph after pre
+      const newP = createParagraph();
+      section.appendChild(newP);
+      
       placeCaretAtEnd(code);
       return true;
     }
 
+    // Check for horizontal rule
     if (text == '---\u00A0' || text === '***\u00A0' || text === '___\u00A0') {
       const hr = document.createElement('hr');
-      replaceLine(lineEl, hr, 'none');
-      const newDiv = createNewLineElement();
-      editor.insertBefore(newDiv, hr.nextSibling);
-      placeCaretAtStart(newDiv);
+      section.replaceChild(hr, lineEl);
+      
+      // Add new paragraph after hr
+      const newP = createParagraph();
+      section.appendChild(newP);
+      
+      placeCaretAtStart(newP);
       return true;
     }
 
-    if (applyBlockStyle(lineEl, 'h1', /^#\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'h2', /^##\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'h3', /^###\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'h4', /^####\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'h5', /^#####\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'h6', /^######\s(.*)/, 0)) handled = true;
-    else if (applyBlockStyle(lineEl, 'blockquote', /^>\s(.*)/, 0)) handled = true;
+    // Check for heading patterns - these create new sections
+    const headingPatterns = [
+      { regex: /^#\s(.*)/, tag: 'h1' },
+      { regex: /^##\s(.*)/, tag: 'h2' },
+      { regex: /^###\s(.*)/, tag: 'h3' },
+      { regex: /^####\s(.*)/, tag: 'h4' },
+      { regex: /^#####\s(.*)/, tag: 'h5' },
+      { regex: /^######\s(.*)/, tag: 'h6' }
+    ];
 
-    else if ((text.startsWith('*\u00A0') || text.startsWith('-\u00A0')) && lineEl.tagName === 'DIV') {
-      const ul = document.createElement('ul');
-      const li = document.createElement('li');
-      li.textContent = text.substring(2) || '\u200B';
-      ul.appendChild(li);
-      replaceLine(lineEl, ul, 'none');
-      placeCaretAtEnd(li);
-      handled = true;
+    for (const pattern of headingPatterns) {
+      const match = text.match(pattern.regex);
+      if (match) {
+        // Create new section with heading
+        const newSection = document.createElement('section');
+        const heading = document.createElement(pattern.tag);
+        heading.textContent = match[1] || '\u200B';
+        
+        const newP = createParagraph();
+        
+        newSection.appendChild(heading);
+        newSection.appendChild(newP);
+        
+        // Insert new section after current section
+        editor.insertBefore(newSection, section.nextSibling);
+        
+        placeCaretAtStart(newP);
+        return true;
+      }
     }
-    else if (text.match(/^(\d+)\.\s(.*)/)) {
-      const olMatch = text.match(/^(\d+)\.\s(.*)/);
-      const ol = document.createElement('ol');
+
+    // Check for list items
+    if (text.match(/^[\*\-\+]\s(.*)/) || text.match(/^\d+\.\s(.*)/)) {
+      const isOrdered = text.match(/^\d+\.\s(.*)/);
+      const listType = isOrdered ? 'ol' : 'ul';
+      const content = text.match(isOrdered ? /^\d+\.\s(.*)/ : /^[\*\-\+]\s(.*)/)[1];
+      
+      const list = document.createElement(listType);
       const li = document.createElement('li');
-      li.textContent = olMatch[2] || '\u200B';
-      li.setAttribute('value', parseInt(olMatch[1]));
-      ol.appendChild(li);
-      replaceLine(lineEl, ol, 'none');
+      li.textContent = content;
+      list.appendChild(li);
+      
+      // Replace current p with list
+      section.replaceChild(list, lineEl);
+      
+      // Add new paragraph after list
+      const newP = createParagraph();
+      section.appendChild(newP);
+      
       placeCaretAtEnd(li);
-      handled = true;
+      return true;
+    }
+
+    // Check for blockquote
+    if (text.match(/^>\s(.*)/)) {
+      const content = text.match(/^>\s(.*)/)[1];
+      const blockquote = document.createElement('blockquote');
+      blockquote.textContent = content;
+      
+      // Replace current p with blockquote
+      section.replaceChild(blockquote, lineEl);
+      
+      // Add new paragraph after blockquote
+      const newP = createParagraph();
+      section.appendChild(newP);
+      
+      placeCaretAtEnd(blockquote);
+      return true;
     }
   }
 
@@ -489,13 +516,17 @@ editor.addEventListener('input', (e) => {
 
   if (!currentLine || !range) return;
 
+  // Only handle block formatting on space, and only for P tags
   if (e.inputType === 'insertText' && e.data === ' ') {
-    if (handleBlockFormatting(currentLine)) {
+    // Check if the line has any styled spans - if so, don't apply block formatting
+    const hasStyledContent = currentLine.querySelector('span[class]');
+    if (currentLine.tagName === 'P' && !hasStyledContent && handleBlockFormatting(currentLine)) {
       return;
     }
   }
 
-  if (currentLine.tagName !== 'PRE') {
+  // Apply inline styles for H1 and P tags
+  if (currentLine.tagName === 'H1' || currentLine.tagName === 'P') {
     // Store the cursor position relative to the entire line's text content
     let cursorPosition = 0;
     
@@ -553,7 +584,7 @@ editor.addEventListener('input', (e) => {
       placeCaretAtEnd(currentLine);
     }
   }
-  else {
+  else if (currentLine.tagName === 'PRE') {
     const codeEl = currentLine.querySelector('code');
     if (codeEl) {
       const cursorPos = getCursorPositionInCodeBlock(codeEl);
@@ -615,13 +646,41 @@ editor.addEventListener('keydown', (e) => {
   let currentLine = getCurrentLineElement();
 
   if(e.key === 'Backspace') {
-    if (currentLine && currentLine.tagName !== 'LI') {
-      if (currentLine.textContent === '' || currentLine.innerHTML === '<br>') {
+    if (currentLine && (currentLine.tagName === 'H1' || currentLine.tagName === 'P')) {
+      if (currentLine.textContent === '' || currentLine.innerHTML === '<br>' || currentLine.innerHTML === '<span class="default-text">\u200B</span>') {
         e.preventDefault();
-        const newDiv = createNewLineElement();
-        editor.replaceChild(newDiv, currentLine);
-        placeCaretAtStart(newDiv);
-        return;
+        const section = currentLine.parentNode;
+        
+        // If it's an H1 and there are other elements in section, just reset it
+        if (currentLine.tagName === 'H1' && section.children.length > 1) {
+          currentLine.innerHTML = '<span class="default-text">\u200B</span>';
+          placeCaretAtStart(currentLine);
+          return;
+        }
+        
+        // If it's a P and there are other Ps in section, remove this P
+        if (currentLine.tagName === 'P') {
+          const otherPs = section.querySelectorAll('p');
+          if (otherPs.length > 1) {
+            const prevP = currentLine.previousElementSibling;
+            const nextP = currentLine.nextElementSibling;
+            section.removeChild(currentLine);
+            if (prevP && prevP.tagName === 'P') {
+              placeCaretAtEnd(prevP);
+            } else if (nextP && nextP.tagName === 'P') {
+              placeCaretAtStart(nextP);
+            } else {
+              const h1 = section.querySelector('h1');
+              if (h1) placeCaretAtEnd(h1);
+            }
+            return;
+          } else {
+            // Last P in section, reset it
+            currentLine.innerHTML = '<span class="default-text">\u200B</span>';
+            placeCaretAtStart(currentLine);
+            return;
+          }
+        }
       }
     }
 
@@ -693,8 +752,37 @@ editor.addEventListener('keydown', (e) => {
     enterPressCount++;
 
     if (!currentLine) {
-      editor.appendChild(createNewLineElement());
-      placeCaretAtStart(editor.lastChild);
+      const newSection = createSection();
+      editor.appendChild(newSection);
+      placeCaretAtStart(newSection.querySelector('p'));
+      return;
+    }
+
+    // Handle Enter in H1 tags - create new P in same section
+    if (currentLine.tagName === 'H1') {
+      const section = currentLine.parentNode;
+      const newP = createParagraph();
+      section.appendChild(newP);
+      placeCaretAtStart(newP);
+      return;
+    }
+
+    // Handle Enter in P tags - create new P in same section
+    if (currentLine.tagName === 'P') {
+      const section = currentLine.parentNode;
+      const newP = createParagraph();
+      
+      // Extract remaining content after cursor
+      const remainingContents = range.extractContents();
+      if (remainingContents.hasChildNodes()) {
+        // Clear the new P and add the remaining content
+        newP.innerHTML = '';
+        newP.appendChild(remainingContents);
+      }
+      
+      // Insert new P after current P
+      section.insertBefore(newP, currentLine.nextSibling);
+      placeCaretAtStart(newP);
       return;
     }
 
@@ -705,18 +793,19 @@ editor.addEventListener('keydown', (e) => {
 
       if (isLiEmpty) {
         if (enterPressCount >= 2 || (isCaretAtStartOfLi && !currentLine.previousElementSibling)) {
-          const newDiv = createNewLineElement();
+          const section = parentList.closest('section');
+          const newP = createParagraph();
           parentList.removeChild(currentLine);
           if (parentList.children.length === 0) {
             if (parentList.parentNode.tagName === 'LI') {
               const grandParentLi = parentList.parentNode;
               parentList.remove();
-              editor.insertBefore(newDiv, grandParentLi.nextSibling || null);
-              placeCaretAtStart(newDiv);
+              section.insertBefore(newP, grandParentLi.nextSibling || null);
+              placeCaretAtStart(newP);
             } else {
               parentList.remove();
-              editor.insertBefore(newDiv, parentList.nextSibling || null);
-              placeCaretAtStart(newDiv);
+              section.appendChild(newP);
+              placeCaretAtStart(newP);
             }
           } else {
             const next = currentLine.nextElementSibling;
@@ -732,13 +821,14 @@ editor.addEventListener('keydown', (e) => {
             parentList.removeChild(currentLine);
             placeCaretAtStart(nextSibling);
           } else {
-            const newDiv = createNewLineElement();
+            const section = parentList.closest('section');
+            const newP = createParagraph();
             parentList.removeChild(currentLine);
             if (parentList.children.length === 0) {
               parentList.remove();
             }
-            editor.insertBefore(newDiv, parentList.nextSibling || null);
-            placeCaretAtStart(newDiv);
+            section.appendChild(newP);
+            placeCaretAtStart(newP);
           }
           enterPressCount = 0;
         }
@@ -778,32 +868,27 @@ editor.addEventListener('keydown', (e) => {
     } else {
       e.preventDefault();
       if (codeEl.textContent.trim() === '') {
-        const newDiv = createNewLineElement();
-        editor.replaceChild(newDiv, currentLine);
-        placeCaretAtStart(newDiv);
+        const section = currentLine.closest('section');
+        const newP = createParagraph();
+        section.replaceChild(newP, currentLine);
+        placeCaretAtStart(newP);
       } else {
-        const newDiv = createNewLineElement();
-        editor.insertBefore(newDiv, currentLine.nextSibling);
-        placeCaretAtStart(newDiv);
+        const section = currentLine.closest('section');
+        const newP = createParagraph();
+        section.appendChild(newP);
+        placeCaretAtStart(newP);
       }
     }
   }
 }
 
     else {
-      if (currentLine.textContent.trim() === '' && currentLine.tagName !== 'DIV') {
-        const newDiv = createNewLineElement();
-        editor.replaceChild(newDiv, currentLine);
-        placeCaretAtStart(newDiv);
-      } else {
-        const newDiv = createNewLineElement();
-        const remainingContents = range.extractContents();
-        if (remainingContents.hasChildNodes()) {
-          newDiv.appendChild(remainingContents);
-        }
-
-        editor.insertBefore(newDiv, currentLine.nextSibling);
-        placeCaretAtStart(newDiv);
+      // For other elements, create new P in section
+      const section = currentLine.closest('section');
+      if (section) {
+        const newP = createParagraph();
+        section.appendChild(newP);
+        placeCaretAtStart(newP);
       }
       enterPressCount = 0;
     }
@@ -833,6 +918,12 @@ editor.addEventListener('keydown', (e) => {
       sel.removeAllRanges();
       sel.addRange(range);
       highlightCodeBlock(currentLine.querySelector('code'));
+    } else if (currentLine && (currentLine.tagName === 'H1' || currentLine.tagName === 'P')) {
+      const spaceNode = document.createTextNode('  ');
+      range.insertNode(spaceNode);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
     } else {
       const spaceNode = document.createTextNode('  ');
       range.insertNode(spaceNode);
@@ -847,36 +938,30 @@ editor.addEventListener('keydown', (e) => {
       const currentLineElement = getCurrentLineElement();
       if (!currentLineElement) return;
 
-      if (currentLineElement.tagName !== 'DIV' && currentLineElement.tagName !== 'LI' && currentLineElement.tagName !== 'PRE' && currentLineElement.previousElementSibling) {
-        e.preventDefault();
-        const newDiv = createNewLineElement();
-        newDiv.innerHTML = currentLineElement.innerHTML;
-        const prevSibling = currentLineElement.previousElementSibling;
-
-        editor.replaceChild(newDiv, currentLineElement);
-        if (prevSibling) {
-          placeCaretAtEnd(prevSibling);
-        } else {
-          placeCaretAtStart(newDiv);
-        }
+      // Handle backspace at beginning of elements - no longer convert back to divs
+      if (currentLineElement.tagName === 'H1' || currentLineElement.tagName === 'P') {
+        // Don't do anything special at start - let normal editing handle it
+        return;
       }
-      else if (currentLineElement.tagName === 'LI' && !currentLineElement.previousElementSibling && currentLineElement.parentNode.parentNode === editor) {
+      else if (currentLineElement.tagName === 'LI' && !currentLineElement.previousElementSibling) {
         e.preventDefault();
         const parentList = currentLineElement.parentNode;
-        const newDiv = createNewLineElement();
-        newDiv.innerHTML = currentLineElement.innerHTML;
+        const section = parentList.closest('section');
+        const newP = createParagraph();
+        newP.innerHTML = currentLineElement.innerHTML;
         parentList.removeChild(currentLineElement);
         if (parentList.children.length === 0) {
           parentList.remove();
         }
-        editor.insertBefore(newDiv, parentList.nextSibling || parentList);
-        placeCaretAtEnd(newDiv);
+        section.appendChild(newP);
+        placeCaretAtEnd(newP);
       }
       else if (currentLineElement.tagName === 'PRE' && currentLineElement.textContent.trim() === '') {
         e.preventDefault();
-        const newDiv = createNewLineElement();
-        editor.replaceChild(newDiv, currentLineElement);
-        placeCaretAtStart(newDiv);
+        const section = currentLineElement.closest('section');
+        const newP = createParagraph();
+        section.replaceChild(newP, currentLineElement);
+        placeCaretAtStart(newP);
       }
     }
   } else {
@@ -928,11 +1013,17 @@ editor.addEventListener('click', (e) => {
   }
 });
 
+// Initialize editor with a section containing H1 and P
 if (editor.children.length === 0 || editor.textContent.trim() === '') {
-  editor.appendChild(createNewLineElement());
-}
-if (editor.firstChild && editor.firstChild.firstChild) {
-  placeCaretAtStart(editor.firstChild.firstChild);
+  editor.innerHTML = '';
+  const initialSection = createSection();
+  editor.appendChild(initialSection);
+  placeCaretAtStart(initialSection.querySelector('p'));
 } else {
-  placeCaretAtStart(editor.firstChild);
+  // If editor has content but no sections, wrap in section
+  if (!editor.querySelector('section')) {
+    const initialSection = createSection();
+    editor.appendChild(initialSection);
+    placeCaretAtStart(initialSection.querySelector('p'));
+  }
 }
