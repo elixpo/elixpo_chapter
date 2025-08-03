@@ -162,20 +162,16 @@ function handleBlockFormatting(lineEl) {
       return true;
     }
 
-    // Heading detection: match #, ##, ###, etc. with any combination of spaces or &nbsp; before/after
     else if (/^(?:\s|\u00A0)*#{1,6}(?:\s|\u00A0)+.*/.test(text)) {
       const hexID = generateHexID();
       const hashCount = (text.match(/#/g) || []).length;
       const content = text.replace(/^(?:\s|\u00A0)*#{1,6}(?:\s|\u00A0)*/, '').trim() || '\u00A0';
       
-      // Always create a new section for H1 headings
       if (hashCount === 1) {
-        // Create a new section
         const newSection = document.createElement('section');
         const h1 = document.createElement('h1');
         h1.id = `heading_${hexID}`;
         
-        // Process inline markdown in heading content
         if (content !== '\u00A0' && hasMarkdownPattern(content)) {
           processMarkdownInText(content, h1);
         } else {
@@ -184,14 +180,11 @@ function handleBlockFormatting(lineEl) {
         
         newSection.appendChild(h1);
         
-        // Insert the new section after the current section
         const currentSection = lineEl.closest('section');
         currentSection.parentNode.insertBefore(newSection, currentSection.nextSibling);
         
-        // Remove the paragraph that was converted to H1
         lineEl.remove();
         
-        // Add a new paragraph to the new section
         const newP = createParagraph();
         newSection.appendChild(newP);
         
@@ -199,11 +192,9 @@ function handleBlockFormatting(lineEl) {
         return true;
       }
       
-      // For H2-H6, create heading in current section
       const heading = document.createElement(`h${Math.min(hashCount, 6)}`);
       heading.id = `heading_${hexID}`;
       
-      // Process inline markdown in heading content
       if (content !== '\u00A0' && hasMarkdownPattern(content)) {
         processMarkdownInText(content, heading);
       } else {
@@ -218,7 +209,6 @@ function handleBlockFormatting(lineEl) {
       return true;
     }
 
-    // ...existing code for lists and blockquotes...
     const unorderedListMatch = text.match(/^[\*\-\+]\s(.*)/);
     const orderedListMatch = text.match(/^\d+\.\s(.*)/);
 
@@ -233,7 +223,6 @@ function handleBlockFormatting(lineEl) {
       const li = document.createElement('li');
       li.id = `li_${generateHexID()}`;
       
-      // Process inline markdown in list item content
       if (content && hasMarkdownPattern(content)) {
         processMarkdownInText(content, li);
       } else {
@@ -256,7 +245,6 @@ function handleBlockFormatting(lineEl) {
       const blockquote = document.createElement('blockquote');
       blockquote.id = `blockquote_${hexID}`;
       
-      // Process inline markdown in blockquote content
       if (content && hasMarkdownPattern(content)) {
         processMarkdownInText(content, blockquote);
       } else {
@@ -333,7 +321,6 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
     return { addedTrailingSpan: false };
   }
 
-  // Sort and filter overlapping
   allMatches.sort((a, b) => {
     if (a.start !== b.start) return a.start - b.start;
     return a.priority - b.priority;
@@ -342,7 +329,9 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
   const validMatches = [];
   for (const match of allMatches) {
     const hasOverlap = validMatches.some(existing =>
-      (match.start < existing.end && match.end > existing.start)
+      (match.start < existing.end && match.end > existing.start) ||
+      (match.start >= existing.start && match.end <= existing.end) ||
+      (existing.start >= match.start && existing.end <= match.end)
     );
     if (!hasOverlap) {
       validMatches.push(match);
@@ -389,8 +378,6 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
   trailingSpan.textContent = '\u00A0  '; 
   fragment.appendChild(trailingSpan);
   insertedTrailingSpan = trailingSpan;
-  placeCaretAtEnd(trailingSpan);
-  console.log("Inserted trailing span:", insertedTrailingSpan);
 
   if (replaceNode) {
     parentNode.insertBefore(fragment, replaceNode);
@@ -416,64 +403,21 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
 }
 
 function processEntireLineContent(node) {
-  const existingStyledSpans = node.querySelectorAll('span:not(.default-text)');
-  const allSpans = Array.from(node.querySelectorAll('span'));
-
-  if (existingStyledSpans.length > 0) {
-    let hasChanges = false;
-    let addedTrailingSpan = false;
-
-    // Process all default-text spans that contain markdown
-    for (const span of allSpans) {
-      if (span.classList.contains('default-text')) {
-        const spanText = span.textContent;
-        if (spanText && hasMarkdownPattern(spanText)) {
-          // Get the parent and position before processing
-          const parent = span.parentNode;
-          const nextSibling = span.nextSibling;
-          
-          // Process the markdown and create new spans
-          const tempDiv = document.createElement('div');
-          const result = processMarkdownInText(spanText, tempDiv);
-          
-          // Insert all the new spans from tempDiv before the original span
-          while (tempDiv.firstChild) {
-            parent.insertBefore(tempDiv.firstChild, span);
-          }
-          
-          // Remove the original span
-          span.remove();
-          
-          if (result && result.addedTrailingSpan) {
-            addedTrailingSpan = true;
-          }
-          hasChanges = true;
-        }
-      }
-    }
-    
-    if (hasChanges) {
-      cleanupEmptySpans(node);
-      
-      // If we added trailing spans, find the last default-text span and position cursor there
-      if (addedTrailingSpan) {
-        const spans = node.querySelectorAll('span.default-text');
-        
-        const lastDefaultSpan = spans[spans.length - 1];
-        
-        if (lastDefaultSpan) {
-          setTimeout(() => {
-            placeCaretAtStart(lastDefaultSpan);
-          }, 0);
-        }
-      }
-    }
-    
-    return { addedTrailingSpan };
+  if (node.querySelector('.default-text-not-editable')) {
+    return { addedTrailingSpan: false };
   }
 
   const lineText = node.textContent;
-  if (!lineText) return { addedTrailingSpan: false };
+  if (!lineText) {
+    if (!node.querySelector('span.default-text')) {
+      node.innerHTML = '';
+      const defaultSpan = document.createElement('span');
+      defaultSpan.className = 'default-text';
+      defaultSpan.innerHTML = '\u00A0';
+      node.appendChild(defaultSpan);
+    }
+    return { addedTrailingSpan: false };
+  }
 
   return processMarkdownInText(lineText, node);
 }
@@ -482,15 +426,24 @@ function processEntireLineContent(node) {
 function cleanupEmptySpans(node) {
   const spans = node.querySelectorAll('span');
   for (const span of spans) {
-    if (span.textContent === '' || span.textContent === '\u200B') {
+    if (
+      !span.classList.contains('default-text-not-editable') &&
+      (span.textContent === '' || span.textContent === '\u200B')
+    ) {
       span.remove();
     }
   }
-  if (node.tagName === 'P' && !node.querySelector('span')) {
-    const defaultSpan = document.createElement('span');
-    defaultSpan.className = 'default-text';
-    defaultSpan.innerHTML = '\u00A0';
-    node.appendChild(defaultSpan);
+  if (
+    node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' ||
+    node.tagName === 'H3' || node.tagName === 'H4' || node.tagName === 'H5' ||
+    node.tagName === 'H6' || node.tagName === 'LI' || node.tagName === 'BLOCKQUOTE'
+  ) {
+    if (!node.querySelector('span.default-text') && !node.querySelector('span:not(.default-text)')) {
+      const defaultSpan = document.createElement('span');
+      defaultSpan.className = 'default-text';
+      defaultSpan.innerHTML = '\u00A0';
+      node.appendChild(defaultSpan);
+    }
   }
 }
 
@@ -594,18 +547,15 @@ editor.addEventListener('input', (e) => {
     removeDefaultTextIfPresent(currentLine);
   }
 
-  // Ensure we're always typing in a span for styled block elements
   if (currentLine.tagName === 'H1' || currentLine.tagName === 'H2' || currentLine.tagName === 'H3' || 
       currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6' || 
       currentLine.tagName === 'P' || currentLine.tagName === 'BLOCKQUOTE' || currentLine.tagName === 'LI') {
     
     const currentNode = range.startContainer;
     
-    // If we're typing directly in the block element (not in a span)
     if (currentNode === currentLine) {
       let targetSpan = currentLine.querySelector('span.default-text');
       if (!targetSpan) {
-        // Create a new default span if none exists
         targetSpan = document.createElement('span');
         targetSpan.className = 'default-text';
         targetSpan.innerHTML = '\u00A0';
@@ -615,18 +565,14 @@ editor.addEventListener('input', (e) => {
       return;
     }
     
-    // If we have a text node directly in the block element, wrap it in a span
     if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentNode === currentLine) {
       const span = document.createElement('span');
       span.className = 'default-text';
       span.id = `span_${generateHexID()}`;
       
-      // Insert the span before the text node
       currentNode.parentNode.insertBefore(span, currentNode);
-      // Move the text node into the span
       span.appendChild(currentNode);
       
-      // Restore cursor position within the span
       const newRange = document.createRange();
       newRange.setStart(currentNode, range.startOffset);
       newRange.collapse(true);
@@ -648,7 +594,6 @@ editor.addEventListener('input', (e) => {
     }
   }
 
-  // Process inline markdown for all supported block elements
   if (currentLine.tagName === 'H1' || currentLine.tagName === 'H2' || currentLine.tagName === 'H3' || 
       currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6' || 
       currentLine.tagName === 'P' || currentLine.tagName === 'BLOCKQUOTE' || currentLine.tagName === 'LI') {
@@ -684,7 +629,7 @@ editor.addEventListener('input', (e) => {
       if (
         lastDefaultSpan &&
         (
-          lastDefaultSpan.innerHTML === '&nbsp;' ||
+          lastDefaultSpan.innerHTML === ' ' ||
           lastDefaultSpan.textContent === '\u00A0' ||
           lastDefaultSpan.textContent === '\u200B' ||
           lastDefaultSpan.textContent === ''        ||
@@ -743,10 +688,8 @@ editor.addEventListener('keydown', (e) => {
   const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
   let currentLine = getCurrentLineElement();
 
-  // Handle Ctrl+A selection behavior
   if (e.ctrlKey && e.key === 'a') {
     if (currentLine) {
-      // If we're in a block element (not P), select only that block's content
       if (currentLine.tagName !== 'P') {
         e.preventDefault();
         const range = document.createRange();
@@ -755,32 +698,26 @@ editor.addEventListener('keydown', (e) => {
         sel.addRange(range);
         return;
       }
-      // If we're in a P tag, allow default Ctrl+A behavior (select all)
     }
     return;
   }
 
-  // Handle Backspace after Ctrl+A
   if (e.key === 'Backspace') {
     const selection = sel.toString();
     const selectedRange = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
     
-    // Check if this is a "select all" scenario (large selection that includes multiple elements)
     if (selectedRange && !selectedRange.collapsed) {
       const selectedContent = selectedRange.cloneContents();
       const sections = selectedContent.querySelectorAll('section');
       const allSections = editor.querySelectorAll('section');
       
-      // If user selected all content (multiple sections or entire editor content)
-      if (sections.length > 0 || selection.length > 100) { // Arbitrary threshold for "large selection"
-        // Check if the first section's H1 is included in selection
+      if (sections.length > 0 || selection.length > 100) {
         const firstSection = allSections[0];
         const firstH1 = firstSection ? firstSection.querySelector('h1') : null;
         
         if (firstH1 && selectedRange.intersectsNode(firstH1)) {
           e.preventDefault();
           
-          // Clear all content but preserve the first section structure
           editor.innerHTML = '';
           const resetSection = createSection();
           editor.appendChild(resetSection);
@@ -790,7 +727,6 @@ editor.addEventListener('keydown', (e) => {
       }
     }
 
-    // Original backspace logic for specific elements
     if (currentLine && currentLine.tagName === 'P') {
       const hasContent = currentLine.textContent.trim() !== '' &&
         currentLine.textContent !== '\u00A0' &&
@@ -825,7 +761,6 @@ editor.addEventListener('keydown', (e) => {
     currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6')) {
       const isEmpty = currentLine.textContent.trim() === '' || currentLine.textContent === '\u00A0';
       
-      // Prevent deletion of the very first H1 header
       const section = currentLine.closest('section');
       const allSections = editor.querySelectorAll('section');
       const isFirstSection = allSections[0] === section;
@@ -868,7 +803,6 @@ editor.addEventListener('keydown', (e) => {
       return;
     }
 
-    // Rest of the original backspace logic for LI and PRE elements...
     if (currentLine && currentLine.tagName === 'LI') {
       const parentList = currentLine.parentElement;
       if (!parentList || (parentList.tagName !== 'UL' && parentList.tagName !== 'OL')) return;
@@ -974,7 +908,6 @@ editor.addEventListener('keydown', (e) => {
     }
   }
 
-  // Rest of existing keydown logic...
   if (currentLine && (currentLine.tagName === 'H1' || currentLine.tagName === 'H2' || 
       currentLine.tagName === 'H3' || currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || 
       currentLine.tagName === 'H6' || currentLine.tagName === 'P' || currentLine.tagName === 'BLOCKQUOTE') &&
@@ -982,7 +915,6 @@ editor.addEventListener('keydown', (e) => {
     removeDefaultTextIfPresent(currentLine);
   }
 
-  // Handle span creation for paragraph elements
   if (currentLine && currentLine.tagName === 'P' && e.key.length === 1) {
     const currentNode = range.startContainer;
 
@@ -1039,22 +971,17 @@ editor.addEventListener('keydown', (e) => {
       const isLiEmpty = currentLine.textContent.trim() === '';
 
       if (isLiEmpty) {
-        // Empty list item - exit the list
         const section = parentList.closest('section');
         const newP = createParagraph();
         
-        // Remove the empty list item
         currentLine.remove();
         
-        // Check if this was a nested list
         const grandParentLi = parentList.parentElement;
         const isNested = grandParentLi && grandParentLi.tagName === 'LI';
         
         if (parentList.children.length === 0) {
-          // List is now empty, remove it
           if (isNested) {
             parentList.remove();
-            // Insert the new paragraph after the parent LI
             const grandParentList = grandParentLi.parentElement;
             const nextSibling = grandParentLi.nextElementSibling;
             if (nextSibling) {
@@ -1067,9 +994,7 @@ editor.addEventListener('keydown', (e) => {
             section.appendChild(newP);
           }
         } else {
-          // List still has items, insert paragraph after the list
           if (isNested) {
-            // For nested lists, insert after the parent LI
             const grandParentList = grandParentLi.parentElement;
             const nextSibling = grandParentLi.nextElementSibling;
             if (nextSibling) {
@@ -1090,20 +1015,16 @@ editor.addEventListener('keydown', (e) => {
         placeCaretAtStart(newP);
         enterPressCount = 0;
       } else {
-        // List item has content - create new list item or exit on double enter
         if (enterPressCount >= 2 && isCaretAtStart) {
-          // Double enter at start of non-empty item - exit list
           const section = parentList.closest('section');
           const newP = createParagraph();
           
-          // Copy current item content to paragraph
           if (currentLine.innerHTML) {
             newP.innerHTML = currentLine.innerHTML;
           }
           
           currentLine.remove();
           
-          // Check if list is now empty
           const grandParentLi = parentList.parentElement;
           const isNested = grandParentLi && grandParentLi.tagName === 'LI';
           
@@ -1111,7 +1032,7 @@ editor.addEventListener('keydown', (e) => {
             if (isNested) {
               parentList.remove();
               const grandParentList = grandParentLi.parentElement;
-              const nextSibling = grandParentLi.nextElementSibling;
+              const nextSibling = grandParentList.nextElementSibling;
               if (nextSibling) {
                 grandParentList.insertBefore(newP, nextSibling);
               } else {
@@ -1143,7 +1064,6 @@ editor.addEventListener('keydown', (e) => {
           placeCaretAtStart(newP);
           enterPressCount = 0;
         } else {
-          // Normal enter - create new list item
           const newLi = document.createElement('li');
           newLi.id = `li_${generateHexID()}`;
           
