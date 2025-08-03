@@ -291,6 +291,7 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
     if (!parentNode.querySelector('span.default-text')) {
       const defaultSpan = document.createElement('span');
       defaultSpan.className = 'default-text';
+      defaultSpan.id = `span_${generateHexID()}`;
       defaultSpan.textContent = text;
       parentNode.innerHTML = '';
       parentNode.appendChild(defaultSpan);
@@ -315,43 +316,52 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
 
   const fragment = document.createDocumentFragment();
   let lastIndex = 0;
+  let lastTrailingSpan = null;
 
   for (const match of validMatches) {
+    // Add text before the match
     if (match.start > lastIndex) {
       const beforeText = text.substring(lastIndex, match.start);
       if (beforeText) {
         const defaultSpan = document.createElement('span');
         defaultSpan.className = 'default-text';
+        defaultSpan.id = `span_${generateHexID()}`;
         defaultSpan.textContent = beforeText;
         fragment.appendChild(defaultSpan);
       }
     }
 
+    // Create the styled span
     const styledSpan = document.createElement(match.tag);
     styledSpan.className = match.className;
+    styledSpan.id = `span_${generateHexID()}`;
     styledSpan.textContent = match.content;
     fragment.appendChild(styledSpan);
 
     lastIndex = match.end;
   }
 
+  // Handle remaining text after the last match
   const remainingText = text.substring(lastIndex);
   let addedTrailingSpan = false;
+  
   if (remainingText) {
-    const defaultSpan = document.createElement('span');
-    defaultSpan.className = 'default-text';
-    defaultSpan.textContent = remainingText;
-    fragment.appendChild(defaultSpan);
-  } else {
-    const lastMatch = validMatches[validMatches.length - 1];
-    if (lastMatch && lastMatch.end === text.length) {
-      const defaultSpan = document.createElement('span');
-      defaultSpan.className = 'default-text';
-      defaultSpan.innerHTML = '&nbsp;';
-      fragment.appendChild(defaultSpan);
-      addedTrailingSpan = true;
-    }
+    // Create a span for remaining text
+    const remainingSpan = document.createElement('span');
+    remainingSpan.className = 'default-text';
+    remainingSpan.id = `span_${generateHexID()}`;
+    remainingSpan.textContent = remainingText;
+    fragment.appendChild(remainingSpan);
   }
+
+  // Always create a trailing span at the end for easy typing
+  const finalTrailingSpan = document.createElement('span');
+  finalTrailingSpan.className = 'default-text';
+  finalTrailingSpan.id = `span_${generateHexID()}`;
+  finalTrailingSpan.innerHTML = ' ';
+  fragment.appendChild(finalTrailingSpan);
+  lastTrailingSpan = finalTrailingSpan;
+  addedTrailingSpan = true;
 
   if (replaceNode) {
     // Replace specific span
@@ -361,6 +371,13 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
     // Replace entire line content
     parentNode.innerHTML = '';
     parentNode.appendChild(fragment);
+  }
+
+  // Always place caret in the last trailing span
+  if (lastTrailingSpan) {
+    setTimeout(() => {
+      placeCaretAtEnd(lastTrailingSpan);
+    }, 0);
   }
 
   return { addedTrailingSpan };
