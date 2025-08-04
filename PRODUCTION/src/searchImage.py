@@ -14,7 +14,7 @@ class GoogleSearchAgentImage:
             java_script_enabled=True,
             locale="en-US",
             geolocation={"longitude": -122.4194, "latitude": 37.7749},
-            permissions=["geolocation"]
+            permissions=["geolocation"],
         )
         await context.add_init_script(
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
@@ -44,7 +44,7 @@ class GoogleSearchAgentImage:
 
     async def search_images(self, query: str):
         async with async_playwright() as p:
-            self.browser = await p.chromium.launch(headless=False)
+            self.browser = await p.chromium.launch(headless=True)
             context = await self._new_context()
             page = await context.new_page()
 
