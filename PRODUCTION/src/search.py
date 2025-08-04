@@ -26,7 +26,6 @@ def remove_readonly(func, path, _):
         func(path)
     except Exception as e:
         print(f"[!] Failed to delete: {path} → {e}")
-
 class GoogleSearchAgentImage:
     def __init__(self):
         self.playwright = None
@@ -40,16 +39,21 @@ class GoogleSearchAgentImage:
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(
             headless=True,
-            args=["--disable-blink-features=AutomationControlled"],
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage"
+            ],
         )
         self.context = await self._new_context()
 
     async def _new_context(self):
-        # Added geolocation parameters to help avoid EU redirection and consent issues.
         context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                       "AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/114.0.0.0 Safari/537.36",
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/114.0.0.0 Safari/537.36"
+            ),
             viewport={'width': 1280, 'height': 800},
             java_script_enabled=True,
             locale="en-US",
@@ -69,14 +73,29 @@ class GoogleSearchAgentImage:
         search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
         await page.goto(search_url, timeout=60000)
 
-        # Bypass Google consent dialog if present
+        # Bypass Google consent dialog (form-based and shadow DOM)
         try:
+            # Method 1: Classic form consent
             await page.wait_for_selector('form[action*="consent"] button', timeout=5000)
             await page.click('form[action*="consent"] button')
-            print("[INFO] Dismissed Google consent dialog.")
+            print("[INFO] Dismissed form-based Google consent dialog.")
             await page.wait_for_timeout(1000)
-        except Exception as e:
-            print("[INFO] No consent dialog detected or already dismissed.")
+        except:
+            # Method 2: Shadow root consent
+            try:
+                await page.evaluate("""
+                    () => {
+                        const shadowHost = document.querySelector('#xe7COe');
+                        if (shadowHost && shadowHost.shadowRoot) {
+                            const btn = shadowHost.shadowRoot.querySelector('button');
+                            if (btn) btn.click();
+                        }
+                    }
+                """)
+                print("[INFO] Dismissed shadow-root Google consent dialog.")
+                await page.wait_for_timeout(1000)
+            except Exception as e:
+                print("[INFO] No consent dialog detected or already dismissed.")
 
         # Wait for the image blocks to load
         await page.wait_for_selector('.ob5Hkd', timeout=15000)
@@ -135,13 +154,12 @@ class GoogleSearchAgentText:
     async def start(self):
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(
-            headless=True, 
+            headless=True,
             args=["--disable-blink-features=AutomationControlled"]
         )
         self.context = await self._new_context()
 
     async def _new_context(self):
-        # Also include geolocation parameters here if needed.
         context = await self.browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                        "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -156,6 +174,18 @@ class GoogleSearchAgentText:
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
         )
         return context
+
+    async def _bypass_google_consent(self, page):
+        try:
+            # Bypass consent form (#L2AGLb button)
+            await page.click("button#L2AGLb", timeout=3000)
+        except:
+            pass
+        try:
+            # Bypass overlay element (#xe7COe)
+            await page.locator("#xe7COe").evaluate("node => node.remove()")
+        except:
+            pass
 
     async def search(self, query, max_links=5):
         blacklist = [
@@ -175,6 +205,9 @@ class GoogleSearchAgentText:
 
             page = await self.context.new_page()
             await page.goto(f"https://www.google.com/search?q={query}", timeout=20000)
+
+            await self._bypass_google_consent(page)
+
             await page.wait_for_selector('a[jsname]')
             links = page.locator('a[jsname]')
             results = []
@@ -199,6 +232,7 @@ class GoogleSearchAgentText:
         if self.playwright:
             await self.playwright.stop()
         print("[INFO] GoogleSearchAgent closed.")
+
 
 def mojeek_form_search(query):
     url = "https://www.mojeek.com/search"
@@ -335,24 +369,24 @@ if __name__ == "__main__":
     async def main():
         # Using the image search agent
         agent_image = GoogleSearchAgentImage()
-        await agent_image.start()
-        print("\nGoogle Image Search with Playwright:")
-        queries = ["ballet dancer"]
-        for query in queries:
-            print(f"\nResults for: {query}")
-            results = await agent_image.search_images(query, 10)
-            print(results)
-        await agent_image.close()
+        # await agent_image.start()
+        # print("\nGoogle Image Search with Playwright:")
+        # queries = ["ballet dancer"]
+        # for query in queries:
+        #     print(f"\nResults for: {query}")
+        #     results = await agent_image.search_images(query, 10)
+        #     print(results)
+        # await agent_image.close()
 
         # Uncomment below to use Google text search if needed.
-        # agent_text = GoogleSearchAgentText()
-        # await agent_text.start()
-        # print("\nGoogle Text Search with Playwright:")
-        # queries_text = ["ballet dancer"]
-        # for query in queries_text:
-        #     print(f"\nResults for: {query}")
-        #     results_text = await agent_text.search(query, 10)
-        #     print(results_text)
-        # await agent_text.close()
+        agent_text = GoogleSearchAgentText()
+        await agent_text.start()
+        print("\nGoogle Text Search with Playwright:")
+        queries_text = ["ballet dancer"]
+        for query in queries_text:
+            print(f"\nResults for: {query}")
+            results_text = await agent_text.search(query, 10)
+            print(results_text)
+        await agent_text.close()
     
     asyncio.run(main())
