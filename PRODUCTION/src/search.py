@@ -40,18 +40,21 @@ class GoogleSearchAgentImage:
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(
             headless=True,
-            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+            args=["--disable-blink-features=AutomationControlled"],
         )
         self.context = await self._new_context()
 
     async def _new_context(self):
+        # Added geolocation parameters to help avoid EU redirection and consent issues.
         context = await self.browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                        "AppleWebKit/537.36 (KHTML, like Gecko) "
                        "Chrome/114.0.0.0 Safari/537.36",
             viewport={'width': 1280, 'height': 800},
             java_script_enabled=True,
-            locale="en-US"
+            locale="en-US",
+            geolocation={"longitude": -122.4194, "latitude": 37.7749},  # San Francisco
+            permissions=["geolocation"]
         )
         await context.add_init_script(
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
@@ -66,6 +69,16 @@ class GoogleSearchAgentImage:
         search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
         await page.goto(search_url, timeout=60000)
 
+        # Bypass Google consent dialog if present
+        try:
+            await page.wait_for_selector('form[action*="consent"] button', timeout=5000)
+            await page.click('form[action*="consent"] button')
+            print("[INFO] Dismissed Google consent dialog.")
+            await page.wait_for_timeout(1000)
+        except Exception as e:
+            print("[INFO] No consent dialog detected or already dismissed.")
+
+        # Wait for the image blocks to load
         await page.wait_for_selector('.ob5Hkd', timeout=15000)
         await page.wait_for_timeout(2000)
         blocks = await page.query_selector_all('.ob5Hkd')
@@ -111,8 +124,6 @@ class GoogleSearchAgentImage:
             await self.playwright.stop()
         print("[INFO] GoogleSearchAgentImage closed.")
 
-
-
 class GoogleSearchAgentText:
     def __init__(self):
         self.playwright = None
@@ -123,20 +134,23 @@ class GoogleSearchAgentText:
 
     async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True, args=[
-            "--disable-blink-features=AutomationControlled",
-            "--no-sandbox"
-        ])
+        self.browser = await self.playwright.chromium.launch(
+            headless=True, 
+            args=["--disable-blink-features=AutomationControlled"]
+        )
         self.context = await self._new_context()
 
     async def _new_context(self):
+        # Also include geolocation parameters here if needed.
         context = await self.browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                        "AppleWebKit/537.36 (KHTML, like Gecko) "
                        "Chrome/114.0.0.0 Safari/537.36",
             viewport={'width': 1280, 'height': 800},
             java_script_enabled=True,
-            locale="en-US"
+            locale="en-US",
+            geolocation={"longitude": -122.4194, "latitude": 37.7749},
+            permissions=["geolocation"]
         )
         await context.add_init_script(
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
@@ -147,11 +161,10 @@ class GoogleSearchAgentText:
         blacklist = [
             "maps.google.", "support.google.", "accounts.google.", "policies.google.",
             "images.google.", "google.com/preferences", "https://www.instagram.com/reel",
-            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live" "youtube.com/watch", "youtube.com",
-            "https://www.facebook.com/", "https://www.facebook.com/p"
+            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live",
+            "youtube.com/watch", "youtube.com", "https://www.facebook.com/", "https://www.facebook.com/p"
         ]
         try:
-
             if self.query_count >= 50:
                 print("[INFO] Resetting browser context to avoid leaks.")
                 await self.context.close()
@@ -159,7 +172,6 @@ class GoogleSearchAgentText:
                 self.query_count = 0
 
             self.query_count += 1
-            
 
             page = await self.context.new_page()
             await page.goto(f"https://www.google.com/search?q={query}", timeout=20000)
@@ -167,10 +179,8 @@ class GoogleSearchAgentText:
             links = page.locator('a[jsname]')
             results = []
 
-            # Fix: await the count() method
             link_count = await links.count()
             for i in range(link_count):
-                # Fix: await the get_attribute() method
                 href = await links.nth(i).get_attribute("href")
                 if href and href.startswith("http") and not any(bad in href for bad in blacklist):
                     results.append(href)
@@ -190,8 +200,6 @@ class GoogleSearchAgentText:
             await self.playwright.stop()
         print("[INFO] GoogleSearchAgent closed.")
 
-
-        
 def mojeek_form_search(query):
     url = "https://www.mojeek.com/search"
     headers = {
@@ -234,11 +242,7 @@ def ddgs_search(query):
         links = []
         for h2 in soup.select("h2.result__title a[href^='http']"):
             href = h2.get("href")
-            if (
-                href
-                and href.startswith("http")
-                and not href.startswith("https://duckduckgo.com/y.js?")
-            ):
+            if href and href.startswith("http") and not href.startswith("https://duckduckgo.com/y.js?"):
                 links.append(href)
 
         print(f"[INFO] DDG search completed with {len(links)} results.")
@@ -247,7 +251,6 @@ def ddgs_search(query):
     except Exception as e:
         print("❌ DDG search failed:", e)
         return []
-
 
 def ddgs_search_module_search(query):
     results = []
@@ -261,7 +264,6 @@ def ddgs_search_module_search(query):
     except Exception as e:
         print("❌ DDG search failed:", e)
     return results
-
 
 async def web_search(query, google_agent):
     print(f"[INFO] Running web search for: {query}")
@@ -277,7 +279,7 @@ async def web_search(query, google_agent):
     except Exception as e:
         print(f"[WARN] Google search failed with error: {e}. Falling back to DDGS module.")
 
-    # Second Priority: DuckDuckGo via DDGS
+    # Second Priority: DuckDuckGo via DDGS module
     try:
         ddg_module_results = ddgs_search_module_search(query)
         if ddg_module_results:
@@ -299,7 +301,6 @@ async def web_search(query, google_agent):
     except Exception as e:
         print(f"[WARN] DuckDuckGo HTML search failed with error: {e}. Falling back to Mojeek.")
 
-    
     try:
         mojeek_results = mojeek_form_search(query)
         if mojeek_results:
@@ -312,8 +313,6 @@ async def web_search(query, google_agent):
 
     print("[INFO] All search engines failed to return results.")
     return []
-
-
 
 async def image_search(query, google_agent, max_images=10):
     print(f"[INFO] Running image search for: {query}")
@@ -331,14 +330,13 @@ async def image_search(query, google_agent, max_images=10):
     finally:
         await google_agent.close()
 
-
-
 if __name__ == "__main__":
 
     async def main():
+        # Using the image search agent
         agent_image = GoogleSearchAgentImage()
         await agent_image.start()
-        print("\nGoogle Search with Playwright:")
+        print("\nGoogle Image Search with Playwright:")
         queries = ["ballet dancer"]
         for query in queries:
             print(f"\nResults for: {query}")
@@ -346,7 +344,7 @@ if __name__ == "__main__":
             print(results)
         await agent_image.close()
 
-
+        # Uncomment below to use Google text search if needed.
         # agent_text = GoogleSearchAgentText()
         # await agent_text.start()
         # print("\nGoogle Text Search with Playwright:")
@@ -358,5 +356,3 @@ if __name__ == "__main__":
         # await agent_text.close()
     
     asyncio.run(main())
-    
-
