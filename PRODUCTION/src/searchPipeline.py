@@ -203,9 +203,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         Final Response Structure:
         1. **Answer**
         2. **Visually Similar Images** (only if input had image)
-        3. **Images from Related Web Results** (if web search or text-based image search was done)
         4. **Sources & References**
-        5. **Summary**
         6. Write the punchline, just casually like a part of the response don't make a different heading for that
 
         Tone:
@@ -213,6 +211,11 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - Balance detail and brevity.
         - **Answer in English**, unless told otherwise.
         - Don't reveal any internal working and don't mention anything which is not relevant
+        - Don't mention the tools you are using, just use them and give the answer.
+        don't mention anything about images or texts which are not needed to be said
+
+
+        Overall Add a jolly vibe to the answer which will make the user feel like they are talking to a friend who is helping them out with their query.
         """
     },
     {
@@ -461,14 +464,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if user_image and collected_similar_images:
                 images_to_show = [img for img in collected_similar_images if img and img.startswith("http")][:10]
                 if images_to_show:
-                    response_parts.append("\n\n---\n**Visually Similar Images:**\n")
                     for img in images_to_show:
                         response_parts.append(f"![Similar Image]({img})\n")
 
             if collected_images_from_web:
                 web_images = [img for img in collected_images_from_web if img and img.startswith("http")][:10]
                 if web_images:
-                    response_parts.append("\n\n---\n**Images from Related Web Results:**\n")
                     for img in web_images:
                         response_parts.append(f"![Web Image]({img})\n")
 
@@ -477,9 +478,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 unique_sources = sorted(list(set(collected_sources)))
                 for i, src in enumerate(unique_sources):
                     response_parts.append(f"{i+1}. [{src}]({src})\n")
-
-            response_parts.append("\n\n---\n**Summary:**\n")
-            response_parts.append("This answer includes information, relevant images, and sources for further reading. If you need more details or updates, please specify your interest.\n")
 
             response_with_sources = "".join(response_parts)
 
@@ -522,8 +520,8 @@ if __name__ == "__main__":
         # user_image = "https://media.istockphoto.com/id/1421310827/photo/young-graceful-ballerina-is-performing-classic-dance-beauty-and-elegance-of-classic-ballet.jpg?s=612x612&w=0&k=20&c=GQ1DVEarW4Y-lGD6y8jCb3YPIgap7gj-6ReS3C7Qi3Y=" 
         
         # 2. Image + Text Query (Your problematic case)
-        user_query = "what's the current price of mango now in india? is it available now in india?"
-        user_image = "https://media.istockphoto.com/id/1019835828/photo/mango-and-leaf-isolated-white-background.jpg?s=612x612&w=0&k=20&c=_nmOBzO9mGEitT2rUvO1xAX9jwL5mHYI8AFRbYeyy-A="
+        user_query = "hi"
+        user_image = None
 
         # 3. Text only
         # user_query = "What is the capital of France and show me some images of it?"
