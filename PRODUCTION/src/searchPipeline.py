@@ -19,8 +19,6 @@ import asyncio
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
-google_agent_text = GoogleSearchAgentText()
-google_agent_image = GoogleSearchAgentImage()
 POLLINATIONS_TOKEN=os.getenv("TOKEN")
 MODEL=os.getenv("MODEL")
 REFRRER=os.getenv("REFERRER")
@@ -34,8 +32,8 @@ def fetch_url_content_parallel(urls, max_workers=10):
         for future in concurrent.futures.as_completed(futures):
             url = futures[future]
             try:
-                text_content, image_urls = future.result()
-                results[url] = (text_content, image_urls)
+                text_content = future.result()
+                results[url] = (text_content)
             except Exception as e:
                 logger.error(f"Failed fetching {url}: {e}")
                 results[url] = ('[Failed]', [])
@@ -70,7 +68,9 @@ def format_sse(event: str, data: str) -> str:
 
 
 async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: str = None):
-    global google_agent_text, google_agent_image  
+    google_agent_text = GoogleSearchAgentText()
+    google_agent_image = GoogleSearchAgentImage()
+
     logger.info(f"Starting ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}'")
     
     def emit_event(event_type, message):
@@ -172,10 +172,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - Follow standard logic:
         - Answer directly if native knowledge suffices.
         - Otherwise, use `web_search()` for reliable info.
-        - Additionally:
-        - Perform `image_search()` with a search-friendly variant of the text query.
-        - Return 10 matching images.
-
+        - No need for searching images if not mentioned in the query explicitly.
         ---
         
         Understanding & Multi-Query Handling:
@@ -330,10 +327,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         summaries = ""
                         if search_results_raw:
                             parallel_results = fetch_url_content_parallel(search_results_raw)
-                            for url, (text_content, image_urls) in parallel_results.items():
-                                summaries += f"\nURL: {url}\nSummary: {text_content}\nImages: {image_urls}\n"
+                            for url, (text_content) in parallel_results.items():
+                                summaries += f"\nURL: {url}\nSummary: {text_content}\n"
                                 collected_sources.append(url)
-                                collected_images_from_web.extend(image_urls)
                         tool_result = summaries if summaries else "[No relevant web search results found.]"
 
                     elif function_name == "generate_prompt_from_image":
@@ -435,10 +431,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             yield format_sse("INFO", f" Writing Script \n")
                         urls = [function_args.get("url")]
                         parallel_results = fetch_url_content_parallel(urls)
-                        for url, (text_content, image_urls) in parallel_results.items():
-                            tool_result = f"URL: {url}\nText Preview: {text_content}...\nImages Found: {len(image_urls)}"
+                        for url, (text_content) in parallel_results.items():
+                            tool_result = f"URL: {url}\nText Preview: {text_content}..."
                             collected_sources.append(url)
-                            collected_images_from_web.extend(image_urls)
                             memoized_results["fetched_urls"][url] = tool_result
 
                     else:
@@ -509,6 +504,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             else:
                 print(error_msg)
     finally:
+
+        try:
+            await google_agent_text.close()
+            await google_agent_image.close()
+        except Exception as e:
+            logger.error(f"Error closing agents: {e}", exc_info=True)
         logger.info("Search Completed")
 
 
@@ -523,7 +524,7 @@ if __name__ == "__main__":
         # user_image = "https://media.istockphoto.com/id/1421310827/photo/young-graceful-ballerina-is-performing-classic-dance-beauty-and-elegance-of-classic-ballet.jpg?s=612x612&w=0&k=20&c=GQ1DVEarW4Y-lGD6y8jCb3YPIgap7gj-6ReS3C7Qi3Y=" 
         
         # 2. Image + Text Query (Your problematic case)
-        user_query = "hi"
+        user_query = "can you tell me what's the latest news from india"
         user_image = None
 
         # 3. Text only
@@ -565,3 +566,7 @@ if __name__ == "__main__":
             print("\n--- No answer received ---")
     
     asyncio.run(main())
+    try:
+        asyncio.get_event_loop().close()
+    except Exception:
+        pass
