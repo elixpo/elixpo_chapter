@@ -83,11 +83,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     
 
     try:
-        if not getattr(google_agent_text, "is_running", False):
-            await google_agent_text.start()
-        if not getattr(google_agent_image, "is_running", False):
-            await google_agent_image.start()
-
         google_req_count = 0  
         google_agent_text = GoogleSearchAgentText()
         google_agent_image = GoogleSearchAgentImage()
@@ -504,7 +499,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             else:
                 print(error_msg)
     finally:
-
         try:
             await google_agent_text.close()
             await google_agent_image.close()
