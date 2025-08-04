@@ -26,6 +26,7 @@ def remove_readonly(func, path, _):
         func(path)
     except Exception as e:
         print(f"[!] Failed to delete: {path} → {e}")
+
 class GoogleSearchAgentImage:
     def __init__(self):
         self.playwright = None
@@ -39,26 +40,18 @@ class GoogleSearchAgentImage:
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(
             headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-dev-shm-usage"
-            ],
+            args=["--disable-blink-features=AutomationControlled"],
         )
         self.context = await self._new_context()
 
     async def _new_context(self):
         context = await self.browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/114.0.0.0 Safari/537.36"
-            ),
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/114.0.0.0 Safari/537.36",
             viewport={'width': 1280, 'height': 800},
             java_script_enabled=True,
-            locale="en-US",
-            geolocation={"longitude": -122.4194, "latitude": 37.7749},  # San Francisco
-            permissions=["geolocation"]
+            locale="en-US"
         )
         await context.add_init_script(
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
@@ -73,31 +66,6 @@ class GoogleSearchAgentImage:
         search_url = f"https://www.google.com/search?tbm=isch&q={quote(query)}"
         await page.goto(search_url, timeout=60000)
 
-        # Bypass Google consent dialog (form-based and shadow DOM)
-        try:
-            # Method 1: Classic form consent
-            await page.wait_for_selector('form[action*="consent"] button', timeout=5000)
-            await page.click('form[action*="consent"] button')
-            print("[INFO] Dismissed form-based Google consent dialog.")
-            await page.wait_for_timeout(1000)
-        except:
-            # Method 2: Shadow root consent
-            try:
-                await page.evaluate("""
-                    () => {
-                        const shadowHost = document.querySelector('#xe7COe');
-                        if (shadowHost && shadowHost.shadowRoot) {
-                            const btn = shadowHost.shadowRoot.querySelector('button');
-                            if (btn) btn.click();
-                        }
-                    }
-                """)
-                print("[INFO] Dismissed shadow-root Google consent dialog.")
-                await page.wait_for_timeout(1000)
-            except Exception as e:
-                print("[INFO] No consent dialog detected or already dismissed.")
-
-        # Wait for the image blocks to load
         await page.wait_for_selector('.ob5Hkd', timeout=15000)
         await page.wait_for_timeout(2000)
         blocks = await page.query_selector_all('.ob5Hkd')
@@ -143,6 +111,8 @@ class GoogleSearchAgentImage:
             await self.playwright.stop()
         print("[INFO] GoogleSearchAgentImage closed.")
 
+
+
 class GoogleSearchAgentText:
     def __init__(self):
         self.playwright = None
@@ -153,10 +123,9 @@ class GoogleSearchAgentText:
 
     async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
-        )
+        self.browser = await self.playwright.chromium.launch(headless=True, args=[
+            "--disable-blink-features=AutomationControlled",
+        ])
         self.context = await self._new_context()
 
     async def _new_context(self):
@@ -166,35 +135,22 @@ class GoogleSearchAgentText:
                        "Chrome/114.0.0.0 Safari/537.36",
             viewport={'width': 1280, 'height': 800},
             java_script_enabled=True,
-            locale="en-US",
-            geolocation={"longitude": -122.4194, "latitude": 37.7749},
-            permissions=["geolocation"]
+            locale="en-US"
         )
         await context.add_init_script(
             """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
         )
         return context
 
-    async def _bypass_google_consent(self, page):
-        try:
-            # Bypass consent form (#L2AGLb button)
-            await page.click("button#L2AGLb", timeout=3000)
-        except:
-            pass
-        try:
-            # Bypass overlay element (#xe7COe)
-            await page.locator("#xe7COe").evaluate("node => node.remove()")
-        except:
-            pass
-
     async def search(self, query, max_links=5):
         blacklist = [
             "maps.google.", "support.google.", "accounts.google.", "policies.google.",
             "images.google.", "google.com/preferences", "https://www.instagram.com/reel",
-            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live",
-            "youtube.com/watch", "youtube.com", "https://www.facebook.com/", "https://www.facebook.com/p"
+            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live" "youtube.com/watch", "youtube.com",
+            "https://www.facebook.com/", "https://www.facebook.com/p"
         ]
         try:
+
             if self.query_count >= 50:
                 print("[INFO] Resetting browser context to avoid leaks.")
                 await self.context.close()
@@ -202,18 +158,18 @@ class GoogleSearchAgentText:
                 self.query_count = 0
 
             self.query_count += 1
+            
 
             page = await self.context.new_page()
             await page.goto(f"https://www.google.com/search?q={query}", timeout=20000)
-
-            await self._bypass_google_consent(page)
-
             await page.wait_for_selector('a[jsname]')
             links = page.locator('a[jsname]')
             results = []
 
+            # Fix: await the count() method
             link_count = await links.count()
             for i in range(link_count):
+                # Fix: await the get_attribute() method
                 href = await links.nth(i).get_attribute("href")
                 if href and href.startswith("http") and not any(bad in href for bad in blacklist):
                     results.append(href)
@@ -234,6 +190,7 @@ class GoogleSearchAgentText:
         print("[INFO] GoogleSearchAgent closed.")
 
 
+        
 def mojeek_form_search(query):
     url = "https://www.mojeek.com/search"
     headers = {
@@ -276,7 +233,11 @@ def ddgs_search(query):
         links = []
         for h2 in soup.select("h2.result__title a[href^='http']"):
             href = h2.get("href")
-            if href and href.startswith("http") and not href.startswith("https://duckduckgo.com/y.js?"):
+            if (
+                href
+                and href.startswith("http")
+                and not href.startswith("https://duckduckgo.com/y.js?")
+            ):
                 links.append(href)
 
         print(f"[INFO] DDG search completed with {len(links)} results.")
@@ -285,6 +246,7 @@ def ddgs_search(query):
     except Exception as e:
         print("❌ DDG search failed:", e)
         return []
+
 
 def ddgs_search_module_search(query):
     results = []
@@ -298,6 +260,7 @@ def ddgs_search_module_search(query):
     except Exception as e:
         print("❌ DDG search failed:", e)
     return results
+
 
 async def web_search(query, google_agent):
     print(f"[INFO] Running web search for: {query}")
@@ -313,7 +276,7 @@ async def web_search(query, google_agent):
     except Exception as e:
         print(f"[WARN] Google search failed with error: {e}. Falling back to DDGS module.")
 
-    # Second Priority: DuckDuckGo via DDGS module
+    # Second Priority: DuckDuckGo via DDGS
     try:
         ddg_module_results = ddgs_search_module_search(query)
         if ddg_module_results:
@@ -335,6 +298,7 @@ async def web_search(query, google_agent):
     except Exception as e:
         print(f"[WARN] DuckDuckGo HTML search failed with error: {e}. Falling back to Mojeek.")
 
+    
     try:
         mojeek_results = mojeek_form_search(query)
         if mojeek_results:
@@ -347,6 +311,8 @@ async def web_search(query, google_agent):
 
     print("[INFO] All search engines failed to return results.")
     return []
+
+
 
 async def image_search(query, google_agent, max_images=10):
     print(f"[INFO] Running image search for: {query}")
@@ -364,13 +330,14 @@ async def image_search(query, google_agent, max_images=10):
     finally:
         await google_agent.close()
 
+
+
 if __name__ == "__main__":
 
     async def main():
-        # Using the image search agent
-        agent_image = GoogleSearchAgentImage()
+        # agent_image = GoogleSearchAgentImage()
         # await agent_image.start()
-        # print("\nGoogle Image Search with Playwright:")
+        # print("\nGoogle Search with Playwright:")
         # queries = ["ballet dancer"]
         # for query in queries:
         #     print(f"\nResults for: {query}")
@@ -378,7 +345,7 @@ if __name__ == "__main__":
         #     print(results)
         # await agent_image.close()
 
-        # Uncomment below to use Google text search if needed.
+
         agent_text = GoogleSearchAgentText()
         await agent_text.start()
         print("\nGoogle Text Search with Playwright:")
@@ -390,3 +357,5 @@ if __name__ == "__main__":
         await agent_text.close()
     
     asyncio.run(main())
+    
+
