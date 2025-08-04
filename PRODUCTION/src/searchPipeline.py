@@ -81,11 +81,13 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     if initial_event:
         yield initial_event
     
+    google_agent_text = GoogleSearchAgentText()
+    google_agent_image = GoogleSearchAgentImage()
 
     try:
+        await google_agent_text.start()
+        await google_agent_image.start()
         google_req_count = 0  
-        google_agent_text = GoogleSearchAgentText()
-        google_agent_image = GoogleSearchAgentImage()
         current_utc_datetime = datetime.now(timezone.utc)
         current_utc_time = current_utc_datetime.strftime("%H:%M UTC")
         current_utc_date = current_utc_datetime.strftime("%Y-%m-%d")
@@ -114,7 +116,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - The query explicitly asks for web research or sources
         - User provides an image
         - Time-sensitive information is requested
-        - Queries asking "now", "current", "latest", "today", "recent"
+        - Queries asking "now", "current", "latest", "today", "recent", "recently", "this week", "this month", "this year", etc.
 
         Your answers must prioritize:
         - Clarity and correctness
@@ -215,6 +217,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
 
         Overall Add a jolly vibe to the answer which will make the user feel like they are talking to a friend who is helping them out with their query.
+        Make the overall content of the message packed with detailed information and insights, easy to read but well detailed! Add a few sources!
         """
     },
     {

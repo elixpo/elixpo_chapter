@@ -146,10 +146,11 @@ class GoogleSearchAgentText:
         blacklist = [
             "maps.google.", "support.google.", "accounts.google.", "policies.google.",
             "images.google.", "google.com/preferences", "https://www.instagram.com/reel",
-            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live", "youtube.com/watch", "youtube.com",
+            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live" "youtube.com/watch", "youtube.com",
             "https://www.facebook.com/", "https://www.facebook.com/p"
         ]
         try:
+
             if self.query_count >= 50:
                 print("[INFO] Resetting browser context to avoid leaks.")
                 await self.context.close()
@@ -157,6 +158,7 @@ class GoogleSearchAgentText:
                 self.query_count = 0
 
             self.query_count += 1
+            
 
             page = await self.context.new_page()
             await page.goto(f"https://www.google.com/search?q={query}", timeout=20000)
@@ -164,14 +166,12 @@ class GoogleSearchAgentText:
             links = page.locator('a[jsname]')
             results = []
 
+            # Fix: await the count() method
             link_count = await links.count()
             for i in range(link_count):
+                # Fix: await the get_attribute() method
                 href = await links.nth(i).get_attribute("href")
-                # Skip image links
                 if href and href.startswith("http") and not any(bad in href for bad in blacklist):
-                    # Exclude Google Images results
-                    if "tbm=isch" in href or "images.google." in href:
-                        continue
                     results.append(href)
 
             await page.close()
@@ -358,5 +358,4 @@ if __name__ == "__main__":
     
     asyncio.run(main())
     
-
 
