@@ -10,6 +10,11 @@ editor.addEventListener('input', (e) => {
     removeDefaultTextIfPresent(currentLine);
   }
 
+  if(currentLine.classList.contains('default-text'))
+  {
+    updateCurrentInlineBlock('default-text');
+  }
+  
   if (currentLine.tagName === 'H1' || currentLine.tagName === 'H2' || currentLine.tagName === 'H3' || 
       currentLine.tagName === 'H4' || currentLine.tagName === 'H5' || currentLine.tagName === 'H6' || 
       currentLine.tagName === 'P' || currentLine.tagName === 'BLOCKQUOTE' || currentLine.tagName === 'LI') {
@@ -32,7 +37,6 @@ editor.addEventListener('input', (e) => {
       const span = document.createElement('span');
       span.className = 'default-text';
       span.id = `span_${generateHexID()}`;
-      
       currentNode.parentNode.insertBefore(span, currentNode);
       span.appendChild(currentNode);
       

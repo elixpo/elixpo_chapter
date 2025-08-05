@@ -294,6 +294,14 @@ body {
   width: 4px;
   background: #888;
 }
+.controls > .blockedStyleElements 
+{
+  padding: 5px 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+
   .controls svg 
   {
     height: 25px;
@@ -312,7 +320,7 @@ body {
     .textControls 
     {
       position: absolute;
-      top: 75%;
+      bottom: 12%;
       left: 40%;
       transform: translateX(-50%);
       display: flex;
@@ -349,18 +357,12 @@ body {
       justify-content: center;
       align-items: center;
       cursor: pointer;
+      padding: 10px 10px;
+      box-sizing: border-box;
     }
 
-    .textControls > .heading > svg 
-    {
-      width: 25px;
-      height: 25px;
-      fill: #f0f0f0; 
-      margin-right: -5px;
-      cursor: pointer;
-      transition: fill 0.2s ease, transform 0.2s ease;
-    }
-    .textControls > .heading > svg:hover,
+    
+    .textControls > .heading 
     .textControls > .styles > svg:hover,
     .textControls > .heading:hover 
     {
@@ -373,3 +375,10 @@ body {
       font-size: 1.1em;
       color: #f0f0f0; 
     }
+
+    .blockedStyleElements.selected,
+    .styles.selected 
+    {
+      background-color: #3a3333;
+      transition: 0.24s; 
+    } 

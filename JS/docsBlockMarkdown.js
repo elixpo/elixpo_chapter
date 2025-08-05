@@ -5,6 +5,7 @@ function handleBlockFormatting(lineEl) {
   console.log(lineEl.tagName)
   if (lineEl.tagName === 'P') {
     if (text === '```\u00A0' || text === '```  ' || text === '```\u00A0\u00A0') {
+      updateCurrentBlock("CODE_BLOCK");
       console.log("inside code creation")
       const hexID = generateHexID();
       const tempDiv = document.createElement('div');
@@ -31,6 +32,7 @@ function handleBlockFormatting(lineEl) {
     }
 
     else if (text === '---\u00A0\u00A0' || text === '***\u00A0\u00A0' || text === '___\u00A0\u00A0' || text === '---\u00A0\u00A0') {
+      currentBlock = "HORIZONTAL_RULE";
       const hexID = generateHexID();
       const hr = document.createElement('hr');
       hr.id = `hr_${hexID}`;
@@ -44,6 +46,7 @@ function handleBlockFormatting(lineEl) {
     }
 
     else if (/^(?:\s|\u00A0)*#{1,6}(?:\s|\u00A0)+.*/.test(text)) {
+      updateCurrentBlock(`HEADING${text.match(/#/g).length}`);
       const hexID = generateHexID();
       const hashCount = (text.match(/#/g) || []).length;
       const content = text.replace(/^(?:\s|\u00A0)*#{1,6}(?:\s|\u00A0)*/, '').trim() || '\u00A0';
@@ -94,6 +97,14 @@ function handleBlockFormatting(lineEl) {
     const orderedListMatch = text.match(/^\d+\.\s(.*)/);
 
     if (unorderedListMatch || orderedListMatch) {
+      if (unorderedListMatch)
+      {
+        updateCurrentBlock("UNORDERED_LIST");
+      }
+      else 
+      {
+        updateCurrentBlock("ORDERED_LIST");
+      }
       const hexID = generateHexID();
       const isOrdered = !!orderedListMatch;
       const listType = isOrdered ? 'ol' : 'ul';
@@ -121,6 +132,7 @@ function handleBlockFormatting(lineEl) {
 
     const blockquoteMatch = text.match(/^>\s(.*)/);
     if (blockquoteMatch) {
+      updateCurrentBlock("BLOCKQUOTE");
       const hexID = generateHexID();
       const content = blockquoteMatch[1];
       const blockquote = document.createElement('blockquote');
@@ -145,25 +157,4 @@ function handleBlockFormatting(lineEl) {
 }
 
 
-const stylePatterns = [
-  { regex: /\*\*(.+?)\*\*/g, tag: 'span', className: 'bold' },
-  { regex: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, tag: 'span', className: 'italic' },
-  { regex: /__(.+?)__/g, tag: 'span', className: 'underline' },
-  { regex: /(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, tag: 'span', className: 'italic' },
-  { regex: /~~(.+?)~~/g, tag: 'span', className: 'strike' },
-  { regex: /==(.+?)==/g, tag: 'span', className: 'mark' },
-  { regex: /`([^`\n]+?)`/g, tag: 'span', className: 'code-inline' }
-];
 
-function hasMarkdownPattern(text) {
-  const patterns = [
-    /\*\*(.+?)\*\*/g,
-    /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,
-    /__(.+?)__/g,
-    /(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g,
-    /~~(.+?)~~/g,
-    /==(.+?)==/g,
-    /`([^`\n]+?)`/g
-  ];
-  return patterns.some(pattern => pattern.test(text));
-}

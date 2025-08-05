@@ -1,7 +1,8 @@
 hljs.highlightAll();
 let enterPressCount = 0;
 const editor = document.getElementById('editor');
-
+let currentBlock = null;
+let currentInlineBlock = null;
 function generateHexID() {
   return Math.random().toString(16).substr(2, 8);
 }
