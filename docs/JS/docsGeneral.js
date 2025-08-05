@@ -3,6 +3,7 @@ let enterPressCount = 0;
 const editor = document.getElementById('editor');
 let currentBlock = null;
 let currentInlineBlock = null;
+let currentLineFormat = {};
 function generateHexID() {
   return Math.random().toString(16).substr(2, 8);
 }
@@ -52,27 +53,77 @@ function highlightCodeBlock(codeElement) {
   }
 }
 
+
 function getCurrentLineElement() {
   const sel = window.getSelection();
   if (!sel.rangeCount) return null;
 
   let node = sel.getRangeAt(0).startContainer;
+  
+  // If we're in a text node, start from its parent
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentNode;
+  }
 
+  // Traverse up the DOM tree to find the line element
   while (node && node !== editor) {
+    // Check if this node is a line element we're looking for (excluding SPAN)
+    if (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || 
+        node.tagName === 'H4' || node.tagName === 'H5' || node.tagName === 'H6' || 
+        node.tagName === 'P' || node.tagName === 'BLOCKQUOTE' || 
+        node.tagName === 'LI' || node.tagName === 'PRE') {
+      return node;
+    }
+    
+    // Check if this node is a direct child of editor (section)
     if (node.parentNode === editor) {
       return node;
     }
-    if (node.tagName === 'H1' || node.tagName === 'P' || node.tagName === 'BLOCKQUOTE') {
-      return node;
+    
+    // Find section by traversing up manually
+    let section = null;
+    let tempNode = node;
+    while (tempNode && tempNode !== editor) {
+      if (tempNode.tagName === 'SECTION' && tempNode.parentNode === editor) {
+        section = tempNode;
+        // console.log("Found section:", section);
+        break;
+      }
+      tempNode = tempNode.parentNode;
     }
-    if (node.tagName === 'LI') {
-      return node;
+    
+    if (section) {
+      
+      // If current node is a direct child of section and is a line element
+      if (node.parentNode === section && 
+          (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || 
+           node.tagName === 'H4' || node.tagName === 'H5' || node.tagName === 'H6' || 
+           node.tagName === 'P' || node.tagName === 'BLOCKQUOTE' || 
+           node.tagName === 'UL' || node.tagName === 'OL' || node.tagName === 'PRE' || node.tagName === 'SPAN'
+          || node.tagName === 'LI')) {
+        return node;
+      }
+      
+
+      let parent = node;
+      console.log(parent, parent.tagName, parent.parentNode)
+      while (parent && parent !== section) {
+        if (parent.tagName === 'H1' || parent.tagName === 'H2' || parent.tagName === 'H3' || 
+            parent.tagName === 'H4' || parent.tagName === 'H5' || parent.tagName === 'H6' || 
+            parent.tagName === 'P' || parent.tagName === 'BLOCKQUOTE' || 
+            parent.tagName === 'LI' || parent.tagName === 'PRE') {
+              console.log("Found parent line element:", parent.tagName);
+          return parent;
+        }
+        parent = parent.parentNode;
+        console.log(parent.tagName)
+        
+      }
     }
-    if (node.tagName === 'PRE') {
-      return node;
-    }
+    
     node = node.parentNode;
   }
+  
   return null;
 }
 

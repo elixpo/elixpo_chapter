@@ -3,6 +3,13 @@ editor.addEventListener('input', (e) => {
   const sel = window.getSelection();
   const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
   const currentLine = getCurrentLineElement();
+  currentLineFormat = 
+  {
+    sel : sel,
+    range : range,
+    currentLine : currentLine
+  }
+  console.log("Current line:", currentLine ? currentLine.tagName : "null");
 
   if (!currentLine || !range) return;
 
