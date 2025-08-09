@@ -89,25 +89,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
-
-
 function applyBlockStyle(elementType) {
     
     sel = currentLineFormat.sel;
     range = currentLineFormat.range;
     currentLine = currentLineFormat.currentLine;
+    
+    // --- FIX 1: Find the actual block-level element ---
+    // If currentLine is a span, traverse up to find the parent block element
+    if (currentLine && currentLine.tagName === 'SPAN') {
+        const blockAncestor = currentLine.closest('h1,h2,h3,h4,h5,h6,p,pre,blockquote,li');
+        if (blockAncestor) {
+            currentLine = blockAncestor;
+            currentLineFormat.currentLine = blockAncestor; // update global ref
+        } else {
+            console.warn("No block-level ancestor found for currentLine");
+            return;
+        }
+    }
+    
     if (!currentLine) {
         console.warn("No current line element found");
         return;
     }
-
-    const section = currentLine.closest('section');
-    if (!section) {
-        console.warn("No section found");
-        return;
-    }
-
 
     // Save cursor position
     let cursorPosition = 0;
@@ -134,113 +138,118 @@ function applyBlockStyle(elementType) {
     const hexID = generateHexID();
     let newElement;
 
-    switch(elementType) {
-        case "H1":
-            if (currentLine.tagName === 'H1') return;
-            updateCurrentBlock("HEADING1");
-            
-            // If converting from other heading, stay in same section
-            if (currentLine.tagName.match(/^H[2-6]$/)) {
-                newElement = document.createElement('h1');
+    // Check if we're clicking the same style on an element that already has it
+    const shouldToggleToP = (
+        (elementType === "H1" && currentLine.tagName === 'H1') ||
+        (elementType === "H2" && currentLine.tagName === 'H2') ||
+        (elementType === "H3" && currentLine.tagName === 'H3') ||
+        (elementType === "H4" && currentLine.tagName === 'H4') ||
+        (elementType === "H5" && currentLine.tagName === 'H5') ||
+        (elementType === "PRE" && currentLine.tagName === 'PRE') ||
+        (elementType === "UL" && currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'UL') ||
+        (elementType === "OL" && currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'OL') ||
+        (elementType === "BLOCKQUOTE" && currentLine.tagName === 'BLOCKQUOTE')
+    );
+
+    // If toggling to paragraph, convert current element to P
+    if (shouldToggleToP) {
+        newElement = document.createElement('p');
+        newElement.id = `p_${hexID}`;
+        newElement.innerHTML = content;
+        currentLine.parentNode.replaceChild(newElement, currentLine);
+        
+        // --- FIX 2: Update currentLineFormat reference ---
+        currentLineFormat.currentLine = newElement;
+        
+        // Clear block style selection
+        document.querySelectorAll(".blockedStyleElements").forEach(el => {
+            el.classList.remove('selected');
+        });
+        currentBlock = "PARAGRAPH";
+    } else {
+        // Apply the new block style
+        switch(elementType) {
+            case "H1":
+            case "H2":
+            case "H3":
+            case "H4":
+            case "H5":
+                const headingLevel = elementType.charAt(1);
+                updateCurrentBlock(`HEADING${headingLevel}`);
+                
+                // Simple heading conversion - just change the tag name
+                newElement = document.createElement(`h${headingLevel}`);
                 newElement.id = `heading_${hexID}`;
                 newElement.innerHTML = content;
-                section.replaceChild(newElement, currentLine);
-            } else {
-                // Create new section for H1
-                const newSection = document.createElement('section');
-                newElement = document.createElement('h1');
-                newElement.id = `heading_${hexID}`;
+                currentLine.parentNode.replaceChild(newElement, currentLine);
+                
+                // --- FIX 3: Update currentLineFormat reference ---
+                currentLineFormat.currentLine = newElement;
+                break;
+
+            case "PRE":
+                updateCurrentBlock("CODE_BLOCK");
+                newElement = document.createElement('div');
+                newElement.innerHTML = createCodeBlock(hexID);
+                const pre = newElement.firstElementChild;
+                const code = pre.querySelector('code');
+                const copyButton = pre.querySelector('i[data-copy-btn]');
+                pre.id = `pre_${hexID}`;
+                copyButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(code.textContent);
+                    copyButton.classList.add('copied');
+                    setTimeout(() => copyButton.classList.remove('copied'), 1500);
+                });
+                
+                code.innerHTML = content;
+                currentLine.parentNode.replaceChild(newElement, currentLine);
+                
+                // --- FIX 4: Update currentLineFormat reference ---
+                currentLineFormat.currentLine = newElement;
+                break;
+
+            case "BLOCKQUOTE":
+                updateCurrentBlock("BLOCKQUOTE");
+                newElement = document.createElement('blockquote');
+                newElement.id = `quote_${hexID}`;
                 newElement.innerHTML = content;
-                newSection.appendChild(newElement);
+                currentLine.parentNode.replaceChild(newElement, currentLine);
                 
-                // Insert new section after current
-                section.parentNode.insertBefore(newSection, section.nextSibling);
+                // --- FIX 5: Update currentLineFormat reference ---
+                currentLineFormat.currentLine = newElement;
+                break;
+
+            case "UL":
+                updateCurrentBlock("UNORDERED_LIST");
+                const ul = document.createElement('ul');
+                ul.id = `ul_${hexID}`;
+                const li = document.createElement('li');
+                li.id = `li_${generateHexID()}`;
+                li.innerHTML = content;
+                ul.appendChild(li);
+                currentLine.parentNode.replaceChild(ul, currentLine);
+                newElement = li;
                 
-                // Remove current line and clean up empty section
-                currentLine.remove();
-                if (section.children.length === 0) {
-                    section.remove();
-                } else {
-                    const newP = createParagraph();
-                    newSection.appendChild(newP);
-                }
-            }
-            break;
+                // --- FIX 6: Update currentLineFormat reference ---
+                currentLineFormat.currentLine = newElement;
+                break;
 
-        case "H2":
-        case "H3":
-        case "H4":
-        case "H5":
-            const headingLevel = elementType.charAt(1);
-            updateCurrentBlock(`HEADING${headingLevel}`);
-            newElement = document.createElement(`h${headingLevel}`);
-            newElement.id = `heading_${hexID}`;
-            newElement.innerHTML = content;
-            section.replaceChild(newElement, currentLine);
-            break;
-
-        case "PRE":
-            if (currentLine.tagName === 'PRE') return;
-            updateCurrentBlock("CODE_BLOCK");
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = createCodeBlock(hexID);
-            newElement = tempDiv.firstElementChild;
-            const code = newElement.querySelector('code');
-            const copyButton = newElement.querySelector('i[data-copy-btn]');
-
-            newElement.id = `pre_${hexID}`;
-            code.textContent = currentLine.textContent || '';
-
-            copyButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(code.textContent);
-                copyButton.classList.add('copied');
-                setTimeout(() => copyButton.classList.remove('copied'), 1500);
-            });
-
-            section.replaceChild(newElement, currentLine);
-            updateCodeBlockClasses(code);
-            placeCaretAtStart(code);
-            return;
-
-        case "UL":
-            if (currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'UL') return;
-            updateCurrentBlock("UNORDERED_LIST");
-            newElement = document.createElement('ul');
-            newElement.id = `ul_${hexID}`;
-            const li = document.createElement('li');
-            li.id = `li_${generateHexID()}`;
-            li.innerHTML = content;
-            newElement.appendChild(li);
-            section.replaceChild(newElement, currentLine);
-            newElement = li; // Focus on the li element
-            break;
-
-        case "OL":
-            if (currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'OL') return;
-            updateCurrentBlock("ORDERED_LIST");
-            newElement = document.createElement('ol');
-            newElement.id = `ol_${hexID}`;
-            const liOrdered = document.createElement('li');
-            liOrdered.id = `li_${generateHexID()}`;
-            liOrdered.innerHTML = content;
-            newElement.appendChild(liOrdered);
-            section.replaceChild(newElement, currentLine);
-            newElement = liOrdered; // Focus on the li element
-            break;
-
-        case "BLOCKQUOTE":
-            if (currentLine.tagName === 'BLOCKQUOTE') return;
-            updateCurrentBlock("BLOCKQUOTE");
-            newElement = document.createElement('blockquote');
-            newElement.id = `blockquote_${hexID}`;
-            newElement.innerHTML = content;
-            section.replaceChild(newElement, currentLine);
-            break;
-
-        default:
-            console.warn(`Unknown element type: ${elementType}`);
-            return;
+            case "OL":
+                updateCurrentBlock("ORDERED_LIST");
+                const ol = document.createElement('ol');
+                ol.id = `ol_${hexID}`;
+                const liItem = document.createElement('li');
+                liItem.id = `li_${generateHexID()}`;
+                liItem.innerHTML = content;
+                ol.appendChild(liItem);
+                currentLine.parentNode.replaceChild(ol, currentLine);
+                newElement = liItem;
+                
+                // --- FIX 7: Update currentLineFormat reference ---
+                currentLineFormat.currentLine = newElement;
+                break;
+        }
     }
 
     // Restore cursor position
@@ -265,18 +274,35 @@ function applyBlockStyle(elementType) {
                         newRange.collapse(true);
                         sel.removeAllRanges();
                         sel.addRange(newRange);
+                        
+                        // --- FIX 8: Update range reference ---
+                        currentLineFormat.range = newRange;
                         return;
                     }
                     currentPos += nodeLength;
                 }
                 placeCaretAtEnd(newElement);
+                
+                // --- FIX 9: Update range reference for fallback ---
+                const fallbackRange = document.createRange();
+                fallbackRange.selectNodeContents(newElement);
+                fallbackRange.collapse(false);
+                currentLineFormat.range = fallbackRange;
+                
             } catch (err) {
                 console.warn("Error restoring cursor position:", err);
                 placeCaretAtEnd(newElement);
+                
+                // --- FIX 10: Update range reference for error case ---
+                const errorRange = document.createRange();
+                errorRange.selectNodeContents(newElement);
+                errorRange.collapse(false);
+                currentLineFormat.range = errorRange;
             }
         }, 0);
     }
 }
+
 
 function applyInlineStyle(styleType, selection) {
     sel = currentLineFormat.sel;
