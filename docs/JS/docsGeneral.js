@@ -36,7 +36,7 @@ function createParagraph() {
 function createCodeBlock(hexID) {
   return `
     <pre data-slate-node="element" contenteditable="false">
-      <code contenteditable="true" id="code_${hexID}" class="code_block hljs" data-slate-node="code"></code>
+      <code contenteditable="true" id="code_${hexID}" class="code_block hljs" data-slate-node="code" contenteditable="true"></code>
       <i class='bx bx-copy' data-copy-btn></i>
     </pre>
   `;

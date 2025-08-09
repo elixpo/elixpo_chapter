@@ -167,6 +167,34 @@ body {
       background: none;
       white-space: pre-wrap; /* Preserve whitespace and wrap */
     }
+
+    code[contenteditable="true"] {
+    outline: none;
+    min-height: 20px;
+    display: block;
+    white-space: pre;
+    font-family: 'Courier New', Consolas, monospace;
+}
+
+  code[contenteditable="true"]:empty:before {
+      content: attr(data-placeholder);
+      color: #888;
+      font-style: italic;
+      pointer-events: none;
+  }
+
+  code[contenteditable="true"]:focus {
+      outline: none;
+  }
+
+  
+  code[contenteditable="true"] * {
+      user-select: text;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+  }
+
     pre button 
     {
         background: none;
@@ -465,6 +493,8 @@ body {
       pointer-events: all;
       filter: blur(0);
 }
+
+
 .languageSelection.hidden 
 {
   opacity: 0;

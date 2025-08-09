@@ -15,6 +15,10 @@ function handleBlockFormatting(lineEl) {
       const copyButton = pre.querySelector('i[data-copy-btn]');
 
       pre.id = `pre_${hexID}`;
+      
+      // --- FIX: Make code element editable ---
+      code.contentEditable = true;
+      code.setAttribute('data-placeholder', 'Enter your code here...');
 
       copyButton.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -23,11 +27,56 @@ function handleBlockFormatting(lineEl) {
         setTimeout(() => copyButton.classList.remove('copied'), 1500);
       });
 
+      // --- FIX: Add input event listener for code editing ---
+      code.addEventListener('input', (e) => {
+        // Prevent auto-formatting inside code blocks
+        e.stopPropagation();
+        
+        // Update currentLineFormat to point to the code element
+        const sel = window.getSelection();
+        const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+        currentLineFormat = {
+          sel: sel,
+          range: range,
+          currentLine: pre // Point to PRE element for block operations
+        };
+      });
+
+      // --- FIX: Handle key events for code blocks ---
+      code.addEventListener('keydown', (e) => {
+        // Allow Tab key in code blocks
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const selection = window.getSelection();
+          const range = selection.getRangeAt(0);
+          
+          // Insert tab character or spaces
+          const tabText = document.createTextNode('    '); // 4 spaces
+          range.insertNode(tabText);
+          range.setStartAfter(tabText);
+          range.setEndAfter(tabText);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        
+        // Handle other special keys as needed
+        if (e.key === 'Enter') {
+          // Allow normal line breaks in code
+          // No special handling needed, let default behavior work
+        }
+      });
+
       section.replaceChild(pre, lineEl);
       const newP = createParagraph();
       section.appendChild(newP);
 
       placeCaretAtStart(code);
+      
+      // --- FIX: Update currentLineFormat to code element ---
+      setTimeout(() => {
+        currentLineFormat.currentLine = pre;
+      }, 0);
+      
       return true;
     }
 
