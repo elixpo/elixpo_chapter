@@ -4,6 +4,14 @@ function handleBlockFormatting(lineEl) {
   const section = lineEl.parentNode;
   console.log(lineEl.tagName)
   if (lineEl.tagName === 'P') {
+    
+    if(text === "TABLE\u00A0" || text === "TABLE  " || text === "TABLE\u00A0\u00A0") {
+      updateCurrentBlock("TABLE_BLOCK");
+      
+    }
+
+
+
     if (text === '```\u00A0' || text === '```  ' || text === '```\u00A0\u00A0') {
       updateCurrentBlock("CODE_BLOCK");
       console.log("inside code creation")

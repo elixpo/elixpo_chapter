@@ -42,6 +42,59 @@ function createCodeBlock(hexID) {
   `;
 }
 
+function createTableBlock(hexID) {
+  return `
+    <table id="table_${hexID}" contenteditable="false">
+      <tbody>
+        <tr>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+        </tr>
+        <tr>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+        </tr>
+        <tr>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+        </tr>
+        <tr>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+          <td contenteditable="true">
+          <span class="default-text">&nbsp;</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
 function highlightCodeBlock(codeElement) {
   if (!codeElement) return;
   try {
