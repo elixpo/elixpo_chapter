@@ -1,7 +1,7 @@
 import requests
 import json
 from clean_query import cleanQuery
-from search import web_search, GoogleSearchAgentText, GoogleSearchAgentImage, image_search
+from yahooSearch import YahooSearchAgentText, YahooSearchAgentImage
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from scrape import fetch_full_text
 from getImagePrompt import generate_prompt_from_image, replyFromImage
@@ -17,7 +17,6 @@ import asyncio
 import threading
 from collections import deque
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
@@ -27,117 +26,135 @@ REFRRER=os.getenv("REFERRER")
 POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 print(MODEL, POLLINATIONS_TOKEN)
 
-# Global Agent Manager
-class GoogleAgentManager:
-    def __init__(self):
-        self.text_agent = None
-        self.image_agent = None
-        self.text_request_count = 0
-        self.image_request_count = 0
-        self.text_buffer = deque()
-        self.image_buffer = deque()
+# Agent Management with Queue System
+class SearchAgentManager:
+    def __init__(self, max_concurrent_agents=10):
+        self.max_concurrent_agents = max_concurrent_agents
+        self.active_text_agents = 0
+        self.active_image_agents = 0
+        self.text_queue = deque()
+        self.image_queue = deque()
         self.text_lock = asyncio.Lock()
         self.image_lock = asyncio.Lock()
-        self.is_restarting_text = False
-        self.is_restarting_image = False
-        self._initialized = False
+        self.port_range_start = 9000
+        self.port_range_end = 9999
+        self.used_ports = set()
         
-    async def initialize(self):
-        """Initialize both agents and warm them up"""
-        if self._initialized:
-            return
-            
-        logger.info("Initializing and warming up Google agents...")
-        try:
-            self.text_agent = GoogleSearchAgentText()
-            self.image_agent = GoogleSearchAgentImage()
-            
-            await self.text_agent.start()
-            await self.image_agent.start()
-            
-            self._initialized = True
-            logger.info("Google agents warmed up and ready!")
-        except Exception as e:
-            logger.error(f"Failed to initialize Google agents: {e}")
-            raise
+    def _get_random_port(self):
+        """Get a random unused port"""
+        while True:
+            port = random.randint(self.port_range_start, self.port_range_end)
+            if port not in self.used_ports:
+                self.used_ports.add(port)
+                return port
     
-    async def get_text_agent(self):
-        """Get text agent, handling restarts and buffering"""
+    def _release_port(self, port):
+        """Release a port back to the pool"""
+        self.used_ports.discard(port)
+    
+    async def get_text_search_result(self, query, max_links=10):
+        """Get text search results with agent management and queueing"""
         async with self.text_lock:
-            if not self._initialized:
-                await self.initialize()
-                
-            # Check if we need to restart
-            if self.text_request_count >= 100 and not self.is_restarting_text:
-                logger.info("Text agent hit 100 requests, restarting...")
-                self.is_restarting_text = True
+            # If we have available slots, create agent immediately
+            if self.active_text_agents < self.max_concurrent_agents:
+                self.active_text_agents += 1
+                port = self._get_random_port()
                 
                 try:
-                    await self.text_agent.close()
-                    self.text_agent = GoogleSearchAgentText()
-                    await self.text_agent.start()
-                    self.text_request_count = 0
-                    logger.info("Text agent restarted successfully")
-                except Exception as e:
-                    logger.error(f"Failed to restart text agent: {e}")
-                finally:
-                    self.is_restarting_text = False
+                    logger.info(f"Creating new text agent on port {port} for query: {query}")
+                    agent = YahooSearchAgentText(custom_port=port)
+                    await agent.start()
                     
-            return self.text_agent
+                    # Add random delay to simulate human behavior
+                    await asyncio.sleep(random.uniform(1, 3))
+                    
+                    results = await agent.search(query, max_links)
+                    logger.info(f"Text search completed for '{query}' with {len(results)} results")
+                    
+                    return results
+                    
+                except Exception as e:
+                    logger.error(f"Text search failed for '{query}': {e}")
+                    return []
+                    
+                finally:
+                    # Always clean up
+                    try:
+                        await agent.close()
+                    except:
+                        pass
+                    self.active_text_agents -= 1
+                    self._release_port(port)
+                    logger.info(f"Text agent on port {port} closed. Active agents: {self.active_text_agents}")
+            
+            else:
+                logger.warning(f"Max concurrent text agents reached ({self.max_concurrent_agents}). Queueing request for: {query}")
+                await asyncio.sleep(random.uniform(2, 5))
+                return await self.get_text_search_result(query, max_links)
     
-    async def get_image_agent(self):
-        """Get image agent, handling restarts and buffering"""
+    async def get_image_search_result(self, query, max_images=10):
+        """Get image search results with agent management and queueing"""
         async with self.image_lock:
-            if not self._initialized:
-                await self.initialize()
-                
-            # Check if we need to restart
-            if self.image_request_count >= 100 and not self.is_restarting_image:
-                logger.info("Image agent hit 100 requests, restarting...")
-                self.is_restarting_image = True
+            if self.active_image_agents < self.max_concurrent_agents:
+                self.active_image_agents += 1
+                port = self._get_random_port()
                 
                 try:
-                    await self.image_agent.close()
-                    self.image_agent = GoogleSearchAgentImage()
-                    await self.image_agent.start()
-                    self.image_request_count = 0
-                    logger.info("Image agent restarted successfully")
-                except Exception as e:
-                    logger.error(f"Failed to restart image agent: {e}")
-                finally:
-                    self.is_restarting_image = False
+                    logger.info(f"Creating new image agent on port {port} for query: {query}")
+                    agent = YahooSearchAgentImage(custom_port=port)
+                    await agent.start()
+                    await asyncio.sleep(random.uniform(1, 3))
                     
-            return self.image_agent
-    
-    async def increment_text_count(self):
-        """Increment text request counter"""
-        async with self.text_lock:
-            self.text_request_count += 1
+                    results = await agent.search_images(query, max_images)
+                    logger.info(f"Image search completed for '{query}' with {len(results)} results")
+                    if results:
+                        result_dict = {f"yahoo_source_{i}": [url] for i, url in enumerate(results)}
+                        return json.dumps(result_dict)
+                    else:
+                        return json.dumps({})
+                    
+                except Exception as e:
+                    logger.error(f"Image search failed for '{query}': {e}")
+                    return json.dumps({})
+                    
+                finally:
+                    try:
+                        await agent.close()
+                    except:
+                        pass
+                    self.active_image_agents -= 1
+                    self._release_port(port)
+                    logger.info(f"Image agent on port {port} closed. Active agents: {self.active_image_agents}")
             
-    async def increment_image_count(self):
-        """Increment image request counter"""
-        async with self.image_lock:
-            self.image_request_count += 1
+            else:
+                logger.warning(f"Max concurrent image agents reached ({self.max_concurrent_agents}). Queueing request for: {query}")
+                await asyncio.sleep(random.uniform(2, 5))
+                return await self.get_image_search_result(query, max_images)
     
-    async def close_all(self):
-        """Close all agents (only call on app shutdown)"""
-        if self.text_agent:
-            try:
-                await self.text_agent.close()
-            except Exception as e:
-                logger.error(f"Error closing text agent: {e}")
-                
-        if self.image_agent:
-            try:
-                await self.image_agent.close()
-            except Exception as e:
-                logger.error(f"Error closing image agent: {e}")
-                
-        self._initialized = False
-        logger.info("All Google agents closed")
+    async def get_agent_status(self):
+        """Get current status of agents"""
+        async with self.text_lock:
+            text_count = self.active_text_agents
+        async with self.image_lock:
+            image_count = self.active_image_agents
+        
+        return {
+            "active_text_agents": text_count,
+            "active_image_agents": image_count,
+            "total_active": text_count + image_count,
+            "max_concurrent": self.max_concurrent_agents,
+            "used_ports": len(self.used_ports)
+        }
 
 # Global instance
-agent_manager = GoogleAgentManager()
+agent_manager = SearchAgentManager(max_concurrent_agents=10)
+
+# Standalone search functions for backward compatibility
+async def web_search(query, agent=None):
+    return await agent_manager.get_text_search_result(query, max_links=10)
+
+async def image_search(query, agent=None, max_images=10):
+    return await agent_manager.get_image_search_result(query, max_images)
 
 def fetch_url_content_parallel(urls, max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -147,7 +164,6 @@ def fetch_url_content_parallel(urls, max_workers=10):
             url = futures[future]
             try:
                 text_content = future.result()
-                # Remove all escape sequences and newlines from text_content
                 clean_text = str(text_content).encode('unicode_escape').decode('utf-8')
                 clean_text = clean_text.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
                 clean_text = ''.join(c for c in clean_text if c.isprintable())
@@ -157,7 +173,6 @@ def fetch_url_content_parallel(urls, max_workers=10):
                 results += f"\nURL: {url}\n Failed to fetch content of this URL"
         logger.info(f"Fetched all URL information in parallel.")
         return results
-
 
 def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -193,15 +208,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     if initial_event:
         yield initial_event
     
-    # Use global agent manager instead of creating new agents
     try:
-        # Ensure agents are initialized
-        await agent_manager.initialize()
-        
-        # Get current UTC time for internal context (not exposed to user)
         current_utc_time = datetime.now(timezone.utc)
         
-
         headers = {"Content-Type": "application/json"}
 
         memoized_results = {
@@ -221,12 +230,13 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         CRITICAL: Answer directly if you know the answer (basic facts, math, general knowledge) — no tools needed.
         Use tools only when:
         - Query needs recent info (news, stocks, weather, etc.)
+        - Don't query more than 3 times in case of a web_search type on the same topic!
         - Current political leaders or officeholders are mentioned
         - Explicit web research or sources are requested
         - User provides an image
         - Info is time-sensitive or implied to be current
         - Queries imply trends, context, or freshness, even without trigger words
-        Always infer user intent — don’t wait for "now" or "current".
+        Always infer user intent — don't wait for "now" or "current".
         ---
         Available Tools:
         - cleanQuery(query: str)
@@ -287,7 +297,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - Prioritize correctness and readability
         - Markdown formatting where helpful
         - Always in English, unless asked otherwise
-        - Don’t show system logic or UTC
+        - Don't show system logic or UTC
         - Sound like a helpful, smart friend
         - Make it useful, rich in info, yet friendly in tone
         Add a jolly punchline without making a different section, just weave it in.
@@ -320,7 +330,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "tool_choice": "auto",
                 "token": POLLINATIONS_TOKEN,
                 "referrer": REFRRER,
-                # "temperature": 0.2,
                 "private": True,
                 "seed": random.randint(1000, 9999)
             }
@@ -360,7 +369,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 logger.info(f"Executing tool: {function_name} with args: {function_args}")
                 if event_id:
                     yield format_sse("INFO", f" Execution In Progress ({function_name}) \n")
-                
 
                 try:                    
                     if function_name == "cleanQuery":
@@ -383,11 +391,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         logger.info(f"Performing web search for: {function_args.get('query')}")
                         search_query = function_args.get("query")
 
-                        
-                        google_agent_text = await agent_manager.get_text_agent()
-                        await agent_manager.increment_text_count()
-
-                        search_results_raw = await web_search(search_query, google_agent_text)
+                        search_results_raw = await web_search(search_query)
                         logger.info(f"Web search returned {len(search_results_raw)} results")
                         if search_results_raw:
                             parallel_results = fetch_url_content_parallel(search_results_raw)
@@ -419,18 +423,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         image_query = function_args.get("image_query")
                         max_images = function_args.get("max_images", 10)
                         
-                        # Use global agent manager
-                        google_agent_image = await agent_manager.get_image_agent()
-                        await agent_manager.increment_image_count()
-
-                        # Use the correct image_search signature and result handling
-                        search_results_raw = await image_search(image_query, google_agent_image, max_images)
+                        search_results_raw = await image_search(image_query, max_images=max_images)
                         logger.info(f"Image search for '{image_query[:50]}...' returned results.")
 
                         image_urls = []
                         url_context = ""
                         try:
-                            # search_results_raw is a JSON string mapping source_url -> [img_url, ...]
                             if isinstance(search_results_raw, str):
                                 try:
                                     image_dict = json.loads(search_results_raw)
@@ -510,11 +508,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 })
             
             messages.extend(tool_outputs)
-            print(messages)
             logger.info(f"Completed tool execution for iteration {current_iteration}. Number of messages: {len(messages)}")
             if event_id:
                 yield format_sse("INFO", f" All tools executed for iteration {current_iteration}. Waiting for next model response...\n")
-
 
         if final_message_content:
             logger.info(f"Preparing final response.")
@@ -522,29 +518,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             
             response_parts.append(final_message_content)
 
-            # Handle image display based on scenarios
             if user_image and not user_query.strip() and collected_similar_images:
-                # Scenario 2: Image Only -> Show 10 similar images
                 response_parts.append("\n\n**Similar Images:**\n")
                 images_to_show = [img for img in collected_similar_images if img and img.startswith("http")][:10]
                 for img in images_to_show:
                     response_parts.append(f"![Similar Image]({img})\n")
 
             elif user_image and user_query.strip() and collected_images_from_web:
-                # Scenario 3: Image + Text Query -> Show 5 relevant images
                 response_parts.append("\n\n**Related Images:**\n")
                 images_to_show = [img for img in collected_images_from_web if img and img.startswith("http")][:5]
                 for img in images_to_show:
                     response_parts.append(f"![Related Image]({img})\n")
 
             elif not user_image and user_query.strip() and collected_images_from_web:
-                # Scenario 1: Text asking for images -> Show requested images
                 response_parts.append("\n\n**Requested Images:**\n")
                 images_to_show = [img for img in collected_images_from_web if img and img.startswith("http")][:10]
                 for img in images_to_show:
                     response_parts.append(f"![Image]({img})\n")
-
-
 
             if collected_sources:
                 response_parts.append("\n\n---\n**Sources & References:**\n")
@@ -555,6 +545,10 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             response_with_sources = "".join(response_parts)
 
             logger.info(f"Final response prepared. Total length: {len(response_with_sources)}")
+            
+            # Log final agent status
+            status = await agent_manager.get_agent_status()
+            logger.info(f"Final agent status: {status}")
             
             if event_id:
                 yield format_sse("INFO", " SUCCESS")
@@ -576,47 +570,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 print(error_msg)
     except Exception as e:
         logger.error(f"Pipeline error: {e}", exc_info=True)
-        # Don't close agents on individual request errors
     finally:
         logger.info("Search Completed")
-
-# Function to initialize agents on app startup
-async def initialize_google_agents():
-    """Call this when your app starts"""
-    await agent_manager.initialize()
-    logger.info("Google agents pre-warmed for the application")
-
-# Function to close agents on app shutdown
-async def shutdown_google_agents():
-    """Call this when your app shuts down"""
-    await agent_manager.close_all()
-    logger.info("Google agents closed on application shutdown")
 
 if __name__ == "__main__":
     import asyncio
     
     async def main():
-        # Test Cases
-        # 1. Image only
-        # user_query = ""
-        # user_image = "https://media.istockphoto.com/id/1421310827/photo/young-graceful-ballerina-is-performing-classic-dance-beauty-and-elegance-of-classic-ballet.jpg?s=612x612&w=0&k=20&c=GQ1DVEarW4Y-lGD6y8jCb3YPIgap7gj-6ReS3C7Qi3Y=" 
-        
-        # 2. Image + Text Query (Your problematic case)
         user_query = "what is the latest news from the indian cricket"
         user_image = None
-
-        # 3. Text only
-        # user_query = "What is the capital of France and show me some images of it?"
-        # user_image = ""
         
-        event_id = None # Set to a string like "test_session_123" if you want SSE output
+        event_id = None 
 
         async_generator = run_elixposearch_pipeline(user_query, user_image, event_id=event_id)
         answer = None
         
         try:
             async for event_chunk in async_generator:
-                # print(event_chunk) # Keep this for detailed SSE debugging
                 if event_chunk and "event: final" in event_chunk:
                     lines = event_chunk.split('\n')
                     for line in lines:
@@ -642,13 +612,9 @@ if __name__ == "__main__":
             print(f"\n--- Final Answer Received ---\n{answer}")
         else:
             print("\n--- No answer received ---")
-    
+        
+        # Show final agent status
+        status = await agent_manager.get_agent_status()
+        print(f"\nFinal Agent Status: {status}")
     
     asyncio.run(main())
-    # content = fetch_url_content_parallel(["https://www.geeksforgeeks.org/operating-systems/implementation-of-contiguous-memory-management-techniques/"])
-    # print(content)
-    try:
-        asyncio.run(agent_manager.close_all())
-        asyncio.get_event_loop().close()
-    except Exception:
-        pass
