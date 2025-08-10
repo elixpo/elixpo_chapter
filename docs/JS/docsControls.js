@@ -92,352 +92,134 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function applyBlockStyle(elementType) {
-    
-    sel = currentLineFormat.sel;
-    range = currentLineFormat.range;
-    currentLine = currentLineFormat.currentLine;
-    
-    // --- FIX 1: Handle table cells specially ---
-    if (currentLine && currentLine.tagName === 'TD') {
-        handleTableCellBlockStyle(currentLine, elementType);
-        return;
-    }
-    
-    // --- FIX 2: Find the actual block-level element ---
-    // If currentLine is a span, traverse up to find the parent block element
-    if (currentLine && currentLine.tagName === 'SPAN') {
-        const blockAncestor = currentLine.closest('h1,h2,h3,h4,h5,h6,p,pre,blockquote,li');
-        if (blockAncestor) {
-            currentLine = blockAncestor;
-            currentLineFormat.currentLine = blockAncestor; // update global ref
-        } else {
-            console.warn("No block-level ancestor found for currentLine");
-            return;
-        }
-    }
-    
-    // --- FIX 3: Special handling for code blocks ---
-    // If we're inside a code block structure, find the actual PRE element
-    if (currentLine && currentLine.tagName === 'CODE') {
-        const preElement = currentLine.closest('pre');
-        if (preElement) {
-            currentLine = preElement;
-            currentLineFormat.currentLine = preElement;
-        }
-    }
+    const { sel, range, currentLine } = currentLineFormat;
     
     if (!currentLine) {
         console.warn("No current line element found");
         return;
     }
 
+    // Handle table cells specially
+    if (currentLine.tagName === 'TD') {
+        handleTableCellBlockStyle(currentLine, elementType);
+        return;
+    }
+    
+    // Find actual block-level element
+    let targetElement = currentLine;
+    if (currentLine.tagName === 'SPAN') {
+        targetElement = currentLine.closest('h1,h2,h3,h4,h5,h6,p,pre,blockquote,li') || currentLine;
+    } else if (currentLine.tagName === 'CODE') {
+        targetElement = currentLine.closest('pre') || currentLine;
+    }
+    
+    // Update reference
+    currentLineFormat.currentLine = targetElement;
+    
     // Save cursor position
-    let cursorPosition = 0;
-    if (range) {
-        const walker = document.createTreeWalker(
-            currentLine,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        let node;
-        let found = false;
-        while ((node = walker.nextNode()) && !found) {
-            if (node === range.startContainer) {
-                cursorPosition += range.startOffset;
-                found = true;
-            } else {
-                cursorPosition += node.textContent.length;
-            }
-        }
-    }
-
-    const hexID = generateHexID();
-    let newElement;
-    let content;
-
-    // --- FIX 4: Special content extraction for code blocks ---
-    if (currentLine.tagName === 'PRE') {
-        // Extract text content from code element, preserving line breaks
-        const codeElement = currentLine.querySelector('code');
-        content = codeElement ? codeElement.textContent : currentLine.textContent;
-        
-        // Convert line breaks to <br> tags for HTML
-        content = content.replace(/\n/g, '<br>');
-        
-        // If content is empty, use placeholder
-        if (!content.trim()) {
-            content = '\u00A0';
-        }
+    const cursorPosition = saveCursorPosition(range, targetElement);
+    
+    // Check if toggling to paragraph
+    if (shouldToggleToP(elementType, targetElement)) {
+        convertToP(targetElement);
     } else {
-        content = currentLine.innerHTML || '\u00A0';
+        applyNewBlockStyle(elementType, targetElement);
     }
-
-    // Check if we're clicking the same style on an element that already has it
-    const shouldToggleToP = (
-        (elementType === "H1" && currentLine.tagName === 'H1') ||
-        (elementType === "H2" && currentLine.tagName === 'H2') ||
-        (elementType === "H3" && currentLine.tagName === 'H3') ||
-        (elementType === "H4" && currentLine.tagName === 'H4') ||
-        (elementType === "H5" && currentLine.tagName === 'H5') ||
-        (elementType === "PRE" && currentLine.tagName === 'PRE') ||
-        (elementType === "UL" && currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'UL') ||
-        (elementType === "OL" && currentLine.tagName === 'LI' && currentLine.parentElement.tagName === 'OL') ||
-        (elementType === "BLOCKQUOTE" && currentLine.tagName === 'BLOCKQUOTE')
-    );
-
-    // If toggling to paragraph, convert current element to P
-    if (shouldToggleToP) {
-        newElement = document.createElement('p');
-        newElement.id = `p_${hexID}`;
-        
-        // Special handling for list items - extract just the text content
-        if (currentLine.tagName === 'LI') {
-            const listParent = currentLine.parentElement;
-            content = currentLine.innerHTML; // Get the content of the LI
-            
-            // Replace the entire list with the paragraph if it's the only item
-            if (listParent.children.length === 1) {
-                newElement.innerHTML = content;
-                listParent.parentNode.replaceChild(newElement, listParent);
-            } else {
-                // If there are other items, just convert this one
-                newElement.innerHTML = content;
-                listParent.parentNode.insertBefore(newElement, listParent);
-                currentLine.remove();
-                
-                // If that was the last item, we need to update the reference
-                if (listParent.children.length === 0) {
-                    listParent.remove();
-                }
-            }
-        } else {
-            newElement.innerHTML = content;
-            currentLine.parentNode.replaceChild(newElement, currentLine);
-        }
-        
-        // --- FIX 5: Update currentLineFormat reference ---
-        currentLineFormat.currentLine = newElement;
-        
-        // Clear block style selection and hide language selector
-        document.querySelectorAll(".blockedStyleElements").forEach(el => {
-            el.classList.remove('selected');
-        });
-        document.getElementById("languageSelector")?.classList.add('hidden');
-        
-        currentBlock = "PARAGRAPH";
-        updateBlockStyleAvailability("PARAGRAPH");
-        updateInlineStyleAvailability("PARAGRAPH");
-    } else {
-        // Apply the new block style
-        switch(elementType) {
-            case "H1":
-            case "H2":
-            case "H3":
-            case "H4":
-            case "H5":
-                const headingLevel = elementType.charAt(1);
-                
-                // Simple heading conversion - just change the tag name
-                newElement = document.createElement(`h${headingLevel}`);
-                newElement.id = `heading_${hexID}`;
-                newElement.innerHTML = content;
-                currentLine.parentNode.replaceChild(newElement, currentLine);
-                
-                // --- FIX 6: Update currentLineFormat reference ---
-                currentLineFormat.currentLine = newElement;
-                updateCurrentBlock(`HEADING${headingLevel}`);
-                break;
-
-            case "PRE":
-                newElement = document.createElement('div');
-                newElement.innerHTML = createCodeBlock(hexID);
-                const pre = newElement.firstElementChild;
-                const code = pre.querySelector('code');
-                const copyButton = pre.querySelector('i[data-copy-btn]');
-                pre.id = `pre_${hexID}`;
-                copyButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(code.textContent);
-                    copyButton.classList.add('copied');
-                    setTimeout(() => copyButton.classList.remove('copied'), 1500);
-                });
-                
-                // --- FIX 7: Convert HTML content back to plain text for code blocks ---
-                let textContent = content;
-                if (content.includes('<br>')) {
-                    // Convert <br> tags back to line breaks
-                    textContent = content.replace(/<br\s*\/?>/gi, '\n');
-                }
-                // Remove any remaining HTML tags
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = textContent;
-                textContent = tempDiv.textContent || tempDiv.innerText || '';
-                
-                code.textContent = textContent; // Use textContent to preserve formatting
-                currentLine.parentNode.replaceChild(newElement, currentLine);
-                
-                // --- FIX 8: Update currentLineFormat reference ---
-                currentLineFormat.currentLine = pre; // Point to the PRE element, not the wrapper div
-                updateCurrentBlock("CODE_BLOCK");
-                break;
-
-            case "BLOCKQUOTE":
-                newElement = document.createElement('blockquote');
-                newElement.id = `quote_${hexID}`;
-                newElement.innerHTML = content;
-                currentLine.parentNode.replaceChild(newElement, currentLine);
-                
-                // --- FIX 9: Update currentLineFormat reference ---
-                currentLineFormat.currentLine = newElement;
-                updateCurrentBlock("BLOCKQUOTE");
-                break;
-
-            case "UL":
-                // Special handling if we're already in a list
-                if (currentLine.tagName === 'LI') {
-                    const currentList = currentLine.parentElement;
-                    
-                    // If it's already a UL, do nothing (or toggle to P as handled above)
-                    if (currentList.tagName === 'UL') {
-                        return;
-                    }
-                    
-                    // If it's an OL, convert to UL
-                    if (currentList.tagName === 'OL') {
-                        const ul = document.createElement('ul');
-                        ul.id = `ul_${hexID}`;
-                        
-                        // Move all LI elements to new UL
-                        while (currentList.firstChild) {
-                            ul.appendChild(currentList.firstChild);
-                        }
-                        
-                        currentList.parentNode.replaceChild(ul, currentList);
-                        newElement = currentLine; // Keep reference to current LI
-                        currentLineFormat.currentLine = newElement;
-                        updateCurrentBlock("UNORDERED_LIST");
-                        return;
-                    }
-                }
-                
-                // Normal case: create new UL
-                const ul = document.createElement('ul');
-                ul.id = `ul_${hexID}`;
-                const li = document.createElement('li');
-                li.id = `li_${generateHexID()}`;
-                li.innerHTML = content;
-                ul.appendChild(li);
-                currentLine.parentNode.replaceChild(ul, currentLine);
-                newElement = li;
-                
-                // --- FIX 10: Update currentLineFormat reference ---
-                currentLineFormat.currentLine = newElement;
-                updateCurrentBlock("UNORDERED_LIST");
-                break;
-
-            case "OL":
-                // Special handling if we're already in a list
-                if (currentLine.tagName === 'LI') {
-                    const currentList = currentLine.parentElement;
-                    
-                    // If it's already an OL, do nothing (or toggle to P as handled above)
-                    if (currentList.tagName === 'OL') {
-                        return;
-                    }
-                    
-                    // If it's a UL, convert to OL
-                    if (currentList.tagName === 'UL') {
-                        const ol = document.createElement('ol');
-                        ol.id = `ol_${hexID}`;
-                        
-                        // Move all LI elements to new OL
-                        while (currentList.firstChild) {
-                            ol.appendChild(currentList.firstChild);
-                        }
-                        
-                        currentList.parentNode.replaceChild(ol, currentList);
-                        newElement = currentLine; // Keep reference to current LI
-                        currentLineFormat.currentLine = newElement;
-                        updateCurrentBlock("ORDERED_LIST");
-                        return;
-                    }
-                }
-                
-                // Normal case: create new OL
-                const ol = document.createElement('ol');
-                ol.id = `ol_${hexID}`;
-                const liItem = document.createElement('li');
-                liItem.id = `li_${generateHexID()}`;
-                liItem.innerHTML = content;
-                ol.appendChild(liItem);
-                currentLine.parentNode.replaceChild(ol, currentLine);
-                newElement = liItem;
-                
-                // --- FIX 11: Update currentLineFormat reference ---
-                currentLineFormat.currentLine = newElement;
-                updateCurrentBlock("ORDERED_LIST");
-                break;
-            default:
-                currentBlock = null;
-        }
-    }
-
+    
     // Restore cursor position
-    if (newElement && elementType !== "PRE") {
-        setTimeout(() => {
-            try {
-                let currentPos = 0;
-                const walker = document.createTreeWalker(
-                    newElement,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-
-                let node;
-                while ((node = walker.nextNode())) {
-                    const nodeLength = node.textContent.length;
-                    if (currentPos + nodeLength >= cursorPosition) {
-                        const offset = cursorPosition - currentPos;
-                        const newRange = document.createRange();
-                        newRange.setStart(node, Math.min(offset, nodeLength));
-                        newRange.collapse(true);
-                        sel.removeAllRanges();
-                        sel.addRange(newRange);
-                        
-                        // --- FIX 12: Update range reference ---
-                        currentLineFormat.range = newRange;
-                        return;
-                    }
-                    currentPos += nodeLength;
-                }
-                placeCaretAtEnd(newElement);
-                
-                // --- FIX 13: Update range reference for fallback ---
-                const fallbackRange = document.createRange();
-                fallbackRange.selectNodeContents(newElement);
-                fallbackRange.collapse(false);
-                currentLineFormat.range = fallbackRange;
-                
-            } catch (err) {
-                console.warn("Error restoring cursor position:", err);
-                placeCaretAtEnd(newElement);
-                
-                // --- FIX 14: Update range reference for error case ---
-                const errorRange = document.createRange();
-                errorRange.selectNodeContents(newElement);
-                errorRange.collapse(false);
-                currentLineFormat.range = errorRange;
-            }
-        }, 0);
-    }
-    else 
-    {
-        updateCurrentBlock = null;
+    if (elementType !== "PRE") {
+        setTimeout(() => restoreCursorPosition(cursorPosition, currentLineFormat.currentLine), 0);
     }
 }
 
+function shouldToggleToP(elementType, element) {
+    const toggleMap = {
+        "H1": "H1", "H2": "H2", "H3": "H3", "H4": "H4", "H5": "H5",
+        "PRE": "PRE", "BLOCKQUOTE": "BLOCKQUOTE"
+    };
+    
+    if (toggleMap[elementType] === element.tagName) return true;
+    
+    if ((elementType === "UL" && element.tagName === 'LI' && element.parentElement.tagName === 'UL') ||
+        (elementType === "OL" && element.tagName === 'LI' && element.parentElement.tagName === 'OL')) {
+        return true;
+    }
+    
+    return false;
+}
+
+function convertToP(element) {
+    const hexID = generateHexID();
+    const newElement = document.createElement('p');
+    newElement.id = `p_${hexID}`;
+    
+    if (element.tagName === 'LI') {
+        const listParent = element.parentElement;
+        newElement.innerHTML = element.innerHTML;
+        
+        if (listParent.children.length === 1) {
+            listParent.parentNode.replaceChild(newElement, listParent);
+        } else {
+            listParent.parentNode.insertBefore(newElement, listParent);
+            element.remove();
+            if (listParent.children.length === 0) listParent.remove();
+        }
+    } else {
+        newElement.innerHTML = element.innerHTML || '\u00A0';
+        element.parentNode.replaceChild(newElement, element);
+    }
+    
+    currentLineFormat.currentLine = newElement;
+    updateCurrentBlock("PARAGRAPH");
+}
+
+function saveCursorPosition(range, element) {
+    if (!range) return 0;
+    
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    let position = 0;
+    let node;
+    
+    while ((node = walker.nextNode())) {
+        if (node === range.startContainer) {
+            return position + range.startOffset;
+        }
+        position += node.textContent.length;
+    }
+    
+    return position;
+}
+
+function restoreCursorPosition(position, element) {
+    try {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        let currentPos = 0;
+        let node;
+        
+        while ((node = walker.nextNode())) {
+            const nodeLength = node.textContent.length;
+            if (currentPos + nodeLength >= position) {
+                const offset = position - currentPos;
+                const newRange = document.createRange();
+                newRange.setStart(node, Math.min(offset, nodeLength));
+                newRange.collapse(true);
+                
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                
+                currentLineFormat.range = newRange;
+                return;
+            }
+            currentPos += nodeLength;
+        }
+        
+        placeCaretAtEnd(element);
+    } catch (err) {
+        console.warn("Error restoring cursor position:", err);
+        placeCaretAtEnd(element);
+    }
+}
 function applyInlineStyle(styleType, selection) {
     sel = currentLineFormat.sel;
     range = currentLineFormat.range;
@@ -1288,135 +1070,4 @@ function updateInlineStyleAvailability(currentBlockType) {
             }
         });
     }
-}
-
-function handleTableCellBlockStyle(cell, elementType) {
-    const existingList = cell.querySelector('ul,ol');
-    
-    if (elementType === "UL") {
-        if (existingList) {
-            if (existingList.tagName === 'UL') {
-                // Convert UL back to normal text (extract all LI content)
-                const allText = Array.from(existingList.querySelectorAll('li'))
-                    .map(li => li.textContent.trim())
-                    .filter(text => text)
-                    .join(' ');
-                
-                cell.removeChild(existingList);
-                
-                if (allText) {
-                    const newSpan = document.createElement('span');
-                    newSpan.className = 'default-text';
-                    newSpan.id = `span_${generateHexID()}`;
-                    newSpan.textContent = allText;
-                    cell.appendChild(newSpan);
-                    placeCaretAtEnd(newSpan);
-                } else {
-                    const newSpan = document.createElement('span');
-                    newSpan.className = 'default-text';
-                    newSpan.id = `span_${generateHexID()}`;
-                    newSpan.innerHTML = '\u00A0';
-                    cell.appendChild(newSpan);
-                    placeCaretAtStart(newSpan);
-                }
-            } else if (existingList.tagName === 'OL') {
-                // Convert OL to UL
-                const ul = document.createElement('ul');
-                ul.className = 'markdown-table-list';
-                
-                // Move all LI elements to new UL
-                while (existingList.firstChild) {
-                    existingList.firstChild.className = 'markdown-table-li';
-                    ul.appendChild(existingList.firstChild);
-                }
-                
-                cell.replaceChild(ul, existingList);
-                
-                const firstLi = ul.querySelector('li');
-                if (firstLi) placeCaretAtEnd(firstLi);
-            }
-        } else {
-            // Create new UL from existing text content
-            const cellText = cell.textContent.trim();
-            cell.innerHTML = '';
-            
-            const ul = document.createElement('ul');
-            ul.className = 'markdown-table-list';
-            const li = document.createElement('li');
-            li.className = 'markdown-table-li';
-            li.textContent = cellText || '\u00A0';
-            ul.appendChild(li);
-            cell.appendChild(ul);
-            
-            placeCaretAtEnd(li);
-        }
-        
-        // Re-attach listeners
-        attachTableCellListeners(cell);
-        return;
-    }
-    
-    if (elementType === "OL") {
-        if (existingList) {
-            if (existingList.tagName === 'OL') {
-                // Convert OL back to normal text (extract all LI content)
-                const allText = Array.from(existingList.querySelectorAll('li'))
-                    .map(li => li.textContent.trim())
-                    .filter(text => text)
-                    .join(' ');
-                
-                cell.removeChild(existingList);
-                
-                if (allText) {
-                    const newSpan = document.createElement('span');
-                    newSpan.className = 'default-text';
-                    newSpan.id = `span_${generateHexID()}`;
-                    newSpan.textContent = allText;
-                    cell.appendChild(newSpan);
-                    placeCaretAtEnd(newSpan);
-                } else {
-                    const newSpan = document.createElement('span');
-                    newSpan.className = 'default-text';
-                    newSpan.id = `span_${generateHexID()}`;
-                    newSpan.innerHTML = '\u00A0';
-                    cell.appendChild(newSpan);
-                    placeCaretAtStart(newSpan);
-                }
-            } else if (existingList.tagName === 'UL') {
-                // Convert UL to OL
-                const ol = document.createElement('ol');
-                ol.className = 'markdown-table-list';
-                
-                // Move all LI elements to new OL
-                while (existingList.firstChild) {
-                    existingList.firstChild.className = 'markdown-table-li';
-                    ol.appendChild(existingList.firstChild);
-                }
-                
-                cell.replaceChild(ol, existingList);
-                
-                const firstLi = ol.querySelector('li');
-                if (firstLi) placeCaretAtEnd(firstLi);
-            }
-        } else {
-            // Create new OL from existing text content
-            const cellText = cell.textContent.trim();
-            cell.innerHTML = '';
-            
-            const ol = document.createElement('ol');
-            ol.className = 'markdown-table-list';
-            const li = document.createElement('li');
-            li.className = 'markdown-table-li';
-            li.textContent = cellText || '\u00A0';
-            ol.appendChild(li);
-            cell.appendChild(ol);
-            
-            placeCaretAtEnd(li);
-        }
-        
-        // Re-attach listeners
-        attachTableCellListeners(cell);
-        return;
-    }
- 
 }

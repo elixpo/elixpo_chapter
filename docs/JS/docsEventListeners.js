@@ -32,21 +32,22 @@ editor.addEventListener('input', (e) => {
     currentLineFormat = {
       sel: sel,
       range: range,
-      currentLine: currentLine // Point to TD, not table
+      currentLine: currentLine 
     };
 
-    // Handle inline styling for table cells
-
-    if (
-      cellText.match(/^(?:\s|\u00A0)*[\*\-\+]\s(.*)/) ||
-      cellText.match(/^(?:\s|\u00A0)*\d+\.\s(.*)/)
-    ) {
-      // Run bullet formatting for table cell
-      setTimeout(() => {
-        handleTableCellBullet(currentLine, false);
-      }, 0);
-      return;
-    }
+    if (/^(?:\s|\u00A0)*-\s/.test(cellText)) {
+    setTimeout(() => {
+      handleTableCellBullet(currentLine, false);
+    }, 0);
+    return;
+  }
+  // Ordered: 1. 2. etc
+  if (/^(?:\s|\u00A0)*\d+\.\s/.test(cellText)) {
+    setTimeout(() => {
+      handleTableCellBullet(currentLine, true);
+    }, 0);
+    return;
+  }
 
     if (currentNode === currentLine) {
       let targetSpan = currentLine.querySelector('span.default-text');
@@ -281,6 +282,38 @@ editor.addEventListener('keydown', (e) => {
           placeCaretAtStart(resetSection.querySelector('p'));
           return;
         }
+      }
+    }
+
+    if (currentLine && currentLine.tagName === 'TD') {
+      const cell = currentLine;
+
+      if (
+        cell.textContent.trim() === '' ||
+        cell.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === ''
+      ) {
+        e.preventDefault();
+        cell.innerHTML = '';
+        const defaultSpan = document.createElement('span');
+        defaultSpan.className = 'default-text';
+        defaultSpan.innerHTML = '\u00A0';
+        cell.appendChild(defaultSpan);
+        placeCaretAtStart(defaultSpan);
+        return;
+      }
+
+      if (
+        cell.childNodes.length === 1 &&
+        cell.firstChild.nodeName === 'BR'
+      ) {
+        e.preventDefault();
+        cell.innerHTML = '';
+        const defaultSpan = document.createElement('span');
+        defaultSpan.className = 'default-text';
+        defaultSpan.innerHTML = '\u00A0';
+        cell.appendChild(defaultSpan);
+        placeCaretAtStart(defaultSpan);
+        return;
       }
     }
 

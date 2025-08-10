@@ -42,6 +42,13 @@ function createCodeBlock(hexID) {
   `;
 }
 
+function createListLi(content = '\u00A0') {
+  const li = document.createElement('li');
+  li.className = 'markdown-table-li';
+  li.innerHTML = `<span class="list-bullet"> </span><span class="default-text" contenteditable="true">${content}</span>`;
+  return li;
+}
+
 function createTable(hexID) {
   let tableHTML = `<table class="markdown-table" id="table_${hexID}">`;
   

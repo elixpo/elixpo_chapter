@@ -564,12 +564,3 @@ body {
   line-height: 1.4;
 }
 
-.markdown-table-list {
-  margin: 0;
-  padding-left: 1.2em;
-}
-.markdown-table-li {
-  margin: 0;
-  padding: 0;
-  list-style-position: inside;
-}

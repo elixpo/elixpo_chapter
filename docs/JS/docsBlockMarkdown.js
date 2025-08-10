@@ -1,3 +1,5 @@
+let lastEnterTime = 0;
+let enterCount = 0;
 
 function handleBlockFormatting(lineEl) {
   const text = lineEl.textContent;
@@ -171,7 +173,7 @@ function handleBlockFormatting(lineEl) {
       return true;
     }
 
-    const unorderedListMatch = text.match(/^[\*\-\+]\s(.*)/);
+    const unorderedListMatch = text.match(/^-\s(.*)/);
     const orderedListMatch = text.match(/^\d+\.\s(.*)/);
 
     if (unorderedListMatch || orderedListMatch) {
@@ -225,153 +227,36 @@ function handleBlockFormatting(lineEl) {
 
   return false;
 }
+
+
 function handleTableCellBullet(cellEl, isOrdered) {
   const text = cellEl.textContent;
   let content = '';
   let listType = isOrdered ? 'ol' : 'ul';
 
   if (isOrdered) {
-    const match = text.match(/^(\d+)\.\s(.*)/);
+    const match = text.match(/^(?:\s|\u00A0)*(\d+)\.\s(.*)/);
     content = match ? match[2] : '';
   } else {
-    const match = text.match(/^[\*\-\+]\s(.*)/);
+    const match = text.match(/^(?:\s|\u00A0)*-\s(.*)/);
     content = match ? match[1] : '';
   }
 
-  // Clear cell and create list structure
   cellEl.innerHTML = '';
-
-  // Create list
   const list = document.createElement(listType);
   list.className = 'markdown-table-list';
-  const li = document.createElement('li');
-  li.className = 'markdown-table-li';
-
-  if (content && hasMarkdownPattern(content)) {
-    processMarkdownInText(content, li);
-  } else {
-    li.textContent = content || '\u00A0';
-  }
-
+  const li = createListLi(content);
   list.appendChild(li);
   cellEl.appendChild(list);
 
-  // Place caret at end of li
-  placeCaretAtEnd(li);
-
-  // Re-attach listeners to this cell (for new content)
+  placeCaretAtEnd(li.querySelector('.default-text'));
   attachTableCellListeners(cellEl);
 }
 
 
-function attachTableCellListeners(cell) {
-  // Remove previous listeners if any
-  cell.oninput = null;
-  cell.onkeydown = null;
-
-  cell.addEventListener('input', () => {
-    const cellText = cell.textContent;
-
-    // Unordered: - , + , *
-    if (/^(?:\s|\u00A0)*[\*\-\+]\s/.test(cellText)) {
-      handleTableCellBullet(cell, false);
-      return;
-    }
-    // Ordered: 1. 2. etc
-    if (/^(?:\s|\u00A0)*\d+\.\s/.test(cellText)) {
-      handleTableCellBullet(cell, true);
-      return;
-    }
-
-    // Inline markdown for normal text
-    processInlineMarkdown(cell);
-  });
-
-  cell.addEventListener('keydown', (e) => {
-    // Shift+Enter: always insert a line break inside the cell
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      const br = document.createElement('br');
-      const sel = window.getSelection();
-      if (sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        range.insertNode(br);
-        range.setStartAfter(br);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-      return;
-    }
-
-    // Handle Enter inside a list in a table cell (same as normal block behavior)
-    if (e.key === 'Enter') {
-      const list = cell.querySelector('ul,ol');
-      const activeEl = document.activeElement;
-      
-      if (list && activeEl && activeEl.tagName === 'LI') {
-        // If current LI is empty, exit the list (same as normal block behavior)
-        if (activeEl.textContent.trim() === '') {
-          e.preventDefault();
-          
-          // Remove the empty LI
-          list.removeChild(activeEl);
-
-          // If list is now empty, remove the list and add default span
-          if (list.children.length === 0) {
-            cell.removeChild(list);
-            const newSpan = document.createElement('span');
-            newSpan.className = 'default-text';
-            newSpan.id = `span_${generateHexID()}`;
-            newSpan.innerHTML = '\u00A0';
-            cell.appendChild(newSpan);
-            placeCaretAtStart(newSpan);
-          } else {
-            // If there are other items, place caret at end of last item
-            const lastLi = list.lastElementChild;
-            if (lastLi) placeCaretAtEnd(lastLi);
-          }
-          return;
-        } else {
-          // Normal Enter: add new LI (same as normal block behavior)
-          e.preventDefault();
-          const newLi = document.createElement('li');
-          newLi.className = 'markdown-table-li';
-          newLi.innerHTML = '\u00A0';
-          
-          // Insert after current LI
-          if (activeEl.nextSibling) {
-            list.insertBefore(newLi, activeEl.nextSibling);
-          } else {
-            list.appendChild(newLi);
-          }
-          
-          placeCaretAtStart(newLi);
-          return;
-        }
-      } else {
-        // Not in a list: just insert a line break
-        e.preventDefault();
-        const br = document.createElement('br');
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0) {
-          const range = sel.getRangeAt(0);
-          range.insertNode(br);
-          range.setStartAfter(br);
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-      }
-    }
-  });
-
-  // Init
-  if (!cell.querySelector('span,ul,ol')) {
-    const defaultSpan = document.createElement('span');
-    defaultSpan.className = 'default-text';
-    defaultSpan.id = `span_${generateHexID()}`;
-    defaultSpan.innerHTML = '\u00A0';
-    cell.appendChild(defaultSpan);
-  }
+function createListLi(content = '\u00A0') {
+  const li = document.createElement('li');
+  li.className = 'markdown-table-li';
+  li.innerHTML = `<span class="list-bullet">- </span><span class="default-text" contenteditable="true">${content}</span>`;
+  return li;
 }
