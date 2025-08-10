@@ -3,13 +3,24 @@ from time import sleep
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from duckduckgo_search import DDGS
-from config import MAX_LINKS_TO_TAKE
+from config import MAX_LINKS_TO_TAKE, isHeadless
 import asyncio
 import stat
 import shutil
 import os
 from urllib.parse import urlparse, parse_qs, unquote, quote
 import json
+import random
+
+USER_AGENTS = [
+    # Add more user agents for rotation
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+]
+
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
 
 def extract_imgurl(href):
     if not href:
@@ -28,35 +39,63 @@ def remove_readonly(func, path, _):
         print(f"[!] Failed to delete: {path} → {e}")
 
 class GoogleSearchAgentImage:
-    def __init__(self):
+    def __init__(self, custom_port=None):
         self.playwright = None
         self.browser = None
         self.context = None
         self.save_dir = "downloaded_images"
         self.query_count = 0
-        print("[INFO] GoogleSearchAgentImage initialized.")
+        self.custom_port = custom_port or random.randint(9000, 9999)
+        print(f"[INFO] GoogleSearchAgentImage initialized on port {self.custom_port}.")
 
     async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"],
-        )
-        self.context = await self._new_context()
-
-    async def _new_context(self):
-        context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                       "AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/114.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 800},
+        
+        # Use launch_persistent_context instead of launch + new_context
+        self.context = await self.playwright.chromium.launch_persistent_context(
+            user_data_dir=f"/tmp/chrome-user-data-{self.custom_port}",
+            headless=isHeadless,
+            args=[
+                f"--remote-debugging-port={self.custom_port}",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--disable-extensions",
+                "--no-first-run",
+                "--disable-default-apps",
+                "--disable-sync",
+                "--disable-background-timer-throttling",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-renderer-backgrounding",
+                "--disable-field-trial-config",
+                "--disable-back-forward-cache",
+                "--disable-ipc-flooding-protection",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ],
+            user_agent=get_random_user_agent(),
+            viewport={'width': random.choice([1280, 1366, 1440, 1920]), 'height': random.choice([720, 800, 900, 1080])},
             java_script_enabled=True,
-            locale="en-US"
+            locale="en-US",
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Upgrade-Insecure-Requests": "1",
+                "DNT": "1",
+                "Connection": "keep-alive",
+            }
         )
-        await context.add_init_script(
-            """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
-        )
-        return context
+        
+        # Add anti-detection scripts
+        await self.context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            window.chrome = {runtime: {}};
+            Object.defineProperty(navigator, 'permissions', {get: () => ({query: () => Promise.resolve({state: 'granted'})})});
+        """)
 
     async def search_images(self, query, max_images):
         source_image_map = {}
@@ -105,8 +144,6 @@ class GoogleSearchAgentImage:
     async def close(self):
         if self.context:
             await self.context.close()
-        if self.browser:
-            await self.browser.close()
         if self.playwright:
             await self.playwright.stop()
         print("[INFO] GoogleSearchAgentImage closed.")
@@ -114,81 +151,123 @@ class GoogleSearchAgentImage:
 
 
 class GoogleSearchAgentText:
-    def __init__(self):
+    def __init__(self, custom_port=None):
         self.playwright = None
-        self.browser = None
         self.context = None
         self.query_count = 0
-        print("[INFO] GoogleSearchAgent ready and warmed up.")
+        self.custom_port = custom_port or random.randint(9000, 9999)
+        print(f"[INFO] GoogleSearchAgent ready on port {self.custom_port}.")
 
     async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True, args=[
-            "--disable-blink-features=AutomationControlled",
-        ])
-        self.context = await self._new_context()
-
-    async def _new_context(self):
-        context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                       "AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/114.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 800},
+        
+        # Use launch_persistent_context with unique port and user data
+        self.context = await self.playwright.chromium.launch_persistent_context(
+            user_data_dir=f"/tmp/chrome-user-data-{self.custom_port}",
+            headless=isHeadless,
+            args=[
+                f"--remote-debugging-port={self.custom_port}",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--disable-extensions",
+                "--no-first-run",
+                "--disable-default-apps",
+                "--disable-sync",
+                "--disable-background-timer-throttling",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-renderer-backgrounding",
+                "--disable-field-trial-config",
+                "--disable-back-forward-cache",
+                "--disable-ipc-flooding-protection",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ],
+            user_agent=get_random_user_agent(),
+            viewport={'width': random.choice([1280, 1366, 1440, 1920]), 'height': random.choice([720, 800, 900, 1080])},
             java_script_enabled=True,
-            locale="en-US"
+            locale="en-US",
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Upgrade-Insecure-Requests": "1",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+            }
         )
-        await context.add_init_script(
-            """Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"""
-        )
-        return context
+        
+        await self.context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            window.chrome = {runtime: {}};
+            Object.defineProperty(navigator, 'permissions', {get: () => ({query: () => Promise.resolve({state: 'granted'})})});
+        """)
 
     async def search(self, query, max_links=5):
         blacklist = [
             "maps.google.", "support.google.", "accounts.google.", "policies.google.",
             "images.google.", "google.com/preferences", "https://www.instagram.com/reel",
-            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live" "youtube.com/watch", "youtube.com",
-            "https://www.facebook.com/", "https://www.facebook.com/p"
+            "https://www.instagram.com/p", "youtube.com/shorts", "youtube.com/live", 
+            "youtube.com/watch", "youtube.com", "https://www.facebook.com/", 
+            "https://www.facebook.com/p"
         ]
         try:
-
-            if self.query_count >= 50:
-                print("[INFO] Resetting browser context to avoid leaks.")
-                await self.context.close()
-                self.context = await self._new_context()
-                self.query_count = 0
-
             self.query_count += 1
             
-
+            # Create a new page for this search
             page = await self.context.new_page()
-            await page.goto(f"https://www.google.com/search?q={query}", timeout=20000)
-            await page.wait_for_selector('a[jsname]')
+            await page.goto(f"https://www.google.com/search?q={quote(query)}", timeout=20000)
+            await page.wait_for_selector('a[jsname]', timeout=15000)
+
+            # Simulate mouse movement and scrolling
+            await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
+            await page.mouse.wheel(0, random.randint(200, 800))
+            await page.wait_for_timeout(random.randint(500, 1500))
+
+            # Optionally, scroll down the page to load more results
+            for _ in range(random.randint(2, 5)):
+                await page.mouse.wheel(0, random.randint(200, 600))
+                await page.wait_for_timeout(random.randint(500, 1200))
+
             links = page.locator('a[jsname]')
             results = []
 
-            # Fix: await the count() method
             link_count = await links.count()
             for i in range(link_count):
-                # Fix: await the get_attribute() method
-                href = await links.nth(i).get_attribute("href")
-                if href and href.startswith("http") and not any(bad in href for bad in blacklist):
-                    results.append(href)
+                if len(results) >= max_links:
+                    break
+                try:
+                    href = await links.nth(i).get_attribute("href")
+                    if href and href.startswith("http") and not any(bad in href for bad in blacklist):
+                        results.append(href)
+                except Exception as e:
+                    print(f"[WARN] Error extracting link {i}: {e}")
+                    continue
 
             await page.close()
-            return results[:max_links]
+            print(f"[INFO] Google search returned {len(results)} results for '{query}'")
+            return results
         except Exception as e:
-            print("❌ Google search failed:", e)
+            print(f"❌ Google search failed: {e}")
             return []
 
     async def close(self):
         if self.context:
             await self.context.close()
-        if self.browser:
-            await self.browser.close()
         if self.playwright:
             await self.playwright.stop()
-        print("[INFO] GoogleSearchAgent closed.")
-
+        # Clean up user data directory
+        import shutil
+        try:
+            shutil.rmtree(f"/tmp/chrome-user-data-{self.custom_port}", ignore_errors=True)
+        except:
+            pass
+        print(f"[INFO] GoogleSearchAgent on port {self.custom_port} closed.")
 
         
 def mojeek_form_search(query):
@@ -262,20 +341,27 @@ def ddgs_search_module_search(query):
     return results
 
 
-async def web_search(query, google_agent):
+async def web_search(query, use_separate_instance=True):
     print(f"[INFO] Running web search for: {query}")
 
-    # First Priority: Google via Playwright (warm)
-    try:
-        google_results = await google_agent.search(query, max_links=MAX_LINKS_TO_TAKE)
-        if google_results:
-            print(f"[INFO] Using Google with {len(google_results)} results.")
-            return google_results
-        else:
-            print("[INFO] Google returned no results. Falling back to DDGS module.")
-    except Exception as e:
-        print(f"[WARN] Google search failed with error: {e}. Falling back to DDGS module.")
-
+    if use_separate_instance:
+        # Create a new browser instance for each search
+        google_agent = GoogleSearchAgentText(custom_port=random.randint(9000, 9999))
+        try:
+            await google_agent.start()
+            # Add random delay before search (1-3 seconds)
+            await asyncio.sleep(random.uniform(1, 3))
+            
+            google_results = await google_agent.search(query, max_links=MAX_LINKS_TO_TAKE)
+            if google_results:
+                print(f"[INFO] Using Google with {len(google_results)} results.")
+                return google_results
+        except Exception as e:
+            print(f"[WARN] Google search failed with error: {e}")
+        finally:
+            # Always close the instance
+            await google_agent.close()
+    
     # Second Priority: DuckDuckGo via DDGS
     try:
         ddg_module_results = ddgs_search_module_search(query)
@@ -314,12 +400,18 @@ async def web_search(query, google_agent):
 
 
 
-async def image_search(query, google_agent, max_images=10):
+async def image_search(query, max_images=10):
     print(f"[INFO] Running image search for: {query}")
+    
+    # Create separate instance for image search
+    google_agent = GoogleSearchAgentImage(custom_port=random.randint(9000, 9999))
     try:
+        await google_agent.start()
+        await asyncio.sleep(random.uniform(1, 3))  # Random delay
+        
         results = await google_agent.search_images(query, max_images)
         if results:
-            print(f"[INFO] Image search returned {len(results)} images.")
+            print(f"[INFO] Image search completed.")
             return results
         else:
             print("[INFO] No images found.")
@@ -330,31 +422,27 @@ async def image_search(query, google_agent, max_images=10):
     finally:
         await google_agent.close()
 
-
-
+# Updated main function:
 if __name__ == "__main__":
-
     async def main():
-        # agent_image = GoogleSearchAgentImage()
-        # await agent_image.start()
-        # print("\nGoogle Search with Playwright:")
-        # queries = ["ballet dancer"]
-        # for query in queries:
-        #     print(f"\nResults for: {query}")
-        #     results = await agent_image.search_images(query, 10)
-        #     print(results)
-        # await agent_image.close()
-
-
-        agent_text = GoogleSearchAgentText()
-        await agent_text.start()
-        print("\nGoogle Text Search with Playwright:")
         queries_text = ["ballet dancer"]
+        
         for query in queries_text:
-            print(f"\nResults for: {query}")
-            results_text = await agent_text.search(query, 10)
-            print(results_text)
-        await agent_text.close()
+            print(f"\n{'='*50}")
+            print(f"Searching for: {query}")
+            print('='*50)
+            
+            # Each search gets its own browser instance
+            results = await web_search(query, use_separate_instance=True)
+            print(f"Results: {results}")
+            
+            # Random delay between searches (2-5 seconds)
+            await asyncio.sleep(random.uniform(2, 5))
     
-    asyncio.run(main())
-    
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n[INFO] Search stopped by user.")
+    except Exception as e:
+        print(f"[ERROR] {e}")
+

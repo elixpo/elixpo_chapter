@@ -5,3 +5,4 @@ MAX_IMAGES_TO_INCLUDE = 4
 scrape_website_show_log = True
 SCRAPE_IMAGE=True
 MAX_LINKS_TO_TAKE = 4
+isHeadless=True
