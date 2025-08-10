@@ -320,7 +320,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "tool_choice": "auto",
                 "token": POLLINATIONS_TOKEN,
                 "referrer": REFRRER,
-                "temperature": 0.2,
+                # "temperature": 0.2,
                 "private": True,
                 "seed": random.randint(1000, 9999)
             }
@@ -330,9 +330,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 response.raise_for_status()
                 response_data = response.json()
             except requests.exceptions.RequestException as e:
-                logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}")
+                error_text = ""
+                if hasattr(e, "response") and e.response is not None:
+                    try:
+                        error_text = e.response.text
+                    except Exception:
+                        error_text = "[Could not read error response text]"
+                logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}\nResponse: {error_text}")
+                
                 if event_id:
-                    yield format_sse("error", f"[ERROR] Pollinations API call failed at iteration {current_iteration}: {e}")
+                    yield format_sse("error", f"[ERROR] Pollinations API call failed at iteration {current_iteration}: {e}\nResponse: {error_text}")
                 break
 
             assistant_message = response_data["choices"][0]["message"]
@@ -382,7 +389,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
                         search_results_raw = await web_search(search_query, google_agent_text)
                         logger.info(f"Web search returned {len(search_results_raw)} results")
-                        summaries = ""
                         if search_results_raw:
                             parallel_results = fetch_url_content_parallel(search_results_raw)
                         tool_result = parallel_results if parallel_results else "[No relevant web search results found.]"
@@ -596,7 +602,7 @@ if __name__ == "__main__":
         # user_image = "https://media.istockphoto.com/id/1421310827/photo/young-graceful-ballerina-is-performing-classic-dance-beauty-and-elegance-of-classic-ballet.jpg?s=612x612&w=0&k=20&c=GQ1DVEarW4Y-lGD6y8jCb3YPIgap7gj-6ReS3C7Qi3Y=" 
         
         # 2. Image + Text Query (Your problematic case)
-        user_query = "hi"
+        user_query = "what is the latest news from the indian cricket"
         user_image = None
 
         # 3. Text only
@@ -637,11 +643,12 @@ if __name__ == "__main__":
         else:
             print("\n--- No answer received ---")
     
+    
     asyncio.run(main())
     # content = fetch_url_content_parallel(["https://www.geeksforgeeks.org/operating-systems/implementation-of-contiguous-memory-management-techniques/"])
     # print(content)
-
     try:
+        asyncio.run(agent_manager.close_all())
         asyncio.get_event_loop().close()
     except Exception:
         pass
