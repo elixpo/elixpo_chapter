@@ -7,33 +7,110 @@ function handleBlockFormatting(lineEl) {
   console.log(lineEl.tagName)
   if (lineEl.tagName === 'P') {
 
-     if (text === 'TABLE\u00A0' || text === 'TABLE  ' || text === 'TABLE\u00A0\u00A0') {
+    if (
+      text === 'TABLE\u00A0' ||
+      text === 'TABLE  ' ||
+      text === 'TABLE\u00A0\u00A0'
+    ) {
       updateCurrentBlock("TABLE");
       const hexID = generateHexID();
-      const tableDiv = document.createElement('div');
-      tableDiv.innerHTML = createTable(hexID);
-      const table = tableDiv.firstElementChild;
+      // Use the createTable function from docsGeneral.js, which returns the correct HTML structure
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = createTable(hexID);
+      const table = tempDiv.firstElementChild;
 
-      // Set equal column widths
-      const cols = table.querySelectorAll('tr:first-child td');
-      cols.forEach(td => {
+      // Set equal column widths for all <td> in the first row
+      const firstRowTds = table.querySelectorAll('tr:first-child td');
+      firstRowTds.forEach(td => {
         td.style.maxWidth = '200px';
         td.style.width = '200px';
       });
 
-      // Add event listeners for each cell
-      const cells = table.querySelectorAll('td');
-      cells.forEach(cell => {
-        attachTableCellListeners(cell);
+      // Attach event listeners to all <td> elements
+      const allTds = table.querySelectorAll('td');
+      allTds.forEach(td => {
+        // Initial markdown processing for the p tags inside td
+        const pTags = td.querySelectorAll('p');
+        pTags.forEach(p => {
+          processEntireLineContent(p);
+        });
+
+        // On input, process markdown for the current p tag
+        td.addEventListener('input', (e) => {
+          const targetP = e.target.closest('p');
+          if (targetP) {
+            processEntireLineContent(targetP);
+          }
+        });
+
+        // Keyboard navigation and editing
+        td.addEventListener('keydown', (e) => {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const tds = Array.from(td.parentElement.children);
+            const currentIndex = tds.indexOf(td);
+            const nextTd = tds[currentIndex + 1];
+            if (nextTd) {
+              nextTd.focus();
+              const firstP = nextTd.querySelector('p');
+              if (firstP) {
+                placeCaretAtStart(firstP);
+              }
+            }
+          }
+          if (e.key === "Backspace") {
+            const pTags = td.querySelectorAll('p');
+            // Remove any empty <p> tag, or remove the table if all <p> tags are empty
+            let allEmpty = true;
+            pTags.forEach(p => {
+              if (p.textContent.trim() === '') {
+                p.remove();
+              } else {
+                allEmpty = false;
+              }
+            });
+            if (allEmpty) {
+              const table = td.closest('table');
+              if (table) {
+                table.remove();
+              }
+            }
+          }
+        });
+
+        td.addEventListener('blur', () => {
+          const pTags = td.querySelectorAll('p');
+          pTags.forEach(p => {
+            processEntireLineContent(p);
+          });
+        });
+
+        // Make sure the first p in each td is focusable
+        const firstP = td.querySelector('p');
+        if (firstP) {
+          firstP.addEventListener('focus', () => {
+            removeDefaultTextIfPresent(firstP);
+          });
+        }
       });
 
-      section.replaceChild(table, lineEl);
+      // Replace the current line with the table, following the section structure
+      if (lineEl.parentNode === section) {
+        section.replaceChild(table, lineEl);
+      } else {
+        lineEl.parentNode.replaceChild(table, lineEl);
+      }
       const newP = createParagraph();
       section.appendChild(newP);
-      placeCaretAtStart(table.querySelector('td'));
+      
+      // Focus on the first p tag in the first td
+      const firstTd = table.querySelector('td');
+      const firstP = firstTd.querySelector('p');
+      if (firstP) {
+        placeCaretAtStart(firstP);
+      }
       return true;
     }
-
 
     if (text === '```\u00A0' || text === '```  ' || text === '```\u00A0\u00A0') {
       updateCurrentBlock("CODE_BLOCK");
@@ -282,35 +359,16 @@ function handleBlockFormatting(lineEl) {
   return false;
 }
 
-
-function handleTableCellBullet(cellEl, isOrdered) {
-  const text = cellEl.textContent;
-  let content = '';
-  let listType = isOrdered ? 'ol' : 'ul';
-
-  if (isOrdered) {
-    const match = text.match(/^(?:\s|\u00A0)*(\d+)\.\s(.*)/);
-    content = match ? match[2] : '';
-  } else {
-    const match = text.match(/^(?:\s|\u00A0)*-\s(.*)/);
-    content = match ? match[1] : '';
-  }
-
-  cellEl.innerHTML = '';
-  const list = document.createElement(listType);
-  list.className = 'markdown-table-list';
-  const li = createListLi(content);
-  list.appendChild(li);
-  cellEl.appendChild(list);
-
-  placeCaretAtEnd(li.querySelector('.default-text'));
-  attachTableCellListeners(cellEl);
+          
+function getCaretLine(cell) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return 0;
+  const range = sel.getRangeAt(0);
+  const preCaretRange = range.cloneRange();
+  preCaretRange.selectNodeContents(cell);
+  preCaretRange.setEnd(range.endContainer, range.endOffset);
+  return preCaretRange.toString().split('\n').length - 1;
 }
-
-
-function createListLi(content = '\u00A0') {
-  const li = document.createElement('li');
-  li.className = 'markdown-table-li';
-  li.innerHTML = `<span class="list-bullet">- </span><span class="default-text" contenteditable="true">${content}</span>`;
-  return li;
+function getTotalLines(cell) {
+  return cell.textContent.split('\n').length;
 }

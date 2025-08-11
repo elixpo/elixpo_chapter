@@ -177,6 +177,7 @@ function processMarkdownInText(text, parentNode, replaceNode = null) {
   trailingSpan.textContent = '\u00A0  '; 
   fragment.appendChild(trailingSpan);
   insertedTrailingSpan = trailingSpan;
+  placeCaretAtEnd(trailingSpan);
 
   // Replace content
   if (replaceNode) {
@@ -207,43 +208,15 @@ function processEntireLineContent(node) {
   if (node.querySelector('.default-text-not-editable')) {
     return { addedTrailingSpan: false };
   }
-
   const lineText = node.textContent;
   if (!lineText) {
-    if (!node.querySelector('span.default-text')) {
-      node.innerHTML = '';
-      const defaultSpan = document.createElement('span');
-      defaultSpan.className = 'default-text';
-      defaultSpan.innerHTML = '\u00A0';
-      node.appendChild(defaultSpan);
-    }
+    node.innerHTML = '';
+    const defaultSpan = document.createElement('span');
+    defaultSpan.className = 'default-text';
+    defaultSpan.innerHTML = '\u00A0';
+    node.appendChild(defaultSpan);
     return { addedTrailingSpan: false };
   }
-
-  // Handle table cells - process inline markdown
-  if (node.tagName === 'TD') {
-    return processMarkdownInText(lineText, node);
-  }
-
+  // Process inline markdown for table cells and all other nodes
   return processMarkdownInText(lineText, node);
-}
-
-// Add new function specifically for table cells
-function processInlineMarkdown(cellNode) {
-  if (!cellNode || cellNode.tagName !== 'TD') return;
-  
-  const cellText = cellNode.textContent;
-  if (!cellText || cellText.trim() === '') {
-    if (!cellNode.querySelector('span.default-text')) {
-      cellNode.innerHTML = '';
-      const defaultSpan = document.createElement('span');
-      defaultSpan.className = 'default-text';
-      defaultSpan.innerHTML = '\u00A0';
-      cellNode.appendChild(defaultSpan);
-    }
-    return;
-  }
-
-  // Process inline markdown patterns in table cells
-  processMarkdownInText(cellText, cellNode);
 }

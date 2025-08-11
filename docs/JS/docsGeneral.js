@@ -42,52 +42,41 @@ function createCodeBlock(hexID) {
   `;
 }
 
-function createTableBlock(hexID) {
+function createTable(hexID) {
   return `
-    <table id="table_${hexID}" contenteditable="false">
+    <table id="table_${hexID}" contenteditable="false" style="border-collapse:collapse;">
       <tbody>
         <tr>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
-          </td>
-        </tr>
-        <tr>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
-          </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
-          </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
         </tr>
         <tr>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
         </tr>
         <tr>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
-          <td contenteditable="true">
-          <span class="default-text">&nbsp;</span>
+          <td contenteditable="true" style="vertical-align:top;">
+            <p><span class="default-text">&nbsp;</span></p>
           </td>
         </tr>
       </tbody>
@@ -124,11 +113,12 @@ function getCurrentLineElement() {
 
   // Traverse up the DOM tree to find the line element
   while (node && node !== editor) {
-    // Check if this node is a line element we're looking for (excluding SPAN)
+    // Check if this node is a line element we're looking for (including table elements)
     if (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || 
         node.tagName === 'H4' || node.tagName === 'H5' || node.tagName === 'H6' || 
         node.tagName === 'P' || node.tagName === 'BLOCKQUOTE' || 
-        node.tagName === 'LI' || node.tagName === 'PRE') {
+        node.tagName === 'LI' || node.tagName === 'PRE' || 
+        node.tagName === 'TD' || node.tagName === 'TH' || node.tagName === 'TR' || node.tagName === 'TABLE') {
       return node;
     }
     
@@ -143,38 +133,32 @@ function getCurrentLineElement() {
     while (tempNode && tempNode !== editor) {
       if (tempNode.tagName === 'SECTION' && tempNode.parentNode === editor) {
         section = tempNode;
-        // console.log("Found section:", section);
         break;
       }
       tempNode = tempNode.parentNode;
     }
     
     if (section) {
-      
       // If current node is a direct child of section and is a line element
       if (node.parentNode === section && 
           (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || 
            node.tagName === 'H4' || node.tagName === 'H5' || node.tagName === 'H6' || 
            node.tagName === 'P' || node.tagName === 'BLOCKQUOTE' || 
            node.tagName === 'UL' || node.tagName === 'OL' || node.tagName === 'PRE' || node.tagName === 'SPAN'
-          || node.tagName === 'LI')) {
+          || node.tagName === 'LI' || node.tagName === 'TABLE')) {
         return node;
       }
       
-
       let parent = node;
-      console.log(parent, parent.tagName, parent.parentNode)
       while (parent && parent !== section) {
         if (parent.tagName === 'H1' || parent.tagName === 'H2' || parent.tagName === 'H3' || 
             parent.tagName === 'H4' || parent.tagName === 'H5' || parent.tagName === 'H6' || 
             parent.tagName === 'P' || parent.tagName === 'BLOCKQUOTE' || 
-            parent.tagName === 'LI' || parent.tagName === 'PRE') {
-              console.log("Found parent line element:", parent.tagName);
+            parent.tagName === 'LI' || parent.tagName === 'PRE' ||
+            parent.tagName === 'TD' || parent.tagName === 'TH' || parent.tagName === 'TR' || parent.tagName === 'TABLE') {
           return parent;
         }
         parent = parent.parentNode;
-        console.log(parent.tagName)
-        
       }
     }
     

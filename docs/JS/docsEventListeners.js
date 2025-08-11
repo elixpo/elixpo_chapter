@@ -15,87 +15,7 @@ editor.addEventListener('input', (e) => {
 
   if (!currentLine || !range) return;
 
-  if (currentLine.tagName === 'TD') {
-    // Always ensure listeners are attached (for pasted tables, etc)
-    if (typeof attachTableCellListeners === 'function') {
-      attachTableCellListeners(currentLine);
-    }
-
-    processInlineMarkdown(currentLine);
-
-    // Update currentLineFormat for table cells
-    const sel = window.getSelection();
-    const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-    const cellText = currentLine.textContent;
-    const currentNode = range.startContainer;
-
-    currentLineFormat = {
-      sel: sel,
-      range: range,
-      currentLine: currentLine 
-    };
-
-    if (/^(?:\s|\u00A0)*-\s/.test(cellText)) {
-    setTimeout(() => {
-      handleTableCellBullet(currentLine, false);
-    }, 0);
-    return;
-  }
-  // Ordered: 1. 2. etc
-  if (/^(?:\s|\u00A0)*\d+\.\s/.test(cellText)) {
-    setTimeout(() => {
-      handleTableCellBullet(currentLine, true);
-    }, 0);
-    return;
-  }
-
-    if (currentNode === currentLine) {
-      let targetSpan = currentLine.querySelector('span.default-text');
-      if (!targetSpan) {
-        targetSpan = document.createElement('span');
-        targetSpan.className = 'default-text';
-        targetSpan.innerHTML = '\u00A0';
-        currentLine.appendChild(targetSpan);
-      }
-      placeCaretAtEnd(targetSpan);
-      return;
-    }
-
-    if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentNode === currentLine) {
-      const span = document.createElement('span');
-      span.className = 'default-text';
-      span.id = `span_${generateHexID()}`;
-      currentNode.parentNode.insertBefore(span, currentNode);
-      span.appendChild(currentNode);
-
-      const newRange = document.createRange();
-      newRange.setStart(currentNode, range.startOffset);
-      newRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-    }
-
-    // Process inline markdown for table cells
-    setTimeout(() => {
-      const styleResult = processEntireLineContent(currentLine);
-      if (styleResult && styleResult.addedTrailingSpan) {
-        const spans = currentLine.querySelectorAll('span.default-text');
-        const lastDefaultSpan = spans[spans.length - 1];
-        if (lastDefaultSpan && (
-          lastDefaultSpan.innerHTML === ' ' ||
-          lastDefaultSpan.textContent === '\u00A0' ||
-          lastDefaultSpan.textContent === '\u200B' ||
-          lastDefaultSpan.textContent === '' ||
-          lastDefaultSpan.textContent === ' ' ||
-          lastDefaultSpan.textContent.trim() === ''
-        )) {
-          placeCaretAtStart(lastDefaultSpan);
-        }
-      }
-    }, 0);
-
-    return;
-  }
+  
   
   if (currentLine.tagName === 'H1' || currentLine.tagName === 'P') {
     removeDefaultTextIfPresent(currentLine);
@@ -230,7 +150,9 @@ editor.addEventListener('input', (e) => {
       console.warn("Error restoring cursor position:", err);
       placeCaretAtEnd(currentLine);
     }
-  } else if (currentLine.tagName === 'PRE') {
+  } 
+  
+  else if (currentLine.tagName === 'PRE') {
     const codeEl = currentLine.querySelector('code');
     if (codeEl) {
       const cursorPos = getCursorPositionInCodeBlock(codeEl);
@@ -523,25 +445,15 @@ editor.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
     enterPressCount++;
+    console.log(currentLine.tagName)
+    if(currentLine && (currentLine.tagName === 'TR' || currentLine.tagName === "TD")) {
+      return;
+    }
 
     if (!currentLine) {
       const newSection = createSection();
       editor.appendChild(newSection);
       placeCaretAtStart(newSection.querySelector('p'));
-      return;
-    }
-
-if (currentLine && currentLine.tagName === 'TD') {
-      // Create a line break in the cell
-      const br = document.createElement('br');
-      range.insertNode(br);
-      
-      // Move cursor after the break
-      const newRange = document.createRange();
-      newRange.setStartAfter(br);
-      newRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
       return;
     }
 
@@ -687,7 +599,9 @@ if (currentLine && currentLine.tagName === 'TD') {
           enterPressCount = 0;
         }
       }
-    } else if (currentLine.tagName === 'PRE') {
+    } 
+    
+    else if (currentLine.tagName === 'PRE') {
       const codeEl = currentLine.querySelector('code');
       if (codeEl) {
         if (e.shiftKey) {
@@ -717,7 +631,9 @@ if (currentLine && currentLine.tagName === 'TD') {
           }
         }
       }
-    } else {
+    } 
+    
+    else {
       const section = currentLine.closest('section');
       if (section) {
         const newP = createParagraph();
@@ -731,79 +647,7 @@ if (currentLine && currentLine.tagName === 'TD') {
   else if (e.key === 'Tab') {
     e.preventDefault();
     console.log(currentLine.tagName)
-  if (currentLine && currentLine.tagName === 'TD') {
-      const currentCell = currentLine;
-      const table = currentCell.closest('table');
-      const cells = Array.from(table.querySelectorAll('td'));
-      const currentIndex = cells.indexOf(currentCell);
-      const rows = Array.from(table.querySelectorAll('tr'));
-    const currentRow = currentCell.closest('tr');
-    const currentRowIndex = rows.indexOf(currentRow);
-    const cellsInCurrentRow = Array.from(currentRow.querySelectorAll('td'));
-    const currentCellIndex = cellsInCurrentRow.indexOf(currentCell);
-    
-    let targetCell = null;
-    
-    switch(e.key) {
-      case 'ArrowUp':
-        if (currentRowIndex > 0) {
-          const prevRow = rows[currentRowIndex - 1];
-          const prevRowCells = Array.from(prevRow.querySelectorAll('td'));
-          targetCell = prevRowCells[Math.min(currentCellIndex, prevRowCells.length - 1)];
-        }
-        break;
-      case 'ArrowDown':
-        if (currentRowIndex < rows.length - 1) {
-          const nextRow = rows[currentRowIndex + 1];
-          const nextRowCells = Array.from(nextRow.querySelectorAll('td'));
-          targetCell = nextRowCells[Math.min(currentCellIndex, nextRowCells.length - 1)];
-        }
-        break;
-      case 'ArrowLeft':
-        if (currentCellIndex > 0) {
-          targetCell = cellsInCurrentRow[currentCellIndex - 1];
-        } else if (currentRowIndex > 0) {
-          const prevRow = rows[currentRowIndex - 1];
-          const prevRowCells = Array.from(prevRow.querySelectorAll('td'));
-          targetCell = prevRowCells[prevRowCells.length - 1];
-        }
-        break;
-      case 'ArrowRight':
-        if (currentCellIndex < cellsInCurrentRow.length - 1) {
-          targetCell = cellsInCurrentRow[currentCellIndex + 1];
-        } else if (currentRowIndex < rows.length - 1) {
-          const nextRow = rows[currentRowIndex + 1];
-          const nextRowCells = Array.from(nextRow.querySelectorAll('td'));
-          targetCell = nextRowCells[0];
-        }
-        break;
-    }
   
-      
-      if (e.shiftKey) {
-        // Previous cell
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : cells.length - 1;
-        placeCaretAtStart(cells[prevIndex]);
-      } else {
-        // Next cell
-        const nextIndex = currentIndex < cells.length - 1 ? currentIndex + 1 : 0;
-        placeCaretAtStart(cells[nextIndex]);
-      }
-
-      if (targetCell) {
-      e.preventDefault();
-      placeCaretAtStart(targetCell);
-      
-      // Update currentLineFormat
-      currentLineFormat = {
-        sel: window.getSelection(),
-        range: window.getSelection().getRangeAt(0),
-        currentLine: targetCell
-      };
-    }
-      return;
-    }
-
     if (currentLine && currentLine.tagName === 'LI') {
       const parentList = currentLine.parentNode;
       const previousSibling = currentLine.previousElementSibling;
@@ -819,27 +663,35 @@ if (currentLine && currentLine.tagName === 'TD') {
         nestedList.appendChild(currentLine);
         placeCaretAtEnd(currentLine);
       }
-    } else if (currentLine && currentLine.tagName === 'PRE') {
+    } 
+    
+    else if (currentLine && currentLine.tagName === 'PRE') {
       const textNode = document.createTextNode('  ');
       range.insertNode(textNode);
       range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
       highlightCodeBlock(currentLine.querySelector('code'));
-    } else if (currentLine && (currentLine.tagName === 'H1' || currentLine.tagName === 'P')) {
+    } 
+    
+    else if (currentLine && (currentLine.tagName === 'H1' || currentLine.tagName === 'P')) {
       const spaceNode = document.createTextNode('  ');
       range.insertNode(spaceNode);
       range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
-    } else {
+    } 
+    
+    else {
       const spaceNode = document.createTextNode('  ');
       range.insertNode(spaceNode);
       range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
     }
-  } else {
+  } 
+  
+  else {
     enterPressCount = 0;
   }
 });
