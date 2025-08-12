@@ -60,7 +60,7 @@ function createSection() {
   `
   section.appendChild(h1);
   section.appendChild(p);
-  section.innerHTML += (testTable);
+  // section.innerHTML += (testTable);
   return section;
 }
 
