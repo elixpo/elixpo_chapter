@@ -1,0 +1,1093 @@
+.innerLayout {
+  position: relative;
+  top: 60px;
+  width: 100%;
+  height: auto;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.firstSection {
+  position: relative;
+  top: 0px;
+  height: 90px;
+  width: 100%;
+  background-color: transparent;
+  border-bottom: 5px solid #1D202A;
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+
+
+}
+
+
+.innerLayout .firstSection>.descText {
+  position: absolute;
+  /* Change to absolute so it stays within .firstSection */
+  top: 80%;
+  /* Move to the vertical center */
+  left: 4%;
+  transform: translateY(-50%);
+  /* Perfectly centers it vertically */
+  font-family: "Kanit", serif;
+  font-size: 1.1em;
+  color: #c6c0c091;
+  z-index: 2;
+}
+
+.secondSection {
+  position: relative;
+  top: 0px;
+  height: 250px;
+  width: 100%;
+  background-color: transparent;
+  border-bottom: 5px solid #1D202A;
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+  overflow: hidden;
+  flex-wrap: wrap;
+  z-index: 2;
+}
+
+.secondSection .welcomeText {
+  position: absolute;
+  top: 20%;
+  transform: translateY(-50%);
+  left: 4%;
+  width: 90%;
+  line-height: 1em;
+  font-family: "Kanit", serif;
+  font-size: 4.5em;
+  font-weight: 500;
+  color: #f4eaeae6;
+  z-index: 2;
+}
+
+.secondSection .backgroundImage {
+  position: absolute;
+  left: 90%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  transform: scale(1.5);
+  overflow: hidden;
+  background: url(../IMAGES/mainframeDesign.png);
+  opacity: 0.5;
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 1;
+
+}
+
+.thirdSection {
+  position: relative;
+  top: 0px;
+  height: 100px;
+  width: 100%;
+  background-color: transparent;
+  border-bottom: 1px solid #1D202A;
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+  overflow: hidden;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.171) 2px, transparent 0);
+  background-size: 30px 30px;
+  background-position: -5px -5px;
+  flex-wrap: wrap;
+}
+
+
+.readBlogsBtn {
+  position: absolute;
+  left: 35%;
+  top: 50%;
+  transform-origin: center;
+  transform: translateY(-50%) scale(1.2);
+  border: none;
+  outline: none;
+  background-color: #3a3a3a;
+  width: 120px;
+  height: 40px;
+  font-size: 18px;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.readBlogsBtn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  width: 106%;
+  height: 130%;
+  z-index: -1;
+  border-radius: inherit;
+  transition: all 0.3s;
+
+}
+
+
+.starGithub {
+  position: absolute;
+  left: 55%;
+  top: 50%;
+  transform-origin: center;
+  transform: translateY(-50%) scale(1.2);
+  border: none;
+  outline: none;
+  background-color: #3a3a3a;
+  width: 120px;
+  height: 40px;
+  font-size: 18px;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.starGithub::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  width: 106%;
+  height: 130%;
+  z-index: -1;
+  border-radius: inherit;
+  transition: all 0.3s;
+}
+
+
+.gradient-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 106%;
+  height: 115%;
+  overflow: hidden;
+  border-radius: 10px;
+  z-index: -2;
+  filter: blur(10px);
+  transition: all 0.3s;
+}
+
+.gradient {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 105%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  transition: all 0.3s;
+  background-image: linear-gradient(90deg,
+      hsl(226, 81%, 64%),
+      hsl(271, 81%, 64%),
+      hsl(316, 81%, 64%),
+      hsl(1, 81%, 64%),
+      hsl(46, 81%, 64%),
+      hsl(91, 81%, 64%),
+      hsl(136, 81%, 64%),
+      hsl(181, 81%, 64%));
+  animation: rotate 2s linear infinite;
+  filter: blur(10px);
+}
+
+.label {
+  width: 156px;
+  height: 45px;
+  text-align: center;
+  line-height: 45px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  background-color: rgba(43, 43, 43, 1);
+  background-image: linear-gradient(180deg,
+      rgb(43, 43, 43) 0%,
+      rgb(68, 68, 68) 100%);
+}
+
+.readBlogsBtn:hover .gradient-container {
+  transform: translate(-50%, -50%) scale(0.98);
+  filter: blur(5px);
+}
+
+
+@keyframes rotate {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+
+.fourthSection {
+  position: relative;
+  top: 0px;
+  height: 450px;
+  width: 100%;
+  background-color: transparent;
+  /* border-bottom: 5px solid #1D202A; */
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+  overflow: hidden;
+}
+
+.fourthSectionBackdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 100%;
+  width: 94%;
+  background: #1D202A;
+}
+
+.fourthSectionBackdropv-2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  border-radius: 25px;
+  height: 95%;
+  width: 98%;
+  background: #030712;
+  border: 1px solid #616678;
+  overflow: hidden;
+}
+
+.fourthSectionBackdropv-2>.documentIcon {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  font-size: 5em;
+  color: #fff;
+  font-weight: 500;
+}
+
+.fourthSectionBackdropv-2>.heading {
+  position: absolute;
+  left: 12%;
+  top: 5%;
+  font-size: 1.8em;
+  color: #fff;
+
+}
+
+.fourthSectionBackdropv-2>.desc {
+  position: absolute;
+  top: 15%;
+  left: 12%;
+  color: #888;
+  width: 40%;
+  flex-wrap: wrap;
+}
+
+.fourthSectionBackdropv-2>.documentContainer {
+  position: absolute;
+  top: 30%;
+  width: 97%;
+  left: 1.5%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
+  background-size: 10px 10px;
+  background-position: -5px -5px;
+  border: 1px solid #555;
+  border-radius: 15px;
+  overflow-x: hidden;
+}
+
+/* Terminal Container */
+.terminal {
+  position: absolute;
+  left: 3%;
+  top: 0%;
+  background: #030712;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 1180px;
+  margin: 20px auto;
+}
+
+/* Terminal Header */
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #030712;
+  padding: 10px 15px;
+}
+
+.terminal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.circles {
+  display: flex;
+  gap: 5px;
+}
+
+.terminalCircle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.terminalCircle {
+  background: #353941;
+}
+
+
+/* Terminal Content */
+.terminal-content {
+  min-height: 280px;
+  background: #10141E;
+  width: 99%;
+  left: 0.5%;
+  position: relative;
+  border-radius: 10px;
+}
+
+
+.terminal-content>.titleHolder {
+  position: relative;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 50px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  pointer-events: none;
+}
+
+.terminal-content>.titleHolder input[type="text"] {
+  border: none;
+  background: transparent;
+  width: 90%;
+  outline: none;
+  text-indent: 10px;
+  color: #888;
+}
+
+.terminal-content>.titleHolder>.content {
+  border: none;
+  background: transparent;
+  width: 90%;
+  outline: none;
+  text-indent: 10px;
+  color: #888;
+  font-size: 2em;
+}
+
+.terminal-content>.titleHolder input[type="text"]::placeholder {
+  color: #888;
+  font-size: 2.5em;
+}
+
+.terminal-content>.titleHolder>ion-icon {
+  font-size: 3em;
+  color: #888;
+}
+
+
+.terminal-content>.titleHolder>ion-icon.hidden {
+  display: none;
+}
+
+.fifthSection {
+  position: relative;
+  top: 0px;
+  height: 450px;
+  width: 100%;
+  background-color: transparent;
+  border-bottom: 5px solid #1D202A;
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+  overflow: hidden;
+}
+
+.fifthSectionBackdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 100%;
+  width: 94%;
+  background: #1D202A;
+  display: flex;
+}
+
+.fifthSectionBackdropv-1 {
+  position: absolute;
+  top: 50%;
+  left: 1%;
+  transform: translateY(-50%);
+  border-radius: 25px;
+  height: 95%;
+  width: 48%;
+  background: #030712;
+  border: 1px solid #616678;
+  overflow: hidden;
+}
+
+.search-container {
+
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 20px auto;
+  height: 50px;
+  width: 600px;
+}
+
+.search-bar-wrapper {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border-radius: 20px;
+  height: 50px;
+  padding: 10px;
+  margin-right: 20px;
+}
+
+.search-bar {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px;
+  font-size: 1em;
+  border-radius: 10px;
+  margin-right: 20px;
+  background: transparent;
+  border: 2px solid #999cff;
+  color: #999cff;
+}
+
+.search-bar::placeholder {
+  color: #999cff;
+}
+
+.icon-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-group>ion-icon {
+  font-size: 1.5em;
+  color: #999cff;
+  cursor: pointer;
+  background: transparent;
+}
+
+.icon {
+  cursor: pointer;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 20px;
+  background: transparent;
+  backdrop-filter: blur(5px);
+  border: 2px solid #999cff;
+  filter: drop-shadow(0 0 20px #999cff);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.newspaper {
+  position: absolute;
+  display: block;
+  top: 15%;
+  left: 5%;
+  rotate: 25deg;
+  scale: 1.1;
+}
+
+.fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.code {
+  position: absolute;
+  display: block;
+  top: 30%;
+  left: 75%;
+  rotate: -25deg;
+  scale: 1.1;
+}
+
+.fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.reader {
+  position: absolute;
+  display: block;
+  top: 35%;
+  left: 27%;
+  rotate: -15deg;
+  scale: 0.8;
+}
+
+.fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.calculator {
+  position: absolute;
+  display: block;
+  top: 35%;
+  left: 38%;
+  rotate: 15deg;
+  scale: 0.8;
+}
+
+.fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.translate {
+  position: absolute;
+  display: block;
+  top: 35%;
+  left: 48%;
+  rotate: -15deg;
+  scale: 0.8;
+}
+
+.quick-action ion-icon {
+  font-size: 2em;
+  color: #999cff;
+}
+
+.fifthSectionBackdropv-2 {
+  position: absolute;
+  top: 50%;
+  left: 51%;
+  transform: translateY(-50%);
+  border-radius: 25px;
+  height: 95%;
+  width: 48%;
+  background: #030712;
+  border: 1px solid #616678;
+  overflow: hidden;
+}
+
+
+.fifthSectionBackdropv-1>.documentIcon,
+.fifthSectionBackdropv-2>.documentIcon {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  font-size: 3em;
+  color: #fff;
+  font-weight: 500;
+}
+
+.fifthSectionBackdropv-1>.heading,
+.fifthSectionBackdropv-2>.heading {
+  position: absolute;
+  left: 15%;
+  top: 5%;
+  font-size: 1.3em;
+  color: #fff;
+}
+
+.fifthSectionBackdropv-1>.desc,
+.fifthSectionBackdropv-2>.desc {
+  position: absolute;
+  top: 12%;
+  left: 15%;
+  color: #888;
+  width: 80%;
+  flex-wrap: wrap;
+}
+
+.fifthSectionBackdropv-1>.documentContainer,
+.fifthSectionBackdropv-2>.documentContainer {
+  position: absolute;
+  top: 30%;
+  width: 97%;
+  left: 1.5%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
+  background-size: 10px 10px;
+  background-position: -5px -5px;
+  border: 1px solid #555;
+  border-radius: 15px;
+  align-items: center;
+  justify-content: center;
+}
+
+.input__container {
+  position: absolute;
+  top: 10%;
+  left: 0%;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  border-radius: 22px;
+  transition: transform 400ms;
+  display: flex;
+}
+
+
+.input__container>.input__search {
+
+  width: 100%;
+  border-radius: 20px;
+  outline: none;
+  border: none;
+  left: 20%;
+  padding: 8px;
+  position: relative;
+  background: transparent;
+  border: 2px solid #999cff;
+  height: 40px;
+  width: 400px;
+  color: #999cff;
+  font-size: 1.3em;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+
+.input__container>.generateIcon {
+  color: #999cff;
+  padding: 10px 10px;
+  border-radius: 15px;
+  background: #1D202A;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.input__container>.generateIcon>ion-icon {
+  font-size: 1.5em;
+  position: relative;
+
+}
+
+.imageContainer {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 40%;
+  opacity: 1;
+  background-size: cover;
+  border-radius: 20px;
+  gap: 5px;
+  display: flex;
+}
+
+.imageContainer .imagePlaceholder {
+  border: 2pxs;
+}
+
+.imageContainer .imagePlaceholder:nth-child(1) {
+  position: relative;
+  margin-left: 5px;
+  margin-right: 5px;
+  left: 13%;
+  transform: rotate(15deg);
+  width: 150px;
+  height: 150px;
+  border-radius: 25px;
+  box-shadow: inset 0 0 40px #111;
+  background: url(../IMAGES/SAMPLE_PICS/img.jpg);
+  background-size: cover;
+  background-position-x: -60px;
+}
+
+.imageContainer .imagePlaceholder:nth-child(2) {
+  position: relative;
+  margin-left: 20px;
+  margin-right: 10px;
+  width: 170px;
+  height: 170px;
+  left: 5%;
+  transform: rotate(-15deg) scale(0.9);
+  aspect-ratio: 1 / 1;
+  border-radius: 25px;
+  box-shadow: inset 0 0 40px #111;
+  background: url(../IMAGES/SAMPLE_PICS/img_two.jpg);
+  background-size: cover;
+}
+
+.imageContainer .imagePlaceholder:nth-child(3) {
+  position: relative;
+  margin-left: 20px;
+  margin-right: 10px;
+  width: 170px;
+  height: 170px;
+  left: -8%;
+  aspect-ratio: 1 / 1;
+  border-radius: 25px;
+  box-shadow: inset 0 0 40px #111;
+  transform: scale(0.9) rotate(15deg);
+  background: url(../IMAGES/SAMPLE_PICS/img_three.jpg);
+  background-size: cover;
+}
+
+.sixthSection {
+  position: relative;
+  top: 0;
+  height: 500px;
+  width: 100%;
+  background: transparent;
+  border-bottom: 5px solid #1D202A;
+  border-left: 1px solid #1D202A;
+  border-right: 1px solid #1D202A;
+}
+
+
+.sixthSectionBackdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 100%;
+  width: 94%;
+  background: #1D202A;
+  display: flex;
+}
+
+.sixthSectionBackdropv1 {
+  position: absolute;
+  top: 50%;
+  left: 1%;
+  transform: translateY(-50%);
+  border-radius: 25px;
+  height: 95%;
+  width: 60%;
+  background: #030712;
+  border: 1px solid #616678;
+  overflow: hidden;
+}
+
+.sixthSectionBackdropv1>.documentContainer {
+  position: absolute;
+  top: 40%;
+  width: 97%;
+  left: 1.5%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
+  background-size: 10px 10px;
+  backdrop-filter: blur(10px);
+  background-position: -5px -5px;
+  transform: perspective(800px) rotateX(35deg) skewX(5deg) rotateY(0deg);
+  transform-style: preserve-3d;
+  border: 1px solid #555;
+  border-radius: 15px;
+  z-index: 10;
+  box-shadow: inset 0 20px 40px #030712,
+    inset -20px 10px 50px #030712;
+}
+
+.sixthSectionBackdropv1 .blob1 {
+  position: absolute;
+  top: 30%;
+  left: 5%;
+  width: 200px;
+  height: 200px;
+  filter: blur(40px);
+  opacity: 0.4;
+  z-index: -1;
+  /* clip-path: polygon(50% 0%, 80% 10%, 100% 35%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 0% 35%, 20% 10%); */
+  background: #401bc6;
+  border-radius: 50%;
+  transform: rotate(45deg) scale(2);
+  z-index: 1;
+}
+
+.sixthSectionBackdropv1 .blob2 {
+  position: absolute;
+  top: 60%;
+  left: 80%;
+  width: 200px;
+  height: 200px;
+  filter: blur(40px);
+  opacity: 0.4;
+  z-index: -1;
+  /* clip-path: polygon(50% 0%, 80% 10%, 100% 35%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 0% 35%, 20% 10%); */
+  background: #14a634;
+  border-radius: 50%;
+  transform: rotate(45deg) scale(2);
+  z-index: 1;
+}
+
+.sixthSectionBackdropv1>.documentContainer>.imageContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  opacity: 0.7;
+  background: url(../IMAGES/background_canvas.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  border-radius: 20px;
+}
+
+.sixthSectionBackdropv1>.documentIcon {
+  position: absolute;
+  height: 40px;
+  width: 40px;
+  left: 5%;
+  top: 5%;
+  filter: invert(1);
+  background: url(../IMAGES/InkFlow.png);
+  background-size: cover;
+}
+
+.sixthSectionBackdropv1>.heading {
+  position: absolute;
+  left: 15%;
+  top: 5%;
+  font-size: 1.3em;
+  color: #fff;
+}
+
+.sixthSectionBackdropv1>.desc {
+  position: absolute;
+  top: 12%;
+  left: 15%;
+  color: #888;
+  width: 80%;
+  flex-wrap: wrap;
+}
+
+.sixthSectionBackdropv1 .iconsControl {
+  position: absolute;
+  height: 110px;
+  width: 60%;
+  left: 50%;
+  top: 35%;
+  transform: translateX(-50%) scale(1.2);
+  background: transparent;
+  text-align: center;
+
+}
+
+
+.sixthSectionBackdropv1 .iconsControl>.square {
+  font-size: 6em;
+  color: #401bc6;
+  margin-right: 20px;
+}
+
+.sixthSectionBackdropv1 .iconsControl>.circle {
+  font-size: 6em;
+  color: #14a634;
+  margin-right: 20px;
+}
+
+.sixthSectionBackdropv1 .iconsControl>.triangle {
+  font-size: 6em;
+  color: #f15603;
+  margin-right: 20px;
+}
+
+.sixthSectionBackdropv1 .iconsControl>.triangle.shadow {
+  position: absolute;
+  left: 15.5%;
+  filter: blur(10px);
+  font-size: 6em;
+  color: #f15603;
+  margin-right: 20px;
+  text-shadow: 0 0 10px #f15603;
+}
+
+.sixthSectionBackdropv1 .iconsControl>.circle.shadow {
+  position: absolute;
+  left: 39%;
+  filter: blur(10px);
+  font-size: 6em;
+  color: #14a634;
+  margin-right: 20px;
+  text-shadow: 0 0 10px #f15603;
+}
+
+.sixthSectionBackdropv1 .iconsControl>.square.shadow {
+  position: absolute;
+  left: 62%;
+  filter: blur(10px);
+  font-size: 6em;
+  color: #401bc6;
+  margin-right: 20px;
+  text-shadow: 0 0 10px #f15603;
+}
+
+
+.sixthSectionBackdropv2 {
+  position: absolute;
+  top: 50%;
+  left: 62%;
+  transform: translateY(-50%);
+  border-radius: 25px;
+  height: 95%;
+  width: 34%;
+  background: #030712;
+  border: 1px solid #616678;
+  overflow: hidden;
+}
+
+.sixthSectionBackdropv2>.documentContainer {
+  position: absolute;
+  top: 30%;
+  width: 97%;
+  left: 1.5%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
+  background-size: 10px 10px;
+  background-position: -5px -5px;
+  border: 1px solid #555;
+  border-radius: 15px;
+}
+
+.sixthSectionBackdropv2>.documentIcon {
+  position: absolute;
+  height: 50px;
+  width: 60px;
+  left: 3%;
+  top: 5%;
+  filter: invert(0);
+  background: url(../IMAGES/dotted_icon.png);
+  background-size: cover;
+}
+
+.sixthSectionBackdropv2>.heading {
+  position: absolute;
+  left: 18%;
+  top: 5%;
+  font-size: 1.2em;
+  color: #fff;
+}
+
+.sixthSectionBackdropv2>.desc {
+  position: absolute;
+  top: 10%;
+  left: 18%;
+  color: #888;
+  width: 80%;
+  flex-wrap: wrap;
+}
+
+.sixthSectionBackdropv2>.documentContainer>.asciiArtZone {
+  position: absolute;
+  color: #e2bcf4;
+  top: 70%;
+  left: 0%;
+  height: 100%;
+  width: 100%;
+  font-size: 15px;
+  line-height: 1.2;
+  transform: translateY(-50%);
+  /* Center the element */
+  text-align: center;
+  /* Ensure text is centered within the element */
+  background: transparent;
+}
+
+.sixthSectionBackdropv2>.documentContainer>.promptTextBox {
+  position: absolute;
+  top: 5%;
+  left: 10%;
+  width: 80%;
+  height: 80px;
+  background: #1D202A;
+  border: 1px solid #616678;
+  border-radius: 15px;
+  overflow: hidden;
+  padding-left: 10px;
+  padding-right: 5px;
+  color: #ffc;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.sixthSectionBackdropv2>.documentContainer>.promptTextBox::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* for the generate button of the image part */
+
+.flex {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.outer-cont {
+  padding: 12px 20px;
+  width: 90px;
+  height: 28px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  position: relative;
+  background: linear-gradient(90deg, #5bfcc4, #f593e4, #71a4f0);
+  border-radius: 12px;
+  color: #fff;
+  transition: all 0.3s ease;
+  box-shadow:
+    inset 0px 0px 5px #ffffffa9,
+    inset 0px 35px 30px #000,
+    0px 5px 10px #000000cc;
+  text-shadow: 1px 1px 1px #000;
+  top: 32.3%;
+  left: 63%;
+}
+
+.outer-cont::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 12px;
+  filter: blur(0);
+  z-index: -1;
+  box-shadow: none;
+  background: conic-gradient(#00000000 80deg,
+      #40baf7,
+      #f34ad7,
+      #5bfcc4,
+      #00000000 280deg);
+  transition: all 0.3s ease;
+}
+
+.outer-cont:hover::before {
+  filter: blur(15px);
+}
+
+.outer-cont:active::before {
+  filter: blur(5px);
+  transform: translateY(1px);
+}
+
+.outer-cont:active {
+  box-shadow:
+    inset 0px 0px 5px #ffffffa9,
+    inset 0px 35px 30px #000;
+  margin-top: 3px;
+}

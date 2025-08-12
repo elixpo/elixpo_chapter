@@ -1,0 +1,744 @@
+@media (max-width: 400px) {
+
+    /* ---------------------------Header Responsiveness----------------- */
+    .appName {
+        position: absolute;
+        left: 10%;
+        font-size: 1.1rem;
+        font-weight: 700;
+        font-family: "Kanit", serif;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .logo {
+        position: absolute;
+        left: 3%;
+        height: 30px;
+        width: 30px;
+        border-radius: 50%;
+        background: url(../IMAGES/logo.png);
+        background-size: cover;
+    }
+
+    .writeIcon {
+        position: absolute;
+        left: 32%;
+        color: #fff;
+        font-size: 1.1em;
+        cursor: pointer;
+        padding: 3px 5px;
+        background: #10141E;
+        border: 1px solid #7ba8f0;
+        border-radius: 15px;
+    }
+
+    .writeIcon ion-icon {
+        font-size: 0.7em;
+        margin-right: 5px;
+        color: #7ba8f0;
+    }
+
+    .signin {
+        position: absolute;
+        left: 75%;
+        color: #fff;
+        font-size: 1.1em;
+        cursor: pointer;
+    }
+
+    .getStartedBtn {
+        position: absolute;
+        cursor: pointer;
+        left: 53%;
+        font-weight: 100;
+        font-size: 12px;
+        line-height: 21px;
+        text-shadow: 0px 0.5px 0.5px rgba(0, 0, 0, 0.2);
+        padding: 0;
+        margin: 0;
+        appearance: none;
+        border: none;
+        outline: none;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        z-index: 1;
+        border-radius: 12px;
+        color: #fff;
+        background-image: linear-gradient(to bottom,
+                var(--fancy-button-gradient-0) 0%,
+                var(--fancy-button-gradient-50) 50%,
+                var(--fancy-button-gradient-100) 100%);
+        box-shadow:
+            0px 4px 12px rgba(9, 12, 60, 0.15),
+            0px 2px 8px rgba(9, 12, 60, 0.15),
+            0px 1px 3px var(--fancy-button-inner-shadow-top-lg),
+            inset 0px 1px 1px var(--fancy-button-inner-shadow-top),
+            inset 0px -1px 3px var(--fancy-button-inner-shadow-bottom);
+    }
+
+    .getStartedBtn:before,
+    .getStartedBtn:after {
+        content: "";
+        position: absolute;
+        border-radius: inherit;
+        will-change: transform;
+    }
+
+    .getStartedBtn:before {
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--fancy-button-shine-top);
+        width: 96px;
+        height: 6px;
+        top: -3px;
+        opacity: 0.6;
+        filter: blur(6px);
+        transition: opacity 0.25s;
+    }
+
+    .getStartedBtn:after {
+        inset: 0;
+        background-size: cover;
+        z-index: 2;
+        opacity: 0.3;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+    }
+
+    .getStartedBtn span {
+        display: block;
+        padding: 5px 6px;
+        border-radius: inherit;
+        overflow: hidden;
+        position: relative;
+        background-image: linear-gradient(to bottom,
+                var(--fancy-button-shine-top),
+                transparent 8px);
+        background-position: 0 -6px;
+        background-repeat: no-repeat;
+        z-index: 1;
+        font-family: "Kanit", serif;
+        font-weight: 500;
+        font-size: 1.1em;
+    }
+
+    .getStartedBtn span:before,
+    .getStartedBtn span:after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background-color: var(--fancy-button-shine-bottom);
+        transition:
+            opacity 0.25s,
+            transform 0.25s;
+        will-change: transform;
+    }
+
+    .getStartedBtn span:before {
+        width: 92px;
+        height: 8px;
+        bottom: -4px;
+        opacity: 0.75;
+        filter: blur(6px);
+    }
+
+    .getStartedBtn span:after {
+        width: 112px;
+        height: 1px;
+        bottom: 0;
+        opacity: 0.9;
+        filter: blur(1px);
+    }
+
+    .getStartedBtn:hover span:before {
+        opacity: 0.8;
+    }
+
+    .getStartedBtn:hover span:before {
+        transform: translateX(-50%) scale(1.25);
+    }
+
+    .getStartedBtn:hover span:after {
+        opacity: 1;
+    }
+
+    .githubLogo {
+        position: absolute;
+        left: 91%;
+        color: #888;
+        font-size: 1.6em;
+    }
+
+    /* -----------------END OF Header Responsiveness----------------- */
+
+
+    /* ------------------------FIRST SECTION----------------- */
+
+    .innerLayout .firstSection>.descText {
+        position: absolute;
+        top: 50%;
+        left: 4%;
+        right: 2%;
+        transform: translateY(-50%);
+        font-family: "Kanit", serif;
+        font-size: 1.1em;
+        color: #c6c0c091;
+        z-index: 2;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* ------------------------END OF FIRST SECTION----------------- */
+
+    /* ------------------------SECOND SECTION----------------- */
+
+    .secondSection {
+        position: relative;
+        top: 0px;
+        height: 250px;
+        width: 100%;
+        background-color: transparent;
+        border-bottom: 5px solid #1D202A;
+        border-left: 1px solid #1D202A;
+        border-right: 1px solid #1D202A;
+        overflow: hidden;
+        flex-wrap: wrap;
+        z-index: 2;
+    }
+
+    .secondSection .welcomeText {
+        position: absolute;
+        top: 32%;
+        transform: translateY(-50%);
+        left: 4%;
+        width: 90%;
+        line-height: 1.1em;
+        font-family: "Kanit", serif;
+        font-size: 2.5em;
+        font-weight: 500;
+        justify-content: center;
+        text-align: center;
+        color: #f4eaeae6;
+        z-index: 2;
+        backdrop-filter: blur(1px);
+    }
+
+    .secondSection .backgroundImage {
+        position: absolute;
+        left: 90%;
+        height: 100%;
+        aspect-ratio: 1 / 1;
+        transform: scale(1.5);
+        overflow: hidden;
+        background: url(../IMAGES/mainframeDesign.png);
+        opacity: 0.5;
+        background-size: contain;
+        background-repeat: no-repeat;
+        z-index: 1;
+    }
+
+    /* ------------------------END OF SECOND SECTION----------------- */
+
+    /* ------------------------THIRD SECTION----------------- */
+
+    .readBlogsBtn {
+        position: absolute;
+        left: 14%;
+        top: 50%;
+        transform-origin: center;
+        transform: translateY(-50%) scale(1.2);
+        border: none;
+        outline: none;
+        background-color: #3a3a3a;
+        width: 120px;
+        height: 40px;
+        font-size: 18px;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .readBlogsBtn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        width: 106%;
+        height: 130%;
+        z-index: -1;
+        border-radius: inherit;
+        transition: all 0.3s;
+
+    }
+
+    .starGithub {
+        position: absolute;
+        left: 55%;
+        top: 50%;
+        transform-origin: center;
+        transform: translateY(-50%) scale(1.2);
+        border: none;
+        outline: none;
+        background-color: #3a3a3a;
+        width: 120px;
+        height: 40px;
+        font-size: 18px;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .starGithub::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        width: 106%;
+        height: 130%;
+        z-index: -1;
+        border-radius: inherit;
+        transition: all 0.3s;
+    }
+
+    /* ------------------------END OF THIRD SECTION----------------- */
+
+    /* ------------------------FOURTH SECTION----------------- */
+
+    .fourthSectionBackdropv-2>.documentIcon {
+        position: absolute;
+        top: 5%;
+        left: 5%;
+        font-size: 5em;
+        color: #fff;
+        font-weight: 500;
+    }
+
+    .fourthSectionBackdropv-2>.heading {
+        position: absolute;
+        left: 28%;
+        top: 5%;
+        font-size: 1.2em;
+        color: #fff;
+
+    }
+
+    .fourthSectionBackdropv-2>.desc {
+        position: absolute;
+        top: 12%;
+        left: 29%;
+        color: #888;
+        width: 40%;
+        flex-wrap: wrap;
+        font-size: 0.8em;
+        justify-content: center;
+        width: 240px;
+    }
+
+    .terminal {
+        position: absolute;
+        left: 3%;
+        right: 3%;
+        top: 0%;
+        background: #030712;
+        border-radius: 10px;
+        overflow: hidden;
+        width: 330px;
+        margin: 20px auto;
+    }
+
+    .terminal-content>.titleHolder input[type="text"]::placeholder {
+        color: #888;
+        font-size: 1.5em;
+        width: 300px;
+    }
+
+    .terminal-content>.titleHolder>.content {
+        border: none;
+        background: transparent;
+        width: 90%;
+        outline: none;
+        text-indent: 10px;
+        color: #888;
+        font-size: 0.68em;
+        justify-content: center;
+    }
+
+
+    /* ------------------------END OF FOURTH SECTION----------------- */
+
+    /* ------------------------FIFTH SECTION----------------- */
+
+    .fifthSectionBackdropv-1 {
+        position: absolute;
+        top: 50%;
+        left: 1%;
+        right: 1%;
+        transform: translateY(-50%);
+        border-radius: 25px;
+        height: 95%;
+        width: 97%;
+        background: #030712;
+        border: 1px solid #616678;
+        overflow: hidden;
+    }
+
+    .fifthSectionBackdropv-1>.heading {
+        position: absolute;
+        left: 22%;
+        top: 5%;
+        font-size: 1.3em;
+        color: #fff;
+    }
+
+    .fifthSectionBackdropv-1>.desc {
+        position: absolute;
+        top: 13%;
+        left: 23%;
+        color: #888;
+        width: 80%;
+        flex-wrap: wrap;
+        font-size: 0.8em;
+        justify-content: center;
+        width: 240px;
+    }
+
+    .search-container {
+
+        position: absolute;
+        top: 20%;
+        left: 60%;
+        transform: translateX(-50%);
+        margin: 20px auto;
+        height: 50px;
+        width: 400px;
+    }
+
+    .fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.newspaper {
+        position: absolute;
+        display: block;
+        top: 16%;
+        left: 5%;
+        rotate: 25deg;
+        scale: 0.8;
+    }
+
+    .fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.code {
+        position: absolute;
+        display: block;
+        top: 35%;
+        left: 85%;
+        rotate: -25deg;
+        scale: 1.1;
+    }
+
+    .fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.reader {
+        position: absolute;
+        display: block;
+        top: 36%;
+        left: 17%;
+        rotate: -15deg;
+        scale: 0.8;
+    }
+
+    .fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.calculator {
+        position: absolute;
+        display: block;
+        top: 35%;
+        left: 38%;
+        rotate: 15deg;
+        scale: 0.8;
+    }
+
+    .fifthSection>.fifthSectionBackdrop>.fifthSectionBackdropv-1>.documentContainer>.quick-action.translate {
+        position: absolute;
+        display: block;
+        top: 40%;
+        left: 52%;
+        rotate: -15deg;
+        scale: 0.8;
+    }
+
+    .fifthSectionBackdropv-2 {
+        position: absolute;
+        top: 50%;
+        left: 1%;
+        right: 1%;
+        transform: translateY(-50%);
+        border-radius: 25px;
+        height: 95%;
+        width: 97%;
+        background: #030712;
+        border: 1px solid #616678;
+        overflow: hidden;
+    }
+
+    .fifthSectionBackdropv-2>.heading {
+        position: absolute;
+        left: 22%;
+        top: 5%;
+        font-size: 1.3em;
+        color: #fff;
+    }
+
+    .fifthSectionBackdropv-2>.desc {
+        position: absolute;
+        top: 13%;
+        left: 23%;
+        color: #888;
+        width: 80%;
+        flex-wrap: wrap;
+        font-size: 0.8em;
+        justify-content: center;
+        width: 240px;
+    }
+
+    .input__container>.input__search {
+
+        width: 100%;
+        border-radius: 20px;
+        outline: none;
+        border: none;
+        left: 0%;
+        padding: 8px;
+        position: relative;
+        background: transparent;
+        border: 2px solid #999cff;
+        height: 40px;
+        width: 300px;
+        color: #999cff;
+        font-size: 1.3em;
+        z-index: 10;
+        backdrop-filter: blur(2px);
+    }
+
+    .input__container>.generateIcon {
+        color: #999cff;
+        padding: 10px 10px;
+        border-radius: 15px;
+        background: #1D202A;
+        cursor: pointer;
+        z-index: 10;
+        margin-right: 12%;
+    }
+
+    .input__container>.generateIcon>ion-icon {
+        font-size: 1.8em;
+        position: relative;
+    }
+
+    .imageContainer {
+        position: absolute;
+        top: 40%;
+        left: 30%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        height: 10%;
+        opacity: 1;
+        background-size: cover;
+        border-radius: 20px;
+        gap: 5px;
+        display: flex;
+    }
+
+    /* ------------------------END OF FIFTH SECTION----------------- */
+
+    /* ------------------------SIXTH SECTION----------------- */
+
+    .sixthSectionBackdropv1 {
+        position: absolute;
+        top: 50%;
+        left: 1%;
+        right: 1%;
+        transform: translateY(-50%);
+        border-radius: 25px;
+        height: 95%;
+        width: 97%;
+        background: #030712;
+        border: 1px solid #616678;
+        overflow: hidden;
+    }
+
+    .sixthSectionBackdropv1>.documentIcon {
+        position: absolute;
+        height: 40px;
+        width: 40px;
+        left: 5%;
+        top: 10%;
+        filter: invert(1);
+        background: url(../IMAGES/InkFlow.png);
+        background-size: cover;
+    }
+
+    .sixthSectionBackdropv1>.heading {
+        position: absolute;
+        left: 22%;
+        width: 300px;
+        top: 5%;
+        font-size: 1.3em;
+        color: #fff;
+    }
+
+    .sixthSectionBackdropv1>.desc {
+        position: absolute;
+        top: 18%;
+        left: 23%;
+        color: #888;
+        width: 80%;
+        flex-wrap: wrap;
+        font-size: 0.8em;
+        justify-content: center;
+        width: 250px;
+    }
+
+    .sixthSectionBackdropv1>.documentContainer {
+        position: absolute;
+        top: 68%;
+        width: 97%;
+        left: 1.5%;
+        height: 40%;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.171) 1px, transparent 0);
+        background-size: 10px 10px;
+        backdrop-filter: blur(10px);
+        background-position: -5px -5px;
+        transform: perspective(800px) rotateX(35deg) skewX(5deg) rotateY(0deg);
+        transform-style: preserve-3d;
+        border: 1px solid #555;
+        border-radius: 15px;
+        z-index: 10;
+        box-shadow: inset 0 20px 40px #030712,
+            inset -20px 10px 50px #030712;
+    }
+
+    .sixthSectionBackdropv1>.documentContainer>.imageContainer {
+        position: absolute;
+        top: 58%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        height: 90%;
+        opacity: 0.7;
+        background: url(../IMAGES/background_canvas.png);
+        background-repeat: no-repeat;
+        background-size: contain;
+        border-radius: 20px;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl {
+        position: absolute;
+        height: 110px;
+        width: 80%;
+        left: 50%;
+        top: 35%;
+        transform: translateX(-50%) scale(1.2);
+        background: transparent;
+        text-align: center;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.triangle {
+        font-size: 5em;
+        color: #f15603;
+        margin-right: 50px;
+        margin-left: 50px;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.triangle.shadow {
+        position: absolute;
+        left: 15%;
+        filter: blur(10px);
+        font-size: 6em;
+        color: #f15603;
+        margin-right: 50px;
+        text-shadow: 0 0 10px #f15603;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.circle {
+        font-size: 5em;
+        color: #14a634;
+        margin-left: 20px;
+        margin-bottom: 60px;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.circle.shadow {
+        position: absolute;
+        left: 6%;
+        filter: blur(10px);
+        font-size: 6em;
+        color: #14a634;
+        margin-right: 20px;
+        text-shadow: 0 0 10px #f15603;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.square {
+        font-size: 5em;
+        color: #401bc6;
+        margin-right: 20px;
+        margin-bottom: 60px;
+    }
+
+    .sixthSectionBackdropv1 .iconsControl>.square.shadow {
+        position: absolute;
+        left: 50%;
+        filter: blur(10px);
+        font-size: 6em;
+        color: #401bc6;
+        margin-right: 20px;
+        text-shadow: 0 0 10px #f15603;
+    }
+
+    .sixthSectionBackdropv2 {
+        position: absolute;
+        top: 50%;
+        left: 1%;
+        right: 1%;
+        transform: translateY(-50%);
+        border-radius: 25px;
+        height: 95%;
+        width: 97%;
+        background: #030712;
+        border: 1px solid #616678;
+        overflow: hidden;
+    }
+
+    .sixthSectionBackdropv2>.heading {
+        position: absolute;
+        left: 22%;
+        top: 5%;
+        font-size: 1.2em;
+        color: #fff;
+    }
+
+    .sixthSectionBackdropv2>.desc {
+        position: absolute;
+        top: 17%;
+        left: 23%;
+        color: #888;
+        width: 80%;
+        flex-wrap: wrap;
+        font-size: 0.8em;
+        justify-content: center;
+        width: 280px;
+    }
+
+    /* ------------------------END OF SIXTH SECTION----------------- */
+
+}

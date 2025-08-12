@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>DailyPost - Account</title>
+    <link rel='stylesheet' href='../CSS/Account/Account.css'>
+    <link rel='stylesheet' href='../CSS/Responsive.css'>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/flaticon@latest/css/flaticon.css'>
+    <script type='module' src='https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js'></script>
+    <script nomodule src='https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js'></script>
+    <link rel="icon" type="image/x-icon" href="../IMAGES/Community/Favicon.png">
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <a href="#" class="menu-item active">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+                    fill="currentColor" />
+            </svg>
+            Account
+        </a>
+        <a href="#" class="menu-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z"
+                    fill="currentColor" />
+            </svg>
+            Notifications
+        </a>
+        <a href="#" class="menu-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M21 18V19C21 20.1 20.1 21 19 21H5C3.89 21 3 20.1 3 19V5C3 3.9 3.89 3 5 3H19C20.1 3 21 3.9 21 5V6H12C10.89 6 10 6.9 10 8V16C10 17.1 10.89 18 12 18H21ZM12 16H22V8H12V16ZM16 13.5C15.17 13.5 14.5 12.83 14.5 12C14.5 11.17 15.17 10.5 16 10.5C16.83 10.5 17.5 11.17 17.5 12C17.5 12.83 16.83 13.5 16 13.5Z"
+                    fill="currentColor" />
+            </svg>
+            Wallets
+        </a>
+        <a href="#" class="menu-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M21 3H3C1.9 3 1 3.9 1 5V19C1 20.1 1.9 21 3 21H21C22.1 21 23 20.1 23 19V5C23 3.9 22.1 3 21 3ZM21 19H3V5H13V9H21V19Z"
+                    fill="currentColor" />
+            </svg>
+            Beta
+        </a>
+        <a href="#" class="menu-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15 8H9V6C9 4.34 10.34 3 12 3C13.66 3 15 4.34 15 6V8Z"
+                    fill="currentColor" />
+            </svg>
+            Security
+        </a>
+
+        <div class="divider"></div>
+
+        <a href="#" class="menu-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+                    fill="currentColor" />
+            </svg>
+            Log out
+        </a>
+    </div>
+
+    <div class="content">
+        <div class="card profile-card">
+            <div class="header-row">
+                <h2>Profile</h2>
+                <a href="../Community/index.html" class="back-to-home">
+                    <i class="bi bi-house-fill"></i>
+                </a>
+            </div>
+            <p class="subtitle">Your profile settings and privacy preferences</p>
+
+            <div class="profile-container">
+                <div class="profile-logo">
+                    <img id="profileImage" src="../IMAGES/Account/default-avatar.png" alt="Profile">
+                    <div class="upload-overlay">
+                        <label for="imageUpload">
+                            <i class="bi bi-camera-fill"></i>
+                        </label>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="hide-profile">
+                <label for="hide-profile">Hide my DailyPost profile from public view</label>
+            </div>
+
+            <div class="flex-row">
+                <input type="text" class="input-field" value="vivekdesigner" style="flex: 1; margin-right: 10px;">
+                <button class="button">Change username</button>
+            </div>
+
+            <div class="flex-row" style="margin-top: 15px;">
+                <input type="email" class="input-field" value="vivekdesigner200@gmail.com"
+                    style="flex: 1; margin-right: 10px;">
+                <button class="button">Change email</button>
+            </div>
+        </div>
+
+        <div class="card linked-accounts-card">
+            <h2>Link accounts</h2>
+            <p class="subtitle">Link your Google, GitHub, LinkedIn and Discord accounts to DailyPost</p>
+
+            <div class="linked-account">
+                <div class="account-info">
+                    <img src="../IMAGES/Account/google.png" alt="Google Logo">
+                    <div>
+                        <div class="account-name">Vivek Yadav</div>
+                        <div class="account-email">vivekdesigner200@gmail.com</div>
+                    </div>
+                </div>
+                <button class="button secondary">Unlink</button>
+            </div>
+
+            <div class="linked-account">
+                <div class="account-info">
+                    <img src="../IMAGES/Account/github.png" alt="GitHub Logo">
+                    <div>
+                        <div class="account-name">Link Your Account with Github</div>
+                        <div class="account-email">github.com</div>
+                    </div>
+                </div>
+                <button class="button secondary">Link</button>
+            </div>
+
+            <div class="linked-account">
+                <div class="account-info">
+                    <img src="../IMAGES/Account/linkedin.png" alt="LinkedIn Logo">
+                    <div>
+                        <div class="account-name">Link Your Account With LinkedIn</div>
+                        <div class="account-email">linkedin.in</div>
+                    </div>
+                </div>
+                <button class="button secondary">Link</button>
+            </div>
+        </div>
+
+        <div class="card notification-section" style="display: none;">
+            <h2>Notifications</h2>
+            <p class="subtitle">Manage your notification preferences</p>
+
+            <div class="notification-list">
+                <div class="notification-item unread">
+                    <div class="notification-icon">
+                        <i class="bi bi-bell-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>New Feature Available</h3>
+                        <p>Check out our new beta features in the Beta tab!</p>
+                        <span class="notification-time">2 hours ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="mark-read"><i class="bi bi-check2-all"></i></button>
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>Security Update</h3>
+                        <p>Your account security was automatically enhanced</p>
+                        <span class="notification-time">1 day ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="notification-item unread">
+                    <div class="notification-icon">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>Premium Features Unlocked</h3>
+                        <p>You now have access to all premium features for the next 30 days!</p>
+                        <span class="notification-time">1 day ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="mark-read"><i class="bi bi-check2-all"></i></button>
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>Community Milestone</h3>
+                        <p>Your post reached 1000+ views! Keep up the great work.</p>
+                        <span class="notification-time">2 days ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="bi bi-heart-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>Content Appreciation</h3>
+                        <p>Your recent post received 50+ likes</p>
+                        <span class="notification-time">3 days ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="bi bi-award-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h3>Achievement Unlocked</h3>
+                        <p>Congratulations! You've earned the "Consistent Creator" badge.</p>
+                        <span class="notification-time">1 week ago</span>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="delete-notification"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-settings">
+                <h3>Notification Settings</h3>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" checked> Email notifications
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" checked> Push notifications
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card wallet-section" style="display: none;">
+            <h2>Wallets</h2>
+            <p class="subtitle">Manage your payment methods and transactions</p>
+
+            <div class="wallet-balance">
+                <h3>Total Balance</h3>
+                <div class="balance">$2,459.50</div>
+                <button class="button">Add Money</button>
+            </div>
+
+            <div class="wallet-cards">
+                <div class="payment-card">
+                    <div class="card-type"><i class="bi bi-credit-card-fill"></i> Credit Card</div>
+                    <div class="card-number">**** **** **** 4242</div>
+                    <div class="card-info">
+                        <span>Expires 12/25</span>
+                        <button class="button secondary small">Remove</button>
+                    </div>
+                </div>
+
+                <button class="add-card-button">
+                    <i class="bi bi-plus-lg"></i>
+                    Add New Card
+                </button>
+            </div>
+
+            <div class="recent-transactions">
+                <h3>Recent Transactions</h3>
+                <div class="transaction-list">
+                    <div class="transaction-item">
+                        <i class="bi bi-arrow-down-circle-fill income"></i>
+                        <div class="transaction-details">
+                            <h4>Money Added</h4>
+                            <span>Oct 15, 2023</span>
+                        </div>
+                        <div class="transaction-amount income">+$500.00</div>
+                    </div>
+
+                    <div class="transaction-item">
+                        <i class="bi bi-arrow-up-circle-fill expense"></i>
+                        <div class="transaction-details">
+                            <h4>Premium Subscription</h4>
+                            <span>Oct 10, 2023</span>
+                        </div>
+                        <div class="transaction-amount expense">-$49.99</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card beta-section" style="display: none;">
+            <h2>Beta Features</h2>
+            <p class="subtitle">Try out our newest features before they're released</p>
+
+            <div class="beta-features">
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <i class="bi bi-lightning-fill"></i>
+                        <span class="beta-tag">BETA</span>
+                    </div>
+                    <h3>AI Writing Assistant</h3>
+                    <p>Get smart writing suggestions powered by AI</p>
+                    <button class="button">Try Now</button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <i class="bi bi-graph-up"></i>
+                        <span class="beta-tag">BETA</span>
+                    </div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Deep insights into your content performance</p>
+                    <button class="button">Try Now</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card security-section" style="display: none;">
+            <h2>Security Settings</h2>
+            <p class="subtitle">Manage your account security and privacy</p>
+
+            <div class="security-options">
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <div>
+                            <h3>Two-Factor Authentication</h3>
+                            <p>Add an extra layer of security to your account</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="bi bi-key-fill"></i>
+                        <div>
+                            <h3>Change Password</h3>
+                            <p>Last changed 3 months ago</p>
+                        </div>
+                    </div>
+                    <button class="button secondary">Update</button>
+                </div>
+
+                <div class="security-item">
+                    <div class="security-info">
+                        <i class="bi bi-activity"></i>
+                        <div>
+                            <h3>Login Activity</h3>
+                            <p>Monitor your account access</p>
+                        </div>
+                    </div>
+                    <button class="button secondary">View Log</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card logout-section" style="display: none;">
+            <h2>Account Management</h2>
+            <p class="subtitle">Manage your account settings and logout options</p>
+
+            <div class="logout-options">
+                <div class="logout-action">
+                    <div class="action-info">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <div>
+                            <h3>Logout from Account</h3>
+                            <p>Sign out from your current session</p>
+                        </div>
+                    </div>
+                    <button class="button">Logout</button>
+                </div>
+
+                <div class="divider-line"></div>
+
+                <div class="danger-zone">
+                    <h3>Danger Zone</h3>
+                    <div class="delete-action">
+                        <div class="action-info">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>
+                                <h3>Delete Account</h3>
+                                <p>Permanently delete your account and all data</p>
+                            </div>
+                        </div>
+                        <button class="button delete-btn" id="deleteAccountBtn">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src='../JS/Account/Account.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'></script>
+</body>
+
+</html>
+
+
+
