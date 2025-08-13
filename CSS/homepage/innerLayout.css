@@ -70,7 +70,7 @@
   aspect-ratio: 1 / 1;
   transform: scale(1.5);
   overflow: hidden;
-  background: url(../IMAGES/mainframeDesign.png);
+  background: url(../../IMAGES/mainframeDesign.png);
   opacity: 0.5;
   background-size: contain;
   background-repeat: no-repeat;
@@ -708,7 +708,7 @@
   height: 150px;
   border-radius: 25px;
   box-shadow: inset 0 0 40px #111;
-  background: url(../IMAGES/SAMPLE_PICS/img.jpg);
+  background: url(../../IMAGES/SAMPLE_PICS/img.jpg);
   background-size: cover;
   background-position-x: -60px;
 }
@@ -724,7 +724,7 @@
   aspect-ratio: 1 / 1;
   border-radius: 25px;
   box-shadow: inset 0 0 40px #111;
-  background: url(../IMAGES/SAMPLE_PICS/img_two.jpg);
+  background: url(../../IMAGES/SAMPLE_PICS/img_two.jpg);
   background-size: cover;
 }
 
@@ -739,7 +739,7 @@
   border-radius: 25px;
   box-shadow: inset 0 0 40px #111;
   transform: scale(0.9) rotate(15deg);
-  background: url(../IMAGES/SAMPLE_PICS/img_three.jpg);
+  background: url(../../IMAGES/SAMPLE_PICS/img_three.jpg);
   background-size: cover;
 }
 
@@ -838,7 +838,7 @@
   width: 90%;
   height: 90%;
   opacity: 0.7;
-  background: url(../IMAGES/background_canvas.png);
+  background: url(../../IMAGES/background_canvas.png);
   background-repeat: no-repeat;
   background-size: contain;
   border-radius: 20px;
@@ -851,7 +851,7 @@
   left: 5%;
   top: 5%;
   filter: invert(1);
-  background: url(../IMAGES/InkFlow.png);
+  background: url(../../IMAGES/InkFlow.png);
   background-size: cover;
 }
 
@@ -967,7 +967,7 @@
   left: 3%;
   top: 5%;
   filter: invert(0);
-  background: url(../IMAGES/dotted_icon.png);
+  background: url(../../IMAGES/dotted_icon.png);
   background-size: cover;
 }
 
