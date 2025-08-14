@@ -7,7 +7,7 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../CSS/Settings/settings.css">
+    <link rel="stylesheet" href="../CSS/Profile/profile.css">
     <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png">
 </head>
 <body>
@@ -61,62 +61,30 @@
                 </div>
             </div>
 
-            <div class="settingsControl w-[80%] h-full max-h-[calc(100vh-80px)] overflow-y-auto bg-[#030712] px-10 box-border flex flex-col items-start">
-                <div class="settingsHeader w-full h-[30%] flex flex-row items-center ">
-                    <h1 class="text-white text-[4em] my-auto font-bold">Settings</h1>
+            <div class="authorSection w-[80%] h-full bg-[#10141E] px-10 box-border flex flex-col ">
+                <div class="authorMedia relative w-full h-[200px] mt-10 box-border flex items-center justify-center">
+                    <div class="authorBanner h-[200px] w-full bg-[url('../CSS/IMAGES/SAMPLE_PICS/img_two.jpg')] bg-cover bg-center rounded-[12px]"></div>
+                    <div class="authorImage absolute left-[5%] top-[50%] h-[170px] w-[170px] bg-[url('../CSS/IMAGES/SAMPLE_PICS/img_three.jpg')] bg-cover bg-center rounded-full border-[6px] border-[#10141E]"></div>
                 </div>
 
-                <div class="settingsNav flex flex-row w-full h-[10%] items-center justify-left gap-10 mt-2 border-b-2 border-[#1D202A]">
-                    <p class="settingsNavItem text-[#888] text-lg selected underline cursor-pointer select-none">Account</p>
-                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Publisher</p>
-                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Notification</p>
-                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Organisation</p>
+                <div class="authorName flex flex-row mt-10 gap-5 items-center">
+                    <p class="text-white text-[2em] font-bold mt-5">Ayushman Bhattacharya</p>
+                    <p class="text-[#888] text-[1.2em] font-medium mt-5">He/Him</p>
                 </div>
 
-                <div class="accountSettings flex flex-col w-full mt-10 gap-5">
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Email</p>
-                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">user@example.com</p>
+                <div class="authorBio flex flex-col gap-2">
+                    <p class="text-[#deeae3] text-[1em] font-medium mt-2">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nostrum dignissimos repudiandae aliquam nobis magni aspernatur, dolorum molestiae delectus nihil officiis aut odit repellat quidem pariatur doloribus dolore inventore illum cupiditate.</p>
+                    <div class="followerStats flex flex-row gap-5 items-center">
+                        <p class="text-[#888] text-[1em] font-medium">Followers: 100</p>
+                        <div class="spacer h-[90%] w-[2px] bg-[#888]"></div>
+                        <p class="text-[#888] text-[1em] font-medium">Following: 50</p>
                     </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Subdomain</p>
-                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">@elixpo</p>
-                    </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Pronoun</p>
-                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">he/him</p>
-                    </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Author Name</p>
-                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">Ayushman</p>
-                    </div>
-                    <div class="settingBox flex flex-col justify-between w-full">
-                        <p class="text-white text-lg select-none">Bio</p>
-                        <textarea class="text-[#888] bg-[#10141E] border border-[#1D202A] mt-5 rounded-lg p-3 text-lg resize-none focus:outline-none focus:border-[#7ba8f0] transition-colors duration-200" rows="4" placeholder="Enter your bio...">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</textarea>
-                        <p class="saveNotif text-[#04db5d] select-none">Changes saved!</p>
-                    </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">LixBlogs Digest</p>
-                        <div class="freq flex flex-row gap-5">
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Daily </span></p>
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Weekly </span></p>
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Monthly </span></p>
-                        </div>
-                    </div>
-
-
-                    <div class="settingBox flex flex-row justify-between w-full mt-10">
-                        <p class="text-red-600 text-lg select-none cursor-pointer hover:text-red-500">Delete Account</p>
-                    </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-red-600 text-lg cursor-pointer hover:text-red-500">Disable Account</p>
-                    </div>
-
                 </div>
+            </div>
+
+            </div>
         </section>
-
-        
-        </div>
     </div>
+</div>
 </body>
 </html>
