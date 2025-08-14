@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - LixBlogs </title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../../../CSS/Settings/settings.css">
+    <link rel="icon" type="image/x-icon" href="../../../IMAGES/logo.png">
+</head>
+<body>
+    <div class="container absolute flex flex-col h-full max-w-[1440px] bg-[#030712] box-border">
+        <section class="w-full h-[60px]">
+            <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
+                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../IMAGES/logo.png')] bg-cover"></div>
+                <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
+                <div class="absolute left-[80%] text-white text-[1.3em] cursor-pointer px-2.5 py-1.5 bg-[#10141E] border border-[#7ba8f0] rounded-[15px] flex items-center">
+                    <ion-icon name="pencil" class="text-[0.8em] mr-1 text-[#7ba8f0]"></ion-icon>
+                    Write
+                </div>
+                <div class="absolute left-[88%] text-white text-[1.3em] cursor-pointer">Sign-In</div>
+                <ion-icon name="logo-github" class="githubLogo absolute left-[95%] text-[#888] text-2xl"></ion-icon>
+            </div>
+        </section>
+        <div class="settingsSection flex flex-row h-full w-full h-full box-border">
+
+        <section class="relative flex flex-row h-full w-full box-border border-t-2 border-[#1D202A]">
+            <div class="profileInformation w-[20%] h-full bg-[#10141E] px-5 box-border flex flex-col items-center">
+                <div class="profileControlButtons flex-col w-full mt-5 py-10 box-border">
+                    <div class="controlButton selected relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 box-border cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="home-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Home</p>
+                    </div>
+                <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="bookmark-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Library</p>
+                    </div>
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-15 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="person-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Profile</p>
+                    </div>
+
+
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mt-20 mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="book-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Stories</p>
+                    </div>
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="stats-chart-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Stats</p>
+                    </div>
+
+
+                    <div class="userInfo flex items-center gap-2 w-full h-[50px] px-3 rounded-[12px] bg-[#10141E] shadow-[6px_6px_12px_#0b0e16,-6px_-6px_12px_#171c28]">
+                        <div class="userLogo flex-shrink-0 h-[35px] w-[35px] rounded-full bg-[#888] shadow-[inset_3px_3px_6px_#777,inset_-3px_-3px_6px_#999]"></div>
+                        <span class="text-white text-lg font-medium cursor-pointer userOrganization truncate">Ayushman Bhattacharya</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="settingsControl w-[80%] h-full max-h-[calc(100vh-80px)] overflow-y-auto bg-[#030712] px-10 box-border flex flex-col items-start">
+                <div class="settingsHeader w-full h-[30%] flex flex-row items-center ">
+                    <h1 class="text-white text-[4em] my-auto font-bold">Settings</h1>
+                </div>
+
+                <div class="settingsNav flex flex-row w-full h-[10%] items-center justify-left gap-10 mt-2 border-b-2 border-[#1D202A]">
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Account</p>
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer selected underline  select-none">Publisher</p>
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Notification</p>
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Organisation</p>
+                </div>
+
+                <div class="publisherSettings flex flex-col w-full mt-10 gap-5">
+
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Allow users to comment?</p>
+                        <div class="freq flex flex-row gap-5">
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Yes </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Nope </span></p>
+                        </div>
+                    </div>
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Allow users to tag you in their posts?</p>
+                        <div class="freq flex flex-row gap-5">
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Yes </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Nope </span></p>
+                        </div>
+                    </div>
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Allow email replies?</p>
+                        <div class="freq flex flex-row gap-5">
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Yes </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Nope </span></p>
+                        </div>
+                    </div>
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Default Reply Email Address</p>
+                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">user@example.com</p>
+                    </div>
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Publisher Visibility</p>
+                        <div class="freq flex flex-row gap-5">
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Public </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Private </span></p>
+                        </div>
+                    </div>
+                    <div class="settingBox flex flex-row justify-between w-full">
+                        <p class="text-white text-lg select-none">Publisher Verification</p>
+                        <div class="freq flex flex-row gap-5">
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Verified <ion-icon name="shield-checkmark" class="relative mt-2"></ion-icon> </span></p>
+                        </div>
+                    </div>
+                </div>
+        </section>
+
+        
+        </div>
+    </div>
+</body>
+</html>
