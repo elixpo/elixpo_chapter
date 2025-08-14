@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.32.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "connect-history-api-fallback": "^2.0.0",
+    "lite-server": "^2.6.1"
+  },
+  "scripts": {
+    "frontend": "lite-server",
+    "backend": "node api/iconsFetcher.js",
+    "backend:dev": "nodemon api/iconsFetcher.js",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend\"",
+    "start": "node api/iconsFetcher.js",
+    "build": "echo 'No build step needed for static frontend'"
+  }
+}
