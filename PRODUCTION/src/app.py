@@ -175,6 +175,8 @@ async def startup():
 
 @app.route("/search/sse", methods=["POST", "GET"])
 async def search_sse(forwarded_data=None):
+    import time
+
     if forwarded_data is not None:
         data = forwarded_data
     elif request.method == "GET":
@@ -187,6 +189,11 @@ async def search_sse(forwarded_data=None):
         data = await request.get_json(force=True, silent=True) or {}
 
     user_query, user_image, _ = extract_query_and_image(data)
+
+    # OpenAI-style chunking fields
+    chat_id = f"chatcmpl-{uuid.uuid4()}"
+    created = int(time.time())
+    model_name = "elixposearch"
 
     request_id = f"sse-{uuid.uuid4().hex[:8]}"
     event_id = f"elixpo-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
@@ -206,6 +213,7 @@ async def search_sse(forwarded_data=None):
                 "start_time": time.time()
             }
 
+            first_chunk = True
             async with processing_semaphore:
                 async for chunk in run_elixposearch_pipeline(user_query, user_image, event_id):
                     lines = chunk.splitlines()
@@ -220,12 +228,46 @@ async def search_sse(forwarded_data=None):
 
                     data_text = "\n".join(data_lines)
                     if data_text:
-                        json_data = {
-                            "choices": [{"delta": {"content": data_text}}]
+                        # OpenAI streaming chunk format
+                        chunk_obj = {
+                            "id": chat_id,
+                            "object": "chat.completion.chunk",
+                            "created": created,
+                            "model": model_name,
+                            "choices": [{
+                                "index": 0,
+                                "delta": {},
+                                "logprobs": None,
+                                "finish_reason": None
+                            }]
                         }
-                        yield f"data: {json.dumps(json_data)}\n\n"
+                        if first_chunk:
+                            chunk_obj["choices"][0]["delta"]["role"] = "assistant"
+                            first_chunk = False
+                            # Send initial role chunk (content empty)
+                            yield f"data: {json.dumps(chunk_obj)}\n\n"
+                            # Now send the actual content chunk
+                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
+                        else:
+                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
+                        yield f"data: {json.dumps(chunk_obj)}\n\n"
 
                     if event_type == "final":
+                        # Send finish_reason chunk
+                        finish_obj = {
+                            "id": chat_id,
+                            "object": "chat.completion.chunk",
+                            "created": created,
+                            "model": model_name,
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"content": ""},
+                                "logprobs": None,
+                                "finish_reason": "stop",
+                                "stop_reason": None
+                            }]
+                        }
+                        yield f"data: {json.dumps(finish_obj)}\n\n"
                         break
 
                     await asyncio.sleep(0.01)
@@ -240,7 +282,6 @@ async def search_sse(forwarded_data=None):
             global_stats["successful_requests"] += 1
 
     return Response(event_stream(), content_type="text/event-stream")
-
 
 @app.route('/search', methods=['GET', 'POST'])
 @app.route('/search/<path:anything>', methods=['GET', 'POST'])
@@ -258,7 +299,7 @@ async def search_json(anything=None):
         data = await request.get_json(force=True, silent=True) or {}
         stream_flag = data.get("stream", False)
 
-    user_query, user_image, is_openai_chat = extract_query_and_image(data)
+    user_query, user_image, _ = extract_query_and_image(data)
 
     if stream_flag:
         # Forward to SSE
@@ -267,11 +308,11 @@ async def search_json(anything=None):
             "image": user_image,
             "stream": True
         }
-
         return await search_sse(forwarded_data=sse_data)
+
     if user_image == "__MULTIPLE_IMAGES__":
         return jsonify({"error": "Only one image can be processed per request. Please submit a single image."}), 400
-    
+
     if not user_query and not user_image:
         return jsonify({"error": "Missing query or image"}), 400
 
@@ -293,11 +334,17 @@ async def search_json(anything=None):
         final_response = f"Error: {e}"
         app.logger.error(f"Request {request_id} failed: {e}")
 
-    if is_openai_chat:
-        return jsonify([{"message": {"role": "assistant", "content": final_response}}])
-    else:
-        return jsonify({"result": final_response})
-
+    # Always return OpenAI-style response
+    return jsonify({
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": final_response
+                }
+            }
+        ]
+    })
 
 @app.route("/status", methods=["GET"])
 async def status():
