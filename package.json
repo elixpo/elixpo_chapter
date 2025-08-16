@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "nodemon": "^3.1.10",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.32.0"
   },
@@ -13,7 +14,7 @@
     "frontend": "lite-server",
     "backend": "node api/iconsFetcher.js",
     "backend:dev": "nodemon api/iconsFetcher.js",
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend\"",
+    "dev": "concurrently \"npm run frontend\"",
     "start": "node api/iconsFetcher.js",
     "build": "echo 'No build step needed for static frontend'"
   }
