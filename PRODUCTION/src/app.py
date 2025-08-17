@@ -412,7 +412,7 @@ async def health():
 
 if __name__ == "__main__":
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = ["0.0.0.0:3000"]
     config.use_reloader = False
     config.workers = 1
     config.backlog = 1000  
