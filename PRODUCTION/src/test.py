@@ -1,4 +1,8 @@
 import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 url = "https://search.pollinations.ai/search"
 text_query = "when was this company founded? what are the latest news of this company"  
@@ -20,7 +24,7 @@ payload = {
     ],
     "stream": False,
     "model": "elixposearch",
-    "token" : "fEWo70t94146ZYgk",
+    "token": os.getenv("TOKEN"),
 }
 
 response = requests.post(url, json=payload)

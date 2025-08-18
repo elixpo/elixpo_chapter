@@ -1,7 +1,8 @@
 import requests
 import base64
 import asyncio
-
+from dotenv import load_dotenv
+import os
 import requests
 
 async def generate_prompt_from_image(imgURL: str) -> str:
@@ -38,7 +39,7 @@ async def generate_prompt_from_image(imgURL: str) -> str:
                 ]
             }
         ],
-        "token": "fEWo70t94146ZYgk",
+        "token": os.getenv("TOKEN"),
         "max_tokens": 50
     }
 
@@ -86,7 +87,7 @@ async def replyFromImage(imgURL: str, query: str) -> str:
                 ]
             }
         ],
-        "token": "fEWo70t94146ZYgk",
+        "token": os.getenv("TOKEN")
     }
 
     response = requests.post(api_url, headers=headers, json=data)
