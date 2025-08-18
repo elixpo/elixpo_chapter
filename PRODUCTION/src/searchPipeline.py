@@ -515,7 +515,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         logger.warning(f"Unknown tool called: {function_name}")
 
                 except Exception as e:
-                    tool_result = f"[ERROR] Tool {function_name} failed: {type(e).__name__}: {e}"
+                    tool_result = f"[ERROR] Oppsie!! {type(e).__name__}: {e}"
                     logger.error(f"Error executing tool {function_name}: {e}", exc_info=True)
                 
                 tool_outputs.append({
