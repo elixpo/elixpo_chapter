@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - LixBlogs</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../../../CSS/auth/login.css">
+    <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/logo.png">
+</head>
+<body class="bg-[#030712] min-h-screen flex items-stretch font-[Kanit,serif]">
+    <div class="w-full md:w-1/2 flex flex-col justify-center px-10 py-12 bg-[#10141E]">
+        <div class="flex flex-col max-w-md w-full mx-auto">
+            <div class="flex items-center mb-10">
+                <div class="h-12 w-12 rounded-full bg-[url('../../../CSS/IMAGES/logo.png')] bg-cover mr-3"></div>
+            </div>
+
+            <form class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="name">Full Name</label>
+                    <input id="name" autocomplete="off" spellcheck="false" type="text" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div>
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="email">Email address</label>
+                    <input id="email" autocomplete="off" spellcheck="false" type="email" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div>
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="password">Password</label>
+                    <input id="password" autocomplete="off" spellcheck="false" type="password" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div>
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="confirm-password">Confirm Password</label>
+                    <input id="confirm-password" autocomplete="off" spellcheck="false" type="password" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div class="flex items-center justify-between text-sm mt-2">
+                    <a href="../login/index.html" class="text-[#7ba8f0] text-[1.1em] font-bold hover:underline">Already have an account?</a>
+                </div>
+                <button type="submit" class="mt-4 px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-lg rounded-full font-semibold shadow transition-all duration-200">
+                    <span> Sign up </span>
+                </button>
+            </form>
+            <div class="flex items-center my-6">
+                <div class="flex-grow border-t border-[#1D202A]"></div>
+                <span class="mx-4 text-[#888] text-[1em] font-bold">Or continue with</span>
+                <div class="flex-grow border-t border-[#1D202A]"></div>
+            </div>
+            <div class="flex gap-4">
+                <button class="flex items-center justify-center gap-2 w-1/2 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] hover:bg-[#23395d] transition">
+                    <ion-icon name="logo-google" class="text-xl text-[#ff0000]"></ion-icon>
+                    <span> Google </span>
+                </button>
+                <button class="flex items-center justify-center gap-2 w-1/2 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] hover:bg-[#23395d] transition">
+                    <ion-icon name="logo-github" class="text-xl text-[#888]"></ion-icon>
+                    <span> GitHub </span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="hidden md:block w-1/2 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80');"></div>
+</body>
+</html>
