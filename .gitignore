@@ -6,3 +6,6 @@ playwright_user_data/
 /PRODUCTION/src/__pycache__'
 searchenv/
 PRODUCTION/k8s/secret.yaml
+/PRODUCTION/src/__pycache__
+__pycache__/
+*.pyc
