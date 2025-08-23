@@ -37,8 +37,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if event_id:
             return format_sse(event_type, message)
         return None
-    
-    initial_event = emit_event("INFO", " Initiating Pipeline ")
+
+    initial_event = emit_event("INFO", " <TASK>Decomposing Request</TASK>")
     if initial_event:
         yield initial_event
     
@@ -60,21 +60,36 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         {
         "role": "system",
         "content": f"""
-        Mission: Answer the user's query with reliable, well-researched, and well-explained information.
-        CRITICAL: Answer directly if you know the answer (basic facts, math, general knowledge) — no tools needed.
-        Use tools only when:
-        - Query needs recent info (news, stocks, weather, etc.)
-        - Don't query more than 3 times in case of a web_search type on the same topic!
-        - Current political leaders or officeholders are mentioned
-        - Explicit web research or sources are requested
+        Mission: Provide comprehensive, detailed, and well-researched answers that synthesize ALL gathered information into rich content.
+        
+        CRITICAL CONTENT REQUIREMENTS:
+        - Write detailed, substantive responses (minimum 400-600 words for substantial topics)
+        - SYNTHESIZE information from all tools into the main answer content
+        - Include specific facts, data, statistics, examples from your research
+        - Structure responses with clear sections and detailed explanations
+        - The main content should be 80% of your response, sources only 20%
+        - Time Context if needed use this information to resolve any time related queries: {current_utc_time}
+        - Mention time of the respective location if user query is time related.
+
+        RESPONSE PRIORITY ORDER:
+        1. **Comprehensive Main Answer** (most important - detailed analysis)
+        2. **Supporting Details & Context** (from research findings)  
+        3. **Images** (when applicable)
+        4. **Sources** (minimal, at the end)
+        
+        USE TOOLS STRATEGICALLY:
+        Answer directly if you know the answer (basic facts, math, general knowledge) — no tools needed.
+        Use tools when:
+        - Query needs recent info (weather, news, stocks, etc.)
+        - Current events or time-sensitive information
         - User provides an image
-        - Info is time-sensitive or implied to be current
-        - Queries imply trends, context, or freshness, even without trigger words
-        Always infer user intent — don't wait for "now" or "current".
-        ---
+        - Explicit research requested
+        
+        When you use tools, INTEGRATE the results into your main response content, don't just list sources.
+        
         Available Tools:
         - cleanQuery(query: str)
-        - web_search(query: str)
+        - web_search(query: str) - Don't query more than 2 times on same topic
         - fetch_full_text(url: str)
         - get_youtube_metadata(url: str)
         - get_youtube_transcript(url: str)
@@ -82,59 +97,20 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         - generate_prompt_from_image(imgURL: str)
         - replyFromImage(imgURL: str, query: str)
         - image_search(image_query: str, max_images=10)
-        ---
-        Context:
-        - Use system UTC internally only.
-        - When asked, give accurate local time in a clear format 
-        - Never expose UTC or internal data.
-        {current_utc_time}
-        - Use local_time() to get the context of time for the queries related to web_search
-        ---
-        IMAGE HANDLING RULES:
-        1. Text Query ONLY (No Image):
-        - Answer directly or use web_search
-        - NEVER call image_search() unless user explicitly asks for images 
-        2. Image ONLY:
-        - Use generate_prompt_from_image() to understand it
-        - Use image_search(max_images=10)
-        - Provide analysis + show all 10 similar images
-        3. Image + Text Query:
-        - If web search needed: use generate_prompt_from_image() + web_search() + fetch_full_text()
-        - If not: use replyFromImage()
-        - ALWAYS call image_search(max_images=5)
-        - Provide full analysis and show 5 images
-        ---
-        Multi-Part Query Handling:
-        If the query has multiple parts:
-        - Parse each one individually
-        - Run separate tool calls if needed
-        - Respond to each clearly, within the same message
-        ---
-        Decision Framework:
-        1. Basic facts/math → Direct Answer
-        2. News/events → web_search
-        3. URLs → fetch_full_text()
-        4. Explicit research → Use tools
-        5. Time-sensitive → Use tools
-        6. Current relevance implied → Use tools
-        7. Image present → Follow image rules
-        8. Text asks for images → Use image_search
-        ---
-        Final Response Format:
-        1. Answer — detailed and insightful
-        2. Related Images — when applicable
-        3. Sources — when tools used
-        4. Signoff — clever, light, and relevant
-        ---
-        Tone & Style:
-        - Clear, confident, professional
-        - Prioritize correctness and readability
-        - Markdown formatting where helpful
-        - Always in English, unless asked otherwise
-        - Don't show system logic or UTC
-        - Sound like a helpful, smart friend
-        - Make it useful, rich in info, yet friendly in tone
-        Add a jolly punchline without making a different section, just weave it in.
+        
+        
+        IMAGE HANDLING:
+        1. Text Only → Answer directly or web_search (NO image_search unless requested)
+        2. Image Only → generate_prompt + image_search(10) + detailed analysis
+        3. Image + Text → replyFromImage + image_search(5) + comprehensive response
+        
+        WRITING STYLE:
+        - Rich, informative content with specific details
+        - Professional yet conversational tone
+        - Well-structured with clear sections
+        - Include ALL relevant information from research
+        - Make it comprehensive and thoroughly informative
+        - Sources should supplement, not dominate the response
         """
         },
     {
@@ -152,8 +128,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
         while current_iteration < max_iterations:
             current_iteration += 1
-            
-            iteration_event = emit_event("INFO", f" Research Iteration {current_iteration} \n")
+
+            iteration_event = emit_event("INFO", f"<TASK>Moving On</TASK> \n")
             if iteration_event:
                 yield iteration_event
                 
@@ -182,10 +158,15 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}\nResponse: {error_text}")
                 
                 if event_id:
-                    yield format_sse("error", f"[ERROR] Pollinations API call failed at iteration {current_iteration}: {e}\nResponse: {error_text}")
+                    yield format_sse("error", f"<TASK> Oppsie!! Something went wrong while connecting to the brain </TASK>")
                 break
 
             assistant_message = response_data["choices"][0]["message"]
+            if not assistant_message.get("content") and assistant_message.get("tool_calls"):
+                assistant_message["content"] = "I'll help you with that. Let me gather the information you need."
+            elif not assistant_message.get("content"):
+                assistant_message["content"] = "Processing your request..."
+            
             messages.append(assistant_message)
 
             tool_calls = assistant_message.get("tool_calls")
@@ -202,7 +183,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 
                 logger.info(f"Executing tool: {function_name} with args: {function_args}")
                 if event_id:
-                    yield format_sse("INFO", f" Execution In Progress ({function_name}) \n")
+                    yield format_sse("INFO", f"<TASK> Cooking Response </TASK>")
 
                 try:                    
                     if function_name == "cleanQuery":
@@ -215,11 +196,11 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             tool_result = memoized_results["timezone_info"][location_name]
                         else:
                             localTime = get_local_time(location_name)
-                            tool_result = f"Location: {location_name}\n {localTime}"
+                            tool_result = f"Location: {location_name} and Local Time is: {localTime}, Please mention the location and time when making the final response!"
                             memoized_results["timezone_info"][location_name] = tool_result
 
                     elif function_name == "web_search":
-                        web_event = emit_event("INFO", f" Surfing Internet \n")
+                        web_event = emit_event("INFO", f"<TASK>Surfing Internet</TASK>")
                         if web_event:
                             yield web_event
                         logger.info(f"Performing web search for: {function_args.get('query')}")
@@ -233,7 +214,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         tool_result = f"{parallel_results} for the URLs {collected_sources}" if parallel_results else "[No relevant web search results found.]"
 
                     elif function_name == "generate_prompt_from_image":
-                        web_event = emit_event("INFO", f" Watching Images! \n")
+                        web_event = emit_event("INFO", f"<TASK>Watching Images!</TASK>")
                         if web_event:
                             yield web_event
                         image_url = function_args.get("imageURL")  
@@ -242,7 +223,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         logger.info(f"Generated prompt: {get_prompt}")
 
                     elif function_name == "replyFromImage":
-                        web_event = emit_event("INFO", f" Understanding Images \n")
+                        web_event = emit_event("INFO", f"<TASK>Understanding Images</TASK>")
                         if web_event:
                             yield web_event
                         image_url = function_args.get("imageURL") 
@@ -252,7 +233,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
 
                     elif function_name == "image_search":
-                        web_event = emit_event("INFO", f" Surfing Images \n")
+                        web_event = emit_event("INFO", f"<TASK>Surfing Images</TASK>")
                         if web_event:
                             yield web_event
                         image_query = function_args.get("image_query")
@@ -311,7 +292,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     elif function_name == "get_youtube_transcript":
                         logger.info(f"Getting YouTube transcripts for URLs")
                         if event_id:
-                            yield format_sse("INFO", f" Watching Youtube \n")
+                            yield format_sse("INFO", f"<TASK> Watching Youtube </TASK>")
                         urls = [function_args.get("url")]
                         results = fetch_youtube_parallel(urls, mode='transcript')
                         for url, transcript in results.items():
@@ -322,7 +303,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     elif function_name == "fetch_full_text":
                         logger.info(f"Fetching full text for URLs")
                         if event_id:
-                            yield format_sse("INFO", f" Writing Script \n")
+                            yield format_sse("INFO", f"<TASK> Writing Script </TASK>")
                         urls = [function_args.get("url")]
                         parallel_results = fetch_url_content_parallel(urls)
                         tool_result = parallel_results if parallel_results else "[No content fetched from URL]"
@@ -345,7 +326,43 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             messages.extend(tool_outputs)
             logger.info(f"Completed tool execution for iteration {current_iteration}. Number of messages: {len(messages)}")
             if event_id:
-                yield format_sse("INFO", f" All tools executed for iteration {current_iteration}. Waiting for next model response...\n")
+                yield format_sse("INFO", f"<TASK> Summarizing Findings </TASK>")
+
+        if not final_message_content and current_iteration >= max_iterations:
+            # Force a comprehensive synthesis if we have gathered information but no final response
+            synthesis_prompt = {
+                "role": "user",
+                "content": f"""Based on ALL the research and information gathered above, provide a comprehensive, detailed analysis answering the original query: "{user_query}". 
+                
+                Requirements:
+                - Synthesize ALL information from web searches, fetched content, and any other sources
+                - Write a detailed response (minimum 500-800 words)
+                - Include specific facts, examples, and context
+                - Structure with clear sections and headings
+                - Provide thorough analysis, not just a summary
+                - Make it comprehensive and well-researched"""
+            }
+            
+            messages.append(synthesis_prompt)
+            
+            # Make one final API call for synthesis
+            payload = {
+                "model": MODEL,
+                "messages": messages,
+                "token": POLLINATIONS_TOKEN,
+                "referrer": REFRRER,
+                "private": True,
+                "seed": random.randint(1000, 9999),
+                "max_tokens": 4000  # Increase for longer responses
+            }
+            
+            try:
+                response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                final_message_content = response_data["choices"][0]["message"].get("content")
+            except Exception as e:
+                logger.error(f"Synthesis step failed: {e}")
 
         if final_message_content:
             logger.info(f"Preparing final response.")
@@ -386,8 +403,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             logger.info(f"Final agent status: {status}")
             
             if event_id:
-                yield format_sse("INFO", " SUCCESS")
-                chunk_size = 5000 
+                yield format_sse("INFO", "<TASK> SUCCESS</TASK>")
+                chunk_size = 5000
                 for i in range(0, len(response_with_sources), chunk_size):
                     chunk = response_with_sources[i:i+chunk_size]
                     event_name = "final" if i + chunk_size >= len(response_with_sources) else "final-part"
@@ -399,7 +416,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             error_msg = f"[ERROR] ElixpoSearch failed after {max_iterations} iterations. No final content generated. Model might be stuck in a tool loop or failed to generate a coherent response."
             logger.error(error_msg)
             if event_id:
-                yield format_sse("error", error_msg)
+                yield format_sse("error", "<TASK> Oppsie!! Something went wrong and I couldn't fetch the answer </TASK>")
                 return  
             else:
                 print(error_msg)

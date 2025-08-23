@@ -8,8 +8,9 @@ from yahooSearch import YahooSearchAgentText, YahooSearchAgentImage, ddgs_search
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from scrape import fetch_full_text
 import concurrent 
+import os
 
-
+_deepsearch_store = {}
 
 class SearchAgentManager:
     def __init__(self, max_concurrent_agents=10):
@@ -190,3 +191,19 @@ def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
                 logger.error(f"YouTube {mode} failed for {url}: {e}")
                 results[url] = '[Failed]'
         return results
+
+
+
+
+
+def storeDeepSearchQuery(query: list, sessionID: str):
+    """Store deep search queries in RAM (in-memory dictionary)."""
+    _deepsearch_store[sessionID] = query
+
+def getDeepSearchQuery(sessionID: str):
+    """Retrieve deep search query for a session from memory."""
+    return _deepsearch_store.get(sessionID)
+def cleanDeepSearchQuery(sessionID: str):
+    """Clean up deep search query for a session from memory."""
+    if sessionID in _deepsearch_store:
+        del _deepsearch_store[sessionID]

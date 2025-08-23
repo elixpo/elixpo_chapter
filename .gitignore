@@ -3,4 +3,5 @@
 clipenv/
 model/
 playwright_user_data/
-/PRODUCTION/src/__pycache__
+/PRODUCTION/src/__pycache__'
+searchenv/

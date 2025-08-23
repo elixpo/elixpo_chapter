@@ -1,7 +1,6 @@
 import requests
 import json
 from clean_query import cleanQuery
-from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from scrape import fetch_full_text
 from getImagePrompt import generate_prompt_from_image, replyFromImage
 from tools import tools
@@ -13,7 +12,16 @@ import dotenv
 import os
 import asyncio
 from textEmbedModel import retrieve_top_k
-from utility import fetch_youtube_parallel, agent_manager, fetch_url_content_parallel, image_search, web_search
+from utility import (
+    fetch_youtube_parallel,
+    fetch_url_content_parallel,
+    image_search,
+    web_search,
+    storeDeepSearchQuery,
+    getDeepSearchQuery,
+    cleanDeepSearchQuery,
+    _deepsearch_store
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
@@ -23,7 +31,9 @@ MODEL = os.getenv("MODEL")
 REFRRER = os.getenv("REFERRER")
 POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 
+
 def format_sse(event: str, data: str, task_num: int = 0, finished: str = "no", progress: int = 0, stage: str = "info") -> str:
+    """Format Server-Sent Event (SSE) messages."""
     lines = data.splitlines()
     data_str = ''.join(f"data: {line}\n" for line in lines)
     return (
@@ -35,15 +45,19 @@ def format_sse(event: str, data: str, task_num: int = 0, finished: str = "no", p
         f"{data_str}\n\n"
     )
 
+
 async def run_deep_research_pipeline(user_query: str, user_image: str, event_id: str = None):
     logger.info(f"Starting DeepResearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}'")
 
     def emit_event(event_type, message, task_num=0, finished="no", progress=0, stage="info"):
         if event_id:
-            return format_sse(event_type, message, task_num, finished, progress, stage)
+            event = format_sse(event_type, message, task_num, finished, progress, stage)
+            logger.debug(f"Emitting event: {event_type} - {message[:100]}")
+            return event
         return None
 
-    initial_event = emit_event("INFO", "Initiating Deep Research Pipeline", 0, "no", 0, "info")
+    # --- INIT EVENT ---
+    initial_event = emit_event("INFO", "<TASK>Initiating Deep Research Pipeline</TASK>", 0, "no", 0, "info")
     if initial_event:
         yield initial_event
 
@@ -51,19 +65,13 @@ async def run_deep_research_pipeline(user_query: str, user_image: str, event_id:
         current_utc_time = datetime.now(timezone.utc)
         headers = {"Content-Type": "application/json"}
 
+        # Results collected along the way
         collected_sources = []
         collected_images_from_web = []
         collected_similar_images = []
+        memoized_results = {"timezone_info": {}, "youtube_metadata": {}, "youtube_transcripts": {}}
 
-        memoized_results = {
-            "timezone_info": {},
-            "web_searches": {},
-            "fetched_urls": {},
-            "youtube_metadata": {},
-            "youtube_transcripts": {},
-            "base64_cache": {}
-        }
-
+        # --- SYSTEM PROMPT ---
         system_prompt = f"""
 Mission: Perform deep research on the user's query by decomposing it into 2-3 sub-tasks using available tools.
 CRITICAL: If you know the answer directly (basic facts, math, general knowledge), answer without research.
@@ -80,50 +88,46 @@ Available Tools:
 - get_youtube_metadata(url: str)
 - get_youtube_transcript(url: str)
 - get_local_time(location: str)
-- generate_prompt_from_image(imageURL: str)
-- replyFromImage(imageURL: str, query: str)
+- generate_prompt_from_image(imgURL: str)
+- replyFromImage(imgURL: str, query: str)
 - image_search(image_query: str, max_images=10)
-
+---
 Context:
-- Current UTC time: {current_utc_time}
-- Use tools strategically to gather comprehensive information
-- Always cite sources and provide evidence
-- Maintain research depth and quality
-
+- Use system UTC internally only.
+- When asked, give accurate local time in a clear format.
+- Never expose UTC or internal data.
+{current_utc_time}
+---
 IMAGE HANDLING RULES:
-1. Text Query ONLY (No Image): Use web_search and other tools as needed
-2. Image ONLY: Use generate_prompt_from_image() + image_search(max_images=10)
-3. Image + Text Query: Use generate_prompt_from_image() + web_search() + image_search(max_images=5)
-
+1. Text Query ONLY → answer or use web_search.
+2. Image ONLY → use generate_prompt_from_image + image_search(10).
+3. Image + Text Query → use replyFromImage + image_search(5).
+---
 Final Response Format:
-1. Comprehensive Answer with deep analysis
-2. Related Images when applicable
-3. All Sources and References
-4. Research summary and insights
-
-All output must be detailed, well-researched, and properly cited.
+1. Answer — detailed and insightful
+2. Related Images — when applicable
+3. Sources — when tools used
+4. Signoff — clever, light, and relevant
 """
 
-        # Handle image only
+        # --- CASE: IMAGE ONLY ---
         if user_image and not user_query.strip():
             prompt = await generate_prompt_from_image(user_image)
             image_results = await image_search(prompt, max_images=10)
             collected_similar_images.extend(json.loads(image_results).get("yahoo_source_0", [])[:10] if image_results else [])
-            answer = f"**Image Analysis:**\n{prompt}"
+            answer = f"{prompt}"
             final_event = emit_event("FINAL_ANSWER", answer, 1, "yes", 100, "finish")
             if final_event:
                 yield final_event
             return
 
-        # Step 1: Decompose query into sub-tasks
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Query: {user_query} {'Image: ' + user_image if user_image else ''}"}
-        ]
+        # --- STEP 1: Decompose Query into Sub-tasks ---
         planning_payload = {
             "model": MODEL,
-            "messages": messages + [
-                {"role": "user", "content": "Break down this query into 2-3 detailed research sub-tasks. For each task, specify what tools should be used and what information to gather."}
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Query: {user_query} {'Image: ' + user_image if user_image else ''}"},
+                {"role": "user", "content": "Break down this query into 2-3 detailed research sub-tasks."}
             ],
             "tools": tools,
             "tool_choice": "auto",
@@ -132,34 +136,33 @@ All output must be detailed, well-researched, and properly cited.
             "private": True,
             "seed": random.randint(1000, 9999)
         }
+
         planning_resp = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=planning_payload)
         planning_resp.raise_for_status()
-        planning_tasks = planning_resp.json()["choices"][0]["message"]["content"]
+        planning_json = planning_resp.json()
+        planning_message = planning_json["choices"][0]["message"] if "choices" in planning_json else {}
+        planning_tasks = planning_message.get("content", "")
+
         tasks = [line.strip(" .") for line in planning_tasks.split("\n") if line.strip() and line[0].isdigit()]
         if not tasks:
             tasks = [planning_tasks.strip()]
+        storeDeepSearchQuery(tasks, event_id)
         logger.info(f"Decomposed into {len(tasks)} tasks: {tasks}")
 
-        # Step 2: For each sub-task, run a searchPipeline-like loop
+        # --- STEP 2: Sequential Sub-task Execution ---
         for task_num, task in enumerate(tasks, 1):
             progress = int((task_num - 1) / len(tasks) * 100)
-            task_start_event = emit_event("INFO", f"Starting Task {task_num}: {task}", task_num, "no", progress, "event")
-            if task_start_event:
-                yield task_start_event
+            yield emit_event("INFO", f"<TASK>Starting Task</TASK>", task_num, "no", progress, "event")
 
             subtask_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Research sub-task: {task}\nOriginal query: {user_query}"}
             ]
-            collected_sources_this_task = []
-            collected_images_this_task = []
+
             final_message_content = None
 
-            max_iterations = 5
-            for iteration in range(max_iterations):
-                iteration_event = emit_event("INFO", f"Task {task_num} - Research Iteration {iteration+1}", task_num, "no", progress, "event")
-                if iteration_event:
-                    yield iteration_event
+            for iteration in range(5):
+                yield emit_event("INFO", f"<TASK>Task Iteration</TASK>", task_num, "no", progress, "event")
 
                 payload = {
                     "model": MODEL,
@@ -172,21 +175,13 @@ All output must be detailed, well-researched, and properly cited.
                     "seed": random.randint(1000, 9999)
                 }
 
-                try:
-                    response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload)
-                    response.raise_for_status()
-                    response_data = response.json()
-                except Exception as e:
-                    logger.error(f"API call failed for task {task_num}: {e}")
-                    if hasattr(e, 'response') and e.response is not None:
-                        logger.error(f"API error response text: {e.response.text}")
-                    elif 'response' in locals() and hasattr(response, 'text'):
-                        logger.error(f"API error response text: {response.text}")
-                    break
+                response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
 
                 assistant_message = response_data["choices"][0]["message"]
                 if not assistant_message.get("content"):
-                    assistant_message["content"] = "Processing tool calls for this sub-task."
+                    assistant_message["content"] = "Processing tool calls..."
                 subtask_messages.append(assistant_message)
 
                 tool_calls = assistant_message.get("tool_calls")
@@ -194,11 +189,11 @@ All output must be detailed, well-researched, and properly cited.
                     final_message_content = assistant_message.get("content")
                     break
 
+                # --- Execute Tool Calls ---
                 tool_outputs = []
                 for tool_call in tool_calls:
                     function_name = tool_call["function"]["name"]
                     function_args = json.loads(tool_call["function"]["arguments"])
-                    logger.info(f"Task {task_num}: Executing tool {function_name}")
 
                     try:
                         if function_name == "cleanQuery":
@@ -206,38 +201,22 @@ All output must be detailed, well-researched, and properly cited.
                             tool_result = f"Cleaned Query: {cleaned_query}\nWebsites: {websites}\nYouTube URLs: {youtube}"
 
                         elif function_name == "get_local_time":
-                            location_name = function_args.get("location_name")
-                            if location_name in memoized_results["timezone_info"]:
-                                tool_result = memoized_results["timezone_info"][location_name]
+                            location = function_args.get("location_name")
+                            if location in memoized_results["timezone_info"]:
+                                tool_result = memoized_results["timezone_info"][location]
                             else:
-                                localTime = get_local_time(location_name)
-                                tool_result = f"Location: {location_name}\n {localTime}"
-                                memoized_results["timezone_info"][location_name] = tool_result
+                                local_time = get_local_time(location)
+                                tool_result = f"Location: {location}\n {local_time}"
+                                memoized_results["timezone_info"][location] = tool_result
 
                         elif function_name == "web_search":
-                            search_query = function_args.get("query")
-                            search_results_raw = await web_search(search_query)
-                            urls = [url for url in search_results_raw if url and url.startswith("http")]
-                            collected_sources_this_task.extend(urls)
-                            if urls:
-                                url_texts = fetch_url_content_parallel(urls)
-                                # Split results into blocks per URL for embedding filtering
-                                doc_blocks = []
-                                for url in urls:
-                                    # Try to extract the block for this URL
-                                    start = url_texts.find(f"URL: {url}")
-                                    if start != -1:
-                                        end = url_texts.find("URL: ", start + 5)
-                                        block = url_texts[start:end] if end != -1 else url_texts[start:]
-                                        doc_blocks.append(block)
-                                # Use embeddings to select the most relevant blocks
-                                top_chunks = retrieve_top_k(doc_blocks, search_query, k=3)
-                                context = "\n\n".join(top_chunks)
-                                if len(context) > 6000:
-                                    context = context[:6000] + "..."
-                                tool_result = f"Web search results for '{search_query}':\n{context}"
-                            else:
-                                tool_result = "No URLs found in search results."
+                            query = function_args.get("query")
+                            urls = await web_search(query)
+                            collected_sources.extend(urls)
+                            url_texts = fetch_url_content_parallel(urls)
+                            top_chunks = retrieve_top_k([url_texts], query, k=3)
+                            context = "\n\n".join(top_chunks)[:1000]
+                            tool_result = f"Web search results for '{query}':\n{context}"
 
                         elif function_name == "fetch_full_text":
                             url = function_args.get("url")
@@ -248,8 +227,8 @@ All output must be detailed, well-researched, and properly cited.
 
                         elif function_name == "generate_prompt_from_image":
                             image_url = function_args.get("imageURL")
-                            get_prompt = await generate_prompt_from_image(image_url)
-                            tool_result = f"Generated Search Query: {get_prompt}"
+                            prompt = await generate_prompt_from_image(image_url)
+                            tool_result = f"Generated Search Query: {prompt}"
 
                         elif function_name == "replyFromImage":
                             image_url = function_args.get("imageURL")
@@ -257,50 +236,36 @@ All output must be detailed, well-researched, and properly cited.
                             reply = await replyFromImage(image_url, query)
                             tool_result = f"Reply from Image: {reply}"
 
-                        elif function_name == "image_search":
-                            image_query = function_args.get("image_query")
-                            max_images = function_args.get("max_images", 10)
-                            search_results_raw = await image_search(image_query, max_images=max_images)
-                            image_urls = []
-                            url_context = ""
-                            try:
-                                if isinstance(search_results_raw, str):
-                                    image_dict = json.loads(search_results_raw)
-                                    if isinstance(image_dict, dict):
-                                        for src_url, imgs in image_dict.items():
-                                            if not imgs:
-                                                continue
-                                            for img_url in imgs:
-                                                if img_url and img_url.startswith("http"):
-                                                    image_urls.append(img_url)
-                                                    url_context += f"\t{img_url}"
-                                if user_image and user_query.strip():
-                                    collected_images_from_web.extend(image_urls[:5])
-                                elif user_image and not user_query.strip():
-                                    collected_similar_images.extend(image_urls[:10])
-                                elif not user_image and user_query.strip():
-                                    collected_images_from_web.extend(image_urls[:10])
-                            except Exception as e:
-                                logger.error(f"Failed to process image search results: {e}", exc_info=True)
-                                image_urls = []
-                                url_context = ""
-                            tool_result = f"The relevant image URLs are {url_context}\n\n"
-
                         elif function_name == "get_youtube_metadata":
-                            urls = [function_args.get("url")]
-                            results = fetch_youtube_parallel(urls, mode='metadata')
-                            for url, metadata in results.items():
-                                tool_result = json.dumps(metadata)
-                                memoized_results["youtube_metadata"][url] = tool_result
-                                collected_sources_this_task.append(url)
+                            url = function_args.get("url")
+                            results = fetch_youtube_parallel([url], mode='metadata')
+                            tool_result = json.dumps(results.get(url, {}))
+                            memoized_results["youtube_metadata"][url] = tool_result
+                            collected_sources.append(url)
 
                         elif function_name == "get_youtube_transcript":
-                            urls = [function_args.get("url")]
-                            results = fetch_youtube_parallel(urls, mode='transcript')
-                            for url, transcript in results.items():
-                                tool_result = f"YouTube Transcript for {url}:\n{transcript if transcript else '[No transcript available]'}..."
-                                memoized_results["youtube_transcripts"][url] = tool_result
-                                collected_sources_this_task.append(url)
+                            url = function_args.get("url")
+                            results = fetch_youtube_parallel([url], mode='transcript')
+                            transcript = results.get(url, "")
+                            tool_result = f"Transcript for {url}: {transcript[:2000]}"
+                            memoized_results["youtube_transcripts"][url] = tool_result
+                            collected_sources.append(url)
+
+                        elif function_name == "image_search":
+                            query = function_args.get("image_query")
+                            max_images = function_args.get("max_images", 10)
+                            search_results_raw = await image_search(query, max_images=max_images)
+                            image_dict = json.loads(search_results_raw) if search_results_raw else {}
+                            image_urls = [img for imgs in image_dict.values() for img in imgs if img.startswith("http")]
+
+                            if user_image and user_query.strip():
+                                collected_images_from_web.extend(image_urls[:5])
+                            elif user_image and not user_query.strip():
+                                collected_similar_images.extend(image_urls[:10])
+                            else:
+                                collected_images_from_web.extend(image_urls[:10])
+
+                            tool_result = f"Image search found {len(image_urls)} images."
 
                         else:
                             tool_result = f"Unknown tool: {function_name}"
@@ -318,92 +283,151 @@ All output must be detailed, well-researched, and properly cited.
 
                 subtask_messages.extend(tool_outputs)
 
-            # After all iterations for this task, emit summary
-            summary_event = emit_event(
+            # --- Emit Task Summary ---
+            yield emit_event(
                 "TASK_SUMMARY",
-                f"### Task {task_num} Complete: {task}\n\n{final_message_content or subtask_messages[-1].get('content', 'Task completed')}",
+                f"<TASK>{final_message_content or 'Task completed.'}</TASK>",
                 task_num,
                 "intermediate" if task_num < len(tasks) else "yes",
                 int(task_num / len(tasks) * 100),
                 "summary" if task_num < len(tasks) else "finish"
             )
-            if summary_event:
-                yield summary_event
 
-            collected_sources.extend(collected_sources_this_task)
-            collected_images_from_web.extend(collected_images_this_task)
+        # --- STEP 3: Final Synthesis ---
+        all_research_data = []
+        for task_num, task in enumerate(tasks, 1):
+            # Get stored research data for this task if available
+            task_data = getDeepSearchQuery(event_id, task_num) if event_id else None
+            if task_data:
+                all_research_data.append(f"### Research Task {task_num}: {task}\n{task_data}")
+        
+        research_context = "\n\n".join(all_research_data) if all_research_data else "No detailed research data available."
+        
+        enhanced_system_prompt = f"""
+You are an expert research analyst and essay writer. Your mission is to synthesize comprehensive, detailed, and insightful analysis based on all available research.
 
-        # Final synthesis
+WRITING REQUIREMENTS:
+- Write in essay format with clear structure (introduction, main body with subsections, conclusion)
+- Minimum 800-1200 words for substantial topics
+- Use academic tone but remain accessible and engaging  
+- Include specific details, statistics, dates, and examples from research
+- Provide comprehensive coverage of all important aspects
+- Use proper transitions between sections
+- Include relevant context and background information
+
+RESEARCH INTEGRATION:
+- Synthesize findings from ALL research tasks
+- Cross-reference information between sources
+- Highlight key insights and patterns
+- Address different perspectives or controversies
+- Include supporting evidence and examples
+
+STRUCTURE GUIDELINES:
+1. **Introduction**: Context, significance, and overview
+2. **Main Analysis**: Detailed exploration with subsections
+3. **Key Insights**: Important findings and implications  
+4. **Conclusion**: Summary and broader significance
+
+TONE & STYLE:
+- Professional yet engaging
+- Rich in detail and substance
+- Well-organized with clear headings
+- Use markdown formatting effectively
+- Confident and authoritative voice
+
+Current Research Context:
+{research_context}
+
+Available Tools Data:
+- Sources consulted: {len(collected_sources)} sources
+- Images found: {len(collected_images_from_web)} images
+- Research tasks completed: {len(tasks)} tasks
+
+Original Query: {user_query}
+"""
+
         final_payload = {
             "model": MODEL,
-            "messages": messages + [
-                {"role": "user", "content": "Based on all the research above, provide a comprehensive final answer with proper citations and insights."}
+            "messages": [
+                {"role": "system", "content": enhanced_system_prompt},
+                {"role": "user", "content": f"Based on all the comprehensive research conducted, write a detailed essay-style analysis answering: {user_query}. Include all relevant information discovered during research, provide proper context, and structure it as a comprehensive academic-style essay with clear sections and subsections."}
             ],
             "token": POLLINATIONS_TOKEN,
             "referrer": REFRRER,
             "private": True,
-            "seed": random.randint(1000, 9999)
+            "seed": random.randint(1000, 9999),
+            "max_tokens": 4000  # Increase token limit for longer responses
         }
 
         try:
-            loop = asyncio.get_event_loop()
-            final_resp = await loop.run_in_executor(None, lambda: requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=final_payload))
+            final_resp = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=final_payload)
             final_resp.raise_for_status()
-            final_answer = final_resp.json()["choices"][0]["message"]["content"]
-
-            response_parts = [final_answer]
-
-            if user_image and not user_query.strip() and collected_similar_images:
-                response_parts.append("\n\n**Similar Images:**\n")
-                for img in collected_similar_images[:10]:
-                    if img and img.startswith("http"):
-                        response_parts.append(f"![Similar Image]({img})\n")
-
-            elif user_image and user_query.strip() and collected_images_from_web:
-                response_parts.append("\n\n**Related Images:**\n")
-                for img in collected_images_from_web[:5]:
-                    if img and img.startswith("http"):
-                        response_parts.append(f"![Related Image]({img})\n")
-
-            elif not user_image and user_query.strip() and collected_images_from_web:
-                response_parts.append("\n\n**Research Images:**\n")
-                for img in collected_images_from_web[:10]:
-                    if img and img.startswith("http"):
-                        response_parts.append(f"![Research Image]({img})\n")
-
-            if collected_sources:
-                response_parts.append("\n\n---\n**Research Sources:**\n")
-                unique_sources = sorted(list(set(collected_sources)))
-                for i, src in enumerate(unique_sources):
-                    response_parts.append(f"{i+1}. [{src}]({src})\n")
-
-            final_response = "".join(response_parts)
-            final_event = emit_event("FINAL_ANSWER", final_response, len(tasks), "yes", 100, "finish")
-            if final_event:
-                yield final_event
-
+            final_data = final_resp.json()
+            
+            if "choices" not in final_data or not final_data["choices"]:
+                raise ValueError("No choices in final response")
+                
+            final_answer = final_data["choices"][0]["message"].get("content", "No content generated")
+            
+            if not final_answer or len(final_answer.strip()) < 50:
+                logger.warning("Final answer is too short, using fallback")
+                final_answer = f"Based on the research conducted on '{user_query}', here is a comprehensive analysis of the available information."
+            
+            logger.info(f"Generated final answer with length: {len(final_answer)}")
+            
         except Exception as e:
-            logger.error(f"Final synthesis failed: {e}")
-            error_event = emit_event("ERROR", f"Final synthesis failed: {e}", len(tasks), "yes", 100, "error")
-            if error_event:
-                yield error_event
+            logger.error(f"Failed to generate final synthesis: {e}")
+            final_answer = f"Research completed for '{user_query}'. Due to a synthesis error, please review the individual task summaries above."
 
+        response_parts = [final_answer]
+
+        # Append images
+        if user_image and not user_query.strip() and collected_similar_images:
+            response_parts.append("\n\n**Similar Images:**\n")
+            response_parts.extend(f"![Similar Image]({img})\n" for img in collected_similar_images[:10])
+        elif user_image and user_query.strip() and collected_images_from_web:
+            response_parts.append("\n\n**Related Images:**\n")
+            response_parts.extend(f"![Related Image]({img})\n" for img in collected_images_from_web[:5])
+        elif not user_image and collected_images_from_web:
+            response_parts.append("\n\n**Research Images:**\n")
+            response_parts.extend(f"![Research Image]({img})\n" for img in collected_images_from_web[:10])
+
+        # Append sources
+        if collected_sources:
+            response_parts.append("\n\n---\n**Research Sources:**\n")
+            for i, src in enumerate(sorted(set(collected_sources))):
+                response_parts.append(f"{i+1}. [{src}]({src})\n")
+
+        final_response = "".join(response_parts)
+        
+        # FIXED: Properly emit the final event
+        logger.info(f"Emitting final response with length: {len(final_response)}")
+        final_event = emit_event("FINAL_ANSWER", final_response, len(tasks), "yes", 100, "finish")
+        if final_event:
+            yield final_event
+        else:
+            # Fallback for non-SSE mode
+            print(f"Final Response: {final_response}")
+            
+        cleanDeepSearchQuery(event_id)
+        
     except Exception as e:
         logger.error(f"Pipeline error: {e}", exc_info=True)
-        if event_id:
-            yield format_sse("error", f"DeepResearch failed: {e}", 0, "yes", 0, "error")
+        error_event = emit_event("ERROR", f"DeepResearch failed: {e}", 0, "yes", 0, "error")
+        if error_event:
+            yield error_event
+        else:
+            print(f"Error: {e}")
     finally:
         logger.info("Deep Research Completed")
 
+
 if __name__ == "__main__":
     async def main():
-        user_query = "The eiffel tower"
+        user_query = "The Eiffel Tower"
         user_image = None
         event_id = "cli"
-        async_generator = run_deep_research_pipeline(user_query, user_image, event_id=event_id)
-        try:
-            async for event_chunk in async_generator:
-                print(event_chunk)
-        except Exception as e:
-            print(f"Error: {e}")
+        async for event_chunk in run_deep_research_pipeline(user_query, user_image, event_id=event_id):
+            print(event_chunk)
+
     asyncio.run(main())

@@ -9,7 +9,6 @@ pytube
 youtube-transcript-api
 selectolax
 timezonefinderL
-timezonefinder
 geopy
 quart
 uvicorn
@@ -18,3 +17,4 @@ slowapi
 yt-dlp
 pytz
 numba
+loguru

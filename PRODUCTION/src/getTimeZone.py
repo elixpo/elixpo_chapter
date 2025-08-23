@@ -1,4 +1,4 @@
-from timezonefinder import TimezoneFinder
+from timezonefinderL import TimezoneFinder
 from geopy.geocoders import Nominatim
 from datetime import datetime
 import pytz

@@ -4,5 +4,5 @@ MAX_TOTAL_SCRAPE_WORD_COUNT = 2000
 MAX_IMAGES_TO_INCLUDE = 4
 scrape_website_show_log = True
 SCRAPE_IMAGE=True
-MAX_LINKS_TO_TAKE = 4
+MAX_LINKS_TO_TAKE = 6
 isHeadless=True
