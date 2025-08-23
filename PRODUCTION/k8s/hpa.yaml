@@ -7,8 +7,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: elixpo-search
-  minReplicas: 10
-  maxReplicas: 50
+  minReplicas: 2
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:
