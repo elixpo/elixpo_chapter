@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: elixpo-search
 spec:
-  replicas: 2
+  replicas: 10
   selector:
     matchLabels:
       app: elixpo-search
