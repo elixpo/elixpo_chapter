@@ -9,3 +9,4 @@ PRODUCTION/k8s/secret.yaml
 /PRODUCTION/src/__pycache__
 __pycache__/
 *.pyc
+minikube-linux-amd64
