@@ -5,3 +5,4 @@ model/
 playwright_user_data/
 /PRODUCTION/src/__pycache__'
 searchenv/
+PRODUCTION/k8s/secret.yaml
