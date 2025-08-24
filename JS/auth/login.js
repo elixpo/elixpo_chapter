@@ -1,8 +1,11 @@
 
 const otpInputs = document.querySelectorAll('#otpLabel input[type="text"]');
-document.getElementById("loginBtn").addEventListener("click", function(event) {
-    var email = document.getElementById("email").value;
-    var verifiedEmail = safeInputEmail(email);
+let reqID = "ZjqQMN";
+let emailResp = "ayushbhatt633@gmail.com";
+let userInpEmail = "ayushbhatt633@gmail.com";
+document.getElementById("loginBtn").addEventListener("click", function() {
+    userInpEmail = document.getElementById("email").value;
+    var verifiedEmail = safeInputEmail(userInpEmail);
     const response = fetch('http://127.0.0.1:5000/api/loginRequest?email=' + encodeURIComponent(verifiedEmail), {
         method: 'GET',
         headers: {
@@ -14,6 +17,7 @@ document.getElementById("loginBtn").addEventListener("click", function(event) {
         if (data.error) {
             alert("Error: " + data.error);
         } else {
+            [emailResp, reqID] = data.message.split(',');
             console.log("OTP sent successfully!");
         }
     });
@@ -31,7 +35,7 @@ otpInputs.forEach((input, idx) => {
         }
         // If all inputs are filled, call verifyOTP
         if ([...otpInputs].every(inp => inp.value.length === 1)) {
-            verifyOTP([...otpInputs].map(inp => inp.value).join(''));
+            verifyOTP([...otpInputs].map(inp => inp.value).join(''), reqID, emailResp);
         }
     });
 
@@ -42,10 +46,32 @@ otpInputs.forEach((input, idx) => {
     });
 });
 
-function verifyOTP(otp) {
+function verifyOTP(otp, reqID, emailResp) {
     console.log('Verifying OTP:', otp);
-    // Example: send OTP to backend for verification
-    // fetch('/api/verifyOTP', { method: 'POST', body: JSON.stringify({ otp }) })
+    if (!reqID || emailResp != userInpEmail) {
+        console.log("Invalid request.");
+        return;
+    }
+    else 
+    {
+        console.log("Valid request."); 
+        const response = fetch('http://127.0.0.1:5000/api/verifyOTP?otp=' + encodeURIComponent(otp) + '&requestID=' + encodeURIComponent(reqID) + '&email=' + encodeURIComponent(emailResp) + '&time=' + encodeURIComponent(Date.now()), 
+        { method: 'GET',
+            headers: {
+            'Content-Type': 'application/json'
+        },
+         })
+    response.then((res) => res.json()).then((data) => {
+        if (data.status) {
+            console.log("OTP verified successfully!");
+        } else {
+                if(data.error){
+                console.log("Error: " + data.error);
+            }
+        }
+    })
+    }
+    
 }
 
 

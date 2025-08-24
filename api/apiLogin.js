@@ -62,12 +62,42 @@ router.get("/loginRequest", async (req, res) => {
       state: "elixpo-blogs"
     });
 
-    res.status(200).json({ message: "Login attempt recorded." });
+    res.status(200).json({ message: `${email},${requestID}`});
   } catch (error) {
     console.error("Firebase write error:", error);
     res.status(500).json({ error: "Failed to record login attempt." });
   }
 });
+
+
+router.get("/verifyOTP", async (req, res) => {
+  const { otp, requestID, email, time } = req.query;
+  if (!otp || !requestID || !email || !time) {
+    return res.status(400).json({ error: "Missing required parameters." });
+  }
+
+  try {
+    const loginRef = db.ref(`loginAttempt/${requestID}`);
+    const snapshot = await loginRef.once("value");
+    const loginData = snapshot.val();
+
+    if (!loginData || loginData.email !== email) {
+      return res.status(400).json({ error: "Invalid request." });
+    }
+    if (loginData.timestamp < time - 60 * 60 * 1000) { // 10 minutes
+      return res.status(400).json({ status: false, error: "OTP expired." });
+    }
+    if (loginData.otp !== otp) {
+      return res.status(400).json({ status: false, error: "Invalid OTP." });
+    }
+
+    res.status(200).json({ status: true });
+  } catch (error) {
+    console.error("Firebase read error:", error);
+    res.status(500).json({ status: false });
+  }
+});
+
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
