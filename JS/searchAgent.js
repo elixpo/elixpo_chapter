@@ -1,221 +1,279 @@
-marked.setOptions({
-    breaks: true, 
-    gfm: true,    
-    headerIds: false,
-    headerPrefix: '',
-    smartLists: true,
-    smartypants: true,
-    xhtml: false,
-    highlight: function(code, lang) {
-        return `<code class="language-${lang || 'text'}">${code}</code>`;
-    }
-});
-
+// Constants
 const SERVER_URL = "http://127.0.0.1:5000";
-const input = document.getElementById('queryInput');
-const submitButton = document.getElementById('submitButton');
-const sseFeed = document.getElementById('sseFeed');
-const finalOutput = document.getElementById('finalOutput');
-const sseToggle = document.getElementById('sseToggle');
-const classicBtn = document.getElementById('classicBtn');
-const chatBtn = document.getElementById('chatBtn');
-const imageUrlInput = document.getElementById('imageUrlInput');
-const statusMessage = document.getElementById('sseFeed');
-const deepToggle = document.getElementById('deepToggle');
 
-let useChatApi = false;
-let hasReachedSuccess = false;
+// DOM elements
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const plusBtn = document.getElementById('plusBtn');
+const plusMenu = document.getElementById('plusMenu');
+const conversation = document.getElementById('conversation');
+const initialTitle = document.querySelector('.initial-title');
 
-function clearOutputs() {
-    sseFeed.innerHTML = '';
-    finalOutput.innerHTML = '';
-    statusMessage.innerHTML = '';
-    statusMessage.classList.add('hidden');
-    sseFeed.style.display = sseToggle.checked ? 'flex' : 'none';
-}
+// State
+let isGenerating = false;
+let isDeepResearch = false;
 
-function updateStatus(msg, type = "info") {
-    let msgNode = `<span> <span class="information_type"> [INFO] </span> ${msg}  </span>`;
-    statusMessage.innerHTML += msgNode;
-    statusMessage.classList.remove('hidden');
-    statusMessage.className = `text-center mb-6 ${type === "error" ? "text-red-400" : "text-blue-400"}`;
-}
-
-classicBtn.addEventListener('click', () => {
-    useChatApi = false;
-    classicBtn.classList.add('active');
-    chatBtn.classList.remove('active');
-    clearOutputs();
-});
-
-chatBtn.addEventListener('click', () => {
-    useChatApi = true;
-    chatBtn.classList.add('active');
-    classicBtn.classList.remove('active');
-    clearOutputs();
-});
-
-function showResult(label, data) {
-    finalOutput.innerHTML = '';
-    let div = document.createElement('div');
-    if (typeof data === 'object' && data !== null && data.error) {
-        div.innerText = `[${label}] ERROR: ${data.error}`;
-        div.className = 'text-red-400';
-    } else if (typeof data === 'object' && data !== null && data.result !== undefined) {
-        div.innerHTML = marked.parse(data.result);
-    } else if (typeof data === 'object' && data.choices && data.choices[0]) {
-        div.innerHTML = marked.parse(data.choices[0].message.content);
-    } else {
-        div.innerText = `[${label}] ${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+// Initialize app
+function init() {
+    console.log('Initializing interface...');
+    
+    // Ensure all elements exist
+    if (!messageInput || !sendBtn || !plusBtn || !plusMenu || !conversation || !initialTitle) {
+        console.error('Required DOM elements not found');
+        return;
     }
-    finalOutput.appendChild(div);
-}
-
-function renderFinalOutput(markdown) {
-    let html = marked.parse(markdown);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    const images = Array.from(tempDiv.querySelectorAll('img'));
-    if (images.length > 0) {
-        const imageGrid = document.createElement('div');
-        imageGrid.className = 'image-grid';
-        images.forEach(img => imageGrid.appendChild(img));
-        tempDiv.querySelectorAll('img').forEach(img => img.remove());
-        tempDiv.append(imageGrid);
-    }
-    finalOutput.innerHTML = tempDiv.innerHTML;
-}
-
-function buildPayload(query, imageUrl) {
-    let content = [];
-    if (query) content.push({ type: "text", text: query });
-    if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
-    return {
-        stream: sseToggle.checked,
-        messages: [{ role: "user", content }],
-        deep: deepToggle.checked // <-- Add this line
-    };
-}
-
-function doSearch() {
-    clearOutputs();
-    const query = input.value;
-    const imageUrl = imageUrlInput.value.trim();
-    input.value = '';
-    imageUrlInput.value = '';
-
-    let payload = buildPayload(query, imageUrl);
-
-    if (sseToggle.checked) {
-        sseFeed.style.display = 'flex';
-        let taskChunks = [];
-        let finalMarkdown = '';
-        let hasSuccess = false;
-        let hasError = false;
-
-        fetch(`${SERVER_URL}/search/sse`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
-            if (!response.ok) throw new Error("Network error");
-            const reader = response.body.getReader();
-            let decoder = new TextDecoder();
-            let buffer = '';
-
-            function processChunk({ done, value }) {
-                if (done) return;
-                buffer += decoder.decode(value, { stream: true });
-                let lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                lines.forEach(line => {
-                    if (line.startsWith('data:')) {
-                        let data = line.slice(5).trim();
-                        if (data === '[DONE]') {
-                            esClose();
-                        } else {
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.error) {
-                                    updateStatus(parsed.error, 'error');
-                                    hasError = true;
-                                }
-                                const delta = parsed?.choices?.[0]?.delta?.content;
-                                if (delta) {
-                                    // Check for <TASK>...</TASK> and SUCCESS
-                                    if (!hasSuccess) {
-                                        // Extract all <TASK>...</TASK> blocks
-                                        const taskMatches = [...delta.matchAll(/<TASK>([\s\S]*?)<\/TASK>/g)];
-                                        taskMatches.forEach(match => {
-                                            taskChunks.push(match[1]);
-                                            // Optionally, show in sseFeed
-                                            const div = document.createElement('div');
-                                            div.innerText = match[1];
-                                            sseFeed.appendChild(div);
-                                        });
-                                        // Check for SUCCESS marker
-                                        if (delta.includes('SUCCESS')) {
-                                            hasSuccess = true;
-                                            // Everything after SUCCESS is final markdown
-                                            const successIndex = delta.indexOf('SUCCESS');
-                                            finalMarkdown += delta.slice(successIndex + 'SUCCESS'.length);
-                                        }
-                                    } else {
-                                        // After SUCCESS, accumulate for final markdown
-                                        finalMarkdown += delta;
-                                    }
-                                }
-                            } catch (e) {
-                                updateStatus(data, 'info');
-                            }
-                        }
-                    }
-                });
-
-                return reader.read().then(processChunk);
-            }
-
-            function esClose() {
-                statusMessage.classList.add('hidden');
-                if (finalMarkdown.trim() && !hasError) {
-                    renderFinalOutput(finalMarkdown);
-                }
-            }
-
-            return reader.read().then(processChunk);
-        })
-        .catch(e => {
-            updateStatus(`[ERROR] ${e.toString()}`, "error");
-            finalOutput.innerHTML = `<span class="text-red-400">[ERROR] ${e.toString()}</span>`;
-        });
-    } else {
-        sseFeed.style.display = 'none';
-        finalOutput.innerHTML = '<span class="text-gray-400">Loading...</span>';
-        fetch(`${SERVER_URL}/search`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(r => r.json())
-        .then(data => showResult('POST', data))
-        .catch(e => showResult('POST', { error: e.toString() }));
-    }
-}
-
-submitButton.onclick = (e) => {
-    e.preventDefault();
-    doSearch();
-};
-
-sseToggle.onchange = () => {
-    clearOutputs();
-};
-
-input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    
+    // Event listeners
+    sendBtn.addEventListener('click', handleSend);
+    plusBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        doSearch();
+        e.stopPropagation();
+        togglePlusMenu();
+    });
+    
+    messageInput.addEventListener('input', function() {
+        updateSendButton();
+        autoResize();
+    });
+    
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    });
+    
+    // Menu item clicks
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const action = this.getAttribute('data-action');
+            handleMenuAction(action);
+        });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!plusBtn.contains(e.target) && !plusMenu.contains(e.target)) {
+            closePlusMenu();
+        }
+    });
+    
+    updateSendButton();
+    console.log('App initialized successfully');
+}
+
+// Toggle plus menu
+function togglePlusMenu() {
+    console.log('Toggling plus menu');
+    if (plusMenu.classList.contains('hidden')) {
+        plusMenu.classList.remove('hidden');
+        console.log('Menu opened');
+    } else {
+        plusMenu.classList.add('hidden');
+        console.log('Menu closed');
     }
-});
+}
+
+// Close plus menu
+function closePlusMenu() {
+    plusMenu.classList.add('hidden');
+}
+
+// Handle menu actions
+function handleMenuAction(action) {
+    console.log('Menu action:', action);
+    closePlusMenu();
+    
+    if (action === 'deep_research') {
+        isDeepResearch = true;
+        messageInput.placeholder = "Ask for deep research...";
+        messageInput.focus();
+        console.log('Deep research mode enabled');
+    } else {
+        isDeepResearch = false;
+        messageInput.placeholder = "Message ChatGPT";
+        messageInput.focus();
+        console.log('Action selected:', action);
+    }
+}
+
+// Auto resize textarea
+function autoResize() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + 'px';
+}
+
+// Update send button state
+function updateSendButton() {
+    const hasText = messageInput.value.trim().length > 0;
+    sendBtn.disabled = !hasText || isGenerating;
+}
+
+// Handle send message
+function handleSend() {
+    const message = messageInput.value.trim();
+    
+    if (!message || isGenerating) {
+        console.log('Cannot send: empty message or generating');
+        return;
+    }
+    
+    console.log('Sending message:', message);
+    
+    // Hide initial title on first message
+    if (!initialTitle.classList.contains('hidden')) {
+        initialTitle.classList.add('hidden');
+    }
+    
+    // Add user message
+    addMessage('user', message);
+    
+    // Clear input
+    messageInput.value = '';
+    autoResize();
+    updateSendButton();
+    closePlusMenu();
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    // Send to backend
+    sendToBackend(message, isDeepResearch);
+    
+    // Reset deep research flag
+    if (isDeepResearch) {
+        isDeepResearch = false;
+        messageInput.placeholder = "Message ChatGPT";
+    }
+}
+
+// Add message to conversation
+function addMessage(role, content) {
+    console.log('Adding message:', role, content);
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + role;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = role === 'user' ? 'Y' : 'AI';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = content;
+    
+    if (role === 'user') {
+        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(avatar);
+    } else {
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(messageContent);
+    }
+    
+    conversation.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+    console.log('Showing typing indicator');
+    isGenerating = true;
+    updateSendButton();
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'typing-indicator';
+    typingDiv.id = 'typing-indicator';
+    
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'typing-dot';
+        typingDiv.appendChild(dot);
+    }
+    
+    conversation.appendChild(typingDiv);
+    scrollToBottom();
+}
+
+// Remove typing indicator
+function removeTypingIndicator() {
+    console.log('Removing typing indicator');
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+    isGenerating = false;
+    updateSendButton();
+}
+
+// Scroll to bottom
+function scrollToBottom() {
+    const container = document.querySelector('.conversation-container');
+    if (container) {
+        setTimeout(function() {
+            container.scrollTop = container.scrollHeight;
+        }, 10);
+    }
+}
+
+// Send message to backend
+function sendToBackend(message, deepResearch) {
+    console.log('Sending to backend:', message, 'Deep research:', deepResearch);
+    
+    const payload = {
+        stream: false,
+        messages: [{
+            role: "user",
+            content: [{ type: "text", text: message }]
+        }],
+        deep: deepResearch || false
+    };
+    
+    fetch(SERVER_URL + '/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('Server responded with ' + response.status + ': ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        removeTypingIndicator();
+        console.log('Backend response:', data);
+        
+        let responseText = '';
+        if (data.error) {
+            responseText = 'Error: ' + data.error;
+        } else if (data.result) {
+            responseText = data.result;
+        } else if (data.choices && data.choices[0] && data.choices[0].message) {
+            responseText = data.choices[0].message.content;
+        } else {
+            responseText = "I received your message but couldn't generate a proper response.";
+        }
+        
+        addMessage('assistant', responseText);
+    })
+    .catch(function(error) {
+        removeTypingIndicator();
+        console.error('Backend error:', error);
+        
+        const fallbackMessage = "An error occured! Please try again later.";
+        
+        addMessage('assistant', fallbackMessage);
+    });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

@@ -19,87 +19,61 @@
     <meta property="twitter:description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
     <meta property="twitter:image" content="https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283">
     <link rel="icon" type="image/png" href="CSS/IMAGES/ElixpoSearchIcon.png"> 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="CSS/searchAgent.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#444ce7',
-                        primaryHover: '#3a41c5',
-                        darkBg: '#18191a',
-                        darkBg2: '#212223',
-                        darkBg3: '#2a2b2d'
-                    }
-                },
-                fontFamily: {
-                    sans: ['Outfit', 'ui-sans-serif', 'system-ui']
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-darkBg text-white min-h-screen flex items-center justify-center"> 
-    <main class="max-w-4xl mx-auto px-6 py-8 w-full"> 
-        <header class="text-center mb-8"> 
-            <h1 class="text-5xl font-bold text-primary mb-4">Elixpo-Search</h1>
-        </header>
-        <section class="search-input-container max-w-2xl mx-auto mb-8"> 
-            <div class="flex items-start p-4 bg-darkBg2 rounded-lg shadow">
-                <i data-lucide="message-circle" class="w-5 h-5 text-gray-400 mt-3 mr-3 flex-shrink-0"></i>
-                <textarea
-                    id="queryInput"
-                    class="flex-1 bg-transparent border-none outline-none resize-none text-white placeholder-gray-400 min-h-[60px] py-2"
-                    placeholder="e.g., Explain quantum computing, show images and sources. Summarize https://www.youtube.com/watch?v=example cite sources."
-                    rows="3"
-                    aria-label="Enter your search query" 
+<body>
+    <div class="app">
+        <div class="conversation-container">
+            <div id="conversation" class="conversation">
+                <div class="initial-title">
+                    <h1>What do you want to search?</h1>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <div class="input-wrapper">
+                <button id="plusBtn" class="plus-btn">
+                    <i data-lucide="plus"></i>
+                </button>
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Search..." 
+                    rows="1"
                 ></textarea>
-                <button id="submitButton" class="relative bottom-[10%] search-btn px-4 py-2 ml-3 text-white font-medium flex items-center gap-2 rounded-lg shadow">
-                    <i data-lucide="send" class="w-4 h-4"></i>
-                    Search
+                <button class="mic-btn">
+                    <i data-lucide="mic"></i>
+                </button>
+                <button id="sendBtn" class="send-btn">
+                    <i data-lucide="arrow-up"></i>
                 </button>
             </div>
-            <div id="imageUrlPlaceholder" class="image-url-placeholder mt-3 px-4 py-2 rounded-lg">
-                <label for="imageUrlInput" class="text-gray-400 text-sm mr-2">Image URL (optional):</label>
-                <input type="text" id="imageUrlInput" class="image-url-input" placeholder="Paste image URL here...">
-            </div>
-            <div class="flex items-center justify-between gap-4 mt-4 py-3 px-5">
-                <label class="flex items-center gap-3">
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="sseToggle" checked>
-                        <span class="slider"></span>
-                    </div>
-                    <span class="text-gray-400 text-sm">Stream (SSE)</span>
-                </label>
-                <label class="flex items-center gap-3">
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="deepToggle">
-                        <span class="slider"></span>
-                    </div>
-                    <span class="text-gray-400 text-sm">Deep Research</span>
-                </label>
-                <div class="flex gap-2">
-                    <button id="classicBtn" class="api-toggle active">Classic</button>
-                    <button id="chatBtn" class="api-toggle" style="display: none;">Chat API</button>
+            
+            <div id="plusMenu" class="plus-menu hidden">
+                <div class="menu-item" data-action="file_upload">
+                    <i data-lucide="paperclip"></i>
+                    <span>Add photos & files</span>
                 </div>
-            </div>            
-        </section>
-        <div id="statusMessage" class="text-center mb-6 hidden"></div> 
-        <section id="resultsContainer"> 
-            <div id="sseFeed" class="mb-4">
-                
+                <div class="menu-item" data-action="think_longer">
+                    <i data-lucide="clock"></i>
+                    <span>Think longer</span>
+                </div>
+                <div class="menu-item" data-action="deep_research">
+                    <i data-lucide="search"></i>
+                    <span>Deep research</span>
+                </div>
             </div>
-            <div id="finalOutput" class="mb-4"></div>
-        </section>
-    </main>
-    <script src="JS/searchAgent.js">
-
+        </div>
+        
+        <div class="footer">
+            <p>AI can make mistakes. Check important info.</p>
+        </div>
+    </div>
+    
+    <script src="JS/searchAgent.js"></script>
+    <script>
+        lucide.createIcons();
     </script>
 </body>
 </html>
