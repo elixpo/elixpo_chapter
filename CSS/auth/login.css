@@ -6,7 +6,8 @@ body
 span,
 p,
 label,
-a 
+a,
+input
 {
     font-family: 'Funnel Display', serif;
 }
