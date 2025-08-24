@@ -15,7 +15,7 @@ let isDeepResearch = false;
 
 // Initialize app
 function init() {
-    console.log('Initializing ChatGPT interface...');
+    console.log('Initializing interface...');
     
     // Ensure all elements exist
     if (!messageInput || !sendBtn || !plusBtn || !plusMenu || !conversation || !initialTitle) {
