@@ -9,7 +9,7 @@ let activeNotifications = 0;
 window.onload = function() {
     hideElement('inputLabel');
     showElement('otpLabel');
-    checkURLParams();
+    checkURLParamsLogin();
 };
 
 
@@ -42,7 +42,7 @@ function showElement(id)
 }
 
 
-function checkURLParams() {
+function checkURLParamsLogin() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenParam = urlParams.get('token');
     const operation = urlParams.get('operation');
@@ -65,7 +65,7 @@ document.getElementById("loginBtn").addEventListener("click", function() {
     userInpEmail = document.getElementById("email").value;
     var verifiedEmail = safeInputEmail(userInpEmail);
     if (!verifiedEmail) {
-        showNotification("Crack!! Please enter a valid email address buddy.");
+        showNotification("Ooppss crack!! Please enter a valid email address buddy.");
         return;
     }
     const response = fetch('http://127.0.0.1:5000/api/loginRequest?email=' + encodeURIComponent(verifiedEmail), {

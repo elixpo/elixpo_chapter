@@ -7,14 +7,14 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-function generatetoken(email, otp) {
+function generatetoken(email, otp, maxLength = 6) {
   const timestamp = Date.now();
   const hash = crypto
     .createHash("sha256")
     .update(email + otp + timestamp)
     .digest("base64")
     .replace(/[^a-zA-Z0-9]/g, "");
-  return hash.substring(0, 6);
+  return hash.substring(0, maxLength);
 }
 
 
