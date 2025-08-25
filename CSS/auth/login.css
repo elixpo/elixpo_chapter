@@ -11,3 +11,11 @@ input
 {
     font-family: 'Funnel Display', serif;
 }
+
+.hidden 
+{
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    filter: blur(2px);
+}

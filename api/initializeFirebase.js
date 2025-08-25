@@ -1,22 +1,19 @@
-import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import admin from "firebase-admin";
+import { readFileSync } from "fs";
 
-// load service account key
-const serviceAccount = JSON.parse(readFileSync('./server.json', 'utf-8'));
 
+// Load service account key
+const serviceAccount = JSON.parse(
+  readFileSync("./database.json", "utf-8")
+);
+
+// Initialize Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://photoshare_edc8a-default-rtdb.firebaseio.com"
+  databaseURL: "https://photoshare-edc8a-default-rtdb.firebaseio.com/"
 });
 
-const db = admin.database();
-const auth = admin.auth();
-const storage = admin.storage();
-const firestore = admin.firestore();
-
-export default {
-  db,
-  auth,
-  storage,
-  firestore
-};
+const db = admin.database(); 
+const store = admin.storage();
+const collec = admin.firestore();
+export { db, store, collec };

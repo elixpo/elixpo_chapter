@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../../../CSS/auth/login.css">
     <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/logo.png">
 </head>
-<body class="bg-[#030712] min-h-screen flex items-stretch font-[Kanit,serif]">
+<body class="bg-[#030712] min-h-screen flex items-stretch font-[Kanit,serif]"> 
     <div class="w-full md:w-1/2 flex flex-col justify-center px-10 py-12 bg-[#10141E]">
         <div class="flex flex-col max-w-md w-full mx-auto">
             <div class="flex items-center mb-10">
@@ -18,11 +18,11 @@
             </div>
 
             <form class="flex flex-col gap-4">
-                <div id="inputLabel" class="hidden">
+                <div id="inputLabel" class="">
                     <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="email">Email address</label>
                     <input id="email" type="email" value="ayushbhatt633@gmail.com" autocomplete="off" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
                 </div>
-                <div id="otpLabel" class="">
+                <div id="otpLabel" class="hidden">
                     <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="otp">OTP</label>
                     <div class="flex gap-2">
                         <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
