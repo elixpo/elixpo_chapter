@@ -5,6 +5,7 @@ import MAX_EXPIRE_TIME from "./config.js";
 
 router.get("/loginRequest", async (req, res) => {
   const email = req.query.email;
+  
   if (!email) {
     // Fancy error notification for missing email
     return res.status(400).json({ error: "🚫 Email is required to proceed with login. Please provide a valid email address!" });
@@ -13,10 +14,37 @@ router.get("/loginRequest", async (req, res) => {
   let otp = generateOTP();
   let token = generatetoken(email, otp);
   let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
+  const usersRef = store.collection("users");
+
+
+  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
+  if (userSnapshot.empty) {
+    return res.status(404).json({ error: "❗ Email not registered. Please sign up before logging in." });
+  }
+  else if(userSnapshot.size > 1)
+  {
+    return res.status(500).json({ error: "🔥 Multiple accounts found with this email. Please contact support." });
+  }
+  else if(userSnapshot.size === 1)
+  {
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+    if(userData.accountStatus && userData.accountStatus === "suspended")
+    {
+      return res.status(403).json({ error: "🚫 Account suspended. Please contact support for assistance." });
+    }
+    if(userData.accountStatus && userData.accountStatus === "deactivated")
+    {
+      return res.status(403).json({ error: "🚫 Account deactivated. Please contact support for assistance." });
+    }
+    if(userData.joinedVia && userData.joinedVia !== "email")
+    {
+      return res.status(403).json({ error: "🚫 The account was created using " + userData.joinedVia + " provider. Please use the same provider to log back in!"});
+    }
+  }
 
   if(!otpConfirmation)
   {
-    // Fancy error notification for failed OTP email
     return res.status(500).json({ error: "❌ Failed to send OTP email. Please check your email address or try again later!" });
   }
 

@@ -53,7 +53,7 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
 
   <!-- Title -->
   <h2 style="font-size:1.8em;text-align:center;margin:0 0 20px 0;color:#fff;font-weight:600;">
-    Your verification code
+    Your Elixpo Blogs ${operation == "login" ? "Login" : "Registration"} OTP
   </h2>
 
   <!-- OTP Block -->
@@ -67,7 +67,7 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
 
   <!-- Instructions -->
   <p style="margin:0 0 12px 0;text-align:center;font-size:1.2em;color:#ccc;">
-    Use this code to sign in to your <strong>Elixpo Blogs</strong> account.
+    Use this code to sign ${operation == "login" ? "in" : "up"} to your <strong>Elixpo Blogs</strong> account.
   </p>
   <p style="margin:0 0 28px 0;font-size:1.1em;color:#888;text-align:center;">
     This code will expire in 10 minutes and can only be used once.
@@ -75,7 +75,7 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
 
   <!-- CTA Button -->
   <div style="text-align:center;margin:36px 0;">
-    <a href="${deploymentURL}/src/auth/login?token=${token}&operation=${operation}&state=${state}&callback=true" 
+    <a href="${deploymentURL}/src/auth/${operation}?token=${token}&operation=${operation}&state=${state}&callback=true" 
        style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);
               color:#fff;border-radius:32px;text-decoration:none;font-weight:600;font-size:1.05em;
               box-shadow:0 4px 12px rgba(139,92,246,0.4);">
@@ -98,7 +98,7 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
     await transporter.sendMail({
       from: `"Elixpo" <${process.env.MAIL_USER}>`,
       to: email,
-      subject: `OTP Login Request to Elixpo --`,
+      subject: `Welcome to Elixpo, just one OTP away! --`,
       html
     });
 

@@ -1,4 +1,4 @@
-import { db } from "./initializeFirebase.js";
+import { db, collec } from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
 import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
 import MAX_EXPIRE_TIME from "./config.js";
@@ -7,6 +7,7 @@ import MAX_EXPIRE_TIME from "./config.js";
 // Registration request: send OTP to email
 router.get("/registerRequest", async (req, res) => {
     const email = req.query.email;
+    console.log(email);
     if (!email) {
         return res.status(400).json({ error: "🚫 Email is required to proceed with registration. Please provide a valid email address!" });
     }
@@ -40,6 +41,7 @@ router.get("/registerRequest", async (req, res) => {
 // OTP verification and user creation
 router.get("/verifyRegisterOTP", async (req, res) => {
     const { otp, token, email, time, callback } = req.query;
+    console.log(otp, token, email, time, callback);
     if (!token) {
         return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the registration process." });
     }
@@ -59,34 +61,47 @@ router.get("/verifyRegisterOTP", async (req, res) => {
             return res.status(400).json({ status: false, error: "🚫 Invalid OTP entered. Please check and try again." });
         }
 
-        // Check if user already exists
-        const userRef = db.ref(`user/${email}`);
-        const userSnap = await userRef.once("value");
-        if (userSnap.exists()) {
+        const uid = generatetoken(email, Date.now(), 12);
+        const userRef = collec.collection("users").doc(uid);
+        const userSnap = await userRef.get();
+        if (userSnap.exists) {
             await regRef.remove();
             return res.status(400).json({ error: "⚠️ User already registered with this email." });
         }
+        let country = "";
+        try {
+            const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.connection.remoteAddress;
+            const fetch = (await import("node-fetch")).default;
+            const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+            const geoData = await geoRes.json();
+            if (geoData && geoData.country) {
+            country = geoData.country;
+            }
+        } catch (e) {
+            country = "";
+        }
 
-        // Create user
-        const uid = generatetoken(email, Date.now(), 12);
         await userRef.set({
-            "name": "",
-            "uid": uid,
-            "datejoined": Date.now(),
-            "blogs-written": [],
-            "org-joined": [],
-            "org-subdomain": "",
-            "blog-reports": [],
-            "profile pic link url": "",
-            "org-id": "",
-            "followers": [],
-            "following": [],
-            "locale": ""
+            name: "",
+            email: email,
+            uid: uid,
+            dateJoined: Date.now(),
+            blogsWritten: {},
+            orgJoined: {},
+            orgSubdomain: "",
+            blogReports: {},
+            profilePicLink: "",
+            orgId: "",
+            followers: {},
+            following: {},
+            locale: country,
+            joinedVia: "email",
+            bio: ""
         });
 
         await regRef.remove();
         res.status(200).json({ status: true, message: "✅ Registration successful! Welcome to Elixpo Blogs." });
-    } catch (error) {
+        } catch (error) {
         res.status(500).json({ status: false, error: "🔥 Internal server error during registration. Please try again!" });
     }
 });

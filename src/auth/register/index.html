@@ -21,12 +21,23 @@
 
                 <div>
                     <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="email">Email address</label>
-                    <input id="email" autocomplete="off" spellcheck="false" type="email" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                    <input id="email" value="ayushbhatt633@gmail.com" autocomplete="off" spellcheck="false" type="email" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div id="otpLabel" class="hidden">
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="otp">OTP</label>
+                    <div class="flex gap-2">
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                    </div>
                 </div>
                 <div class="flex items-center justify-between text-sm mt-2">
                     <a href="../login/index.html" class="text-[#7ba8f0] text-[1.1em] font-bold hover:underline">Already have an account?</a>
                 </div>
-                <button type="submit" class="mt-4 px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-lg rounded-full font-semibold shadow transition-all duration-200">
+                <button type="button" id="registerBtn" class="mt-4 px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-lg rounded-full font-semibold shadow transition-all duration-200">
                     <span> Sign up </span>
                 </button>
             </form>
@@ -49,4 +60,6 @@
     </div>
     <!-- <div class="hidden md:block w-1/2 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80');"></div> -->
 </body>
+<script src="../../../JS/auth/helperFunction.js"></script>
+<script src="../../../JS/auth/register.js"></script>
 </html>
