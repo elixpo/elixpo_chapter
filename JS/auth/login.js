@@ -50,7 +50,7 @@ function checkURLParamsLogin() {
     let callback = urlParams.get('callback');
     console.log("URL Parameters:", { tokenParam, operation, state, callback });
     if (callback === 'true' && operation === 'login' && state === 'elixpo-blogs' && tokenParam) {
-        verifyOTP(tokenParam, null, operation, state, otp=null, callback=true);
+        verifyLoginOTP(tokenParam, null, operation, state, otp=null, callback=true);
     }
     else if(operation != null && operation != "login" || state!= null && state != "elixpo-blogs")
     {
@@ -98,9 +98,9 @@ otpInputs.forEach((input, idx) => {
         if (this.value.length === 1 && idx < otpInputs.length - 1) {
             otpInputs[idx + 1].focus();
         }
-        // If all inputs are filled, call verifyOTP
+        // If all inputs are filled, call verifyLoginOTP
         if ([...otpInputs].every(inp => inp.value.length === 1)) {
-            verifyOTP(token, emailResp=emailResp, operation=null, state=null, [...otpInputs].map(inp => inp.value).join(''), callback=false);
+            verifyLoginOTP(token, emailResp=emailResp, operation=null, state=null, [...otpInputs].map(inp => inp.value).join(''), callback=false);
         }
     });
 
@@ -124,26 +124,32 @@ function resetLoginForm() {
     userInpEmail = null;
 }
 
-function verifyOTP(token, emailResp=null, operation=null, state=null, otp=null, callback=false) {
+function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=null, callback=false) {
     console.log("Verifying OTP with:", { token, emailResp, operation, state, otp, callback });
     showNotification("Verifying OTP, just a moment...");
     if (callback === true) {
+        disableElement('loginBtn');
+        showNotification("Verifying OTP, just a moment...");
+        hideElement('inputLabel');
+        hideElement('otpLabel');
         console.log("checking from the callback")
-        const response = fetch(`http://127.0.0.1:5000/api/verifyOTP?token=${encodeURIComponent(token)}&email=${encodeURIComponent(emailResp)}&time=${encodeURIComponent(Date.now())}&state=${encodeURIComponent(state)}&operation=${encodeURIComponent(operation)}&callback=${true}`, 
+        const response = fetch(`http://127.0.0.1:5000/api/verifyLoginOTP?token=${encodeURIComponent(token)}&email=${encodeURIComponent(emailResp)}&time=${encodeURIComponent(Date.now())}&state=${encodeURIComponent(state)}&operation=${encodeURIComponent(operation)}&callback=${true}`, 
         { method: 'GET',
             headers: {
             'Content-Type': 'application/json'
         },
          })
-    response.then((res) => res.json()).then((data) => {
+        response.then((res) => res.json()).then((data) => {
         if (data.status) {
             showNotification(data.message || "🎉 OTP verified! Welcome!");
             resetLoginForm();
         } else {
             showNotification(data.error || "❗ OTP verification failed. Please try again.");
+            resetLoginForm();
         }
     }).catch(() => {
         showNotification("🔥 Network error during OTP verification.");
+        resetLoginForm();
     });
     return;
     }
@@ -155,7 +161,7 @@ function verifyOTP(token, emailResp=null, operation=null, state=null, otp=null, 
     }
     else 
     {
-        const response = fetch('http://127.0.0.1:5000/api/verifyOTP?otp=' + encodeURIComponent(otp) + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(emailResp) + '&time=' + encodeURIComponent(Date.now()), 
+        const response = fetch('http://127.0.0.1:5000/api/verifyLoginOTP?otp=' + encodeURIComponent(otp) + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(emailResp) + '&time=' + encodeURIComponent(Date.now()), 
         { method: 'GET',
             headers: {
             'Content-Type': 'application/json'

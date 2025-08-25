@@ -1,6 +1,13 @@
 import {db, store, collec} from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
 import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+dotenv.config();
+
+
+
 import MAX_EXPIRE_TIME from "./config.js";
 
 router.get("/loginRequest", async (req, res) => {
@@ -69,8 +76,8 @@ router.get("/loginRequest", async (req, res) => {
 });
 
 
-router.get("/verifyOTP", async (req, res) => {
-  const { otp, token, email, time, operation, state, callback } = req.query;
+router.get("/verifyLoginOTP", async (req, res) => {
+  const { otp, token, email, time, operation, state, callback, remember } = req.query;
   if (!token)
   {
     // Fancy error notification for missing token
@@ -89,9 +96,13 @@ router.get("/verifyOTP", async (req, res) => {
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
       if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
+        const payload = {email: loginData.email, token: loginData.token};
+        const expiresIn = remember === true ? "30d" : "2h"; 
+        const cookieMaxAge = remember === "true" ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
+        const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
+        res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
         res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
         db.ref(`loginAttempt/${token}`).remove();
-        return;
       }
     }
     else if(!callback)
@@ -104,6 +115,12 @@ router.get("/verifyOTP", async (req, res) => {
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
       if(loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
+
+        const payload = {email: loginData.email, token: loginData.token};
+        const expiresIn = remember === true ? "30d" : "2h"; 
+        const cookieMaxAge = remember === "true" ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
+        const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
+        res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
        res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
        db.ref(`loginAttempt/${token}`).remove();
        return;

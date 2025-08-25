@@ -27,9 +27,6 @@ function checkURLParamsRegister()
     let callback = urlParams.get('callback');
     console.log("URL Parameters:", { tokenParam, operation, state, callback });
     if (callback === 'true' && operation === 'register' && state === 'elixpo-blogs' && tokenParam) {
-        hideElement('inputLabel');
-        hideElement('otpLabel');
-        disableElement('registerBtn');
         verifyRegisterOTP(tokenParam, null, operation, state, otp=null, callback=true);
     }
     else if(operation != null && operation != "register" || state!= null && state != "elixpo-blogs")
@@ -111,7 +108,10 @@ if (otpInputs.length) {
 }
 
 function verifyRegisterOTP(token, email, otp) {
-    showNotification("Verifying OTP...");
+    showNotification("Verifying OTP, just a moment...");
+    hideElement('inputLabel');
+    hideElement('otpLabel');
+    disableElement('registerBtn');
     if (!token || !email || !otp) {
         showNotification("Invalid registration attempt. Please try again.");
         resetRegisterForm();
@@ -125,7 +125,7 @@ function verifyRegisterOTP(token, email, otp) {
     .then(data => {
         if (data.status) {
             showNotification(data.message || "🎉 Registration successful!");
-            console.log("Registered User ");
+            console.log("Registered User");
             resetRegisterForm();
         } else {
             showNotification(data.error || "❗ OTP verification failed. Please try again.");
@@ -134,5 +134,6 @@ function verifyRegisterOTP(token, email, otp) {
     })
     .catch(() => {
         showNotification("🔥 Network error during OTP verification.");
+        resetRegisterForm();
     });
 }
