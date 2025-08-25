@@ -61,7 +61,9 @@ router.get("/verifyOTP", async (req, res) => {
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
       if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
-        return res.status(200).json({ status: true, message: "🎉 Login verified via callback! Welcome to Elixpo Blogs." });
+        res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
+        db.ref(`loginAttempt/${token}`).remove();
+        return;
       }
     }
     else if(!callback)
@@ -75,6 +77,8 @@ router.get("/verifyOTP", async (req, res) => {
       const loginData = snapshot.val();
       if(loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
        res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
+       db.ref(`loginAttempt/${token}`).remove();
+       return;
       }
       else if (!loginData || loginData.email !== email) {
       return res.status(400).json({ error: "❗ Invalid login request. Please check your email and try again." });
