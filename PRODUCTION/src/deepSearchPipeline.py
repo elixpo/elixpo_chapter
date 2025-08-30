@@ -9,19 +9,20 @@ from getTimeZone import get_local_time
 import random
 import logging
 import dotenv
+import concurrent.futures
 import os
 import asyncio
-from textEmbedModel import retrieve_top_k
 from utility import (
     fetch_youtube_parallel,
     fetch_url_content_parallel,
-    image_search,
-    web_search,
     storeDeepSearchQuery,
     getDeepSearchQuery,
     cleanDeepSearchQuery,
     _deepsearch_store
 )
+from functools import lru_cache
+from yahooSearch import agent_pool, image_search
+from model_client import parent_conn, p
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
@@ -31,6 +32,10 @@ MODEL = os.getenv("MODEL")
 REFRRER = os.getenv("REFERRER")
 POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 
+
+@lru_cache(maxsize=100)
+def cached_web_search_key(query: str) -> str:
+    return f"web_search_{hash(query)}"
 
 def format_sse(event: str, data: str, task_num: int = 0, finished: str = "no", progress: int = 0, stage: str = "info") -> str:
     """Format Server-Sent Event (SSE) messages."""
@@ -57,7 +62,7 @@ async def run_deep_research_pipeline(user_query: str, user_image: str, event_id:
         return None
 
     # --- INIT EVENT ---
-    initial_event = emit_event("INFO", "<TASK>Initiating Deep Research Pipeline</TASK>", 0, "no", 0, "info")
+    initial_event = emit_event("INFO", "<TASK>Understanding Query</TASK>", 0, "no", 0, "info")
     if initial_event:
         yield initial_event
 
@@ -69,7 +74,7 @@ async def run_deep_research_pipeline(user_query: str, user_image: str, event_id:
         collected_sources = []
         collected_images_from_web = []
         collected_similar_images = []
-        memoized_results = {"timezone_info": {}, "youtube_metadata": {}, "youtube_transcripts": {}}
+        memoized_results = {"timezone_info": {}, "youtube_metadata": {}, "youtube_transcripts": {}, "web_searches": {}, "current_search_urls": []}
 
         # --- SYSTEM PROMPT ---
         system_prompt = f"""
@@ -189,7 +194,6 @@ Final Response Format:
                     final_message_content = assistant_message.get("content")
                     break
 
-                # --- Execute Tool Calls ---
                 tool_outputs = []
                 for tool_call in tool_calls:
                     function_name = tool_call["function"]["name"]
@@ -210,26 +214,35 @@ Final Response Format:
                                 memoized_results["timezone_info"][location] = tool_result
 
                         elif function_name == "web_search":
-                            if event_id:
-                                yield emit_event("INFO", f"<TASK>Web Search</TASK>", task_num, "no", progress, "event")
-                            if event_id:
-                                yield emit_event("INFO", f"<TASK>1 min please!</TASK>", task_num, "no", progress, "event")
-                            query = function_args.get("query")
-                            urls = await web_search(query)
-                            collected_sources.extend(urls)
-                            url_texts = fetch_url_content_parallel(urls)
-                            top_chunks = retrieve_top_k([url_texts], query, k=3)
-                            context = "\n\n".join(top_chunks)[:1000]
-                            tool_result = f"Web search results for '{query}':\n{context}"
+                                search_query = function_args.get("query")
+                                cache_key = cached_web_search_key(search_query)
+                                if cache_key in memoized_results["web_searches"]:
+                                    logger.info(f"Using cached web search for: {search_query}")
+                                    yield memoized_results["web_searches"][cache_key]
+                                web_event = emit_event("INFO", f"<TASK>Fast Internet Search</TASK>")
+                                if web_event:
+                                    yield web_event
+                                logger.info(f"Performing optimized web search for: {search_query}")
+                                parent_conn.send({"cmd": "search", "query": f"{search_query}", "max_chars": 500})
+                                response = parent_conn.recv()
+                                tool_result = response.get("result")
+                                source_urls = response.get("urls")
+                                memoized_results["web_searches"][cache_key] = tool_result
+                                if "current_search_urls" not in memoized_results:
+                                    memoized_results["current_search_urls"] = []
+                                memoized_results["current_search_urls"] = source_urls
+                                yield tool_result
 
                         elif function_name == "fetch_full_text":
-                            if event_id:
-                                yield emit_event("INFO", f"<TASK>Getting Detailed Information</TASK>", task_num, "no", progress, "event")
-                            url = function_args.get("url")
-                            text = fetch_full_text(url)
-                            top_chunks = retrieve_top_k([text], task, k=1)
-                            context = top_chunks[0][:2000] if top_chunks else text[:2000]
-                            tool_result = f"Fetched content for {url}:\n{context}"
+                            logger.info(f"Fetching webpage content")
+                            web_event = emit_event("INFO", f"<TASK>Reading Webpage</TASK>")
+                            if web_event:
+                                yield web_event
+                            urls = [function_args.get("url")]
+                            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                                future = executor.submit(fetch_url_content_parallel, urls)
+                                parallel_results = future.result(timeout=10)
+                            yield parallel_results if parallel_results else "[No content fetched from URL]"
 
                         elif function_name == "generate_prompt_from_image":
                             if event_id:
@@ -288,6 +301,7 @@ Final Response Format:
 
                     except Exception as e:
                         tool_result = f"Tool execution error: {e}"
+                        print("Error:", e)
                         logger.error(f"Error in tool {function_name}: {e}")
 
                     tool_outputs.append({
@@ -313,7 +327,7 @@ Final Response Format:
         all_research_data = []
         for task_num, task in enumerate(tasks, 1):
             # Get stored research data for this task if available
-            task_data = getDeepSearchQuery(event_id, task_num) if event_id else None
+            task_data = getDeepSearchQuery(event_id) if event_id else None
             if task_data:
                 all_research_data.append(f"### Research Task {task_num}: {task}\n{task_data}")
         
@@ -324,19 +338,12 @@ You are an expert research analyst and essay writer. Your mission is to synthesi
 
 WRITING REQUIREMENTS:
 - Write in essay format with clear structure (introduction, main body with subsections, conclusion)
-- Minimum 800-1200 words for substantial topics
+- Minimum 1200 words for substantial topics
 - Use academic tone but remain accessible and engaging  
 - Include specific details, statistics, dates, and examples from research
 - Provide comprehensive coverage of all important aspects
 - Use proper transitions between sections
 - Include relevant context and background information
-
-RESEARCH INTEGRATION:
-- Synthesize findings from ALL research tasks
-- Cross-reference information between sources
-- Highlight key insights and patterns
-- Address different perspectives or controversies
-- Include supporting evidence and examples
 
 STRUCTURE GUIDELINES:
 1. **Introduction**: Context, significance, and overview
@@ -355,11 +362,8 @@ Current Research Context:
 {research_context}
 
 Available Tools Data:
-- Sources consulted: {len(collected_sources)} sources
-- Images found: {len(collected_images_from_web)} images
-- Research tasks completed: {len(tasks)} tasks
-
-Original Query: {user_query}
+- Sources consulted: {(collected_sources)} sources
+- Images found: {(collected_images_from_web)} images
 """
 
         final_payload = {
