@@ -5,12 +5,14 @@ import random
 import logging
 import sys
 import uuid
-from searchPipeline import run_elixposearch_pipeline
+from searchPipeline import run_elixposearch_pipeline, initialize_search_agents
 from deepSearchPipeline import run_deep_research_pipeline
 import asyncio
 import threading
 import hypercorn.asyncio
 import json
+import uuid
+import multiprocessing as mp
 from hypercorn.config import Config
 from getYoutubeDetails import get_youtube_transcript
 from collections import deque
@@ -19,7 +21,6 @@ import atexit
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', stream=sys.stdout)
-
 request_queue = asyncio.Queue(maxsize=100) 
 processing_semaphore = asyncio.Semaphore(15)  
 active_requests = {}
@@ -128,7 +129,7 @@ def extract_query_and_image(data: dict) -> tuple[str, str | None, bool]:
         for msg in reversed(messages):
             if msg.get("role") == "user":
                 content = msg.get("content", "")
-                if isinstance(content, list):  # OpenAI-style with multiple parts
+                if isinstance(content, list):  
                     for part in content:
                         if part.get("type") == "text":
                             user_query += part.get("text", "").strip() + " "
@@ -154,14 +155,6 @@ def extract_query_and_image(data: dict) -> tuple[str, str | None, bool]:
     return user_query.strip(), user_image, is_openai_chat
 
 
-
-
-
-
-
-
-
-# --------------------------------------------- INITIALIZE APP-------------------------------------------------
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 app.logger.setLevel(logging.INFO)
@@ -169,6 +162,12 @@ app.logger.setLevel(logging.INFO)
 
 @app.before_serving
 async def startup():
+    try:
+        await initialize_search_agents()
+        app.logger.info("Search agents pre-warmed and ready for cold start")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize search agents: {e}")
+        
     for i in range(8):
         asyncio.create_task(process_request_worker())
     app.logger.info("Started 8 request processing workers")
@@ -452,6 +451,6 @@ if __name__ == "__main__":
     config = Config()
     config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False
-    config.workers = 1
+    config.workers = 10
     config.backlog = 1000  
     asyncio.run(hypercorn.asyncio.serve(app, config))
