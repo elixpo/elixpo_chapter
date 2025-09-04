@@ -7,12 +7,37 @@ let notificationQueue = [];
 let activeNotifications = 0;
 
 window.onload = function() {
+    // Check if user is already logged in via cookie
+    checkExistingAuth();
     hideElement('inputLabel');
     showElement('otpLabel');
     checkURLParamsLogin();
 };
 
-
+// Add function to check existing authentication
+function checkExistingAuth() {
+    fetch('http://127.0.0.1:5000/api/checkAuth', {
+        method: 'GET',
+        credentials: 'include', // Include cookies
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.authenticated) {
+            showNotification("✅ Already logged in! Redirecting...");
+            // Redirect to dashboard or main page
+            setTimeout(() => {
+                window.location.href = '/dashboard'; // Adjust URL as needed
+            }, 1500);
+        }
+    })
+    .catch(() => {
+        // User not authenticated, continue with normal flow
+        console.log("User not authenticated, showing login form");
+    });
+}
 
 function hideElement(id)
 {
@@ -41,7 +66,6 @@ function showElement(id)
     }, 100);
 }
 
-
 function checkURLParamsLogin() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenParam = urlParams.get('token');
@@ -59,7 +83,6 @@ function checkURLParamsLogin() {
     }
 }
 
-
 document.getElementById("loginBtn").addEventListener("click", function() {
     showNotification("Sending OTP via email...");
     userInpEmail = document.getElementById("email").value;
@@ -68,8 +91,13 @@ document.getElementById("loginBtn").addEventListener("click", function() {
         showNotification("Ooppss crack!! Please enter a valid email address buddy.");
         return;
     }
-    const response = fetch('http://127.0.0.1:5000/api/loginRequest?email=' + encodeURIComponent(verifiedEmail), {
+    
+    // Add remember me checkbox value
+    const rememberMe = document.getElementById("rememberMe") ? document.getElementById("rememberMe").checked : false;
+    
+    const response = fetch('http://127.0.0.1:5000/api/loginRequest?email=' + encodeURIComponent(verifiedEmail) + '&remember=' + rememberMe, {
         method: 'GET',
+        credentials: 'include', // Include cookies
         headers: {
             'Content-Type': 'application/json'
         },
@@ -82,6 +110,7 @@ document.getElementById("loginBtn").addEventListener("click", function() {
             [emailResp, token] = (data.data || data.message).split(',');
             sessionStorage.setItem('email', emailResp);
             sessionStorage.setItem('token', token);
+            sessionStorage.setItem('rememberMe', rememberMe);
             showNotification(msg);
             hideElement('inputLabel');
             showElement('otpLabel');
@@ -119,6 +148,7 @@ function resetLoginForm() {
     showElement('inputLabel');
     sessionStorage.removeItem('email');
     sessionStorage.removeItem('token');
+    sessionStorage.removeItem('rememberMe');
     token = null;
     emailResp = null;
     userInpEmail = null;
@@ -127,14 +157,18 @@ function resetLoginForm() {
 function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=null, callback=false) {
     console.log("Verifying OTP with:", { token, emailResp, operation, state, otp, callback });
     showNotification("Verifying OTP, just a moment...");
+    
+    const rememberMe = sessionStorage.getItem('rememberMe') === 'true';
+    
     if (callback === true) {
         disableElement('loginBtn');
         showNotification("Verifying OTP, just a moment...");
         hideElement('inputLabel');
         hideElement('otpLabel');
         console.log("checking from the callback")
-        const response = fetch(`http://127.0.0.1:5000/api/verifyLoginOTP?token=${encodeURIComponent(token)}&email=${encodeURIComponent(emailResp)}&time=${encodeURIComponent(Date.now())}&state=${encodeURIComponent(state)}&operation=${encodeURIComponent(operation)}&callback=${true}`, 
+        const response = fetch(`http://127.0.0.1:5000/api/verifyLoginOTP?token=${encodeURIComponent(token)}&email=${encodeURIComponent(emailResp)}&time=${encodeURIComponent(Date.now())}&state=${encodeURIComponent(state)}&operation=${encodeURIComponent(operation)}&callback=${true}&remember=${rememberMe}`, 
         { method: 'GET',
+            credentials: 'include', // Include cookies
             headers: {
             'Content-Type': 'application/json'
         },
@@ -142,7 +176,10 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
         response.then((res) => res.json()).then((data) => {
         if (data.status) {
             showNotification(data.message || "🎉 OTP verified! Welcome!");
-            resetLoginForm();
+            // Redirect to dashboard after successful login
+            setTimeout(() => {
+                window.location.href = '/dashboard'; // Adjust URL as needed
+            }, 1500);
         } else {
             showNotification(data.error || "❗ OTP verification failed. Please try again.");
             resetLoginForm();
@@ -161,8 +198,9 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
     }
     else 
     {
-        const response = fetch('http://127.0.0.1:5000/api/verifyLoginOTP?otp=' + encodeURIComponent(otp) + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(emailResp) + '&time=' + encodeURIComponent(Date.now()), 
+        const response = fetch('http://127.0.0.1:5000/api/verifyLoginOTP?otp=' + encodeURIComponent(otp) + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(emailResp) + '&time=' + encodeURIComponent(Date.now()) + '&remember=' + rememberMe, 
         { method: 'GET',
+            credentials: 'include', // Include cookies
             headers: {
             'Content-Type': 'application/json'
         },
@@ -172,6 +210,11 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
             showNotification(data.message);
             sessionStorage.removeItem('email');
             sessionStorage.removeItem('token');
+            sessionStorage.removeItem('rememberMe');
+            // Redirect to dashboard after successful login
+            setTimeout(() => {
+                window.location.href = '/dashboard'; // Adjust URL as needed
+            }, 1500);
         } else {
             showNotification(data.error || "❗ Oops! Please try logging in again");
             resetLoginForm();
@@ -180,7 +223,28 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
         showNotification("🔥 Network error during OTP verification.");
     });
     }
-    
+}
+
+// Add logout function
+function logout() {
+    fetch('http://127.0.0.1:5000/api/logout', {
+        method: 'POST',
+        credentials: 'include', // Include cookies
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        showNotification(data.message || "✅ Logged out successfully!");
+        // Redirect to login page
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1500);
+    })
+    .catch(() => {
+        showNotification("🔥 Error during logout.");
+    });
 }
 
 function showNotification(message, duration = 3500) {

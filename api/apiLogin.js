@@ -6,12 +6,52 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
 
-
-
 import MAX_EXPIRE_TIME from "./config.js";
+
+// Ensure cookie parser is used
+appExpress.use(cookieParser());
+
+// Add authentication middleware
+function authenticateToken(req, res, next) {
+    const token = req.cookies.authToken;
+    
+    if (!token) {
+        return res.status(401).json({ authenticated: false, error: "No authentication token found" });
+    }
+
+    jwt.verify(token, process.env.secretJWTKEY, (err, user) => {
+        if (err) {
+            return res.status(403).json({ authenticated: false, error: "Invalid or expired token" });
+        }
+        req.user = user;
+        next();
+    });
+}
+
+// Add route to check authentication status
+router.get("/checkAuth", authenticateToken, (req, res) => {
+    res.status(200).json({ 
+        authenticated: true, 
+        user: { 
+            email: req.user.email,
+            token: req.user.token 
+        } 
+    });
+});
+
+// Add logout route
+router.post("/logout", (req, res) => {
+    res.clearCookie("authToken", { 
+        httpOnly: true, 
+        secure: false, 
+        sameSite: "Lax" 
+    });
+    res.status(200).json({ message: "✅ Logged out successfully!" });
+});
 
 router.get("/loginRequest", async (req, res) => {
   const email = req.query.email;
+  const remember = req.query.remember === 'true';
   
   if (!email) {
     // Fancy error notification for missing email
@@ -22,7 +62,6 @@ router.get("/loginRequest", async (req, res) => {
   let token = generatetoken(email, otp);
   let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
   const usersRef = store.collection("users");
-
 
   const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
   if (userSnapshot.empty) {
@@ -56,7 +95,7 @@ router.get("/loginRequest", async (req, res) => {
   }
 
   try {
-    console.log("Writing to Firebase:", { email, otp, token });
+    console.log("Writing to Firebase:", { email, otp, token, remember });
     const loginRef = db.ref(`loginAttempt/${token}`);
     await loginRef.set({
       timestamp: Date.now(),
@@ -65,7 +104,8 @@ router.get("/loginRequest", async (req, res) => {
       requestType: "login",
       token: token,
       state: "elixpo-blogs",
-      method: "email"
+      method: "email",
+      remember: remember
     });
 
     res.status(200).json({ message: `✅ OTP sent to ${email}! Please check your inbox.`, data: `${email},${token}`});
@@ -74,7 +114,6 @@ router.get("/loginRequest", async (req, res) => {
     res.status(500).json({ error: "🔥 Internal server error while recording login attempt. Please try again!" });
   }
 });
-
 
 router.get("/verifyLoginOTP", async (req, res) => {
   const { otp, token, email, time, operation, state, callback, remember } = req.query;
@@ -97,10 +136,16 @@ router.get("/verifyLoginOTP", async (req, res) => {
       const loginData = snapshot.val();
       if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
         const payload = {email: loginData.email, token: loginData.token};
-        const expiresIn = remember === true ? "30d" : "2h"; 
-        const cookieMaxAge = remember === "true" ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
+        const rememberUser = remember === 'true' || loginData.remember === true;
+        const expiresIn = rememberUser ? "30d" : "2h"; 
+        const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
-        res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
+        res.cookie("authToken", jwtToken, { 
+          httpOnly: true, 
+          secure: false, 
+          sameSite: "Lax", 
+          maxAge: cookieMaxAge 
+        });
         res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
         db.ref(`loginAttempt/${token}`).remove();
       }
@@ -117,10 +162,16 @@ router.get("/verifyLoginOTP", async (req, res) => {
       if(loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
 
         const payload = {email: loginData.email, token: loginData.token};
-        const expiresIn = remember === true ? "30d" : "2h"; 
-        const cookieMaxAge = remember === "true" ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
+        const rememberUser = remember === 'true' || loginData.remember === true;
+        const expiresIn = rememberUser ? "30d" : "2h"; 
+        const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
-        res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
+        res.cookie("authToken", jwtToken, { 
+          httpOnly: true, 
+          secure: false, 
+          sameSite: "Lax", 
+          maxAge: cookieMaxAge 
+        });
        res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
        db.ref(`loginAttempt/${token}`).remove();
        return;
@@ -140,7 +191,13 @@ router.get("/verifyLoginOTP", async (req, res) => {
   }
 });
 
-
+// Add protected route example
+router.get("/protected", authenticateToken, (req, res) => {
+    res.status(200).json({ 
+        message: "Access granted to protected resource", 
+        user: req.user 
+    });
+});
 
 // Start server
 appExpress.listen(5000, "0.0.0.0", () => {
