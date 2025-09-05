@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <button onclick="setCookie()">Set Cookie</button>
+    <button onclick="checkAuth()">Check Auth</button>
+
+    <script>
+      async function setCookie() {
+        const res = await fetch("http://127.0.0.1:5000/setCookie", {
+          credentials: "include"
+        });
+        console.log(await res.json());
+      }
+
+      async function checkAuth() {
+        const res = await fetch("http://127.0.0.1:5000/checkAuth", {
+          credentials: "include"
+        });
+        console.log("Status:", res.status);
+        console.log(await res.json());
+      }
+    </script>
+  </body>
+</html>

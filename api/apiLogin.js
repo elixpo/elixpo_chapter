@@ -14,9 +14,9 @@ function authenticateToken(req, res, next) {
     console.log("🔍 Authentication check started");
     console.log("📝 All cookies received:", req.cookies);
     console.log("📝 Raw cookie header:", req.headers.cookie);
-    
-    const token = req.cookies?.authToken;
-    
+
+    const token = req.headers.cookie.split('=')[1];
+
     if (!token) {
         console.log("❌ No authToken cookie found");
         console.log("Available cookies:", Object.keys(req.cookies || {}));
@@ -59,20 +59,7 @@ router.get("/checkAuth", authenticateToken, (req, res) => {
     });
 });
 
-// Add debug route to check cookie status
-router.get("/debugCookies", (req, res) => {
-    console.log("🐛 DEBUG: Cookie status");
-    console.log("Raw cookie header:", req.headers.cookie);
-    console.log("Parsed cookies:", req.cookies);
-    console.log("Has authToken:", !!req.cookies?.authToken);
-    
-    res.status(200).json({
-        rawCookieHeader: req.headers.cookie,
-        parsedCookies: req.cookies,
-        hasAuthToken: !!req.cookies?.authToken,
-        authTokenLength: req.cookies?.authToken?.length || 0
-    });
-});
+
 
 router.post("/logout", (req, res) => {
     console.log("🚪 Logout request received");
@@ -184,7 +171,7 @@ router.get("/verifyLoginOTP", async (req, res) => {
           sameSite: "Lax", 
           maxAge: cookieMaxAge 
         });
-        console.log("🍪 JWT Token (first 50 chars):", jwtToken.substring(0, 50));
+        console.log("🍪 JWT Token", jwtToken);
         
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 
@@ -220,7 +207,7 @@ router.get("/verifyLoginOTP", async (req, res) => {
           sameSite: "Lax", 
           maxAge: cookieMaxAge 
         });
-        console.log("🍪 JWT Token (first 50 chars):", jwtToken.substring(0, 50));
+        console.log("🍪 JWT Token", jwtToken);
         
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 
@@ -247,6 +234,6 @@ router.get("/verifyLoginOTP", async (req, res) => {
   }
 });
 
-appExpress.listen(5000, "0.0.0.0", () => {
-  console.log("Server listening on http://0.0.0.0:5000");
+appExpress.listen(5000, "localhost", () => {
+  console.log("Server listening on http://localhost:5000");
 });
