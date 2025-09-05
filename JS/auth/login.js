@@ -26,6 +26,16 @@ async function checkExistingAuth() {
     if (res && res.status === 200) {
         const data = await res.json();
         console.log("🔍 Auth check successful:", data);
+        
+        // Add these lines to specifically log user details
+        if (data.user) {
+            console.log("👤 User email:", data.user.email);
+            console.log("🔑 User token:", data.user.token);
+            console.log("🆔 User UID:", data.user.uid); 
+            console.log("📋 Full user object:", data.user);
+            // redirectTo("src/feed");
+        }
+        
     } else {
         console.log("❌ Auth check failed or user not authenticated");
     }
@@ -180,7 +190,8 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
                     console.log("🍪 Cookies after delay:", document.cookie);
                 }, 500);
                 setTimeout(() => {
-                    console.log("Verified and stored cookie" + document.cookie);
+                    // console.log("Verified and stored cookie" + document.cookie);
+                    redirectTo("src/feed")
                 }, 1500);
             } else {
                 showNotification(data.error || "❗ OTP verification failed. Please try again.");
@@ -225,7 +236,7 @@ function verifyLoginOTP(token, emailResp=null, operation=null, state=null, otp=n
                     console.log("🍪 Cookies after delay:", document.cookie);
                 }, 1500);
                 setTimeout(() => {
-                    console.log("Verified and stored cookie" + document.cookie);
+                    redirectTo("src/feed")
                 }, 1500);
             } else {
                 showNotification(data.error || "❗ OTP verification failed. Please try again.");

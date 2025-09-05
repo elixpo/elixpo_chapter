@@ -54,7 +54,8 @@ router.get("/checkAuth", authenticateToken, (req, res) => {
         authenticated: true, 
         user: { 
             email: req.user.email,
-            token: req.user.token 
+            token: req.user.token,
+            uid: req.user.uid
         } 
     });
 });
@@ -78,7 +79,6 @@ router.post("/logout", (req, res) => {
 router.get("/loginRequest", async (req, res) => {
   const email = req.query.email;
   const remember = req.query.remember === 'true';
-  
   if (!email) {
     return res.status(400).json({ error: "🚫 Email is required to proceed with login. Please provide a valid email address!" });
   }
@@ -87,7 +87,6 @@ router.get("/loginRequest", async (req, res) => {
   let token = generatetoken(email, otp);
   let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
   const usersRef = collec.collection("users");
-
   const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
   if (userSnapshot.empty) {
     return res.status(404).json({ error: "❗ Email not registered. Please sign up before logging in." });
@@ -113,6 +112,7 @@ router.get("/loginRequest", async (req, res) => {
       return res.status(403).json({ error: "🚫 The account was created using " + userData.joinedVia + " provider. Please use the same provider to log back in!"});
     }
   }
+ 
 
   if(!otpConfirmation)
   {
@@ -145,7 +145,14 @@ router.get("/verifyLoginOTP", async (req, res) => {
   {
     return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the login process." });
   }
-
+  let userUID = null;
+  const usersRef = collec.collection("users");
+  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
+  if (!userSnapshot.empty) {
+    const userDoc = userSnapshot.docs[0];
+    userUID = userDoc.id;
+    console.log("🆔 User UID:", userUID);
+  }
   try {
     if(callback)
     {
@@ -158,7 +165,8 @@ router.get("/verifyLoginOTP", async (req, res) => {
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
       if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
-        const payload = {email: loginData.email, token: loginData.token};
+        const payload = {email: loginData.email, token: loginData.token, uid: userUID };
+        console.log("🔐 JWT Payload being signed:", payload); 
         const rememberUser = remember === 'true' || loginData.remember === true;
         const expiresIn = rememberUser ? "30d" : "2h"; 
         const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
@@ -194,7 +202,7 @@ router.get("/verifyLoginOTP", async (req, res) => {
       const loginData = snapshot.val();
       if(loginData && loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
 
-        const payload = {email: loginData.email, token: loginData.token};
+        const payload = {email: loginData.email, token: loginData.token, uid: userUID }; ;
         const rememberUser = remember === 'true' || loginData.remember === true;
         const expiresIn = rememberUser ? "30d" : "2h"; 
         const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
