@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyPost Community</title>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/ionicons@5.5.2/dist/css/ionicons.min.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="icon" type="image/x-icon" href="../IMAGES/Community/Favicon.png">
+    <link rel="stylesheet" href="../../CSS/Community/Community.css">
+
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="#" class="navbar-logo">DailyPost.</a>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search" />
+                <i class="bi bi-search search-icon"></i>
+                <div class="search-suggestions">
+                    <div class="trending-section">
+                        <div class="trending-items">
+                            <div class="trending-item">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Artificial Intelligence</span>
+                            </div>
+                            <div class="trending-item">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Web Development</span>
+                            </div>
+                            <div class="trending-item">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Machine Learning</span>
+                            </div>
+                            <div class="trending-item">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>App Development</span>
+                            </div>
+                            <div class="trending-item">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Generative AI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="create">
+            <i class="bi bi-box-arrow-in-down-left"></i>
+            <span>Write</span>
+            <i class="bi bi-bell bell-icon"></i>
+        </div>
+        <div class="profile-icon">D</div>
+    </nav>
+
+    <div class="profile-dropdown" id="profileDropdown">
+        <div class="profile-section">
+            <a href="../Account/index.html" class="profile-item">
+                <i class="bi bi-person"></i>
+                <span>Profile</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-book"></i>
+                <span>Library</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-file-text"></i>
+                <span>Stories</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-graph-up"></i>
+                <span>Stats</span>
+            </a>
+        </div>
+
+        <div class="profile-divider"></div>
+
+        <div class="profile-section">
+            <a href="#" class="profile-item">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-sliders"></i>
+                <span>Refine recommendations</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-building"></i>
+                <span>Manage publications</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-question-circle"></i>
+                <span>Help</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-star"></i>
+                <span>Become a member</span>
+            </a>
+            <a href="#" class="profile-item">
+                <i class="bi bi-gift"></i>
+                <span>Gift membership</span>
+            </a>
+        </div>
+
+        <div class="profile-divider"></div>
+
+        <div class="profile-section">
+            <a href="#" class="profile-item">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Log out</span>
+            </a>
+            <div class="profile-email">
+                vivekdesigner200@gmail.com
+            </div>
+        </div>
+    </div>
+
+    <div class="notifications-panel" id="notificationsPanel">
+        <div class="notifications-header">
+            <h1>Notifications</h1>
+            <div class="notifications-tabs">
+                <button class="tab active">All</button>
+                <button class="tab">Responses</button>
+            </div>
+        </div>
+
+        <div class="notifications-content">
+            <p class="notifications-status">You're all caught up.</p>
+            <a href="#" class="notifications-stats">Your stats</a>
+        </div>
+        <div class="writing-box">
+            <div class="writing-header">
+                <h2>Writing on Medium</h2>
+                <button class="close-button">×</button>
+            </div>
+            <ul class="writing-links">
+                <li><a href="#">New writer FAQ</a></li>
+                <li><a href="#">Expert writing advice</a></li>
+                <li><a href="#">Grow your readership</a></li>
+            </ul>
+            <button class="start-writing-button">Start writing</button>
+        </div>
+
+        <div class="recommended">
+            <h2>Recommended topics</h2>
+            <div class="topic-tags">
+                <a href="#" class="topic-tag">Data Science</a>
+                <a href="#" class="topic-tag">Self Improvement</a>
+                <a href="#" class="topic-tag">Politics</a>
+                <a href="#" class="topic-tag">Technology</a>
+                <a href="#" class="topic-tag">Data Science</a>
+                <a href="#" class="topic-tag">Self Improvement</a>
+                <a href="#" class="topic-tag">Politics</a>
+                <a href="#" class="topic-tag">Technology</a>
+                <a href="#" class="topic-tag additional-topic" style="display: none;">Relationships</a>
+                <a href="#" class="topic-tag additional-topic" style="display: none;">Business</a>
+                <a href="#" class="topic-tag additional-topic" style="display: none;">Psychology</a>
+            </div>
+            <a href="#" class="see-more">See more</a>
+        </div>
+    </div>
+    <div class="container">
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs-container">
+            <button class="scroll-button left hidden">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="scroll-button right">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+            <div class="nav-tabs">
+                <button class="icon-btn">
+                    <i class="bi bi-plus"></i>
+                </button>
+                <button class="nav-tab active"><i class="bi bi-stars"></i> For you</button>
+                <button class="nav-tab">Following</button>
+                <button class="nav-tab">Featured</button>
+                <button class="nav-tab">UI</button>
+                <button class="nav-tab">NodeJs</button>
+                <button class="nav-tab">Flutter</button>
+                <button class="nav-tab">UX Design</button>
+                <button class="nav-tab">AWS</button>
+                <button class="nav-tab">Python</button>
+                <button class="nav-tab">JavaScript</button>
+                <button class="nav-tab">Machine Learning</button>
+                <button class="nav-tab">Data Analysis</button>
+                <button class="nav-tab">Cybersecurity</button>
+                <button class="nav-tab">Blockchain</button>
+                <button class="nav-tab">DevOps</button>
+                <button class="nav-tab">Cloud Computing</button>
+                <button class="nav-tab">Artificial Intelligence</button>
+                <button class="nav-tab">Big Data</button>
+                <button class="nav-tab">Internet of Things</button>
+                <button class="nav-tab">Quantum Computing</button>
+                <button class="nav-tab">Augmented Reality</button>
+                <button class="nav-tab">Virtual Reality</button>
+                <button class="nav-tab">5G</button>
+                <button class="nav-tab">Edge Computing</button>
+                <button class="nav-tab">Robotics</button>
+                <button class="nav-tab">Fintech</button>
+                <button class="nav-tab">Bioinformatics</button>
+                <button class="nav-tab">Autonomous Vehicles</button>
+                <button class="nav-tab">Wearable Technology</button>
+                <button class="nav-tab">Smart Cities</button>
+            </div>
+        </div>
+
+        <!-- Recommendations card here -->
+        <div class="recommendations-card">
+            <div class="recommendations-card-header">
+                <div class="content">
+                    <h1>Refine Your Recommendations</h1>
+                    <p>Customize your reading experience based on your interests and preferences.</p>
+                </div>
+                <i class="bi bi-x-lg close-icon"></i>
+            </div>
+
+            <div class="rec-tabs">
+                <button class="rec-tab">Following</button>
+                <button class="rec-tab">Reading History</button>
+                <button class="rec-tab">Muted</button>
+                <button class="rec-tab active">Suggestions</button>
+            </div>
+
+            <div class="rec-divider"></div>
+
+            <div class="writers-section" id="suggestion-section">
+                <h3>Writers to follow</h3>
+                <div class="writer-list">
+                    <div class="writer-item">
+                        <div class="writer-avatar">SR</div>
+                        <div class="writer-info">
+                            <h4>Sarah Roberts</h4>
+                            <p>Tech journalist, writing about AI and future of technology</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">JD</div>
+                        <div class="writer-info">
+                            <h4>James Dean</h4>
+                            <p>Product Designer, UX enthusiast, Design Systems Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">ML</div>
+                        <div class="writer-info">
+                            <h4>Maria Lin</h4>
+                            <p>Software Engineer, Web3 Developer, Blockchain Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">ML</div>
+                        <div class="writer-info">
+                            <h4>Maria Lin</h4>
+                            <p>Software Engineer, Web3 Developer, Blockchain Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">ML</div>
+                        <div class="writer-info">
+                            <h4>Maria Lin</h4>
+                            <p>Software Engineer, Web3 Developer, Blockchain Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="following-section" id="following-section">
+                <h3>You Follow</h3>
+                <div class="writer-list">
+                    <div class="writer-item">
+                        <div class="writer-avatar">SR</div>
+                        <div class="writer-info">
+                            <h4>Sarah Roberts</h4>
+                            <p>Tech journalist, writing about AI and future of technology</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">JD</div>
+                        <div class="writer-info">
+                            <h4>James Dean</h4>
+                            <p>Product Designer, UX enthusiast, Design Systems Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                    <div class="writer-item">
+                        <div class="writer-avatar">ML</div>
+                        <div class="writer-info">
+                            <h4>Maria Lin</h4>
+                            <p>Software Engineer, Web3 Developer, Blockchain Expert</p>
+                            <button class="follow-btn">Follow</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Reading History Section -->
+            <div class="reading-section" id="reading-section">
+                <h3>Your Reading History</h3>
+                <div class="topic-list">
+                    <div class="topic-item">
+                        <div class="topic-banner" style="background: linear-gradient(45deg, #FF6B6B, #FF8E8E);">
+                            <i class="bi bi-code-slash"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4>Web Development</h4>
+                            <p>Modern web technologies and best practices</p>
+                        </div>
+                    </div>
+                    <div class="topic-item">
+                        <div class="topic-banner" style="background: linear-gradient(45deg, #4ECDC4, #45B7D1);">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4>Machine Learning</h4>
+                            <p>AI and neural networks exploration</p>
+                        </div>
+                    </div>
+                    <div class="topic-item">
+                        <div class="topic-banner" style="background: linear-gradient(45deg, #96CEB4, #88D4AB);">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4>Mobile Development</h4>
+                            <p>iOS, Android, and cross-platform solutions</p>
+                        </div>
+                    </div>
+                    <div class="topic-item">
+                        <div class="topic-banner" style="background: linear-gradient(45deg, #9B59B6, #8E44AD);">
+                            <i class="bi bi-cloud"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4>Cloud Computing</h4>
+                            <p>AWS, Azure, and cloud architecture</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article Feed -->
+        <div class="article-feed">
+            <!-- Article 1 -->
+            <article class="article">
+                <div class="article-content">
+                    <div class="article-author">
+                        <div class="author-avatar avatar-eh">EH</div>
+                        <span>
+                            In Entrepreneurship Handbook by
+                            <span class="author-name">
+                                Aaron Dinin, PhD
+                                <div class="author-card">
+                                    <div class="author-card-header">
+                                        <div class="author-card-info">
+                                            <div class="author-card-name">Aaron Dinin, PhD</div>
+                                            <div class="author-card-bio">Writer,Poetry and love to explore Nature</div>
+                                            <button class="author-card-follow">Follow</button>
+                                        </div>
+                                        <div class="author-card-avatar" style="background: #000;">AD</div>
+                                    </div>
+                                    <div class="author-card-divider"></div>
+                                    <div class="author-card-recent">Recent posts</div>
+                                    <div class="recent-post">
+                                        <img src="https://images.unsplash.com/photo-1726056652663-8f1e42b2fc95"
+                                            alt="Post thumbnail">
+                                        <div class="recent-post-title">The Only Thing You'll Need to Know About Building
+                                            Your Startup's Brand</div>
+                                    </div>
+                                </div>
+                            </span>
+                            <span class="verified-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                                    fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                    </polygon>
+                                </svg>
+                            </span>
+                        </span>
+                    </div>
+
+                    <h2 class="article-title">
+                        The Only Thing You’ll Need to Know About Building Your Startup’s Brand
+                    </h2>
+
+                    <p class="article-description">
+                        Lots of entrepreneurs obsess about their brands, but, ultimately, only one thing actually
+                        matters.
+                    </p>
+
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            <span class="star-icon">★</span>
+                            <span>4h ago</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-chat"></i>
+                            <span>210</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-eye"></i>
+                            <span>10</span>
+                        </div>
+                        <div class="article-actions">
+                            <button class="action-btn circle-btn">
+                                <i class="bi bi-dash-circle"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-bookmark"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-three-dots"></i>
+                                <div class="article-options-dropdown">
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Show more like this</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-dash-circle"></i>
+                                            <span>Show less like this</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-person-plus"></i>
+                                            <span>Follow author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-plus"></i>
+                                            <span>Follow publication</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-volume-mute"></i>
+                                            <span>Mute author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-x"></i>
+                                            <span>Mute publication</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-flag"></i>
+                                            <span>Report story</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="article-image">
+                    <img src="https://images.unsplash.com/photo-1726056652663-8f1e42b2fc95?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwxMXx8fGVufDB8fHx8fA%3D%3D"
+                        alt="Person using laptop with business tools website" style="height: 200px; object-fit: cover;">
+                </div>
+            </article>
+
+            <!-- Article 2 -->
+            <article class="article">
+                <div class="article-content">
+                    <div class="article-author">
+                        <div class="author-avatar avatar-m">M</div>
+                        <span class="author-name">
+                            UX Movement
+                            <div class="author-card">
+                                <div class="author-card-header">
+                                    <div class="author-card-info">
+                                        <div class="author-card-name">UX Movement</div>
+                                        <div class="author-card-bio">Exploring the best practices in user experience
+                                            design</div>
+                                        <button class="author-card-follow">Follow</button>
+                                    </div>
+                                    <div class="author-card-avatar" style="background: #000;">UX</div>
+                                </div>
+                                <div class="author-card-divider"></div>
+                                <div class="author-card-recent">Recent posts</div>
+                                <div class="recent-post">
+                                    <img src="https://images.unsplash.com/photo-1607637508975-bf0090d7a0b4"
+                                        alt="Post thumbnail">
+                                    <div class="recent-post-title">Vertical vs. Horizontal Cards: Which Are Better?
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+
+                    <h2 class="article-title">
+                        Vertical vs. Horizontal Cards: Which Are Better?
+                    </h2>
+
+                    <p class="article-description">
+                        The best way to display content in a card format is to use vertical cards. Here's why.
+                    </p>
+
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            <span class="star-icon">★</span>
+                            <span>Jul 26, 2023</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-chat"></i>
+                            <span>2.2K</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-eye"></i>
+                            <span>25</span>
+                        </div>
+                        <div class="article-actions">
+                            <button class="action-btn circle-btn">
+                                <i class="bi bi-dash-circle"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-bookmark"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-three-dots"></i>
+                                <div class="article-options-dropdown">
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Show more like this</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-dash-circle"></i>
+                                            <span>Show less like this</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-person-plus"></i>
+                                            <span>Follow author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-plus"></i>
+                                            <span>Follow publication</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-volume-mute"></i>
+                                            <span>Mute author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-x"></i>
+                                            <span>Mute publication</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-flag"></i>
+                                            <span>Report story</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="article-image image-stack">
+                    <img src="https://images.unsplash.com/photo-1607637508975-bf0090d7a0b4?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Y2FyZHN8ZW58MHx8MHx8fDA%3D"
+                        alt="Burger comparison">
+                </div>
+            </article>
+
+            <!-- Article 3 -->
+            <article class="article">
+                <div class="article-content">
+                    <div class="article-author">
+                        <div class="author-avatar avatar-in">In</div>
+                        <span>
+                            In In Fitness And In Health by
+                            <span class="author-name">
+                                Zachary Walston, PT, DPT, OCS
+                                <div class="author-card">
+                                    <div class="author-card-header">
+                                        <div class="author-card-info">
+                                            <div class="author-card-name">Zachary Walston, PT, DPT, OCS</div>
+                                            <div class="author-card-bio">Physical therapist and healthcare advocate
+                                            </div>
+                                            <button class="author-card-follow">Follow</button>
+                                        </div>
+                                        <div class="author-card-avatar" style="background: #000;">ZW</div>
+                                    </div>
+                                    <div class="author-card-divider"></div>
+                                    <div class="author-card-recent">Recent posts</div>
+                                    <div class="recent-post">
+                                        <img src="https://images.unsplash.com/photo-1551884170-09fb70a3a2ed"
+                                            alt="Post thumbnail">
+                                        <div class="recent-post-title">Student Debt and Private Insurance Are Fueling a
+                                            Shortage of Healthcare Providers</div>
+                                    </div>
+                                </div>
+                            </span>
+                        </span>
+                    </div>
+
+                    <h2 class="article-title">
+                        Student Debt and Private Insurance Are Fueling a Shortage of Healthcare Providers
+                    </h2>
+
+                    <p class="article-description">
+                        The current trends will worsen an already struggling US healthcare system
+                    </p>
+
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            <span class="star-icon">★</span>
+                            <span>3d ago</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-chat"></i>
+                            <span>423</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-eye"></i>
+                            <span>6</span>
+                        </div>
+                        <div class="article-actions">
+                            <button class="action-btn circle-btn">
+                                <i class="bi bi-dash-circle"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-bookmark"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-three-dots"></i>
+                                <div class="article-options-dropdown">
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Show more like this</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-dash-circle"></i>
+                                            <span>Show less like this</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-person-plus"></i>
+                                            <span>Follow author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-plus"></i>
+                                            <span>Follow publication</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-volume-mute"></i>
+                                            <span>Mute author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-x"></i>
+                                            <span>Mute publication</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-flag"></i>
+                                            <span>Report story</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="article-image">
+                    <img src="https://images.unsplash.com/photo-1551884170-09fb70a3a2ed?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGRvY3RvcnxlbnwwfHwwfHx8MA%3D%3D"
+                        alt="Doctor with glasses">
+                </div>
+            </article>
+
+            <!-- Article 4 -->
+            <article class="article">
+                <div class="article-content">
+                    <div class="article-author">
+                        <div class="author-avatar avatar-tu">TU</div>
+                        <span>
+                            In The Ugly Monster by
+                            <span class="author-name">
+                                Cian McGrath
+                                <div class="author-card">
+                                    <div class="author-card-header">
+                                        <div class="author-card-info">
+                                            <div class="author-card-name">Cian McGrath</div>
+                                            <div class="author-card-bio">Writer and critic exploring the depths of
+                                                identity and culture</div>
+                                            <button class="author-card-follow">Follow</button>
+                                        </div>
+                                        <div class="author-card-avatar" style="background: #000;">CM</div>
+                                    </div>
+                                    <div class="author-card-divider"></div>
+                                    <div class="author-card-recent">Recent posts</div>
+                                    <div class="recent-post">
+                                        <img src="https://plus.unsplash.com/premium_photo-1683121643864-89fb5c6cc10a"
+                                            alt="Post thumbnail">
+                                        <div class="recent-post-title">'A Different Man' is a Thrilling Dissection of
+                                            Identity</div>
+                                    </div>
+                                </div>
+                            </span>
+                        </span>
+                    </div>
+
+                    <h2 class="article-title">
+                        'A Different Man' is a Thrilling Dissection of Identity
+                    </h2>
+
+                    <p class="article-description">
+                        It's just a shame that this comedy-drama descends into surrealism to prove its points, dulling
+                        its narrative potential
+                    </p>
+
+                    <div class="article-meta">
+                        <div class="meta-item">
+                            <span class="star-icon">★</span>
+                            <span>Mar 2</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-chat"></i>
+                            <span>233</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-eye"></i>
+                            <span>4</span>
+                        </div>
+                        <div class="article-actions">
+                            <button class="action-btn circle-btn">
+                                <i class="bi bi-dash-circle"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-bookmark"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="bi bi-three-dots"></i>
+                                <div class="article-options-dropdown">
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-plus-circle"></i>
+                                            <span>Show more like this</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-dash-circle"></i>
+                                            <span>Show less like this</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-person-plus"></i>
+                                            <span>Follow author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-plus"></i>
+                                            <span>Follow publication</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="option-divider"></div>
+
+                                    <div class="options-section">
+                                        <div class="option-item">
+                                            <i class="bi bi-volume-mute"></i>
+                                            <span>Mute author</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-journal-x"></i>
+                                            <span>Mute publication</span>
+                                        </div>
+                                        <div class="option-item">
+                                            <i class="bi bi-flag"></i>
+                                            <span>Report story</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="article-image">
+                    <img src="https://plus.unsplash.com/premium_photo-1683121643864-89fb5c6cc10a?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fHR3byUyMG1lbiUyMHNpdHRpbmclMjB0b2dldGhlcnxlbnwwfHwwfHx8MA%3D%3D"
+                        alt="Two men sitting together">
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div class="floating-editor">
+        <div class="editor-header">
+            <div class="editor-controls">
+                <button class="control-btn expand">
+                    <i class="bi bi-arrows-angle-expand"></i>
+                </button>
+                <button class="control-btn close">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="editor-actions">
+                <button class="action-btn">
+                    <i class="bi bi-image"></i>
+                </button>
+                <button class="action-btn">
+                    <i class="bi bi-link-45deg"></i>
+                </button>
+                <button class="publish-btn">Publish</button>
+            </div>
+        </div>
+        <div class="editor-content">
+            <div class="title-input" contenteditable="true" data-placeholder="Title"></div>
+            <div class="content-input" contenteditable="true" data-placeholder="Tell your story..."></div>
+        </div>
+        <div class="formatting-toolbar">
+            <button class="format-btn" data-format="bold">
+                <i class="bi bi-type-bold"></i>
+            </button>
+            <button class="format-btn" data-format="italic">
+                <i class="bi bi-type-italic"></i>
+            </button>
+            <button class="format-btn" data-format="underline">
+                <i class="bi bi-type-underline"></i>
+            </button>
+            <button class="format-btn" data-format="strikethrough">
+                <i class="bi bi-type-strikethrough"></i>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button class="format-btn" data-format="h1">H1</button>
+            <button class="format-btn" data-format="h2">H2</button>
+            <div class="toolbar-divider"></div>
+            <button class="format-btn" data-format="quote">
+                <i class="bi bi-quote"></i>
+            </button>
+            <button class="format-btn" data-format="code">
+                <i class="bi bi-code-slash"></i>
+            </button>
+            <button class="format-btn" data-format="list-ul">
+                <i class="bi bi-list-ul"></i>
+            </button>
+            <button class="format-btn" data-format="list-ol">
+                <i class="bi bi-list-ol"></i>
+            </button>
+        </div>
+    </div>
+
+    <button class="scroll-to-top">
+        <i class="bi bi-arrow-up"></i>
+    </button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="../JS/Community/Community.js"></script>
+</body>
+
+</html>

@@ -8,28 +8,48 @@ dotenv.config();
 
 import MAX_EXPIRE_TIME from "./config.js";
 
-// Ensure cookie parser is used
 appExpress.use(cookieParser());
 
-// Add authentication middleware
 function authenticateToken(req, res, next) {
-    const token = req.cookies.authToken;
+    console.log("🔍 Authentication check started");
+    console.log("📝 All cookies received:", req.cookies);
+    console.log("📝 Raw cookie header:", req.headers.cookie);
+    
+    const token = req.cookies?.authToken;
     
     if (!token) {
-        return res.status(401).json({ authenticated: false, error: "No authentication token found" });
+        console.log("❌ No authToken cookie found");
+        console.log("Available cookies:", Object.keys(req.cookies || {}));
+        return res.status(401).json({ 
+            authenticated: false, 
+            error: "No authentication token found",
+            debug: {
+                cookiesReceived: req.cookies,
+                cookieHeader: req.headers.cookie
+            }
+        });
     }
+
+    console.log("🍪 Auth token found:", token.substring(0, 20) + "...");
 
     jwt.verify(token, process.env.secretJWTKEY, (err, user) => {
         if (err) {
-            return res.status(403).json({ authenticated: false, error: "Invalid or expired token" });
+            console.log("❌ JWT verification failed:", err.message);
+            return res.status(403).json({ 
+                authenticated: false, 
+                error: "Invalid or expired token",
+                debug: err.message
+            });
         }
+        
+        console.log("✅ JWT verified for user:", user.email);
         req.user = user;
         next();
     });
 }
 
-// Add route to check authentication status
 router.get("/checkAuth", authenticateToken, (req, res) => {
+    console.log("✅ Authentication successful for:", req.user.email);
     res.status(200).json({ 
         authenticated: true, 
         user: { 
@@ -39,13 +59,32 @@ router.get("/checkAuth", authenticateToken, (req, res) => {
     });
 });
 
-// Add logout route
+// Add debug route to check cookie status
+router.get("/debugCookies", (req, res) => {
+    console.log("🐛 DEBUG: Cookie status");
+    console.log("Raw cookie header:", req.headers.cookie);
+    console.log("Parsed cookies:", req.cookies);
+    console.log("Has authToken:", !!req.cookies?.authToken);
+    
+    res.status(200).json({
+        rawCookieHeader: req.headers.cookie,
+        parsedCookies: req.cookies,
+        hasAuthToken: !!req.cookies?.authToken,
+        authTokenLength: req.cookies?.authToken?.length || 0
+    });
+});
+
 router.post("/logout", (req, res) => {
+    console.log("🚪 Logout request received");
+    console.log("Current cookies before logout:", req.cookies);
+    
     res.clearCookie("authToken", { 
         httpOnly: true, 
         secure: false, 
         sameSite: "Lax" 
     });
+    
+    console.log("✅ Auth cookie cleared");
     res.status(200).json({ message: "✅ Logged out successfully!" });
 });
 
@@ -54,14 +93,13 @@ router.get("/loginRequest", async (req, res) => {
   const remember = req.query.remember === 'true';
   
   if (!email) {
-    // Fancy error notification for missing email
     return res.status(400).json({ error: "🚫 Email is required to proceed with login. Please provide a valid email address!" });
   }
 
   let otp = generateOTP();
   let token = generatetoken(email, otp);
   let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
-  const usersRef = store.collection("users");
+  const usersRef = collec.collection("users");
 
   const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
   if (userSnapshot.empty) {
@@ -110,7 +148,6 @@ router.get("/loginRequest", async (req, res) => {
 
     res.status(200).json({ message: `✅ OTP sent to ${email}! Please check your inbox.`, data: `${email},${token}`});
   } catch (error) {
-    // Fancy error notification for Firebase write error
     res.status(500).json({ error: "🔥 Internal server error while recording login attempt. Please try again!" });
   }
 });
@@ -119,7 +156,6 @@ router.get("/verifyLoginOTP", async (req, res) => {
   const { otp, token, email, time, operation, state, callback, remember } = req.query;
   if (!token)
   {
-    // Fancy error notification for missing token
     return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the login process." });
   }
 
@@ -140,6 +176,16 @@ router.get("/verifyLoginOTP", async (req, res) => {
         const expiresIn = rememberUser ? "30d" : "2h"; 
         const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
+        
+        console.log("🍪 Setting auth cookie for:", loginData.email);
+        console.log("🍪 Cookie options:", { 
+          httpOnly: true, 
+          secure: false, 
+          sameSite: "Lax", 
+          maxAge: cookieMaxAge 
+        });
+        console.log("🍪 JWT Token (first 50 chars):", jwtToken.substring(0, 50));
+        
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 
           secure: false, 
@@ -159,13 +205,23 @@ router.get("/verifyLoginOTP", async (req, res) => {
       }
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
-      if(loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
+      if(loginData && loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
 
         const payload = {email: loginData.email, token: loginData.token};
         const rememberUser = remember === 'true' || loginData.remember === true;
         const expiresIn = rememberUser ? "30d" : "2h"; 
         const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
+        
+        console.log("🍪 Setting auth cookie for:", loginData.email);
+        console.log("🍪 Cookie options:", { 
+          httpOnly: true, 
+          secure: false, 
+          sameSite: "Lax", 
+          maxAge: cookieMaxAge 
+        });
+        console.log("🍪 JWT Token (first 50 chars):", jwtToken.substring(0, 50));
+        
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 
           secure: false, 
@@ -191,15 +247,6 @@ router.get("/verifyLoginOTP", async (req, res) => {
   }
 });
 
-// Add protected route example
-router.get("/protected", authenticateToken, (req, res) => {
-    res.status(200).json({ 
-        message: "Access granted to protected resource", 
-        user: req.user 
-    });
-});
-
-// Start server
 appExpress.listen(5000, "0.0.0.0", () => {
   console.log("Server listening on http://0.0.0.0:5000");
 });
