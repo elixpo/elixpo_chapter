@@ -1,11 +1,10 @@
-import { GoogleAuth, OAuth2Client } from 'google-auth-library';
+import {OAuth2Client } from 'google-auth-library';
 import {db, store, collec} from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
 import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import { GoogleAuth } from 'google-auth-library';
 
 dotenv.config();
 
@@ -21,7 +20,15 @@ function authenticateToken(req, res, next) {
     console.log("📝 All cookies received:", req.cookies);
     console.log("📝 Raw cookie header:", req.headers.cookie);
 
-    const token = req.headers.cookie.split('=')[1];
+    let token;
+    try 
+    {
+      token = req.headers.cookie.split('=')[1];
+    }
+    catch(err)
+    {
+      token = null;
+    }
 
     if (!token) {
         console.log("❌ No authToken cookie found");
