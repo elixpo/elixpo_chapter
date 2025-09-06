@@ -1,14 +1,20 @@
+import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 import {db, store, collec} from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
 import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import { GoogleAuth } from 'google-auth-library';
+
 dotenv.config();
 
 import MAX_EXPIRE_TIME from "./config.js";
 
 appExpress.use(cookieParser());
+const googleClient = new OAuth2Client(process.env.google_auth_client_id);
+
+
 
 function authenticateToken(req, res, next) {
     console.log("🔍 Authentication check started");
@@ -74,6 +80,80 @@ router.post("/logout", (req, res) => {
     
     console.log("✅ Auth cookie cleared");
     res.status(200).json({ message: "✅ Logged out successfully!" });
+});
+
+
+router.post("/googleLogin", async (req, res) => {
+    const { idToken, remember } = req.body;
+    if (!idToken) {
+        return res.status(400).json({ error: "🚫 ID Token is required for Google login." });
+    }
+    let ticket, payload, email;
+    try {
+        ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.google_auth_client_id,
+        });
+        payload = ticket.getPayload();
+        email = payload.email;
+    } catch (err) {
+        return res.status(401).json({ error: "Invalid Google token." });
+    }
+
+    const usersRef = collec.collection("users");
+    const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
+    let userDoc, userData, uid;
+
+    if (!userSnapshot.empty) {
+        
+        userDoc = userSnapshot.docs[0];
+        userData = userDoc.data();
+        uid = userDoc.id;
+        if (userData.joinedVia === "github") {
+            return res.status(403).json({ error: "Account registered with GitHub. Please use GitHub login." });
+        }
+        if (userData.accountStatus === "suspended") {
+            return res.status(403).json({ error: "Account suspended. Contact support." });
+        }
+        if (userData.accountStatus === "deactivated") {
+            return res.status(403).json({ error: "Account deactivated. Contact support." });
+        }
+    } else {
+        
+        uid = generatetoken(email, Date.now(), 12);
+        await usersRef.doc(uid).set({
+            name: payload.name || "",
+            email: email,
+            uid: uid,
+            dateJoined: Date.now(),
+            blogsWritten: {},
+            orgJoined: {},
+            orgSubdomain: "",
+            blogReports: {},
+            profilePicLink: payload.picture || "",
+            orgId: "",
+            followers: {},
+            following: {},
+            locale: payload.locale || "",
+            joinedVia: "google",
+            bio: ""
+        });
+    }
+
+
+    const jwtPayload = { email, uid, token: generatetoken(email, Date.now()) };
+    const expiresIn = "30d";
+    const cookieMaxAge = 30 * 24 * 60 * 60 * 1000;
+    const jwtToken = jwt.sign(jwtPayload, process.env.secretJWTKEY, { expiresIn });
+
+    res.cookie("authToken", jwtToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+        maxAge: cookieMaxAge
+    });
+
+    res.status(200).json({ status: true, message: "Google login successful!", user: { email, uid } });
 });
 
 router.get("/loginRequest", async (req, res) => {
