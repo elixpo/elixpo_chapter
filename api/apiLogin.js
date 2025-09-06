@@ -1,21 +1,18 @@
-import {OAuth2Client } from 'google-auth-library';
-import {db, store, collec} from "./initializeFirebase.js";
+import {db, collec} from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
-import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
+import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser } from "./utility.js";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import admin from "firebase-admin";
 
 dotenv.config();
 
 import MAX_EXPIRE_TIME from "./config.js";
 
 appExpress.use(cookieParser());
-const googleClient = new OAuth2Client(process.env.google_auth_client_id);
 
-
-
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
     console.log("🔍 Authentication check started");
     console.log("📝 All cookies received:", req.cookies);
     console.log("📝 Raw cookie header:", req.headers.cookie);
@@ -67,13 +64,10 @@ router.get("/checkAuth", authenticateToken, (req, res) => {
         authenticated: true, 
         user: { 
             email: req.user.email,
-            token: req.user.token,
             uid: req.user.uid
         } 
     });
 });
-
-
 
 router.post("/logout", (req, res) => {
     console.log("🚪 Logout request received");
@@ -89,88 +83,86 @@ router.post("/logout", (req, res) => {
     res.status(200).json({ message: "✅ Logged out successfully!" });
 });
 
+router.post("/loginGoogle", async (req, res) => {
+  const { idToken, remember } = req.body;
 
-router.post("/googleLogin", async (req, res) => {
-    const { idToken, remember } = req.body;
-    if (!idToken) {
-        return res.status(400).json({ error: "🚫 ID Token is required for Google login." });
+  if (!idToken) {
+    return res.status(400).json({ error: "🚫 ID Token is required for Google login." });
+  }
+
+  let decodedToken, email, firebaseUID;
+
+  try {
+    decodedToken = await admin.auth().verifyIdToken(idToken);
+    email = decodedToken.email;
+    firebaseUID = decodedToken.uid; 
+  } catch (err) {
+    console.error("❌ Google token verification failed:", err.message);
+    return res.status(401).json({ error: "Invalid Google token." });
+  }
+
+  const usersRef = collec.collection("users");
+  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
+
+  if (!userSnapshot.empty) {
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    if (userData.joinedVia !== "google") {
+      let providerMsg = userData.joinedVia === "github"
+        ? "GitHub"
+        : "Email Address";
+      return res.status(403).json({
+        error: `This account was registered with ${providerMsg}. Please use the correct login method.`
+      });
     }
-
-    let decodedToken, email, firebaseUser;
+    if (userData.accountStatus === "suspended") {
+      return res.status(403).json({ error: "Account suspended. Contact support." });
+    }
+    if (userData.accountStatus === "deactivated") {
+      return res.status(403).json({ error: "Account deactivated. Contact support." });
+    }
+  } else {
     try {
-        // Verify the Google ID token with Firebase Auth
-        decodedToken = await admin.auth().verifyIdToken(idToken);
-        email = decodedToken.email;
-        // Try to get the Firebase user (will throw if not found)
-        try {
-            firebaseUser = await admin.auth().getUser(decodedToken.uid);
-        } catch (e) {
-            // If user doesn't exist, create one
-            firebaseUser = await admin.auth().createUser({
-                uid: decodedToken.uid,
-                email: decodedToken.email,
-                displayName: decodedToken.name,
-                photoURL: decodedToken.picture,
-            });
-        }
+      await createFirebaseUser(email, decodedToken.name, decodedToken.picture, "google", firebaseUID);
+      console.log("🆕 New Firestore user created with Firebase UID:", firebaseUID);
     } catch (err) {
-        return res.status(401).json({ error: "Invalid Google token." });
+      console.error("❌ Error creating Firestore user:", err.message);
+      return res.status(500).json({ error: "Internal server error during user creation." });
     }
+  }
 
-    // Now check your Firestore users collection
-    const usersRef = collec.collection("users");
-    const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
-    let userDoc, userData, uid;
-
-    if (!userSnapshot.empty) {
-        userDoc = userSnapshot.docs[0];
-        userData = userDoc.data();
-        uid = userDoc.id;
-        if (userData.joinedVia === "github") {
-            return res.status(403).json({ error: "Account registered with GitHub. Please use GitHub login." });
-        }
-        if (userData.accountStatus === "suspended") {
-            return res.status(403).json({ error: "Account suspended. Contact support." });
-        }
-        if (userData.accountStatus === "deactivated") {
-            return res.status(403).json({ error: "Account deactivated. Contact support." });
-        }
-    } else {
-        // Create user in your Firestore users collection
-        uid = decodedToken.uid;
-        await usersRef.doc(uid).set({
-            name: firebaseUser.displayName || "",
-            email: email,
-            uid: uid,
-            dateJoined: Date.now(),
-            blogsWritten: {},
-            orgJoined: {},
-            orgSubdomain: "",
-            blogReports: {},
-            profilePicLink: firebaseUser.photoURL || "",
-            orgId: "",
-            followers: {},
-            following: {},
-            locale: decodedToken.locale || "",
-            joinedVia: "google",
-            bio: ""
-        });
-    }
-
-    // Issue your own JWT/cookie as before
-    const jwtPayload = { email, uid, token: generatetoken(email, Date.now()) };
-    const expiresIn = "30d";
-    const cookieMaxAge = 30 * 24 * 60 * 60 * 1000;
-    const jwtToken = jwt.sign(jwtPayload, process.env.secretJWTKEY, { expiresIn });
-
-    res.cookie("authToken", jwtToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
-        maxAge: cookieMaxAge
+  try {
+    await admin.auth().getUser(firebaseUID);
+  } catch {
+    await admin.auth().createUser({
+      uid: firebaseUID,
+      email,
+      displayName: decodedToken.name || "",
+      photoURL: decodedToken.picture || "",
     });
+  }
 
-    res.status(200).json({ status: true, message: "Google login successful!", user: { email, uid } });
+
+  const jwtPayload = { email, uid: firebaseUID };
+  const rememberUser = remember === true || remember === "true";
+  const expiresIn = rememberUser ? "30d" : "2h";
+  const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
+
+  const jwtToken = jwt.sign(jwtPayload, process.env.secretJWTKEY, { expiresIn });
+
+  res.cookie("authToken", jwtToken, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax",
+    maxAge: cookieMaxAge,
+  });
+
+  return res.status(200).json({
+    status: true,
+    message: "✅ Google login successful!",
+    user: { email, uid: firebaseUID },
+  });
 });
 
 router.get("/loginRequest", async (req, res) => {
@@ -181,8 +173,9 @@ router.get("/loginRequest", async (req, res) => {
   }
 
   let otp = generateOTP();
-  let token = generatetoken(email, otp);
+  let token = generatetoken(email, otp); // Token for tracking login attempts and callback URLs
   let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
+  
   const usersRef = collec.collection("users");
   const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
   if (userSnapshot.empty) {
@@ -209,7 +202,6 @@ router.get("/loginRequest", async (req, res) => {
       return res.status(403).json({ error: "🚫 The account was created using " + userData.joinedVia + " provider. Please use the same provider to log back in!"});
     }
   }
- 
 
   if(!otpConfirmation)
   {
@@ -224,7 +216,7 @@ router.get("/loginRequest", async (req, res) => {
       email: email,
       otp: otp,
       requestType: "login",
-      token: token,
+      token: token, 
       state: "elixpo-blogs",
       method: "email",
       remember: remember
@@ -242,14 +234,18 @@ router.get("/verifyLoginOTP", async (req, res) => {
   {
     return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the login process." });
   }
-  let userUID = null;
-  const usersRef = collec.collection("users");
-  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
-  if (!userSnapshot.empty) {
-    const userDoc = userSnapshot.docs[0];
-    userUID = userDoc.id;
-    console.log("🆔 User UID:", userUID);
+  
+  // Get Firebase UID for email users
+  let firebaseUID = null;
+  try {
+    const userRecord = await admin.auth().getUserByEmail(email);
+    firebaseUID = userRecord.uid;
+    console.log("🆔 Firebase UID found:", firebaseUID);
+  } catch (error) {
+    console.error("❌ Firebase user not found:", error.message);
+    return res.status(404).json({ error: "User not found in Firebase Auth. Please contact support." });
   }
+
   try {
     if(callback)
     {
@@ -262,7 +258,7 @@ router.get("/verifyLoginOTP", async (req, res) => {
       const snapshot = await loginRef.once("value");
       const loginData = snapshot.val();
       if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
-        const payload = {email: loginData.email, token: loginData.token, uid: userUID };
+        const payload = { email: loginData.email, uid: firebaseUID }; // Use Firebase UID
         console.log("🔐 JWT Payload being signed:", payload); 
         const rememberUser = remember === 'true' || loginData.remember === true;
         const expiresIn = rememberUser ? "30d" : "2h"; 
@@ -270,13 +266,6 @@ router.get("/verifyLoginOTP", async (req, res) => {
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
         
         console.log("🍪 Setting auth cookie for:", loginData.email);
-        console.log("🍪 Cookie options:", { 
-          httpOnly: true, 
-          secure: false, 
-          sameSite: "Lax", 
-          maxAge: cookieMaxAge 
-        });
-        console.log("🍪 JWT Token", jwtToken);
         
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 
@@ -299,20 +288,13 @@ router.get("/verifyLoginOTP", async (req, res) => {
       const loginData = snapshot.val();
       if(loginData && loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
 
-        const payload = {email: loginData.email, token: loginData.token, uid: userUID }; ;
+        const payload = { email: loginData.email, uid: firebaseUID }; // Use Firebase UID
         const rememberUser = remember === 'true' || loginData.remember === true;
         const expiresIn = rememberUser ? "30d" : "2h"; 
         const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
         const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
         
         console.log("🍪 Setting auth cookie for:", loginData.email);
-        console.log("🍪 Cookie options:", { 
-          httpOnly: true, 
-          secure: false, 
-          sameSite: "Lax", 
-          maxAge: cookieMaxAge 
-        });
-        console.log("🍪 JWT Token", jwtToken);
         
         res.cookie("authToken", jwtToken, { 
           httpOnly: true, 

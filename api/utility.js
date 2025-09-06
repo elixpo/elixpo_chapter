@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import dotenv from "dotenv";
-
+import {collec} from "./initializeFirebase.js";
 dotenv.config();
 let deploymentURL = "http://127.0.0.1:3000"
 function generateOTP() {
@@ -21,25 +21,32 @@ function generatetoken(email, otp, maxLength = 6) {
 
 async function createFirebaseUser(email, displayName, photoURL, provider) {
   try {
-    // Try to get the user by email first
-    let userRecord;
-    try {
-      userRecord = await admin.auth().getUserByEmail(email);
-      } catch (err) {
-        // If not found, create new user
-        userRecord = await admin.auth().createUser({
-          email,
-          displayName,
-          photoURL,
-          providerData: [{ providerId: provider }]
+    const uid = generatetoken(email, Date.now(), 12);
+    const userRef = collec.collection("users").doc(uid);
+    await userRef.set({
+            name: displayName || "",
+            email: email,
+            uid: uid,
+            dateJoined: Date.now(),
+            blogsWritten: {},
+            orgJoined: {},
+            orgSubdomain: "",
+            blogReports: {},
+            profilePicLink: photoURL || "",
+            orgId: "",
+            followers: {},
+            following: {},
+            locale: country,
+            joinedVia: provider,
+            bio: ""
         });
-      }
-      return userRecord;
-    } catch (error) {
-      console.error("Error creating Firebase user:", error);
-      throw error;
-    }
+    return uid;
   }
+  catch (error) {
+    console.error("Error creating Firebase user:", error);
+    throw error;
+  }
+}
 
 
 const transporter = nodemailer.createTransport({
@@ -134,4 +141,4 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
 //test mail 
 // sendOTPMail("ayushbhatt633@gmail.com", "123456", "bljY0G", "elixpo-blogs", "login", false)
 
-export { generateOTP, generatetoken, sendOTPMail };
+export { generateOTP, generatetoken, sendOTPMail, createFirebaseUser };

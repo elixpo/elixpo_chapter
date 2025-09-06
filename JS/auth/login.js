@@ -5,8 +5,9 @@ let userInpEmail = "ayushbhatt633@gmail.com";
 const MAX_NOTIFICATIONS = 3;
 let notificationQueue = [];
 let activeNotifications = 0;
-
+const clientID = "189837241818-83ote5e8amrlvcpvm7phi76guv0ocm56.apps.googleusercontent.com"
 window.onload = function() {
+    initializeGoogle();
     checkExistingAuth();
     showElement('inputLabel');
     hideElement('otpLabel');
@@ -14,6 +15,14 @@ window.onload = function() {
 
 };
 
+function initializeGoogle() {
+     if (window.google && window.google.accounts && window.google.accounts.id) {
+    google.accounts.id.initialize({
+      client_id: clientID,
+      callback: handleGoogleCredentialResponse
+    });
+  }
+}
 
 async function checkExistingAuth() {
     console.log("🔍 Checking existing authentication...");
@@ -330,6 +339,52 @@ function enableElement(id) {
     }
 }
 
+
+document.getElementById("loginGoogle").addEventListener("click", () => {
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+        // Show Google One Tap or popup
+        google.accounts.id.prompt();
+    } else {
+        showNotification("Google Sign-In not loaded. Please refresh and try again.");
+    }
+});
+
+
+async function handleGoogleCredentialResponse(response) {
+    if (!response.credential) {
+        showNotification("Google authentication failed. Please try again.");
+        enableElement('loginGoogle');
+        return;
+    }
+
+    showNotification("Authenticating with Elixpo...");
+    try {
+        const rememberMe = document.getElementById("rememberMe")?.checked || false;
+        const res = await fetch("http://localhost:5000/api/loginGoogle", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                idToken: response.credential,
+                remember: rememberMe
+            })
+        });
+
+        const data = await res.json();
+        if (data.status) {
+            showNotification(data.message || "✅ Google login successful!");
+            console.log("Done login with google");
+
+            // setTimeout(() => redirectTo("src/feed"), 1500);
+        } else {
+            showNotification(data.error || "❌ Google login failed.");
+            enableElement('loginGoogle');
+        }
+    } catch (err) {
+        showNotification("🔥 Network error during Google login.");
+        enableElement('loginGoogle');
+    }
+}
 
 
 // document.cookie = "authToken=TEST12345; path=/; SameSite=None; Secure";

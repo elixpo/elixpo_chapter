@@ -1,6 +1,6 @@
 import { db, collec } from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
-import { generateOTP, generatetoken, sendOTPMail } from "./utility.js";
+import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser } from "./utility.js";
 import MAX_EXPIRE_TIME from "./config.js";
 
 
@@ -81,24 +81,13 @@ router.get("/verifyRegisterOTP", async (req, res) => {
             country = "";
         }
 
-        await userRef.set({
-            name: "",
-            email: email,
-            uid: uid,
-            dateJoined: Date.now(),
-            blogsWritten: {},
-            orgJoined: {},
-            orgSubdomain: "",
-            blogReports: {},
-            profilePicLink: "",
-            orgId: "",
-            followers: {},
-            following: {},
-            locale: country,
-            joinedVia: "email",
-            bio: ""
+        await createFirebaseUser(email, "", "", "email").then((newUid) => {
+            console.log("New user created with UID:", newUid);
+            uid = newUid;
+        }).catch((error) => {
+            console.error("Error creating user:", error);
+            throw error;
         });
-
         await regRef.remove();
         res.status(200).json({ status: true, message: "✅ Registration successful! Welcome to Elixpo Blogs." });
         } catch (error) {
