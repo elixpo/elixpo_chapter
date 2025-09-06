@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import dotenv from "dotenv";
+
 dotenv.config();
 let deploymentURL = "http://127.0.0.1:3000"
 function generateOTP() {
@@ -18,6 +19,27 @@ function generatetoken(email, otp, maxLength = 6) {
 }
 
 
+async function createFirebaseUser(email, displayName, photoURL, provider) {
+  try {
+    // Try to get the user by email first
+    let userRecord;
+    try {
+      userRecord = await admin.auth().getUserByEmail(email);
+      } catch (err) {
+        // If not found, create new user
+        userRecord = await admin.auth().createUser({
+          email,
+          displayName,
+          photoURL,
+          providerData: [{ providerId: provider }]
+        });
+      }
+      return userRecord;
+    } catch (error) {
+      console.error("Error creating Firebase user:", error);
+      throw error;
+    }
+  }
 
 
 const transporter = nodemailer.createTransport({

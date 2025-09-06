@@ -95,24 +95,34 @@ router.post("/googleLogin", async (req, res) => {
     if (!idToken) {
         return res.status(400).json({ error: "🚫 ID Token is required for Google login." });
     }
-    let ticket, payload, email;
+
+    let decodedToken, email, firebaseUser;
     try {
-        ticket = await googleClient.verifyIdToken({
-            idToken,
-            audience: process.env.google_auth_client_id,
-        });
-        payload = ticket.getPayload();
-        email = payload.email;
+        // Verify the Google ID token with Firebase Auth
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+        email = decodedToken.email;
+        // Try to get the Firebase user (will throw if not found)
+        try {
+            firebaseUser = await admin.auth().getUser(decodedToken.uid);
+        } catch (e) {
+            // If user doesn't exist, create one
+            firebaseUser = await admin.auth().createUser({
+                uid: decodedToken.uid,
+                email: decodedToken.email,
+                displayName: decodedToken.name,
+                photoURL: decodedToken.picture,
+            });
+        }
     } catch (err) {
         return res.status(401).json({ error: "Invalid Google token." });
     }
 
+    // Now check your Firestore users collection
     const usersRef = collec.collection("users");
     const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
     let userDoc, userData, uid;
 
     if (!userSnapshot.empty) {
-        
         userDoc = userSnapshot.docs[0];
         userData = userDoc.data();
         uid = userDoc.id;
@@ -126,10 +136,10 @@ router.post("/googleLogin", async (req, res) => {
             return res.status(403).json({ error: "Account deactivated. Contact support." });
         }
     } else {
-        
-        uid = generatetoken(email, Date.now(), 12);
+        // Create user in your Firestore users collection
+        uid = decodedToken.uid;
         await usersRef.doc(uid).set({
-            name: payload.name || "",
+            name: firebaseUser.displayName || "",
             email: email,
             uid: uid,
             dateJoined: Date.now(),
@@ -137,17 +147,17 @@ router.post("/googleLogin", async (req, res) => {
             orgJoined: {},
             orgSubdomain: "",
             blogReports: {},
-            profilePicLink: payload.picture || "",
+            profilePicLink: firebaseUser.photoURL || "",
             orgId: "",
             followers: {},
             following: {},
-            locale: payload.locale || "",
+            locale: decodedToken.locale || "",
             joinedVia: "google",
             bio: ""
         });
     }
 
-
+    // Issue your own JWT/cookie as before
     const jwtPayload = { email, uid, token: generatetoken(email, Date.now()) };
     const expiresIn = "30d";
     const cookieMaxAge = 30 * 24 * 60 * 60 * 1000;
