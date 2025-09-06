@@ -53,10 +53,20 @@
                 <div class="flex-grow border-t border-[#1D202A]"></div>
             </div>
             <div class="flex gap-4">
-                <button id="loginGoogle" class="flex items-center justify-center gap-2 w-1/2 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] hover:bg-[#23395d] transition">
-                    <ion-icon name="logo-google" class="text-xl text-[#ff0000]"></ion-icon>
-                    <span> Google </span>
-                </button>
+                <div id="g_id_onload"
+                    data-client_id="796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com"
+                    data-callback="handleGoogleCredentialResponse"
+                    data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin w-1/2"
+                    data-type="standard"
+                    data-shape="pill"
+                    data-theme="filled_blue"
+                    data-text="continue_with"
+                    data-size="large"
+                    data-logo_alignment="left">
+                </div>
+            </div>
                 <button id="loginGitHub" class="flex items-center justify-center gap-2 w-1/2 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] hover:bg-[#23395d] transition">
                     <ion-icon name="logo-github" class="text-xl text-[#888]"></ion-icon>
                     <span> GitHub </span>

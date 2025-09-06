@@ -16,4 +16,5 @@ admin.initializeApp({
 const db = admin.database(); 
 const store = admin.storage();
 const collec = admin.firestore();
-export { db, store, collec };
+const auth = admin.auth();
+export { db, store, collec, auth };

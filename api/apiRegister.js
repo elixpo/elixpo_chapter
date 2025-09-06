@@ -81,9 +81,24 @@ router.get("/verifyRegisterOTP", async (req, res) => {
             country = "";
         }
 
-        await createFirebaseUser(email, "", "", "email").then((newUid) => {
+        await createFirebaseUser(email, "", "", "email").then(async (newUid) => {
             console.log("New user created with UID:", newUid);
             uid = newUid;
+            const userData = {
+            uid: uid, 
+            email
+            };
+            firebaseUser = await auth.createUser(userData);
+            if (firebaseUser) 
+            {
+                console.log("Firebase Auth user created:", firebaseUser.uid);
+            }
+            else 
+            {
+                throw new Error("Firebase Auth user creation failed");
+            }
+            return
+            
         }).catch((error) => {
             console.error("Error creating user:", error);
             throw error;

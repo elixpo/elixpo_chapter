@@ -1,37 +1,52 @@
-import {db, collec} from "./initializeFirebase.js";
+import { db, collec, auth } from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
-import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser } from "./utility.js";
+import { 
+  generateOTP, 
+  generatetoken, 
+  sendOTPMail, 
+  createFirebaseUser,  
+  generateUID,
+  getCountryFromIP 
+} from "./utility.js";
 import jwt from "jsonwebtoken";
-import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import admin from "firebase-admin";
+import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
 import MAX_EXPIRE_TIME from "./config.js";
 
-appExpress.use(cookieParser());
+
+
+const client = new OAuth2Client(process.env.google_auth_client_id);
+
+
+function issueJwt(uid, email, rememberUser = false) {
+  const jwtPayload = { email, uid: uid };
+  const expiresIn = rememberUser ? "30d" : "2h";
+  const jwtToken = jwt.sign(jwtPayload, process.env.secretJWTKEY, { expiresIn });
+  return jwtToken;
+}
 
 async function authenticateToken(req, res, next) {
     console.log("🔍 Authentication check started");
     console.log("📝 All cookies received:", req.cookies);
     console.log("📝 Raw cookie header:", req.headers.cookie);
 
-    let token;
-    try 
-    {
-      token = req.headers.cookie.split('=')[1];
-    }
-    catch(err)
-    {
-      token = null;
+    let token = null;
+    // If using cookie-parser, use req.cookies.authToken
+    if (req.cookies && req.cookies.authToken) {
+        token = req.cookies.authToken;
+    } else if (req.headers.cookie) {
+        // Manual fallback: parse cookie string
+        const match = req.headers.cookie.match(/authToken=([^;]+)/);
+        if (match) token = match[1];
     }
 
     if (!token) {
         console.log("❌ No authToken cookie found");
-        console.log("Available cookies:", Object.keys(req.cookies || {}));
-        return res.status(401).json({ 
-            authenticated: false, 
+        return res.status(401).json({
+            authenticated: false,
             error: "No authentication token found",
             debug: {
                 cookiesReceived: req.cookies,
@@ -45,282 +60,179 @@ async function authenticateToken(req, res, next) {
     jwt.verify(token, process.env.secretJWTKEY, (err, user) => {
         if (err) {
             console.log("❌ JWT verification failed:", err.message);
-            return res.status(403).json({ 
-                authenticated: false, 
+            return res.status(403).json({
+                authenticated: false,
                 error: "Invalid or expired token",
                 debug: err.message
             });
         }
-        
+
         console.log("✅ JWT verified for user:", user.email);
         req.user = user;
         next();
     });
 }
 
+
 router.get("/checkAuth", authenticateToken, (req, res) => {
-    console.log("✅ Authentication successful for:", req.user.email);
-    res.status(200).json({ 
-        authenticated: true, 
-        user: { 
-            email: req.user.email,
-            uid: req.user.uid
-        } 
-    });
+  res.status(200).json({ 
+    authenticated: true, 
+    user: { email: req.user.email, uid: req.user.uid } 
+  });
 });
+
 
 router.post("/logout", (req, res) => {
-    console.log("🚪 Logout request received");
-    console.log("Current cookies before logout:", req.cookies);
-    
-    res.clearCookie("authToken", { 
-        httpOnly: true, 
-        secure: false, 
-        sameSite: "Lax" 
-    });
-    
-    console.log("✅ Auth cookie cleared");
-    res.status(200).json({ message: "✅ Logged out successfully!" });
+  res.clearCookie("authToken", { httpOnly: true, secure: false, sameSite: "Lax" });
+  res.status(200).json({ message: "✅ Logged out successfully!" });
 });
+
 
 router.post("/loginGoogle", async (req, res) => {
-  const { idToken, remember } = req.body;
-
-  if (!idToken) {
-    return res.status(400).json({ error: "🚫 ID Token is required for Google login." });
-  }
-
-  let decodedToken, email, firebaseUID;
-
+  const { idToken } = req.body;
+  console.log("Received idToken:", idToken);
+  if (!idToken) return res.status(400).json({ error: "Missing idToken" });
   try {
-    decodedToken = await admin.auth().verifyIdToken(idToken);
-    email = decodedToken.email;
-    firebaseUID = decodedToken.uid; 
-  } catch (err) {
-    console.error("❌ Google token verification failed:", err.message);
-    return res.status(401).json({ error: "Invalid Google token." });
-  }
-
-  const usersRef = collec.collection("users");
-  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
-
-  if (!userSnapshot.empty) {
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-
-    if (userData.joinedVia !== "google") {
-      let providerMsg = userData.joinedVia === "github"
-        ? "GitHub"
-        : "Email Address";
-      return res.status(403).json({
-        error: `This account was registered with ${providerMsg}. Please use the correct login method.`
-      });
-    }
-    if (userData.accountStatus === "suspended") {
-      return res.status(403).json({ error: "Account suspended. Contact support." });
-    }
-    if (userData.accountStatus === "deactivated") {
-      return res.status(403).json({ error: "Account deactivated. Contact support." });
-    }
-  } else {
-    try {
-      await createFirebaseUser(email, decodedToken.name, decodedToken.picture, "google", firebaseUID);
-      console.log("🆕 New Firestore user created with Firebase UID:", firebaseUID);
-    } catch (err) {
-      console.error("❌ Error creating Firestore user:", err.message);
-      return res.status(500).json({ error: "Internal server error during user creation." });
-    }
-  }
-
-  try {
-    await admin.auth().getUser(firebaseUID);
-  } catch {
-    await admin.auth().createUser({
-      uid: firebaseUID,
-      email,
-      displayName: decodedToken.name || "",
-      photoURL: decodedToken.picture || "",
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: "796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com",
     });
+    const payload = ticket.getPayload();
+    const email = payload.email.toLowerCase();
+    const name = payload.name || "";
+    const photo = payload.picture || "";
+    const uid = generateUID(email, 12);
+
+    const userDocRef = collec.collection("users").doc(uid);
+    const userSnap = await userDocRef.get();
+
+    let authUser = null;
+    try {
+      authUser = await auth.getUserByEmail(email);
+    } catch (e) {
+      authUser = null;
+    }
+
+    let ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
+    const country = await getCountryFromIP(ip);
+    console.log(`Login attempt from IP: ${ip}, Country: ${country}`);
+
+
+    if (!userSnap.exists && !authUser) {
+      await createFirebaseUser(email, name, photo, "google", country);
+      await auth.createUser({ uid, email, displayName: name });
+    } else if (!userSnap.exists && authUser) {
+      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "google", country);
+    } else if (userSnap.exists && !authUser) {
+      const userData = userSnap.data();
+      await auth.createUser({ uid, email, displayName: userData.displayName || name });
+    } else {
+      const userData = userSnap.data();
+      if (userData.provider && userData.provider !== "google") {
+        return res.status(403).json({ error: `This account was registered with ${userData.provider}. Use correct login method.` });
+      }
+    }
+
+    const token = issueJwt(uid, email);
+    res.cookie("authToken", token, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: 2 * 60 * 60 * 1000 });
+    return res.json({ status: true, user: { uid, email } });
+
+  } catch (err) {
+    console.error("❌ Error during Google login:", err.message);
+    return res.status(500).json({ error: "Internal server error during Google login." });
   }
-
-
-  const jwtPayload = { email, uid: firebaseUID };
-  const rememberUser = remember === true || remember === "true";
-  const expiresIn = rememberUser ? "30d" : "2h";
-  const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
-
-  const jwtToken = jwt.sign(jwtPayload, process.env.secretJWTKEY, { expiresIn });
-
-  res.cookie("authToken", jwtToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "Lax",
-    maxAge: cookieMaxAge,
-  });
-
-  return res.status(200).json({
-    status: true,
-    message: "✅ Google login successful!",
-    user: { email, uid: firebaseUID },
-  });
 });
+
 
 router.get("/loginRequest", async (req, res) => {
-  const email = req.query.email;
-  const remember = req.query.remember === 'true';
+  const email = req.query.email?.toLowerCase();
+  const remember = req.query.remember === "true";
   if (!email) {
-    return res.status(400).json({ error: "🚫 Email is required to proceed with login. Please provide a valid email address!" });
+    return res.status(400).json({ error: "🚫 Email is required" });
   }
 
-  let otp = generateOTP();
-  let token = generatetoken(email, otp); // Token for tracking login attempts and callback URLs
-  let otpConfirmation = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
-  
-  const usersRef = collec.collection("users");
-  const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
-  if (userSnapshot.empty) {
-    return res.status(404).json({ error: "❗ Email not registered. Please sign up before logging in." });
-  }
-  else if(userSnapshot.size > 1)
-  {
-    return res.status(500).json({ error: "🔥 Multiple accounts found with this email. Please contact support." });
-  }
-  else if(userSnapshot.size === 1)
-  {
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-    if(userData.accountStatus && userData.accountStatus === "suspended")
-    {
-      return res.status(403).json({ error: "🚫 Account suspended. Please contact support for assistance." });
-    }
-    if(userData.accountStatus && userData.accountStatus === "deactivated")
-    {
-      return res.status(403).json({ error: "🚫 Account deactivated. Please contact support for assistance." });
-    }
-    if(userData.joinedVia && userData.joinedVia !== "email")
-    {
-      return res.status(403).json({ error: "🚫 The account was created using " + userData.joinedVia + " provider. Please use the same provider to log back in!"});
-    }
+  const uid = generateUID(email, 12);
+  const userDocRef = collec.collection("users").doc(uid);
+  const userDocSnap = await userDocRef.get();
+
+  if (!userDocSnap.exists) {
+    return res.status(404).json({ error: "No account found with this email. Please register first." });
   }
 
-  if(!otpConfirmation)
-  {
-    return res.status(500).json({ error: "❌ Failed to send OTP email. Please check your email address or try again later!" });
+  const userData = userDocSnap.data();
+  if (userData.provider !== "email") {
+    return res.status(403).json({ error: `This account was registered with ${userData.provider}. Use correct login method.` });
   }
 
   try {
-    console.log("Writing to Firebase:", { email, otp, token, remember });
-    const loginRef = db.ref(`loginAttempt/${token}`);
-    await loginRef.set({
-      timestamp: Date.now(),
-      email: email,
-      otp: otp,
-      requestType: "login",
-      token: token, 
-      state: "elixpo-blogs",
-      method: "email",
-      remember: remember
-    });
-
-    res.status(200).json({ message: `✅ OTP sent to ${email}! Please check your inbox.`, data: `${email},${token}`});
-  } catch (error) {
-    res.status(500).json({ error: "🔥 Internal server error while recording login attempt. Please try again!" });
+    await auth.getUserByEmail(email);
+  } catch (e) {
+    await auth.createUser({ uid, email, displayName: userData.displayName || "" });
   }
+
+  const otp = generateOTP();
+  const token = generatetoken(email, otp);
+
+  const otpSent = await sendOTPMail(email, otp, token, "elixpo-blogs", "login", false);
+  if (!otpSent) {
+    return res.status(500).json({ error: "❌ Failed to send OTP email." });
+  }
+
+  await db.ref(`loginAttempt/${token}`).set({
+    timestamp: Date.now(),
+    email,
+    otp,
+    requestType: "login",
+    token,
+    state: "elixpo-blogs",
+    method: "email",
+    remember,
+  });
+
+  res.status(200).json({ message: `✅ OTP sent to ${email}`, data: `${email},${token}` });
 });
+
 
 router.get("/verifyLoginOTP", async (req, res) => {
   const { otp, token, email, time, operation, state, callback, remember } = req.query;
-  if (!token)
-  {
-    return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the login process." });
-  }
-  
-  // Get Firebase UID for email users
-  let firebaseUID = null;
-  try {
-    const userRecord = await admin.auth().getUserByEmail(email);
-    firebaseUID = userRecord.uid;
-    console.log("🆔 Firebase UID found:", firebaseUID);
-  } catch (error) {
-    console.error("❌ Firebase user not found:", error.message);
-    return res.status(404).json({ error: "User not found in Firebase Auth. Please contact support." });
+  if (!token) return res.status(400).json({ error: "🔑 Request ID missing." });
+
+  const uid = generateUID(email, 12);
+  const loginRef = db.ref(`loginAttempt/${token}`);
+  const snapshot = await loginRef.once("value");
+  const loginData = snapshot.val();
+
+  if (!loginData) {
+    return res.status(400).json({ error: "❗ Invalid/Expired login request." });
   }
 
-  try {
-    if(callback)
-    {
-      console.log("checking from the callback")
-      const loginRef = db.ref(`loginAttempt/${token}`);
-      if(!loginRef)
-      {
-        return res.status(400).json({ error: "❗ Invalid/Expired login request. Please check your email and try again." });
-      }
-      const snapshot = await loginRef.once("value");
-      const loginData = snapshot.val();
-      if(loginData && loginData.requestType === operation && loginData.state == state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME){
-        const payload = { email: loginData.email, uid: firebaseUID }; // Use Firebase UID
-        console.log("🔐 JWT Payload being signed:", payload); 
-        const rememberUser = remember === 'true' || loginData.remember === true;
-        const expiresIn = rememberUser ? "30d" : "2h"; 
-        const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
-        const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
-        
-        console.log("🍪 Setting auth cookie for:", loginData.email);
-        
-        res.cookie("authToken", jwtToken, { 
-          httpOnly: true, 
-          secure: false, 
-          sameSite: "Lax", 
-          maxAge: cookieMaxAge 
-        });
-        res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
-        db.ref(`loginAttempt/${token}`).remove();
-      }
-    }
-    else if(!callback)
-    {
-      const loginRef = db.ref(`loginAttempt/${token}`);
-      if(!loginRef)
-      {
-        return res.status(400).json({ error: "❗ Invalid/Expired login request. Please check your email and try again." });
-      }
-      const snapshot = await loginRef.once("value");
-      const loginData = snapshot.val();
-      if(loginData && loginData.otp === otp && loginData.token === token && loginData.email === email && loginData.timestamp >= time - MAX_EXPIRE_TIME){
+  if (callback) {
+    if (loginData.requestType === operation && loginData.state === state && loginData.token === token && loginData.timestamp >= time - MAX_EXPIRE_TIME) {
+      const rememberUser = remember === "true" || loginData.remember === true;
+      const jwtToken = issueJwt(uid, loginData.email, rememberUser);
+      const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
 
-        const payload = { email: loginData.email, uid: firebaseUID }; // Use Firebase UID
-        const rememberUser = remember === 'true' || loginData.remember === true;
-        const expiresIn = rememberUser ? "30d" : "2h"; 
-        const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000; 
-        const jwtToken = jwt.sign(payload, process.env.secretJWTKEY, { expiresIn: expiresIn });
-        
-        console.log("🍪 Setting auth cookie for:", loginData.email);
-        
-        res.cookie("authToken", jwtToken, { 
-          httpOnly: true, 
-          secure: false, 
-          sameSite: "Lax", 
-          maxAge: cookieMaxAge 
-        });
-       res.status(200).json({ status: true, message: "✅ OTP verified! Welcome to Elixpo Blogs." });
-       db.ref(`loginAttempt/${token}`).remove();
-       return;
-      }
-      else if (!loginData || loginData.email !== email) {
-      return res.status(400).json({ error: "❗ Invalid login request. Please check your email and try again." });
-      }
-      else if (loginData.timestamp < time - MAX_EXPIRE_TIME) {
-        return res.status(400).json({ status: false, error: "⏰ OTP expired. Please request a new OTP." });
-      }
-      else if (loginData.otp !== otp) {
-        return res.status(400).json({ status: false, error: "🚫 Invalid OTP entered. Please check and try again." });
-      }
+      res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
+      db.ref(`loginAttempt/${token}`).remove();
+      return res.status(200).json({ status: true, message: "✅ OTP verified!" });
     }
-  } catch (error) {
-    res.status(500).json({ status: false, error: "🔥 Internal server error during OTP verification. Please try again!" });
+  } else {
+    if (loginData.otp === otp && loginData.email === email && Date.now() - loginData.timestamp <= MAX_EXPIRE_TIME) {
+      const rememberUser = remember === "true" || loginData.remember === true;
+      const jwtToken = issueJwt(uid, loginData.email, rememberUser);
+      const cookieMaxAge = rememberUser ? 30 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000;
+
+      res.cookie("authToken", jwtToken, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: cookieMaxAge });
+      db.ref(`loginAttempt/${token}`).remove();
+      return res.status(200).json({ status: true, message: "✅ OTP verified!" });
+    } else if (Date.now() - loginData.timestamp > MAX_EXPIRE_TIME) {
+      return res.status(400).json({ status: false, error: "⏰ OTP expired." });
+    } else {
+      return res.status(400).json({ status: false, error: "🚫 Invalid OTP." });
+    }
   }
 });
 
 appExpress.listen(5000, "localhost", () => {
-  console.log("Server listening on http://localhost:5000");
+  console.log("Server running at http://localhost:5000");
 });
