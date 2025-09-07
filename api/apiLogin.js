@@ -159,24 +159,32 @@ router.post("/loginGithub", async (req, res) => {
     const country = await getCountryFromIP(ip);
     console.log(`GitHub login attempt from IP: ${ip}, Country: ${country}`);
 
-    if (!userSnap.exists && !authUser) {
-      await createFirebaseUser(email, name, photo, "github", country);
-      await auth.createUser({ uid, email, displayName: name });
-    } else if (!userSnap.exists && authUser) {
-      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "github", country);
-    } else if (userSnap.exists && !authUser) {
-      const userData = userSnap.data();
-      await auth.createUser({ uid, email, displayName: userData.displayName || name });
-    } else {
+    // CHECK FOR PROVIDER CONFLICTS FIRST - BEFORE CREATING/UPDATING ANYTHING
+    if (userSnap.exists) {
       const userData = userSnap.data();
       if (userData.provider && userData.provider !== "github") {
+        console.log(`❌ Provider conflict: Account exists with ${userData.provider}, trying to login with github`);
         return res.status(403).json({
-          error: `This account was registered with ${userData.provider}. Use correct login method.`,
+          error: `This account was registered with ${userData.provider}. Please use ${userData.provider} to login.`
         });
       }
     }
 
-    
+    // Only create/update users if no provider conflict exists
+    if (!userSnap.exists && !authUser) {
+      // Brand new user
+      await createFirebaseUser(email, name, photo, "github", country);
+      await auth.createUser({ uid, email, displayName: name });
+    } else if (!userSnap.exists && authUser) {
+      // Firebase Auth exists but no Firestore doc
+      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "github", country);
+    } else if (userSnap.exists && !authUser) {
+      // Firestore exists but no Firebase Auth
+      const userData = userSnap.data();
+      await auth.createUser({ uid, email, displayName: userData.displayName || name });
+    }
+    // If both exist and provider matches, we just proceed to login
+
     const token = issueJwt(uid, email, true); 
     res.cookie("authToken", token, {
       httpOnly: true,
@@ -203,10 +211,11 @@ router.post("/loginGoogle", async (req, res) => {
   const { idToken } = req.body;
   console.log("Received idToken:", idToken);
   if (!idToken) return res.status(400).json({ error: "Missing idToken" });
+  
   try {
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: "796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com",
+      audience: process.env.google_auth_client_id,
     });
     const payload = ticket.getPayload();
     const email = payload.email.toLowerCase();
@@ -227,26 +236,47 @@ router.post("/loginGoogle", async (req, res) => {
     let ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
     const country = await getCountryFromIP(ip);
     console.log(`Login attempt from IP: ${ip}, Country: ${country}`);
-
-
-    if (!userSnap.exists && !authUser) {
-      await createFirebaseUser(email, name, photo, "google", country);
-      await auth.createUser({ uid, email, displayName: name });
-    } else if (!userSnap.exists && authUser) {
-      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "google", country);
-    } else if (userSnap.exists && !authUser) {
-      const userData = userSnap.data();
-      await auth.createUser({ uid, email, displayName: userData.displayName || name });
-    } else {
+    if (userSnap.exists) {
       const userData = userSnap.data();
       if (userData.provider && userData.provider !== "google") {
-        return res.status(403).json({ error: `This account was registered with ${userData.provider}. Use correct login method.` });
+        console.log(`❌ Provider conflict: Account exists with ${userData.provider}, trying to login with google`);
+        return res.status(403).json({
+          error: `This account was registered with ${userData.provider}. Please use ${userData.provider} to login.`
+        });
       }
     }
 
-    const token = issueJwt(uid, email);
-    res.cookie("authToken", token, { httpOnly: true, secure: false, sameSite: "Lax", maxAge: 2 * 60 * 60 * 1000 });
-    return res.json({ status: true, user: { uid, email } });
+    // Only create/update users if no provider conflict exists
+    if (!userSnap.exists && !authUser) {
+      // Brand new user
+      await createFirebaseUser(email, name, photo, "google", country);
+      await auth.createUser({ uid, email, displayName: name });
+    } else if (!userSnap.exists && authUser) {
+      // Firebase Auth exists but no Firestore doc
+      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "google", country);
+    } else if (userSnap.exists && !authUser) {
+      // Firestore exists but no Firebase Auth
+      const userData = userSnap.data();
+      await auth.createUser({ uid, email, displayName: userData.displayName || name });
+    }
+    // If both exist and provider matches, we just proceed to login
+
+    const token = issueJwt(uid, email, true); // Changed to true for consistency with GitHub
+    res.cookie("authToken", token, { 
+      httpOnly: true, 
+      secure: false, 
+      sameSite: "Lax", 
+      maxAge: 30 * 24 * 60 * 60 * 1000, // Changed to 30 days for consistency
+      path: "/"
+    });
+    
+    console.log("✅ Google login successful, cookie set");
+    
+    return res.json({ 
+      status: true, 
+      user: { uid, email, name, photo },
+      message: "Google login successful!"
+    });
 
   } catch (err) {
     console.error("❌ Error during Google login:", err.message);
@@ -271,8 +301,12 @@ router.get("/loginRequest", async (req, res) => {
   }
 
   const userData = userDocSnap.data();
-  if (userData.provider !== "email") {
-    return res.status(403).json({ error: `This account was registered with ${userData.provider}. Use correct login method.` });
+  // CHECK FOR PROVIDER CONFLICTS - Email login should only work for email provider
+  if (userData.provider && userData.provider !== "email") {
+    console.log(`❌ Provider conflict: Account exists with ${userData.provider}, trying to login with email`);
+    return res.status(403).json({ 
+      error: `This account was registered with ${userData.provider}. Please use ${userData.provider} to login.` 
+    });
   }
 
   try {
