@@ -6,15 +6,9 @@ import stat
 import threading
 from urllib.parse import quote
 from playwright.async_api import async_playwright  #type: ignore
-from duckduckgo_search import DDGS #type: ignore
-import requests
-from time import sleep
-from bs4 import BeautifulSoup
-
 from config import MAX_LINKS_TO_TAKE, isHeadless
+import json
 
-
-# Global port manager to handle port allocation across all instances
 class PortManager:
     def __init__(self, start_port=9000, end_port=9999):
         self.start_port = start_port
@@ -23,10 +17,8 @@ class PortManager:
         self.lock = threading.Lock()
     
     def get_port(self):
-        """Get an available port"""
         with self.lock:
-            # Try to find an unused port
-            for _ in range(100):  # Max 100 attempts to find a port
+            for _ in range(100):  
                 port = random.randint(self.start_port, self.end_port)
                 if port not in self.used_ports:
                     self.used_ports.add(port)
@@ -60,10 +52,8 @@ class PortManager:
                 "available_range": f"{self.start_port}-{self.end_port}"
             }
 
-# Global port manager instance
 port_manager = PortManager(start_port=9000, end_port=9999)
 
-# User agents for rotation
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
@@ -81,34 +71,147 @@ def remove_readonly(func, path, _):
         print(f"[!] Failed to delete: {path} → {e}")
 
 async def handle_accept_popup(page):
-    """Click 'Accept' button if it appears."""
     try:
-        # Look for a submit button with text 'Accept'
-        accept_button = await page.wait_for_selector("button[type='submit']:has-text('Accept')", timeout=5000)
+        accept_button = await page.query_selector("button:has-text('Accept')")
+        # Try Spanish ("Aceptar todo" or "Aceptar")
+        if not accept_button:
+            accept_button = await page.query_selector("button:has-text('Aceptar todo')")
+        if not accept_button:
+            accept_button = await page.query_selector("button:has-text('Aceptar')")
+
         if accept_button:
             await accept_button.click()
             print("[INFO] Accepted cookie/privacy popup.")
             await asyncio.sleep(1)
-    except:
-        # No popup found
-        pass
+    except Exception as e:
+        print(f"[WARN] No accept popup found: {e}")
 
-# --------------------------------------------
-# Yahoo Search - Text
-# --------------------------------------------
+
+class SearchAgentPool:
+    def __init__(self, pool_size=1, max_tabs_per_agent=20):  # Changed from max_requests_per_agent
+        self.pool_size = pool_size
+        self.max_tabs_per_agent = max_tabs_per_agent
+        self.text_agents = []
+        self.image_agents = []
+        self.text_agent_tabs = []  # Track tab count instead of requests
+        self.image_agent_tabs = []
+        self.lock = asyncio.Lock()
+        self.initialized = False
+    
+    async def initialize_pool(self):
+        if self.initialized:
+            return
+            
+        print(f"[POOL] Cold-starting {self.pool_size} text and image agents...")
+        
+        # Initialize text agents
+        for i in range(self.pool_size):
+            agent = YahooSearchAgentText()
+            await agent.start()
+            self.text_agents.append(agent)
+            self.text_agent_tabs.append(0)  # Start with 0 tabs
+            print(f"[POOL] Text agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
+            
+        # Initialize image agents  
+        for i in range(self.pool_size):
+            agent = YahooSearchAgentImage()
+            await agent.start()
+            self.image_agents.append(agent)
+            self.image_agent_tabs.append(0)
+            print(f"[POOL] Image agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
+            
+        self.initialized = True
+        print(f"[POOL] Cold start complete - agents ready for immediate use")
+    
+    async def get_text_agent(self):
+        async with self.lock:
+            # Find agent with least tabs
+            min_tabs = min(self.text_agent_tabs)
+            agent_idx = self.text_agent_tabs.index(min_tabs)
+            
+            # Check if agent needs restart after 20 tabs
+            if self.text_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
+                print(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
+                try:
+                    await self.text_agents[agent_idx].close()
+                except Exception as e:
+                    print(f"[POOL] Error closing old text agent: {e}")
+                
+                # Create and start new agent
+                new_agent = YahooSearchAgentText()
+                await new_agent.start()
+                self.text_agents[agent_idx] = new_agent
+                self.text_agent_tabs[agent_idx] = 0
+                print(f"[POOL] Text agent {agent_idx} restarted and ready")
+            
+            # Increment tab count (will be incremented in agent.search())
+            print(f"[POOL] Using text agent {agent_idx} (will open tab #{self.text_agent_tabs[agent_idx] + 1})")
+            return self.text_agents[agent_idx], agent_idx
+    
+    async def get_image_agent(self):
+        async with self.lock:
+            min_tabs = min(self.image_agent_tabs)
+            agent_idx = self.image_agent_tabs.index(min_tabs)
+            
+            # Check if agent needs restart after 20 tabs
+            if self.image_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
+                print(f"[POOL] Restarting image agent {agent_idx} after {self.image_agent_tabs[agent_idx]} tabs")
+                try:
+                    await self.image_agents[agent_idx].close()
+                except Exception as e:
+                    print(f"[POOL] Error closing old image agent: {e}")
+                
+                # Create and start new agent
+                new_agent = YahooSearchAgentImage()
+                await new_agent.start()
+                self.image_agents[agent_idx] = new_agent
+                self.image_agent_tabs[agent_idx] = 0
+                print(f"[POOL] Image agent {agent_idx} restarted and ready")
+            
+            print(f"[POOL] Using image agent {agent_idx} (will open tab #{self.image_agent_tabs[agent_idx] + 1})")
+            return self.image_agents[agent_idx], agent_idx
+    
+    def increment_tab_count(self, agent_type: str, agent_idx: int):
+        """Increment tab count after successful tab creation"""
+        if agent_type == "text":
+            self.text_agent_tabs[agent_idx] += 1
+            print(f"[POOL] Text agent {agent_idx} now has {self.text_agent_tabs[agent_idx]} tabs")
+        elif agent_type == "image":
+            self.image_agent_tabs[agent_idx] += 1
+            print(f"[POOL] Image agent {agent_idx} now has {self.image_agent_tabs[agent_idx]} tabs")
+    
+    async def get_status(self):
+        """Get current pool status"""
+        async with self.lock:
+            return {
+                "initialized": self.initialized,
+                "pool_size": self.pool_size,
+                "max_tabs_per_agent": self.max_tabs_per_agent,
+                "text_agents": {
+                    "count": len(self.text_agents),
+                    "tabs": self.text_agent_tabs.copy()
+                },
+                "image_agents": {
+                    "count": len(self.image_agents), 
+                    "tabs": self.image_agent_tabs.copy()
+                }
+            }
+
+# Create global agent pool with 1 text + 1 image agent, max 20 tabs each
+agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
+
 class YahooSearchAgentText:
     def __init__(self, custom_port=None):
         self.playwright = None
         self.context = None
-        self.query_count = 0
+        self.tab_count = 0  # Track tabs opened by this agent
         
-        # Use port manager if no custom port specified
         if custom_port:
             self.custom_port = custom_port
-            self.owns_port = False  # Don't manage port if externally provided
+            self.owns_port = False
         else:
             self.custom_port = port_manager.get_port()
-            self.owns_port = True  # We allocated this port, so we should release it
+            self.owns_port = True
             
         print(f"[INFO] YahooSearchAgentText ready on port {self.custom_port}.")
 
@@ -141,12 +244,11 @@ class YahooSearchAgentText:
             print(f"[INFO] YahooSearchAgentText started successfully on port {self.custom_port}")
         except Exception as e:
             print(f"[ERROR] Failed to start YahooSearchAgentText on port {self.custom_port}: {e}")
-            # If we own the port and startup fails, release it
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
             raise
 
-    async def search(self, query, max_links=MAX_LINKS_TO_TAKE):
+    async def search(self, query, max_links=MAX_LINKS_TO_TAKE, agent_idx=None):
         blacklist = [
             "yahoo.com/preferences",
             "yahoo.com/account",
@@ -154,8 +256,12 @@ class YahooSearchAgentText:
             "yahoo.com/gdpr",
         ]
         results = []
+        page = None
         try:
-            self.query_count += 1
+            self.tab_count += 1
+            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            
+            # Open new tab for this search
             page = await self.context.new_page()
             search_url = f"https://search.yahoo.com/search?p={quote(query)}"
             await page.goto(search_url, timeout=50000)
@@ -177,10 +283,23 @@ class YahooSearchAgentText:
                 if href and href.startswith("http") and not any(b in href for b in blacklist):
                     results.append(href)
 
-            await page.close()
-            print(f"[INFO] Yahoo search returned {len(results)} results for '{query}' on port {self.custom_port}")
+            print(f"[SEARCH] Tab #{self.tab_count} returned {len(results)} results for '{query[:50]}...' on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+                
         except Exception as e:
-            print(f"❌ Yahoo search failed on port {self.custom_port}: {e}")
+            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+        
         return results
 
     async def close(self):
@@ -196,24 +315,20 @@ class YahooSearchAgentText:
             except Exception as e:
                 print(f"[WARN] Failed to clean up user data for port {self.custom_port}: {e}")
             
-            print(f"[INFO] YahooSearchAgentText on port {self.custom_port} closed.")
+            print(f"[INFO] YahooSearchAgentText on port {self.custom_port} closed after {self.tab_count} tabs.")
         except Exception as e:
             print(f"[ERROR] Error closing YahooSearchAgentText on port {self.custom_port}: {e}")
         finally:
-            # Always release the port if we own it
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
 
-# --------------------------------------------
-# Yahoo Search - Images
-# --------------------------------------------
 class YahooSearchAgentImage:
     def __init__(self, custom_port=None):
         self.playwright = None
         self.context = None
         self.save_dir = "downloaded_images"
+        self.tab_count = 0  # Track tabs opened by this agent
         
-        # Use port manager if no custom port specified
         if custom_port:
             self.custom_port = custom_port
             self.owns_port = False
@@ -256,10 +371,15 @@ class YahooSearchAgentImage:
                 port_manager.release_port(self.custom_port)
             raise
 
-    async def search_images(self, query, max_images=10):
+    async def search_images(self, query, max_images=10, agent_idx=None):
         results = []
         os.makedirs(self.save_dir, exist_ok=True)
+        page = None
         try:
+            self.tab_count += 1
+            print(f"[IMAGE SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            
+            # Open new tab for this search
             page = await self.context.new_page()
             search_url = f"https://images.search.yahoo.com/search/images?p={quote(query)}"
             await page.goto(search_url, timeout=20000)
@@ -271,20 +391,32 @@ class YahooSearchAgentImage:
             await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
             await page.wait_for_timeout(random.randint(1000, 2000))
 
-            await page.wait_for_selector("li > a.redesign-img > img", timeout=15000)
+            await page.wait_for_selector("li > a.image-tile > img", timeout=15000)
 
-            img_elements = await page.query_selector_all("li > a.redesign-img > img")
+            img_elements = await page.query_selector_all("li > a.image-tile > img")
             for img in img_elements[:max_images]:
                 src = await img.get_attribute("data-src") or await img.get_attribute("src")
                 if src and src.startswith("http"):
                     results.append(src)
 
-            await page.close()
-            print(f"[INFO] Yahoo image search returned {len(results)} results for '{query}' on port {self.custom_port}")
-            return results
+            print(f"[IMAGE SEARCH] Tab #{self.tab_count} returned {len(results)} image results for '{query[:50]}...' on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("image", agent_idx)
+                
         except Exception as e:
-            print(f"[ERROR] Yahoo image search failed on port {self.custom_port}: {e}")
-            return []
+            print(f"[ERROR] Yahoo image search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[IMAGE SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close image search tab #{self.tab_count}: {e}")
+        
+        return results
 
     async def close(self):
         try:
@@ -298,111 +430,44 @@ class YahooSearchAgentImage:
             except Exception as e:
                 print(f"[WARN] Failed to clean up user data for port {self.custom_port}: {e}")
             
-            print(f"[INFO] YahooSearchAgentImage on port {self.custom_port} closed.")
+            print(f"[INFO] YahooSearchAgentImage on port {self.custom_port} closed after {self.tab_count} tabs.")
         except Exception as e:
             print(f"[ERROR] Error closing YahooSearchAgentImage on port {self.custom_port}: {e}")
         finally:
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
 
-# --------------------------------------------
-# Main search functions
-# --------------------------------------------
 async def web_search(query):
-    yahoo_agent = YahooSearchAgentText()  # Let it auto-allocate port
-    try:
-        await yahoo_agent.start()
-        await asyncio.sleep(random.uniform(1, 3))
-        results = await yahoo_agent.search(query, max_links=MAX_LINKS_TO_TAKE)
-        return results
-    finally:
-        await yahoo_agent.close()
+    if not agent_pool.initialized:
+        await agent_pool.initialize_pool()
+    
+    agent, agent_idx = await agent_pool.get_text_agent()
+    results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
+    return results
 
 async def image_search(query, max_images=10):
-    yahoo_agent = YahooSearchAgentImage()  # Let it auto-allocate port
-    try:
-        await yahoo_agent.start()
-        await asyncio.sleep(random.uniform(1, 3))
-        results = await yahoo_agent.search_images(query, max_images)
-        return results
-    finally:
-        await yahoo_agent.close()
+    if not agent_pool.initialized:
+        await agent_pool.initialize_pool()
+    
+    agent, agent_idx = await agent_pool.get_image_agent()
+    results = await agent.search_images(query, max_images, agent_idx=agent_idx)
+    
+    # Format results to match expected JSON format
+    if results:
+        result_dict = {f"yahoo_source_{i}": [url] for i, url in enumerate(results)}
+        return json.dumps(result_dict)
+    else:
+        return json.dumps({})
 
+async def get_agent_pool_status():
+    """Get current agent pool status"""
+    return await agent_pool.get_status()
+
+    
 def get_port_status():
     """Get current port manager status"""
     return port_manager.get_status()
 
-
-        
-def mojeek_form_search(query):
-    url = "https://www.mojeek.com/search"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-        "Referer": "https://www.mojeek.com/",
-        "Accept": "text/html"
-    }
-    params = {"q": query}
-
-    try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-        results = soup.select("ul.results-standard li")
-        links = []
-
-        for r in results[:MAX_LINKS_TO_TAKE]:
-            title_tag = r.select_one("a.title")
-            if title_tag and title_tag.has_attr("href"):
-                links.append(title_tag["href"])
-
-        return links
-
-    except requests.exceptions.RequestException as e:
-        print("❌ Mojeek request failed:", e)
-        return []
-
-def ddgs_search(query):
-    url = "https://html.duckduckgo.com/html/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
-    }
-    data = {"q": query}
-
-    try:
-        response = requests.post(url, data=data, headers=headers, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        links = []
-        for h2 in soup.select("h2.result__title a[href^='http']"):
-            href = h2.get("href")
-            if (
-                href
-                and href.startswith("http")
-                and not href.startswith("https://duckduckgo.com/y.js?")
-            ):
-                links.append(href)
-
-        print(f"[INFO] DDG search completed with {len(links)} results.")
-        return links[:MAX_LINKS_TO_TAKE]
-
-    except Exception as e:
-        print("❌ DDG search failed:", e)
-        return []
-
-
-def ddgs_search_module_search(query):
-    results = []
-    try:
-        with DDGS() as ddgs:
-            for entry in ddgs.text(query, max_results=MAX_LINKS_TO_TAKE):
-                url = entry.get("href") or entry.get("link")
-                if url and url.startswith("http"):
-                    results.append(url)
-        print(f"[INFO] DDG search returned {len(results)} links")
-    except Exception as e:
-        print("❌ DDG search failed:", e)
-    return results
 
 # --------------------------------------------
 # Run Example

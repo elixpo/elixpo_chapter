@@ -1,4 +1,4 @@
-from timezonefinderL import TimezoneFinder
+from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
 from datetime import datetime
 import pytz
@@ -6,19 +6,22 @@ import pytz
 
 def get_local_time(location_name: str):
     try:
-        # Geocode the location
-        geolocator = Nominatim(user_agent="elixposearch-timezone")
-        location = geolocator.geocode(location_name, timeout=10)
+        if location_name in pytz.all_timezones:
+            timezone_str = location_name
+        else:
+            # Case 2: Input is a place name -> geocode it
+            geolocator = Nominatim(user_agent="elixposearch-timezone")
+            location = geolocator.geocode(location_name, timeout=10)
 
-        if not location:
-            return f"❌ Could not find the location: '{location_name}'."
+            if not location:
+                return f"❌ Could not find the location: '{location_name}'."
 
-        # Get timezone from coordinates
-        tf = TimezoneFinder()
-        timezone_str = tf.timezone_at(lat=location.latitude, lng=location.longitude)
+            # Get timezone from coordinates
+            tf = TimezoneFinder()
+            timezone_str = tf.timezone_at(lat=location.latitude, lng=location.longitude)
 
-        if not timezone_str:
-            return f"❌ Could not determine the timezone for '{location_name}'."
+            if not timezone_str:
+                return f"❌ Could not determine the timezone for '{location_name}'."
 
         # Get current time in that timezone
         tz = pytz.timezone(timezone_str)
@@ -41,6 +44,6 @@ def get_local_time(location_name: str):
 
 
 if __name__ == "__main__":
-    location = "Asia/Kolkata"
-    result = get_local_time(location)
-    print(result)
+    # Test with both cases
+    print(get_local_time("Asia/Kolkata"))   # direct timezone
+    print(get_local_time("Kolkata"))       # city name

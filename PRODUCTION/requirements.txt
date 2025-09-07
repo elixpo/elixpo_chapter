@@ -8,7 +8,7 @@ ddgs
 pytube
 youtube-transcript-api
 selectolax
-timezonefinderL
+timezonefinder
 geopy
 quart
 uvicorn
@@ -20,3 +20,6 @@ numba
 loguru
 sentence-transformers
 faiss-cpu
+aiohttp
+torch
+psutil

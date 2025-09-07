@@ -10,3 +10,4 @@ PRODUCTION/k8s/secret.yaml
 __pycache__/
 *.pyc
 minikube-linux-amd64
+pip_cache/
