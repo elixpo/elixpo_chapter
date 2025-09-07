@@ -5,7 +5,8 @@ let userInpEmail = "ayushbhatt633@gmail.com";
 const MAX_NOTIFICATIONS = 3;
 let notificationQueue = [];
 let activeNotifications = 0;
-const clientID = "189837241818-83ote5e8amrlvcpvm7phi76guv0ocm56.apps.googleusercontent.com"
+const githubClientID = "Ov23li51zbnVuh5pmkbK"
+
 window.onload = function() {
     checkExistingAuth();
     showElement('inputLabel');
@@ -372,6 +373,22 @@ async function handleGoogleCredentialResponse(response) {
         showNotification("🔥 Network error during Google login.");
         enableElement('loginGoogle');
     }
+}
+document.getElementById("loginGithub").addEventListener("click", function () {
+  loginWithGitHub();
+});
+
+function loginWithGitHub() {
+  showNotification("Redirecting to GitHub for authentication...");
+  disableElement("loginGithub");
+
+  // GitHub OAuth URL - Fixed callback URL
+  const githubAuthUrl =
+    `https://github.com/login/oauth/authorize?client_id=${githubClientID}` +
+    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback")}` +
+    `&scope=user:email&state=elixpo-blogs`;
+
+  window.location.href = githubAuthUrl;
 }
 
 

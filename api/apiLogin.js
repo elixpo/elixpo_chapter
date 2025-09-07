@@ -88,6 +88,117 @@ router.post("/logout", (req, res) => {
 });
 
 
+
+router.post("/loginGithub", async (req, res) => {
+  const { code, state } = req.body;
+  console.log("Received GitHub code:", code);
+
+  if (!code) return res.status(400).json({ error: "Missing authorization code" });
+  if (state !== "elixpo-blogs") return res.status(400).json({ error: "Invalid state" });
+
+  try {
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: process.env.github_auth_client_id,
+        client_secret: process.env.github_auth_client_secret,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      console.error("❌ GitHub token exchange error:", tokenData.error);
+      return res.status(400).json({ error: "Failed to exchange authorization code" });
+    }
+
+    const accessToken = tokenData.access_token;
+    const userResponse = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
+
+    const githubUser = await userResponse.json();
+
+    if (!githubUser.email) {
+      const emailResponse = await fetch("https://api.github.com/user/emails", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const emails = await emailResponse.json();
+      const primaryEmail = emails.find((e) => e.primary);
+      githubUser.email = primaryEmail ? primaryEmail.email : null;
+    }
+
+    if (!githubUser.email) {
+      return res.status(400).json({ error: "GitHub account must have an email address" });
+    }
+
+    const email = githubUser.email.toLowerCase();
+    const name = githubUser.name || githubUser.login || "";
+    const photo = githubUser.avatar_url || "";
+    const uid = generateUID(email, 12);
+
+    const userDocRef = collec.collection("users").doc(uid);
+    const userSnap = await userDocRef.get();
+
+    let authUser = null;
+    try {
+      authUser = await auth.getUserByEmail(email);
+    } catch (e) {
+      authUser = null;
+    }
+
+    let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || req.ip;
+    const country = await getCountryFromIP(ip);
+    console.log(`GitHub login attempt from IP: ${ip}, Country: ${country}`);
+
+    if (!userSnap.exists && !authUser) {
+      await createFirebaseUser(email, name, photo, "github", country);
+      await auth.createUser({ uid, email, displayName: name });
+    } else if (!userSnap.exists && authUser) {
+      await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "github", country);
+    } else if (userSnap.exists && !authUser) {
+      const userData = userSnap.data();
+      await auth.createUser({ uid, email, displayName: userData.displayName || name });
+    } else {
+      const userData = userSnap.data();
+      if (userData.provider && userData.provider !== "github") {
+        return res.status(403).json({
+          error: `This account was registered with ${userData.provider}. Use correct login method.`,
+        });
+      }
+    }
+
+    
+    const token = issueJwt(uid, email, true); 
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
+      path: "/"
+    });
+
+    console.log("✅ GitHub login successful, cookie set");
+
+    return res.json({
+      status: true,
+      user: { uid, email, name, photo },
+      message: "GitHub login successful!"
+    });
+  } catch (err) {
+    console.error("❌ Error during GitHub login:", err.message);
+    return res.status(500).json({ error: "Internal server error during GitHub login." });
+  }
+});
+
 router.post("/loginGoogle", async (req, res) => {
   const { idToken } = req.body;
   console.log("Received idToken:", idToken);
