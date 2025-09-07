@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LixBlogs</title>
-     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <title>Saved Collections - LixBlogs </title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <link rel="stylesheet" href="../CSS/Community/trending.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/x-icon" href="../IMAGES/logo.png">
+    <link rel="stylesheet" href="../../CSS/history/history.css">
+    <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png">
 </head>
 <body>
-    <div class="container absolute flex flex-col h-full max-w-[1440px] bg-[#030712] box-border">
+    <div class="container absolute flex flex-col h-full max-w-[2560px] bg-[#030712] box-border">
         <section class="w-full h-[60px]">
             <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
-                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../IMAGES/logo.png')] bg-cover"></div>
+                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../CSS/IMAGES/logo.png')] bg-cover"></div>
                 <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
                 <div class="absolute left-[80%] text-white text-[1.3em] cursor-pointer px-2.5 py-1.5 bg-[#10141E] border border-[#7ba8f0] rounded-[15px] flex items-center">
                     <ion-icon name="pencil" class="text-[0.8em] mr-1 text-[#7ba8f0]"></ion-icon>
@@ -25,75 +25,53 @@
             </div>
         </section>
 
-        <section class="trending pseudo relative flex flex-row items-center w-full h-[40px] bg-[#10141E] px-20 box-border">
-            <input type="text" placeholder="Ctrl K" class="w-[30%] h-[40px] bg-[#1D202A] text-white rounded-[20px] px-4 outline-none border border-[#888] focus:border-[#7ba8f0]">
-            <div class="trendingTopics h-[40px] max-w-full overflow-x-auto flex flex-row gap-[5px] px-5 box-border ml-[5px] items-center flex-nowrap scrollbar-thin scrollbar-thumb-[#7ba8f0] whitespace-nowrap">
-                <div class="topic ai-recommend relative h-[80%] px-5 flex flex-row gap-[5px] items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <ion-icon name="sparkles" class="rotate-[25deg] text-[#7ba8f0] mr-1 mt-1"></ion-icon>
-                    <p class="text-[#7ba8f0] text-[1em] font-bold"> For You</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Web Development</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">App Analytics</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Dev-ops</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Dev-ops</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Dev-ops</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Dev-ops</p>
-                </div>
-                <div class="topic relative h-[80%] px-3 box-border flex items-center justify-center bg-[#1D202A] rounded-[8px] cursor-pointer hover:bg-[#191e49] hover:text-white transition-all duration-300">
-                    <p class="text-[#7ba8f0] text-[1em] font-bold">Dev-ops</p>
-                </div>
-            </div>
-        </section>
-        <section class="recommendations relative flex flex-row h-full w-full box-border border-t-2 border-[#1D202A]">
+        <div class="historySection flex flex-row h-full w-full h-full box-border">
+
+        <section class="relative flex flex-row h-full w-full box-border border-t-2 border-[#1D202A]">
             <div class="profileInformation w-[20%] h-full bg-[#10141E] px-5 box-border flex flex-col items-center">
                 <div class="profileControlButtons flex-col w-full mt-5 py-10 box-border">
-                    <div class="controlButton selected relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 box-border cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 box-border cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
                         <ion-icon name="home-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
                         <p class="text-[#7ba8f0] text-[0.9em]">Home</p>
                     </div>
-                <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
                         <ion-icon name="bookmark-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
-                        <p class="text-[#7ba8f0] text-[0.9em]">Library</p>
+                        <p class="text-[#7ba8f0] text-[0.9em]">history</p>
                     </div>
                     <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-15 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
                         <ion-icon name="person-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
                         <p class="text-[#7ba8f0] text-[0.9em]">Profile</p>
                     </div>
-
-
                     <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mt-20 mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
                         <ion-icon name="book-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
                         <p class="text-[#7ba8f0] text-[0.9em]">Stories</p>
                     </div>
                     <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
-                        <ion-icon name="stats-chart-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
-                        <p class="text-[#7ba8f0] text-[0.9em]">Stats</p>
+                        <ion-icon name="chart-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">history</p>
                     </div>
-
-
                     <div class="userInfo flex items-center gap-2 w-full h-[50px] px-3 rounded-[12px] bg-[#10141E] shadow-[6px_6px_12px_#0b0e16,-6px_-6px_12px_#171c28]">
                         <div class="userLogo flex-shrink-0 h-[35px] w-[35px] rounded-full bg-[#888] shadow-[inset_3px_3px_6px_#777,inset_-3px_-3px_6px_#999]"></div>
                         <span class="text-white text-lg font-medium cursor-pointer userOrganization truncate">Ayushman Bhattacharya</span>
                     </div>
-
                 </div>
             </div>
 
-          <div class="recommendationCards w-[50%] h-full bg-[#10141E] box-border flex flex-col items-left justify-start">
-            <div class="recommendationContainer relative w-full max-h-[75%] overflow-y-auto flex flex-col items-center box-border mt-10">
+            <div class="historyControl w-[80%] h-full max-h-[calc(100vh-80px)] overflow-y-auto bg-[#030712] px-10 box-border flex flex-col items-start">
+                <div class="historyHeader w-full h-[30%] flex flex-row items-center ">
+                    <h1 class="text-white text-[4em] my-auto font-bold">Reading History</h1>
+                </div>
 
-                <div class="recommendCard relative shrink-0 flex flex-col w-[98%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
+                <div class="historyNav flex flex-row w-full h-[10%] items-center justify-left gap-10 mt-2 border-b-2 border-[#1D202A]">
+                    <p class="historyNavItem text-[#888] text-lg cursor-pointer select-none">Collection</p>
+                    <p class="historyNavItem text-[#888] text-lg cursor-pointer select-none">Saved Collections</p>
+                    <p class="historyNavItem text-[#7ba8f0] text-lg cursor-pointer selected underline select-none">Read History</p>
+                </div>
+
+                <div class="historyOverview flex flex-col w-full h-full gap-5 overflow-hidden">
+                    <div class="historyContent flex flex-col gap-5 mt-5 max-h-[95%] overflow-y-auto">
+                    
+                    <div class="recommendCard relative shrink-0 flex flex-col w-[80%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
                     <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
                         <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
                         <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
@@ -122,7 +100,7 @@
                     </div>
                 </div>
 
-                <div class="recommendCard relative shrink-0 flex flex-col w-[98%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
+                <div class="recommendCard relative shrink-0 flex flex-col w-[80%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
                     <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
                         <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
                         <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
@@ -151,7 +129,7 @@
                     </div>
                 </div>
 
-                <div class="recommendCard relative shrink-0 flex flex-col w-[98%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
+                <div class="recommendCard relative shrink-0 flex flex-col w-[80%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
                     <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
                         <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
                         <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
@@ -179,69 +157,16 @@
                         </div>
                     </div>
                 </div>
-                
-            </div>
-        </div>
-
-        <div class="topPicks relative w-[30%] h-full bg-[#10141E] px-2 box-border flex flex-col">
-            <p class="picksHeader text-[#7ba8f0] text-[1.2em] font-bold mt-10">Top Developer Picks</p>
-            <div class="topPicksContainer relative w-full max-h-[70%] overflow-y-auto flex-col items-center box-border flex-grow">
-
-                <div class="pickCard flex-shrink-0 relative flex flex-col w-full h-[150px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mt-3">
-                    <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
-                        <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
-                        <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
-                        <span class="text-[#888]">by</span>
-                        <span class="text-[#fff] cursor-pointer author">John Doe</span>
-                    </div>
-                    <div class="contentInfo flex flex-row w-full gap-2">
-                    <div class="contentTitle flex flex-col gap-1 w-[75%] box-border">
-                        <p class="contentText text-[#fff] text-[1.2em] font-bold">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                    </div>
-                </div>
-                <div class="postAttributes w-full flex flex-row mt-2 gap-5 justify-between">                         
-                    <p class="date text-[#888] text-[1em]">Aug 10</p>
-                </div>
-                </div>
-
-                <div class="pickCard flex-shrink-0 relative flex flex-col w-full h-[150px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mt-3">
-                    <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
-                        <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
-                        <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
-                        <span class="text-[#888]">by</span>
-                        <span class="text-[#fff] cursor-pointer author">John Doe</span>
-                    </div>
-                    <div class="contentInfo flex flex-row w-full gap-2">
-                    <div class="contentTitle flex flex-col gap-1 w-[75%] box-border">
-                        <p class="contentText text-[#fff] text-[1.2em] font-bold">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                    </div>
-                </div>
-                <div class="postAttributes w-full flex flex-row mt-2 gap-5 justify-between">                         
-                    <p class="date text-[#888] text-[1em]">Aug 10</p>
-                </div>
-                </div>
-
-                <div class="pickCard flex-shrink-0 relative flex flex-col w-full h-[150px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mt-3">
-                    <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
-                        <div class="logo h-[25px] w-[25px] rounded-[8px] bg-[#888]"></div>
-                        <span class="text-[#fff] underline cursor-pointer organization">Elixpo Organization</span>
-                        <span class="text-[#888]">by</span>
-                        <span class="text-[#fff] cursor-pointer author">John Doe</span>
-                    </div>
-                    <div class="contentInfo flex flex-row w-full gap-2">
-                    <div class="contentTitle flex flex-col gap-1 w-[75%] box-border">
-                        <p class="contentText text-[#fff] text-[1.2em] font-bold">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                    </div>
-                </div>
-                <div class="postAttributes w-full flex flex-row mt-2 gap-5 justify-between">                         
-                    <p class="date text-[#888] text-[1em]">Aug 10</p>
-                </div>
-                </div>
 
             </div>
-            
-        </div>
+             
+
+            </div>
         </section>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../JS/history/history.js"></script>
 </body>
 </html>

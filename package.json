@@ -1,5 +1,15 @@
 {
   "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "fs": "^0.0.1-security",
+    "google-auth-library": "^10.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.5",
+    "nodemon": "^3.1.10",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.32.0"
   },
@@ -13,7 +23,7 @@
     "frontend": "lite-server",
     "backend": "node api/iconsFetcher.js",
     "backend:dev": "nodemon api/iconsFetcher.js",
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend\"",
+    "dev": "concurrently \"npm run frontend\"",
     "start": "node api/iconsFetcher.js",
     "build": "echo 'No build step needed for static frontend'"
   }

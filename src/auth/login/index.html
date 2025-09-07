@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - LixBlogs</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="../../../CSS/auth/login.css">
+    <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/logo.png">
+</head>
+<body class="bg-[#030712] min-h-screen flex items-stretch font-[Kanit,serif]"> 
+    <div class="w-full md:w-1/2 flex flex-col justify-center px-10 py-12 bg-[#10141E]">
+        <div class="flex flex-col max-w-md w-full mx-auto">
+            <div class="flex items-center mb-10">
+                <div class="h-12 w-12 rounded-full bg-[url('../../../CSS/IMAGES/logo.png')] bg-cover mr-3"></div>
+            </div>
+
+            <form class="flex flex-col gap-4">
+                <div id="inputLabel" class="">
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="email">Email address</label>
+                    <input id="email" type="email" value="ayushbhatt633@gmail.com" autocomplete="off" required class="w-full px-4 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                </div>
+                <div id="otpLabel" class="hidden">
+                    <label class="block text-[#7ba8f0] mb-1 text-[1em] font-bold" for="otp">OTP</label>
+                    <div class="flex gap-2">
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                        <input maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" class="w-12 h-12 text-center text-xl rounded-lg bg-[#1D202A] text-white border border-[#313647] focus:outline-none focus:border-[#7ba8f0] transition" />
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm mt-2">
+                    <label class="flex items-center text-[#888]">
+                        <input type="checkbox" id="rememberMe" class="appearance-none h-5 w-5 rounded-md bg-[#1D202A] border border-[#313647] checked:bg-[#7ba8f0] checked:border-[#7ba8f0] focus:outline-none transition-all duration-200 mr-2 relative" />
+                        <span class="pointer-events-none absolute left-0 top-0 flex items-center justify-center w-5 h-5">
+                        </span>
+                        <span> Remember Me </span>
+                    </label>
+                    <a href="#" class="text-[#7ba8f0] text-[1.1em] font-bold hover:underline">Forgot password?</a>
+                </div>
+                <button type="button" id="loginBtn" class="mt-4 px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-lg rounded-full font-semibold shadow transition-all duration-200">
+                    <span> Sign in </span>
+                </button>
+            </form>
+            <div class="flex items-center my-6">
+                <div class="flex-grow border-t border-[#1D202A]"></div>
+                <span class="mx-4 text-[#888] text-[1em] font-bold">Or continue with</span>
+                <div class="flex-grow border-t border-[#1D202A]"></div>
+            </div>
+
+            <div class="flex gap-4 flex-row">
+
+                <button id="g_id_onload"
+                    data-client_id="796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com" 
+                    data-callback="handleGoogleCredentialResponse" 
+                    data-auto_prompt="false"
+                    data-type="standard"
+                    data-shape="pill"
+                    data-theme="filled_blue"
+                    data-text="continue_with"
+                    data-size="medium"
+                    data-logo_alignment="left"
+                    class="g_id_signin relative overflow-hidden w-1/2 flex items-center bg-[#1D202A] justify-center gap-2 py-2 rounded-full border border-[#313647] hover:bg-[#1D202A] transition shadow-lg group">
+                    <span class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#1D202A] group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                        <ion-icon name="logo-google" class="text-xl text-white"></ion-icon>
+                    </span>
+                    <span class="ml-8 text-[#4285F4] font-semibold">Google</span>
+                </button>
+
+                <button id="loginGithub" class="flex items-center justify-center gap-2 w-1/2 py-2 rounded-lg bg-[#1D202A] text-white border border-[#313647] hover:bg-[#23395d] transition">
+                    <ion-icon name="logo-github" class="text-xl text-[#888]"></ion-icon>
+                    <span> GitHub </span>
+                </button>
+                
+            </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <script src="../../../JS/linkRedirect.js"></script>
+    <script src="../../../JS/auth/helperFunction.js"></script>
+    <script src="../../../JS/auth/login.js"> </script>
+</body>
+</html>

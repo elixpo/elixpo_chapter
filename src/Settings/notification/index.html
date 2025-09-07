@@ -7,11 +7,11 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../../CSS/Settings/settings.css">
-    <link rel="icon" type="image/x-icon" href="../../IMAGES/logo.png">
+    <link rel="stylesheet" href="../../../CSS/Settings/settings.css">
+    <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/logo.png">
 </head>
 <body>
-    <div class="container absolute flex flex-col h-full max-w-[1440px] bg-[#030712] box-border">
+    <div class="container absolute flex flex-col h-full max-w-[2560px] bg-[#030712] box-border">
         <section class="w-full h-[60px]">
             <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
                 <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../IMAGES/logo.png')] bg-cover"></div>
@@ -68,51 +68,78 @@
 
                 <div class="settingsNav flex flex-row w-full h-[10%] items-center justify-left gap-10 mt-2 border-b-2 border-[#1D202A]">
                     <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Account</p>
-                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer selected underline  select-none">Publisher</p>
-                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Notification</p>
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Publisher</p>
+                    <p class="settingsNavItem text-[#888] text-lg cursor-pointer selected underline select-none">Notification</p>
                     <p class="settingsNavItem text-[#888] text-lg cursor-pointer select-none">Organisation</p>
                 </div>
 
                 <div class="publisherSettings flex flex-col w-full mt-10 gap-5">
+                    <div class="settingBox flex flex-row items-center justify-between w-full">
+                        <div class="flex flex-col">
+                            <p class="text-white text-lg select-none">Selective Posts</p>
+                            <p class="text-[#888] text-[1em] select-none">Receive notifications for selective posts</p>
+                        </div>
 
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Allow users to comment?</p>
                         <div class="freq flex flex-row gap-5">
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Yes </span></p>
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Nope </span></p>
                         </div>
                     </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Allow users to tag you in their posts?</p>
+
+                    <div class="settingBox flex flex-row items-center justify-between w-full">
+                        <div class="flex flex-col">
+                            <p class="text-white text-lg select-none">Recommended Posts</p>
+                            <p class="text-[#888] text-[1em] select-none">Homepage recommendation section with the top-picks and publishing 
+                                according to your interests</p>
+                            </p>
+                        </div>
+
                         <div class="freq flex flex-row gap-5">
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Yes </span></p>
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Nope </span></p>
                         </div>
                     </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Allow email replies?</p>
+
+                    <div class="settingBox flex flex-row items-center justify-between w-full">
+                        <div class="flex flex-col">
+                            <p class="text-white text-lg select-none">Tag Notifications</p>
+                            <p class="text-[#888] text-[1em] select-none">Notification for posts with specific tags with your username</p>
+                        </div>
+
+                        <div class="freq flex flex-row gap-5">
+                            <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Followers </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer "><span> Everyone </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> None </span></p>
+                        </div>
+                    </div>
+
+                    <div class="settingBox flex flex-row items-center justify-between w-full">
+                        <div class="flex flex-col">
+                            <p class="text-white text-lg select-none">Email on LixBlogs Update</p>
+                            <p class="text-[#888] text-[1em] select-none">Get notified via email for updates on LixBlogs</p>
+                        </div>
+
                         <div class="freq flex flex-row gap-5">
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Yes </span></p>
                         <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Nope </span></p>
+
                         </div>
                     </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Default Reply Email Address</p>
-                        <p class="text-[#888] hover:text-white text-lg select-none cursor-pointer">user@example.com</p>
-                    </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Publisher Visibility</p>
+
+                    <div class="settingBox flex flex-row items-center justify-between w-full">
+                        <div class="flex flex-col">
+                            <p class="text-white text-lg select-none">Overall Email Notification</p>
+                            <p class="text-[#888] text-[1em] select-none">You will still get official email notifications from LixBlogs.</p>
+                        </div>
+
                         <div class="freq flex flex-row gap-5">
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Public </span></p>
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Private </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Yes </span></p>
+                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer"><span> Nope </span></p>
+
                         </div>
                     </div>
-                    <div class="settingBox flex flex-row justify-between w-full">
-                        <p class="text-white text-lg select-none">Publisher Verification</p>
-                        <div class="freq flex flex-row gap-5">
-                        <p class="optionalSetting text-[#888] hover:text-white text-lg select-none cursor-pointer selected"><span> Verified <ion-icon name="shield-checkmark" class="relative mt-2"></ion-icon> </span></p>
-                        </div>
-                    </div>
+
+
                 </div>
         </section>
 
