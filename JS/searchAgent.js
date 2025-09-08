@@ -94,7 +94,7 @@ function handleMenuAction(action) {
         console.log('Deep research mode enabled');
     } else {
         isDeepResearch = false;
-        messageInput.placeholder = "Message ChatGPT";
+        messageInput.placeholder = "Search...";
         messageInput.focus();
         console.log('Action selected:', action);
     }
@@ -112,7 +112,111 @@ function updateSendButton() {
     sendBtn.disabled = !hasText || isGenerating;
 }
 
-// Add streaming section and final markdown message
+// Get favicon URL from domain
+function getFaviconUrl(url) {
+    try {
+        const domain = new URL(url).hostname;
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+    } catch {
+        return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+    }
+}
+
+// Create sources section
+function createSourcesSection(sources) {
+    if (!sources || sources.length === 0) return null;
+    
+    const sourcesDiv = document.createElement('div');
+    sourcesDiv.className = 'sources-section';
+    
+    const header = document.createElement('div');
+    header.className = 'sources-header';
+    header.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14,2 14,8 20,8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10,9 9,9 8,9"></polyline>
+        </svg>
+        Sources
+    `;
+    sourcesDiv.appendChild(header);
+    
+    const grid = document.createElement('div');
+    grid.className = 'sources-grid';
+    
+    sources.forEach(source => {
+        const card = document.createElement('a');
+        card.className = 'source-card';
+        card.href = source.url;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        
+        const favicon = document.createElement('img');
+        favicon.className = 'source-favicon';
+        favicon.src = getFaviconUrl(source.url);
+        favicon.onerror = function() {
+            this.style.display = 'none';
+        };
+        
+        card.innerHTML = `
+            <div class="source-header">
+                <img class="source-favicon" src="${getFaviconUrl(source.url)}" onerror="this.style.display='none'">
+                <div class="source-url">${new URL(source.url).hostname}</div>
+            </div>
+            <div class="source-title">${source.title || 'Untitled'}</div>
+            <div class="source-description">${source.description || source.snippet || ''}</div>
+        `;
+        
+        grid.appendChild(card);
+    });
+    
+    sourcesDiv.appendChild(grid);
+    return sourcesDiv;
+}
+
+// Create status indicator
+function createStatusIndicator(stage, progress = 0) {
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'status-indicator';
+    
+    const getStatusInfo = (stage) => {
+        switch (stage?.toLowerCase()) {
+            case 'analyzing':
+            case 'query_analysis':
+                return { text: 'Analyzing your query...', class: 'analyzing' };
+            case 'searching':
+            case 'web_search':
+                return { text: 'Searching the web...', class: 'searching' };
+            case 'processing':
+            case 'content_extraction':
+                return { text: 'Processing results...', class: 'searching' };
+            case 'generating':
+            case 'answer_generation':
+                return { text: 'Generating response...', class: 'searching' };
+            case 'completed':
+                return { text: 'Completed', class: 'completed' };
+            default:
+                return { text: 'Processing...', class: 'searching' };
+        }
+    };
+    
+    const statusInfo = getStatusInfo(stage);
+    statusDiv.className = `status-indicator ${statusInfo.class}`;
+    
+    statusDiv.innerHTML = `
+        <div class="status-spinner"></div>
+        <span>${statusInfo.text}</span>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+        </div>
+    `;
+    
+    return statusDiv;
+}
+
+// Add streaming message with sources and status
 function addStreamingMessage(role, stream = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + role;
@@ -124,15 +228,18 @@ function addStreamingMessage(role, stream = false) {
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
 
-    let streamingDiv = null;
+    let sourcesDiv = null;
+    let statusDiv = null;
     let finalDiv = null;
 
     if (role === 'assistant' && stream) {
-        streamingDiv = document.createElement('div');
-        streamingDiv.className = 'streaming-section loading';
-        streamingDiv.id = 'streaming-section-' + Date.now();
-        streamingDiv.textContent = '';
-        messageContent.appendChild(streamingDiv);
+        sourcesDiv = document.createElement('div');
+        sourcesDiv.className = 'sources-container';
+        sourcesDiv.style.display = 'none';
+        messageContent.appendChild(sourcesDiv);
+        
+        statusDiv = createStatusIndicator('analyzing', 0);
+        messageContent.appendChild(statusDiv);
 
         finalDiv = document.createElement('div');
         finalDiv.className = 'final-markdown';
@@ -144,7 +251,7 @@ function addStreamingMessage(role, stream = false) {
         conversation.appendChild(messageDiv);
 
         scrollToBottom();
-        return {streamingDiv, finalDiv, messageDiv};
+        return { sourcesDiv, statusDiv, finalDiv, messageDiv };
     } else {
         messageContent.textContent = '';
         if (role === 'user') {
@@ -156,12 +263,14 @@ function addStreamingMessage(role, stream = false) {
         }
         conversation.appendChild(messageDiv);
         scrollToBottom();
-        return {messageContent, messageDiv};
+        return { messageContent, messageDiv };
     }
 }
 
 function streamAssistantResponse(message, deepResearch) {
-    const { streamingDiv, finalDiv } = addStreamingMessage('assistant', true);
+    const { sourcesDiv, statusDiv, finalDiv } = addStreamingMessage('assistant', true);
+    let sources = [];
+    let hasShownSources = false;
 
     const payload = {
         stream: true,
@@ -186,55 +295,81 @@ function streamAssistantResponse(message, deepResearch) {
             const decoder = new TextDecoder();
             let buffer = '';
             let finalText = '';
-            streamingDiv.style.display = 'block';
-            streamingDiv.classList.add('loading');
-            streamingDiv.textContent = '';
+            
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
+                
                 buffer += decoder.decode(value, { stream: true });
                 let parts = buffer.split('\n\n');
                 buffer = parts.pop();
+                
                 for (let part of parts) {
                     if (!part.trim()) continue;
                     if (part.startsWith('data:')) {
                         let jsonStr = part.replace(/^data:\s*/, '');
                         if (jsonStr === '[DONE]') continue;
+                        
                         try {
                             let chunk = JSON.parse(jsonStr);
                             let content = chunk?.choices?.[0]?.delta?.content || '';
-                            // Show <TASK> lines in streamingDiv, rest in final markdown
+                            let meta = chunk?.choices?.[0]?.delta?.elixpo_meta || {};
+                            
+                            // Update status and progress
+                            if (meta.stage && statusDiv) {
+                                const newStatusDiv = createStatusIndicator(meta.stage, meta.progress || 0);
+                                statusDiv.replaceWith(newStatusDiv);
+                                statusDiv = newStatusDiv;
+                            }
+                            
+                            // Handle content
                             if (content) {
-                                const { taskLines, restText } = extractTaskLines(content);
-                                if (taskLines.length > 0) {
-                                    for (let line of taskLines) {
-                                        let lineDiv = document.createElement('div');
-                                        lineDiv.textContent = line;
-                                        streamingDiv.appendChild(lineDiv);
+                                // Check for sources in content
+                                const sourceMatch = content.match(/\[SOURCES\](.*?)\[\/SOURCES\]/s);
+                                if (sourceMatch && !hasShownSources) {
+                                    try {
+                                        sources = JSON.parse(sourceMatch[1]);
+                                        const sourcesSection = createSourcesSection(sources);
+                                        if (sourcesSection) {
+                                            sourcesDiv.appendChild(sourcesSection);
+                                            sourcesDiv.style.display = 'block';
+                                            hasShownSources = true;
+                                        }
+                                    } catch (e) {
+                                        console.log('Failed to parse sources:', e);
                                     }
+                                    content = content.replace(/\[SOURCES\].*?\[\/SOURCES\]/s, '');
                                 }
-                                finalText += restText;
+                                
+                                // Remove task markers and add to final text
+                                const cleanContent = content.replace(/<TASK>[\s\S]*?<\/TASK>/gi, '');
+                                if (cleanContent.trim()) {
+                                    finalText += cleanContent;
+                                }
+                                
                                 scrollToBottom();
                             }
-                            // If finish_reason is stop, show final markdown
+                            
+                            // Check if finished
                             if (chunk?.choices?.[0]?.finish_reason === 'stop') {
-                                streamingDiv.classList.remove('loading');
-                                streamingDiv.style.display = 'none';
+                                if (statusDiv) statusDiv.style.display = 'none';
                                 finalDiv.style.display = 'block';
                                 finalDiv.innerHTML = renderMarkdown(finalText);
                                 scrollToBottom();
                                 isGenerating = false;
                                 updateSendButton();
+                                break;
                             }
                         } catch (e) {
-                            // ignore parse errors
+                            console.log('Parse error:', e);
                         }
                     }
                 }
             }
+            
+            // Ensure final content is shown
             if (finalDiv.style.display === 'none') {
-                streamingDiv.classList.remove('loading');
-                streamingDiv.style.display = 'none';
+                if (statusDiv) statusDiv.style.display = 'none';
                 finalDiv.style.display = 'block';
                 finalDiv.innerHTML = renderMarkdown(finalText);
                 scrollToBottom();
@@ -244,9 +379,9 @@ function streamAssistantResponse(message, deepResearch) {
         } else {
             // --- Fallback: JSON response ---
             const data = await response.json();
-            streamingDiv.classList.remove('loading');
-            streamingDiv.style.display = 'none';
+            if (statusDiv) statusDiv.style.display = 'none';
             finalDiv.style.display = 'block';
+            
             let responseText = '';
             if (data.error) {
                 responseText = 'Error: ' + data.error;
@@ -257,16 +392,32 @@ function streamAssistantResponse(message, deepResearch) {
             } else {
                 responseText = "I received your message but couldn't generate a proper response.";
             }
-            // Remove <TASK> blocks from final message
-            const { restText } = extractTaskLines(responseText);
-            finalDiv.innerHTML = renderMarkdown(restText);
+            
+            // Extract sources from response
+            const sourceMatch = responseText.match(/\[SOURCES\](.*?)\[\/SOURCES\]/s);
+            if (sourceMatch) {
+                try {
+                    sources = JSON.parse(sourceMatch[1]);
+                    const sourcesSection = createSourcesSection(sources);
+                    if (sourcesSection) {
+                        sourcesDiv.appendChild(sourcesSection);
+                        sourcesDiv.style.display = 'block';
+                    }
+                } catch (e) {
+                    console.log('Failed to parse sources:', e);
+                }
+                responseText = responseText.replace(/\[SOURCES\].*?\[\/SOURCES\]/s, '');
+            }
+            
+            const cleanResponse = responseText.replace(/<TASK>[\s\S]*?<\/TASK>/gi, '');
+            finalDiv.innerHTML = renderMarkdown(cleanResponse);
             scrollToBottom();
             isGenerating = false;
             updateSendButton();
         }
     }).catch(error => {
-        streamingDiv.classList.remove('loading');
-        streamingDiv.style.display = 'none';
+        console.error('Stream error:', error);
+        if (statusDiv) statusDiv.style.display = 'none';
         finalDiv.style.display = 'block';
         finalDiv.innerHTML = "<span style='color:#f87171'>An error occurred! Please try again later.</span>";
         scrollToBottom();
@@ -275,25 +426,9 @@ function streamAssistantResponse(message, deepResearch) {
     });
 }
 
-
-
-function extractTaskLines(text) {
-    let taskLines = [];
-    let restText = text;
-    const taskRegex = /<TASK>([\s\S]*?)<\/TASK>/gi;
-    let match;
-    while ((match = taskRegex.exec(text)) !== null) {
-        // Split the content inside <TASK> by newlines, trim, and add to array
-        let lines = match[1].split('\n').map(l => l.trim()).filter(Boolean);
-        taskLines.push(...lines);
-        // Remove this <TASK>...</TASK> from restText
-        restText = restText.replace(match[0], '');
-    }
-    return { taskLines, restText: restText.trim() };
-}
-
 function renderMarkdown(text) {
-    // Simple replacements for demo; use a real markdown parser for production
+    if (!text) return '';
+    
     return text
         .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -303,10 +438,11 @@ function renderMarkdown(text) {
             const level = Math.min(hashes.length, 4);
             return `<h${level}>${title}</h${level}>`;
         })
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
         .replace(/\n/g, '<br>');
 }
 
-// Handle send message (update to use streaming)
+// Handle send message
 function handleSend() {
     const message = messageInput.value.trim();
 
@@ -331,9 +467,6 @@ function handleSend() {
     updateSendButton();
     closePlusMenu();
 
-    // Show typing indicator (optional, can remove if streaming)
-    // showTypingIndicator();
-
     // Send to backend with streaming
     isGenerating = true;
     updateSendButton();
@@ -342,11 +475,11 @@ function handleSend() {
     // Reset deep research flag
     if (isDeepResearch) {
         isDeepResearch = false;
-        messageInput.placeholder = "Message ChatGPT";
+        messageInput.placeholder = "Search...";
     }
 }
 
-// Replace addMessage for user only (assistant handled by streaming)
+// Add user message
 function addMessage(role, content) {
     if (role === 'user') {
         const messageDiv = document.createElement('div');
@@ -366,6 +499,10 @@ function addMessage(role, content) {
         conversation.appendChild(messageDiv);
         scrollToBottom();
     }
+}
+
+function scrollToBottom() {
+    conversation.scrollTop = conversation.scrollHeight;
 }
 
 // Initialize when DOM is ready
@@ -501,9 +638,4 @@ function showImagePreview(dataUrl) {
 function removeImagePreview() {
     const prev = document.getElementById('search-bar-image-preview');
     if (prev) prev.remove();
-}
-
-
-function scrollToBottom() {
-    conversation.scrollTop = conversation.scrollHeight;
 }

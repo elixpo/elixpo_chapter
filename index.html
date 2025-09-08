@@ -21,6 +21,149 @@
     <link rel="icon" type="image/png" href="CSS/IMAGES/ElixpoSearchIcon.png"> 
     <link rel="stylesheet" href="CSS/searchAgent.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Sources section styling */
+        .sources-section {
+            margin: 20px 0;
+            padding: 0;
+        }
+        
+        .sources-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+        
+        .sources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .source-card {
+            background: #2a2a2a;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .source-card:hover {
+            background: #333333;
+            border-color: #555555;
+            transform: translateY(-1px);
+        }
+        
+        .source-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .source-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        
+        .source-url {
+            font-size: 12px;
+            color: #9ca3af;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            flex: 1;
+        }
+        
+        .source-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #f3f4f6;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .source-description {
+            font-size: 12px;
+            color: #9ca3af;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        /* Streaming status indicator */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 16px 0;
+            font-size: 14px;
+            color: #9ca3af;
+            padding: 8px 12px;
+            background: #1f1f1f;
+            border-radius: 6px;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .status-indicator.analyzing {
+            border-left-color: #f59e0b;
+        }
+        
+        .status-indicator.searching {
+            border-left-color: #3b82f6;
+        }
+        
+        .status-indicator.completed {
+            border-left-color: #10b981;
+        }
+        
+        .status-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #404040;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #404040;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+    </style>
 </head>
 <body>
     <div class="app">
@@ -48,10 +191,6 @@
             </div>
             
             <div id="plusMenu" class="plus-menu hidden">
-                <!-- <div class="menu-item" data-action="file_upload">
-                    <i data-lucide="paperclip"></i>
-                    <span>Add photo</span>
-                </div> -->
                 <div class="menu-item" data-action="deep_research">
                     <i data-lucide="search"></i>
                     <span>Deep research</span>

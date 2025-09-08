@@ -51,7 +51,6 @@ class RequestTask:
         self.start_processing_time = None
 
 
-
 async def process_request_worker():
     while True:
         try:
@@ -68,7 +67,9 @@ async def process_request_worker():
                 
                 try:
                     final_result_content = []
+                    sources = []
                     uq, ui = task.user_query if isinstance(task.user_query, tuple) else (task.user_query, None)
+                    
                     async for chunk in run_elixposearch_pipeline(uq, ui, event_id=None):
                         lines = chunk.splitlines()
                         event_type = None
@@ -81,12 +82,27 @@ async def process_request_worker():
                                 data_lines.append(line.replace("data:", "").strip())
 
                         data_text = "\n".join(data_lines)
+                        
+                        # Extract sources from data
+                        if "[SOURCES]" in data_text and "[/SOURCES]" in data_text:
+                            try:
+                                import re
+                                source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
+                                if source_match:
+                                    sources = json.loads(source_match.group(1))
+                            except:
+                                pass
+                        
                         if data_text and event_type in ["final", "final-part"]:
                             final_result_content.append(data_text)
                     
                     final_response = "\n".join(final_result_content).strip()
                     if not final_response:
                         final_response = "No results found"
+                    
+                    # Include sources in response
+                    if sources:
+                        final_response = f"[SOURCES]{json.dumps(sources)}[/SOURCES]\n\n{final_response}"
                     
                     task.result_future.set_result(final_response)
                     
@@ -216,6 +232,8 @@ async def search_sse(forwarded_data=None):
             }
 
             first_chunk = True
+            sources_sent = False
+            
             async with processing_semaphore:
                 # Choose pipeline based on deep_flag
                 if deep_flag:
@@ -253,8 +271,36 @@ async def search_sse(forwarded_data=None):
                             data_lines.append(line.replace("data:", "").strip())
 
                     data_text = "\n".join(data_lines)
-                    # Always include progress and stage
-                    if data_text:
+                    
+                    # Extract and send sources first
+                    if "[SOURCES]" in data_text and "[/SOURCES]" in data_text and not sources_sent:
+                        try:
+                            import re
+                            source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
+                            if source_match:
+                                sources_chunk = {
+                                    "id": chat_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [{
+                                        "index": 0,
+                                        "delta": {
+                                            "content": f"[SOURCES]{source_match.group(1)}[/SOURCES]"
+                                        },
+                                        "logprobs": None,
+                                        "finish_reason": None
+                                    }]
+                                }
+                                yield f"data: {json.dumps(sources_chunk)}\n\n"
+                                sources_sent = True
+                                # Remove sources from data_text
+                                data_text = re.sub(r'\[SOURCES\].*?\[\/SOURCES\]', '', data_text, flags=re.DOTALL).strip()
+                        except Exception as e:
+                            app.logger.error(f"Error processing sources: {e}")
+                    
+                    # Always include progress and stage metadata
+                    if data_text or stage or progress is not None:
                         chunk_obj = {
                             "id": chat_id,
                             "object": "chat.completion.chunk",
@@ -267,23 +313,33 @@ async def search_sse(forwarded_data=None):
                                 "finish_reason": None
                             }]
                         }
+                        
+                        # Add metadata
                         meta = {}
-                        meta["progress"] = progress if progress is not None else 0
-                        meta["stage"] = stage if stage is not None else "event"
+                        if progress is not None:
+                            meta["progress"] = progress
+                        if stage is not None:
+                            meta["stage"] = stage
                         if task_num is not None:
                             meta["task"] = task_num
                         if finished is not None:
                             meta["finished"] = finished
-                        chunk_obj["choices"][0]["delta"]["elixpo_meta"] = meta
+                        
+                        if meta:
+                            chunk_obj["choices"][0]["delta"]["elixpo_meta"] = meta
 
                         if first_chunk:
                             chunk_obj["choices"][0]["delta"]["role"] = "assistant"
                             first_chunk = False
+                            if data_text:
+                                chunk_obj["choices"][0]["delta"]["content"] = data_text
                             yield f"data: {json.dumps(chunk_obj)}\n\n"
-                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
                         else:
-                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
-                        yield f"data: {json.dumps(chunk_obj)}\n\n"
+                            if data_text:
+                                chunk_obj["choices"][0]["delta"]["content"] = data_text
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
+                            elif meta:  # Send metadata even without content
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
 
                     # Use event_type and/or finished to determine when to stop
                     if event_type in ["final", "FINAL_ANSWER"] or (finished and finished.lower() == "yes"):
@@ -440,7 +496,6 @@ async def transcript():
         return jsonify({"error": "Transcript not available"}), 404
 
     return jsonify({"transcript": transcript_text})
-
 
 
 @app.route("/health", methods=["GET"])
