@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GitHub OAuth Callback</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      text-align: center;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .loading {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔄 Authenticating with GitHub...</h2>
+    <div class="loading">⏳</div>
+    <p id="status">Please wait while we complete your login...</p>
+  </div>
+
+
+  <script src="../../../JS/linkRedirect.js"></script>
+  <script>
+    async function handleGitHubCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const state = params.get("state");
+      const error = params.get("error");
+      
+      const statusElement = document.getElementById("status");
+
+      // Handle OAuth errors
+      if (error) {
+        statusElement.innerHTML = `❌ GitHub authentication failed: ${error}`;
+        setTimeout(() => {
+          redirectTo("src/auth/login");
+        }, 3000);
+        return;
+      }
+
+      // Validate required parameters
+      if (!code || state !== "elixpo-blogs") {
+        statusElement.innerHTML = "❌ Invalid GitHub OAuth callback.";
+        setTimeout(() => {
+          redirectTo("src/auth/login");
+        }, 3000);
+        return;
+      }
+
+      try {
+        statusElement.innerHTML = "🔐 Verifying with server...";
+        
+        const res = await fetch("http://localhost:5000/api/loginGithub", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({ code, state }),
+        });
+
+        const data = await res.json();
+        
+        if (data.status) {
+          statusElement.innerHTML = `✅ Login successful! Welcome, ${data.user.name || data.user.email}`;
+          
+          // Log cookie information for debugging
+          console.log("🍪 Login successful, checking cookies...");
+          console.log("🍪 Document cookies:", document.cookie);
+          
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Redirect to login page (or wherever you want authenticated users to go)
+          setTimeout(() => {
+            
+            redirectTo("src/feed");
+          }, 2000);
+        } else {
+          statusElement.innerHTML = `❌ ${data.error || "GitHub login failed"}`;
+          setTimeout(() => {
+            redirectTo("src/auth/login");
+          }, 3000);
+        }
+      } catch (err) {
+        console.error("GitHub callback error:", err);
+        statusElement.innerHTML = "🔥 Network error during GitHub login.";
+        setTimeout(() => {
+          redirectTo("src/auth/login");
+        }, 3000);
+      }
+    }
+
+    // Auto-run on page load
+    document.addEventListener('DOMContentLoaded', handleGitHubCallback);
+  </script>
+
+</body>
+</html>

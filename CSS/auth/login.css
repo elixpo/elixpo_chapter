@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&display=swap');
+body 
+{
+    overflow: hidden;
+}
+span,
+p,
+label,
+a,
+input
+{
+    font-family: 'Funnel Display', serif;
+}
+
+.hidden 
+{
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    filter: blur(2px);
+}

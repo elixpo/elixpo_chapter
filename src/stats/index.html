@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats - LixBlogs </title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../CSS/stats/stats.css">
+    <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png">
+</head>
+<body>
+    <div class="container absolute flex flex-col h-full max-w-[2560px] bg-[#030712] box-border">
+        <section class="w-full h-[60px]">
+            <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
+                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../CSS/IMAGES/logo.png')] bg-cover"></div>
+                <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
+                <div class="absolute left-[80%] text-white text-[1.3em] cursor-pointer px-2.5 py-1.5 bg-[#10141E] border border-[#7ba8f0] rounded-[15px] flex items-center">
+                    <ion-icon name="pencil" class="text-[0.8em] mr-1 text-[#7ba8f0]"></ion-icon>
+                    Write
+                </div>
+                <div class="absolute left-[88%] text-white text-[1.3em] cursor-pointer">Sign-In</div>
+                <ion-icon name="logo-github" class="githubLogo absolute left-[95%] text-[#888] text-2xl"></ion-icon>
+            </div>
+        </section>
+        <div class="settingsSection flex flex-row h-full w-full h-full box-border">
+
+        <section class="relative flex flex-row h-full w-full box-border border-t-2 border-[#1D202A]">
+            <div class="profileInformation w-[20%] h-full bg-[#10141E] px-5 box-border flex flex-col items-center">
+                <div class="profileControlButtons flex-col w-full mt-5 py-10 box-border">
+                    <div class="controlButton selected relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 box-border cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="home-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Home</p>
+                    </div>
+                <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="bookmark-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Library</p>
+                    </div>
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-15 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="person-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Profile</p>
+                    </div>
+
+
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mt-20 mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="book-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Stories</p>
+                    </div>
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-5 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                        <ion-icon name="stats-chart-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
+                        <p class="text-[#7ba8f0] text-[0.9em]">Stats</p>
+                    </div>
+
+
+                    <div class="userInfo flex items-center gap-2 w-full h-[50px] px-3 rounded-[12px] bg-[#10141E] shadow-[6px_6px_12px_#0b0e16,-6px_-6px_12px_#171c28]">
+                        <div class="userLogo flex-shrink-0 h-[35px] w-[35px] rounded-full bg-[#888] shadow-[inset_3px_3px_6px_#777,inset_-3px_-3px_6px_#999]"></div>
+                        <span class="text-white text-lg font-medium cursor-pointer userOrganization truncate">Ayushman Bhattacharya</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="statsControl w-[80%] h-full max-h-[calc(100vh-80px)] overflow-y-auto bg-[#030712] px-10 box-border flex flex-col items-start">
+                <div class="statsHeader w-full h-[30%] flex flex-row items-center ">
+                    <h1 class="text-white text-[4em] my-auto font-bold">Stats</h1>
+                </div>
+
+                <div class="statsNav flex flex-row w-full h-[10%] items-center justify-left gap-10 mt-2 border-b-2 border-[#1D202A]">
+                    <p class="statsNavItem text-[#888] text-lg selected underline cursor-pointer select-none">Posts</p>
+                    <p class="statsNavItem text-[#888] text-lg cursor-pointer select-none">Viewers</p>
+                </div>
+
+
+
+                <div class="statsOverview flex flex-col w-full mt-10 gap-5">
+
+                    <div class="statsBox flex flex-row justify-between w-full px-10">
+                        <div class="flex flex-col w-1/2">
+                        <p class="text-white text-lg select-none">This Month</p>
+                        <p class="text-[#888] text-[1em] select-none">From the 1st August to the 31st August</p>
+                        </div>
+                        <div class="flex w-1/2">
+                            <div class="relative w-full max-w-xs"></div>
+                                <div class="relative w-full">
+                                    <div id="customMonthDropdown" class="flex items-center justify-between bg-[#10141E] border border-[#7ba8f0] text-white py-2 px-4 pr-8 rounded-[12px] cursor-pointer select-none transition-all duration-300">
+                                        <span id="selectedMonth">August</span>
+                                        <ion-icon name="chevron-down-outline" class="text-xl text-[#7ba8f0]"></ion-icon>
+                                    </div>
+                                    <div id="monthOptions" class="monthOptions absolute left-0 right-0 mt-2 bg-[#10141E] max-h-[200px] overflow-y-auto border border-[#7ba8f0] rounded-[12px] shadow-lg z-10 hidden">
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">January</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">February</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">March</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">April</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">May</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">June</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">July</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] selected hover:text-[#7ba8f0] cursor-pointer">August</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">September</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">October</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">November</div>
+                                        <div class="relative px-4 py-2 hover:bg-[#313647] text-[#888] hover:text-[#7ba8f0] cursor-pointer">December</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="statsBox flex flex-row gap-5 justify-start items-center">
+                            <div class="viewCount flex flex-col px-10">
+                                <p class="views text-[4em] font-bold text-white">0</p>
+                                <p class="text-[#888] text-[1em] select-none">Views</p>
+                            </div>
+                            <div class="readCount flex flex-col px-10">
+                                <p class="reads text-[4em] font-bold text-white">0</p>
+                                <p class="text-[#888] text-[1em] select-none">Reads</p>
+                            </div>
+                        </div>
+
+
+                        <div class="statsBox w-full flex flex-col items-center mt-8">
+                            <canvas id="readsViewsChart" class="w-full h-80 bg-[#10141E] rounded-[16px] p-4"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="../JS/stats/stats.js"></script>
+   
+</body>
+</html>
