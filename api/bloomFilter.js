@@ -1,10 +1,11 @@
 import { murmurhash3_32_gc } from './murmurhash3.js';
+import fs from "fs";
 class BloomFilter {
   constructor(size, numHashes) {
-    this.size = size;                  
-    this.numHashes = numHashes;        
+    this.size = size;
+    this.numHashes = numHashes;
     this.bitArray = new Uint8Array(Math.ceil(size / 8));
-    this.count = 0;                    
+    this.count = 0;
   }
 
   _setBit(pos) {
@@ -43,7 +44,6 @@ class BloomFilter {
     return true;
   }
 
-  // Estimate false positive rate based on current fill level
   estimateFalsePositiveRate() {
     const m = this.size;
     const k = this.numHashes;
@@ -51,20 +51,52 @@ class BloomFilter {
     const probBitSet = 1 - Math.exp(-k * n / m);
     return Math.pow(probBitSet, k);
   }
+
+  // Save to binary file
+  saveToFile(path) {
+    const header = Buffer.alloc(12); // store size, numHashes, count
+    header.writeUInt32BE(this.size, 0);
+    header.writeUInt32BE(this.numHashes, 4);
+    header.writeUInt32BE(this.count, 8);
+
+    const buffer = Buffer.concat([header, Buffer.from(this.bitArray)]);
+    fs.writeFileSync(path, buffer);
+  }
+
+  // Load from binary file
+  static loadFromFile(path) {
+    const buffer = fs.readFileSync(path);
+
+    const size = buffer.readUInt32BE(0);
+    const numHashes = buffer.readUInt32BE(4);
+    const count = buffer.readUInt32BE(8);
+
+    const bitArray = buffer.slice(12);
+
+    const bf = new BloomFilter(size, numHashes);
+    bf.count = count;
+    bf.bitArray = new Uint8Array(bitArray);
+
+    return bf;
+  }
 }
 
-
 class AdaptiveBloom {
-  constructor(expectedItems, targetFPR = 0.01, growthFactor = 2) {
+  constructor(expectedItems, targetFPR = 0.01, growthFactor = 2, file = "adaptiveBloom.bin") {
     this.targetFPR = targetFPR;
     this.growthFactor = growthFactor;
+    this.file = file;
     this.filters = [];
 
-    // Compute initial size and k
-    const m = Math.ceil(-(expectedItems * Math.log(targetFPR)) / (Math.log(2) ** 2));
-    const k = Math.round((m / expectedItems) * Math.log(2));
-
-    this.filters.push(new BloomFilter(m, k));
+    // If saved state exists, load it
+    if (fs.existsSync(file)) {
+      this.loadFromFile(file);
+    } else {
+      const m = Math.ceil(-(expectedItems * Math.log(targetFPR)) / (Math.log(2) ** 2));
+      const k = Math.round((m / expectedItems) * Math.log(2));
+      this.filters.push(new BloomFilter(m, k));
+      this.saveToFile(); // save initial
+    }
   }
 
   add(item) {
@@ -74,34 +106,63 @@ class AdaptiveBloom {
     if (current.estimateFalsePositiveRate() > this.targetFPR) {
       console.log("⚠️ Rebuilding: current FPR too high");
 
-      // Double the size for new filter
       const newM = current.size * this.growthFactor;
       const newExpected = current.count * this.growthFactor;
       const newK = Math.round((newM / newExpected) * Math.log(2));
 
       this.filters.push(new BloomFilter(newM, newK));
     }
+
+    this.saveToFile();
   }
 
   contains(item) {
-    // Must check all filters
     return this.filters.some(f => f.contains(item));
   }
-}
 
+  saveToFile() {
+    // Write multiple filters back-to-back
+    const buffers = [];
+    for (const f of this.filters) {
+      const header = Buffer.alloc(12);
+      header.writeUInt32BE(f.size, 0);
+      header.writeUInt32BE(f.numHashes, 4);
+      header.writeUInt32BE(f.count, 8);
+      buffers.push(header, Buffer.from(f.bitArray));
+    }
+    fs.writeFileSync(this.file, Buffer.concat(buffers));
+  }
 
-const bf = new AdaptiveBloom(10000, 0.01);
+  loadFromFile(file) {
+    const data = fs.readFileSync(file);
+    let offset = 0;
+    this.filters = [];
 
-for (let i = 0; i < 15000; i++) {
-  bf.add("user" + i);
+    while (offset < data.length) {
+      const size = data.readUInt32BE(offset);
+      const numHashes = data.readUInt32BE(offset + 4);
+      const count = data.readUInt32BE(offset + 8);
+      const byteLength = Math.ceil(size / 8);
 
-  if (i % 2000 === 0) {
-    console.log("Items:", i, 
-      "Filters:", bf.filters.length, 
-      "Current FPR:", bf.filters[bf.filters.length - 1].estimateFalsePositiveRate());
+      const bitArray = data.slice(offset + 12, offset + 12 + byteLength);
+
+      const bf = new BloomFilter(size, numHashes);
+      bf.count = count;
+      bf.bitArray = new Uint8Array(bitArray);
+      this.filters.push(bf);
+
+      offset += 12 + byteLength;
+    }
   }
 }
 
-console.log(bf.contains("user123"));  
-console.log(bf.contains("user554"));  
-console.log(bf.contains("ghost999"));
+
+// const bf = new AdaptiveBloom(10000, 0.01); 
+// bf.add("user123");
+// bf.add("test456");
+// console.log("user123?", bf.contains("user123")); // true
+// console.log("ghost999?", bf.contains("ghost999")); // false
+
+// Restart the script later
+const bf2 = new AdaptiveBloom(10000, 0.01); // auto-loads file
+console.log("After reload:", bf2.contains("user123")); // true
