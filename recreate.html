@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elixpo-Search: AI Search & Synthesize with Citations & Images</title>
+    <meta name="description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
+    <meta name="keywords" content="AI search, information synthesis, LLM, Langchain, web search, citations, images, YouTube summary, open source, search assistant, realtime search">
+    <meta name="author" content="Elixpo-Search Project">
+    <meta name="robots" content="index, follow"> 
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://search.elixpo.com"> 
+    <meta property="og:title" content="Elixpo-Search: AI Search & Synthesize with Citations & Images">
+    <meta property="og:description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
+    <meta property="og:image" content="https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://search.elixpo.com"> 
+    <meta property="twitter:title" content="Elixpo-Search: AI Search & Synthesize with Citations & Images">
+    <meta property="twitter:description" content="Elixpo-Search is an open-source AI search assistant that synthesizes information from the web, providing comprehensive answers with citations, images, and YouTube summaries. Built with LLM & Langchain.">
+    <meta property="twitter:image" content="https://github.com/user-attachments/assets/98fb5606-2466-49cc-836b-bc4cf088e283">
+    <link rel="icon" type="image/png" href="CSS/IMAGES/ElixpoSearchIcon.png"> 
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="CSS/searchAgent2.css">
+    <link rel="stylesheet" href="CSS/markdown.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    </head>
+<body>
+    <div class="app">
+        <div class="conversation-container">
+
+            <div id="conversation" class="conversation flex flex-col items-center gap-2">
+                <div class="initial-title hidden">
+                    <h1>What do you want to search?</h1>
+                </div>
+
+
+                               <section class="flex flex-col items-start mt-10 w-full h-auto ">
+                    <div class="query font-bold text-[2em] text-white p-3 rounded-lg break-words">
+                        <p>What are the latest advancements in renewable energy technologies in 2024?</p>
+                    </div>
+                    <div class="response text-lg text-white p-3 rounded-lg  break-words">
+                        <div class="loader w-full h-[60px] flex flex-row gap-2 animation-rotate">
+                            <ion-icon name="sparkles" class="text-[#888] text-[1.2em]"></ion-icon> 
+                            <p class="SSEstatus text-m text-[#888]"> Thinking </p>
+                        </div>
+
+                        <div class="renderMarkdown w-full flex-col g-5" id="renderMarkdown">
+                                <div class="renderMarkdownResult text-white break-words text-[1.2em]" id="renderMarkdownResult">
+                                    
+                                </div>
+
+
+                                <div class="sources w-full mt-2">
+                                    <div class="sourceHeading flex flex-row gap-5 mb-2 text-[#888] ">
+                                        <ion-icon name="book-outline" class="text-[#888] text-[1.2em]"></ion-icon>
+                                        <span>Sources</span>
+                                    </div>
+                                    <div class="sourceContainers flex flex-row gap-5 flex-wrap py-2 w-full">
+
+                                            <div class="sourceItem h-[120px] w-[250px] bg-[#222] rounded-lg py-3 px-3 flex flex-col justify-between hover:bg-[#333] cursor-pointer overflow-hidden">
+                                                <div class="firstRow flex flex-row w-[99%] items-center">
+                                                    <div class="logoWebsite h-[20px] w-[20px] rounded-[8px] bg-cover bg-center mr-2"
+                                                        style="background-image: url('https://www.google.com/s2/favicons?domain=elixpo.com&sz=32');"></div>
+                                                    <span class="text-[#ccc] text-sm ml-2 truncate block max-w-[95%]" title="https://www.example.com/article1">https://www.example.com/article1</span>
+                                                </div>
+                                                <div class="secondRow text-[1em] text-[#fff] h-[60px] overflow-hidden mt-2">
+                                                    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Quasi expedita omnis mollitia provident voluptate aliquam consequuntur placeat cumque! Mollitia laboriosam aperiam commodi maxime veniam itaque voluptatum voluptates! Vel, deleniti autem!
+                                                </div>
+                                            </div>
+
+                                            <div class="sourceItem h-[120px] w-[250px] bg-[#222] rounded-lg py-3 px-3 flex flex-col justify-between hover:bg-[#333] cursor-pointer overflow-hidden">
+                                                <div class="firstRow flex flex-row w-[99%] items-center">
+                                                    <div class="logoWebsite h-[20px] w-[20px] rounded-[8px] bg-cover bg-center mr-2"
+                                                        style="background-image: url('https://www.google.com/s2/favicons?domain=elixpo.com&sz=32');"></div>
+                                                    <span class="text-[#ccc] text-sm ml-2 truncate block max-w-[95%]" title="https://www.example.com/article1">https://www.example.com/article1</span>
+                                                </div>
+                                                <div class="secondRow text-[1em] text-[#fff] h-[60px] overflow-hidden mt-2">
+                                                    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Quasi expedita omnis mollitia provident voluptate aliquam consequuntur placeat cumque! Mollitia laboriosam aperiam commodi maxime veniam itaque voluptatum voluptates! Vel, deleniti autem!
+                                                </div>
+                                            </div>
+                                            <div class="sourceItem h-[120px] w-[250px] bg-[#222] rounded-lg py-3 px-3 flex flex-col justify-between hover:bg-[#333] cursor-pointer overflow-hidden">
+                                                <div class="firstRow flex flex-row w-[99%] items-center">
+                                                    <div class="logoWebsite h-[20px] w-[20px] rounded-[8px] bg-cover bg-center mr-2"
+                                                        style="background-image: url('https://www.google.com/s2/favicons?domain=elixpo.com&sz=32');"></div>
+                                                    <span class="text-[#ccc] text-sm ml-2 truncate block max-w-[95%]" title="https://www.example.com/article1">https://www.example.com/article1</span>
+                                                </div>
+                                                <div class="secondRow text-[1em] text-[#fff] h-[60px] overflow-hidden mt-2">
+                                                    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Quasi expedita omnis mollitia provident voluptate aliquam consequuntur placeat cumque! Mollitia laboriosam aperiam commodi maxime veniam itaque voluptatum voluptates! Vel, deleniti autem!
+                                                </div>
+                                            </div>
+                                    </div>
+                                </div> 
+                                
+                                <div class="images w-full mt-2">
+                                    <div class="imageHeading flex flex-row gap-5 mb-2 text-[#888] ">
+                                        <ion-icon name="image-outline" class="text-[#888] text-[1.2em]"></ion-icon>
+                                        <span>Images</span>
+                                    </div>
+                                    <div class="imageContainers flex flex-row gap-5 overflow-x-auto py-2 w-full">
+                                        <img src="https://via.placeholder.com/150" alt="Image 1" class="h-[150px] w-[150px] rounded-lg bg-cover bg-center">
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+
+
+        </div>
+        
+        <div class="input-container">
+            <div class="input-wrapper">
+                <button id="plusBtn" class="plus-btn">
+                    <i data-lucide="plus"></i>
+                </button>
+                <input type="text" 
+                    id="messageInput" 
+                    placeholder="Search..." 
+                    rows="1"
+                >
+                <button id="sendBtn" class="send-btn">
+                    <i data-lucide="arrow-up"></i>
+                </button>
+            </div>
+            
+            <div id="plusMenu" class="plus-menu hidden">
+                <div class="menu-item" data-action="deep_research">
+                    <i data-lucide="search"></i>
+                    <span>Deep research</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>AI can make mistakes. Check important info.</p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <script src="JS/chatTemplate.js"></script>
+    <script src="JS/searchAgent.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
