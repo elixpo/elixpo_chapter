@@ -13,4 +13,20 @@ const initialTitle = document.querySelector('.initial-title');
 let isGenerating = false;
 let isDeepResearch = false;
 
-document.getElementById("renderMarkdownResult").innerHTML = marked.parse("This is **bold** and this is *italic* `code`");
+
+sendBtn.addEventListener('click', function() {
+    sendMessage(messageInput.value);
+});
+
+messageInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); 
+        sendMessage(messageInput.value);
+    }
+});
+
+function sendMessage(prompt) 
+{
+    sectionHandler(prompt, null, "create");
+}
+// document.getElementById("renderMarkdownResult").innerHTML = marked.parse("This is **bold** and this is *italic* `code`");
