@@ -1,0 +1,242 @@
+
+
+*
+{
+    font-family: 'DM Sans', system-ui, ui-sans-serif, Arial, sans-serif;
+}
+.renderMarkdown h1,
+.renderMarkdown h2,
+.renderMarkdown h3,
+.renderMarkdown h4,
+.renderMarkdown h5,
+.renderMarkdown h6 {
+    color: #ffffff;
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.7em;
+    line-height: 1.25;
+}
+
+.renderMarkdown h1 { font-size: 2em; border-bottom: 1px solid #2a2b2d; padding-bottom: 0.3em; }
+.renderMarkdown h2 { font-size: 1.6em; border-bottom: 1px solid #2a2b2d; padding-bottom: 0.2em; }
+.renderMarkdown h3 { font-size: 1.3em; }
+.renderMarkdown h4 { font-size: 1.1em; }
+.renderMarkdown h5 { font-size: 1em; }
+.renderMarkdown h6 { font-size: 0.95em; color: #8e8ea0; }
+
+/* Paragraphs */
+.renderMarkdown p {
+    margin: 1em 0;
+}
+
+/* Blockquotes */
+.renderMarkdown blockquote {
+    border-left: 4px solid #444ce7;
+    background: #232425;
+    color: #bdbdbd;
+    padding: 0.7em 1.2em;
+    margin: 1em 0;
+    border-radius: 0.5em;
+    font-style: italic;
+}
+
+/* Lists */
+.renderMarkdown ul,
+.renderMarkdown ol {
+    margin: 1em 0 1em 2em;
+    padding-left: 1.2em;
+}
+
+.renderMarkdown ul {
+    list-style: disc inside;
+}
+.renderMarkdown ol {
+    list-style: decimal inside;
+}
+
+.renderMarkdown li {
+    margin: 0.3em 0;
+}
+
+.renderMarkdown li > ul,
+.renderMarkdown li > ol {
+    margin-top: 0.3em;
+    margin-bottom: 0.3em;
+}
+
+/* Code blocks */
+.renderMarkdown pre,
+.renderMarkdown code {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.97em;
+}
+
+.renderMarkdown pre {
+    background: linear-gradient(135deg, #1a1b1c 0%, #212223 100%);
+    color: #e0e0e0;
+    border-radius: 0.75em;
+    padding: 1em 1.2em;
+    margin: 1.2em 0;
+    overflow-x: auto;
+    border: 1px solid #2a2b2d;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    line-height: 1.6;
+    white-space: pre;
+}
+
+.renderMarkdown code {
+    background: #232425;
+    color: #ffea80;
+    border-radius: 0.3em;
+    padding: 0.15em 0.4em;
+    font-size: 0.97em;
+    word-break: break-word;
+}
+
+.renderMarkdown pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+}
+
+/* Horizontal rule */
+.renderMarkdown hr {
+    border: none;
+    border-top: 1px solid #2a2b2d;
+    margin: 2em 0;
+}
+
+/* Links */
+.renderMarkdown a {
+    color: #6ea8fe;
+    text-decoration: underline;
+    transition: color 0.2s;
+    word-break: break-all;
+}
+.renderMarkdown a:hover {
+    color: #444ce7;
+    text-decoration: underline;
+}
+
+/* Images */
+.renderMarkdown img {
+    max-width: 100%;
+    border-radius: 6px;
+    border: 1px solid #444;
+    margin: 0.5em 0;
+    background: #232425;
+    vertical-align: middle;
+}
+
+/* Tables */
+.renderMarkdown table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    background: #232425;
+    border-radius: 0.5em;
+    overflow: hidden;
+    font-size: 0.98em;
+}
+
+.renderMarkdown th,
+.renderMarkdown td {
+    border: 1px solid #2a2b2d;
+    padding: 0.6em 1em;
+    text-align: left;
+}
+
+.renderMarkdown th {
+    background: #232425;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.renderMarkdown tr:nth-child(even) td {
+    background: #202123;
+}
+
+/* Inline styles */
+.renderMarkdown strong {
+    color: #fff;
+    font-weight: 700;
+}
+.renderMarkdown em {
+    color: #bdbdbd;
+    font-style: italic;
+}
+.renderMarkdown del {
+    color: #8e8ea0;
+    text-decoration: line-through;
+}
+.renderMarkdown sup,
+.renderMarkdown sub {
+    font-size: 0.8em;
+    color: #8e8ea0;
+}
+
+/* Task lists */
+.renderMarkdown input[type="checkbox"] {
+    accent-color: #444ce7;
+    margin-right: 0.5em;
+    vertical-align: middle;
+}
+
+/* Details/Summary */
+.renderMarkdown details {
+    background: #232425;
+    border-radius: 0.5em;
+    padding: 0.7em 1em;
+    margin: 1em 0;
+    border: 1px solid #2a2b2d;
+}
+.renderMarkdown summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Footnotes */
+.renderMarkdown .footnote-ref {
+    color: #6ea8fe;
+    font-size: 0.9em;
+    vertical-align: super;
+}
+
+/* Block math (if using KaTeX/MathJax) */
+.renderMarkdown .katex-display {
+    background: #232425;
+    border-radius: 0.5em;
+    padding: 0.7em 1em;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+
+/* Scrollbar for code blocks */
+.renderMarkdown pre::-webkit-scrollbar {
+    height: 8px;
+}
+.renderMarkdown pre::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+}
+.renderMarkdown pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .renderMarkdown {
+        font-size: 0.98em;
+    }
+    .renderMarkdown pre {
+        font-size: 0.95em;
+        padding: 0.7em 0.7em;
+    }
+    .renderMarkdown th,
+    .renderMarkdown td {
+        padding: 0.4em 0.5em;
+    }
+}

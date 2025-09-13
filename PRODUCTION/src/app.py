@@ -8,7 +8,6 @@ import uuid
 from searchPipeline import run_elixposearch_pipeline, initialize_search_agents
 from deepSearchPipeline import run_deep_research_pipeline
 import asyncio
-import threading
 import hypercorn.asyncio
 import json
 import uuid
@@ -16,9 +15,9 @@ import multiprocessing as mp
 from hypercorn.config import Config
 from getYoutubeDetails import get_youtube_transcript
 from collections import deque
-from datetime import datetime, timedelta
-import atexit
-
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', stream=sys.stdout)
 request_queue = asyncio.Queue(maxsize=100) 
@@ -51,7 +50,6 @@ class RequestTask:
         self.start_processing_time = None
 
 
-
 async def process_request_worker():
     while True:
         try:
@@ -68,7 +66,9 @@ async def process_request_worker():
                 
                 try:
                     final_result_content = []
+                    sources = []
                     uq, ui = task.user_query if isinstance(task.user_query, tuple) else (task.user_query, None)
+                    
                     async for chunk in run_elixposearch_pipeline(uq, ui, event_id=None):
                         lines = chunk.splitlines()
                         event_type = None
@@ -81,12 +81,27 @@ async def process_request_worker():
                                 data_lines.append(line.replace("data:", "").strip())
 
                         data_text = "\n".join(data_lines)
+                        
+                        # Extract sources from data
+                        if "[SOURCES]" in data_text and "[/SOURCES]" in data_text:
+                            try:
+                                import re
+                                source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
+                                if source_match:
+                                    sources = json.loads(source_match.group(1))
+                            except:
+                                pass
+                        
                         if data_text and event_type in ["final", "final-part"]:
                             final_result_content.append(data_text)
                     
                     final_response = "\n".join(final_result_content).strip()
                     if not final_response:
                         final_response = "No results found"
+                    
+                    # Include sources in response
+                    if sources:
+                        final_response = f"[SOURCES]{json.dumps(sources)}[/SOURCES]\n\n{final_response}"
                     
                     task.result_future.set_result(final_response)
                     
@@ -136,7 +151,7 @@ def extract_query_and_image(data: dict) -> tuple[str, str | None, bool]:
                         elif part.get("type") == "image_url" and not user_image:
                             user_image = part.get("image_url", {}).get("url", None)
                     user_query = user_query.strip()
-                else:  # Old style: plain string content
+                else: 
                     user_query = content.strip()
                 is_openai_chat = True
                 break
@@ -171,6 +186,36 @@ async def startup():
     for i in range(8):
         asyncio.create_task(process_request_worker())
     app.logger.info("Started 8 request processing workers")
+
+
+@app.route("/metadata", methods=["GET"])
+def get_metadata():
+    if request.method == "GET":
+        url = request.args.get("url")
+    resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+    html = resp.text
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    metadata = {
+        "title": soup.title.string if soup.title else None,
+        "description": soup.find("meta", attrs={"name": "description"})["content"]
+            if soup.find("meta", attrs={"name": "description"}) else None,
+        "og_title": soup.find("meta", property="og:title")["content"]
+            if soup.find("meta", property="og:title") else None,
+        "og_description": soup.find("meta", property="og:description")["content"]
+            if soup.find("meta", property="og:description") else None,
+        "og_image": soup.find("meta", property="og:image")["content"]
+            if soup.find("meta", property="og:image") else None,
+    }
+
+    response = {
+        "url": url,
+        "metadata": metadata["description"]
+    }
+
+    return jsonify(response)
+
 
 
 @app.route("/search/sse", methods=["POST", "GET"])
@@ -216,6 +261,8 @@ async def search_sse(forwarded_data=None):
             }
 
             first_chunk = True
+            sources_sent = False
+            
             async with processing_semaphore:
                 # Choose pipeline based on deep_flag
                 if deep_flag:
@@ -253,8 +300,36 @@ async def search_sse(forwarded_data=None):
                             data_lines.append(line.replace("data:", "").strip())
 
                     data_text = "\n".join(data_lines)
-                    # Always include progress and stage
-                    if data_text:
+                    
+                    # Extract and send sources first
+                    if "[SOURCES]" in data_text and "[/SOURCES]" in data_text and not sources_sent:
+                        try:
+                            import re
+                            source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
+                            if source_match:
+                                sources_chunk = {
+                                    "id": chat_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [{
+                                        "index": 0,
+                                        "delta": {
+                                            "content": f"[SOURCES]{source_match.group(1)}[/SOURCES]"
+                                        },
+                                        "logprobs": None,
+                                        "finish_reason": None
+                                    }]
+                                }
+                                yield f"data: {json.dumps(sources_chunk)}\n\n"
+                                sources_sent = True
+                                # Remove sources from data_text
+                                data_text = re.sub(r'\[SOURCES\].*?\[\/SOURCES\]', '', data_text, flags=re.DOTALL).strip()
+                        except Exception as e:
+                            app.logger.error(f"Error processing sources: {e}")
+                    
+                    # Always include progress and stage metadata
+                    if data_text or stage or progress is not None:
                         chunk_obj = {
                             "id": chat_id,
                             "object": "chat.completion.chunk",
@@ -267,23 +342,33 @@ async def search_sse(forwarded_data=None):
                                 "finish_reason": None
                             }]
                         }
+                        
+                        # Add metadata
                         meta = {}
-                        meta["progress"] = progress if progress is not None else 0
-                        meta["stage"] = stage if stage is not None else "event"
+                        if progress is not None:
+                            meta["progress"] = progress
+                        if stage is not None:
+                            meta["stage"] = stage
                         if task_num is not None:
                             meta["task"] = task_num
                         if finished is not None:
                             meta["finished"] = finished
-                        chunk_obj["choices"][0]["delta"]["elixpo_meta"] = meta
+                        
+                        if meta:
+                            chunk_obj["choices"][0]["delta"]["elixpo_meta"] = meta
 
                         if first_chunk:
                             chunk_obj["choices"][0]["delta"]["role"] = "assistant"
                             first_chunk = False
+                            if data_text:
+                                chunk_obj["choices"][0]["delta"]["content"] = data_text
                             yield f"data: {json.dumps(chunk_obj)}\n\n"
-                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
                         else:
-                            chunk_obj["choices"][0]["delta"] = {"content": data_text}
-                        yield f"data: {json.dumps(chunk_obj)}\n\n"
+                            if data_text:
+                                chunk_obj["choices"][0]["delta"]["content"] = data_text
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
+                            elif meta:  # Send metadata even without content
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
 
                     # Use event_type and/or finished to determine when to stop
                     if event_type in ["final", "FINAL_ANSWER"] or (finished and finished.lower() == "yes"):
@@ -410,6 +495,20 @@ async def status():
     })
 
 
+@app.route("/test", methods=["GET"])
+async def testResponse():
+    return jsonify({
+        "choices" : [
+            {
+                "message" : {
+                    "role" : "assistant",
+                    "content" : "as of Tuesday, September 9, 2025, here's the latest news from Nepal:\n\n**Major Political Unrest and Protests:**\n\n*   **Prime Minister Resigns Amidst Widespread Protests:** Prime Minister K. P. Sharma Oli resigned from his position on Tuesday, September 9, 2025. This resignation followed a period of intense mass protests and significant unrest across the country.\n*   **Violence and Arson:** The protests escalated to a point where protesters entered the parliament building and set it on fire. There are also reports of government ministers being attacked and their homes being targeted.\n*   **Gen Z-Led Movement:** A significant driving force behind the recent protests appears to be Nepal's Generation Z, who are expressing deep anger and dissatisfaction, demanding not only the Prime Minister's resignation but also broader systemic changes. Their sentiment is captured in slogans like \"Topple this government.\"\n*   **Airport Closure:** As a consequence of the unrest, the airport in Nepal was shut down, indicating the severity of the situation and its impact on daily life and national operations.\n*   **Social Media Restrictions:** In response to the ongoing protests and to manage information flow, there were reports of a social media ban being implemented.\n\n**Contextual Information:**\n\nThe news indicates a period of significant political instability in Nepal. The mass protests, seemingly fueled by a younger generation's demand for change, have led to a change in leadership and widespread disruption. The actions taken, such as setting fire to parliament and closing the airport, highlight the intensity of the public's dissatisfaction. The government's response, including a potential social media ban, suggests efforts to control the narrative and maintain order amidst the chaos.\n\nIt's important to note that this is a developing situation, and further updates would be necessary to understand the long-term implications of these events on Nepal's political landscape.\n\n---\n**Sources:**\n1. [https://english.nepalnews.com/](https://english.nepalnews.com/)\n2. [https://www.aljazeera.com/features/2025/9/9/we-want-mass-resignations-nepals-gen-z-anger-explodes-after-19-killed](https://www.aljazeera.com/features/2025/9/9/we-want-mass-resignations-nepals-gen-z-anger-explodes-after-19-killed)\n3. [https://www.aljazeera.com/news/liveblog/2025/9/9/nepal-protests-live-nepali-congress-office-top-leaders-homes-set-on-fire](https://www.aljazeera.com/news/liveblog/2025/9/9/nepal-protests-live-nepali-congress-office-top-leaders-homes-set-on-fire)\n4. [https://www.cnn.com/2025/09/09/asia/nepal-protests-social-media-ban-explainer-intl-hnk](https://www.cnn.com/2025/09/09/asia/nepal-protests-social-media-ban-explainer-intl-hnk)\n5. [https://www.firstpost.com/explainers/photos-videos-nepal-protests-gen-z-13932219.html](https://www.firstpost.com/explainers/photos-videos-nepal-protests-gen-z-13932219.html)"
+                }
+            }
+        ]
+    })
+
+
 @app.route("/transcript", methods=["GET"])
 async def transcript():
     now = datetime.utcnow()
@@ -440,7 +539,6 @@ async def transcript():
         return jsonify({"error": "Transcript not available"}), 404
 
     return jsonify({"transcript": transcript_text})
-
 
 
 @app.route("/health", methods=["GET"])

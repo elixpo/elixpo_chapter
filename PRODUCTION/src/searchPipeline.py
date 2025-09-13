@@ -15,7 +15,7 @@ import concurrent.futures
 from model_client import parent_conn, p
 from functools import lru_cache
 from yahooSearch import agent_pool, image_search
-
+import time
 
 
 
@@ -64,14 +64,16 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             memoized_results["timezone_info"][location_name] = result
             yield result
         elif function_name == "web_search":
+            start_time = time.time()
             search_query = function_args.get("query")
+            web_event = emit_event_func("INFO", f"<TASK>Searching for '{search_query}'</TASK>")
+            if web_event:
+                yield web_event
             cache_key = cached_web_search_key(search_query)
             if cache_key in memoized_results["web_searches"]:
                 logger.info(f"Using cached web search for: {search_query}")
                 yield memoized_results["web_searches"][cache_key]
-            web_event = emit_event_func("INFO", f"<TASK>Fast Internet Search</TASK>")
-            if web_event:
-                yield web_event
+            
             logger.info(f"Performing optimized web search for: {search_query}")
             parent_conn.send({"cmd": "search", "query": f"{search_query}", "max_chars": 2000})
             response = parent_conn.recv()
@@ -104,9 +106,15 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
             yield result
         elif function_name == "image_search":
+            start_time = time.time()
             web_event = emit_event_func("INFO", f"<TASK>Finding Images</TASK>")
             if web_event:
                 yield web_event
+            elapsed = time.time() - start_time
+            if elapsed > 10:
+                web_event = emit_event_func("INFO", f"<TASK>Taking a bit of time... just a minute</TASK>")
+                if web_event:
+                    yield web_event
             image_query = function_args.get("image_query")
             max_images = function_args.get("max_images", 10)
             search_results_raw = await image_search(image_query, max_images=max_images)
@@ -405,7 +413,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             error_msg = f"[ERROR] ElixpoSearch failed after {max_iterations} iterations"
             logger.error(error_msg)
             if event_id:
-                yield format_sse("error", "<TASK>Unable to generate response</TASK>")
+                yield format_sse("error", "Ooops! I crashed, can you please query again?")
                 return
     except Exception as e:
         logger.error(f"Pipeline error: {e}", exc_info=True)
