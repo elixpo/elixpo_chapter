@@ -110,19 +110,29 @@ function sectionHandler(prompt, sectionUID=null, action="create", sseText=null, 
     }
     else if(action === "addImages")
     {
-        images.forEach((image) => {
+
         let imagesBlock = `
-        <div class="images w-full mt-2">
+        <div class="images w-full mt-2 flex flex-col">
         <div class="imageHeading flex flex-row gap-5 mb-2 text-[#888] ">
             <ion-icon name="image-outline" class="text-[#888] text-[1.2em]"></ion-icon>
             <span>Images</span>
         </div>
-        <div class="imageContainers flex flex-row gap-5 overflow-x-auto py-2 w-full">
-            <img src="${image.url}" alt="Image 1" class="h-[150px] w-[150px] rounded-lg bg-cover bg-center">
+        <div class="imageContainers flex flex-row gap-5 overflow-x-auto py-2 w-full" id="imageContainers_${sectionUID}">
+           
         </div>
     </div>
-    `
+    `   
     document.getElementById(sectionUID).insertAdjacentHTML('beforeend', imagesBlock)
+
+    images.forEach((image) => {
+    if (!image.url || !/[?&]h=\w+/i.test(image.url)) {
+        return;
+    }
+    let imageElement = `
+        <img src="${image.url}" alt="Image 1" class="h-[150px] w-[150px] rounded-lg bg-cover bg-center">
+    `
+    
+    document.getElementById(`imageContainers_${sectionUID}`).insertAdjacentHTML('beforeend', imageElement)
     })
 }
 

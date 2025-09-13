@@ -21,7 +21,7 @@ async def sse_event_generator(response_data: dict):
     ]
 
     for step in steps:
-        await asyncio.sleep(1) 
+        await asyncio.sleep(0.25) 
         yield f"data: {json.dumps({'status': step})}\n\n"
 
     # Final response
@@ -46,27 +46,7 @@ async def testResponse():
                         "role": "assistant",
                         "content": (
                             """
-                            Germany is currently experiencing a mixed economic landscape. Recent reports indicate that the country's GDP contraction 
-                            in the second quarter was worse than initially expected. This downturn has been a significant concern, particularly as it
-                              follows a period that was expected to see some boost.\n\nEconomically, Germany has been grappling with several 
-                              challenges. Despite efforts to stimulate growth, the overall economic performance has been sluggish. The impact of 
-                              global economic trends, including inflation and supply chain disruptions, continues to be felt. There have been 
-                              discussions among lawmakers about the need for increased investment, particularly in areas like air defense, which 
-                              could have broader economic implications.\n\nOn a brighter note, the German basketball team is 
-                              enjoying a \"golden era,\" achieving significant success. This is a positive development that has captured public 
-                              attention and brought a sense of national pride.\n\nIn terms of policy and social issues, there has been a notable
-                                sharp drop in asylum applications. This suggests a potential shift in migration patterns or policy effectiveness,
-                                  and it is a trend that is being closely monitored. Additionally, a cultural event, a festival, had to address a 
-                                  controversy regarding the dropping of a German orchestra due to the involvement of an Israeli conductor. 
-                                  This highlights ongoing discussions and sensitivities surrounding international relations within cultural 
-                                  spheres.\n\nWhile the economic outlook presents challenges, these developments in sports, social policy, and 
-                                  cultural events paint a more nuanced picture of the current situation in Germany.
-                                  \n\n---\n**Sources:**\n
-                                  1. [https://apnews.com/article/germany-economy-gdp-shrank-second-quarter-ed5a0ca6732d3cf92828e045144defc2](https://apnews.com/article/germany-economy-gdp-shrank-second-quarter-ed5a0ca6732d3cf92828e045144defc2)\n
-                                  2. [https://www.deutschland.de/en/news](https://www.deutschland.de/en/news)\n
-                                  3. [https://www.dw.com/en/germany/s-1432](https://www.dw.com/en/germany/s-1432)\n
-                                  4. [https://www.euronews.com/business/2025/08/22/germanys-gdp-contraction-worse-than-expected-after-tariff-boost](https://www.euronews.com/business/2025/08/22/germanys-gdp-contraction-worse-than-expected-after-tariff-boost)\n
-                                  5. [https://www.newsworm.de/](https://www.newsworm.de/)
+                           The latest news from Nepal includes a variety of topics, as indicated by recent search results. While specific headlines require a direct look at news outlets, general themes often involve political developments, economic updates, and social issues. For instance, one search result points to recent protests in Kathmandu involving Gen Z, highlighting youth engagement in civic matters. Another result indicates that international news agencies like AP are covering events in Nepal, suggesting topics of broader significance are being reported.\n\nTo provide the most current and detailed news, it would be beneficial to check reputable Nepalese news sources directly. Websites such as `nepalnews.com` (in English) are excellent resources for up-to-date information on politics, business, features, opinions, sports, entertainment, climate, science, technology, weather, and travel within Nepal.\n\nHere are some sample images that represent current events or general scenes from Nepal:\n\n*   An image depicting a bustling street scene in Kathmandu, showcasing the vibrant city life.\n*   A photograph of a political rally or public gathering, possibly related to recent demonstrations or official events.\n*   A scenic view of Nepal's natural landscape, such as the Himalayas, reflecting the country's significant tourism appeal.\n*   An image related to infrastructure development or a community project, indicating progress and local initiatives.\n*   A picture of a cultural festival or traditional ceremony, representing Nepal's rich heritage.\n\nFor the most accurate and up-to-the-minute news, I recommend visiting the following sources:\n\n*   **NepalNews.com:** Provides comprehensive news coverage in English.\n*   **Associated Press (AP):** Offers international reporting that may include significant events from Nepal.\n\n**Related Images:**\n![Image](https://tse1.mm.bing.net/th/id/OIF.RGSB27sIPQTR88CCTlnGhA?pid=Api&P=0&h=220)\n![Image](https://tse4.mm.bing.net/th?id=OIF.%2bb%2bVjHJ6M1Quij8gywM5zw&pid=Api&P=0&h=220)\n![Image](https://tse1.mm.bing.net/th?id=OIF.q%2bklBqo2gCO8HEQu7yk81Q&pid=Api&P=0&h=220)\n![Image](https://tse2.mm.bing.net/th/id/OIF.Dh8q5mpzTOPilByRPW5uEg?pid=Api&P=0&h=220)\n![Image](https://tse1.mm.bing.net/th/id/OIF.ankDjgVKVfFhccw1g2t5Ag?pid=Api&P=0&h=220)\n\n\n---\n**Sources:**\n1. [https://apnews.com/article/nepal-gen-z-protests-army-kathmandu-2e4d9e835216b11fa238d7bcf8915cbf](https://apnews.com/article/nepal-gen-z-protests-army-kathmandu-2e4d9e835216b11fa238d7bcf8915cbf)\n2. [https://english.nepalnews.com/](https://english.nepalnews.com/)
                             """
                         )
                     }
