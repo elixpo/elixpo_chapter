@@ -391,9 +391,9 @@ class YahooSearchAgentImage:
             await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
             await page.wait_for_timeout(random.randint(1000, 2000))
 
-            await page.wait_for_selector("li > a.image-tile > img", timeout=15000)
+            await page.wait_for_selector("li > a.redesign-img > img", timeout=15000)
 
-            img_elements = await page.query_selector_all("li > a.image-tile > img")
+            img_elements = await page.query_selector_all("li > a.redesign-img > img")
             for img in img_elements[:max_images]:
                 src = await img.get_attribute("data-src") or await img.get_attribute("src")
                 if src and src.startswith("http"):
@@ -494,14 +494,14 @@ if __name__ == "__main__":
             # Add delay between searches
             await asyncio.sleep(2)
 
-            # print(f"\n{'-'*50}")
-            # print(f"Searching Yahoo Images for: {q}")
-            # print('-'*50)
-            # image_results = await image_search(q, max_images=5)
-            # print("Image results:", image_results)  # Show all image URLs
+            print(f"\n{'-'*50}")
+            print(f"Searching Yahoo Images for: {q}")
+            print('-'*50)
+            image_results = await image_search(q, max_images=5)
+            print("Image results:", image_results)  # Show all image URLs
 
-            # # Show port status after image search
-            # status = get_port_status()
-            # print(f"Port status after image search: {status}")
+            # Show port status after image search
+            status = get_port_status()
+            print(f"Port status after image search: {status}")
 
     asyncio.run(main())
