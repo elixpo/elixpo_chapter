@@ -1,3 +1,4 @@
+const SERVER_URL = "http://127.0.0.1:5000";
 function sectionHandler(prompt, sectionUID=null, action="create", sseText=null, finalResponse=null, sources = [], images=[])
 {   
     if (!sectionUID) {
@@ -72,7 +73,7 @@ function sectionHandler(prompt, sectionUID=null, action="create", sseText=null, 
                 url = { hostname: '' };
             }
             const domain = url.hostname;
-                    fetch(`http://127.0.0.1:5001/metadata?url=${encodeURIComponent(source.url)}`)
+                    fetch(`${SERVER_URL}/metadata?url=${encodeURIComponent(source.url)}`)
                         .then(response => response.json())
                         .then(data => {
                             let secondRow = data.metadata || 'No description available';

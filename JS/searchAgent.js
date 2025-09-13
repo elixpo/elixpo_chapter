@@ -1,5 +1,5 @@
 // Constants
-const SERVER_URL = "http://127.0.0.1:5001";
+
 
 // DOM elements
 const messageInput = document.getElementById('messageInput');
@@ -73,7 +73,7 @@ async function sendMessage(prompt)
                             sources.push({ title: linkMatch[1], url: linkMatch[2] });
                         }
                     } 
-                    
+
                     if (imagesMatch) {
                         mainContent = content.replace(/\*\*Related Images:\*\*[\s\S]*/i, '').trim();
                         const imagesText = imagesMatch[1];
