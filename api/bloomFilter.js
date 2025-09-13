@@ -157,12 +157,12 @@ class AdaptiveBloom {
 }
 
 
-// const bf = new AdaptiveBloom(10000, 0.01); 
-// bf.add("user123");
-// bf.add("test456");
-// console.log("user123?", bf.contains("user123")); // true
-// console.log("ghost999?", bf.contains("ghost999")); // false
 
-// Restart the script later
-const bf2 = new AdaptiveBloom(10000, 0.01); // auto-loads file
-console.log("After reload:", bf2.contains("user123")); // true
+
+if (require.main === module) {
+  const bf2 = new AdaptiveBloom(10000, 0.01); 
+console.log("After reload:", bf2.contains("user123"));
+}
+
+const bf2 = new AdaptiveBloom(10000, 0.01);
+export { bf2 };

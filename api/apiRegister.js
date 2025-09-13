@@ -1,8 +1,8 @@
 import { db, collec } from "./initializeFirebase.js";
 import { appExpress, router } from "./initializeExpress.js";
-import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser } from "./utility.js";
+import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID } from "./utility.js";
 import MAX_EXPIRE_TIME from "./config.js";
-
+import { bf2 }  from './bloomFilter.js';
 
 // Registration request: send OTP to email
 router.get("/registerRequest", async (req, res) => {
@@ -62,12 +62,14 @@ router.get("/verifyRegisterOTP", async (req, res) => {
         }
 
         const uid = generatetoken(email, Date.now(), 12);
-        const userRef = collec.collection("users").doc(uid);
-        const userSnap = await userRef.get();
-        if (userSnap.exists) {
-            await regRef.remove();
-            return res.status(400).json({ error: "⚠️ User already registered with this email." });
-        }
+
+        checkExistingUserEmail(uid).then((exists) => {
+            if (exists) {
+                return res.status(400).json({ status: false, error: "🚫 Email already registered. Please log in instead." });
+            }
+        });
+
+
         let country = "";
         try {
             const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.connection.remoteAddress;
@@ -110,7 +112,28 @@ router.get("/verifyRegisterOTP", async (req, res) => {
     }
 });
 
-// Start server
-appExpress.listen(5000, "0.0.0.0", () => {
-    console.log("Register server listening on http://0.0.0.0:5000");
-});
+
+async function checkExistingUserEmail(uid)
+{
+    const generateUID = generateUID(email, 12);
+    const userRef = collec.collection("users").doc(uid);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+        return true;
+    }
+
+}
+
+
+if (require.main === module) {
+    checkExistingUserEmail("ayushbhatt633@gmail.com").then((exists) => {
+        if(exists)
+        {
+            console.log("The user exists");
+        }
+    })
+}
+
+// appExpress.listen(5000, "0.0.0.0", () => {
+//     console.log("Register server listening on http://0.0.0.0:5000");
+// });
