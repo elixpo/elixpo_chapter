@@ -28,10 +28,13 @@ messageInput.addEventListener('keydown', function(event) {
 async function sendMessage(prompt) 
 {
     const sectionUID = sectionHandler(prompt, null, "create");
-    const response = await fetch(`${SERVER_URL}/test`, {
+    const response = await fetch(`${SERVER_URL}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: "X45110" })
+        body: JSON.stringify({
+            query: prompt,
+            stream: true
+        })
     });
 
     if (!response.body) return;
