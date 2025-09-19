@@ -285,10 +285,15 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 response.raise_for_status()
                 response_data = response.json()
             except Exception as e:
-                
-                logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}")
+                error_detail = ""
+                if hasattr(e, "response") and e.response is not None:
+                    try:
+                        error_detail = f" | Response: {e.response.text}"
+                    except Exception:
+                        error_detail = " | Response: [unavailable]"
+                logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}{error_detail}")
                 if event_id:
-                    yield format_sse("error", f"<TASK>Connection Error - Retrying</TASK>")
+                    yield format_sse("error", f"<TASK>Connection Error - Retrying</TASK>{error_detail}")
                 break
             assistant_message = response_data["choices"][0]["message"]
             if not assistant_message.get("content") and assistant_message.get("tool_calls"):
