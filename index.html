@@ -12,38 +12,54 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     </head>
 <body>
-    <div class="app">
-
-        <div class="sideNavBar w-[18%] h-full bg-[#222]">
+    <div class="app h-[100vh] flex flex-col bg-[#18191a]">
+        <div class="sideNavBar absolute w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
             <div class="logoHeader w-full px-4 flex flex-row gap-3 justify-center items-center mt-8 mb-6">
                 <div class="logo bg-cover bg-center bg-[url(CSS/IMAGES/ElixpoSearchIcon.png)] h-[20px] w-[20px] invert-[1]"></div>
-                <span class="text-[#fff] font-bold text-[1.2em]"> Elixpo Search </span>
-                <span class="text-[#fff] text-[1em] bg-[#444] text-center items-center justify-center rounded-[10px] px-2 border-2 border-[#888]"> Beta </span>
+            </div>
+
+            <div class="navigationSection mt-8 flex flex-col items-center gap-6">
+                <div class="navItem h-[40px] w-[40px] rounded-full bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="New Search" id="newSearchBtn">
+                    <ion-icon name="add-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+
+                <div class="navItem mt-10 h-[40px] w-[40px] rounded-[10px] bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="Home" id="newSearchBtn">
+                    <ion-icon name="home-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+                <div class="navItem h-[40px] w-[40px] rounded-[10px] cursor-pointer flex flex-col items-center justify-center" title="News" id="newSearchBtn">
+                     <ion-icon name="earth-outline" class="text-[#555] text-2xl"></ion-icon>
+                </div>
 
             </div>
         </div>
 
 
-        <div class="conversation-container w-[82%] h-full p-6 overflow-y-auto">
-            <div id="conversation" class="conversation flex flex-col items-center gap-2">
-                <div class="initial-title" id="initial-title">
+        <div class="conversation-container w-full h-full p-6 overflow-y-auto max-w-[85%] m-auto px-[16px] flex flex-col flex-[1] overflow-y-auto">
+            <div id="conversation" class="conversation flex flex-col w-full items-left gap-2">
+                <div class="initial-title hidden" id="initial-title">
                     <h1>What do you want to search?</h1>
                 </div>
 
-                <!-- <section id="secID1992006801" class="conversationSection  flex flex-col items-start mt-10 w-full ">
+                <section id="secID583661719" class="conversationSection flex flex-col items-start mt-10 w-full h-auto ">
                     <div class="query font-bold text-[2em] text-white rounded-lg break-words">
                         <p>hi</p>
                     </div>
-                    <div class="renderMarkdown w-full flex-col g-5" id="renderMarkdown">
-                        <div class="renderMarkdownResult_secID1992006801 text-white break-words text-[1.2em]" id="renderMarkdownResult_secID1992006801">
-                            <p>Hello! How can I assist you today? If you have a specific question or need information on a particular topic, feel free to let me know. I'm here to help with detailed, well-researched answers.</p>
-                        </div>
-                    </div>
-                </section> -->
+        
+        
+        
+        
+        
+        
+        
+        <div class="renderMarkdown w-full flex-col g-5" id="renderMarkdown">
+        <div class="renderMarkdownResult_secID583661719 text-white break-words text-[1.2em]" id="renderMarkdownResult_secID583661719"><p>Hello! How can I assist you today? If you have any questions or need information on a specific topic, feel free to ask. I'm here to help!</p>
+</div>
+        </div>
+    </section>
             </div>
         </div>
 
-        <div class="input-container">
+        <div class="input-container relative bg-[#18191a] p-[5px] border-t-2 border-[#333] z-100 h-[15%]">
             <div class="input-wrapper">
                 <input type="text" 
                     id="messageInput" 
@@ -61,11 +77,12 @@
                     <span>Deep research</span>
                 </div>
             </div>
+            <div class="footer">
+                <p>AI can make mistakes. Check important info.</p>
+            </div>
         </div>
 
-        <div class="footer">
-            <p>AI can make mistakes. Check important info.</p>
-        </div>
+        
     </div>
     <script src="JS/marked.js"></script>
     <script src="JS/chatTemplate.js"></script>
