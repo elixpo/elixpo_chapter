@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="CSS/markdown.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="CSS/IMAGES/ElixpoSearchIcon.png">
     </head>
 <body>
     <div class="app h-[100vh] flex flex-col bg-[#18191a]">
@@ -33,9 +34,31 @@
             </div>
         </div>
 
+        <div class="sidebar absolute w-[15%] h-full flex flex-col bg-[#1F2121a1] backdrop-blur-[5px] left-[5%]">
+            <div class="sidebarName text-[1em] text-white px-[20px] py-5 flex h-[40px] w-full justify-between">
+                <p>Home</p>
+                <ion-icon name="lock-closed-outline" class=" text-[#555] mt-2 cursor-pointer transition-colors hover:text-[#fff]"></ion-icon>
+            </div>
+            <div class="spacer w-[85%] mx-auto mt-5 h-[2px] bg-[#333] "></div>
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] mt-2 font-bold">Library</span>
+
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> Hi </span>
+                <span class="cursor-pointer hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> What's the news about the latest </span>
+            </div>
+
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] mt-2 font-bold">Pages </span>
+
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> Bike Racing </span>
+                <span class="cursor-pointer hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> Contingency Planning is a secret tool </span>
+            </div>
+
+        </div>
+
 
         <div class="conversation-container w-full h-full p-6 overflow-y-auto max-w-[85%] m-auto px-[16px] flex flex-col flex-[1] overflow-y-auto">
-            <div id="conversation" class="conversation max-w-[85%] m-auto py-[20px] min-h-[100%] flex flex-col gap-2">
+            <div id="conversation" class="conversation max-w-[65%] m-auto py-[20px] min-h-[100%] flex flex-col gap-2">
                 <div class="initial-title flex items-center justify-center flex-1 text-center mb-[40px] hidden" id="initial-title">
                     <h1 class="text-[32px] font-bold text-[#fff] m-0">What do you want to search?</h1>
                 </div>
