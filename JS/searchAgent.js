@@ -14,6 +14,23 @@ let isGenerating = false;
 let isDeepResearch = false;
 
 
+
+
+  messageInput.addEventListener("input", () => {
+    messageInput.style.height = "auto"; // reset height
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 600) + "px"; // grow but max 600px
+  });
+
+  // Optional: send message on Enter, new line on Shift+Enter
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // trigger send button click
+      document.getElementById("sendBtn")?.click();
+    }
+  });
+
+
 sendBtn.addEventListener('click', function() {
     sendMessage(messageInput.value);
 });

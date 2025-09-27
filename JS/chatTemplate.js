@@ -1,4 +1,4 @@
-const SERVER_URL = "http://51.159.148.245:5000";
+const SERVER_URL = "https://apisearch.elixpo.com";
 lucide.createIcons();
 function sectionHandler(prompt, sectionUID=null, action="create", sseText=null, finalResponse=null, sources = [], images=[])
 {   

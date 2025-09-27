@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elixpo-Search: AI Search & Synthesize with Citations & Images</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="CSS/searchAgent.css">
+    <link rel="stylesheet" href="CSS/markdown.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="CSS/IMAGES/ElixpoSearchIcon.png">
+    </head>
+<body>
+    <div class="app h-[100vh] flex flex-col bg-[#18191a]">
+        <div class="sideNavBar absolute w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
+            <div class="logoHeader w-full px-4 flex flex-row gap-3 justify-center items-center mt-8 mb-6">
+                <div class="logo bg-cover bg-center bg-[url(CSS/IMAGES/ElixpoSearchIcon.png)] h-[20px] w-[20px] invert-[1]"></div>
+            </div>
+
+            <div class="navigationSection mt-8 flex flex-col items-center gap-6">
+                <div class="navItem h-[40px] w-[40px] rounded-full bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="New Search" id="newSearchBtn">
+                    <ion-icon name="add-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+
+                <div class="navItem mt-10 h-[40px] w-[40px] rounded-[10px] bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="Home" id="newSearchBtn">
+                    <ion-icon name="home-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+                <div class="navItem h-[40px] w-[40px] rounded-[10px] cursor-pointer flex flex-col items-center justify-center" title="News" id="newSearchBtn">
+                     <ion-icon name="earth-outline" class="text-[#555] text-2xl"></ion-icon>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="appHeader w-full h-[60px] flex flex-col items-center justify-center bg-transparent border-b-2 border-[#333] flex flex-row items-center px-6">
+            <div class="headerContent w-[60%] flex flex-row mx-auto justify-between h-full items-center px-2 ">
+
+                <div class="name flex h-full items-center gap-2 ">
+                    <ion-icon class="text-white text-[1.5em] mt-[5px]" name="book-outline"></ion-icon>
+                    <span class="text-white text-[1.5em] font-semibold">Library</span>
+                </div>
+
+                <div class="name flex h-[40px] items-center gap-2 ">
+                    <div class="newDiscussionButton h-full px-4 py-2 bg-transparent border-2 border-[#222] rounded-[10px] flex flex-row items-center gap-2 cursor-pointer hover:bg-[#888e0]">
+                        <span class="text-[#888] text-[1em] font-semibold">New Talk</span>
+                        <ion-icon class="text-[#888] text-[1.2em] mt-[2px]" name="barcode-outline"></ion-icon>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</body>
+</html>

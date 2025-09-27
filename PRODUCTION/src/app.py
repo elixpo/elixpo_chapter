@@ -549,6 +549,6 @@ if __name__ == "__main__":
     config = Config()
     config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False
-    config.workers = 10
+    config.workers = 15
     config.backlog = 1000  
     asyncio.run(hypercorn.asyncio.serve(app, config))
