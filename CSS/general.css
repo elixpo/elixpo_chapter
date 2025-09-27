@@ -34,7 +34,8 @@
   0 10px 30px #111;
 
 }
-.newsSection::-webkit-scrollbar
+.newsSection::-webkit-scrollbar,
+.newsItemsVRContainer::-webkit-scrollbar
 {
   display: none;
 }
