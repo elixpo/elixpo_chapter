@@ -6,15 +6,15 @@
     <title>Elixpo-Search: AI Search & Synthesize with Citations & Images</title>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <link rel="stylesheet" href="CSS/searchAgent.css">
-    <link rel="stylesheet" href="CSS/markdown.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../../CSS/general.css">
     <link rel="icon" type="image/x-icon" href="CSS/IMAGES/ElixpoSearchIcon.png">
     </head>
 <body>
     <div class="app h-[100vh] flex flex-row bg-[#18191a]">
-        <div class="sideNavBar w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
+
+        <div class="topNavBar w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
             <div class="logoHeader w-full px-4 flex flex-row gap-3 justify-center items-center mt-8 mb-6">
                 <div class="logo bg-cover bg-center bg-[url(CSS/IMAGES/ElixpoSearchIcon.png)] h-[20px] w-[20px] invert-[1]"></div>
             </div>
@@ -70,47 +70,151 @@
 
         </div>
 
-
-
-        <div class="discoverSection w-[80%] h-full mx-auto right-0 flex flex-col">
-
-            <div class="appHeader w-full h-[60px] flex flex-col items-center justify-center bg-transparent border-b-2 border-[#333] flex flex-row items-center px-6">
+        <div class="w-full h-full mx-auto right-0 flex flex-col">
+            <div class="discoveryHeader w-full h-[50px] flex flex-col items-center justify-center bg-transparent border-b-2 border-[#333] flex flex-row items-center px-6">
                 <div class="headerContent w-full flex flex-row mx-auto justify-between h-full items-center px-2 ">
 
-                    <div class="name flex h-full items-center gap-2 ">
-                        <ion-icon class="text-white text-[1.5em] mt-[5px]" name="book-outline"></ion-icon>
-                        <span class="text-white text-[1.5em] font-semibold">Discover</span>
+                    <div class="name flex h-[30px] items-center gap-2 px-2 bg-[#000] rounded-[10px] transition-ease border-2 border-[#333] hover:border-[#555] cursor-pointer">
+                        <span class="text-[#aaa] text-[1em] font-semibold">Discover</span>
+                        <span class="text-[#666] text-[1em] font-semibold"> / </span>
+                        <span class="text-[#666] text-[1em] font-semibold">Top</span>
                     </div>
 
-                    <div class="name flex h-[40px] items-center gap-2 ">
-                        <div class="newDiscussionButton h-full px-4 py-2 bg-transparent border-2 border-[#222] rounded-[10px] flex flex-row items-center gap-2 cursor-pointer hover:bg-[#888e0]">
-                            <span class="text-[#888] text-[1em] font-semibold">New Talk</span>
-                            <ion-icon class="text-[#888] text-[1.2em] mt-[2px]" name="barcode-outline"></ion-icon>
+                    <div class="name flex h-[40px] items-center gap-1 flex flex-row gap-5">
+                        <ion-icon name="options-outline" class="text-[#ccc] text-[1.5em] mt-[0px] rotate-[90deg] cursor-pointer"></ion-icon>
+                        <div class="newDiscussionButton h-full px-4 py-2 bg-[#2C98A3] border-2 border-[#222] rounded-[10px] flex flex-row items-center gap-2 cursor-pointer hover:bg-[#888e0] bg-[#2C98A3] transition-colors" title="Share Discovery">
+                            <ion-icon class="text-[#111] text-[1.2em] mt-[0px]" name="arrow-redo"></ion-icon>
+                            <span class="text-[#111] text-[1em] font-semibold">Share</span>
                         </div>
                     </div>
                 </div>
-        </div>
+            </div>
 
-        <div class="navHeader w-full h-[60px] flex flex-row items-center justify-start flex flex-row gap-2 mt-2 px-6">
-            <div class="navItem h-full px-4 py-2 bg-transparent flex flex-row items-center gap-[25px] cursor-pointer">
-                <span class="text-[#fff] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
-                    <p>Talks</p>
-                    <div class="selectedOutline mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
-                </span>
+            <div class="backgroundPattern w-full h-[80px]"></div>
 
-                <span class="text-[#555] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
-                    <p>Pages</p>
-                    <div class="selectedOutline opacity-[0] mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
-                </span>
+            <div class="navHeader w-[90%] h-[100px] flex flex-row mx-auto  items-center justify-start flex flex-row gap-1 mt-[-3%] px-6">
+                    <ion-icon name="rose-outline" class="text-[#fff] text-[4em] mr-[10px]"></ion-icon>
+                    <span class="headerName text-[4em] text-white font-bold tracking-tighter">Discove</span>
+                    <span class="headerName text-[4.3em] text-[#ffc] rotate-[15deg] font-bold" style="font-family: 'Shadows Into Light', cursive;">r</span>
 
-                <span class="text-[#555] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
-                    <p>Media</p>
-                    <div class="selectedOutline opacity-[0] mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
-                </span>
-                
+                    <div class="topics flex flex-row gap-4 items-center justify-start mt-[30px] ml-[20px]">
+
+                        <div class="cursor-pointer text-[#02eaf2] bg-[#1E3A3D] scale-[0.8] flex flex-row px-[10px] py-[8px] gap-2 rounded-[12px] border-[1px] border-[#02eaf2] hover:border-[#02eaf2] transition-colors"> 
+                            <ion-icon name="shapes-outline" class="text-[1em] mt-[5px]"></ion-icon>
+                            <span class="text-[1em]">For You</span>
+                        </div>
+                    </div>          
+            </div>
+
+            <div class="newsSection max-h-[calc(100vh - 200px)] w-[70%] flex flex-col pl-[100px] overflow-hidden overflow-y-auto mt-5 gap-2">
+
+                <div class="newsItemsHZContainer w-full flex flex-col justify-start pl-[0px] mt-10">
+                    <div class="newsItemHZ w-full flex flex-row gap-2">
+                        <div class="newsTextItem w-1/2 flex flex-col">
+                            <span class="text-[#fff] text-[1.5em] font-bold flex-wrap ">Coinbase XRP reserves drop to zero amid ETF approval buzz</span>
+                            <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px]">
+                                <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                                <span> Published - Sep 23, 2025</span>
+                            </div>
+                            <span class="text-[#fff] text-[1.1em] flex-wrap mt-5">Coinbase XRP reserves drop to zero amid ETF approval buzz</span>
+
+                            <div class="newsFooter flex w-full flex-row items-center justify-between mt-10">
+                            <div class="flex items-center gap-1 mt-3">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" alt="Source 1" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2 first:ml-0" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" alt="Source 2" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wiktionary-logo-v2.svg" alt="Source 3" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <span class="text-[#888] text-[0.9em] font-semibold ml-2">38 sources</span>
+                            </div>
+
+                            <div class="controls px-3 flex flex-row items-center gap-5 cursor-pointer mt-[10px]" title="Share Discovery">
+                                <ion-icon class="text-[#fff] text-[1.2m]" name="heart-outline"></ion-icon>
+                                <ion-icon class="text-[#fff] text-[1.2m]" name="ellipsis-horizontal-outline"></ion-icon>
+                                
+                            </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="newsThumbnail w-1/2">
+                        <div class="imageContainer h-full w-full rounded-[20px] border-2 border-[#333] overflow-hidden relative group cursor-pointer">
+                            <div class="h-full w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80')] transition-transform duration-500 ease-in-out group-hover:scale-110"></div>
+                        </div>
+                        </div>
+                        </div>
+                </div>
+                <div class="newsItemsVRContainer w-full flex flex-row overflow-hidden overflow-x-auto mt-[20px] gap-5">
+
+                            <div class="newsItem w-[300px] h-[400px] rounded-[25px] flex flex-col overflow-hidden bg-[#333] shrink-0">
+                                <div class="newsThumbnail w-full h-[60%] overflow-hidden">
+                                    <div class="imageContainer h-full w-full border-2 border-[#333] overflow-hidden relative group cursor-pointer">
+                                        <div class="h-full w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80')] transition-transform duration-500 ease-in-out group-hover:scale-110"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[#fff] text-[1em] font-bold flex-wrap px-[20px] mt-5">Coinbase XRP reserves drop to zero amid ETF approval buzz</span>
+                                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px] px-[20px]">
+                                <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                                <span> Published - Sep 23, 2025</span>
+                                </div>
+                                <div class="flex items-center gap-1 mt-3 px-[20px]">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" alt="Source 1" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2 first:ml-0" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" alt="Source 2" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wiktionary-logo-v2.svg" alt="Source 3" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <span class="text-[#888] text-[0.9em] font-semibold ml-2">38 sources</span>
+                            </div>
+                            </div>
+
+
+                            <div class="newsItem w-[300px] h-[400px] rounded-[25px] flex flex-col overflow-hidden bg-[#333] shrink-0">
+                                <div class="newsThumbnail w-full h-[60%] overflow-hidden">
+                                    <div class="imageContainer h-full w-full border-2 border-[#333] overflow-hidden relative group cursor-pointer">
+                                        <div class="h-full w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80')] transition-transform duration-500 ease-in-out group-hover:scale-110"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[#fff] text-[1em] font-bold flex-wrap px-[20px] mt-5">Coinbase XRP reserves drop to zero amid ETF approval buzz</span>
+                                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px] px-[20px]">
+                                <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                                <span> Published - Sep 23, 2025</span>
+                                </div>
+                                <div class="flex items-center gap-1 mt-3 px-[20px]">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" alt="Source 1" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2 first:ml-0" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" alt="Source 2" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wiktionary-logo-v2.svg" alt="Source 3" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <span class="text-[#888] text-[0.9em] font-semibold ml-2">38 sources</span>
+                            </div>
+                            </div>
+
+                            <div class="newsItem w-[300px] h-[400px] rounded-[25px] flex flex-col overflow-hidden bg-[#333]">
+                                <div class="newsThumbnail w-full h-[60%] overflow-hidden">
+                                    <div class="imageContainer h-full w-full border-2 border-[#333] overflow-hidden relative group cursor-pointer">
+                                        <div class="h-full w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80')] transition-transform duration-500 ease-in-out group-hover:scale-110"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[#fff] text-[1em] font-bold flex-wrap px-[20px] mt-5">Coinbase XRP reserves drop to zero amid ETF approval buzz</span>
+                                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px] px-[20px]">
+                                <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                                <span> Published - Sep 23, 2025</span>
+                                </div>
+                                <div class="flex items-center gap-1 mt-3 px-[20px]">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" alt="Source 1" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2 first:ml-0" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" alt="Source 2" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wiktionary-logo-v2.svg" alt="Source 3" class="w-5 h-5 rounded-full border-2 border-[#222] bg-white -ml-2" />
+                                <span class="text-[#888] text-[0.9em] font-semibold ml-2">38 sources</span>
+                            </div>
+                            </div>
+
+                </div>
+               
+        
+            </div>
+
+
+
             </div>
         </div>
-        </div>
-    </div>
+
+    
+
+</div>
 </body>
 </html>
