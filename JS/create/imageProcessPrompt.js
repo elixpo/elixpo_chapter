@@ -51,7 +51,7 @@ document.getElementById("inputImage").addEventListener("click", function () {
     input.click();
 });
 
-// Only show image and upload when preparePromptInput is called and isImageMode is true
+
 async function showAndUploadImageIfNeeded() {
     if (!selectedImageFile) return null;
     // Show preview
@@ -90,10 +90,29 @@ async function handleImageFile(file) {
     selectedImageFile = file;
     const reader = new FileReader();
     reader.onload = function () {
-        extractedBase64Data = reader.result.split(",")[1];
-    };
-    reader.readAsDataURL(file);
-    document.getElementById("generateButton").classList.remove("disabled");
+            extractedBase64Data = reader.result.split(",")[1];
+            // Show preview in imageHolder immediately
+            const imageDataUrl = reader.result;
+            isImageMode = true;
+            document.getElementById("promptBox").classList.add("image");
+            document.getElementById("imageHolder").style.background = `url(${imageDataUrl})`;
+            document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
+            document.getElementById("imageHolder").style.backgroundSize = "cover";
+            document.getElementById("imageHolder").style.backgroundPosition = "center center";
+            handleFlagUpdateAuto(".models", "model", "nanobanana");
+            handleFlagUpdateAuto(".themes", "theme", "normal");
+            document.querySelectorAll(".modelsTiles").forEach(tile => {
+                if ((tile.getAttribute("data-model") === "flux") || (tile.getAttribute("data-model") === "turbo")) {
+                    tile.style.pointerEvents = "none";
+                }
+            });
+            document.getElementById("OneImage").style.pointerEvents = "none";
+            document.getElementById("OneImage").className = "fa-solid fa-dice-one";
+            generationNumber = 1;
+
+        };
+        reader.readAsDataURL(selectedImageFile);
+        document.getElementById("generateButton").classList.remove("disabled");
 }
 
 function cancelImageReference() {
@@ -136,27 +155,32 @@ document.getElementById("cancelImageMode").addEventListener("click", () => {
     cancelImageReference();
 });
 
-// Paste handler (for clipboard images)
+
 document.getElementById("promptTextInput").addEventListener("paste", async (event) => {
-    const items = (event.clipboardData || event.clipboardData).items;
+    console.log("Paste event detected");
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+    const items = clipboardData.items;
     let blob = null;
     for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") === 0) {
+        console.log(`Item ${i}: kind=${items[i].kind}, type=${items[i].type}`);
+        if (items[i].kind === "file" && items[i].type.startsWith("image/")) {
             blob = items[i].getAsFile();
+            console.log(blob)
             break;
         }
     }
-    if (blob !== null) {
+    if (blob) {
         event.preventDefault();
         if (blob.size >= 10 * 1024 * 1024) {
-            alert("Please paste an image smaller than 10 MB.");
+            notify("Please paste an image smaller than 10 MB.");
             return;
         }
         await handleImageFile(blob);
     }
 });
 
-// For hardcoded image loading (dev/test)
+
 async function loadHardcodedImage() {
     const imageUrl = "../../CSS/IMAGES/testImg.jpg";
     try {
