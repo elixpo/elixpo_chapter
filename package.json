@@ -27,7 +27,7 @@
     "instagram-private-api": "^1.46.1",
     "lite-server": "^2.6.1",
     "marked": "^14.1.1",
-    "multer": "^2.0.0",
+    "multer": "^2.0.2",
     "node-fetch": "^2.7.0",
     "request-promise": "^4.2.6",
     "simple-git": "^3.25.0",
