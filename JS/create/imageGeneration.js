@@ -346,7 +346,7 @@ async function preparePromptInput(generationNumber, prompt, ratio, model, select
             notify("Processing your image...", true);
             document.getElementById("overlay").classList.remove("display");
             scrollToImageGenerator();
-            generateImage(generationNumber, finalPrompt, width, height, "kontext", suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
+            generateImage(generationNumber, finalPrompt, width, height, "nanobanana", suffixPrompt, selectedImageQuality, enhanceMode, privateMode, imageMode, signal);
         } else {
             notify("Failed to upload image. Please try again.");
             document.getElementById("generateButton").removeAttribute("disabled");

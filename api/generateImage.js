@@ -11,10 +11,10 @@ async function generateImageWorker(request) {
   let generateUrl;
   
   if (imageMode && uploadedUrl) {
-    if (model === "kontext") {
+    if (model === "kontext" || model === "nanobanana") {
       generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&image=[${uploadedUrl}]&nologo=true&token=${POLLINATIONS_TOKEN}`;
     } else {
-      throw new Error("Image mode only supports kontext model");
+      throw new Error("Image mode only supports kontext and nanobanana models");
     }
   } else {
     generateUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}&nologo=true&referrer=elixpoart&token=${POLLINATIONS_TOKEN}&seed=${seed}`;
@@ -61,8 +61,8 @@ async function generateImageWorker(request) {
       lastError = error;
       console.log(`Attempt ${attempt} failed for request ${request.id}:`, error.message);
       
-      // If gptimage or kontext fails and not in imageMode, fallback to flux
-      if ((model === 'gptimage' || model === 'kontext') && !imageMode && attempt === 2) {
+      // If nanobanana or kontext fails and not in imageMode, fallback to flux
+      if ((model === 'nanobanana' || model === 'kontext') && !imageMode && attempt === 2) {
         currentUrl = currentUrl.replace(`model=${model}`, 'model=flux');
         console.log(`Falling back to flux model for request ${request.id}`);
       }

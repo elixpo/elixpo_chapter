@@ -27,7 +27,7 @@ document.getElementById("inputImage").addEventListener("click", function () {
             document.querySelector(".userInputImageHolder").style.setProperty("--before-background", `url(${imageDataUrl})`);
             document.getElementById("imageHolder").style.backgroundSize = "cover";
             document.getElementById("imageHolder").style.backgroundPosition = "center center";
-            handleFlagUpdateAuto(".models", "model", "kontext");
+            handleFlagUpdateAuto(".models", "model", "nanobanana");
             handleFlagUpdateAuto(".themes", "theme", "normal");
             document.querySelectorAll(".modelsTiles").forEach(tile => {
                 if ((tile.getAttribute("data-model") === "flux") || (tile.getAttribute("data-model") === "turbo")) {
