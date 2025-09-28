@@ -1,0 +1,338 @@
+
+.visitIntegration {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 36px;
+    border: 4px solid;
+    border-color: transparent;
+    font-size: 16px;
+    background-color: inherit;
+    border-radius: 100px;
+    font-weight: 600;
+    color: greenyellow;
+    box-shadow: 0 0 0 2px greenyellow;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 0 0 4px greenyellow;
+}
+
+
+.visitIntegration>ion-icon {
+    position: absolute;
+    left: 75%;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5em;
+    margin-left: 12px;
+    color: #212121;
+}
+
+
+.visitIntegration svg {
+    position: absolute;
+    width: 24px;
+    fill: greenyellow;
+    z-index: 9;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.visitIntegration .arr-1 {
+    right: 16px;
+}
+
+.visitIntegration .arr-2 {
+    left: -25%;
+}
+
+.visitIntegration .circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: greenyellow;
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.visitIntegration .text {
+    position: relative;
+    left: 50%;
+    z-index: 1;
+    font-size: 1.5em;
+    transform: translateX(-50%);
+    color: #212121;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.visitIntegration:hover {
+    box-shadow: 0 0 0 12px transparent;
+    color: #212121;
+    border-radius: 12px;
+}
+
+.visitIntegration:hover>ion-icon {
+    opacity: 0;
+}
+
+.visitIntegration:hover .text {
+    left: 50%;
+}
+
+
+.visitIntegration:hover .arr-1 {
+    right: -25%;
+}
+
+.visitIntegration:hover .arr-2 {
+    left: 16px;
+}
+
+
+
+.visitIntegration:hover svg {
+    fill: #212121;
+}
+
+
+.visitIntegration .circle {
+    width: 220px;
+    height: 220px;
+    opacity: 1;
+}
+
+.visitIntegration.blur {
+    filter: blur(5px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+.blogVisit {
+    position: absolute;
+    top: 50%;
+    left: 20%;
+    scale: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 36px;
+    border: 4px solid;
+    border-color: transparent;
+    font-size: 16px;
+    background-color: inherit;
+    border-radius: 100px;
+    font-weight: 600;
+    color: rgb(47, 165, 255);
+    box-shadow: 0 0 0 2px rgb(47, 165, 255);
+    cursor: pointer;
+    z-index: 100;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+
+
+.blogVisit svg {
+    position: absolute;
+    width: 24px;
+    fill: rgb(47, 165, 255);
+    z-index: 9;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.blogVisit .arr-1 {
+    right: 16px;
+}
+
+.blogVisit .arr-2 {
+    left: -25%;
+}
+
+.blogVisit .circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: rgb(47, 165, 255);
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.blogVisit .text {
+    position: relative;
+    left: 50%;
+    z-index: 1;
+    font-size: 1.5em;
+    transform: translateX(-50%);
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.blogVisit:hover {
+    box-shadow: 0 0 0 12px transparent;
+    color: #212121;
+    border-radius: 12px;
+}
+
+.blogVisit:hover>ion-icon {
+    opacity: 0;
+}
+
+.blogVisit:hover .text {
+    left: 50%;
+    color: #fff;
+}
+
+
+.blogVisit:hover .arr-1 {
+    right: -25%;
+}
+
+.blogVisit:hover .arr-2 {
+    left: 16px;
+}
+
+
+
+.blogVisit:hover svg {
+    fill: #212121;
+}
+
+.blogVisit:active {
+    scale: 0.95;
+    box-shadow: 0 0 0 4px rgb(47, 165, 255);
+}
+
+.blogVisit:hover .circle {
+    width: 220px;
+    height: 220px;
+    opacity: 1;
+}
+
+.blogVisit.blur {
+    filter: blur(5px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+
+.feedVisit {
+    position: absolute;
+    top: 50%;
+    left: 65%;
+    scale: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 36px;
+    border: 4px solid;
+    border-color: transparent;
+    font-size: 16px;
+    background-color: inherit;
+    border-radius: 100px;
+    font-weight: 600;
+    color: rgb(238, 195, 23);
+    box-shadow: 0 0 0 2px rgb(238, 195, 23);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+
+
+.feedVisit svg {
+    position: absolute;
+    width: 24px;
+    fill: rgb(238, 195, 23);
+    z-index: 9;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.feedVisit .arr-1 {
+    right: 16px;
+}
+
+.feedVisit .arr-2 {
+    left: -25%;
+}
+
+.feedVisit .circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: rgb(238, 195, 23);
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.feedVisit .text {
+    position: relative;
+    left: 50%;
+    z-index: 1;
+    font-size: 1.5em;
+    transform: translateX(-50%);
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.feedVisit:hover {
+    box-shadow: 0 0 0 12px transparent;
+    color: #212121;
+    border-radius: 12px;
+}
+
+.feedVisit:hover>ion-icon {
+    opacity: 0;
+}
+
+.feedVisit:hover .text {
+    left: 50%;
+    color: #fff;
+}
+
+
+.feedVisit:hover .arr-1 {
+    right: -25%;
+}
+
+.feedVisit:hover .arr-2 {
+    left: 16px;
+}
+
+
+
+.feedVisit:hover svg {
+    fill: #212121;
+}
+
+.feedVisit:active {
+    scale: 0.95;
+    box-shadow: 0 0 0 4px rgb(238, 195, 23);
+}
+
+.feedVisit:hover .circle {
+    width: 220px;
+    height: 220px;
+    opacity: 1;
+}
+
+.feedVisit.blur {
+    filter: blur(5px);
+    opacity: 0;
+    pointer-events: none;
+}
