@@ -15,7 +15,7 @@
   },
   "scripts": {
     "frontend": "lite-server",
-    "backend": "vercel dev --listen 3002",
+    "backend": "node api/server.js",
     "dev": "concurrently  \"npm run backend\" \"npm run frontend\"",
     "deploy": "vercel --prod"
   }

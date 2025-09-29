@@ -20,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const apiUrl = location.hostname === "localhost"
-                ? "http://localhost:3004/api/mail"
-                : "/api/mail";
+                ? "http://localhost:3004/mail"
+                : "/mail";
             const res = await fetch(apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
