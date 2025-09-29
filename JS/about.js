@@ -14,10 +14,25 @@ const workExperiences = [
         open source assigmnments.`
     },
     {
-        jobTitle: "GDG Wev Dev Associate",
+        jobTitle: "GDG Campus Lead",
+        timeline: "July 2025 - Present",
+        description: `Positioned as the GDG Campus Lead at JIS University, organizing events and workshops to promote Google technologies and foster a strong developer community.`
+    },
+    {
+        jobTitle: "GDG Web Dev Associate",
         timeline: "June 2024 - 2025",
         description: `I was a web dev associate for the Google Developers Group Club of JIS University, where I had conducted 3 engaging tech-talk sessions, with 
         statisfactory participation, with the previlage of collaborating with other GDG clubs and speakers in my tenure`
+    },
+    {
+        jobTitle: "OSCI Mentor",
+        timeline: "August 2025 - Sept 2025",
+        description: `Positioned as an OSCI Mentor, guiding and supporting students in their open-source contributions and helping them navigate the complexities of collaborative software development.`
+    },
+    {
+        jobTitle: "GSSoc Mentor",
+        timeline: "May 2025 - Nov 2025",
+        description: `Positioned as the GSSoc Mentor, guiding and supporting students in their open-source contributions and helping them navigate the complexities of collaborative software development.`
     },
     {
         jobTitle: "Mod Developer at Modrinth",

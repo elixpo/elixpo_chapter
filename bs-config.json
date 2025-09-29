@@ -16,5 +16,8 @@
         "handle": "historyApiFallback"
       }
     }
-  }
+  },
+  "files": ["*.html", "css/*.css", "js/*.js"],
+  "injectChanges": true,
+  "codeSync": false
 }

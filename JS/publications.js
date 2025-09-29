@@ -5,7 +5,18 @@ const publications = [
         title: "Exploring Microcode CPU Instructions with RISC-V Breadboard Computer",
         year: "2025",
         isNew: true
-    }
+    },
+    {
+        title: "Decoding the Vulnerabilities of Large AI Models: Practical Demonstrations and Defensive Strategies Against Poisoning, Extraction, and Prompt Injection Attacks",
+        year: "2025",
+        isNew: false
+    },
+    {
+        title: "Predictive Analysis of Autism Spectrum Disorder (ASD) Traits: Integrating Supervised Machine Learning and Exploratory Data Insights",
+        year: "2024",
+        isNew: false
+    },
+    
 ];
 
 function renderPublications(publications) {
@@ -14,20 +25,28 @@ function renderPublications(publications) {
 
     publications.forEach(pub => {
         const pubHTML = `
-            <div class="publication h-[60px] w-full flex flex-row justify-between border-t-2 border-b-2 border-[#111] p-10">
-                <div class="paperName flex flex-col gap-5 items-center justify-center h-full">
-                    <p class="paperTitle font-extrabold text-[2em] text-left tracking-[2px] w-[200px] whitespace-nowrap">${pub.title}</p>
-                </div>
-                <div class="paperDate flex flex-row gap-5 items-center justify-center">
-                    <p class="paperDate text-[#222] text-[2em] text-center font-bold">${pub.year}</p>
-                    ${pub.isNew ? `
-                        <span class="newTag relative flex h-[30px] text-[1.8em] text-[#ffc] bg-[#B63B12] items-center justify-center px-[2px] rounded-[5px]"> 
-                            <p> NEW </p> 
-                        </span>
-                    ` : ''}
-                    <ion-icon name="caret-forward" class="text-[2em] p-2 border-2 border-dashed border-[#222] rounded-[50%] cursor-pointer hover:rotate-[25deg] transition-[0.25s]" onclick="showPaper()"></ion-icon>
-                </div>
+            <div class="publication relative h-[60px] w-full flex flex-row items-center justify-between border-t-2 border-b-2 border-[#111] box-border px-6 py-3">
+            <div class="paperName h-full flex-1 flex items-center overflow-hidden">
+                <p class="paperTitle font-extrabold text-lg md:text-xl lg:text-2xl text-left tracking-[2px] p-6 truncate">
+                    ${pub.title}
+                </p>
             </div>
+
+            <div class="paperDate flex flex-row gap-3 items-center flex-shrink-0">
+                <p class="text-[#222] text-lg md:text-xl font-bold whitespace-nowrap">${pub.year}</p>
+                ${pub.isNew ? `
+                <span class="newTag flex h-[28px] px-2 text-sm md:text-base text-[#ffc] bg-[#B63B12] items-center justify-center rounded-[5px]"> 
+                    <p>NEW</p> 
+                </span>
+                ` : ''}
+                <ion-icon 
+                    name="caret-forward" 
+                    class="text-xl p-1 border-2 border-dashed border-[#222] rounded-full cursor-pointer hover:rotate-[25deg] transition duration-200"
+                    onclick="showPaper()">
+                </ion-icon>
+            </div>
+        </div>
+
         `;
         container.innerHTML += pubHTML;
     });
