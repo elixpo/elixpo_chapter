@@ -32,6 +32,15 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${GITHUB_TOKEN}` }
     });
     const contributors = await contributorsRes.json();
+    console.dir({name: repoData.name,
+      description: repoData.description,
+      stars: repoData.stargazers_count,
+      topics: repoData.topics,
+      owner: repoData.owner.login,
+      contributors: contributors.slice(0, 10),
+      url: repoData.html_url,
+      ownerLogo: repoData.owner.avatar_url})
+
 
     res.json({
       name: repoData.name,
@@ -43,8 +52,11 @@ export default async function handler(req, res) {
       url: repoData.html_url,
       ownerLogo: repoData.owner.avatar_url
     });
+
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch GitHub data' });
   }
 }
+

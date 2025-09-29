@@ -5,7 +5,7 @@
       "1": {
         "route": "/api",
         "handle": {
-          "target": "http://localhost:3002",
+          "target": "http://localhost:3004",
           "proxy": true,
           "changeOrigin": true,
           "logLevel": "debug"

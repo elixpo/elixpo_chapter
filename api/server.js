@@ -42,6 +42,7 @@ const app = express();
 app.use(cors({
     origin: [
         'http://localhost:3000',
+        'http://localhost:3001',  
         'http://localhost',
         'https://me.elixpo.com',
         'https://www.me.elixpo.com',
@@ -65,9 +66,6 @@ app.post('/github', async (req, res) => {
     }
 });
 
-app.listen(3004, "0.0.0.0", () => {
-    console.log('Server listening on port 3004');
-});
 
 
 app.post('/mail', async (req, res) => {
@@ -113,4 +111,8 @@ app.post('/mail', async (req, res) => {
         console.error('Error sending mail:', err);
         res.status(500).json({ error: 'Failed to send mail.' });
     }
+});
+
+app.listen(3004, "localhost", () => {
+    console.log('Server listening on port 3004');
 });
