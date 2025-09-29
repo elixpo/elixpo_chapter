@@ -24,7 +24,7 @@ async function generateImageWorker(request) {
     generateUrl += "&private=true";
   }
 
-  // Implement retry logic with fallback
+
   const maxRetries = 3;
   let lastError;
   let currentUrl = generateUrl;
@@ -51,7 +51,7 @@ async function generateImageWorker(request) {
       
       const imageBlob = await response.blob();
       
-      // Return both the blob and the successful URL
+
       return {
         blob: imageBlob,
         originalUrl: currentUrl
@@ -68,7 +68,6 @@ async function generateImageWorker(request) {
       }
       
       if (attempt < maxRetries) {
-        // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
