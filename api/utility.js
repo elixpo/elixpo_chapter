@@ -46,6 +46,8 @@ function generateUID(email, maxLength = 12)
 async function createFirebaseUser(email, displayName, photoURL, provider, country) {
   try {
     const uid = generateUID(email, 12);
+    //check if the user exists in the bloom filter (only for github and google based provider signups)
+
     const userRef = collec.collection("users").doc(uid);
     await userRef.set({
             name: displayName || "",
