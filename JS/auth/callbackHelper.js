@@ -90,4 +90,4 @@ async function handleCallback() {
 
 
 
-document.addEventListener('DOMContentLoaded', handleGitHubCallback);
+document.addEventListener('DOMContentLoaded', handleCallback);
