@@ -11,6 +11,9 @@ var passwordSignIn = document.getElementById("signInPassword").value.toLowerCase
 
 
 document.getElementById("signupBtnDB").addEventListener("click", () => { //when the signup button is clicked
+    const btn = document.getElementById("signupBtnDB");
+    if (btn.classList.contains("is-loading")) return;
+    btn.classList.add("is-loading");
     emailSignUp = document.getElementById("signupEmail").value.trim();
     passwordSignUp = document.getElementById("signupPsswd").value.trim();
     ConfpasswordSignUp = document.getElementById("signupPsswdConf").value.trim();
@@ -19,18 +22,22 @@ document.getElementById("signupBtnDB").addEventListener("click", () => { //when 
     if(emailSignUp == "" || passwordSignUp == "" || ConfpasswordSignUp == "" || userSignUp == "")
     {
         RegisterError("Please Fill All Fields!");
+        btn.classList.remove("is-loading");
     }
     else if(!regex.test(emailSignUp))
     {
         RegisterError("Invalid Email!");
+        btn.classList.remove("is-loading");
     }
     else if(passwordSignUp.length < 6)
     {
         RegisterError("Password Must be 6 Characters Long!");
+        btn.classList.remove("is-loading");
     }
     else if(passwordSignUp != ConfpasswordSignUp)
     {
         RegisterError("Password Doesn't Match!");
+        btn.classList.remove("is-loading");
     }
     else
     {
@@ -39,6 +46,9 @@ document.getElementById("signupBtnDB").addEventListener("click", () => { //when 
 });
 
 document.getElementById("signinBtnDB").addEventListener("click", () => { //when the signin button is clicked
+    const btn = document.getElementById("signinBtnDB");
+    if (btn.classList.contains("is-loading")) return;
+    btn.classList.add("is-loading");
     
     emailSignIn = document.getElementById("signInEmail").value.toLowerCase().trim();
     usernameSignIn = document.getElementById("signInName").value.toLowerCase().trim();
@@ -47,14 +57,17 @@ document.getElementById("signinBtnDB").addEventListener("click", () => { //when 
     if(emailSignIn == "" || passwordSignIn == "" || usernameSignIn == "")
     {
         LoginError("Please Fill All Fields!");
+        btn.classList.remove("is-loading");
     }
     else if(!regex.test(emailSignIn))
     {
         LoginError("Invalid Email!");
+        btn.classList.remove("is-loading");
     }
     else if(passwordSignIn.length < 6)
     {
         LoginError("Password Must be 6 Characters Long!");
+        btn.classList.remove("is-loading");
     }
     else
     {
@@ -105,6 +118,7 @@ function registerUser() {
 
                         document.getElementById("form_register").style.pointerEvents = "all";
                         notify("Please Re Login!");
+                        document.getElementById("signupBtnDB").classList.remove("is-loading");
                         
                     }, 2200);
                     
@@ -113,6 +127,7 @@ function registerUser() {
                     
                     console.error("Error adding document: ", err);
                     RegisterError("Some Error Occured!");
+                    document.getElementById("signupBtnDB").classList.remove("is-loading");
                     setTimeout(() => {
                         
                     }, 500);
@@ -133,6 +148,7 @@ function registerUser() {
             RegisterError("Some Error Occured!");
             
         }
+        document.getElementById("signupBtnDB").classList.remove("is-loading");
         
     });
     
@@ -170,6 +186,11 @@ function loginUser() {
                 LoginError("Invalid Credentials!");
                 
             }
+            document.getElementById("signinBtnDB").classList.remove("is-loading");
+        }
+        else {
+            LoginError("User not found!");
+            document.getElementById("signinBtnDB").classList.remove("is-loading");
         }
 })
 }

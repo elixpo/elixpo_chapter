@@ -1,6 +1,9 @@
 
 
 document.getElementById("signin_with_google").addEventListener("click", () => {
+    const btn = document.getElementById("signin_with_google");
+    if (btn.classList.contains("is-loading")) return;
+    btn.classList.add("is-loading");
     var provider = new firebase.auth.GoogleAuthProvider();
 
     firebase.auth().signInWithPopup(provider)
@@ -9,13 +12,13 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
         var user = result.user;
         var today  = new Date();
         var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
-        var docRef = db.collection("users").doc(user.displayName);
+        var docRef = db.collection("users").doc(user.displayName.toLowerCase());
 
         docRef.get().then((doc) => { // gets the whole data against the entered email address
             if (doc.exists) {
                 tileFlash();
                         notify("Login Successful!");
-                        localStorage.setItem("ElixpoAIUser", usernameSignIn);
+                        localStorage.setItem("ElixpoAIUser", user.displayName.toLowerCase());
                         setTimeout(() => {
                             localStorage.setItem("guestLogin", "false");
                         const urlParams = new URLSearchParams(window.location.search);
@@ -46,7 +49,7 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
                     user_logo: user.photoURL,
                 }).then(() => {
                     
-                    localStorage.setItem("ElixpoAIUser", user.displayName);
+                    localStorage.setItem("ElixpoAIUser", user.displayName.toLowerCase());
                     localStorage.setItem("guestLogin", "false");
                     redirectTo("src/create");
                 })
@@ -75,6 +78,7 @@ document.getElementById("signin_with_google").addEventListener("click", () => {
         }
         
     });
+    btn.classList.remove("is-loading");
     
 });
 

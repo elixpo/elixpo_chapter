@@ -132,6 +132,7 @@ document.getElementById("passwordShowHideSignInPassword").addEventListener("clic
    } else {
        passwordField.setAttribute("type", "password");
    }
+   e.currentTarget.setAttribute("aria-pressed", passwordField.getAttribute("type") === "text" ? "true" : "false");
 });
 
 
@@ -144,6 +145,7 @@ document.getElementById("passwordShowHideSignUpPassword").addEventListener("clic
    } else {
        passwordField.setAttribute("type", "password");
    }
+   e.currentTarget.setAttribute("aria-pressed", passwordField.getAttribute("type") === "text" ? "true" : "false");
 });
 
 
@@ -157,6 +159,7 @@ document.getElementById("passwordShowHideSignUpPasswordConf").addEventListener("
    } else {
        passwordField.setAttribute("type", "password");
    }
+   e.currentTarget.setAttribute("aria-pressed", passwordField.getAttribute("type") === "text" ? "true" : "false");
 });
 
 
@@ -255,7 +258,7 @@ document.getElementById("usernameGuestInput").addEventListener("keypress", async
     
  });
 
-document.getElementById("guestAuth").addEventListener("click", () => {
+document.querySelectorAll(".guestAuth").forEach((btn)=>btn.addEventListener("click", () => {
     document.getElementById("userNameGuest").style.display = "block";
     document.getElementById("initializeText1").innerText = "";
     document.getElementById("initializeText2").innerText = "";
@@ -298,7 +301,7 @@ document.getElementById("guestAuth").addEventListener("click", () => {
        });
     
     }, 1300);
-});
+}));
 
 
 function generateUUID() {

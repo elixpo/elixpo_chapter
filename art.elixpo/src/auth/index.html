@@ -17,7 +17,7 @@
     <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1">
 </head>
 <body>
-    <div class="container">
+    <div class="container" role="application" aria-label="Elixpo authentication">
       <div class="savedMsg" id="savedMsg">
         <div class="blob1"></div>
         <div class="blob2"></div>
@@ -52,28 +52,28 @@
         <div class="vgGirl"></div>
 
 
-    <form class="form_login" id="form_login">
+    <form class="form_login" id="form_login" role="form" aria-labelledby="signin-heading">
 
       <div class="flex-column">
-        <label>Username </label></div>
+        <label id="signin-heading">Username </label></div>
         <div class="inputForm">
           <ion-icon name="text" class="usernameIcon"></ion-icon>
-          <input type="text" class="input" id="signInName" placeholder="Alex" >
+          <input type="text" class="input" id="signInName" placeholder="Alex" aria-label="Username" autocomplete="username">
         </div>
 
 
         <div class="flex-column">
           <label>Email </label></div>
           <div class="inputForm">
-            <ion-icon name="at" class="emailIcon"></ion-icon>
-            <input type="text" class="input" id="signInEmail" placeholder="someone@gmail.com" >
+          <ion-icon name="at" class="emailIcon"></ion-icon>
+            <input type="email" class="input" id="signInEmail" placeholder="someone@gmail.com" aria-label="Email" autocomplete="email" >
           </div>
         
         <div class="flex-column">
           <label>Password </label></div>
           <div class="inputForm">
             <ion-icon name="lock-closed-outline" class="passwordIcon"></ion-icon>
-            <input type="password" class="input" id="signInPassword" placeholder="Enter your Password">
+            <input type="password" class="input" id="signInPassword" placeholder="Enter your Password" aria-label="Password" autocomplete="current-password">
             <ion-icon name="eye" class="passwordShowHide hidden" id="passwordShowHideSignInPassword"></ion-icon>
           </div>
 
@@ -82,52 +82,52 @@
         <div class="flex-row">
           <span class="span">Forgot password?</span>
         </div>
-        <button class="button-submit" id="signinBtnDB" type="button">Sign In</button>
+        <button class="button-submit" id="signinBtnDB" type="button" aria-label="Sign in">Sign In</button>
         <p class="p">Don't have an account? <span class="span" id="signInFormBtn">Sign Up</span>
     
     
         <div class="flex-row">
-          <button class="btn google" id="signin_with_google" type="button">
+          <button class="btn google" id="signin_with_google" type="button" aria-label="Sign in with Google">
             <ion-icon name="logo-google"></ion-icon>
     </svg>
             Google 
           </button>
           
-          <button class="btn github" id="signin_with_github" type="button">
+          <button class="btn github" id="signin_with_github" type="button" aria-label="Sign in with GitHub">
             <ion-icon name="logo-github"></ion-icon>
     
             Github
-            <p id="LoginError"> </p>
+            <p id="LoginError" aria-live="polite"> </p>
           
     </button>
-    <button class="btn guest" type="button" id="guestAuth">
+    <button class="btn guest guestAuth" type="button" aria-label="Continue as Guest">
       <ion-icon name="person"></ion-icon>
       Guest
-      <p id="RegisterError"></p>
+      <p id="RegisterError" aria-live="polite"></p>
 </button>
   </div></form>
 
 
-    <form class="form_register hidden" id="form_register">
+    <form class="form_register hidden" id="form_register" role="form" aria-labelledby="signup-heading">
       <div class="flex-column">
-        <label>Username </label></div>
+        <label id="signup-heading">Username </label></div>
         <div class="inputForm">
           <ion-icon name="text" class="usernameIcon"></ion-icon>
-          <input type="text" class="input" id="signupName" placeholder="Alex">
+          <input type="text" class="input" id="signupName" placeholder="Alex" aria-label="Username" autocomplete="username">
         </div>
 
       <div class="flex-column">
         <label>Email </label></div>
         <div class="inputForm">
           <ion-icon name="at" class="emailIcon"></ion-icon>
-          <input type="text" class="input" id="signupEmail" placeholder="someone@gmail.com">
+          <input type="email" class="input" id="signupEmail" placeholder="someone@gmail.com" aria-label="Email" autocomplete="email">
         </div>
       
       <div class="flex-column">
         <label>Password </label></div>
         <div class="inputForm">
           <ion-icon name="lock-closed-outline" class="passwordIcon"></ion-icon>
-          <input type="password" class="input" id="signupPsswd" placeholder="Enter your Password">
+          <input type="password" class="input" id="signupPsswd" placeholder="Enter your Password" aria-label="Password" autocomplete="new-password">
           <ion-icon name="eye" class="passwordShowHide" id="passwordShowHideSignUpPassword"></ion-icon>
         </div>
 
@@ -135,33 +135,33 @@
           <label>Confirm Password </label></div>
           <div class="inputForm">
             <ion-icon name="lock-closed-outline" class="passwordIcon"></ion-icon>
-            <input type="password" class="input" id="signupPsswdConf" placeholder="Confirm your Password">
+            <input type="password" class="input" id="signupPsswdConf" placeholder="Confirm your Password" aria-label="Confirm Password" autocomplete="new-password">
             <ion-icon name="eye" class="passwordShowHide" id="passwordShowHideSignUpPasswordConf"></ion-icon>
           </div>
 
         
 
-      <button class="button-submit" id="signupBtnDB" type="button">Sign Up</button>
+      <button class="button-submit" id="signupBtnDB" type="button" aria-label="Sign up">Sign Up</button>
       <p class="p"> Have an account? <span class="span" id="signUpFormBtn">Sign In</span>
   
   
       <div class="flex-row">
-        <button class="btn google">
+        <button class="btn google" type="button" aria-label="Continue with Google">
           <ion-icon name="logo-google"></ion-icon>
   </svg>
           Google 
         </button>
         
-        <button class="btn github">
+        <button class="btn github" type="button" aria-label="Continue with GitHub">
           <ion-icon name="logo-github"></ion-icon>
   
           Github
-          <p id="RegisterError"></p>
+          <p id="RegisterError" aria-live="polite"></p>
       </button>
-      <button class="btn guest" type="button" id="guestAuth">
+      <button class="btn guest guestAuth" type="button" aria-label="Continue as Guest">
         <ion-icon name="person"></ion-icon>
         Guest
-        <p id="RegisterError"></p>
+        <p id="RegisterError" aria-live="polite"></p>
   </button>
       
 

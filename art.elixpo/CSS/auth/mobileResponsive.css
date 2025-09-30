@@ -32,21 +32,27 @@
     }
     .form_login
     {
-        left: 40%;
+        left: 50%;
         transform-origin: center;
-        transform: scale(0.8) translateX(-50%) translateY(-50%);
+        transform: scale(0.95) translateX(-50%) translateY(-50%);
+        width: 90%;
+        max-width: 420px;
     }
     .form_register
     {
-        left: 40%;
+        left: 50%;
         transform-origin: center;
-        transform: scale(0.8) translateX(-50%) translateY(-50%);
+        transform: scale(0.95) translateX(-50%) translateY(-50%);
+        width: 90%;
+        max-width: 420px;
     }
     .form_logout
     {
-        left: 40%;
+        left: 50%;
         transform-origin: center;
-        transform: scale(0.8) translateX(-50%) translateY(-50%);
+        transform: scale(0.95) translateX(-50%) translateY(-50%);
+        width: 90%;
+        max-width: 420px;
     }
     .appName
     {

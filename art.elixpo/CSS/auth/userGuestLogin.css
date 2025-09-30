@@ -14,6 +14,8 @@
     overflow: hidden;
     width: 100%;
     /* display: none; */
+    opacity: 0;
+    animation: fadeInOverlay 250ms ease-out forwards;
 }
 .userNameGuest.hidden
 {
@@ -258,6 +260,9 @@
     z-index: 10;
     pointer-events: none;
 }
+.usernameGuestInput:focus {
+    outline: 2px solid #1b97f0;
+}
 .usernameGuestInput::placeholder
 {
     color: #1b97f0;
@@ -265,4 +270,9 @@
     font-weight: 700;
     font-size: 1em;
     font-family: "VT323", monospace;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
