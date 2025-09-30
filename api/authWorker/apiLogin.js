@@ -1,5 +1,4 @@
 import { db, collec, auth } from "../initializeFirebase.js";
-import { appExpress, router } from "../initializeExpress.js";
 import { 
   generateOTP, 
   generatetoken, 
@@ -34,11 +33,9 @@ export async function authenticateToken(req, res, next) {
     console.log("📝 Raw cookie header:", req.headers.cookie);
 
     let token = null;
-    // If using cookie-parser, use req.cookies.authToken
     if (req.cookies && req.cookies.authToken) {
         token = req.cookies.authToken;
     } else if (req.headers.cookie) {
-        // Manual fallback: parse cookie string
         const match = req.headers.cookie.match(/authToken=([^;]+)/);
         if (match) token = match[1];
     }
