@@ -73,17 +73,13 @@ function checkURLParamsLogin() {
     const tokenParam = urlParams.get('token');
     const operation = urlParams.get('operation');
     const state = urlParams.get('state');
-    const code = urlParams.get('code'); // For OAuth code flow
+    const code = urlParams.get('code');
     let callback = urlParams.get('callback');
     
     console.log("URL Parameters:", { tokenParam, operation, state, callback, code });
     
     if (callback === 'true' && operation === 'login' && state === 'elixpo-blogs' && tokenParam) {
         verifyLoginOTP(tokenParam, null, operation, state, otp=null, callback=true);
-    }
-    else if (code && state === 'elixpo-blogs-google') {
-        // Handle Google OAuth callback
-        handleGoogleOAuthCallback(code);
     }
     else if(operation != null && operation != "login" || (state != null && !state.startsWith("elixpo-blogs"))) {
         showNotification("Invalid login request. Please try logging in again.");
@@ -337,33 +333,6 @@ function enableElement(id) {
 }
 
 
-async function handleGoogleOAuthCallback(code) {
-    showNotification("Processing Google authentication...");
-    
-    try {
-        const res = await fetch("http://localhost:5000/api/loginGoogle", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ code: code }),
-        });
-
-        const data = await res.json();
-        if (data.status) {
-            showNotification("Google login successful!");
-            setTimeout(() => redirectTo("src/feed"), 1500);
-        } else {
-            showNotification(data.error || "Google login failed.");
-            resetLoginForm();
-        }
-    } catch (err) {
-        showNotification("Network error during Google login.");
-        resetLoginForm();
-    }
-}
-
-
-
 document.getElementById("loginGithub").addEventListener("click", function () {
   loginWithGitHub();
 });
@@ -383,17 +352,14 @@ function loginWithGoogle() {
     const googleAuthUrl =
     `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${googleClientId}` +
-    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback")}` +
+    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback&state=elixpo-blogs-google")}` +
     `&response_type=code` +
     `&scope=${encodeURIComponent("openid email profile")}` +
     `&access_type=offline` +
-    `&prompt=consent` +
-    `&state=elixpo-blogs-google`;
+    `&prompt=consent`;
 
-    
     const popup = window.open(googleAuthUrl, 'googleAuth', 'width=500,height=600,scrollbars=yes,resizable=yes');
-    
-    // Listen for the popup to close or send a message
+
     const checkClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkClosed);
@@ -406,8 +372,6 @@ function loginWithGoogle() {
 function loginWithGitHub() {
   showNotification("Redirecting to GitHub for authentication...");
   disableElement("loginGithub");
-
-  // GitHub OAuth URL - Fixed callback URL
   const githubAuthUrl =
     `https://github.com/login/oauth/authorize?client_id=${githubClientID}` +
     `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback")}` +
@@ -416,5 +380,3 @@ function loginWithGitHub() {
   window.location.href = githubAuthUrl;
 }
 
-
-// document.cookie = "authToken=TEST12345; path=/; SameSite=None; Secure";
