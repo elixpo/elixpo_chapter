@@ -6,6 +6,7 @@ import { handlePing } from './commands/ping.js';
 import { handleHelp } from './commands/help.js';
 import { EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { Semaphore } from './semaphore.js';
+import { generateChatReply } from './textService.js';
 
 let queue = [];
 let isProcessing = false;
@@ -78,6 +79,45 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
+});
+
+// Listen to plain text messages in channels where the bot has permission
+client.on('messageCreate', async (message) => {
+  try {
+    if (message.author.bot) return; // ignore other bots
+    if (!message.guild) return; // ignore DMs for now
+
+    const channel = message.channel;
+    const botMember = message.guild.members.me;
+    if (!channel || !botMember) return;
+
+    const botPermissions = channel.permissionsFor(botMember);
+    if (!botPermissions) return;
+
+    // Ensure bot can view and reply in this channel
+    const canView = botPermissions.has(PERMISSIONS.ViewChannel);
+    const canSend = botPermissions.has(PERMISSIONS.SendMessages);
+    if (!canView || !canSend) return;
+
+    // Optional: Only respond in channels that grant the bot a "Bot" role name or specific permission
+    // If a channel topic or name contains [jackey] we allow responses, else ignore unless bot is mentioned
+    const mentioned = message.mentions.has(client.user);
+    const inBotChannel = (channel.topic && /jackey|bot/i.test(channel.topic)) || /jackey|bot/i.test(channel.name);
+
+    if (!mentioned && !inBotChannel) return;
+
+    const content = message.cleanContent.replace(new RegExp(`^<@!?${client.user.id}>`), '').trim();
+    if (!content) return;
+
+    // Create a short typing indication
+    await channel.sendTyping();
+    const reply = await generateChatReply(content);
+    if (!reply) return;
+
+    await message.reply({ content: reply, allowedMentions: { repliedUser: false } });
+  } catch (err) {
+    console.error('Error handling messageCreate:', err);
+  }
 });
 
 async function processQueueDiscord() {

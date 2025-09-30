@@ -96,3 +96,52 @@ export async function generateConclusionText(promptContent) {
     return null;
   }
 }
+
+/**
+ * Generate a conversational reply using text.pollinations OpenAI-compatible endpoint.
+ * @param {string} promptContent - The user's message content.
+ * @param {string} [systemPrompt] - Optional system instruction.
+ * @returns {Promise<string>}
+ */
+export async function generateChatReply(promptContent, systemPrompt) {
+  const textURL = "https://text.pollinations.ai/openai";
+  const payload = {
+    model: "evil",
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt || "You are Jackey, a helpful, witty Discord bot. Keep replies concise (<= 120 words), friendly, and safe for work. Use simple markdown (bold/italics) sparingly. Never include links or code blocks unless explicitly asked."
+      },
+      {
+        role: "user",
+        content: promptContent
+      }
+    ],
+    seed: 101,
+    referrer: "jackey",
+  };
+
+  try {
+    const response = await fetch(textURL, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`Error generating chat reply: ${response.status} ${response.statusText}`, errorBody);
+      return "I'm having a small hiccup right now. Try again in a moment!";
+    }
+
+    const textResult = await response.json();
+    return textResult.choices && textResult.choices[0] && textResult.choices[0].message && textResult.choices[0].message.content
+           ? textResult.choices[0].message.content
+           : "I'm here! How can I help?";
+  } catch (error) {
+    console.error('Network or parsing error generating chat reply:', error);
+    return "Connection seems glitchy. Please try again.";
+  }
+}
