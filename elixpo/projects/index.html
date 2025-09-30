@@ -17,10 +17,10 @@
 <body class="relative min-h-screen bg-white overflow-hidden">
     <canvas id="above-canvas"></canvas> 
   <div class="absolute top-0 left-0 w-screen h-screen opacity-55 bg-[url('../CSS/ASSESTS/paperTexture.jpg')] bg-contain bg-repeat bg-center brightness-[55%] sepia-[65%] "></div>
-  <div class="navBar static h-[80px] flex items-center justify-between border-b-2 border-[#888] px-[50px] box-border mb-[5px]">
-    <p class="location text-[1.5em] z-10">WB,IN</p>
-    <p id="rootRedirect"  class="name text-[3em] cursor-pointer z-10"> Elixpo </p>
-    <ion-icon name="list" class="cursor-pointer" id="scrollInMenu"></ion-icon>
+  <div class="navBar static h-[64px] md:h-[80px] flex items-center justify-between border-b-2 border-[#888] px-4 md:px-[50px] box-border mb-[5px]">
+    <p class="location text-[1.1em] md:text-[1.5em] z-10">WB,IN</p>
+    <p id="rootRedirect"  class="name text-[2em] md:text-[3em] cursor-pointer z-10"> Elixpo </p>
+    <ion-icon name="list" class="cursor-pointer text-[1.5em] md:text-[2em]" id="scrollInMenu"></ion-icon>
   </div>
 
   <div id="menuSection" class=" hidden menuSection bg-[#1D1D1B] h-full w-full fixed top-0 left-0 z-50 flex flex-col items-center justify-center gap-5 text-[#E2D9C8] text-[2em] font-extrabold tracking-widest">
@@ -36,18 +36,18 @@
 
   </div>
 
-    <div id="appContainer" class="appContainer relative top-0 mx-auto max-w-[1440px] h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]  overflow-y-auto overflow-x-hidden p-10" >
+    <div id="appContainer" class="appContainer relative top-0 mx-auto max-w-[1440px] h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]  overflow-y-auto overflow-x-hidden p-4 md:p-10" >
 
-        <div class="headerTextContainer w-full p-2 flex h-[200px] flex-row justify-left gap-10">
-        <div class="projectsHeaderText text-[10em] lg:text-[9em] w-1/2 flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[5px]">
+        <div class="headerTextContainer w-full p-2 flex h-auto md:h-[200px] flex-col md:flex-row justify-left gap-4 md:gap-10">
+        <div class="projectsHeaderText text-[3.5em] sm:text-[6em] md:text-[8em] lg:text-[9em] w-full md:w-1/2 flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[2px] md:tracking-[5px]">
             <p class="text-[#E2D9C8]">PROJECTS</p>
           </div>
-          <p class="w-1/2 relative flex-wrap break-words text-[#111] font-bold text-[1.4em]">
+          <p class="w-full md:w-1/2 relative flex-wrap break-words text-[#111] font-bold text-[1em] sm:text-[1.2em] md:text-[1.4em]">
             This page contains some of my projects that I have worked on. You can find the source code and more details about each project by 
             clicking on the project title. Feel free to explore and reach out if you have any questions or would like to collaborate on any of these projects!  
           </p>
         </div>
-        <div class="stampImageHolder absolute top-[150px] left-[42%] bg-[url(../CSS/ASSESTS/projects/stamp-2.png)] bg-center bg-cover h-[150px] w-[150px]"></div>
+        <div class="stampImageHolder absolute top-[150px] left-1/2 -translate-x-1/2 md:left-[42%] md:translate-x-0 bg-[url(../CSS/ASSESTS/projects/stamp-2.png)] bg-center bg-cover h-[100px] w-[100px] md:h-[150px] md:w-[150px]"></div>
 
         <section id="projectsContainer" class="projectsContainer w-full mt-5 border-t-2 border-[#555] flex flex-col gap-10">
         </section>
@@ -67,9 +67,9 @@
           </section>
 
           <footer class="w-screen left-1/2 -translate-x-1/2 relative">
-            <div class="footerContent flex flex-row justify-around mt-5 h-[40px] w-full items-left">
-              <p class="footerName select-none text-[#111] text-[3em]"> ELIXPO </p>
-              <div class="socials flex flex-row gap-5 mt-5 h-full items-center">
+            <div class="footerContent flex flex-col md:flex-row justify-around mt-5 h-auto md:h-[40px] w-full items-left px-4 md:px-0">
+              <p class="footerName select-none text-[#111] text-[2em] md:text-[3em]"> ELIXPO </p>
+              <div class="socials flex flex-row gap-5 mt-3 md:mt-5 h-full items-center">
                 <ion-icon name="logo-github" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
                 <div class="spacer h-[10px] w-[10px] rounded-[50%] bg-[#111]"></div>
                 <ion-icon name="logo-linkedin" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>

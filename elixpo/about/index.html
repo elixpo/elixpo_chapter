@@ -17,10 +17,10 @@
     <body class="relative min-h-screen min-w-screen bg-white overflow-hidden items-center">
       <canvas id="above-canvas"></canvas> 
         <div class="absolute top-0 left-0 w-screen h-screen opacity-55 bg-[url('../CSS/ASSESTS/paperTexture.jpg')] bg-contain bg-repeat bg-center brightness-[55%] sepia-[65%] "></div>
-        <div class="navBar static h-[80px] flex items-center justify-between border-b-2 border-[#888] px-[50px] box-border mb-[5px]">
-          <p class="location text-[1.5em] z-10">WB,IN</p>
-          <p id="rootRedirect"  class="name text-[3em] cursor-pointer z-10"> Elixpo </p>
-          <ion-icon name="list" class="cursor-pointer" id="scrollInMenu"></ion-icon>
+        <div class="navBar static h-[64px] md:h-[80px] flex items-center justify-between border-b-2 border-[#888] px-4 md:px-[50px] box-border mb-[5px]">
+          <p class="location text-[1.1em] md:text-[1.5em] z-10">WB,IN</p>
+          <p id="rootRedirect"  class="name text-[2em] md:text-[3em] cursor-pointer z-10"> Elixpo </p>
+          <ion-icon name="list" class="cursor-pointer text-[1.5em] md:text-[2em]" id="scrollInMenu"></ion-icon>
         </div>
 
         <div id="menuSection" class=" hidden menuSection bg-[#1D1D1B] h-full w-full fixed top-0 left-0 z-50 flex flex-col items-center justify-center gap-5 text-[#E2D9C8] text-[2em] font-extrabold tracking-widest">
@@ -36,42 +36,42 @@
       
         </div>
       
-        <div id="appContainer" class="appContainer relative top-0 mx-auto w-full max-w-[1440px] h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]  overflow-y-auto overflow-x-hidden p-10" >
-            <section class="introSection flex flex-row item-center gap-10">
+        <div id="appContainer" class="appContainer relative top-0 mx-auto w-full max-w-[1440px] h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]  overflow-y-auto overflow-x-hidden p-4 md:p-10" >
+            <section class="introSection flex flex-col md:flex-row item-center gap-6 md:gap-10">
 
-                <div class="col1 flex flex-col justify-left gap-2 w-1/2">
-                    <div class="headingText text-[7em] flex-start w-[500px] p-5 h-[200px] flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[5px]">
+                <div class="col1 flex flex-col justify-left gap-2 w-full md:w-1/2">
+                    <div class="headingText text-[3.5em] sm:text-[5em] lg:text-[7em] flex-start w-full md:w-[500px] p-4 md:p-5 h-[120px] sm:h-[160px] md:h-[200px] flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[2px] md:tracking-[5px]">
                         <p class="text-[#E2D9C8] transform scale-y-[1.4] font-extrabold">AYUSHMAN</p>
                       </div>
-                      <div class="headingText text-[7em] flex-start w-[400px] p-5 h-[200px] flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[7px]">
+                      <div class="headingText text-[3.5em] sm:text-[5em] lg:text-[7em] flex-start w-full md:w-[400px] p-4 md:p-5 h-[120px] sm:h-[160px] md:h-[200px] flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[3px] md:tracking-[7px]">
                         <p class="text-[#E2D9C8] transform scale-y-[1.4] font-extrabold">ABOUT!</p>
                       </div>
                       <div class="descriptionText">
-                        <p class="text-[#1B1B19] text-[2em]">Elixpo is a platform dedicated to exploring the intersection of technology and creativity, offering insights into innovative projects and research.
+                        <p class="text-[#1B1B19] text-[1.1em] sm:text-[1.3em] md:text-[1.6em] lg:text-[2em]">Elixpo is a platform dedicated to exploring the intersection of technology and creativity, offering insights into innovative projects and research.
                            Alongside I am an Ex-Web Dev Associate @GDG JISU | DevOps Engineer @pollinations | Excellence SOF NCO 19' | 3rd, 2nd SOF NCO 14' 18' | LSA exe.BIT Runners 20' | Techverse2.0 & 3.0 Winner | Mod Dev @modrinth.
                            More about me, as you scroll down this page! Thanks for visiting my portfolio!
                         </p>
                       </div>
                 </div>
-                <div class="col2 bg-[url(../CSS/ASSESTS/about/ptr-11.png)] bg-cover bg-center h-[750px] w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
+                <div class="col2 bg-[url(../CSS/ASSESTS/about/ptr-11.png)] bg-cover bg-center h-[320px] sm:h-[480px] md:h-[600px] lg:h-[750px] w-full md:w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
             </section>
 
             <section  id="workExperience" class="workExperience relative h-[600px] mb-[20px] pl-[40px] pr-[40px] box-border py-[40px] gap-[20px] overflow-x-auto overflow-y-hidden flex-nowrap flex flex-row mt-20 select-none cursor-grabbing">
             </section>
 
-            <section  class="visitPublication flex flex-row gap-10 justify-between p-20 mt-5">
-                <p class="publicationText text-[#222] text-[6em] transform scale-y-[1.2] font-extrabold" > PUBLICATIONS </p>
+            <section  class="visitPublication flex flex-col md:flex-row gap-6 md:gap-10 justify-between p-6 md:p-12 lg:p-20 mt-5">
+                <p class="publicationText text-[#222] text-[3em] sm:text-[4em] lg:text-[6em] transform scale-y-[1.2] font-extrabold" > PUBLICATIONS </p>
 
-                <div id="publicationVisit" class="visitCircle w-[350px] h-[100px] text-[3em] border-2 border-[#222] rounded-full mt-10 flex justify-center items-center cursor-pointer transition-all duration-300 hover:bg-[#1B1B19] hover:text-[#E2D9C8] hover:scale-105">
+                <div id="publicationVisit" class="visitCircle w-full md:w-[350px] h-[70px] md:h-[100px] text-[1.8em] md:text-[3em] border-2 border-[#222] rounded-full mt-4 md:mt-10 flex justify-center items-center cursor-pointer transition-all duration-300 hover:bg-[#1B1B19] hover:text-[#E2D9C8] hover:scale-105">
                   Visit Now
                 </div>
 
             </section>
 
 
-            <section class="aboutSectionImages mt-5 p-10 flex flex-row gap-[5px]">
-                <div class="bg-[url(../CSS/ASSESTS/about/sq-22.png)] bg-cover bg-center h-[750px] w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
-                <div class="bg-[url(../CSS/ASSESTS/about/sq-11.png)] bg-cover bg-center h-[750px] w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
+            <section class="aboutSectionImages mt-5 p-4 md:p-10 flex flex-col md:flex-row gap-[5px]">
+                <div class="bg-[url(../CSS/ASSESTS/about/sq-22.png)] bg-cover bg-center h-[320px] sm:h-[480px] md:h-[600px] lg:h-[750px] w-full md:w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
+                <div class="bg-[url(../CSS/ASSESTS/about/sq-11.png)] bg-cover bg-center h-[320px] sm:h-[480px] md:h-[600px] lg:h-[750px] w-full md:w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
             </section>
 
 
@@ -120,7 +120,7 @@
                   
                   
             </section>
-            <section id="spotlight" class="spotlight relative h-[350px] mb-[20px] pl-[40px] pr-[40px] box-border py-[40px] gap-[20px] overflow-x-auto overflow-y-hidden flex-nowrap flex flex-row select-none cursor-grabbing">
+            <section id="spotlight" class="spotlight relative h-[260px] sm:h-[300px] md:h-[350px] mb-[20px] pl-4 md:pl-[40px] pr-4 md:pr-[40px] box-border py-[20px] md:py-[40px] gap-[20px] overflow-x-auto overflow-y-hidden flex-nowrap flex flex-row select-none cursor-grabbing">
             </section>
 
             <section class="contactMeWrapper overflow-hidden w-full border-y-2 border-[#111] mt-10 pt-5 pb-5 justify-center select-none overflow-y-hidden cursor-pointer">
@@ -138,9 +138,9 @@
               </section>
 
               <footer class="w-screen left-1/2 -translate-x-1/2 relative">
-                <div class="footerContent flex flex-row justify-around mt-5 h-[40px] w-full items-left">
-                  <p class="footerName select-none text-[#111] text-[3em]"> ELIXPO </p>
-                  <div class="socials flex flex-row gap-5 mt-5 h-full items-center">
+                <div class="footerContent flex flex-col md:flex-row justify-around mt-5 h-auto md:h-[40px] w-full items-left px-4 md:px-0">
+                  <p class="footerName select-none text-[#111] text-[2em] md:text-[3em]"> ELIXPO </p>
+                  <div class="socials flex flex-row gap-5 mt-3 md:mt-5 h-full items-center">
                     <ion-icon name="logo-github" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
                     <div class="spacer h-[10px] w-[10px] rounded-[50%] bg-[#111]"></div>
                     <ion-icon name="logo-linkedin" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
