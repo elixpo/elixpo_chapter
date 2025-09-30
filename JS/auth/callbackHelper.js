@@ -3,10 +3,7 @@ async function handleGitHubCallback() {
       const code = params.get("code");
       const state = params.get("state");
       const error = params.get("error");
-      
       const statusElement = document.getElementById("status");
-
-      // Handle OAuth errors
       if (error) {
         statusElement.innerHTML = `❌ GitHub authentication failed: ${error}`;
         setTimeout(() => {
@@ -15,8 +12,7 @@ async function handleGitHubCallback() {
         return;
       }
 
-      // Validate required parameters
-      if (!code || state !== "elixpo-blogs") {
+      if (!code || state !== "elixpo-blogs-github") {
         statusElement.innerHTML = "❌ Invalid GitHub OAuth callback.";
         setTimeout(() => {
           redirectTo("src/auth/login");
@@ -41,15 +37,9 @@ async function handleGitHubCallback() {
         
         if (data.status) {
           statusElement.innerHTML = `✅ Login successful! Welcome, ${data.user.name || data.user.email}`;
-          
-          // Log cookie information for debugging
           console.log("🍪 Login successful, checking cookies...");
           console.log("🍪 Document cookies:", document.cookie);
-          
-          // Clear URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Redirect to login page (or wherever you want authenticated users to go)
           setTimeout(() => {
             
             redirectTo("src/feed");
@@ -69,7 +59,7 @@ async function handleGitHubCallback() {
       }
     }
 
-    
 
-    // Auto-run on page load
-    document.addEventListener('DOMContentLoaded', handleGitHubCallback);
+
+
+document.addEventListener('DOMContentLoaded', handleGitHubCallback);
