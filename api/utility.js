@@ -164,6 +164,8 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
   }
 }
 
+
+
 //test mail 
 // sendOTPMail("ayushbhatt633@gmail.com", "123456", "bljY0G", "elixpo-blogs", "login", false)
 

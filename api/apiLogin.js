@@ -378,6 +378,6 @@ router.get("/verifyLoginOTP", async (req, res) => {
   }
 });
 
-appExpress.listen(5000, "localhost", () => {
-  console.log("Server running at http://localhost:5000");
-});
+// appExpress.listen(5000, "localhost", () => {
+//   console.log("Server running at http://localhost:5000");
+// });
