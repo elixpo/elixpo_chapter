@@ -1,13 +1,11 @@
-import { db, collec } from "./initializeFirebase.js";
-import { appExpress, router } from "./initializeExpress.js";
-import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID } from "./utility.js";
-import MAX_EXPIRE_TIME from "./config.js";
-import { bf2 }  from './bloomFilter.js';
+import { db, collec } from "../initializeFirebase.js";
+import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID } from "../utility.js";
+import MAX_EXPIRE_TIME from "../config.js";
 
-// Registration request: send OTP to email
-router.get("/registerRequest", async (req, res) => {
-    const email = req.query.email;
-    console.log(email);
+
+
+
+export async function registerRequest(email, req, res) {
     if (!email) {
         return res.status(400).json({ error: "🚫 Email is required to proceed with registration. Please provide a valid email address!" });
     }
@@ -36,12 +34,10 @@ router.get("/registerRequest", async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "🔥 Internal server error while recording registration attempt. Please try again!" });
     }
-});
+}
 
-// OTP verification and user creation
-router.get("/verifyRegisterOTP", async (req, res) => {
-    const { otp, token, email, time, callback } = req.query;
-    console.log(otp, token, email, time, callback);
+export async function verifyRegisterOTP(otp, token, email, time, callback, req, res)
+{
     if (!token) {
         return res.status(400).json({ error: "🔑 Request ID (token) missing. Please retry the registration process." });
     }
@@ -110,7 +106,7 @@ router.get("/verifyRegisterOTP", async (req, res) => {
         } catch (error) {
         res.status(500).json({ status: false, error: "🔥 Internal server error during registration. Please try again!" });
     }
-});
+}
 
 
 async function checkExistingUserEmail(uid)
@@ -125,15 +121,5 @@ async function checkExistingUserEmail(uid)
 }
 
 
-if (require.main === module) {
-    checkExistingUserEmail("ayushbhatt633@gmail.com").then((exists) => {
-        if(exists)
-        {
-            console.log("The user exists");
-        }
-    })
-}
 
-// appExpress.listen(5000, "0.0.0.0", () => {
-//     console.log("Register server listening on http://0.0.0.0:5000");
-// });
+
