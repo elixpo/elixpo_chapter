@@ -1,5 +1,5 @@
-import { db, collec, auth } from "./initializeFirebase.js";
-import { appExpress, router } from "./initializeExpress.js";
+import { db, collec, auth } from "../initializeFirebase.js";
+import { appExpress, router } from "../initializeExpress.js";
 import { 
   generateOTP, 
   generatetoken, 
@@ -7,14 +7,14 @@ import {
   createFirebaseUser,  
   generateUID,
   getCountryFromIP 
-} from "./utility.js";
+} from "../utility.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
-import MAX_EXPIRE_TIME from "./config.js";
+import MAX_EXPIRE_TIME from "../config.js";
 
 
 

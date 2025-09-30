@@ -1,4 +1,4 @@
-import { appExpress, router } from "./initializeExpress.js";
+import { appExpress, router } from "../initializeExpress.js";
 import {registerRequest, verifyRegisterOTP} from './apiRegister.js';
 import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP} from './apiLogin.js';
 
