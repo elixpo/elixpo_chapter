@@ -21,10 +21,10 @@
   },
   "scripts": {
     "frontend": "lite-server",
-    "backend": "node api/iconsFetcher.js",
-    "backend:dev": "nodemon api/iconsFetcher.js",
-    "dev": "concurrently \"npm run frontend\"",
-    "start": "node api/iconsFetcher.js",
+    "backend": "node api/authWorker/authService.js",
+    "backend:dev": "nodemon api/authWorker/authService.js",
+    "dev": "concurrently \"npm run frontend\" \"npm run backend:dev\"",
+    "start": "node api/authWorker/authService.js",
     "build": "echo 'No build step needed for static frontend'"
   }
 }
