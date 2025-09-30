@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorization Handshake - Jackey</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="CSS/callback.css">
+</head>
+<body class="callback-body">
+  <div class="callback-container">
+    <div class="callback-card">
+      <div class="handshake" aria-hidden="true">
+        <div class="hand" title="Discord"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.369A19.791 19.791 0 0 0 16.558 3c-.2.356-.434.83-.595 1.205a18.399 18.399 0 0 0-7.926 0A12.3 12.3 0 0 0 7.442 3c-1.362.247-2.67.663-3.759 1.369C1.043 8.054.363 12.641.665 17.174A20.01 20.01 0 0 0 7.2 20.25c.6-.823 1.137-1.696 1.596-2.61-.879-.331-1.715-.752-2.49-1.254c.207-.148.41-.302.607-.46c4.74 2.225 9.89 2.225 14.59 0c.199.16.402.314.608.462c-.776.502-1.613.923-2.492 1.254c.458.914.995 1.786 1.596 2.61a20.01 20.01 0 0 0 6.535-3.075c.344-4.983-.654-9.522-3.433-12.988ZM9.861 14.724c-1.137 0-2.063-1.04-2.063-2.319c0-1.278.906-2.327 2.063-2.327c1.166 0 2.082 1.058 2.063 2.327c0 1.279-.897 2.319-2.063 2.319Zm4.287 0c-1.138 0-2.064-1.04-2.064-2.319c0-1.278.905-2.327 2.064-2.327c1.165 0 2.082 1.058 2.063 2.327c0 1.279-.897 2.319-2.063 2.319Z" fill="#5865F2"/></svg></div>
+        <div class="handshake-line"></div>
+        <div class="hand" title="Jackey"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="#7c3aed" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/></svg></div>
+      </div>
+      <h1 id="cb-title" class="title">Establishing Handshake…</h1>
+      <p id="cb-status" class="status">Awaiting OAuth response</p>
+      <div id="cb-details" class="details">Parsing authorization parameters…</div>
+      <div class="btn-row">
+        <a id="cb-continue" class="btn" href="#">Continue</a>
+        <a id="cb-retry" class="btn secondary" href="#">Try Again</a>
+      </div>
+      <div class="small">You may safely close this tab after completion.</div>
+    </div>
+  </div>
+  <script src="JS/callback.js"></script>
+  </body>
+  </html>
+
+
