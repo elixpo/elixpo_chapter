@@ -4,6 +4,7 @@ async function handleCallback() {
       const state = params.get("state");
       const error = params.get("error");
       const statusElement = document.getElementById("status");
+      console.log("OAuth Callback Params:", { code, state, error });
       if (error) {
         statusElement.innerHTML = `❌ GitHub authentication failed: ${error}`;
         setTimeout(() => {
@@ -12,14 +13,15 @@ async function handleCallback() {
         return;
       }
 
-      if (!code || state !== "elixpo-blogs-github" || state!=="elixpo-blogs-google") {
+      if (!code || state != "elixpo-blogs-github" && state!= "elixpo-blogs-google") {
         statusElement.innerHTML = "❌ Invalid GitHub OAuth callback.";
-        setTimeout(() => {
-          redirectTo("src/auth/login");
-        }, 3000);
+        // setTimeout(() => {
+        //   redirectTo("src/auth/login");
+        // }, 5000);
+
         return;
       }
-      else if (state==="elixpo-blogs-google"){
+      else if (state === "elixpo-blogs-google"){
         showNotification("Processing Google authentication...");
     
     try {
@@ -43,7 +45,7 @@ async function handleCallback() {
         resetLoginForm();
         }
       }
-      else if (state==="elixpo-blogs-github"){
+      else if (state === "elixpo-blogs-github"){
         try {
         statusElement.innerHTML = "🔐 Verifying with server...";
         
@@ -70,16 +72,16 @@ async function handleCallback() {
           }, 2000);
         } else {
           statusElement.innerHTML = `❌ ${data.error || "GitHub login failed"}`;
-          setTimeout(() => {
-            redirectTo("src/auth/login");
-          }, 3000);
+        //   setTimeout(() => {
+        //     redirectTo("src/auth/login");
+        //   }, 3000);
         }
       } catch (err) {
         console.error("GitHub callback error:", err);
         statusElement.innerHTML = "🔥 Network error during GitHub login.";
-        setTimeout(() => {
-          redirectTo("src/auth/login");
-        }, 3000);
+        // setTimeout(() => {
+        //   redirectTo("src/auth/login");
+        // }, 3000);
       }
       }
 
