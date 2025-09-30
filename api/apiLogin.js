@@ -28,7 +28,7 @@ function issueJwt(uid, email, rememberUser = false) {
   return jwtToken;
 }
 
-async function authenticateToken(req, res, next) {
+export async function authenticateToken(req, res, next) {
     console.log("🔍 Authentication check started");
     console.log("📝 All cookies received:", req.cookies);
     console.log("📝 Raw cookie header:", req.headers.cookie);
@@ -73,24 +73,8 @@ async function authenticateToken(req, res, next) {
     });
 }
 
-
-router.get("/checkAuth", authenticateToken, (req, res) => {
-  res.status(200).json({ 
-    authenticated: true, 
-    user: { email: req.user.email, uid: req.user.uid } 
-  });
-});
-
-
-router.post("/logout", (req, res) => {
-  res.clearCookie("authToken", { httpOnly: true, secure: false, sameSite: "Lax" });
-  res.status(200).json({ message: "✅ Logged out successfully!" });
-});
-
-
-
-router.post("/loginGithub", async (req, res) => {
-  const { code, state } = req.body;
+export async function loginGithub(code, state, req, res)
+{
   console.log("Received GitHub code:", code);
 
   if (!code) return res.status(400).json({ error: "Missing authorization code" });
@@ -170,20 +154,15 @@ router.post("/loginGithub", async (req, res) => {
       }
     }
 
-    // Only create/update users if no provider conflict exists
     if (!userSnap.exists && !authUser) {
-      // Brand new user
       await createFirebaseUser(email, name, photo, "github", country);
       await auth.createUser({ uid, email, displayName: name });
     } else if (!userSnap.exists && authUser) {
-      // Firebase Auth exists but no Firestore doc
       await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "github", country);
     } else if (userSnap.exists && !authUser) {
-      // Firestore exists but no Firebase Auth
       const userData = userSnap.data();
       await auth.createUser({ uid, email, displayName: userData.displayName || name });
     }
-    // If both exist and provider matches, we just proceed to login
 
     const token = issueJwt(uid, email, true); 
     res.cookie("authToken", token, {
@@ -205,10 +184,10 @@ router.post("/loginGithub", async (req, res) => {
     console.error("❌ Error during GitHub login:", err.message);
     return res.status(500).json({ error: "Internal server error during GitHub login." });
   }
-});
+}
 
-router.post("/loginGoogle", async (req, res) => {
-  const { idToken } = req.body;
+export async function loginGoogle(idToken, req, res)
+{
   console.log("Received idToken:", idToken);
   if (!idToken) return res.status(400).json({ error: "Missing idToken" });
   
@@ -246,27 +225,22 @@ router.post("/loginGoogle", async (req, res) => {
       }
     }
 
-    // Only create/update users if no provider conflict exists
     if (!userSnap.exists && !authUser) {
-      // Brand new user
       await createFirebaseUser(email, name, photo, "google", country);
       await auth.createUser({ uid, email, displayName: name });
     } else if (!userSnap.exists && authUser) {
-      // Firebase Auth exists but no Firestore doc
       await createFirebaseUser(email, authUser.displayName || name, authUser.photoURL || photo, "google", country);
     } else if (userSnap.exists && !authUser) {
-      // Firestore exists but no Firebase Auth
       const userData = userSnap.data();
       await auth.createUser({ uid, email, displayName: userData.displayName || name });
     }
-    // If both exist and provider matches, we just proceed to login
 
-    const token = issueJwt(uid, email, true); // Changed to true for consistency with GitHub
+    const token = issueJwt(uid, email, true); 
     res.cookie("authToken", token, { 
       httpOnly: true, 
       secure: false, 
       sameSite: "Lax", 
-      maxAge: 30 * 24 * 60 * 60 * 1000, // Changed to 30 days for consistency
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
       path: "/"
     });
     
@@ -282,12 +256,11 @@ router.post("/loginGoogle", async (req, res) => {
     console.error("❌ Error during Google login:", err.message);
     return res.status(500).json({ error: "Internal server error during Google login." });
   }
-});
+}
 
 
-router.get("/loginRequest", async (req, res) => {
-  const email = req.query.email?.toLowerCase();
-  const remember = req.query.remember === "true";
+export async function loginEmail(email, remember, req, res)
+{
   if (!email) {
     return res.status(400).json({ error: "🚫 Email is required" });
   }
@@ -301,7 +274,6 @@ router.get("/loginRequest", async (req, res) => {
   }
 
   const userData = userDocSnap.data();
-  // CHECK FOR PROVIDER CONFLICTS - Email login should only work for email provider
   if (userData.provider && userData.provider !== "email") {
     console.log(`❌ Provider conflict: Account exists with ${userData.provider}, trying to login with email`);
     return res.status(403).json({ 
@@ -335,12 +307,12 @@ router.get("/loginRequest", async (req, res) => {
   });
 
   res.status(200).json({ message: `✅ OTP sent to ${email}`, data: `${email},${token}` });
-});
+}
 
 
-router.get("/verifyLoginOTP", async (req, res) => {
-  const { otp, token, email, time, operation, state, callback, remember } = req.query;
-  if (!token) return res.status(400).json({ error: "🔑 Request ID missing." });
+export async function verifyLoginOTP(otp, token, email, time, operation, state, callback, remember, req, res)
+{
+   if (!token) return res.status(400).json({ error: "🔑 Request ID missing." });
 
   const uid = generateUID(email, 12);
   const loginRef = db.ref(`loginAttempt/${token}`);
@@ -376,6 +348,45 @@ router.get("/verifyLoginOTP", async (req, res) => {
       return res.status(400).json({ status: false, error: "🚫 Invalid OTP." });
     }
   }
+}
+
+
+
+router.get("/checkAuth", authenticateToken, (req, res) => {
+  res.status(200).json({ 
+    authenticated: true, 
+    user: { email: req.user.email, uid: req.user.uid } 
+  });
+});
+
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("authToken", { httpOnly: true, secure: false, sameSite: "Lax" });
+  res.status(200).json({ message: "✅ Logged out successfully!" });
+});
+
+
+router.post("/loginGithub", async (req, res) => {
+  const { code, state } = req.body;
+  
+});
+
+router.post("/loginGoogle", async (req, res) => {
+  const { idToken } = req.body;
+  
+});
+
+
+router.get("/loginRequest", async (req, res) => {
+  const email = req.query.email?.toLowerCase();
+  const remember = req.query.remember === "true";
+  
+});
+
+
+router.get("/verifyLoginOTP", async (req, res) => {
+  const { otp, token, email, time, operation, state, callback, remember } = req.query;
+ 
 });
 
 // appExpress.listen(5000, "localhost", () => {
