@@ -8,7 +8,17 @@ setInterval(() => {
     // generateAsciiArt();
 }, 5000);
 
-document.getElementById("visitCreateArt").addEventListener("click", function() {
+// Helper function to safely add event listeners
+function safeAddEventListener(elementId, event, callback) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.addEventListener(event, callback);
+    } else {
+        console.warn(`Element with id "${elementId}" not found`);
+    }
+}
+
+safeAddEventListener("visitCreateArt", "click", function() {
     if(localStorage.getItem("ElixpoAIUser") != null || localStorage.getItem("ElixpoAIUser") != undefined) {
         redirectTo("src/create");
     }
@@ -22,37 +32,35 @@ document.getElementById("visitCreateArt").addEventListener("click", function() {
     }
 });
   
-document.getElementById("visitDocs").addEventListener("click", function() {
-  
+safeAddEventListener("visitDocs", "click", function() {
     redirectTo("blogs/elixpo_art");
 });
 
-document.getElementById("visitFeed").addEventListener("click", function() {
-  
+safeAddEventListener("visitFeed", "click", function() {
     redirectTo("src/feed");
 });
 
-document.getElementById("integrationsIcon").addEventListener("click", () => {
+safeAddEventListener("integrationsIcon", "click", () => {
     redirectTo("integrations/")
-})
+});
 
-document.getElementById("kaizenIcon").addEventListener("click", () => {
+safeAddEventListener("kaizenIcon", "click", () => {
     location.href = "https://www.kaizenyumee.com/"
-})
+});
 
-document.getElementById("visitIntegration").addEventListener("click", () => {
+safeAddEventListener("visitIntegration", "click", () => {
     redirectTo("integrations/")
-})
+});
 
-document.getElementById("visitGithub").addEventListener("click", () => {
+safeAddEventListener("visitGithub", "click", () => {
     window.open("https://github.com/Circuit-Overtime/elixpo_ai_chapter/", "_blank");
-})
+});
 
-document.getElementById("discordBotRedirect").addEventListener("click", () => {
+safeAddEventListener("discordBotRedirect", "click", () => {
     window.open("https://discord.com/oauth2/authorize?client_id=1214916249222643752", "_blank");
 });
 
-document.getElementById("chromeExtentionRedirect").addEventListener("click", () => {
+safeAddEventListener("chromeExtentionRedirect", "click", () => {
     window.open("https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh", "_blank");
 });
 

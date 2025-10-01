@@ -54,6 +54,10 @@ if ((/Mobi|Android/i.test(navigator.userAgent)) == false) {
       },
       retina_detect: true
     });
+    
+    // Stats functionality - commented out to prevent errors
+    // Uncomment if stats.js library is loaded
+    /*
     var count_particles, stats, update;
     stats = new Stats();
     stats.setMode(0);
@@ -71,6 +75,7 @@ if ((/Mobi|Android/i.test(navigator.userAgent)) == false) {
       requestAnimationFrame(update);
     };
     requestAnimationFrame(update);
+    */
     
   }
   

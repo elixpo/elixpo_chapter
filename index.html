@@ -62,6 +62,8 @@
     <link rel="stylesheet" href="./CSS/homepages/elixpo_art_features.css">
     <link rel="stylesheet" href="./CSS/homepages/elixpo_project_showcase.css">
     <link rel="stylesheet" href="./CSS/homepages/elixpo_information.css">
+    <link rel="stylesheet" href="./CSS/homepages/elixpo_information_enhanced.css">
+    <link rel="stylesheet" href="./CSS/enhanced/pro_landing_style.css">
     <link rel="icon" type="image/x-icon" href="https://firebasestorage.googleapis.com/v0/b/videolize-3563f.appspot.com/o/bigstar.png?alt=media&token=53c5945b-2b37-4c3e-972c-7bd1b0b9e4f1">
 
 </head>
@@ -87,47 +89,115 @@
         </div>
 
         <div class="sitecontent" id="sitecontent">
-            <div class="flag">
-                <div class="flagDesc"> ✨ Introducing Elixpo Art | Release </div>
+            <!-- Professional Hero Section -->
+            <div class="pro-hero-container">
+                <!-- Status Badge -->
+                <div class="pro-status-badge blob-banner">
+                    <div class="status-dot"></div>
+                    <span>✨ Introducing Elixpo Art v5.0</span>
+                    <div class="blob-bg"></div>
+                </div>
+                
+                <!-- Main Hero Content -->
+                <div class="pro-hero-content">
+                    <div class="hero-left">
+                        <!-- Enhanced Title -->
+                        <div class="pro-main-title">
+                            <h1 class="title-line-1">Transform Ideas</h1>
+                            <h1 class="title-line-2">Into <span class="title-accent">Stunning Art</span></h1>
+                            <div class="title-decoration"></div>
+                        </div>
+                        
+                        <!-- Professional Description -->
+                        <div class="pro-description">
+                            <p class="desc-main">Experience next-generation AI-powered creativity with just 3 clicks</p>
+                            <p class="desc-features">
+                                Advanced text-to-image generation • 15+ artistic themes • 8+ AI models
+                                <br><span class="highlight-accent">Completely free, no limits</span>
+                            </p>
+                        </div>
+                        
+                        <!-- Enhanced Action Buttons -->
+                        <div class="pro-action-buttons">
+                            <button class="pro-btn primary" id="visitCreateArt">
+                                <div class="btn-content">
+                                    <i class='bx bxs-magic-wand'></i>
+                                    <span>Start Creating</span>
+                                </div>
+                                <div class="btn-glow"></div>
+                            </button>
+                            
+                            <button class="pro-btn secondary" id="visitDocs">
+                                <div class="btn-content">
+                                    <i class='bx bx-book-open'></i>
+                                    <span>Documentation</span>
+                                </div>
+                            </button>
+                            
+                            <button class="pro-btn tertiary" id="visitFeed">
+                                <div class="btn-content">
+                                    <i class='bx bx-grid-alt'></i>
+                                    <span>Gallery</span>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- Professional Stats -->
+                        <div class="pro-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">25K+</span>
+                                <span class="stat-label">Images Created</span>
+                            </div>
+                            <div class="stat-separator"></div>
+                            <div class="stat-item">
+                                <span class="stat-number">15+</span>
+                                <span class="stat-label">AI Models</span>
+                            </div>
+                            <div class="stat-separator"></div>
+                            <div class="stat-item">
+                                <span class="stat-number">4</span>
+                                <span class="stat-label">AI Models</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hero Visual Elements -->
+                    <div class="hero-right">
+                        <div class="floating-elements">
+                            <div class="float-icon icon-1"><i class='bx bx-palette'></i></div>
+                            <div class="float-icon icon-2"><i class='bx bx-brush'></i></div>
+                            <div class="float-icon icon-3"><i class='bx bx-sparkles'></i></div>
+                        </div>
+                        
+                        <!-- Partner Logos Enhanced -->
+                        <div class="pro-partners">
+                            <div class="partner-item">
+                                <div class="partner-logo logo1"></div>
+                                <span>Elixpo</span>
+                            </div>
+                            <div class="partner-item">
+                                <div class="partner-logo logo2"></div>
+                                <span>Firebase</span>
+                            </div>
+                            <div class="partner-item">
+                                <div class="partner-logo logo3"></div>
+                                <span>Pollinations</span>
+                            </div>
+                            <div class="partner-item">
+                                <div class="partner-logo logo4"></div>
+                                <span>Kaizen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-           
-            <div class="mainName">
-                <div class="integrationsIcon" id="integrationsIcon"><i class='bx bx-git-branch'></i></div>
-                <div class="kaizenIcon" id="kaizenIcon"><i class='bx bxs-t-shirt'></i></div>
-                <span class="mainName_name">Elixpo</span>
-                <span class="mainName_ending">art</span>
-            </div>
-
-
-            <div class="siteDesc">
-                <p>Transfrom your thoughts into images with just 3 clicks. <br> AI Powered Text-Image Generation with 10+ themes and 5+ models <br>for unique, fast and seamless image generation <span style="color: yellow;"> all for free! </span></p>
-            </div>
-            <button class="visitCreateArt redirectBtn" id="visitCreateArt">
-                <ion-icon name="play" class="visitCreateArtIcon"></ion-icon>
-                Create Art
-            </button>
-
-            <button class="visitDocs redirectBtn" id="visitDocs">
-                <ion-icon name="document" class="visitCreateArtIcon"></ion-icon>
-                Read Blog
-            </button>
-
-          <button class="visitFeed redirectBtn" id="visitFeed">
-                <ion-icon name="pulse" class="visitCreateArtIcon"></ion-icon>
-                Visit Feed
-            </button>
-
-             
-
-
         </div> 
         <div class="projectShowcase">
 
             <div class="blob_showcaseTier_red"></div>
             <div class="blob_showcaseTier_yellow"></div>
             <div class="demoPicture">
-                <img src="https://github.com/user-attachments/assets/20264cef-2833-4b42-8615-8e4280dd3a5e" alt="" role="presentation">
+                <img src="https://github.com/user-attachments/assets/20264cef-2833-4b42-8615-8e4280dd3a5e" alt="" role="presentation" style="width: 90%; margin: 0 auto;">
             </div>
         </div>
 
@@ -257,36 +327,31 @@
                 <div class="faqHeading">Extended Functionalities of Elixpo Art</div>
                 <div class="faqDesc">I thought of extending the functionalities of the service of Elixpo-Art beyond the web.</div>
                 <div class="extendContainer">
-                    <div class="extendCard">
+                    <div class="extendCard" id="discordBotRedirect">
                         <div class="extendCard-content">
-                            <div class="extendCard-title" id="discordBotRedirect"> Jackey -  Discord Bot </div>
-                            <p id="installCount"> 83 Servers</p>
-                            <i class='bx bxl-discord-alt extendCard-icon' style='color:#ffffff' ></i>
+                            <i class='bx bxl-discord-alt extendCard-icon'></i>
+                            <div class="extendCard-title">Jackey - Discord Bot</div>
+                            <div class="extendCard-badge">83 Servers</div>
+                        </div>
+                    </div>
+
+                    <div class="extendCard" id="chromeExtentionRedirect">
+                        <div class="extendCard-content">
+                            <i class='bx bxl-chrome extendCard-icon'></i>
+                            <div class="extendCard-title">Elixpo - Chrome Ext</div>
+                            <div class="extendCard-badge">39 Users</div>
                         </div>
                     </div>
 
                     <div class="extendCard">
-                        <div class="extendCard-content" id="chromeExtentionRedirect">
-                            <div class="extendCard-title"> Elixpo - Chrome Ext </div>
-                            <p id="installCount"> 39 Users </p>
-                            <i class='bx bxl-chrome extendCard-icon' style='color:#ffffff' ></i>
-                            
-                        </div>
-                    </div>
-
-                    <div class="extendCard">
                         <div class="extendCard-content">
-                        <div class="extendCard-title"> Elixpo - Minecraft Bot (under dev) </div>
-                        <i class='bx bx-cube-alt extendCard-icon' style='color:#ffffff' ></i>
-                        </div>
+                            <i class='bx bx-cube-alt extendCard-icon'></i>
+                            <div class="extendCard-title">Elixpo - Minecraft Bot</div>
+                            <div class="extendCard-badge extendCard-badge-dev">Under Development</div>
                         </div>
                     </div>
                 </div>
-
-
-              <div class="footerElement">
-                <div class="footerText">Copyright &copy; 2025 elixpo-art. All rights reserved.</div>
-              </div>
+            </div>
         </div>
 
     </div>
