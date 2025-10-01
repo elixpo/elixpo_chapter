@@ -75,7 +75,7 @@ export async function loginGithub(code, state, req, res)
   console.log("Received GitHub code:", code);
 
   if (!code) return res.status(400).json({ error: "Missing authorization code" });
-  if (state !== "elixpo-blogs") return res.status(400).json({ error: "Invalid state" });
+  if (state !== "elixpo-blogs-github") return res.status(400).json({ error: "Invalid state" });
 
   try {
     const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
@@ -140,7 +140,6 @@ export async function loginGithub(code, state, req, res)
     const country = await getCountryFromIP(ip);
     console.log(`GitHub login attempt from IP: ${ip}, Country: ${country}`);
 
-    // CHECK FOR PROVIDER CONFLICTS FIRST - BEFORE CREATING/UPDATING ANYTHING
     if (userSnap.exists) {
       const userData = userSnap.data();
       if (userData.provider && userData.provider !== "github") {

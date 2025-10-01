@@ -29,13 +29,11 @@ async function checkExistingAuth() {
         const data = await res.json();
         console.log("🔍 Auth check successful:", data);
         
-        // Add these lines to specifically log user details
         if (data.user) {
             console.log("👤 User email:", data.user.email);
             console.log("🔑 User token:", data.user.token);
             console.log("🆔 User UID:", data.user.uid); 
             console.log("📋 Full user object:", data.user);
-            // redirectTo("src/feed");
         }
         
     } else {
@@ -75,13 +73,15 @@ function checkURLParamsLogin() {
     const tokenParam = urlParams.get('token');
     const operation = urlParams.get('operation');
     const state = urlParams.get('state');
+    const code = urlParams.get('code');
     let callback = urlParams.get('callback');
-    console.log("URL Parameters:", { tokenParam, operation, state, callback });
+    
+    console.log("URL Parameters:", { tokenParam, operation, state, callback, code });
+    
     if (callback === 'true' && operation === 'login' && state === 'elixpo-blogs' && tokenParam) {
         verifyLoginOTP(tokenParam, null, operation, state, otp=null, callback=true);
     }
-    else if(operation != null && operation != "login" || state!= null && state != "elixpo-blogs")
-    {
+    else if(operation != null && operation != "login" || (state != null && !state.startsWith("elixpo-blogs"))) {
         showNotification("Invalid login request. Please try logging in again.");
         resetLoginForm();
     }
@@ -333,63 +333,50 @@ function enableElement(id) {
 }
 
 
-async function handleGoogleCredentialResponse(response) {
-    if (!response.credential) {
-        showNotification("Google authentication failed. Please try again.");
-        enableElement('loginGoogle');
-        return;
-    }
-    else 
-    {
-        console.log("Google ID Token received:", response.credential);  
-    }
-
-    showNotification("Authenticating with Elixpo...");
-    try {
-        const res = await fetch("http://localhost:5000/api/loginGoogle", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ idToken: response.credential }),
-        });
-
-        const data = await res.json();
-        if (data.status) {
-            const user = data.user;
-            console.log(
-                user
-                    ? `✅ Logged in as ${user.email} (uid: ${user.uid})`
-                    : (data.message || "✅ Google login successful!")
-            );
-            showNotification("Login successful!");
-            // Optionally redirect after login
-            // setTimeout(() => redirectTo("src/feed"), 1500);
-
-        } else {
-            showNotification(data.error || "❌ Google login failed.");
-            enableElement('loginGoogle');
-        }
-    } catch (err) {
-        showNotification("🔥 Network error during Google login.");
-        enableElement('loginGoogle');
-    }
-}
 document.getElementById("loginGithub").addEventListener("click", function () {
   loginWithGitHub();
 });
 
+document.getElementById("loginGoogle").addEventListener("click", function() {
+    loginWithGoogle();
+});
+
+
+function loginWithGoogle() {
+    showNotification("Redirecting to Google for authentication...");
+    disableElement('loginGoogle');
+    
+    const googleClientId = "796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com";
+    
+    // Google OAuth URL
+    const googleAuthUrl =
+    `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${googleClientId}` +
+    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback&state=elixpo-blogs-google")}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent("openid email profile")}` +
+    `&access_type=offline` +
+    `&prompt=consent`;
+
+    const popup = window.open(googleAuthUrl, 'googleAuth', 'width=500,height=600,scrollbars=yes,resizable=yes');
+
+    const checkClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkClosed);
+            enableElement('loginGoogle');
+            window.location.reload();
+        }
+    }, 1000);
+}
+
 function loginWithGitHub() {
   showNotification("Redirecting to GitHub for authentication...");
   disableElement("loginGithub");
-
-  // GitHub OAuth URL - Fixed callback URL
   const githubAuthUrl =
     `https://github.com/login/oauth/authorize?client_id=${githubClientID}` +
     `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback")}` +
-    `&scope=user:email&state=elixpo-blogs`;
+    `&scope=user:email&state=elixpo-blogs-github`;
 
   window.location.href = githubAuthUrl;
 }
 
-
-// document.cookie = "authToken=TEST12345; path=/; SameSite=None; Secure";
