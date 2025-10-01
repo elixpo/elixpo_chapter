@@ -9,8 +9,8 @@ document.getElementById("signin_with_github").addEventListener("click", () => {
 
         var docRef = db.collection("users").doc(user.displayName);
         var today  = new Date();
-        var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; //gives the  current date to the system
-        docRef.get().then((doc) => { // gets the whole data against the entered email address
+        var date = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear() ; 
+        docRef.get().then((doc) => { 
             if (doc.exists) {
                 tileFlash();
                 if(doc.data().isDev == "DEV")
