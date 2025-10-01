@@ -1,4 +1,4 @@
-import { murmurhash3_32_gc } from './murmurhash3.js';
+import { murmurhash3_32_gc } from "./murmurhash3.js";
 import fs from "fs";
 class BloomFilter {
   constructor(size, numHashes) {
@@ -11,7 +11,7 @@ class BloomFilter {
   _setBit(pos) {
     const byteIndex = Math.floor(pos / 8);
     const bitIndex = pos % 8;
-    this.bitArray[byteIndex] |= (1 << bitIndex);
+    this.bitArray[byteIndex] |= 1 << bitIndex;
   }
 
   _getBit(pos) {
@@ -48,7 +48,7 @@ class BloomFilter {
     const m = this.size;
     const k = this.numHashes;
     const n = this.count;
-    const probBitSet = 1 - Math.exp(-k * n / m);
+    const probBitSet = 1 - Math.exp((-k * n) / m);
     return Math.pow(probBitSet, k);
   }
 
@@ -92,7 +92,7 @@ class AdaptiveBloom {
     if (fs.existsSync(file)) {
       this.loadFromFile(file);
     } else {
-      const m = Math.ceil(-(expectedItems * Math.log(targetFPR)) / (Math.log(2) ** 2));
+      const m = Math.ceil(-(expectedItems * Math.log(targetFPR)) / Math.log(2) ** 2);
       const k = Math.round((m / expectedItems) * Math.log(2));
       this.filters.push(new BloomFilter(m, k));
       this.saveToFile(); // save initial
@@ -117,7 +117,7 @@ class AdaptiveBloom {
   }
 
   contains(item) {
-    return this.filters.some(f => f.contains(item));
+    return this.filters.some((f) => f.contains(item));
   }
 
   saveToFile() {
@@ -156,13 +156,5 @@ class AdaptiveBloom {
   }
 }
 
-
-
-
-if (require.main === module) {
-  const bf2 = new AdaptiveBloom(10000, 0.01); 
-console.log("After reload:", bf2.contains("user123"));
-}
-
-const bf2 = new AdaptiveBloom(10000, 0.01);
-export { bf2 };
+const bloomFilter = new AdaptiveBloom(10000, 0.01);
+export { bloomFilter };
