@@ -1,67 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Amarante&family=Bitcount+Grid+Double:wght@100..900&family=Changa+One:ital@0;1&family=Pathway+Gothic+One&display=swap');
-@font-face
-{
-    font-family: "Canopee";
-    src: url("./FONT/Canopee\ Regular.otf") format("opentype");
+@import url("https://fonts.googleapis.com/css2?family=Amarante&family=Bitcount+Grid+Double:wght@100..900&family=Changa+One:ital@0;1&family=Pathway+Gothic+One&display=swap");
+@font-face {
+  font-family: "Canopee";
+  src: url("./FONT/Canopee\ Regular.otf") format("opentype");
 }
-.name 
-{
-    font-family: "Bitcount Grid Double", system-ui;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
+.name {
+  font-family: "Bitcount Grid Double", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
 }
-.location 
-{
-    font-family: "Bitcount Grid Double", system-ui;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
-
+.location {
+  font-family: "Bitcount Grid Double", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
 }
 
 .hoverScale {
-  background-size: 400px !important;
+  background-size: 300px !important;
   background-position: center;
   background-repeat: no-repeat;
   transition: background-size 0.25s ease;
 }
 
 .hoverScale:hover {
-  background-size: 450px !important;
+  background-size: 320px !important;
 }
-.featuredDescription
-{
+
+@media (min-width: 640px) {
+  .hoverScale {
+    background-size: 350px !important;
+  }
+  .hoverScale:hover {
+    background-size: 380px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .hoverScale {
+    background-size: 400px !important;
+  }
+  .hoverScale:hover {
+    background-size: 450px !important;
+  }
+}
+.featuredDescription {
   font-family: "Pathway Gothic One", sans-serif;
 }
 
-.appContainer::-webkit-scrollbar
-{
+.appContainer::-webkit-scrollbar {
   display: none;
 }
-.navBar ion-icon 
-{
-  font-size: 2em;
+.navBar ion-icon {
+  font-size: 1.5rem;
 }
 
-.featureName
-{
-   font-family: "Amarante";
-    font-optical-sizing: auto;
+@media (min-width: 640px) {
+  .navBar ion-icon {
+    font-size: 1.75rem;
+  }
 }
-.newTag 
-{
+
+@media (min-width: 768px) {
+  .navBar ion-icon {
+    font-size: 2rem;
+  }
+}
+
+.featureName {
+  font-family: "Amarante";
+  font-optical-sizing: auto;
+}
+.newTag {
   font-family: monospace;
   font-weight: 700;
 }
-.spotlight 
-{
-  min-width:0;
+.spotlight {
+  min-width: 0;
   width: 100%;
   padding: 40px;
 }
-.spotlight::-webkit-scrollbar
-{
+.spotlight::-webkit-scrollbar {
   display: none;
 }
 .nameContainer {
@@ -72,19 +91,16 @@
 
 .nameContainer p {
   fill: none;
-  stroke: #96B59F;
+  stroke: #96b59f;
   stroke-miterlimit: 10;
 }
-.text1
-{
+.text1 {
   font-family: "Canopee";
 }
-.description1 
-{
+.description1 {
   font-family: "Pathway Gothic One", sans-serif;
 }
-.col2text 
-{
+.col2text {
   font-family: "Canopee";
   font-weight: 500;
 }
@@ -107,51 +123,41 @@
 }
 .websiteTextContainer,
 .webCol1Row1Text1,
-.slide2text1
-{
+.slide2text1 {
   font-family: "Canopee";
   font-weight: 500;
   position: relative;
   padding-bottom: 10px;
 }
 .webDescription1,
-.webDescription2
-{
+.webDescription2 {
   font-family: "Pathway Gothic One", sans-serif;
 }
-.webCol2text1 
-{
+.webCol2text1 {
   font-family: "Canopee";
   font-weight: 500;
   position: relative;
   padding-bottom: 10px;
 }
-.webDescription3 
-{
+.webDescription3 {
   font-family: "Pathway Gothic One", sans-serif;
 }
-.quote 
-{
-  font-family: "Pathway Gothic One", sans-serif; 
+.quote {
+  font-family: "Pathway Gothic One", sans-serif;
 }
-.recommendationSection::-webkit-scrollbar
-{
+.recommendationSection::-webkit-scrollbar {
   display: none;
 }
-.userName 
-{
+.userName {
   font-family: "Canopee";
 }
-.userDesig 
-{
-  font-family: "Pathway Gothic One", sans-serif; 
+.userDesig {
+  font-family: "Pathway Gothic One", sans-serif;
 }
-.contactMeText 
-{
-  font-family: "Pathway Gothic One", sans-serif; 
+.contactMeText {
+  font-family: "Pathway Gothic One", sans-serif;
 }
-.contactMeBox 
-{
+.contactMeBox {
   font-family: "Canopee";
   font-weight: 500;
   position: relative;
@@ -170,49 +176,270 @@
   animation: scroll-horizontal 10s linear infinite;
 }
 
-.footerName 
-{
+.footerName {
   font-family: "Bitcount Grid Double", system-ui;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
 }
-.text1row1col1techTracks 
-{
+.text1row1col1techTracks {
   font-family: "Canopee";
   font-weight: 500;
   position: relative;
   padding-bottom: 10px;
 }
-.descriptionRow2 
-{
-  font-family: "Pathway Gothic One", sans-serif; 
+.descriptionRow2 {
+  font-family: "Pathway Gothic One", sans-serif;
 }
-.featuredTileSpecialText 
-{
+.featuredTileSpecialText {
   font-family: "Canopee";
   position: relative;
   padding-bottom: 10px;
 }
-.featuredTileSpecialDesc 
-{
-  font-family: "Pathway Gothic One", sans-serif; 
+.featuredTileSpecialDesc {
+  font-family: "Pathway Gothic One", sans-serif;
 }
-.visitCircle 
-{
+.visitCircle {
   font-family: "Bitcount Grid Double", system-ui;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
 }
-.hidden
-{
+.hidden {
   opacity: 0;
   pointer-events: none;
 }
 
+/* Prevent text overflow and ensure responsive behavior */
+* {
+  box-sizing: border-box;
+}
 
+body {
+  overflow-x: hidden;
+}
 
+.appContainer {
+  overflow-x: hidden;
+}
+
+/* Responsive font and layout fixes */
+@media (max-width: 639px) {
+  .nameContainer p {
+    font-size: 2rem !important;
+    word-break: break-word;
+  }
+
+  .text1 p {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .col2text {
+    font-size: 1rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .websiteTextContainer p {
+    font-size: 2rem !important;
+    word-break: break-word;
+  }
+
+  .webCol2text1 > div:first-child {
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .webCol2text1 > div:last-child {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .text1row1col1techTracks {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+    text-align: center !important;
+  }
+
+  .descriptionRow2 {
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .contactMeText {
+    font-size: 1rem !important;
+  }
+
+  .contactMeBox {
+    font-size: 1rem !important;
+  }
+
+  .contactMeBox p {
+    line-height: 1.3 !important;
+  }
+
+  .footerName {
+    font-size: 1.25rem !important;
+  }
+
+  .socialIcon {
+    font-size: 1.125rem !important;
+  }
+}
+@media (max-width: 639px) {
+  .appContainer {
+    padding: 1rem !important;
+    max-width: 100% !important;
+  }
+
+  .punchlineSection {
+    padding: 1rem !important;
+    gap: 1.25rem !important;
+  }
+
+  .column1 {
+    padding: 1rem !important;
+    border-right: none !important;
+    border-bottom: 2px solid #888 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .websiteSection {
+    padding: 0.5rem !important;
+  }
+
+  .websiteContainer {
+    gap: 1.25rem !important;
+  }
+
+  .webCol1 {
+    padding: 0.5rem !important;
+    border-right: none !important;
+    border-bottom: 2px solid #888 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .webCol2 {
+    padding: 0.5rem !important;
+  }
+
+  .slide1 {
+    padding: 0.5rem !important;
+    border-right: none !important;
+    border-bottom: 2px solid #888 !important;
+    margin-bottom: 1rem !important;
+    margin-right: 0 !important;
+  }
+
+  .techTracks {
+    padding: 1rem !important;
+  }
+
+  .row1col1 {
+    gap: 1rem !important;
+  }
+
+  .image1row1col1techTracks {
+    width: 60px !important;
+    height: 200px !important;
+    margin: 0 auto !important;
+  }
+
+  .row2row1 {
+    gap: 1.25rem !important;
+  }
+
+  .text1row1col1techTracks {
+    gap: 1rem !important;
+  }
+
+  .row2row2 {
+    gap: 1.25rem !important;
+  }
+
+  .visitCircle {
+    width: 100% !important;
+    margin: 0 auto !important;
+    margin-top: 2.5rem !important;
+  }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 639px) {
+  .nameContainer {
+    font-size: 2rem !important;
+    height: 200px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .text1 p {
+    font-size: 1.5rem !important;
+  }
+
+  .col2text {
+    font-size: 1rem !important;
+  }
+
+  .websiteTextContainer p {
+    font-size: 2rem !important;
+  }
+
+  .webCol2text1 div {
+    font-size: 1.25rem !important;
+    line-height: 50px !important;
+  }
+
+  .text1row1col1techTracks {
+    font-size: 1.5rem !important;
+    line-height: 40px !important;
+  }
+
+  .contactMeText {
+    font-size: 1rem !important;
+  }
+
+  .contactMeBox {
+    font-size: 1rem !important;
+  }
+
+  .contactMeBox p {
+    line-height: 50px !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .nameContainer {
+    font-size: 3rem !important;
+    height: 250px !important;
+  }
+
+  .text1 p {
+    font-size: 2rem !important;
+  }
+
+  .col2text {
+    font-size: 1.25rem !important;
+  }
+
+  .websiteTextContainer p {
+    font-size: 3rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nameContainer {
+    font-size: 4rem !important;
+    height: 300px !important;
+  }
+
+  .text1 p {
+    font-size: 2.5rem !important;
+  }
+
+  .col2text {
+    font-size: 1.5rem !important;
+  }
+}
 
 /* canvas {
   height: 100% !important;

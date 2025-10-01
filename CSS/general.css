@@ -1,44 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Amarante&family=Bitcount+Grid+Double:wght@100..900&family=Changa+One:ital@0;1&family=Pathway+Gothic+One&display=swap');
-@font-face
-{
-    font-family: "Canopee";
-    src: url("./FONT/Canopee\ Regular.otf") format("opentype");
-}
-.name 
-{
-    font-family: "Bitcount Grid Double", system-ui;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
-}
-.location 
-{
-    font-family: "Bitcount Grid Double", system-ui;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
-
+/* Prevent horizontal scroll and ensure responsive behavior */
+* {
+  box-sizing: border-box;
 }
 
-.appContainer::-webkit-scrollbar
-{
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.appContainer {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Amarante&family=Bitcount+Grid+Double:wght@100..900&family=Changa+One:ital@0;1&family=Pathway+Gothic+One&display=swap");
+@font-face {
+  font-family: "Canopee";
+  src: url("./FONT/Canopee\ Regular.otf") format("opentype");
+}
+.name {
+  font-family: "Bitcount Grid Double", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+.location {
+  font-family: "Bitcount Grid Double", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.appContainer::-webkit-scrollbar {
   display: none;
 }
-.navBar ion-icon 
-{
-  font-size: 2em;
+.navBar ion-icon {
+  font-size: 1.5rem;
 }
-.headingText 
-{
+
+@media (min-width: 640px) {
+  .navBar ion-icon {
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .navBar ion-icon {
+    font-size: 2rem;
+  }
+}
+.headingText {
   font-family: "Canopee", system-ui;
 }
-.descriptionText 
-{
+.descriptionText {
   font-family: "Pathway Gothic One", sans-serif;
 }
 
-.footerName 
-{
+.footerName {
   font-family: "Bitcount Grid Double", system-ui;
   font-optical-sizing: auto;
   font-weight: 400;
@@ -71,21 +90,41 @@
   transition: opacity 0.5s ease-in-out;
 }
 
-
-.menuItem 
-{
+.menuItem {
   text-align: center;
-  letter-spacing: -.05em;
+  letter-spacing: -0.05em;
   text-transform: uppercase;
   margin-top: 0;
   margin-bottom: 0;
   font-family: Canopee, sans-serif;
-  font-size: 5em;
+  font-size: 2rem;
   font-weight: 400;
-
 }
-.menuItem.selected 
-{
-  color: #96B59F;
+
+@media (min-width: 640px) {
+  .menuItem {
+    font-size: 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .menuItem {
+    font-size: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .menuItem {
+    font-size: 4rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .menuItem {
+    font-size: 5rem;
+  }
+}
+.menuItem.selected {
+  color: #96b59f;
   text-decoration: underline;
 }
