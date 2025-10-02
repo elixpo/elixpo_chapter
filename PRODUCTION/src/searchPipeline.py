@@ -5,7 +5,7 @@ from getImagePrompt import generate_prompt_from_image, replyFromImage
 from tools import tools
 from datetime import datetime, timezone
 from getTimeZone import get_local_time
-from utility import fetch_youtube_parallel, agent_manager, fetch_url_content_parallel
+from utility import fetch_youtube_parallel, fetch_url_content_parallel, webSearch, imageSearch
 import random
 import logging
 import dotenv
@@ -13,7 +13,6 @@ import os
 import asyncio
 import concurrent.futures
 from functools import lru_cache
-from yahooSearch import agent_pool, image_search
 import time
 
 
@@ -26,17 +25,6 @@ MODEL = os.getenv("MODEL")
 REFRRER = os.getenv("REFERRER")
 POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 print(MODEL, POLLINATIONS_TOKEN)
-
-async def initialize_search_agents():
-    if not agent_pool.initialized:
-        logger.info("Initializing search agent pool...")
-        await agent_pool.initialize_pool()
-        logger.info("Search agent pool pre-warmed and ready")
-        status = await agent_pool.get_status()
-        logger.info(f"Agent pool status: {status}")
-    else:
-        logger.info("Search agent pool already initialized")
-
 
 
 @lru_cache(maxsize=100)
@@ -75,9 +63,8 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 logger.info(f"Using cached web search for: {search_query}")
                 yield memoized_results["web_searches"][cache_key]
             logger.info(f"Performing optimized web search for: {search_query}")
-            response = None
-            tool_result = response.get("result")
-            source_urls = response.get("urls")
+            tool_result = webSearch(search_query)
+            source_urls = tool_result
             memoized_results["web_searches"][cache_key] = tool_result
             if "current_search_urls" not in memoized_results:
                 memoized_results["current_search_urls"] = []
@@ -119,7 +106,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                     yield web_event
             image_query = function_args.get("image_query")
             max_images = function_args.get("max_images", 10)
-            search_results_raw = await image_search(image_query, max_images=max_images)
+            search_results_raw = await imageSearch(image_query, max_images=max_images)
             logger.info(f"Image search for '{image_query[:50]}...' completed.")
             image_urls = []
             url_context = ""
@@ -171,7 +158,10 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 yield web_event
             urls = [function_args.get("url")]
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fetch_url_content_parallel, urls)
+                queries = memoized_results.get("search_query", "")
+                if isinstance(queries, str):
+                    queries = [queries]
+                future = executor.submit(fetch_url_content_parallel, queries, urls)
                 parallel_results = future.result(timeout=10)
             yield parallel_results if parallel_results else "[No content fetched from URL]"
         else:
@@ -435,7 +425,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 if __name__ == "__main__":
     import asyncio
     async def main():
-        await initialize_search_agents()
         user_query = "latest news from ai in india 2025"
         user_image = None
         event_id = None
@@ -470,6 +459,4 @@ if __name__ == "__main__":
             print(f"\n--- Final Answer Received in {processing_time:.2f}s ---\n{answer}")
         else:
             print(f"\n--- No answer received after {processing_time:.2f}s ---")
-        status = await agent_manager.get_agent_status()
-        print(f"\nFinal Agent Status: {status}")
     asyncio.run(main())
