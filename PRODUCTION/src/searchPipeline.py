@@ -12,7 +12,6 @@ import dotenv
 import os
 import asyncio
 import concurrent.futures
-from model_client import parent_conn, p
 from functools import lru_cache
 from yahooSearch import agent_pool, image_search
 import time
@@ -66,6 +65,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
         elif function_name == "web_search":
             start_time = time.time()
             search_query = function_args.get("query")
+            memoized_results["search_query"] = search_query
             web_event = emit_event_func("INFO", f"<TASK>Searching for '{search_query}'</TASK>")
             if web_event:
                 yield web_event
@@ -75,8 +75,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 yield memoized_results["web_searches"][cache_key]
             
             logger.info(f"Performing optimized web search for: {search_query}")
-            parent_conn.send({"cmd": "search", "query": f"{search_query}", "max_chars": 2000})
-            response = parent_conn.recv()
+            response = None
             tool_result = response.get("result")
             source_urls = response.get("urls")
             memoized_results["web_searches"][cache_key] = tool_result
@@ -84,6 +83,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 memoized_results["current_search_urls"] = []
             memoized_results["current_search_urls"] = source_urls
             yield tool_result
+
         elif function_name == "generate_prompt_from_image":
             web_event = emit_event_func("INFO", f"<TASK>Analyzing Image</TASK>")
             if web_event:
@@ -95,6 +95,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             result = f"Generated Search Query: {get_prompt}"
             logger.info(f"Generated prompt: {get_prompt}")
             yield result
+
         elif function_name == "replyFromImage":
             web_event = emit_event_func("INFO", f"<TASK>Processing Image Query</TASK>")
             if web_event:
@@ -105,6 +106,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             result = f"Reply from Image: {reply}"
             logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
             yield result
+
         elif function_name == "image_search":
             start_time = time.time()
             web_event = emit_event_func("INFO", f"<TASK>Finding Images</TASK>")
@@ -136,6 +138,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             except Exception as e:
                 logger.error(f"Failed to process image search results: {e}")
                 yield ("Image search completed but results processing failed", [])
+
         elif function_name == "get_youtube_metadata":
             logger.info(f"Getting YouTube metadata")
             urls = [function_args.get("url")]
@@ -146,6 +149,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 result = json.dumps(metadata)
                 memoized_results["youtube_metadata"][url] = result
                 yield result
+
         elif function_name == "get_youtube_transcript":
             logger.info(f"Getting YouTube transcript")
             web_event = emit_event_func("INFO", f"<TASK>Processing Video</TASK>")
@@ -159,6 +163,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 result = f"YouTube Transcript for {url}:\n{transcript if transcript else '[No transcript available]'}"
                 memoized_results["youtube_transcripts"][url] = result
                 yield result
+
         elif function_name == "fetch_full_text":
             logger.info(f"Fetching webpage content")
             web_event = emit_event_func("INFO", f"<TASK>Reading Webpage</TASK>")

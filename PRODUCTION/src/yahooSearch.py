@@ -73,7 +73,6 @@ def remove_readonly(func, path, _):
 async def handle_accept_popup(page):
     try:
         accept_button = await page.query_selector("button:has-text('Accept')")
-        # Try Spanish ("Aceptar todo" or "Aceptar")
         if not accept_button:
             accept_button = await page.query_selector("button:has-text('Aceptar todo')")
         if not accept_button:
@@ -88,12 +87,12 @@ async def handle_accept_popup(page):
 
 
 class SearchAgentPool:
-    def __init__(self, pool_size=1, max_tabs_per_agent=20):  # Changed from max_requests_per_agent
+    def __init__(self, pool_size=1, max_tabs_per_agent=20):  
         self.pool_size = pool_size
         self.max_tabs_per_agent = max_tabs_per_agent
         self.text_agents = []
         self.image_agents = []
-        self.text_agent_tabs = []  # Track tab count instead of requests
+        self.text_agent_tabs = []  
         self.image_agent_tabs = []
         self.lock = asyncio.Lock()
         self.initialized = False
@@ -112,7 +111,6 @@ class SearchAgentPool:
             self.text_agent_tabs.append(0)  # Start with 0 tabs
             print(f"[POOL] Text agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
             
-        # Initialize image agents  
         for i in range(self.pool_size):
             agent = YahooSearchAgentImage()
             await agent.start()
@@ -125,11 +123,9 @@ class SearchAgentPool:
     
     async def get_text_agent(self):
         async with self.lock:
-            # Find agent with least tabs
             min_tabs = min(self.text_agent_tabs)
             agent_idx = self.text_agent_tabs.index(min_tabs)
             
-            # Check if agent needs restart after 20 tabs
             if self.text_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
                 print(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
                 try:
@@ -137,14 +133,12 @@ class SearchAgentPool:
                 except Exception as e:
                     print(f"[POOL] Error closing old text agent: {e}")
                 
-                # Create and start new agent
                 new_agent = YahooSearchAgentText()
                 await new_agent.start()
                 self.text_agents[agent_idx] = new_agent
                 self.text_agent_tabs[agent_idx] = 0
                 print(f"[POOL] Text agent {agent_idx} restarted and ready")
-            
-            # Increment tab count (will be incremented in agent.search())
+
             print(f"[POOL] Using text agent {agent_idx} (will open tab #{self.text_agent_tabs[agent_idx] + 1})")
             return self.text_agents[agent_idx], agent_idx
     
@@ -181,7 +175,7 @@ class SearchAgentPool:
             print(f"[POOL] Image agent {agent_idx} now has {self.image_agent_tabs[agent_idx]} tabs")
     
     async def get_status(self):
-        """Get current pool status"""
+        
         async with self.lock:
             return {
                 "initialized": self.initialized,
