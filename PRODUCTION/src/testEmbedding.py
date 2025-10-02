@@ -3,11 +3,11 @@ from utility import fetch_url_content_parallel
 import re
 
 class modelManager(BaseManager): pass
-modelManager.register("EmbeddingService")
+modelManager.register("ipcService")
 
-manager = modelManager(address=("localhost", 5002), authkey=b"embedding")
+manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
 manager.connect()
-service = manager.EmbeddingService()
+service = manager.Service()
 
 # Example usage
 urls = [

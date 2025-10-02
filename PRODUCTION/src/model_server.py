@@ -14,7 +14,6 @@ import threading
 from urllib.parse import quote
 from config import MAX_LINKS_TO_TAKE, isHeadless
 import json
-from utility import get_random_user_agent
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -441,32 +440,44 @@ class YahooSearchAgentImage:
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
 
-async def web_search(query):
-    if not agent_pool.initialized:
-        await agent_pool.initialize_pool()
-    
-    agent, agent_idx = await agent_pool.get_text_agent()
-    results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
-    return results
 
-async def image_search(query, max_images=10):
-    if not agent_pool.initialized:
-        await agent_pool.initialize_pool()
+class accessSearchAgents:
+    def __init__(self):
+        pass
     
-    agent, agent_idx = await agent_pool.get_image_agent()
-    results = await agent.search_images(query, max_images, agent_idx=agent_idx)
-    if results:
-        return json.dumps({f"yahoo_source_{i}": [url] for i, url in enumerate(results)})
-    else:
-        return json.dumps({})
+    async def _async_web_search(self, query):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        
+        agent, agent_idx = await agent_pool.get_text_agent()
+        results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
+        return results
+    
+    async def _async_image_search(self, query, max_images=10):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        
+        agent, agent_idx = await agent_pool.get_image_agent()
+        results = await agent.search_images(query, max_images, agent_idx=agent_idx)
+        if results:
+            return json.dumps({f"yahoo_source_{i}": [url] for i, url in enumerate(results)})
+        else:
+            return json.dumps({})
+    
+    async def _async_get_agent_pool_status(self):
+        return await agent_pool.get_status()
 
-async def get_agent_pool_status():
-    """Get current agent pool status"""
-    return await agent_pool.get_status()
+    def web_search(self, query):
+        return asyncio.run(self._async_web_search(query))
+    
+    def image_search(self, query, max_images=10):
+        return asyncio.run(self._async_image_search(query, max_images))
+    
+    def get_agent_pool_status(self):
+        return asyncio.run(self._async_get_agent_pool_status())
 
     
 def get_port_status():
-    """Get current port manager status"""
     return port_manager.get_status()
 
 
@@ -475,9 +486,10 @@ agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
 
 if __name__ == "__main__":
     class modelManager(BaseManager): pass
-    modelManager.register("ipcService", (ipcModules, searchPortManager))
+    modelManager.register("ipcService", ipcModules)
+    modelManager.register("accessSearchAgents", accessSearchAgents)
     agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
-    manager = modelManager(address=("localhost", 5002), authkey=b"embedding")
+    manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
     server = manager.get_server()
     logger.info("Starting embedding service on port 5002...")
     server.serve_forever()
