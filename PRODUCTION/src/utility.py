@@ -2,6 +2,7 @@
 from collections import deque
 from loguru import logger
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
 import os
@@ -10,6 +11,13 @@ import asyncio
 import random
 _deepsearch_store = {}
 
+class modelManager(BaseManager): pass
+modelManager.register("accessSearchAgents")
+modelManager.register("ipcService")
+manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+manager.connect()
+search_service = manager.accessSearchAgents()
+embedModelService = manager.ipcService()
 
 
 def preprocess_text(text):
@@ -31,14 +39,6 @@ def preprocess_text(text):
     
     return meaningful_sentences[:15]
 
-
-async def web_search(query, agent=None):
-    from yahooSearch import web_search as yahoo_web_search
-    return await yahoo_web_search(query)
-
-async def image_search(query, agent=None, max_images=10):
-    from yahooSearch import image_search as yahoo_image_search
-    return await yahoo_image_search(query, max_images)
 
 def fetch_url_content_parallel(urls, max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:

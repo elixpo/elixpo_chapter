@@ -4,6 +4,7 @@ import re
 
 class modelManager(BaseManager): pass
 modelManager.register("accessSearchAgents")
+modelManager.register("ipcService")
 
 manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
 manager.connect()

@@ -499,7 +499,6 @@ def _ensure_background_loop():
                 loop.run_forever()
             _event_loop_thread = threading.Thread(target=_run_loop, args=(_event_loop,), daemon=True)
             _event_loop_thread.start()
-            # small wait to ensure loop is running
             timeout = 0.5
             t0 = time.time()
             while not _event_loop.is_running() and time.time() - t0 < timeout:
