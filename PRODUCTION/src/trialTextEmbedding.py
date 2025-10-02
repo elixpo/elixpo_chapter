@@ -15,7 +15,7 @@ sentences = [
 
 # Encode them
 sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
-
+print(sentence_embeddings)
 # Query
 query = "Where is the Eiffel Tower?"
 query_embedding = model.encode(query, convert_to_tensor=True)
