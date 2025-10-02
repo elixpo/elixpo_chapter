@@ -8,6 +8,7 @@ import {
   getCountryFromIP 
 } from "../utility.js";
 import jwt from "jsonwebtoken";
+import fetch from "node-fetch";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 
@@ -85,8 +86,8 @@ export async function loginGithub(code, state, req, res)
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        client_id: process.env.github_auth_client_id,
-        client_secret: process.env.github_auth_client_secret,
+        client_id: process.env.github_auth_client_id || "Ov23li51zbnVuh5pmkbK",
+        client_secret: process.env.github_auth_client_secret || "", // You'll need to add the GitHub client secret
         code,
       }),
     });
@@ -182,10 +183,46 @@ export async function loginGithub(code, state, req, res)
   }
 }
 
-export async function loginGoogle(idToken, req, res)
+export async function loginGoogle(authData, req, res)
 {
-  console.log("Received idToken:", idToken);
-  if (!idToken) return res.status(400).json({ error: "Missing idToken" });
+  console.log("Received authData:", authData);
+  if (!authData) return res.status(400).json({ error: "Missing authentication data" });
+  
+  let idToken = authData;
+  
+  // If authData looks like an authorization code, exchange it for tokens
+  if (typeof authData === 'string' && !authData.includes('.')) {
+    console.log("Exchanging authorization code for tokens...");
+    try {
+      // Exchange authorization code for tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.google_auth_client_id || "796328864956-hn8dcs3t1i3kui6qd8pvhhblj5c8c66k.apps.googleusercontent.com",
+          client_secret: process.env.google_auth_client_secret || "", // You'll need to add this
+          code: authData,
+          grant_type: 'authorization_code',
+          redirect_uri: 'http://localhost:3000/src/auth/callback'
+        })
+      });
+      
+      const tokenData = await tokenResponse.json();
+      console.log("Token exchange response:", tokenData);
+      
+      if (tokenData.id_token) {
+        idToken = tokenData.id_token;
+      } else {
+        console.error("No ID token received from Google");
+        return res.status(400).json({ error: "Failed to get ID token from Google" });
+      }
+    } catch (error) {
+      console.error("Error exchanging code for tokens:", error);
+      return res.status(500).json({ error: "Failed to exchange authorization code" });
+    }
+  }
   
   try {
     const ticket = await client.verifyIdToken({
