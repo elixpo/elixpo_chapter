@@ -1,18 +1,12 @@
-import random
+
 from collections import deque
-import asyncio 
 from loguru import logger
-import json
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from scrape import fetch_full_text
 import concurrent 
 import os
 
 _deepsearch_store = {}
-
-# Remove the entire SearchAgentManager class since we have agent_pool in yahooSearch.py
-
-# Simple wrapper functions that use the agent pool from yahooSearch
 async def web_search(query, agent=None):
     from yahooSearch import web_search as yahoo_web_search
     return await yahoo_web_search(query)
@@ -56,26 +50,13 @@ def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
                 results[url] = '[Failed]'
         return results
 
-# Keep agent_manager for backward compatibility but make it use the agent pool
-class DummyAgentManager:
-    async def get_agent_status(self):
-            from yahooSearch import get_agent_pool_status
-            try:
-                return await get_agent_pool_status()
-            except Exception as e:
-                return {"error": str(e), "agent_pool_status": "error"}
-
-agent_manager = DummyAgentManager()
 
 def storeDeepSearchQuery(query: list, sessionID: str):
-    """Store deep search queries in RAM (in-memory dictionary)."""
     _deepsearch_store[sessionID] = query
 
 def getDeepSearchQuery(sessionID: str):
-    """Retrieve deep search query for a session from memory."""
     return _deepsearch_store.get(sessionID)
 
 def cleanDeepSearchQuery(sessionID: str):
-    """Clean up deep search query for a session from memory."""
     if sessionID in _deepsearch_store:
         del _deepsearch_store[sessionID]

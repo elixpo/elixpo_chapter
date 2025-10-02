@@ -55,10 +55,8 @@ async def fetch_content_async(session: aiohttp.ClientSession, url: str, max_char
             if response.status == 200:
                 html = await response.text()
                 soup = BeautifulSoup(html, "html.parser")
-                # Extract visible text
                 text = " ".join([t.get_text(" ", strip=True) for t in soup.find_all(["p", "li", "h1", "h2", "h3", "div"])])
-                # Clean and limit text
-                text = " ".join(text.split())[:max_chars]  # Limit to ~2000 chars
+                text = " ".join(text.split())[:max_chars] 
                 print(f"[INFO] Successfully fetched content from {url} ({len(text)} chars)")
                 return url, text
             else:
@@ -69,7 +67,6 @@ async def fetch_content_async(session: aiohttp.ClientSession, url: str, max_char
         return url, ""
 
 async def fetch_all_content(urls: List[str], max_chars: int) -> Dict[str, str]:
-    """Fetch content from multiple URLs concurrently"""
     connector = aiohttp.TCPConnector(limit=10, limit_per_host=3)
     timeout = aiohttp.ClientTimeout(total=30)
     
@@ -93,11 +90,8 @@ async def fetch_all_content(urls: List[str], max_chars: int) -> Dict[str, str]:
         
         return content_dict
 
-# -------------------------------
-# 2. Concurrent Embedding Generation
-# -------------------------------
+
 def generate_embeddings_concurrent(texts: List[str], model: SentenceTransformer, batch_size: int = 32) -> np.ndarray:
-    """Generate embeddings for texts concurrently using batching"""
     print(f"[INFO] Generating embeddings for {len(texts)} documents...")
     
     # Use model's encode method which is already optimized for batching
@@ -111,11 +105,7 @@ def generate_embeddings_concurrent(texts: List[str], model: SentenceTransformer,
     print(f"[INFO] Generated embeddings: {embeddings.shape}")
     return embeddings
 
-# -------------------------------
-# 3. Enhanced Vector Search
-# -------------------------------
 def build_enhanced_vector_index(docs: List[str], urls: List[str], model: SentenceTransformer) -> Tuple[faiss.Index, np.ndarray, List[Dict]]:
-    """Build FAISS index with metadata"""
     embeddings = generate_embeddings_concurrent(docs, model)
     
     # Create index
@@ -138,7 +128,7 @@ def build_enhanced_vector_index(docs: List[str], urls: List[str], model: Sentenc
 
 def search_enhanced_index(query: str, model: SentenceTransformer, index: faiss.Index, 
                          metadata: List[Dict], top_k: int = 3) -> List[Dict]:
-    """Search index and return results with metadata"""
+    
     q_emb = model.encode([query], convert_to_numpy=True)
     distances, indices = index.search(q_emb, top_k)
     
@@ -153,13 +143,9 @@ def search_enhanced_index(query: str, model: SentenceTransformer, index: faiss.I
     return results
 
 def get_embedding_model():
-    """
-    Get embedding model - either IPC client or local model based on configuration
-    """
     global _model_cache
     
     if USE_IPC_EMBEDDING:
-        # Use IPC embedding client
         try:
             from embeddingClient import get_embedding_client
             logger.info("Using IPC embedding client")
@@ -180,7 +166,7 @@ def get_embedding_model():
                 logger.info(f"Local embedding model loaded on {device.upper()}")
     return _model_cache
 
-# New function to determine if we're using IPC
+
 def is_using_ipc_embedding():
     return USE_IPC_EMBEDDING
 
