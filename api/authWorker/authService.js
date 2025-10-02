@@ -33,8 +33,10 @@ router.post("/loginGithub", async (req, res) => {
 
 
 router.post("/loginGoogle", async (req, res) => {
-  const { idToken } = req.body;
-    await loginGoogle(idToken, req, res);
+  const { code, idToken } = req.body;
+  // Support both authorization code and idToken flows
+  const authData = code || idToken;
+  await loginGoogle(authData, req, res);
   
 });
 

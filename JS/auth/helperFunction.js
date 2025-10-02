@@ -1,4 +1,7 @@
 
+const MAX_NOTIFICATIONS = 3;
+let notificationQueue = [];
+let activeNotifications = 0;
 
 function disableElement(id) {
     const el = document.getElementById(id);

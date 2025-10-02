@@ -2,9 +2,6 @@ const otpInputs = document.querySelectorAll('#otpLabel input[type="text"]');
 let token = "bljY0G";
 let emailResp = "ayushbhatt633@gmail.com";
 let userInpEmail = "ayushbhatt633@gmail.com";
-const MAX_NOTIFICATIONS = 3;
-let notificationQueue = [];
-let activeNotifications = 0;
 const githubClientID = "Ov23li51zbnVuh5pmkbK"
 
 window.onload = function() {
@@ -41,32 +38,7 @@ async function checkExistingAuth() {
     }
 }
 
-function hideElement(id)
-{
-    document.getElementById(id).style.cssText = `
-    opacity: 0;
-    pointer-events: none;
-    filter: blur(2px);
-    transition: opacity 0.3s ease;
-    `
-    setTimeout(() => {
-      document.getElementById(id).style.display = "none";
-    }, 500);
-}
-
-function showElement(id)
-{
-    document.getElementById(id).style.display = "block";
-    document.getElementById(id).classList.remove('hidden');
-    setTimeout(() => {
-      document.getElementById(id).style.cssText = `
-      opacity: 1;
-      pointer-events: auto;
-      filter: blur(0px);
-      transition: opacity 0.3s ease;
-      `
-    }, 100);
-}
+// hideElement and showElement functions are now in helperFunction.js
 
 function checkURLParamsLogin() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -272,34 +244,7 @@ function logout() {
     });
 }
 
-function showNotification(message, duration = 3500) {
-    if (activeNotifications >= MAX_NOTIFICATIONS) {
-        notificationQueue.push({ message, duration });
-        return;
-    }
-    activeNotifications++;
-
-    const notif = document.createElement('div');
-    notif.className = 'notification-instance fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-[#1D202A] text-white px-6 py-3 rounded-lg shadow-lg border border-[#7ba8f0] transition-all duration-300 mb-2';
-    notif.style.position = 'fixed';
-    notif.style.top = `${1.5 + (activeNotifications - 1) * 4}rem`;
-    notif.style.left = '50%';
-    notif.style.transform = 'translateX(-50%)';
-    notif.innerHTML = `<span>${message}</span>`;
-    notif.id = `notification-${Date.now().toString().slice(0, 5)}`;
-    document.body.appendChild(notif);
-    setTimeout(() => {
-        hideElement(notif.id);
-        setTimeout(() => {
-            notif.remove();
-            activeNotifications--;
-            if (notificationQueue.length > 0) {
-                const next = notificationQueue.shift();
-                showNotification(next.message, next.duration);
-            }
-        }, 500);
-    }, duration);
-}
+// showNotification function is now in helperFunction.js
 
 function safeInputEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -314,23 +259,7 @@ function safeInputEmail(email) {
     return email;
 }
 
-function disableElement(id) {
-    const element = document.getElementById(id);
-    if (element) {
-        element.disabled = true;
-        element.style.opacity = '0.5';
-        element.style.pointerEvents = 'none';
-    }
-}
-
-function enableElement(id) {
-    const element = document.getElementById(id);
-    if (element) {
-        element.disabled = false;
-        element.style.opacity = '1';
-        element.style.pointerEvents = 'auto';
-    }
-}
+// disableElement and enableElement functions are now in helperFunction.js
 
 
 document.getElementById("loginGithub").addEventListener("click", function () {
@@ -352,9 +281,10 @@ function loginWithGoogle() {
     const googleAuthUrl =
     `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${googleClientId}` +
-    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback&state=elixpo-blogs-google")}` +
+    `&redirect_uri=${encodeURIComponent("http://localhost:3000/src/auth/callback")}` +
     `&response_type=code` +
     `&scope=${encodeURIComponent("openid email profile")}` +
+    `&state=elixpo-blogs-google` +
     `&access_type=offline` +
     `&prompt=consent`;
 
