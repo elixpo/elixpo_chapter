@@ -14,6 +14,8 @@ import threading
 from urllib.parse import quote
 from config import MAX_LINKS_TO_TAKE, isHeadless
 import json
+import atexit
+import time
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -468,13 +470,13 @@ class accessSearchAgents:
         return await agent_pool.get_status()
 
     def web_search(self, query):
-        return asyncio.run(self._async_web_search(query))
+        return run_async_on_bg_loop(self._async_web_search(query))
     
     def image_search(self, query, max_images=10):
-        return asyncio.run(self._async_image_search(query, max_images))
+        return run_async_on_bg_loop(self._async_image_search(query, max_images))
     
     def get_agent_pool_status(self):
-        return asyncio.run(self._async_get_agent_pool_status())
+        return run_async_on_bg_loop(self._async_get_agent_pool_status())
 
     
 def get_port_status():
@@ -483,6 +485,78 @@ def get_port_status():
 
 port_manager = searchPortManager(start_port=9000, end_port=9999)
 agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
+_event_loop = None
+_event_loop_thread = None
+_event_loop_lock = threading.Lock()
+
+def _ensure_background_loop():
+    global _event_loop, _event_loop_thread
+    with _event_loop_lock:
+        if _event_loop is None:
+            _event_loop = asyncio.new_event_loop()
+            def _run_loop(loop):
+                asyncio.set_event_loop(loop)
+                loop.run_forever()
+            _event_loop_thread = threading.Thread(target=_run_loop, args=(_event_loop,), daemon=True)
+            _event_loop_thread.start()
+            # small wait to ensure loop is running
+            timeout = 0.5
+            t0 = time.time()
+            while not _event_loop.is_running() and time.time() - t0 < timeout:
+                time.sleep(0.01)
+    return _event_loop
+
+def run_async_on_bg_loop(coro):
+    loop = _ensure_background_loop()
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    return future.result()
+
+async def _close_all_agents():
+    text_agents = list(agent_pool.text_agents)
+    image_agents = list(agent_pool.image_agents)
+    for a in text_agents:
+        try:
+            await a.close()
+        except Exception as e:
+            print(f"[WARN] Error closing text agent: {e}")
+    for a in image_agents:
+        try:
+            await a.close()
+        except Exception as e:
+            print(f"[WARN] Error closing image agent: {e}")
+    agent_pool.text_agents.clear()
+    agent_pool.image_agents.clear()
+    agent_pool.text_agent_tabs.clear()
+    agent_pool.image_agent_tabs.clear()
+    agent_pool.initialized = False
+
+def shutdown_graceful(timeout=5):
+    global _event_loop, _event_loop_thread
+    try:
+        if _event_loop is None:
+            return
+        try:
+            run_async_on_bg_loop(_close_all_agents())
+        except Exception as e:
+            print(f"[WARN] Error during agent close: {e}")
+        loop = _event_loop
+        def _stop_loop():
+            for task in asyncio.all_tasks(loop):
+                try:
+                    task.cancel()
+                except Exception:
+                    pass
+            loop.stop()
+        loop.call_soon_threadsafe(_stop_loop)
+        if _event_loop_thread is not None:
+            _event_loop_thread.join(timeout)
+    except Exception as e:
+        print(f"[ERROR] shutdown_graceful failed: {e}")
+    finally:
+        _event_loop = None
+        _event_loop_thread = None
+        
+atexit.register(shutdown_graceful)
 
 if __name__ == "__main__":
     class modelManager(BaseManager): pass
@@ -492,4 +566,18 @@ if __name__ == "__main__":
     manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
     server = manager.get_server()
     logger.info("Starting embedding service on port 5002...")
-    server.serve_forever()
+
+    try:
+        _ensure_background_loop()
+        run_async_on_bg_loop(agent_pool.initialize_pool())
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize agent pool: {e}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("[INFO] KeyboardInterrupt received - shutting down gracefully...")
+    except Exception as e:
+        print(f"[ERROR] Server error: {e}")
+    finally:
+        shutdown_graceful()
+        print("[INFO] Shutdown complete.")
