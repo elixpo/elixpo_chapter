@@ -9,202 +9,15 @@ from playwright.async_api import async_playwright  #type: ignore
 from config import MAX_LINKS_TO_TAKE, isHeadless
 import json
 
-class PortManager:
-    def __init__(self, start_port=9000, end_port=9999):
-        self.start_port = start_port
-        self.end_port = end_port
-        self.used_ports = set()
-        self.lock = threading.Lock()
-    
-    def get_port(self):
-        with self.lock:
-            for _ in range(100):  
-                port = random.randint(self.start_port, self.end_port)
-                if port not in self.used_ports:
-                    self.used_ports.add(port)
-                    print(f"[PORT] Allocated port {port}. Active ports: {len(self.used_ports)}")
-                    return port
-            
-            # If random selection fails, try sequential search
-            for port in range(self.start_port, self.end_port + 1):
-                if port not in self.used_ports:
-                    self.used_ports.add(port)
-                    print(f"[PORT] Allocated port {port} (sequential). Active ports: {len(self.used_ports)}")
-                    return port
-            
-            raise Exception(f"No available ports in range {self.start_port}-{self.end_port}")
-    
-    def release_port(self, port):
-        """Release a port back to the pool"""
-        with self.lock:
-            if port in self.used_ports:
-                self.used_ports.remove(port)
-                print(f"[PORT] Released port {port}. Active ports: {len(self.used_ports)}")
-            else:
-                print(f"[PORT] Warning: Attempted to release port {port} that wasn't tracked")
-    
-    def get_status(self):
-        """Get current port usage status"""
-        with self.lock:
-            return {
-                "active_ports": len(self.used_ports),
-                "used_ports": list(self.used_ports),
-                "available_range": f"{self.start_port}-{self.end_port}"
-            }
-
-port_manager = PortManager(start_port=9000, end_port=9999)
-
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-]
-
-def get_random_user_agent():
-    return random.choice(USER_AGENTS)
-
-def remove_readonly(func, path, _):
-    os.chmod(path, stat.S_IWRITE)
-    try:
-        func(path)
-    except Exception as e:
-        print(f"[!] Failed to delete: {path} → {e}")
-
-async def handle_accept_popup(page):
-    try:
-        accept_button = await page.query_selector("button:has-text('Accept')")
-        # Try Spanish ("Aceptar todo" or "Aceptar")
-        if not accept_button:
-            accept_button = await page.query_selector("button:has-text('Aceptar todo')")
-        if not accept_button:
-            accept_button = await page.query_selector("button:has-text('Aceptar')")
-
-        if accept_button:
-            await accept_button.click()
-            print("[INFO] Accepted cookie/privacy popup.")
-            await asyncio.sleep(1)
-    except Exception as e:
-        print(f"[WARN] No accept popup found: {e}")
 
 
-class SearchAgentPool:
-    def __init__(self, pool_size=1, max_tabs_per_agent=20):  # Changed from max_requests_per_agent
-        self.pool_size = pool_size
-        self.max_tabs_per_agent = max_tabs_per_agent
-        self.text_agents = []
-        self.image_agents = []
-        self.text_agent_tabs = []  # Track tab count instead of requests
-        self.image_agent_tabs = []
-        self.lock = asyncio.Lock()
-        self.initialized = False
-    
-    async def initialize_pool(self):
-        if self.initialized:
-            return
-            
-        print(f"[POOL] Cold-starting {self.pool_size} text and image agents...")
-        
-        # Initialize text agents
-        for i in range(self.pool_size):
-            agent = YahooSearchAgentText()
-            await agent.start()
-            self.text_agents.append(agent)
-            self.text_agent_tabs.append(0)  # Start with 0 tabs
-            print(f"[POOL] Text agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
-            
-        # Initialize image agents  
-        for i in range(self.pool_size):
-            agent = YahooSearchAgentImage()
-            await agent.start()
-            self.image_agents.append(agent)
-            self.image_agent_tabs.append(0)
-            print(f"[POOL] Image agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
-            
-        self.initialized = True
-        print(f"[POOL] Cold start complete - agents ready for immediate use")
-    
-    async def get_text_agent(self):
-        async with self.lock:
-            # Find agent with least tabs
-            min_tabs = min(self.text_agent_tabs)
-            agent_idx = self.text_agent_tabs.index(min_tabs)
-            
-            # Check if agent needs restart after 20 tabs
-            if self.text_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
-                print(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
-                try:
-                    await self.text_agents[agent_idx].close()
-                except Exception as e:
-                    print(f"[POOL] Error closing old text agent: {e}")
-                
-                # Create and start new agent
-                new_agent = YahooSearchAgentText()
-                await new_agent.start()
-                self.text_agents[agent_idx] = new_agent
-                self.text_agent_tabs[agent_idx] = 0
-                print(f"[POOL] Text agent {agent_idx} restarted and ready")
-            
-            # Increment tab count (will be incremented in agent.search())
-            print(f"[POOL] Using text agent {agent_idx} (will open tab #{self.text_agent_tabs[agent_idx] + 1})")
-            return self.text_agents[agent_idx], agent_idx
-    
-    async def get_image_agent(self):
-        async with self.lock:
-            min_tabs = min(self.image_agent_tabs)
-            agent_idx = self.image_agent_tabs.index(min_tabs)
-            
-            # Check if agent needs restart after 20 tabs
-            if self.image_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
-                print(f"[POOL] Restarting image agent {agent_idx} after {self.image_agent_tabs[agent_idx]} tabs")
-                try:
-                    await self.image_agents[agent_idx].close()
-                except Exception as e:
-                    print(f"[POOL] Error closing old image agent: {e}")
-                
-                # Create and start new agent
-                new_agent = YahooSearchAgentImage()
-                await new_agent.start()
-                self.image_agents[agent_idx] = new_agent
-                self.image_agent_tabs[agent_idx] = 0
-                print(f"[POOL] Image agent {agent_idx} restarted and ready")
-            
-            print(f"[POOL] Using image agent {agent_idx} (will open tab #{self.image_agent_tabs[agent_idx] + 1})")
-            return self.image_agents[agent_idx], agent_idx
-    
-    def increment_tab_count(self, agent_type: str, agent_idx: int):
-        """Increment tab count after successful tab creation"""
-        if agent_type == "text":
-            self.text_agent_tabs[agent_idx] += 1
-            print(f"[POOL] Text agent {agent_idx} now has {self.text_agent_tabs[agent_idx]} tabs")
-        elif agent_type == "image":
-            self.image_agent_tabs[agent_idx] += 1
-            print(f"[POOL] Image agent {agent_idx} now has {self.image_agent_tabs[agent_idx]} tabs")
-    
-    async def get_status(self):
-        """Get current pool status"""
-        async with self.lock:
-            return {
-                "initialized": self.initialized,
-                "pool_size": self.pool_size,
-                "max_tabs_per_agent": self.max_tabs_per_agent,
-                "text_agents": {
-                    "count": len(self.text_agents),
-                    "tabs": self.text_agent_tabs.copy()
-                },
-                "image_agents": {
-                    "count": len(self.image_agents), 
-                    "tabs": self.image_agent_tabs.copy()
-                }
-            }
 
-# Create global agent pool with 1 text + 1 image agent, max 20 tabs each
-agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
 
 class YahooSearchAgentText:
     def __init__(self, custom_port=None):
         self.playwright = None
         self.context = None
-        self.tab_count = 0  # Track tabs opened by this agent
+        self.tab_count = 0  
         
         if custom_port:
             self.custom_port = custom_port
@@ -327,7 +140,7 @@ class YahooSearchAgentImage:
         self.playwright = None
         self.context = None
         self.save_dir = "downloaded_images"
-        self.tab_count = 0  # Track tabs opened by this agent
+        self.tab_count = 0
         
         if custom_port:
             self.custom_port = custom_port
@@ -391,9 +204,9 @@ class YahooSearchAgentImage:
             await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
             await page.wait_for_timeout(random.randint(1000, 2000))
 
-            await page.wait_for_selector("li > a.image-tile > img", timeout=15000)
+            await page.wait_for_selector("li > a.redesign-img > img", timeout=15000)
 
-            img_elements = await page.query_selector_all("li > a.image-tile > img")
+            img_elements = await page.query_selector_all("li > a.redesign-img > img")
             for img in img_elements[:max_images]:
                 src = await img.get_attribute("data-src") or await img.get_attribute("src")
                 if src and src.startswith("http"):
@@ -494,14 +307,14 @@ if __name__ == "__main__":
             # Add delay between searches
             await asyncio.sleep(2)
 
-            # print(f"\n{'-'*50}")
-            # print(f"Searching Yahoo Images for: {q}")
-            # print('-'*50)
-            # image_results = await image_search(q, max_images=5)
-            # print("Image results:", image_results)  # Show all image URLs
+            print(f"\n{'-'*50}")
+            print(f"Searching Yahoo Images for: {q}")
+            print('-'*50)
+            image_results = await image_search(q, max_images=5)
+            print("Image results:", image_results)  # Show all image URLs
 
-            # # Show port status after image search
-            # status = get_port_status()
-            # print(f"Port status after image search: {status}")
+            # Show port status after image search
+            status = get_port_status()
+            print(f"Port status after image search: {status}")
 
     asyncio.run(main())

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elixpo-Search: AI Search & Synthesize with Citations & Images</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="CSS/searchAgent.css">
+    <link rel="stylesheet" href="CSS/markdown.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="CSS/IMAGES/ElixpoSearchIcon.png">
+    </head>
+<body>
+    <div class="app h-[100vh] flex flex-col bg-[#18191a]">
+        <div class="sideNavBar absolute w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
+            <div class="logoHeader w-full px-4 flex flex-row gap-3 justify-center items-center mt-8 mb-6">
+                <div class="logo bg-cover bg-center bg-[url(CSS/IMAGES/ElixpoSearchIcon.png)] h-[20px] w-[20px] invert-[1]"></div>
+            </div>
+
+            <div class="navigationSection mt-8 flex flex-col items-center gap-6">
+                <div class="navItem h-[40px] w-[40px] rounded-full bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="New Search" id="newSearchBtn">
+                    <ion-icon name="add-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+
+                <div class="navItem mt-10 h-[40px] w-[40px] rounded-[10px] bg-[#333] cursor-pointer flex flex-col items-center justify-center" title="Home" id="newSearchBtn">
+                    <ion-icon name="home-outline" class="text-white text-2xl"></ion-icon>
+                </div>
+                <div class="navItem h-[40px] w-[40px] rounded-[10px] cursor-pointer flex flex-col items-center justify-center" title="News" id="newSearchBtn">
+                     <ion-icon name="earth-outline" class="text-[#555] text-2xl"></ion-icon>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="sidebar home absolute w-[15%] h-full flex flex-col bg-[#1F2121a1] backdrop-blur-[5px] left-[5%]">
+            <div class="sidebarName text-[1em] text-white px-[20px] py-5 flex h-[40px] w-full justify-between">
+                <p>Home</p>
+                <ion-icon name="lock-closed-outline" class=" text-[#555] mt-2 cursor-pointer transition-colors hover:text-[#fff]"></ion-icon>
+            </div>
+            <div class="spacer w-[85%] mx-auto mt-5 h-[2px] bg-[#333] "></div>
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] flex justify-between items-center mt-2 font-bold "> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Library </span> 
+                    <ion-icon class="text-white transition-ease p-1 rounded-[5px] hover:bg-[#222] cursor-pointer" name="add"></ion-icon>
+                </span>
+
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Hi </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Latest news  </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+            </div>
+
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] flex justify-between items-center mt-2 font-bold "> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Pages </span> 
+                    <ion-icon class="text-white transition-ease p-1 rounded-[5px] hover:bg-[#222] cursor-pointer" name="add"></ion-icon>
+                </span>
+
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Bike Racing </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> OS Writeup </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+            </div>
+
+        </div>
+
+        <div class="sidebar discover hidden absolute w-[15%] h-full flex flex-col bg-[#1F2121a1] backdrop-blur-[5px] left-[5%]">
+            <div class="sidebarName text-[1em] text-white px-[20px] py-5 flex h-[40px] w-full justify-between">
+                <p>Discover</p>
+                <ion-icon name="lock-closed-outline" class=" text-[#555] mt-2 cursor-pointer transition-colors hover:text-[#fff]"></ion-icon>
+            </div>
+            <div class="spacer w-[85%] mx-auto mt-5 h-[2px] bg-[#333] "></div>
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] mt-2 font-bold">Topics</span>
+
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer flex justify-start gap-2 items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <ion-icon name="sparkles" class=""></ion-icon>
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> For You  </span> 
+                </span>
+                <span class="cursor-pointer flex justify-start gap-2 items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <ion-icon name="laptop"></ion-icon>
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Technology  </span> 
+                </span>
+                <span class="cursor-pointer flex justify-start gap-2 items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <ion-icon name="card"></ion-icon>
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Finance  </span> 
+                </span>
+                <span class="cursor-pointer flex justify-start gap-2 items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <ion-icon name="color-palette"></ion-icon>
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> World Arts  </span> 
+                </span>
+                <span class="cursor-pointer flex justify-start gap-2 items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <ion-icon name="film"></ion-icon>
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Entertainment  </span> 
+                </span>
+                
+            </div>
+
+
+        </div>
+
+
+        <div class="conversation-container w-full h-full p-6 overflow-y-auto max-w-[85%] m-auto px-[16px] flex flex-col flex-[1] overflow-y-auto">
+            <div id="conversation" class="conversation max-w-[65%] m-auto py-[20px] min-h-[100%] flex flex-col gap-2">
+                <div class="initial-title flex items-center justify-center flex-1 text-center mb-[40px] hidden" id="initial-title">
+                    <h1 class="text-[32px] font-bold text-[#fff] m-0">What do you want to search?</h1>
+                </div>
+
+                <section id="secID583661719" class="conversationSection flex flex-col items-start mt-10 w-full h-auto ">
+                    <div class="query font-bold text-[2em] text-white rounded-lg break-words">
+                        <p>hi</p>
+                    </div>
+        
+        
+        
+        
+        
+        
+        
+        <div class="renderMarkdown w-full flex-col g-5" id="renderMarkdown">
+        <div class="renderMarkdownResult_secID583661719 text-white break-words text-[1.2em]" id="renderMarkdownResult_secID583661719"><p>Hello! How can I assist you today? If you have any questions or need information on a specific topic, feel free to ask. I'm here to help!</p>
+</div>
+        </div>
+    </section>
+            </div>
+        </div>
+
+        <div class="input-container relative bg-transparent p-[5px] mb-2 w-full flex">
+        <div class="input-wrapper max-w-[768px] w-full h-[120px] m-auto flex flex-col items-left gap-2 bg-[#2a2b2d] rounded-[24px] px-3 py-2 border border-[#333] shadow-[0px_-10px_20px_#111] focus-within:border-[#444ce7] transition-colors">
+            <textarea
+            id="messageInput"
+            placeholder="Ask a follow-up..."
+            class="flex-grow bg-transparent resize-none text-white text-[1.2em] ml-2 mt-2 placeholder-gray-400 focus:outline-none px-1"
+            rows="1"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="off"
+            >hi</textarea>
+
+            <div class="flex items-center gap-2 text-gray-400 ml-2 justify-between">
+            <div class="leftSection flex items-center gap-5 pr-[5px] bg-[#191B1B] rounded-[8px]">
+                <ion-icon name="globe" class="text-[1.2em] cursor-pointer h-[20px] w-[20px] text-[#32aab5] border-2 border-[#32aab5] p-2 rounded-[10px] bg-[#0A2528]"></ion-icon>
+                <ion-icon name="construct-outline" class="text-[1.2em] cursor-pointer mr-[5px]"></ion-icon>
+                <ion-icon name="layers-outline" class="text-[1.2em] cursor-pointer mr-[5px]"></ion-icon>
+
+            </div>
+            
+            <div class="rightSection flex items-center gap-5">
+                <ion-icon name="hardware-chip-outline" class=" text-[1.5em] cursor-pointer hover:text-white"></ion-icon>
+                <ion-icon name="attach-outline" class=" text-[1.5em] cursor-pointer hover:text-white"></ion-icon>
+                <ion-icon name="mic-outline" class=" text-[1.5em] cursor-pointer hover:text-white"></ion-icon>
+                <button class="sendBtn text-white bg-[#444ce7] rounded-lg p-2" id="sendBtn">
+                    <i data-lucide="arrow-up"></i>
+                </button>
+            </div>
+
+
+            </div>
+        </div>
+        </div>
+
+        </div>
+
+        
+    </div>
+    <script src="JS/marked.js"></script>
+    <script src="JS/chatTemplate.js"></script>
+    <script src="JS/searchAgent.js"></script>
+</body>
+</html>
