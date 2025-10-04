@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Elixpo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap");
+      body {
+        font-family: "Parkinsans", sans-serif;
+        background: #141a2b;
+        color: #fff;
+      }
+      .chat-bubble {
+        word-wrap: break-word;
+      }
+      .scrollbar-custom::-webkit-scrollbar {
+        width: 8px;
+        background: #222;
+        border-radius: 4px;
+      }
+      .scrollbar-custom::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #ffc 0%, #ed9d3a 100%);
+        border-radius: 4px;
+      }
+      .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #ffe9a3 0%, #ed9d3a 100%);
+      }
+    </style>
+  </head>
+  <body class="h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-[#1E2538] shadow-lg p-4 border-b border-[#ed9d3a]/20">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-[#ffc]">Chat Elixpo</h1>
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 bg-[#ed9d3a] rounded-full animate-pulse"></div>
+          <span class="text-sm text-[#ffc]/80">Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chat Area -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full scrollbar-custom">
+      <!-- Welcome Message -->
+      <div class="flex justify-center">
+        <div class="bg-[#1E2538] p-6 rounded-3xl shadow-xl max-w-lg text-center chat-bubble border border-[#ed9d3a]/10">
+          <div class="text-4xl mb-3">�</div>
+          <h2 class="text-xl font-semibold text-[#ffc] mb-2">Welcome to Chat Elixpo!</h2>
+          <p class="text-gray-300">Your AI-powered assistant for news, weather, podcasts, and more. How can I help you today?</p>
+        </div>
+      </div>
+
+      <!-- Sample Conversation -->
+      <div class="flex justify-start">
+        <div
+          class="bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10"
+        >
+          <p class="text-gray-200">Can you tell me about the latest trends in web development?</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <div
+          class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
+        >
+          <p class="font-semibold">Sure! Here are some cutting-edge trends:</p>
+          <ul class="list-disc list-inside mt-2 space-y-1">
+            <li>Server-Side Rendering (SSR) with Next.js</li>
+            <li>Progressive Web Apps (PWAs)</li>
+            <li>AI-powered development tools</li>
+            <li>Component-based architectures</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-start">
+        <div
+          class="bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10"
+        >
+          <p class="text-gray-200">That sounds interesting! What about responsive design?</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <div
+          class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
+        >
+          <p>
+            Responsive design is crucial! It ensures your website looks great on all devices. Using Tailwind CSS makes it easy to
+            create responsive layouts with utility classes.
+          </p>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="flex justify-start">
+        <div class="bg-[#1E2538] p-4 rounded-3xl shadow-lg border border-[#ed9d3a]/10">
+          <div class="flex space-x-1">
+            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce"></div>
+            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="bg-[#1E2538] p-4 border-t border-[#ed9d3a]/20">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-end space-x-3">
+          <div class="flex-1 relative">
+            <textarea
+              id="messageInput"
+              class="w-full bg-[#141A2B] border border-[#ed9d3a]/30 rounded-2xl p-4 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-[#ed9d3a] focus:border-transparent text-white placeholder-gray-400"
+              rows="1"
+              placeholder="Type your message here..."
+              onkeydown="handleKeyPress(event)"
+            ></textarea>
+            <button class="absolute right-3 bottom-3 text-[#ed9d3a] hover:text-[#ffc] transition-colors">
+              <i class="fas fa-paperclip text-lg"></i>
+            </button>
+          </div>
+          <button
+            onclick="sendMessage()"
+            class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] hover:from-[#ffc] hover:to-[#ed9d3a] text-[#141A2B] p-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <i class="fas fa-paper-plane text-lg"></i>
+          </button>
+        </div>
+        <div class="mt-2 text-xs text-gray-400 text-center">Press Enter to send, Shift+Enter for new line</div>
+      </div>
+    </div>
+
+    <script>
+      function handleKeyPress(event) {
+        const textarea = event.target;
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      }
+
+      function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value.trim();
+
+        if (message) {
+          console.log("Message sent:", message);
+          // Here you would typically send the message to your backend
+          // For now, we'll just clear the input
+          input.value = "";
+          input.style.height = "auto";
+
+          // You could add the message to the chat here
+          // addMessageToChat(message, 'user');
+        }
+      }
+
+      // Optional: Function to add messages to chat
+      function addMessageToChat(message, sender) {
+        const chatArea = document.querySelector(".flex-1.overflow-y-auto");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = sender === "user" ? "flex justify-end" : "flex justify-start";
+
+        const bubble = document.createElement("div");
+        bubble.className =
+          sender === "user"
+            ? "bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
+            : "bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10";
+
+        const text = document.createElement("p");
+        text.className = sender === "user" ? "text-[#141A2B]" : "text-gray-200";
+        text.textContent = message;
+
+        bubble.appendChild(text);
+        messageDiv.appendChild(bubble);
+        chatArea.appendChild(messageDiv);
+
+        // Scroll to bottom
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+    </script>
+  </body>
+</html>
