@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import rateLimit from "express-rate-limit";
 import { getTodaysPodcasts, getTodaysPodcastDetails } from "./BackendNode/podCastDetailsFetch.js";
 import { getTodaysNews, getTodaysNewsDetails } from "./BackendNode/newsDetailsFetch.js";
 import { getDominantColor } from "./BackendNode/getDominantColor.js";
@@ -18,6 +19,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 40012;
+
+// Rate limiter: limit each IP to 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the RateLimit-* headers
+  legacyHeaders: false, // Disable the X-RateLimit-* headers
+});
 app.use(
   cors({
     origin: "https://chat.elixpo.com",
@@ -26,11 +35,11 @@ app.use(
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/c", express.static(path.join(__dirname, "c")));
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.get("/c", (req, res) => res.sendFile(path.join(__dirname, "c", "index.html")));
-app.get("/daily", (req, res) => res.sendFile(path.join(__dirname, "public", "daily.html")));
-app.get("/podcast", (req, res) => res.sendFile(path.join(__dirname, "public", "podcast.html")));
-app.get("/weather", (req, res) => res.sendFile(path.join(__dirname, "public", "weather.html")));
+app.get("/", limiter, (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.get("/c", limiter, (req, res) => res.sendFile(path.join(__dirname, "c", "index.html")));
+app.get("/daily", limiter, (req, res) => res.sendFile(path.join(__dirname, "public", "daily.html")));
+app.get("/podcast", limiter, (req, res) => res.sendFile(path.join(__dirname, "public", "podcast.html")));
+app.get("/weather", limiter, (req, res) => res.sendFile(path.join(__dirname, "public", "weather.html")));
 
 // In-memory cache
 let newsCache = null;
