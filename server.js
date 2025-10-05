@@ -1,27 +1,36 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { getTodaysPodcasts, getTodaysPodcastDetails } from './BackendNode/podCastDetailsFetch.js';
-import { getTodaysNews, getTodaysNewsDetails } from './BackendNode/newsDetailsFetch.js';
-import { getDominantColor } from './BackendNode/getDominantColor.js';
-import { getLocation, getNearestLocationName, getStructuredWeather, generateAISummary, generateAIImage } from './BackendNode/locationWeather.js';
-import cors from 'cors';
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { getTodaysPodcasts, getTodaysPodcastDetails } from "./BackendNode/podCastDetailsFetch.js";
+import { getTodaysNews, getTodaysNewsDetails } from "./BackendNode/newsDetailsFetch.js";
+import { getDominantColor } from "./BackendNode/getDominantColor.js";
+import {
+  getLocation,
+  getNearestLocationName,
+  getStructuredWeather,
+  generateAISummary,
+  generateAIImage,
+} from "./BackendNode/locationWeather.js";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 40012;
-app.use(cors({
-  origin: 'https://chat.elixpo.com'
-}));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(
+  cors({
+    origin: "https://chat.elixpo.com",
+  })
+);
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/c", express.static(path.join(__dirname, "c")));
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/c', (req, res) => res.sendFile(path.join(__dirname, 'public', 'search.html')));
-app.get('/daily', (req, res) => res.sendFile(path.join(__dirname, 'public', 'daily.html')));
-app.get('/podcast', (req, res) => res.sendFile(path.join(__dirname, 'public', 'podcast.html')));
-app.get('/weather', (req, res) => res.sendFile(path.join(__dirname, 'public', 'weather.html')));
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.get("/c", (req, res) => res.sendFile(path.join(__dirname, "c", "index.html")));
+app.get("/daily", (req, res) => res.sendFile(path.join(__dirname, "public", "daily.html")));
+app.get("/podcast", (req, res) => res.sendFile(path.join(__dirname, "public", "podcast.html")));
+app.get("/weather", (req, res) => res.sendFile(path.join(__dirname, "public", "weather.html")));
 
 // In-memory cache
 let newsCache = null;
@@ -35,7 +44,7 @@ let podcastDetailsCacheTime = 0;
 // Set cache expiry duration (in milliseconds)
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-app.get('/api/news', async (req, res) => {
+app.get("/api/news", async (req, res) => {
   const now = Date.now();
   if (newsCache && now - newsCacheTime < CACHE_DURATION) {
     return res.json(newsCache);
@@ -53,7 +62,7 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
-app.get('/api/podcast', async (req, res) => {
+app.get("/api/podcast", async (req, res) => {
   const now = Date.now();
   if (podcastCache && now - podcastCacheTime < CACHE_DURATION) {
     return res.json(podcastCache);
@@ -71,7 +80,7 @@ app.get('/api/podcast', async (req, res) => {
   }
 });
 
-app.get('/api/podcastDetails', async (req, res) => {
+app.get("/api/podcastDetails", async (req, res) => {
   const now = Date.now();
   if (podcastDetailsCache && now - podcastDetailsCacheTime < CACHE_DURATION) {
     return res.json(podcastDetailsCache);
@@ -89,7 +98,7 @@ app.get('/api/podcastDetails', async (req, res) => {
   }
 });
 
-app.get('/api/getDominantColor', async (req, res) => {
+app.get("/api/getDominantColor", async (req, res) => {
   const { imageUrl } = req.query;
   if (!imageUrl) {
     return res.status(400).json({ error: "Missing imageUrl query parameter" });
@@ -104,7 +113,7 @@ app.get('/api/getDominantColor', async (req, res) => {
   }
 });
 
-app.get('/api/newsDetails', async (req, res) => {
+app.get("/api/newsDetails", async (req, res) => {
   try {
     const newsDetails = await getTodaysNewsDetails();
     res.json(newsDetails);
@@ -114,34 +123,30 @@ app.get('/api/newsDetails', async (req, res) => {
   }
 });
 
-
-
 // Helper to build cache key from lat/lon or location name
 function getWeatherCacheKey(lat, lon, locationName) {
   // Prefer locationName if available, else lat,lon
   if (locationName) return locationName.toLowerCase();
   if (lat && lon) return `${lat},${lon}`;
-  return 'unknown';
+  return "unknown";
 }
 
-app.get('/api/weather', async (req, res) => {
+app.get("/api/weather", async (req, res) => {
   try {
-  
     let lat = "";
     let lon = "";
     let locationName = null;
     // console.log("The location is" + req.query.location);
-   
+
     if (req.query.location) {
-      
-      lat = parseFloat(req.query.location.split(',')[1]);
-      lon = parseFloat(req.query.location.split(',')[2]);
-      locationName = req.query.location.split(',')[0]
+      lat = parseFloat(req.query.location.split(",")[1]);
+      lon = parseFloat(req.query.location.split(",")[2]);
+      locationName = req.query.location.split(",")[0];
       if (!lat || !lon) {
         return res.status(400).json({ error: "Unable to resolve location" });
       }
-    } 
-    
+    }
+
     // else {
     //   // If nothing provided, fallback to auto-detect (server-side)
     //   const locationResult = await getLocation();
@@ -177,7 +182,7 @@ app.get('/api/weather', async (req, res) => {
     // Save to cache
     weatherCacheByLocation[cacheKey] = {
       data: responseData,
-      time: now
+      time: now,
     };
 
     res.json(responseData);
@@ -187,9 +192,8 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
-
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
 });
 
 app.listen(PORT, () => {

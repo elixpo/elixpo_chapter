@@ -3,188 +3,159 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Elixpo</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @import url("https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap");
-      body {
-        font-family: "Parkinsans", sans-serif;
-        background: #141a2b;
-        color: #fff;
-      }
-      .chat-bubble {
-        word-wrap: break-word;
-      }
-      .scrollbar-custom::-webkit-scrollbar {
-        width: 8px;
-        background: #222;
-        border-radius: 4px;
-      }
-      .scrollbar-custom::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #ffc 0%, #ed9d3a 100%);
-        border-radius: 4px;
-      }
-      .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #ffe9a3 0%, #ed9d3a 100%);
-      }
-    </style>
+    <link rel="icon" type="image/png" href="/CSS/IMAGES/ElixpoSearchIcon.png" />
+    <title>Chat with Elixpo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flaticon@latest/css/flaticon.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css" />
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="/CSS/search.css" />
+    <link rel="stylesheet" href="/CSS/searchPageResponsive.css" />
   </head>
-  <body class="h-screen flex flex-col overflow-hidden">
-    <!-- Header -->
-    <header class="bg-[#1E2538] shadow-lg p-4 border-b border-[#ed9d3a]/20">
-      <div class="max-w-4xl mx-auto flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-[#ffc]">Chat Elixpo</h1>
-        <div class="flex items-center space-x-2">
-          <div class="w-3 h-3 bg-[#ed9d3a] rounded-full animate-pulse"></div>
-          <span class="text-sm text-[#ffc]/80">Online</span>
+
+  <body>
+    <div class="app-container">
+      <div class="bg-blob blob-1"></div>
+      <div class="bg-blob blob-2"></div>
+      <div class="bg-blob blob-3"></div>
+      <div class="bg-blob blob-4"></div>
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="header-content">
+            <div class="copilot-logo">
+              <div class="logo-icon"><img src="/CSS/IMAGES/ElixpoSearchIcon.png" /></div>
+              <span class="logo-text">Elixpo Search</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="conversations-section">
+          <div class="conversations-content">
+            <h3 class="conversations-title">Conversations</h3>
+            <div class="conversations-list">
+              <div class="conversation-item">Order</div>
+              <div class="conversation-item">Casual Greeting</div>
+              <div class="conversation-item">Evocative Description of...</div>
+              <div class="conversation-item">Understanding RAG and...</div>
+              <div class="conversation-item">Imagining Indian Weddi...</div>
+              <div class="conversation-item">Request for Interesting F...</div>
+              <div class="conversation-item">Solving Statistical and R...</div>
+              <div class="conversation-item">Math Problem Solving A...</div>
+              <div class="conversation-item">Unable to Summarize Pa...</div>
+              <div class="conversation-item">Automating Instagram I...</div>
+              <div class="conversation-item">GitHub Projects for Doc...</div>
+              <div class="conversation-item">Latest Code Editors Ove...</div>
+              <div class="conversation-item">Zoology Lecture on Hum...</div>
+              <div class="conversation-item">Summary of F1 Movie Tra...</div>
+              <div class="conversation-item">HTML Boilerplate Gene...</div>
+              <div class="conversation-item">How to Delete Skype Ac...</div>
+              <div class="conversation-item">PDF Apps and Recomme...</div>
+              <div class="conversation-item">Deleting Red Hat Config...</div>
+              <div class="conversation-item">Generating and Managi...</div>
+              <div class="conversation-item">Best Running Sneakers R...</div>
+              <div class="conversation-item">Resources for Operating...</div>
+              <div class="conversation-item">Latest Python Version</div>
+              <div class="conversation-item">Introduction to Python P...</div>
+              <div class="conversation-item">Latest Headlines Summary</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div class="user-profile-content">
+            <div class="user-avatar">V</div>
+            <div class="user-details">
+              <div class="user-info">
+                <h4 class="user-name">Vivek Kumar</h4>
+                <span class="user-email">vivek@example.com</span>
+              </div>
+            </div>
+          </div>
+          <div class="user-actions">
+            <div class="action-icon">
+              <i class="bi bi-person"></i>
+              <span class="action-text">Account</span>
+            </div>
+            <div class="action-icon">
+              <i class="bi bi-gear"></i>
+              <span class="action-text">Settings</span>
+            </div>
+            <div class="action-icon signout">
+              <i class="bi bi-box-arrow-right"></i>
+              <span class="action-text">Sign out</span>
+            </div>
+          </div>
         </div>
       </div>
-    </header>
 
-    <!-- Chat Area -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full scrollbar-custom">
-      <!-- Welcome Message -->
-      <div class="flex justify-center">
-        <div class="bg-[#1E2538] p-6 rounded-3xl shadow-xl max-w-lg text-center chat-bubble border border-[#ed9d3a]/10">
-          <div class="text-4xl mb-3">�</div>
-          <h2 class="text-xl font-semibold text-[#ffc] mb-2">Welcome to Chat Elixpo!</h2>
-          <p class="text-gray-300">Your AI-powered assistant for news, weather, podcasts, and more. How can I help you today?</p>
+      <div class="main-content">
+        <div class="content-area">
+          <div class="greeting-section">
+            <h1 class="greeting-title">Good afternoon, Vivek</h1>
+            <p class="greeting-subtitle">What can I help you with today?</p>
+          </div>
+
+          <div class="suggestions-section">
+            <div class="suggestions-row">
+              <button class="suggestion-button">Write a first draft</button>
+              <button class="suggestion-button">Get advice</button>
+              <button class="suggestion-button">Learn something new</button>
+              <button class="suggestion-button">Create an image</button>
+              <button class="suggestion-button">Design something</button>
+            </div>
+            <div class="suggestions-row">
+              <button class="suggestion-button">Make a plan</button>
+              <button class="suggestion-button">Brainstorm ideas</button>
+              <button class="suggestion-button">Practice a language</button>
+              <button class="suggestion-button">Take a quiz</button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Sample Conversation -->
-      <div class="flex justify-start">
-        <div
-          class="bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10"
-        >
-          <p class="text-gray-200">Can you tell me about the latest trends in web development?</p>
-        </div>
-      </div>
+        <div class="input-area">
+          <div class="input-container">
+            <div class="input-wrapper">
+              <div class="input-main">
+                <input type="text" id="messageInput" placeholder="Message Elixpo Search" class="message-input" />
+                <button class="send-button">
+                  <i class="bi bi-send"></i>
+                </button>
+              </div>
+              <div class="search-pills">
+                <button class="pill-button">
+                  <i class="bi bi-globe"></i>
+                  Web search
+                </button>
+                <button class="pill-button">
+                  <i class="bi bi-image"></i>
+                  Image
+                </button>
+                <button class="pill-button">
+                  <i class="bi bi-paperclip"></i>
+                  Upload
+                </button>
+                <button class="pill-button">
+                  <i class="bi bi-mic"></i>
+                  Speech to text
+                </button>
+              </div>
+            </div>
+          </div>
 
-      <div class="flex justify-end">
-        <div
-          class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
-        >
-          <p class="font-semibold">Sure! Here are some cutting-edge trends:</p>
-          <ul class="list-disc list-inside mt-2 space-y-1">
-            <li>Server-Side Rendering (SSR) with Next.js</li>
-            <li>Progressive Web Apps (PWAs)</li>
-            <li>AI-powered development tools</li>
-            <li>Component-based architectures</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="flex justify-start">
-        <div
-          class="bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10"
-        >
-          <p class="text-gray-200">That sounds interesting! What about responsive design?</p>
-        </div>
-      </div>
-
-      <div class="flex justify-end">
-        <div
-          class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
-        >
-          <p>
-            Responsive design is crucial! It ensures your website looks great on all devices. Using Tailwind CSS makes it easy to
-            create responsive layouts with utility classes.
+          <p class="disclaimer">
+            Elixpo Search uses AI. Check for mistakes. Conversations are used to train AI and Elixpo Search can learn about your
+            interests. Change this anytime in your settings or <span class="learn-more">learn more</span>.
           </p>
         </div>
       </div>
-
-      <!-- Typing Indicator -->
-      <div class="flex justify-start">
-        <div class="bg-[#1E2538] p-4 rounded-3xl shadow-lg border border-[#ed9d3a]/10">
-          <div class="flex space-x-1">
-            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce"></div>
-            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-            <div class="w-2 h-2 bg-[#ed9d3a] rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Input Area -->
-    <div class="bg-[#1E2538] p-4 border-t border-[#ed9d3a]/20">
-      <div class="max-w-4xl mx-auto">
-        <div class="flex items-end space-x-3">
-          <div class="flex-1 relative">
-            <textarea
-              id="messageInput"
-              class="w-full bg-[#141A2B] border border-[#ed9d3a]/30 rounded-2xl p-4 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-[#ed9d3a] focus:border-transparent text-white placeholder-gray-400"
-              rows="1"
-              placeholder="Type your message here..."
-              onkeydown="handleKeyPress(event)"
-            ></textarea>
-            <button class="absolute right-3 bottom-3 text-[#ed9d3a] hover:text-[#ffc] transition-colors">
-              <i class="fas fa-paperclip text-lg"></i>
-            </button>
-          </div>
-          <button
-            onclick="sendMessage()"
-            class="bg-gradient-to-r from-[#ed9d3a] to-[#ffc] hover:from-[#ffc] hover:to-[#ed9d3a] text-[#141A2B] p-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <i class="fas fa-paper-plane text-lg"></i>
-          </button>
-        </div>
-        <div class="mt-2 text-xs text-gray-400 text-center">Press Enter to send, Shift+Enter for new line</div>
-      </div>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
-    <script>
-      function handleKeyPress(event) {
-        const textarea = event.target;
-        textarea.style.height = "auto";
-        textarea.style.height = textarea.scrollHeight + "px";
-
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
-        }
-      }
-
-      function sendMessage() {
-        const input = document.getElementById("messageInput");
-        const message = input.value.trim();
-
-        if (message) {
-          console.log("Message sent:", message);
-          // Here you would typically send the message to your backend
-          // For now, we'll just clear the input
-          input.value = "";
-          input.style.height = "auto";
-
-          // You could add the message to the chat here
-          // addMessageToChat(message, 'user');
-        }
-      }
-
-      // Optional: Function to add messages to chat
-      function addMessageToChat(message, sender) {
-        const chatArea = document.querySelector(".flex-1.overflow-y-auto");
-        const messageDiv = document.createElement("div");
-        messageDiv.className = sender === "user" ? "flex justify-end" : "flex justify-start";
-
-        const bubble = document.createElement("div");
-        bubble.className =
-          sender === "user"
-            ? "bg-gradient-to-r from-[#ed9d3a] to-[#ffc] text-[#141A2B] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble"
-            : "bg-[#1E2538] p-4 rounded-3xl shadow-lg max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg chat-bubble border border-[#ed9d3a]/10";
-
-        const text = document.createElement("p");
-        text.className = sender === "user" ? "text-[#141A2B]" : "text-gray-200";
-        text.textContent = message;
-
-        bubble.appendChild(text);
-        messageDiv.appendChild(bubble);
-        chatArea.appendChild(messageDiv);
-
-        // Scroll to bottom
-        chatArea.scrollTop = chatArea.scrollHeight;
-      }
-    </script>
+    <script src="/JS/search.js"></script>
   </body>
 </html>
