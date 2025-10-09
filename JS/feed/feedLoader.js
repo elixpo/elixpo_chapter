@@ -5,9 +5,10 @@ let isLoading = false
 const LOAD_THRESHOLD = 450
 let msnry = null
 let imageQueue = []
-let isProcessingQueue = false
+const PARALLEL_IMAGE_LOADS = 5 
+const IMAGES_PER_BATCH = 50
+const eventSource = new EventSource('https://image.pollinations.ai/feed')
 
-// Initialize Masonry with imagesLoaded integration
 function initMasonry () {
   const feedWrapper = document.getElementById('feedImageWrapper')
 
@@ -29,17 +30,34 @@ function initMasonry () {
   }
 }
 
+// Debounce Masonry layout calls
+let layoutTimer = null
+function debounceLayout () {
+  if (msnry) {
+    clearTimeout(layoutTimer)
+    layoutTimer = setTimeout(() => {
+      msnry.layout()
+    }, 100)
+  }
+}
+
 function processImageQueue () {
-  if (isProcessingQueue || imageQueue.length === 0) return
+  if (imageQueue.length === 0) return
 
-  isProcessingQueue = true
-  const imageData = imageQueue.shift()
+  // Load up to PARALLEL_IMAGE_LOADS images at once
+  const batch = imageQueue.splice(0, PARALLEL_IMAGE_LOADS)
+  let completed = 0
 
-  renderSingleImage(imageData, () => {
-    isProcessingQueue = false
-    if (imageQueue.length > 0) {
-      setTimeout(processImageQueue, 150)
-    }
+  batch.forEach(imageData => {
+    renderSingleImage(imageData, () => {
+      completed++
+      if (completed === batch.length) {
+        // When all in batch are done, process next batch
+        if (imageQueue.length > 0) {
+          processImageQueue()
+        }
+      }
+    })
   })
 }
 
@@ -66,8 +84,6 @@ function renderSingleImage (imageData, callback) {
   const tempImg = new Image()
 
   tempImg.onload = function () {
-    console.log('Image loaded:', imageData.id)
-
     feedImageWrapper.appendChild(node)
 
     const image = node.querySelector('img')
@@ -75,7 +91,7 @@ function renderSingleImage (imageData, callback) {
 
     if (msnry) {
       msnry.appended(node)
-      msnry.layout()
+      debounceLayout()
     }
 
     node.style.visibility = 'visible'
@@ -126,7 +142,8 @@ function appendImage (imageData) {
   imagesData.push(imageData)
   imageQueue.push(imageData)
 
-  if (!isProcessingQueue) {
+  // Start processing if not already running
+  if (imageQueue.length <= PARALLEL_IMAGE_LOADS) {
     processImageQueue()
   }
 }
@@ -138,8 +155,6 @@ function startListening () {
   if (!msnry) {
     initMasonry()
   }
-
-  const eventSource = new EventSource('https://image.pollinations.ai/feed')
 
   eventSource.onmessage = function (event) {
     const imageData = JSON.parse(event.data)
@@ -156,10 +171,12 @@ function startListening () {
     appendImage(imageData)
     imageCount++
 
-    if (imageCount >= 30) {
+    if (imageCount >= IMAGES_PER_BATCH) {
       eventSource.close()
       isLoading = false
       imageCount = 0
+      // Auto-restart EventSource for continuous loading
+      setTimeout(startListening, 100)
     }
   }
 
