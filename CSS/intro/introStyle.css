@@ -100,14 +100,184 @@
         50% { transform: scale(1.05); }
       }
 
-      /* Responsive adjustments */
+      /* Multi-step Progress Indicator */
+      .progress-container {
+        width: 100%;
+      }
+
+      .step-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(71, 85, 105, 0.5);
+        border: 2px solid rgba(148, 163, 184, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(148, 163, 184, 0.7);
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .step-label {
+        font-size: 12px;
+        color: rgba(148, 163, 184, 0.7);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .step-line {
+        width: 60px;
+        height: 2px;
+        background: rgba(71, 85, 105, 0.5);
+        transition: all 0.3s ease;
+      }
+
+      .step.active .step-circle {
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        border-color: #3b82f6;
+        color: white;
+        transform: scale(1.1);
+      }
+
+      .step.active .step-label {
+        color: #e2e8f0;
+      }
+
+      .step.completed .step-circle {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-color: #10b981;
+        color: white;
+      }
+
+      .step.completed .step-label {
+        color: #a7f3d0;
+      }
+
+      .step.completed + .step-line {
+        background: linear-gradient(90deg, #10b981, #3b82f6);
+      }
+
+      /* Slider Container */
+      .slider-container {
+        position: relative;
+        height: 280px;
+      }
+
+      .step-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+
+      .step-content.active {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: all;
+      }
+
+      .step-content.prev {
+        transform: translateX(-100%);
+      }
+
+      /* Form Animations */
+      .step-content.active .form-group {
+        animation: slideInUp 0.6s ease-out 0.2s both;
+      }
+
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Profile Picture Preview Enhanced */
+      #step3 .profile-pic-preview {
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      #step3 .profile-pic-preview:hover {
+        transform: scale(1.05);
+      }
+
+      /* Button States */
+      .back-btn, .next-btn, .complete-btn {
+        min-width: fit-content;
+        white-space: nowrap;
+      }
+
+      .form-actions {
+        min-height: 60px;
+        align-items: center;
+      }
+
+      /* Responsive Design */
       @media (max-width: 640px) {
-        .form-actions {
-          flex-direction: column;
-          align-items: stretch;
+        .step-indicator {
+          gap: 12px;
         }
         
-        .complete-btn {
+        .step-line {
+          width: 30px;
+        }
+        
+        .step-circle {
+          width: 32px;
+          height: 32px;
+          font-size: 12px;
+        }
+        
+        .step-label {
+          font-size: 10px;
+        }
+        
+        .slider-container {
+          height: 320px;
+        }
+        
+        .form-actions {
+          flex-direction: column-reverse;
+          gap: 12px;
+        }
+        
+        .form-actions > div {
+          margin-left: 0 !important;
+          width: 100%;
+          display: flex;
+          gap: 12px;
+        }
+        
+        .back-btn, .next-btn, .complete-btn {
+          flex: 1;
           justify-content: center;
         }
       }

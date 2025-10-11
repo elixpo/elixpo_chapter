@@ -22,84 +22,151 @@
       <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-600/10 rounded-3xl shadow-2xl w-full max-w-md p-10 relative z-10 animate-fade-in-up">
         <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-t-3xl animate-pulse"></div>
         
+        <!-- Progress Indicator -->
+        <div class="progress-container mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <div class="step-indicator flex items-center gap-4">
+              <div class="step active" id="step1-indicator">
+                <div class="step-circle">1</div>
+                <span class="step-label">Name</span>
+              </div>
+              <div class="step-line"></div>
+              <div class="step" id="step2-indicator">
+                <div class="step-circle">2</div>
+                <span class="step-label">Bio</span>
+              </div>
+              <div class="step-line"></div>
+              <div class="step" id="step3-indicator">
+                <div class="step-circle">3</div>
+                <span class="step-label">Photo</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar bg-slate-700/50 rounded-full h-2 overflow-hidden">
+            <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 33.33%" id="progressBar"></div>
+          </div>
+        </div>
+        
         <div class="text-center">
           <div class="welcome-section mb-10">
-            <h1 class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent">
-              Welcome to LixBlogs!
+            <h1 class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent" id="stepTitle">
+              What's your name?
             </h1>
-            <p class="text-slate-400 text-base leading-relaxed font-normal">
-              Let's complete your profile to get started with your blogging journey.
+            <p class="text-slate-400 text-base leading-relaxed font-normal" id="stepDescription">
+              This will be your display name on LixBlogs
             </p>
           </div>
 
-          <form class="text-left space-y-6" id="profileForm">
-            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-100">
-              <label for="displayName" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
-                Display Name *
-              </label>
-              <input 
-                type="text" 
-                id="displayName" 
-                name="displayName" 
-                placeholder="Enter your display name" 
-                required 
-                class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500"
-              />
-              <div class="name-status mt-2 text-sm font-medium min-h-5 flex items-center gap-2" id="nameStatus"></div>
-              <div class="name-suggestions mt-3" id="nameSuggestions"></div>
-            </div>
+          <form class="text-left" id="profileForm">
+            <div class="slider-container relative overflow-hidden">
+              
+              <!-- Step 1: Display Name -->
+              <div class="step-content active" id="step1" data-step="1">
+                <div class="form-group opacity-0 translate-y-5 animate-fade-in-up">
+                  <label for="displayName" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                    Display Name *
+                  </label>
+                  <input 
+                    type="text" 
+                    id="displayName" 
+                    name="displayName" 
+                    placeholder="Enter your display name" 
+                    required 
+                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500"
+                  />
+                  <div class="name-status mt-2 text-sm font-medium min-h-5 flex items-center gap-2" id="nameStatus"></div>
+                  <div class="name-suggestions mt-3" id="nameSuggestions"></div>
+                </div>
+              </div>
 
-            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-200">
-              <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
-                Bio
-              </label>
-              <textarea 
-                id="bio" 
-                name="bio" 
-                placeholder="Tell us about yourself..." 
-                rows="4" 
-                maxlength="150"
-                class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
-              ></textarea>
-              <div class="char-count mt-2 text-xs text-slate-500 text-right">
-                <span id="bioCharCount">0</span>/150 characters
+              <!-- Step 2: Bio -->
+              <div class="step-content" id="step2" data-step="2">
+                <div class="form-group opacity-0 translate-y-5">
+                  <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                    Bio (Optional)
+                  </label>
+                  <textarea 
+                    id="bio" 
+                    name="bio" 
+                    placeholder="Tell us about yourself..." 
+                    rows="4" 
+                    maxlength="150"
+                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
+                  ></textarea>
+                  <div class="char-count mt-2 text-xs text-slate-500 text-right">
+                    <span id="bioCharCount">0</span>/150 characters
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3: Profile Picture -->
+              <div class="step-content" id="step3" data-step="3">
+                <div class="form-group opacity-0 translate-y-5">
+                  <label for="profilePicture" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                    Profile Picture (Optional)
+                  </label>
+                  <div class="flex flex-col items-center gap-6">
+                    <div 
+                      class="profile-pic-preview w-32 h-32 rounded-full bg-slate-900/60 border-2 border-dashed border-slate-600/30 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-500 text-sm text-center relative overflow-hidden hover:border-blue-500 hover:bg-blue-500/5" 
+                      id="profilePicPreview"
+                    >
+                      <ion-icon name="person-outline" class="text-4xl mb-2"></ion-icon>
+                      <span>Upload Image</span>
+                    </div>
+                    <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
+                    <div class="flex gap-3">
+                      <button 
+                        type="button" 
+                        class="upload-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-5 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30"
+                        onclick="document.getElementById('profilePicture').click()"
+                      >
+                        <ion-icon name="camera-outline" class="text-base"></ion-icon>
+                        Choose Photo
+                      </button>
+                      <button 
+                        type="button" 
+                        class="skip-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-5 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70"
+                        id="skipPhotoBtn"
+                      >
+                        Skip for now
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-300">
-              <label for="profilePicture" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
-                Profile Picture
-              </label>
-              <div class="flex items-center gap-4 flex-wrap">
-                <div 
-                  class="profile-pic-preview w-20 h-20 rounded-full bg-slate-900/60 border-2 border-dashed border-slate-600/30 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-500 text-xs text-center relative overflow-hidden hover:border-blue-500 hover:bg-blue-500/5" 
-                  id="profilePicPreview"
-                >
-                  <ion-icon name="person-outline" class="text-2xl mb-1"></ion-icon>
-                  <span>Upload Image</span>
-                </div>
-                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
+            <!-- Navigation Buttons -->
+            <div class="form-actions flex justify-between items-center gap-4 mt-8">
+              <button 
+                type="button" 
+                class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden" 
+                id="backBtn"
+              >
+                <ion-icon name="arrow-back" class="text-base"></ion-icon>
+                <span>Back</span>
+              </button>
+              
+              <div class="flex gap-3 ml-auto">
                 <button 
                   type="button" 
-                  class="upload-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-5 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30"
-                  onclick="document.getElementById('profilePicture').click()"
+                  class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
+                  id="nextBtn" 
+                  disabled
                 >
-                  <ion-icon name="camera-outline" class="text-base"></ion-icon>
-                  Choose Photo
+                  <span>Next</span>
+                  <ion-icon name="arrow-forward" class="text-base"></ion-icon>
+                </button>
+                
+                <button 
+                  type="submit" 
+                  class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
+                  id="completeBtn"
+                >
+                  <span>Complete Profile</span>
+                  <ion-icon name="checkmark" class="text-base"></ion-icon>
                 </button>
               </div>
-            </div>
-
-            <div class="form-actions flex justify-between items-center gap-4 mt-8 flex-wrap opacity-0 translate-y-5 animate-fade-in-up animation-delay-400">
-              <button 
-                type="submit" 
-                class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out min-w-fit hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
-                id="completeBtn" 
-                disabled
-              >
-                <span>Complete Profile</span>
-                <ion-icon name="arrow-forward" class="text-base"></ion-icon>
-              </button>
             </div>
           </form>
         </div>
@@ -108,5 +175,6 @@
 
     <script src="../../JS/intro/bloomFilter.js"></script>
     <script src="../../JS/intro/script.js"></script>
+    <script src="../../JS/intro/slider.js"></script>
   </body>
 </html>
