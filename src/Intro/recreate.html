@@ -14,7 +14,7 @@
   </head>
 <body>
     <div class="min-h-screen min-w-screen items-center flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-x-hidden">
-      <section class="w-full h-[60px]"></section>
+      <section class="w-full h-[60px]">
         <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
           <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../../CSS/IMAGES/logo.png')] bg-cover"></div>
           <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
@@ -22,7 +22,7 @@
         </div>
       </section>
 
-      <section class="max-w-[60%] max-auto bg-transparent mt-5 border-2 border-[#888] rounded-[15px] shadow-2xl w-full p-10 relative z-10 animate-fade-in-up">
+      <section class="max-w-[60%] max-auto bg-transparent mt-5 border-2 border-[#888] rounded-[15px] shadow-2xl w-full p-5 relative z-10 animate-fade-in-up">
         <div class="progress-container mb-8 items-center justify-center w-full">
           <div class="flex justify-between items-center mb-4">
           <div class="step-indicator flex items-center gap-4">
@@ -57,14 +57,70 @@
         </div>
 
         <div class="blog-content w-full p-5 flex flex-col items-center justify-center">
-          <div class="stepone" id="step1">
-           <label for="displayName" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+
+          <div class="stepone w-full hidden" id="step1">
+           <label for="displayName" class="block mb-2 text-slate-200 font-medium text-md uppercase tracking-wider">
               Display Name *
             </label>
-            <input type="text" id="displayName" name="displayName" required class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-slate-200" placeholder="Enter your display name">
+            <input type="text" id="displayName" name="displayName" spellcheck="false" autocomplete="off" required class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-md placeholder:text-md sm:text-sm text-slate-200" placeholder="Enter your display name">
+            <div class="name-status mt-2 text-sm font-medium min-h-5 flex items-center gap-2" id="nameStatus"> 
+              <ion-icon name="checkmark-circle-outline" class="text-green-500"></ion-icon><span class="text-green-500">Looks good!</span>
+            </div>
           </div>
+
+          <div class="step-content w-full" id="step2" data-step="2">
+                  <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                    Bio (Optional)
+                  </label>
+                  <textarea 
+                    id="bio" 
+                    name="bio" 
+                    placeholder="Tell us about yourself..." 
+                    rows="4" 
+                    maxlength="150"
+                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
+                  ></textarea>
+                  <div class="char-count mt-2 text-xs text-slate-500 text-right">
+                    <span id="bioCharCount">0</span>/150 characters
+                  </div>
+              </div>
+
         </div>
       </section>
+
+      <div class="form-actions flex justify-between items-center gap-2 mt-2">
+              <button 
+                type="button" 
+                class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden" 
+                id="backBtn"
+              >
+                <ion-icon name="arrow-back" class="text-base"></ion-icon>
+                <span>Back</span>
+              </button>
+              
+              <div class="flex gap-3 ml-auto">
+                <button 
+                  type="button" 
+                  class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
+                  id="nextBtn" 
+                  disabled
+                >
+                  <span>Next</span>
+                  <ion-icon name="arrow-forward" class="text-base"></ion-icon>
+                </button>
+                
+                <button 
+                  type="submit" 
+                  class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
+                  id="completeBtn"
+                >
+                  <span>Complete Profile</span>
+                  <ion-icon name="checkmark" class="text-base"></ion-icon>
+                </button>
+              </div>
+            </div>
     </div>
+
+
 </body>
 </html>
