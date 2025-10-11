@@ -7,104 +7,31 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../../../CSS/callback.css">
     <link rel="icon" type="image/x-icon" href="../../../CSS/IMAGES/logo.png">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        .gradient-bg {
-            background: linear-gradient(135deg, #030712 0%, #10141E 50%, #1a1f2e 100%);
-        }
-        
-        .pulse-animation {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        .slide-up {
-            animation: slideUp 0.6s ease-out forwards;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.8s ease-out forwards;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .provider-icon {
-            transition: all 0.3s ease;
-        }
-        
-        .provider-icon:hover {
-            transform: scale(1.05);
-        }
-        
-        .success-checkmark {
-            animation: checkmark 0.6s ease-in-out;
-        }
-        
-        @keyframes checkmark {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        
-        .loading-dots::after {
-            content: '';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-        
-        @keyframes dots {
-            0%, 20% { content: ''; }
-            40% { content: '.'; }
-            60% { content: '..'; }
-            80%, 100% { content: '...'; }
-        }
-    </style>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center font-['Inter',sans-serif] p-4">
-    <!-- Main Container -->
     <div class="w-full max-w-md mx-auto">
-        <!-- Header with Logo -->
-        <div class="text-center mb-8 fade-in">
+        <div class="text-center mb-8 fade-in flex flex-col">
+            <div class="initSection flex flex-row items-center justify-center space-x-3">
             <div class="flex justify-center items-center mb-4">
-                <div class="h-16 w-16 rounded-full bg-[url('../../../CSS/IMAGES/logo.png')] bg-cover bg-center border-2 border-[#7ba8f0]/30"></div>
+                <div class="h-16 w-16 rounded-full bg-[url('../../../CSS/IMAGES/logo.png')] bg-cover bg-center "></div>
             </div>
             <h1 class="text-2xl font-bold text-white mb-2">LixBlogs</h1>
+            </div>
             <p class="text-gray-400 text-sm">Completing your authentication</p>
         </div>
 
-        <!-- Authentication Card -->
-        <div class="bg-[#10141E]/80 backdrop-blur-sm border border-[#313647] rounded-2xl p-8 shadow-2xl slide-up">
-            <!-- Provider Info Section -->
+        <div class="bg-[#10141E]/80 backdrop-blur-sm border border-[#313647] rounded-2xl p-4 shadow-2xl slide-up">
             <div class="flex items-center justify-between mb-8">
-                <!-- User Info Placeholder -->
                 <div class="flex items-center space-x-3">
-                    <div id="userAvatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-[#7ba8f0] to-[#2563eb] flex items-center justify-center text-white font-semibold text-lg hidden">
+                    <div id="userAvatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-[#7ba8f0] to-[#2563eb] flex items-center justify-center text-white font-semibold text-lg hidden" title="Who am I?">
                         ?
                     </div>
                     <div id="userInfo" class="hidden">
                         <div id="userName" class="text-white font-medium text-sm">Loading...</div>
                         <div id="userEmail" class="text-gray-400 text-xs">Verifying identity</div>
                     </div>
-                    <!-- Loading State -->
                     <div id="loadingUser" class="flex items-center space-x-3">
                         <div class="w-12 h-12 rounded-full bg-[#1D202A] animate-pulse"></div>
                         <div>
@@ -114,18 +41,16 @@
                     </div>
                 </div>
 
-                <!-- Provider Logo -->
                 <div class="flex items-center space-x-2">
                     <div id="providerIcon" class="provider-icon">
-                        <!-- Will be populated by JavaScript -->
+
                     </div>
                 </div>
             </div>
 
-            <!-- Status Section -->
+            
             <div class="text-center mb-6">
                 <div id="statusIcon" class="mb-4">
-                    <!-- Loading spinner -->
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1D202A] border-2 border-[#7ba8f0]/30">
                         <div class="w-8 h-8 border-2 border-[#7ba8f0] border-t-transparent rounded-full animate-spin"></div>
                     </div>
@@ -140,7 +65,6 @@
                 </p>
             </div>
 
-            <!-- Progress Bar -->
             <div class="mb-6">
                 <div class="w-full bg-[#1D202A] rounded-full h-2 overflow-hidden">
                     <div id="progressBar" class="h-full bg-gradient-to-r from-[#7ba8f0] to-[#2563eb] rounded-full transition-all duration-1000 ease-out w-0"></div>
@@ -161,8 +85,7 @@
                 </button>
             </div>
         </div>
-
-        <!-- Footer -->
+        
         <div class="text-center mt-6 fade-in">
             <p class="text-gray-500 text-xs">
                 Secured by LixBlogs Authentication

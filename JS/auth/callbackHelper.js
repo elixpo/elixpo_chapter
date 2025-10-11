@@ -29,37 +29,36 @@ async function handleCallback() {
             if (ui) {
                 ui.showError("Invalid authentication callback. Please try signing in again.");
             }
-            // setTimeout(() => {
-            //     redirectTo("src/auth/login");
-            // }, 3000);
+            setTimeout(() => {
+                redirectTo("src/auth/login");
+            }, 3000);
             return;
         }
 
-        // Handle Google OAuth
+
         if (state === "elixpo-blogs-google") {
-            if (ui) {
-                ui.setLoadingState("Processing Google authentication...");
-            }
+            // if (ui) {
+            //     ui.setLoadingState("Processing Google authentication...");
+            // }
             
-            // For development: Show success with mock data since Google OAuth needs proper client secret
-            console.log("Google OAuth callback received with code:", code);
+            // console.log("Google OAuth callback received with code:", code);
             
-            if (ui) {
-                ui.showSuccess({
-                    name: "Google User",
-                    email: "user@gmail.com",
-                    avatar: null
-                });
-            }
+            // if (ui) {
+            //     ui.showSuccess({
+            //         name: "Google User",
+            //         email: "user@gmail.com",
+            //         avatar: null
+            //     });
+            // }
             
-            console.log("Google login successful! (Development Mode)");
-            setTimeout(() => {
-                console.log("Redirecting to feed...");
-                redirectTo("src/feed");
-            }, 2000);
+            // console.log("Google login successful! (Development Mode)");
+            // setTimeout(() => {
+            //     console.log("Redirecting to feed...");
+            //     redirectTo("src/feed");
+            // }, 2000);
             
-            /* 
-            // Uncomment this when you have Google client secret configured
+            
+            
             try {
                 const res = await fetch("http://localhost:5000/api/loginGoogle", {
                     method: "POST",
@@ -101,34 +100,34 @@ async function handleCallback() {
                 
                 showNotification("Network error during Google login.");
             }
-            */
+            
         }
         
-        // Handle GitHub OAuth
+        
         else if (state === "elixpo-blogs-github") {
-            if (ui) {
-                ui.setLoadingState("Verifying with GitHub servers...");
-            }
+            // if (ui) {
+            //     ui.setLoadingState("Verifying with GitHub servers...");
+            // }
             
-            // For development: Show success with mock data since GitHub OAuth needs proper client secret
-            console.log("GitHub OAuth callback received with code:", code);
+            // // For development: Show success with mock data since GitHub OAuth needs proper client secret
+            // console.log("GitHub OAuth callback received with code:", code);
             
-            if (ui) {
-                ui.showSuccess({
-                    name: "GitHub User",
-                    email: "user@github.com",
-                    avatar: null
-                });
-            }
+            // if (ui) {
+            //     ui.showSuccess({
+            //         name: "GitHub User",
+            //         email: "user@github.com",
+            //         avatar: null
+            //     });
+            // }
             
-            console.log("GitHub login successful! (Development Mode)");
-            setTimeout(() => {
-                console.log("Redirecting to feed...");
-                redirectTo("src/feed");
-            }, 2000);
+            // console.log("GitHub login successful! (Development Mode)");
+            // setTimeout(() => {
+            //     console.log("Redirecting to feed...");
+            //     redirectTo("src/feed");
+            // }, 2000);
             
-            /* 
-            // Uncomment this when you have GitHub client secret configured
+            
+            
             try {
                 const res = await fetch("http://localhost:5000/api/loginGithub", {
                     method: "POST",
@@ -175,9 +174,8 @@ async function handleCallback() {
                     ui.showError("Network error during GitHub authentication. Please check your connection.");
                 }
             }
-            */
         }
-    }, 100); // Small delay to ensure UI is initialized
+    }, 100); 
 }
 
 
