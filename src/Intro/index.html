@@ -7,59 +7,106 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="../../CSS/intro/introStyle.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="../CSS/Icons/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
   </head>
 
   <body>
-    <div class="container">
-      <div class="intro-content">
-        <div class="welcome-section">
-          <h1>Welcome to LixBlogs!</h1>
-          <p>Let's complete your profile to get started with your blogging journey.</p>
-        </div>
-
-        <form class="profile-form" id="profileForm">
-          <div class="form-group">
-            <label for="displayName">Display Name *</label>
-            <input type="text" id="displayName" name="displayName" placeholder="Enter your display name" required />
-            <div class="name-status" id="nameStatus"></div>
-            <div class="name-suggestions" id="nameSuggestions"></div>
+    <div class="min-h-screen flex items-center justify-center p-5 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-x-hidden">
+      
+      <div class="absolute inset-0 bg-gradient-radial from-blue-500/15 via-transparent to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-radial from-purple-500/15 via-transparent to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-radial from-emerald-500/10 via-transparent to-transparent pointer-events-none"></div>
+      
+      <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-600/10 rounded-3xl shadow-2xl w-full max-w-md p-10 relative z-10 animate-fade-in-up">
+        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-t-3xl animate-pulse"></div>
+        
+        <div class="text-center">
+          <div class="welcome-section mb-10">
+            <h1 class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent">
+              Welcome to LixBlogs!
+            </h1>
+            <p class="text-slate-400 text-base leading-relaxed font-normal">
+              Let's complete your profile to get started with your blogging journey.
+            </p>
           </div>
 
-          <div class="form-group">
-            <label for="bio">Bio</label>
-            <textarea id="bio" name="bio" placeholder="Tell us about yourself..." rows="4" maxlength="150"></textarea>
-            <div class="char-count"><span id="bioCharCount">0</span>/150 characters</div>
-          </div>
+          <form class="text-left space-y-6" id="profileForm">
+            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-100">
+              <label for="displayName" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                Display Name *
+              </label>
+              <input 
+                type="text" 
+                id="displayName" 
+                name="displayName" 
+                placeholder="Enter your display name" 
+                required 
+                class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500"
+              />
+              <div class="name-status mt-2 text-sm font-medium min-h-5 flex items-center gap-2" id="nameStatus"></div>
+              <div class="name-suggestions mt-3" id="nameSuggestions"></div>
+            </div>
 
-          <div class="form-group">
-            <label for="profilePicture">Profile Picture</label>
-            <div class="profile-pic-container">
-              <div class="profile-pic-preview" id="profilePicPreview">
-                <ion-icon name="person-outline"></ion-icon>
-                <span>Upload Image</span>
+            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-200">
+              <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                Bio
+              </label>
+              <textarea 
+                id="bio" 
+                name="bio" 
+                placeholder="Tell us about yourself..." 
+                rows="4" 
+                maxlength="150"
+                class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
+              ></textarea>
+              <div class="char-count mt-2 text-xs text-slate-500 text-right">
+                <span id="bioCharCount">0</span>/150 characters
               </div>
-              <input type="file" id="profilePicture" name="profilePicture" accept="image/*" hidden />
-              <button type="button" class="upload-btn" onclick="document.getElementById('profilePicture').click()">
-                <ion-icon name="camera-outline"></ion-icon>
-                Choose Photo
+            </div>
+
+            <div class="form-group opacity-0 translate-y-5 animate-fade-in-up animation-delay-300">
+              <label for="profilePicture" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+                Profile Picture
+              </label>
+              <div class="flex items-center gap-4 flex-wrap">
+                <div 
+                  class="profile-pic-preview w-20 h-20 rounded-full bg-slate-900/60 border-2 border-dashed border-slate-600/30 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-500 text-xs text-center relative overflow-hidden hover:border-blue-500 hover:bg-blue-500/5" 
+                  id="profilePicPreview"
+                >
+                  <ion-icon name="person-outline" class="text-2xl mb-1"></ion-icon>
+                  <span>Upload Image</span>
+                </div>
+                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
+                <button 
+                  type="button" 
+                  class="upload-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-5 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30"
+                  onclick="document.getElementById('profilePicture').click()"
+                >
+                  <ion-icon name="camera-outline" class="text-base"></ion-icon>
+                  Choose Photo
+                </button>
+              </div>
+            </div>
+
+            <div class="form-actions flex justify-between items-center gap-4 mt-8 flex-wrap opacity-0 translate-y-5 animate-fade-in-up animation-delay-400">
+              <button 
+                type="submit" 
+                class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out min-w-fit hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
+                id="completeBtn" 
+                disabled
+              >
+                <span>Complete Profile</span>
+                <ion-icon name="arrow-forward" class="text-base"></ion-icon>
               </button>
             </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="skip-btn" onclick="skipProfile()">Skip for now</button>
-            <button type="submit" class="complete-btn" id="completeBtn" disabled>
-              <span>Complete Profile</span>
-              <ion-icon name="arrow-forward"></ion-icon>
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
 
-    <script src="bloomFilter.js"></script>
-    <script src="script.js"></script>
+    <script src="../../JS/intro/bloomFilter.js"></script>
+    <script src="../../JS/intro/script.js"></script>
   </body>
 </html>
