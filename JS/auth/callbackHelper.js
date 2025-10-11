@@ -8,8 +8,6 @@ async function handleCallback() {
     const error = params.get("error");
     
     console.log("📋 OAuth Callback Params:", { code, state, error });
-    
-    // Wait for UI to be initialized
     setTimeout(async () => {
         const ui = window.callbackUI;
         
@@ -18,9 +16,9 @@ async function handleCallback() {
             if (ui) {
                 ui.showError(`Authentication failed: ${error}`);
             }
-            // setTimeout(() => {
-            //     redirectTo("src/auth/login");
-            // }, 3000);
+            setTimeout(() => {
+                redirectTo("src/auth/login");
+            }, 3000);
             return;
         }
 
@@ -80,7 +78,7 @@ async function handleCallback() {
                         });
                     }
                     
-                    showNotification("Google login successful!");
+
                     setTimeout(() => redirectTo("src/feed"), 2000);
                 } else {
                     console.error("Google login failed:", data);
@@ -89,7 +87,6 @@ async function handleCallback() {
                         ui.showError(data.error || "Google authentication failed. Please try again.");
                     }
                     
-                    showNotification(data.error || "Google login failed.");
                 }
             } catch (err) {
                 console.error("Network error during Google login:", err);
@@ -98,7 +95,6 @@ async function handleCallback() {
                     ui.showError("Network error during Google authentication. Please check your connection.");
                 }
                 
-                showNotification("Network error during Google login.");
             }
             
         }
