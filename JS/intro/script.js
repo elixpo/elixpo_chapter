@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const nameStatus = document.getElementById("nameStatus");
   const nameSuggestions = document.getElementById("nameSuggestions");
   const completeBtn = document.getElementById("completeBtn");
-  const loadingOverlay = document.getElementById("loadingOverlay");
 
   let nameCheckTimeout;
   let isNameAvailable = false;
@@ -97,23 +96,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 500);
   });
 
-  // Form submission
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
+  // // Form submission
+  // form.addEventListener("submit", function (e) {
+  //   e.preventDefault();
 
-    if (!isNameAvailable) {
-      alert("Please choose an available display name");
-      return;
-    }
+  //   if (!isNameAvailable) {
+  //     alert("Please choose an available display name");
+  //     return;
+  //   }
 
-    const formData = {
-      displayName: displayNameInput.value.trim(),
-      bio: bioTextarea.value.trim(),
-      profilePicture: profilePictureInput.files[0],
-    };
+  //   const formData = {
+  //     displayName: displayNameInput.value.trim(),
+  //     bio: bioTextarea.value.trim(),
+  //     profilePicture: profilePictureInput.files[0],
+  //   };
 
-    completeProfile(formData);
-  });
+  //   completeProfile(formData);
+  // });
 
   // Helper functions
   function showNameStatus(message, type) {

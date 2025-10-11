@@ -51,9 +51,6 @@ class ProfileSlider {
     // Back button
     this.elements.backBtn.addEventListener('click', () => this.prevStep());
     
-    // Skip photo button
-    this.elements.skipPhotoBtn.addEventListener('click', () => this.completeProfile());
-    
     // Display name validation
     this.elements.displayName.addEventListener('input', () => this.validateDisplayName());
     
@@ -63,11 +60,6 @@ class ProfileSlider {
     // Profile picture upload
     this.elements.profilePicture.addEventListener('change', (e) => this.handleProfilePicture(e));
     
-    // Form submission
-    document.getElementById('profileForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      this.completeProfile();
-    });
     
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {

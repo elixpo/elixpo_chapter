@@ -9,7 +9,6 @@
     <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png" />
     <link rel="stylesheet" href="../../CSS/intro/introStyle.css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="../CSS/Icons/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png">
   </head>
 <body>
@@ -56,7 +55,7 @@
           </div>
         </div>
 
-        <div class="blog-content w-full p-5 flex flex-col items-center justify-center">
+        <div class="blog-content w-full p-1 flex flex-col items-center justify-center">
 
           <div class="stepone w-full hidden" id="step1">
            <label for="displayName" class="block mb-2 text-slate-200 font-medium text-md uppercase tracking-wider">
@@ -87,7 +86,32 @@
                   </div>
           </div>
 
-          
+            <div class="step-content w-full" id="step3" data-step="3">
+              <div class="profile-banner-container relative w-full max-w-md mx-auto">
+                <div 
+                  class="banner-preview w-full h-32 rounded-t-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-2 border-dashed border-slate-600/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-purple-400 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20 group" 
+                  id="bannerPreview"
+                  onclick="document.getElementById('bannerImage').click()"
+                >
+                  <ion-icon name="image-outline" class="text-3xl mb-1 group-hover:text-purple-400 transition-colors duration-300"></ion-icon>
+                  <span class="group-hover:text-purple-400 transition-colors duration-300 text-xs">Add banner photo</span>
+                </div>
+                
+                <div class="absolute -bottom-12 left-6">
+                  <div 
+                    class="profile-pic-preview w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-blue-400 hover:bg-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 group" 
+                    id="profilePicPreview"
+                    onclick="document.getElementById('profilePicture').click()"
+                  >
+                    <ion-icon name="person-outline" class="text-2xl group-hover:text-blue-400 transition-colors duration-300"></ion-icon>
+                  </div>
+                </div>
+                
+                <div class="h-12 bg-slate-800/20 border-2 border-t-0 border-dashed border-slate-600/50 rounded-b-xl"></div>
+                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
+                <input type="file" id="bannerImage" name="bannerImage" accept="image/*" class="hidden" />
+              </div>
+            </div>
 
         </div>
 
@@ -124,9 +148,8 @@
                 </div>
         </div>
       </section>
-
-      
-
-
+      <script src="../../JS/intro/bloomFilter.js"></script>
+      <script src="../../JS/intro/script.js"></script>
+      <script src="../../JS/intro/slider.js"></script>
 </body>
 </html>
