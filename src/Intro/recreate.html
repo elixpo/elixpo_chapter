@@ -46,7 +46,7 @@
           <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 33.33%" id="progressBar"></div>
           </div>
 
-          <div class="welcome-section mb-10 mx-auto text-center mt-10">
+          <div class="welcome-section mx-auto text-center mt-5">
           <h1 class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent" id="stepTitle">
             What's your name?
           </h1>
@@ -68,58 +68,64 @@
             </div>
           </div>
 
-          <div class="step-content w-full" id="step2" data-step="2">
+          <div class="step-content w-full hidden" id="step2" data-step="2">
                   <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
                     Bio (Optional)
                   </label>
                   <textarea 
                     id="bio" 
                     name="bio" 
-                    placeholder="Tell us about yourself..." 
-                    rows="4" 
+                    placeholder="Wassup Buddy! Let us know your glorious self in a few words..."
+                    spellcheck="false" 
+                    autocomplete="off" 
+                    rows="3" 
                     maxlength="150"
                     class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
                   ></textarea>
                   <div class="char-count mt-2 text-xs text-slate-500 text-right">
                     <span id="bioCharCount">0</span>/150 characters
                   </div>
-              </div>
+          </div>
+
+          
 
         </div>
-      </section>
 
-      <div class="form-actions flex justify-between items-center gap-2 mt-2">
+            <div class="form-actions flex justify-between items-center px-5">
               <button 
                 type="button" 
                 class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden" 
                 id="backBtn"
               >
-                <ion-icon name="arrow-back" class="text-base"></ion-icon>
-                <span>Back</span>
-              </button>
-              
-              <div class="flex gap-3 ml-auto">
-                <button 
-                  type="button" 
-                  class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
-                  id="nextBtn" 
-                  disabled
-                >
-                  <span>Next</span>
-                  <ion-icon name="arrow-forward" class="text-base"></ion-icon>
-                </button>
-                
-                <button 
-                  type="submit" 
-                  class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
-                  id="completeBtn"
-                >
-                  <span>Complete Profile</span>
-                  <ion-icon name="checkmark" class="text-base"></ion-icon>
-                </button>
-              </div>
-            </div>
-    </div>
+                    <ion-icon name="arrow-back" class="text-base"></ion-icon>
+                    <span>Back</span>
+                  </button>
+                  
+                  <div class="flex gap-3 ml-auto">
+                    <button 
+                      type="button" 
+                      class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
+                      id="nextBtn" 
+                      disabled
+                    >
+                      <span>Next</span>
+                      <ion-icon name="arrow-forward" class="text-base"></ion-icon>
+                    </button>
+                    
+                    <button 
+                      type="submit" 
+                      class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
+                      id="completeBtn"
+                    >
+                      <span>Complete Profile</span>
+                      <ion-icon name="checkmark" class="text-base"></ion-icon>
+                    </button>
+                  </div>
+                </div>
+        </div>
+      </section>
+
+      
 
 
 </body>

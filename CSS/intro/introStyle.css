@@ -182,31 +182,7 @@
         height: 280px;
       }
 
-      .step-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        opacity: 1;
-        transform: translateX(100%);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        pointer-events: none;
-      }
-
-      .step-content.active {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: all;
-      }
-
-      .step-content.prev {
-        transform: translateX(-100%);
-      }
-
-      /* Form Animations */
-      .step-content.active .form-group {
-        animation: slideInUp 0.6s ease-out 0.2s both;
-      }
+      
 
       @keyframes slideInUp {
         from {
@@ -219,7 +195,7 @@
         }
       }
 
-      /* Profile Picture Preview Enhanced */
+      
       #step3 .profile-pic-preview {
         position: relative;
         transition: all 0.3s ease;
