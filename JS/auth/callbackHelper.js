@@ -18,9 +18,9 @@ async function handleCallback() {
             if (ui) {
                 ui.showError(`Authentication failed: ${error}`);
             }
-            setTimeout(() => {
-                redirectTo("src/auth/login");
-            }, 3000);
+            // setTimeout(() => {
+            //     redirectTo("src/auth/login");
+            // }, 3000);
             return;
         }
 
@@ -29,9 +29,9 @@ async function handleCallback() {
             if (ui) {
                 ui.showError("Invalid authentication callback. Please try signing in again.");
             }
-            setTimeout(() => {
-                redirectTo("src/auth/login");
-            }, 3000);
+            // setTimeout(() => {
+            //     redirectTo("src/auth/login");
+            // }, 3000);
             return;
         }
 
