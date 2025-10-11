@@ -86,8 +86,8 @@ export async function loginGithub(code, state, req, res)
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        client_id: process.env.github_auth_client_id || "Ov23li51zbnVuh5pmkbK",
-        client_secret: process.env.github_auth_client_secret || "", // You'll need to add the GitHub client secret
+        client_id: process.env.github_auth_client_id,
+        client_secret: process.env.github_auth_client_secret,
         code,
       }),
     });
