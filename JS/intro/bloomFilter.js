@@ -1,6 +1,4 @@
-// Simple Bloom Filter Client for Username Checking
 class BloomFilter {
-  // Check name availability using backend API
   async checkNameAvailability(name) {
     try {
       const response = await fetch("http://localhost:3001/api/check-username", {
@@ -31,5 +29,4 @@ class BloomFilter {
   }
 }
 
-// Create global bloom filter instance
 window.bloomFilter = new BloomFilter();
