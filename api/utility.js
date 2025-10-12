@@ -42,6 +42,17 @@ function generateUID(email, maxLength = 12)
   return hash.substring(0, maxLength);
 }
 
+async function setUserDisplayName(uid, displayName) {
+  try {
+    const userRef = collec.collection("users").doc(uid);
+    await userRef.update({ name: displayName });
+    console.log(`Updated display name for user ${uid}: ${displayName}`);
+    return true;
+  } catch (error) {
+    console.error(`Error updating display name for user ${uid}:`, error);
+    return false;
+  }
+}
 
 async function createFirebaseUser(email, displayName, photoURL, provider, country) {
   try {
@@ -169,4 +180,4 @@ async function sendOTPMail(email, otp, token, state, operation, callback)
 //test mail 
 // sendOTPMail("ayushbhatt633@gmail.com", "123456", "bljY0G", "elixpo-blogs", "login", false)
 
-export { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID, getCountryFromIP };
+export { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID, getCountryFromIP, setUserDisplayName };

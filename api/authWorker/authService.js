@@ -1,6 +1,9 @@
 import { appExpress, router } from "../initializeExpress.js";
-import {registerRequest, verifyRegisterOTP} from './apiRegister.js';
+import {registerRequest, verifyRegisterOTP, registerDisplayName} from './apiRegister.js';
 import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP} from './apiLogin.js';
+import {checkUsernameRequest } from "./bloomfiltercheck.js";
+
+
 
 router.get("/registerRequest", async (req, res) => {
     const email = req.query.email;
@@ -59,6 +62,17 @@ router.post("/logout", (req, res) => {
   res.clearCookie("authToken", { httpOnly: true, secure: false, sameSite: "Lax" });
   res.status(200).json({ message: "✅ Logged out successfully!" });
 });
+
+
+router.post("/checkUsername", async (req, res) => {
+  const { username } = req.body;
+  await checkUsernameRequest(username, req, res);
+});
+
+router.post("/registerDisplayName", async (req, res) => { 
+  const { username, uid } = req.body;
+  await registerDisplayName(username, uid, req, res);
+})
 
 
 appExpress.listen(5000, "localhost", () => {
