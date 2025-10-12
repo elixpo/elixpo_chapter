@@ -1,5 +1,6 @@
 import { db, collec } from "../initializeFirebase.js";
 import { generateOTP, generatetoken, sendOTPMail, createFirebaseUser, generateUID } from "../utility.js";
+import {checkInBloomFilter, checkUserNameFormat, suggestUserName, addNameToBloomRedisDB } from "./bloomfiltercheck.js";
 import MAX_EXPIRE_TIME from "../config.js";
 
 
@@ -120,6 +121,27 @@ async function checkExistingUserEmail(uid)
 
 }
 
+// Function connects with api gateway
+export async function registerDisplayName(username, uid, req, res)
+{
+    const sanitized = checkUserNameFormat(username);
+  if (sanitized !== username) {
+    return res.status(400).json({ success: false, message: sanitized });
+  }
+  const exists = await checkInBloomFilter(sanitized.toLowerCase());
+  if (exists) {
+    const userNameSuggested = suggestUserName(sanitized);
+    return res.status(200).json({ success: false, message: "Username is already taken.", suggestion: userNameSuggested });
+  } else {
 
+    const added = addNameToBloomRedisDB(sanitized, uid);
+    if (added) {
 
+      return res.status(200).json({ success: true, message: "Username is available!" });
+
+    } else {
+      return res.status(500).json({ success: false, message: "Failed to add username to bloom filter." });
+    }
+  }
+}
 

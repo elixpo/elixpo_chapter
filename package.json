@@ -23,7 +23,7 @@
   "scripts": {
     "frontend": "lite-server",
     "backend": "node api/authWorker/authService.js",
-    "backend:dev": "nodemon api/authWorker/authService.js",
+    "backend:dev": "nodemon api/authWorker/authService.js && nodemon api/redisWorker/redisService.js",
     "dev": "concurrently \"npm run frontend\" \"npm run backend:dev\"",
     "start": "node api/authWorker/authService.js",
     "build": "echo 'No build step needed for static frontend'"

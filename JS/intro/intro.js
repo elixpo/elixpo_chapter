@@ -49,7 +49,15 @@ class ProfileSlider {
   bindEvents() {
     this.elements.nextBtn.addEventListener('click', () => this.nextStep());
     this.elements.backBtn.addEventListener('click', () => this.prevStep());
-    this.elements.displayName.addEventListener('input', () => this.validateDisplayName());
+    this.elements.displayName.addEventListener('input', () => {
+      this.isValid[1] = false;
+      this.updateButtons();
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = setTimeout(() => {
+      console.log('Validating display name...');
+      this.validateDisplayName();
+      }, 1000);
+    });
     this.elements.bio.addEventListener('input', () => this.updateBioCount());
     this.elements.profilePicture.addEventListener('change', (e) => this.handleProfilePicture(e));
     
@@ -77,25 +85,35 @@ class ProfileSlider {
       this.isValid[1] = false;
       nameStatus.innerHTML = '<ion-icon name="warning-outline" class="text-yellow-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-yellow-500 mt-[10px] mr-[5px]">Name must be at least 6 characters</span>';
     } else if (name.length > 20) {
+
       this.isValid[1] = false;
       nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name must be less than 20 characters</span>';
     } else {
       this.isValid[1] = true;
-      const bloomChecker = new BloomFilter();
-      const available = await bloomChecker.checkNameAvailability(name);
-      console.log(available);
+
+      const [available, message, suggestion] = await checkNameAvailability(name);
       if (!available) {
         this.isValid[1] = false;
-        nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name is already taken</span>';
+        if(suggestion && suggestion.length > 0 && suggestion !== name)
+        {
+          nameStatus.innerHTML = `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">${message}... How about ${suggestion} ?</span>`;
+        }
+        else
+        {
+          nameStatus.innerHTML = `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">${message}</span>`;
+        }
         this.updateButtons();
         return;
       }
-      nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">Looks good!</span>';
+      else if(available)
+      {
+        nameStatus.innerHTML = `<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">${message}</span>`;
+      }
     }
-    
+
     this.updateButtons();
   }
-  
+
   updateBioCount() {
     const bio = this.elements.bio.value;
     this.elements.bioCharCount.textContent = bio.length;
@@ -205,6 +223,40 @@ class ProfileSlider {
     }, 2000);
   }
 }
+
+
+async function checkNameAvailability(name) {
+    try {
+      const response = await fetch("http://localhost:5000/api/checkUsername", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log("Name availability result:", errorData);
+        return [errorData.available, errorData.message, errorData.suggestion];
+      }
+      else 
+      {
+        const result = await response.json();
+        console.log("Name availability result:", result);
+        return [result.available, result.message, result.suggestion];
+      }
+
+      
+    } 
+    catch (error) {
+      console.error("Error checking name availability:", error);
+      return false;
+      
+    }
+  }
+
+
 
 
 document.addEventListener('DOMContentLoaded', () => {
