@@ -13,7 +13,7 @@ export function getRedisClient(prefix = "") {
   return {
     set: (key, val, ttl = null) =>
       ttl
-        ? redis.set(`${prefix}:${key}`, val, { EX: ttl })
+        ? redis.set(`${prefix}:${key}`, val, { 'EX': ttl })
         : redis.set(`${prefix}:${key}`, val),
     get: (key) => redis.get(`${prefix}:${key}`),
     del: (key) => redis.del(`${prefix}:${key}`),

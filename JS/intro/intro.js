@@ -225,21 +225,22 @@ async function checkNameAvailability(name) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        return {
-          available: false,
-          reason: errorData.reason || "Server error",
-        };
+        console.log("Name availability result:", errorData);
+        return false;
+      }
+      else 
+      {
+        const result = await response.json();
+        console.log("Name availability result:", result);
+        return result;
       }
 
-      const result = await response.json();
-      console.log("Name availability result:", result);
-      return result;
-    } catch (error) {
+      
+    } 
+    catch (error) {
       console.error("Error checking name availability:", error);
-      return {
-        available: false,
-        reason: "Unable to check availability",
-      };
+      return false;
+      
     }
   }
 

@@ -15,9 +15,7 @@ async function checkInBloomFilter(key) {
     const inBloomFilter = inActiveFilter || inOldFilters;
     
     console.log(`Checked bloom filters for key: ${key}, found: ${inBloomFilter}`);
-    // Use proper Redis client syntax for setting with expiry
-    await authService.set(key, String(inBloomFilter));
-    await authService.expire(key, 180);
+    await authService.set(key, String(inBloomFilter), 180);
     return inBloomFilter;
   } catch (error) {
     console.error(`Error checking bloom filter for key ${key}:`, error);
@@ -85,8 +83,7 @@ async function addNameToBloomRedisDB(name, uid) {
     if (typeof sanitized === 'string') {
         bloomFilter.add(sanitized.toLowerCase());
         authService.del(sanitized.toLowerCase()); 
-        await authService.set(sanitized.toLowerCase(), 'true');
-        await authService.expire(sanitized.toLowerCase(), 900);
+        await authService.set(sanitized.toLowerCase(), 'true', 900);
         setUserDisplayName(uid, sanitized);
         console.log(`Added name to bloom filter: ${sanitized.toLowerCase()}`);
         return true;
@@ -111,4 +108,12 @@ async function checkUsernameRequest(name, req, res)
     return res.status(200).json({ available: true, message: "Username is available!" });
   }
 }
+
+bloomFilter.add("existinguser");
+bloomFilter.add("testuser");
+bloomFilter.add("sampleuser");
+
+checkInBloomFilter("existinguser").then(result => console.log("Bloom filter check for 'existinguser':", result));
+checkInBloomFilter("newuser").then(result => console.log("Bloom filter check for 'newuser':", result));
+
 export {checkInBloomFilter, checkUserNameFormat, suggestUserName, addNameToBloomRedisDB, checkUsernameRequest}
