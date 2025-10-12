@@ -73,12 +73,12 @@ class ProfileSlider {
     if (name.length === 0) {
       this.isValid[1] = false;
       nameStatus.innerHTML = '';
-    } else if (name.length < 2) {
+    } else if (name.length < 6) {
       this.isValid[1] = false;
-      nameStatus.innerHTML = '<ion-icon name="warning-outline" class="text-yellow-500"></ion-icon><span class="text-yellow-500">Name must be at least 2 characters</span>';
+      nameStatus.innerHTML = '<ion-icon name="warning-outline" class="text-yellow-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-yellow-500 mt-[10px] mr-[5px]">Name must be at least 6 characters</span>';
     } else if (name.length > 20) {
       this.isValid[1] = false;
-      nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500"></ion-icon><span class="text-red-500">Name must be less than 20 characters</span>';
+      nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name must be less than 20 characters</span>';
     } else {
       this.isValid[1] = true;
       nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">Looks good!</span>';

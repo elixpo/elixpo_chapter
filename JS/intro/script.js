@@ -1,14 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const form = document.getElementById("profileForm");
   const displayNameInput = document.getElementById("displayName");
   const bioTextarea = document.getElementById("bio");
   const bioCharCount = document.getElementById("bioCharCount");
   const profilePictureInput = document.getElementById("profilePicture");
   const profilePicPreview = document.getElementById("profilePicPreview");
   const nameStatus = document.getElementById("nameStatus");
-  // const nameSuggestions = document.getElementById("nameSuggestions");
   const completeBtn = document.getElementById("completeBtn");
-
   let nameCheckTimeout;
   let isNameAvailable = false;
   bioTextarea.addEventListener("input", function () {
@@ -43,55 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Display name validation and checking
-  displayNameInput.addEventListener("input", function () {
-    const name = this.value.trim();
-
-    // Clear previous timeout
-    clearTimeout(nameCheckTimeout);
-
-    // Clear previous status
-    nameStatus.innerHTML = "";
-    // nameSuggestions.innerHTML = "";
-    isNameAvailable = false;
-    updateCompleteButton();
-
-    if (name.length === 0) {
-      return;
-    }
-
-    if (name.length < 2) {
-      showNameStatus("Name must be at least 2 characters long", "error");
-      return;
-    }
-
-    // Show checking status with inline spinner
-    showNameStatus('<span class="checking-spinner"></span> Checking availability...', "checking");
-
-    // Debounce the check
-    nameCheckTimeout = setTimeout(async () => {
-      try {
-        const result = await window.bloomFilter.checkNameAvailability(name);
-
-        if (result.available) {
-          showNameStatus("✓ Name is available!", "available");
-          isNameAvailable = true;
-        } else {
-          showNameStatus(`✗ ${result.reason}`, "taken");
-          isNameAvailable = false;
-
-          if (result.suggestions && result.suggestions.length > 0) {
-            showSuggestions(result.suggestions);
-          }
-        }
-
-        updateCompleteButton();
-      } catch (error) {
-        showNameStatus("Error checking name availability", "error");
-        console.error("Name check error:", error);
-      }
-    }, 500);
-  });
+  
 
   // // Form submission
   // form.addEventListener("submit", function (e) {
@@ -112,25 +61,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // });
 
   // Helper functions
-  function showNameStatus(message, type) {
-    nameStatus.className = `name-status ${type}`;
-    nameStatus.innerHTML = message;
-  }
+  
 
-  function showSuggestions(suggestions) {
-    nameSuggestions.innerHTML = '<p style="font-size: 14px; color: #666; margin-bottom: 10px;">Try these suggestions:</p>';
-
-    suggestions.forEach((suggestion) => {
-      const suggestionElement = document.createElement("span");
-      suggestionElement.className = "suggestion-item";
-      suggestionElement.textContent = suggestion;
-      suggestionElement.addEventListener("click", () => {
-        displayNameInput.value = suggestion;
-        displayNameInput.dispatchEvent(new Event("input"));
-      });
-      nameSuggestions.appendChild(suggestionElement);
-    });
-  }
+  
 
   function updateCompleteButton() {
     const hasName = displayNameInput.value.trim().length > 0;
