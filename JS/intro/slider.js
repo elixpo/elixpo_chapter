@@ -2,7 +2,7 @@ class ProfileSlider {
   constructor() {
     this.currentStep = 1;
     this.totalSteps = 3;
-    this.isValid = { 1: false, 2: true, 3: true }; // Step 2 and 3 are optional
+    this.isValid = { 1: false, 2: true, 3: true }; 
     
     this.elements = {
       steps: document.querySelectorAll('.step-content'),
@@ -45,23 +45,13 @@ class ProfileSlider {
   }
   
   bindEvents() {
-    // Next button
     this.elements.nextBtn.addEventListener('click', () => this.nextStep());
-    
-    // Back button
     this.elements.backBtn.addEventListener('click', () => this.prevStep());
-    
-    // Display name validation
     this.elements.displayName.addEventListener('input', () => this.validateDisplayName());
-    
-    // Bio character count
     this.elements.bio.addEventListener('input', () => this.updateBioCount());
-    
-    // Profile picture upload
     this.elements.profilePicture.addEventListener('change', (e) => this.handleProfilePicture(e));
     
     
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -138,11 +128,9 @@ class ProfileSlider {
   }
   
   updateUI() {
-    // Update progress bar
     const progress = (this.currentStep / this.totalSteps) * 100;
     this.elements.progressBar.style.width = `${progress}%`;
     
-    // Update step indicators
     this.elements.indicators.forEach((indicator, index) => {
       const stepNum = index + 1;
       indicator.classList.remove('active', 'completed');
@@ -154,12 +142,9 @@ class ProfileSlider {
       }
     });
     
-    // Update title and description
     const stepInfo = this.stepData[this.currentStep];
     this.elements.stepTitle.textContent = stepInfo.title;
     this.elements.stepDescription.textContent = stepInfo.description;
-    
-    // Update step content visibility
     this.elements.steps.forEach((step, index) => {
       const stepNum = index + 1;
       step.classList.remove('active', 'prev');
@@ -175,28 +160,22 @@ class ProfileSlider {
   }
   
   updateButtons() {
-    // Back button
     if (this.currentStep === 1) {
       this.elements.backBtn.classList.add('hidden');
     } else {
       this.elements.backBtn.classList.remove('hidden');
     }
-    
-    // Next/Complete buttons
     if (this.currentStep === this.totalSteps) {
       this.elements.nextBtn.classList.add('hidden');
       this.elements.completeBtn.classList.remove('hidden');
     } else {
       this.elements.nextBtn.classList.remove('hidden');
       this.elements.completeBtn.classList.add('hidden');
-      
-      // Enable/disable next button based on validation
       this.elements.nextBtn.disabled = !this.isValid[this.currentStep];
     }
   }
   
   animateStep() {
-    // Add entrance animation to current step
     const currentStepElement = document.querySelector(`[data-step="${this.currentStep}"]`);
     if (currentStepElement) {
       const formGroup = currentStepElement.querySelector('.form-group');
@@ -207,8 +186,6 @@ class ProfileSlider {
         }, 100);
       }
     }
-    
-    // Focus on relevant input
     setTimeout(() => {
       if (this.currentStep === 1) {
         this.elements.displayName.focus();
@@ -219,7 +196,6 @@ class ProfileSlider {
   }
   
   completeProfile() {
-    // Collect form data
     const formData = new FormData();
     formData.append('displayName', this.elements.displayName.value.trim());
     formData.append('bio', this.elements.bio.value.trim());
@@ -227,24 +203,20 @@ class ProfileSlider {
     if (this.elements.profilePicture.files[0]) {
       formData.append('profilePicture', this.elements.profilePicture.files[0]);
     }
-    
-    // Show loading state
     this.elements.completeBtn.disabled = true;
     this.elements.completeBtn.innerHTML = `
       <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
       <span>Creating Profile...</span>
     `;
     
-    // Simulate API call
     setTimeout(() => {
       console.log('Profile completed:', Object.fromEntries(formData));
-      // Handle successful completion here
-      // Redirect to dashboard or show success message
+      
     }, 2000);
   }
 }
 
-// Initialize the slider when DOM is loaded
+
 document.addEventListener('DOMContentLoaded', () => {
   new ProfileSlider();
 });
