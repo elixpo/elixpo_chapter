@@ -66,14 +66,14 @@ class ProfileSlider {
     });
   }
   
-  validateDisplayName() {
+  async validateDisplayName() {
     const name = this.elements.displayName.value.trim();
     const nameStatus = document.getElementById('nameStatus');
     
     if (name.length === 0) {
       this.isValid[1] = false;
       nameStatus.innerHTML = '';
-    } else if (name.length < 6) {
+    } else if (name.length < 2) {
       this.isValid[1] = false;
       nameStatus.innerHTML = '<ion-icon name="warning-outline" class="text-yellow-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-yellow-500 mt-[10px] mr-[5px]">Name must be at least 6 characters</span>';
     } else if (name.length > 20) {
@@ -81,6 +81,15 @@ class ProfileSlider {
       nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name must be less than 20 characters</span>';
     } else {
       this.isValid[1] = true;
+      const bloomChecker = new BloomFilter();
+      const available = await bloomChecker.checkNameAvailability(name);
+      console.log(available);
+      if (!available) {
+        this.isValid[1] = false;
+        nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name is already taken</span>';
+        this.updateButtons();
+        return;
+      }
       nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">Looks good!</span>';
     }
     

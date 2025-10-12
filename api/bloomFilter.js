@@ -1,5 +1,7 @@
 import { murmurhash3_32_gc } from "./murmurhash3.js";
 import fs from "fs";
+import path from "path";
+
 class BloomFilter {
   constructor(size, numHashes) {
     this.size = size;
@@ -52,9 +54,8 @@ class BloomFilter {
     return Math.pow(probBitSet, k);
   }
 
-  // Save to binary file
   saveToFile(path) {
-    const header = Buffer.alloc(12); // store size, numHashes, count
+    const header = Buffer.alloc(12);
     header.writeUInt32BE(this.size, 0);
     header.writeUInt32BE(this.numHashes, 4);
     header.writeUInt32BE(this.count, 8);
@@ -63,7 +64,6 @@ class BloomFilter {
     fs.writeFileSync(path, buffer);
   }
 
-  // Load from binary file
   static loadFromFile(path) {
     const buffer = fs.readFileSync(path);
 
@@ -88,15 +88,19 @@ class AdaptiveBloom {
     this.file = file;
     this.filters = [];
 
-    // If saved state exists, load it
+    file = `bloomFilters/adaptiveBloom_${this.getCurrentTimestamp()}.bin`;
     if (fs.existsSync(file)) {
       this.loadFromFile(file);
     } else {
       const m = Math.ceil(-(expectedItems * Math.log(targetFPR)) / Math.log(2) ** 2);
       const k = Math.round((m / expectedItems) * Math.log(2));
       this.filters.push(new BloomFilter(m, k));
-      this.saveToFile(); // save initial
+      this.saveToFile(); 
     }
+  }
+
+  getCurrentTimestamp() {
+    return Date.now();
   }
 
   add(item) {
@@ -121,7 +125,6 @@ class AdaptiveBloom {
   }
 
   saveToFile() {
-    // Write multiple filters back-to-back
     const buffers = [];
     for (const f of this.filters) {
       const header = Buffer.alloc(12);
@@ -156,5 +159,59 @@ class AdaptiveBloom {
   }
 }
 
+
+function loadAllBloomFilters() {
+  const bloomFiltersDir = 'bloomFilters';
+  const allBloomFilters = [];
+
+
+  if (!fs.existsSync(bloomFiltersDir)) {
+    fs.mkdirSync(bloomFiltersDir, { recursive: true });
+    return allBloomFilters;
+  }
+
+  try {
+    const files = fs.readdirSync(bloomFiltersDir);
+    const binFiles = files.filter(file => file.endsWith('.bin'));
+
+    for (const file of binFiles) {
+      try {
+        const filePath = path.join(bloomFiltersDir, file);
+        if (file.startsWith('adaptiveBloom_')) {
+          const adaptiveBloom = new AdaptiveBloom(10000, 0.01);
+          adaptiveBloom.loadFromFile(filePath);
+          allBloomFilters.push({
+            type: 'adaptive',
+            filename: file,
+            filter: adaptiveBloom,
+            timestamp: file.match(/adaptiveBloom_(\d+)\.bin/)?.[1] || 'unknown'
+          });
+        } else {
+          const bloomFilter = BloomFilter.loadFromFile(filePath);
+          allBloomFilters.push({
+            type: 'regular',
+            filename: file,
+            filter: bloomFilter,
+            timestamp: 'unknown'
+          });
+        }
+      } catch (error) {
+        console.error(`Failed to load bloom filter from ${file}:`, error.message);
+      }
+    }
+
+    console.log(`✅ Loaded ${allBloomFilters.length} bloom filters from ${bloomFiltersDir}/`);
+    return allBloomFilters;
+  } catch (error) {
+    console.error('Error reading bloomFilters directory:', error.message);
+    return allBloomFilters;
+  }
+}
+
+const allBloomFilters = loadAllBloomFilters();
 const bloomFilter = new AdaptiveBloom(10000, 0.01);
-export { bloomFilter };
+const time = bloomFilter.getCurrentTimestamp();
+console.log(`Current timestamp: ${time}`);
+console.log(`Total bloom filters loaded: ${allBloomFilters.length}`);
+
+export { bloomFilter, allBloomFilters, BloomFilter, AdaptiveBloom };
