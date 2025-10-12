@@ -6,13 +6,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const profilePictureInput = document.getElementById("profilePicture");
   const profilePicPreview = document.getElementById("profilePicPreview");
   const nameStatus = document.getElementById("nameStatus");
-  const nameSuggestions = document.getElementById("nameSuggestions");
+  // const nameSuggestions = document.getElementById("nameSuggestions");
   const completeBtn = document.getElementById("completeBtn");
 
   let nameCheckTimeout;
   let isNameAvailable = false;
-
-  // Bio character counter
   bioTextarea.addEventListener("input", function () {
     const currentLength = this.value.length;
     bioCharCount.textContent = currentLength;
@@ -26,12 +24,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Profile picture preview
+
   profilePictureInput.addEventListener("change", function (e) {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
         alert("Please select an image smaller than 5MB");
         return;
       }
@@ -55,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Clear previous status
     nameStatus.innerHTML = "";
-    nameSuggestions.innerHTML = "";
+    // nameSuggestions.innerHTML = "";
     isNameAvailable = false;
     updateCompleteButton();
 

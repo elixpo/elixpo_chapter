@@ -16,7 +16,6 @@ class ProfileSlider {
       displayName: document.getElementById('displayName'),
       bio: document.getElementById('bio'),
       bioCharCount: document.getElementById('bioCharCount'),
-      skipPhotoBtn: document.getElementById('skipPhotoBtn'),
       profilePicture: document.getElementById('profilePicture'),
       profilePicPreview: document.getElementById('profilePicPreview')
     };
@@ -24,15 +23,18 @@ class ProfileSlider {
     this.stepData = {
       1: {
         title: "What's your name?",
-        description: "This will be your display name on LixBlogs"
+        description: "This will be your display name on LixBlogs",
+        step: 1
       },
       2: {
         title: "Tell us about yourself",
-        description: "Write a short bio to help others know you better (optional)"
+        description: "Write a short bio to help others know you better (optional)",
+        step: 2
       },
       3: {
         title: "Add a profile picture",
-        description: "Upload a photo or skip this step for now"
+        description: "Upload a photo or skip this step for now",
+        step: 3
       }
     };
     
@@ -79,7 +81,7 @@ class ProfileSlider {
       nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500"></ion-icon><span class="text-red-500">Name must be less than 20 characters</span>';
     } else {
       this.isValid[1] = true;
-      nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500"></ion-icon><span class="text-green-500">Looks good!</span>';
+      nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">Looks good!</span>';
     }
     
     this.updateButtons();
@@ -131,29 +133,8 @@ class ProfileSlider {
     const progress = (this.currentStep / this.totalSteps) * 100;
     this.elements.progressBar.style.width = `${progress}%`;
     
-    this.elements.indicators.forEach((indicator, index) => {
-      const stepNum = index + 1;
-      indicator.classList.remove('active', 'completed');
-      
-      if (stepNum < this.currentStep) {
-        indicator.classList.add('completed');
-      } else if (stepNum === this.currentStep) {
-        indicator.classList.add('active');
-      }
-    });
-    
-    const stepInfo = this.stepData[this.currentStep];
-    this.elements.stepTitle.textContent = stepInfo.title;
-    this.elements.stepDescription.textContent = stepInfo.description;
-    this.elements.steps.forEach((step, index) => {
-      const stepNum = index + 1;
-      step.classList.remove('active', 'prev');
-      
-      if (stepNum === this.currentStep) {
-        step.classList.add('active');
-      } else if (stepNum < this.currentStep) {
-        step.classList.add('prev');
-      }
+    document.querySelectorAll(".step-content").forEach((step, index) => {
+      step.classList.toggle('hidden', index + 1 !== this.currentStep);
     });
     
     this.updateButtons();
