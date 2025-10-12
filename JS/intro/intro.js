@@ -50,11 +50,13 @@ class ProfileSlider {
     this.elements.nextBtn.addEventListener('click', () => this.nextStep());
     this.elements.backBtn.addEventListener('click', () => this.prevStep());
     this.elements.displayName.addEventListener('input', () => {
+      this.isValid[1] = false;
+      this.updateButtons();
       clearTimeout(this.typingTimeout);
       this.typingTimeout = setTimeout(() => {
       console.log('Validating display name...');
       this.validateDisplayName();
-      }, 1500);
+      }, 1000);
     });
     this.elements.bio.addEventListener('input', () => this.updateBioCount());
     this.elements.profilePicture.addEventListener('change', (e) => this.handleProfilePicture(e));
