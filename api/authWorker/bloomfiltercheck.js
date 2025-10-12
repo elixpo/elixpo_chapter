@@ -15,7 +15,9 @@ async function checkInBloomFilter(key) {
     const inBloomFilter = inActiveFilter || inOldFilters;
     
     console.log(`Checked bloom filters for key: ${key}, found: ${inBloomFilter}`);
-    await authService.set(key, String(inBloomFilter), { EX: 180 }); //cache for 3 mins
+    // Use proper Redis client syntax for setting with expiry
+    await authService.set(key, String(inBloomFilter));
+    await authService.expire(key, 180);
     return inBloomFilter;
   } catch (error) {
     console.error(`Error checking bloom filter for key ${key}:`, error);
@@ -25,24 +27,38 @@ async function checkInBloomFilter(key) {
 
 function checkUserNameFormat(name)
 {
-    if (!name || typeof name !== 'string') {
-        return "The name must be a non-empty string.";
-    }
+  if (!name || typeof name !== 'string') {
+    return "The name must be a non-empty string.";
+  }
 
-    const sanitized = name.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
-    if (!sanitized || sanitized.replace(/-/g, '') === '') {
-        return "The name cancontain alphanumeric characters & hyphens only.";
-    }
+  const sanitized = name.trim();
+  
+  // Check length requirements first
+  if (sanitized.length < 6 || sanitized.length > 20) {
+    return "The name must be between 6 and 20 characters long.";
+  }
 
-    if (sanitized.includes('--') || sanitized.startsWith('-') || sanitized.endsWith('-')) {
-        return "The name must not contain consecutive hyphens or leading/trailing hyphens.";
-    }
-
+  // Priority 1: Only alphabets
+  if (/^[a-zA-Z]+$/.test(sanitized)) {
     return sanitized;
+  }
+  
+  // Priority 2: Alphabets + numbers
+  if (/^[a-zA-Z0-9]+$/.test(sanitized)) {
+    return sanitized;
+  }
+  
+  // Priority 3: Alphabets + numbers + dots/underscores
+  if (/^[a-zA-Z0-9._]+$/.test(sanitized)) {
+    return sanitized;
+  }
+
+  return "The name must contain only alphabetic characters, numbers, underscores, or dots.";
 }
 
 function suggestUserName(name) {
     const normalized = checkUserNameFormat(name);
+    
     if (typeof normalized === 'string' && normalized !== name) {
         return normalized;
     }
@@ -64,12 +80,13 @@ function suggestUserName(name) {
 }
 
 
-function addNameToBloomRedisDB(name, uid) {
+async function addNameToBloomRedisDB(name, uid) {
     const sanitized = checkUserNameFormat(name);
     if (typeof sanitized === 'string') {
         bloomFilter.add(sanitized.toLowerCase());
         authService.del(sanitized.toLowerCase()); 
-        authService.set(sanitized.toLowerCase(), 'true', { EX: 900 }); 
+        await authService.set(sanitized.toLowerCase(), 'true');
+        await authService.expire(sanitized.toLowerCase(), 900);
         setUserDisplayName(uid, sanitized);
         console.log(`Added name to bloom filter: ${sanitized.toLowerCase()}`);
         return true;
@@ -81,7 +98,8 @@ function addNameToBloomRedisDB(name, uid) {
 
 async function checkUsernameRequest(name, req, res)
 {
-    const sanitized = checkUserNameFormat(name);
+  const sanitized = checkUserNameFormat(name);
+  console.log("Sanitized Name:", sanitized);
   if (sanitized !== name) {
     return res.status(400).json({ available: false, message: sanitized });
   }
