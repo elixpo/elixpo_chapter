@@ -2,7 +2,7 @@ import { appExpress, router } from "../initializeExpress.js";
 import {registerRequest, verifyRegisterOTP, registerDisplayName} from './apiRegister.js';
 import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP} from './apiLogin.js';
 import {checkUsernameRequest } from "./bloomfiltercheck.js";
-
+import { extractUIDFromCookie } from "./cookieHandler.js";
 
 
 router.get("/registerRequest", async (req, res) => {
@@ -74,6 +74,14 @@ router.post("/registerDisplayName", async (req, res) => {
   await registerDisplayName(username, uid, req, res);
 })
 
+
+router.post("/getUID", (req, res) => {
+  const uid = extractUIDFromCookie(req);
+  if (!uid) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  res.status(200).json({ uid });
+});
 
 appExpress.listen(5000, "localhost", () => {
   console.log("Server running at http://localhost:5000");

@@ -79,7 +79,6 @@ function addNameToBloomRedisDB(name, uid) {
     }
 }
 
-// Function connects with the api gateway
 async function checkUsernameRequest(name, req, res)
 {
     const sanitized = checkUserNameFormat(name);
@@ -95,10 +94,3 @@ async function checkUsernameRequest(name, req, res)
   }
 }
 export {checkInBloomFilter, checkUserNameFormat, suggestUserName, addNameToBloomRedisDB, checkUsernameRequest}
-// bloomFilter.add("exampleKey");
-
-// checkInBloomFilter("exampleKey").then(result => {
-//   console.log(`Key exists: ${result}`);
-// }).catch(err => {
-//   console.error("Error:", err);
-// });
