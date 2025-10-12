@@ -54,28 +54,36 @@ function checkUserNameFormat(name)
   return "The name must contain only alphabetic characters, numbers, underscores, or dots.";
 }
 
-function suggestUserName(name) {
+async function suggestUserName(name) {
     const normalized = checkUserNameFormat(name);
-    
     if (typeof normalized === 'string' && normalized !== name) {
         return normalized;
     }
+
     const baseName = name.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     if (!baseName) {
         return 'user' + Math.random().toString(36).substr(2, 6);
     }
+
     const elegantSuffixes = ['pro', 'elite', 'prime', 'zen', 'core', 'sage'];
     const classyPrefixes = ['the', 'neo', 'ultra', 'alpha', 'meta'];
-    
-    const suggestions = [
-        baseName,
-        baseName + elegantSuffixes[Math.floor(Math.random() * elegantSuffixes.length)],
-        classyPrefixes[Math.floor(Math.random() * classyPrefixes.length)] + baseName,
-        baseName + (Math.floor(Math.random() * 99) + 1)
-    ];
-    
-    return suggestions[Math.floor(Math.random() * suggestions.length)];
+    const candidates = [];
+    candidates.push(baseName);
+    for (let i = 1; i <= 20; i++) {
+        candidates.push(baseName + (Math.floor(Math.random() * 99) + 1));
+    }
+    elegantSuffixes.forEach(suf => candidates.push(baseName + suf));
+    classyPrefixes.forEach(pre => candidates.push(pre + baseName));
+    candidates.push(baseName + Math.random().toString(36).substr(2, 4));
+    for (const candidate of candidates) {
+        const exists = await checkInBloomFilter(candidate);
+        if (!exists) {
+            return candidate;
+        }
+    }
+    return 'user' + Math.random().toString(36).substr(2, 8);
 }
+
 
 
 async function addNameToBloomRedisDB(name, uid) {
@@ -102,18 +110,19 @@ async function checkUsernameRequest(name, req, res)
   }
   const exists = await checkInBloomFilter(sanitized.toLowerCase());
   if (exists) {
-    const userNameSuggested = suggestUserName(sanitized);
+    const userNameSuggested = await suggestUserName(sanitized);
+    console.log("Suggested Name:", userNameSuggested);
     return res.status(200).json({ available: false, message: "Username is already taken.", suggestion: userNameSuggested });
   } else {
     return res.status(200).json({ available: true, message: "Username is available!" });
   }
 }
 
-bloomFilter.add("existinguser");
-bloomFilter.add("testuser");
-bloomFilter.add("sampleuser");
+// bloomFilter.add("existinguser");
+// bloomFilter.add("testuser");
+// bloomFilter.add("sampleuser");
 
-checkInBloomFilter("existinguser").then(result => console.log("Bloom filter check for 'existinguser':", result));
-checkInBloomFilter("newuser").then(result => console.log("Bloom filter check for 'newuser':", result));
+// checkInBloomFilter("existinguser").then(result => console.log("Bloom filter check for 'existinguser':", result));
+// checkInBloomFilter("newuser").then(result => console.log("Bloom filter check for 'newuser':", result));
 
 export {checkInBloomFilter, checkUserNameFormat, suggestUserName, addNameToBloomRedisDB, checkUsernameRequest}

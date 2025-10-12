@@ -89,19 +89,29 @@ class ProfileSlider {
     } else {
       this.isValid[1] = true;
 
-      const available = await checkNameAvailability(name);
+      const [available, message, suggestion] = await checkNameAvailability(name);
       if (!available) {
         this.isValid[1] = false;
-        nameStatus.innerHTML = '<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">Name is already taken</span>';
+        if(suggestion && suggestion.length > 0 && suggestion !== name)
+        {
+          nameStatus.innerHTML = `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">${message}... How about ${suggestion} ?</span>`;
+        }
+        else
+        {
+          nameStatus.innerHTML = `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-red-500 mt-[10px] mr-[5px]">${message}</span>`;
+        }
         this.updateButtons();
         return;
       }
-      nameStatus.innerHTML = '<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">Looks good!</span>';
+      else if(available)
+      {
+        nameStatus.innerHTML = `<ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon><span class="text-green-500 mt-[10px] mr-[5px]">${message}</span>`;
+      }
     }
-    
+
     this.updateButtons();
   }
-  
+
   updateBioCount() {
     const bio = this.elements.bio.value;
     this.elements.bioCharCount.textContent = bio.length;
@@ -226,13 +236,13 @@ async function checkNameAvailability(name) {
       if (!response.ok) {
         const errorData = await response.json();
         console.log("Name availability result:", errorData);
-        return false;
+        return [errorData.available, errorData.message, errorData.suggestion];
       }
       else 
       {
         const result = await response.json();
         console.log("Name availability result:", result);
-        return result;
+        return [result.available, result.message, result.suggestion];
       }
 
       
