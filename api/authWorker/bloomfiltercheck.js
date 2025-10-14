@@ -30,23 +30,24 @@ function checkUserNameFormat(name)
   }
 
   const sanitized = name.trim();
-  
-  // Check length requirements first
   if (sanitized.length < 6 || sanitized.length > 20) {
     return "The name must be between 6 and 20 characters long.";
   }
+  if (/^\d+$/.test(sanitized)) {
+    return "The name cannot contain only numbers.";
+  }
 
-  // Priority 1: Only alphabets
+  if (/^\d/.test(sanitized)) {
+    return "The name cannot start with a number.";
+  }
   if (/^[a-zA-Z]+$/.test(sanitized)) {
     return sanitized;
   }
-  
-  // Priority 2: Alphabets + numbers
+
   if (/^[a-zA-Z0-9]+$/.test(sanitized)) {
     return sanitized;
   }
-  
-  // Priority 3: Alphabets + numbers + dots/underscores
+
   if (/^[a-zA-Z0-9._]+$/.test(sanitized)) {
     return sanitized;
   }
