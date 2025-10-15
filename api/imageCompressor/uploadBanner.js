@@ -2,7 +2,7 @@ import { store, collec } from "../initializeFirebase.js";
 import fs from "fs";
 import { compressBannerPic, imageToBase64 } from "./dctCompress.js";
 
-export async function uploadBanner(req, res, imgData, uid) {
+export async function uploadBannerPic(req, res, imgData, uid) {
   try {
     const compressedImagePath = await compressBannerPic(imgData, uid, 30);
     const bucket = store.bucket();

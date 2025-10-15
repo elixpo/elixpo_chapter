@@ -4,6 +4,7 @@ import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP}
 import {checkUsernameRequest } from "./bloomfiltercheck.js";
 import { extractUIDFromCookie } from "./cookieHandler.js";
 import { uploadProfilePic } from "../imageCompressor/uploadpfp.js";
+import { uploadBannerPic } from "../imageCompressor/uploadBanner.js";
 
 router.get("/registerRequest", async (req, res) => {
     const email = req.query.email;
@@ -87,6 +88,12 @@ router.post("/uploadProfilePic", async (req, res) => {
   const { imgData, uid } = req.body;
     await uploadProfilePic(req, res, imgData, uid);
 });
+
+router.post("/uploadBannerPic", async (req, res) => {
+  const { imgData, uid } = req.body;
+    await uploadBannerPic(req, res, imgData, uid);
+});
+
 
 appExpress.listen(5000, "localhost", () => {
   console.log("Server running at http://localhost:5000");
