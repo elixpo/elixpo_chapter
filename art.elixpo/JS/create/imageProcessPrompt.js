@@ -29,11 +29,7 @@ document.getElementById("inputImage").addEventListener("click", function () {
             document.getElementById("imageHolder").style.backgroundPosition = "center center";
             handleFlagUpdateAuto(".models", "model", "nanobanana");
             handleFlagUpdateAuto(".themes", "theme", "normal");
-            document.querySelectorAll(".modelsTiles").forEach(tile => {
-                if ((tile.getAttribute("data-model") === "flux") || (tile.getAttribute("data-model") === "turbo")) {
-                    tile.style.pointerEvents = "none";
-                }
-            });
+            
             document.getElementById("OneImage").style.pointerEvents = "none";
             document.getElementById("OneImage").className = "fa-solid fa-dice-one";
             generationNumber = 1;
@@ -101,11 +97,7 @@ async function handleImageFile(file) {
             document.getElementById("imageHolder").style.backgroundPosition = "center center";
             handleFlagUpdateAuto(".models", "model", "nanobanana");
             handleFlagUpdateAuto(".themes", "theme", "normal");
-            document.querySelectorAll(".modelsTiles").forEach(tile => {
-                if ((tile.getAttribute("data-model") === "flux") || (tile.getAttribute("data-model") === "turbo")) {
-                    tile.style.pointerEvents = "none";
-                }
-            });
+
             document.getElementById("OneImage").style.pointerEvents = "none";
             document.getElementById("OneImage").className = "fa-solid fa-dice-one";
             generationNumber = 1;
@@ -134,9 +126,7 @@ function cancelImageReference() {
     document.getElementById("promptTextInput").classList.remove("blur");
     document.getElementById("overlay").classList.remove("display");
     document.getElementById("overlay").innerHTML = "";
-    document.querySelectorAll(".modelsTiles").forEach(tile => {
-        tile.style.pointerEvents = "all";
-    });
+    
     dismissNotification();
     document.getElementById("OneImage").style.pointerEvents = "all"
     notify("Image reference removed.");

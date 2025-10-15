@@ -10,6 +10,29 @@
     <link rel="stylesheet" href="../../CSS/intro/introStyle.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <style>
+      #cropModal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-content {
+        background-color: #1a202c;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+      }
+    </style>
   </head>
 <body>
     <div class="min-h-screen min-w-screen items-center flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-x-hidden">
@@ -39,10 +62,15 @@
             <div class="step-circle">3</div>
             <span class="step-label">Photo</span>
             </div>
+            <div class="step-line"></div>
+            <div class="step" id="step4-indicator">
+            <div class="step-circle">4</div>
+            <span class="step-label">Banner</span>
+            </div>
           </div>
           </div>
           <div class="progress-bar bg-slate-700/50 rounded-full h-2 overflow-hidden">
-          <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 33.33%" id="progressBar"></div>
+          <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 25%" id="progressBar"></div>
           </div>
 
           <div class="welcome-section mx-auto text-center mt-5">
@@ -62,7 +90,7 @@
               Display Name *
             </label>
             <input type="text" id="displayName" name="displayName" spellcheck="false" autocomplete="off" required class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-md placeholder:text-md sm:text-sm text-slate-200" placeholder="Enter your display name">
-            <div class="name-status text-sm font-medium min-h-5 flex items-center gap-2 mt-2" id="nameStatus"> 
+            <div class="name-status text-sm font-medium min-h-5 flex items-center gap-2 mt-2" id="nameStatus">
             </div>
           </div>
 
@@ -70,13 +98,13 @@
                   <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
                     Bio (Optional)
                   </label>
-                  <textarea 
-                    id="bio" 
-                    name="bio" 
+                  <textarea
+                    id="bio"
+                    name="bio"
                     placeholder="Wassup Buddy! Let us know your glorious self in a few words..."
-                    spellcheck="false" 
-                    autocomplete="off" 
-                    rows="3" 
+                    spellcheck="false"
+                    autocomplete="off"
+                    rows="3"
                     maxlength="150"
                     class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
                   ></textarea>
@@ -86,58 +114,62 @@
           </div>
 
             <div class="step-content w-full hidden" id="step3" data-step="3">
-              <div class="profile-banner-container relative w-full max-w-md mx-auto">
-                <div 
-                  class="banner-preview w-full h-32 rounded-t-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-2 border-dashed border-slate-600/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-purple-400 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20 group" 
-                  id="bannerPreview"
-                  onclick="document.getElementById('bannerImage').click()"
-                >
-                  <ion-icon name="image-outline" class="text-3xl mb-1 group-hover:text-purple-400 transition-colors duration-300"></ion-icon>
-                  <span class="group-hover:text-purple-400 transition-colors duration-300 text-xs">Add banner photo</span>
+                <div class="profile-banner-container relative w-full max-w-md mx-auto">
+                    <div
+                        class="profile-pic-preview w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-blue-400 hover:bg-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 group"
+                        id="profilePicPreview"
+                        onclick="document.getElementById('profilePicture').click()"
+                      >
+                        <ion-icon name="person-outline" class="text-2xl group-hover:text-blue-400 transition-colors duration-300"></ion-icon>
+                      </div>
+                    <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
                 </div>
-                
-                <div class="absolute -bottom-12 left-6">
-                  <div 
-                    class="profile-pic-preview w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-blue-400 hover:bg-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 group" 
-                    id="profilePicPreview"
-                    onclick="document.getElementById('profilePicture').click()"
-                  >
-                    <ion-icon name="person-outline" class="text-2xl group-hover:text-blue-400 transition-colors duration-300"></ion-icon>
-                  </div>
-                </div>
-                
-                <div class="h-12 bg-slate-800/20 border-2 border-t-0 border-dashed border-slate-600/50 rounded-b-xl"></div>
-                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
-                <input type="file" id="bannerImage" name="bannerImage" accept="image/*" class="hidden" />
-              </div>
+
             </div>
 
+            <div class="step-content w-full hidden" id="step4" data-step="4">
+                <div class="profile-banner-container relative w-full max-w-md mx-auto">
+                    <div
+                      class="banner-preview w-full h-32 rounded-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-2 border-dashed border-slate-600/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-purple-400 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20 group"
+                      id="bannerPreview"
+                      onclick="document.getElementById('bannerImage').click()"
+                    >
+                      <ion-icon name="image-outline" class="text-3xl mb-1 group-hover:text-purple-400 transition-colors duration-300"></ion-icon>
+                      <span class="group-hover:text-purple-400 transition-colors duration-300 text-xs">Add banner photo</span>
+                    </div>
+                    <input type="file" id="bannerImage" name="bannerImage" accept="image/*" class="hidden" />
+                </div>
+            </div>
+
+            <div class="step-content w-full hidden" id="step5" data-step="5">
+              <h2 class="text-white text-2xl text-center">You're all set!</h2>
+            </div>
         </div>
 
             <div class="form-actions flex justify-between items-center px-5">
-              <button 
-                type="button" 
-                class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden" 
+              <button
+                type="button"
+                class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden"
                 id="backBtn"
               >
                     <ion-icon name="arrow-back" class="text-base"></ion-icon>
                     <span>Back</span>
                   </button>
-                  
+
                   <div class="flex gap-3 ml-auto">
-                    <button 
-                      type="button" 
-                      class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
-                      id="nextBtn" 
+                    <button
+                      type="button"
+                      class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                      id="nextBtn"
                       disabled
                     >
                       <span>Next</span>
                       <ion-icon name="arrow-forward" class="text-base"></ion-icon>
                     </button>
-                    
-                    <button 
-                      type="submit" 
-                      class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
+
+                    <button
+                      type="submit"
+                      class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden"
                       id="completeBtn"
                     >
                       <span>Complete Profile</span>
@@ -147,6 +179,16 @@
                 </div>
         </div>
       </section>
+      <div id="cropModal" class="flex">
+        <div class="modal-content">
+          <h2 class="text-white text-2xl mb-4">Crop Image</h2>
+          <div>
+            <img id="imageToCrop" src="" style="max-width: 100%;">
+          </div>
+          <button id="cropButton" class="bg-blue-500 text-white px-4 py-2 rounded-md mt-4">Crop</button>
+        </div>
+      </div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
       <script src="../../JS/intro/intro.js"></script>
 </body>
 </html>
