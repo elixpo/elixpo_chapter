@@ -70,6 +70,7 @@ async function createFirebaseUser(email, displayName, photoURL, provider, countr
             orgSubdomain: "",
             blogReports: {},
             profilePicLink: photoURL || "",
+            bannerPicLink: "",
             orgId: "",
             followers: {},
             following: {},

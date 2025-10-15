@@ -42,7 +42,31 @@ export async function compressProfilePic(imgData, uid, quality = 15) {
 }
 
 
+export async function compressBannerPic(imgData, uid, quality = 15) {
+  try {
+    const base64Data = imgData.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+    const userDir = path.join("../../bannerPicUploads", uid);
+    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
+    const outputPath = path.join(userDir, `banner_compressed_${Date.now()}.jpg`);
+    const existingFiles = fs.readdirSync(userDir).filter(file => file.endsWith('.jpg'));
+    existingFiles.forEach(file => {
+        fs.unlinkSync(path.join(userDir, file));
+    });
+    await sharp(buffer)
+      .jpeg({
+        quality,
+        effort: 4
+      })
+      .toFile(outputPath);
 
-let imgPath = "test.jpg";
-let data = imageToBase64(imgPath);
-let compressedImageLocation  = await compressProfilePic(data, "testUser");
+    return outputPath;
+  } catch (error) {
+    console.error("Error compressing banner picture:", error);
+    throw error;
+  }
+}
+
+// let imgPath = "test.jpg";
+// let data = imageToBase64(imgPath);
+// let compressedImageLocation  = await compressProfilePic(data, "testUser");

@@ -1,12 +1,12 @@
 import { store, collec } from "../initializeFirebase.js";
 import fs from "fs";
-import { compressProfilePic, imageToBase64 } from "./dctCompress.js";
+import { compressBannerPic, imageToBase64 } from "./dctCompress.js";
 
-export async function uploadProfilePic(req, res, imgData, uid) {
+export async function uploadBanner(req, res, imgData, uid) {
   try {
-    const compressedImagePath = await compressProfilePic(imgData, uid, 10);     
+    const compressedImagePath = await compressBannerPic(imgData, uid, 30);
     const bucket = store.bucket();
-    const destination = `profile_pictures/${uid}/pfp_${Date.now()}.jpg`;
+    const destination = `banner_images/${uid}/banner_${Date.now()}.jpg`;
     await bucket.upload(compressedImagePath, {
         destination,
         metadata: {
@@ -24,18 +24,18 @@ export async function uploadProfilePic(req, res, imgData, uid) {
     try 
     {
         collec.collection('users').doc(uid).update({
-        profilePicLink: url,
+        bannerPicLink: url,
         updatedAt: new Date().toISOString()
     });
     res.status(200).json({ success: true, url: url });
     }
     catch (error)
     {
-        console.error("Error updating Firestore with profile picture URL:", error);
-        res.status(500).json({ success: false, url: url, error: "Failed to update profile picture URL in database." });
+        console.error("Error updating Firestore with banner picture URL:", error);
+        res.status(500).json({ success: false, url: url, error: "Failed to update banner picture URL in database." });
     }
   } catch (error) {
-    console.error("Error uploading profile picture:", error);
+    console.error("Error uploading banner picture:", error);
     throw error;
   }
 }
