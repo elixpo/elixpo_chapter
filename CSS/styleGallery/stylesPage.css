@@ -29,7 +29,16 @@ body {
   color: #8d49fd;
 }
 
-/* Header Styles */
+.appHeader > i:not(.githubLogo),
+.appHeader > .userCell {
+  margin-right: 15px !important;
+}
+
+.githubLogo {
+  margin-left: 25px !important;
+  margin-right: 0 !important;
+}
+
 .stylesHeader {
   text-align: center;
   padding: 40px 20px;
@@ -153,7 +162,11 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(141, 73, 253, 0.2), rgba(86, 145, 243, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(141, 73, 253, 0.2),
+    rgba(86, 145, 243, 0.2)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,6 +248,11 @@ body {
   display: flex;
 }
 
+.styleModal.active .modalContent {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
 .modalContent {
   background: #1d202a;
   border-radius: 20px;
@@ -244,6 +262,10 @@ body {
   overflow-y: auto;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.1);
+
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
 .closeModal {
@@ -266,6 +288,7 @@ body {
 .modalBody {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* display:flex; */
   gap: 30px;
   padding: 30px;
 }
@@ -330,6 +353,12 @@ body {
   left: 0;
   font-weight: bold;
 }
+.modalBody > .tryNowBtn {
+  grid-column: 1/-1;
+  justify-self: center;
+  margin-top: 0;
+  padding-top: 10px;
+}
 
 /* Try Now Button */
 .tryNowBtn {
@@ -346,7 +375,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 25px;
+
   box-shadow: 0 4px 15px rgba(141, 73, 253, 0.3);
 }
 
@@ -425,4 +454,17 @@ body {
 }
 .styleCard:nth-child(12) {
   animation-delay: 1.2s;
+}
+@media (max-width: 900px) {
+  .modalBody {
+    grid-template-columns: 1fr;
+  }
+
+  .modalImage img {
+    height: auto;
+  }
+
+  .tryNowBtn {
+    margin-top: 25px;
+  }
 }
