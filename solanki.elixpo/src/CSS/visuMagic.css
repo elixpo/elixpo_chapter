@@ -2,7 +2,6 @@
 :root
 {
    --other_text_width : 0;
-}
 
 .spotlightSection {
     display: flex;
@@ -458,6 +457,7 @@
    z-index: 0;
    background: linear-gradient(to bottom, #2E2E33 75%, #080808);
    -webkit-background-clip: text;
+   background-clip: text;
    -webkit-text-fill-color: transparent;
    
    transition: 0.5s;
@@ -478,11 +478,12 @@
   overflow: hidden;    
   font-family: 'Dosis', monospace;  
   font-size: 8em;
-  background: linear-gradient(to bottom, #cacaca 75%, #464545);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   width: 400px;
   
+}
 }
 
  .mask
