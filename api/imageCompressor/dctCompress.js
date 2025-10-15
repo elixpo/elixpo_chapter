@@ -15,11 +15,11 @@ function imageToBase64(filePath) {
 }
 
 
-export async function compressProfilePic(imgData, uid, quality = 65) {
+export async function compressProfilePic(imgData, uid, quality = 15) {
   try {
     const base64Data = imgData.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
-    const userDir = path.join("profilePicUploads", uid);
+    const userDir = path.join("../../profilePicUploads", uid);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
     const outputPath = path.join(userDir, `compressed_${Date.now()}.jpg`);
     await sharp(buffer)
@@ -39,4 +39,4 @@ export async function compressProfilePic(imgData, uid, quality = 65) {
 
 let imgPath = "test.jpg";
 let data = imageToBase64(imgPath);
-let compressedImageLocation  = await compressProfilePic(data, "testUser", 30);
+let compressedImageLocation  = await compressProfilePic(data, "testUser");
