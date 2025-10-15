@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 
-function imageToBase64(filePath) {
+export function imageToBase64(filePath) {
   const fileData = fs.readFileSync(filePath);
   const base64 = fileData.toString("base64");
 
@@ -21,7 +21,11 @@ export async function compressProfilePic(imgData, uid, quality = 15) {
     const buffer = Buffer.from(base64Data, "base64");
     const userDir = path.join("../../profilePicUploads", uid);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
-    const outputPath = path.join(userDir, `compressed_${Date.now()}.jpg`);
+    const outputPath = path.join(userDir, `pfp_compressed_${Date.now()}.jpg`);
+    const existingFiles = fs.readdirSync(userDir).filter(file => file.endsWith('.jpg'));
+    existingFiles.forEach(file => {
+        fs.unlinkSync(path.join(userDir, file));
+    });
     await sharp(buffer)
       .jpeg({
         quality,
@@ -36,6 +40,8 @@ export async function compressProfilePic(imgData, uid, quality = 15) {
     throw error;
   }
 }
+
+
 
 let imgPath = "test.jpg";
 let data = imageToBase64(imgPath);

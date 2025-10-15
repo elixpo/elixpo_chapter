@@ -9,11 +9,13 @@ try {
     const serviceAccount = JSON.parse(
       readFileSync("./database.json", "utf-8")
     );
+    console.log("Service account loaded");
 
     // Initialize Admin SDK
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      databaseURL: "https://photoshare-edc8a-default-rtdb.firebaseio.com/"
+      databaseURL: "https://photoshare-edc8a-default-rtdb.firebaseio.com/",
+      storageBucket: "gs://photoshare-edc8a.appspot.com" 
     });
 
     db = admin.database(); 
@@ -29,7 +31,6 @@ try {
     console.log("   2. Save it as 'database.json' in the project root");
     console.log("   3. Restart the server");
     
-    // Create mock objects for development
     db = {
       ref: () => ({
         once: () => Promise.resolve({ val: () => null }),
