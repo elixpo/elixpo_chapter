@@ -1,8 +1,10 @@
 class ProfileSlider {
   constructor() {
-    this.currentStep = 2;
+    this.currentStep = 3;
     this.totalSteps = 3;
     this.isValid = { 1: false, 2: true, 3: true }; 
+    this.cropper = null;
+    this.cropType = null;
     
     this.elements = {
       steps: document.querySelectorAll('.step-content'),
@@ -17,7 +19,13 @@ class ProfileSlider {
       bio: document.getElementById('bio'),
       bioCharCount: document.getElementById('bioCharCount'),
       profilePicture: document.getElementById('profilePicture'),
-      profilePicPreview: document.getElementById('profilePicPreview')
+      profilePicPreview: document.getElementById('profilePicPreview'),
+      bannerImage: document.getElementById('bannerImage'),
+      bannerPreview: document.getElementById('bannerPreview'),
+      cropperModal: document.getElementById('cropperModal'),
+      imageToCrop: document.getElementById('imageToCrop'),
+      cancelCrop: document.getElementById('cancelCrop'),
+      cropImage: document.getElementById('cropImage')
     };
     
     this.stepData = {
@@ -59,9 +67,11 @@ class ProfileSlider {
       }, 1000);
     });
     this.elements.bio.addEventListener('input', () => this.updateBioCount());
-    this.elements.profilePicture.addEventListener('change', (e) => this.handleProfilePicture(e));
-    
-    
+    this.elements.profilePicture.addEventListener('change', (e) => this.handleImage(e, 'pfp'));
+    this.elements.bannerImage.addEventListener('change', (e) => this.handleImage(e, 'banner'));
+    this.elements.cancelCrop.addEventListener('click', () => this.closeCropper());
+    this.elements.cropImage.addEventListener('click', () => this.crop());
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -72,6 +82,64 @@ class ProfileSlider {
         }
       }
     });
+  }
+
+  handleImage(event, type) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.elements.imageToCrop.src = e.target.result;
+        this.cropType = type;
+        this.openCropper();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  openCropper() {
+    this.elements.cropperModal.classList.remove('hidden');
+    let aspectRatio;
+    if (this.cropType === 'pfp') {
+        aspectRatio = 1;
+    } else if (this.cropType === 'banner') {
+        aspectRatio = 16 / 9;
+    }
+
+    this.cropper = new Cropper(this.elements.imageToCrop, {
+        aspectRatio: aspectRatio,
+        viewMode: 1,
+        maxCropBoxWidth: this.cropType === 'pfp' ? 500 : 1920,
+        maxCropBoxHeight: this.cropType === 'pfp' ? 500 : 1080,
+    });
+  }
+
+  closeCropper() {
+      this.elements.cropperModal.classList.add('hidden');
+      if (this.cropper) {
+          this.cropper.destroy();
+          this.cropper = null;
+      }
+  }
+
+  crop() {
+    if (this.cropper) {
+      const canvas = this.cropper.getCroppedCanvas({
+          maxWidth: this.cropType === 'pfp' ? 500 : 1920,
+          maxHeight: this.cropType === 'pfp' ? 500 : 1080,
+      });
+      const croppedImageUrl = canvas.toDataURL('image/jpeg');
+
+      if (this.cropType === 'pfp') {
+          this.elements.profilePicPreview.innerHTML = `
+              <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full">
+          `;
+      } else if (this.cropType === 'banner') {
+          this.elements.bannerPreview.style.backgroundImage = `url(${croppedImageUrl})`;
+          this.elements.bannerPreview.innerHTML = '';
+      }
+      this.closeCropper();
+    }
   }
   
   async validateDisplayName() {
@@ -132,19 +200,6 @@ class ProfileSlider {
       this.updateButtons();
       this.elements.bioCharCount.parentElement.classList.remove('text-red-500');
       this.elements.bioCharCount.parentElement.classList.add('text-slate-500');
-    }
-  }
-  
-  handleProfilePicture(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.elements.profilePicPreview.innerHTML = `
-          <img src="${e.target.result}" alt="Profile Picture" class="w-full h-full object-cover rounded-full">
-        `;
-      };
-      reader.readAsDataURL(file);
     }
   }
   
@@ -216,9 +271,16 @@ class ProfileSlider {
     formData.append('displayName', this.elements.displayName.value.trim());
     formData.append('bio', this.elements.bio.value.trim());
     
-    if (this.elements.profilePicture.files[0]) {
-      formData.append('profilePicture', this.elements.profilePicture.files[0]);
+    const pfpImage = this.elements.profilePicPreview.querySelector('img');
+    if (pfpImage) {
+        formData.append('profilePicture', pfpImage.src);
     }
+
+    const bannerImage = this.elements.bannerPreview.style.backgroundImage.slice(4, -1).replace(/"/g, "");
+    if (bannerImage) {
+        formData.append('bannerImage', bannerImage);
+    }
+
     this.elements.completeBtn.disabled = true;
     this.elements.completeBtn.innerHTML = `
       <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
