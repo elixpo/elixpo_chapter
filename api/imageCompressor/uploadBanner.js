@@ -4,6 +4,14 @@ import { compressBannerPic, imageToBase64 } from "./dctCompress.js";
 
 export async function uploadBannerPic(req, res, imgData, uid) {
   try {
+    const imageSizeInBytes = Buffer.byteLength(imgData, 'base64');
+    const maxSizeInBytes = 1024 * 1024; // 1MB
+    if (imageSizeInBytes > maxSizeInBytes) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Image size exceeds 1MB limit" 
+      });
+    }
     const compressedImagePath = await compressBannerPic(imgData, uid, 30);
     const bucket = store.bucket();
     const destination = `banner_images/${uid}/banner_${Date.now()}.jpg`;
