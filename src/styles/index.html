@@ -42,7 +42,7 @@
 
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" />
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" /> -->
 
     <!-- Reusing existing CSS from create page -->
     <link rel="stylesheet" href="../../CSS/createRemaster/navbarStyling.css" />
@@ -55,19 +55,24 @@
   </head>
 
   <body>
-    <!-- Navigation (reusing from create page) -->
     <div class="appHeader">
-      <div class="logo"></div>
-      <div class="appName">Elixpo</div>
-      <i class="bi bi-house-door redirectHome" onclick="window.location.href='../../index.html'"></i>
-      <i class="bi bi-brush redirectCreate" onclick="window.location.href='../create/index.html'" title="Create Art"></i>
-      <i class="bi bi-newspaper redirectBlogs" onclick="window.location.href='../../../blogs.elixpo/index.html'"></i>
-      <div class="userCell">
-        <i class="bi bi-person-circle" style="color: #888; font-size: 1.5em"></i>
-        <span style="color: #888">Guest</span>
-      </div>
-      <i class="bi bi-github githubLogo" onclick="window.open('https://github.com/shresthashim/elixpo_chapter', '_blank')"></i>
-    </div>
+  <div class="logo"></div>
+  <p class="appName" id="appName">Elixpo-Art</p>
+
+  <i class="bx bxs-home redirectHome" id="redirectHome" onclick="window.location.href='../../index.html'"></i>
+  
+  <i class="bx bx-palette redirectStyles" id="redirectStyles" title="Art Styles" onclick="window.location.href='./index.html'"></i>
+  
+  <i class="bx bxl-blogger redirectBlogs" id="redirectBlogs" onclick="window.location.href='../../../blogs.elixpo/index.html'"></i>
+  
+  <span class="userCell" id="userCell">
+    <div class="userInfo" id="userInfo"></div>
+    <p id="username">Guest</p> </span>
+
+  <i class="bx bxs-photo-album"></i>
+  
+  <i class="bx bxl-github githubLogo" id="redirectGitHub" onclick="window.open('https://github.com/shresthashim/elixpo_chapter', '_blank')"></i>
+</div>
 
     <!-- Main Container -->
     <div class="container">
@@ -95,7 +100,7 @@
           <div class="styleCard" data-category="historic" data-style="renaissance">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/renaissance-art.jpg"
                 alt="Renaissance Art Style"
                 loading="lazy"
               />
@@ -113,7 +118,7 @@
           <div class="styleCard" data-category="historic" data-style="baroque">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"
+                src="./assets/images/baroque-art.jpg"
                 alt="Baroque Art Style"
                 loading="lazy"
               />
@@ -131,7 +136,7 @@
           <div class="styleCard" data-category="historic" data-style="impressionism">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/impressionism-art.jpg"
                 alt="Impressionism Art Style"
                 loading="lazy"
               />
@@ -149,8 +154,8 @@
           <div class="styleCard" data-category="historic" data-style="art-nouveau">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
-                alt="Art Nouveau Style"
+                src="./assets/images/art-nouveau.jpeg"
+                alt="A/stylesrt Nouveau Style"
                 loading="lazy"
               />
               <div class="styleOverlay">
@@ -168,7 +173,7 @@
           <div class="styleCard" data-category="modern" data-style="abstract">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"
+                src="./assets/images/abstract.jpeg"
                 alt="Abstract Art Style"
                 loading="lazy"
               />
@@ -186,7 +191,7 @@
           <div class="styleCard" data-category="modern" data-style="surrealism">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/surrealism-art.jpg"
                 alt="Surrealism Art Style"
                 loading="lazy"
               />
@@ -204,7 +209,7 @@
           <div class="styleCard" data-category="modern" data-style="pop-art">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"
+                src="./assets/images/pop-art.jpeg"
                 alt="Pop Art Style"
                 loading="lazy"
               />
@@ -222,7 +227,7 @@
           <div class="styleCard" data-category="modern" data-style="minimalism">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/minimalism-art.jpg"
                 alt="Minimalism Art Style"
                 loading="lazy"
               />
@@ -241,7 +246,7 @@
           <div class="styleCard" data-category="digital" data-style="cyberpunk">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"
+                src="./assets/images/cyberpunk-art.jpg"
                 alt="Cyberpunk Art Style"
                 loading="lazy"
               />
@@ -259,7 +264,7 @@
           <div class="styleCard" data-category="digital" data-style="synthwave">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/synthwave-art.jpg"
                 alt="Synthwave Art Style"
                 loading="lazy"
               />
@@ -277,7 +282,7 @@
           <div class="styleCard" data-category="digital" data-style="vaporwave">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"
+                src="./assets/images/vaporwave-art.jpg"
                 alt="Vaporwave Art Style"
                 loading="lazy"
               />
@@ -295,7 +300,7 @@
           <div class="styleCard" data-category="digital" data-style="digital-painting">
             <div class="styleImage">
               <img
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&q=80"
+                src="./assets/images/digital-painting.jpg"
                 alt="Digital Painting Style"
                 loading="lazy"
               />

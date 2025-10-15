@@ -153,7 +153,11 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(141, 73, 253, 0.2), rgba(86, 145, 243, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(141, 73, 253, 0.2),
+    rgba(86, 145, 243, 0.2)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,6 +270,7 @@ body {
 .modalBody {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* display:flex; */
   gap: 30px;
   padding: 30px;
 }
@@ -279,6 +284,11 @@ body {
   width: 100%;
   height: 300px;
   object-fit: cover;
+}
+.modalInfo {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .modalInfo h2 {
@@ -346,7 +356,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 25px;
+  margin-top: auto;
   box-shadow: 0 4px 15px rgba(141, 73, 253, 0.3);
 }
 
@@ -425,4 +435,17 @@ body {
 }
 .styleCard:nth-child(12) {
   animation-delay: 1.2s;
+}
+@media (max-width: 900px) {
+  .modalBody {
+    grid-template-columns: 1fr;
+  }
+
+  .modalImage img {
+    height: auto;
+  }
+
+  .tryNowBtn {
+    margin-top: 25px;
+  }
 }
