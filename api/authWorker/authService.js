@@ -3,7 +3,7 @@ import {registerRequest, verifyRegisterOTP, registerDisplayName} from './apiRegi
 import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP} from './apiLogin.js';
 import {checkUsernameRequest } from "./bloomfiltercheck.js";
 import { extractUIDFromCookie } from "./cookieHandler.js";
-
+import { uploadProfilePic } from "../imageCompressor/uploadpfp.js";
 
 router.get("/registerRequest", async (req, res) => {
     const email = req.query.email;
@@ -81,6 +81,16 @@ router.post("/getUID", (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
   res.status(200).json({ uid });
+});
+
+router.post("/uploadProfilePic", async (req, res) => {
+  const { imgData, uid } = req.body;
+  try {
+    const downloadURL = await uploadProfilePic(imgData, uid);
+    res.status(200).json({ url: downloadURL });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to upload profile picture" });
+  }
 });
 
 appExpress.listen(5000, "localhost", () => {

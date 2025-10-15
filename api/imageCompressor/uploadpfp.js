@@ -4,7 +4,6 @@ import { compressProfilePic, imageToBase64 } from "./dctCompress.js";
 
 export async function uploadProfilePic(imgData, uid) {
   try {
-    // Compress the image first
     const compressedImagePath = await compressProfilePic(imgData, uid, 10);     
     const bucket = store.bucket();
     const destination = `profile_pictures/${uid}/pfp_${Date.now()}.jpg`;
@@ -28,3 +27,8 @@ export async function uploadProfilePic(imgData, uid) {
   }
 }
 
+// Example usage
+// let imgPath = "test.jpg";
+// let data = imageToBase64(imgPath);
+// let downloadURL = await uploadProfilePic(data, "testUser");
+// console.log("Download URL:", downloadURL);
