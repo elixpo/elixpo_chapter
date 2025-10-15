@@ -1,6 +1,6 @@
 class ProfileSlider {
   constructor() {
-    this.currentStep = 3;
+    this.currentStep = 2;
     this.totalSteps = 3;
     this.isValid = { 1: false, 2: true, 3: true }; 
     
@@ -118,10 +118,18 @@ class ProfileSlider {
     const bio = this.elements.bio.value;
     this.elements.bioCharCount.textContent = bio.length;
     
-    if (bio.length > 150) {
+    if(bio.length !==0 && bio.length < 10) {
+      this.isValid[2] = false;
+      this.updateButtons();
+      this.elements.bioCharCount.parentElement.classList.add('text-red-500');
+      this.elements.bioCharCount.parentElement.classList.remove('text-slate-500');
+    }
+    else if (bio.length > 150) {
       this.elements.bioCharCount.parentElement.classList.add('text-red-500');
       this.elements.bioCharCount.parentElement.classList.remove('text-slate-500');
     } else {
+      this.isValid[2] = true;
+      this.updateButtons();
       this.elements.bioCharCount.parentElement.classList.remove('text-red-500');
       this.elements.bioCharCount.parentElement.classList.add('text-slate-500');
     }
