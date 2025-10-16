@@ -1,5 +1,5 @@
 *.env
-/PRODUCTION/venv
+/venv
 clipenv/
 model/
 playwright_user_data/
