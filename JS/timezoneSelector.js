@@ -537,7 +537,7 @@ function animateTimezoneSwitch() {
 function handleTimezoneChange() {
   currentTimezone = timezoneSelect.value;
   animateTimezoneSwitch();
-  // The clock update functions will use the new timezone
+  updateClock(); // Immediately update the clock with the new timezone
 }
 
 // Hotkey support
