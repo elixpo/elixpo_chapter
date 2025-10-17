@@ -1,6 +1,6 @@
 class ProfileSlider {
   constructor() {
-    this.currentStep = 3;
+    this.currentStep = 1;
     this.totalSteps = 3;
     this.isValid = { 1: false, 2: true, 3: true }; 
     this.cropper = null;
