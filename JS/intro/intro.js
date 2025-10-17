@@ -1,33 +1,41 @@
+// ProfileSlider — robust, defensive, and fixed
 class ProfileSlider {
   constructor() {
+    // state
     this.currentStep = 1;
     this.totalSteps = 3;
-    this.isValid = { 1: false, 2: true, 3: true }; 
+    this.isValid = { 1: false, 2: true, 3: true };
     this.cropper = null;
     this.cropType = null;
+    this.typingTimeout = null;
+    this.nameCheckAbort = null;
 
+    // element refs — safe lookups with fallbacks
+    const el = (selector) => document.querySelector(selector);
     this.elements = {
-      steps: document.querySelectorAll('.step-content'),
-      indicators: document.querySelectorAll('.step'),
-      progressBar: document.getElementById('progressBar'),
-      stepTitle: document.getElementById('stepTitle'),
-      stepDescription: document.getElementById('stepDescription'),
-      nextBtn: document.getElementById('nextBtn'),
-      backBtn: document.getElementById('backBtn'),
-      completeBtn: document.getElementById('completeBtn'),
-      displayName: document.getElementById('displayName'),
-      bio: document.getElementById('bio'),
-      bioCharCount: document.getElementById('bioCharCount'),
-      profilePicture: document.getElementById('profilePicture'),
-      profilePicPreview: document.getElementById('profilePicPreview'),
-      bannerImage: document.getElementById('bannerImage'),
-      bannerPreview: document.getElementById('bannerPreview'),
-      cropperModal: document.getElementById('cropperModal'),
-      imageToCrop: document.getElementById('imageToCrop'),
-      cancelCrop: document.getElementById('cancelCrop'),
-      cropImage: document.getElementById('cropImage')
+      steps: document.querySelectorAll('.step-content') || [],
+      indicators: document.querySelectorAll('.step') || [],
+      progressBar: el('#progressBar'),
+      stepTitle: el('#stepTitle'),
+      stepDescription: el('#stepDescription'),
+      nextBtn: el('#nextBtn'),
+      backBtn: el('#backBtn'),
+      completeBtn: el('#completeBtn'),
+      displayName: el('#displayName'),
+      bio: el('#bio'),
+      bioCharCount: el('#bioCharCount'),
+      profilePicture: el('#profilePicture'),
+      profilePicPreview: el('#profilePicPreview'),
+      bannerImage: el('#bannerImage'),
+      bannerPreview: el('#bannerPreview'),
+      cropperModal: el('#cropperModal'),
+      imageToCrop: el('#imageToCrop'),
+      cancelCrop: el('#cancelCrop'),
+      cropImage: el('#cropImage'),
+      nameStatus: el('#nameStatus')
     };
 
+    // step data
     this.stepData = {
       1: {
         title: "What's your name?",
@@ -50,152 +58,277 @@ class ProfileSlider {
   }
 
   init() {
+    // ensure minimal required elements exist
+    if (!this.elements.nextBtn || !this.elements.backBtn || !this.elements.completeBtn) {
+      console.warn('ProfileSlider: some core buttons are missing from DOM.');
+    }
     this.bindEvents();
     this.updateUI();
   }
 
   bindEvents() {
-    this.elements.nextBtn.addEventListener('click', () => this.nextStep());
-    this.elements.backBtn.addEventListener('click', () => this.prevStep());
+    // buttons - guard with optional chaining
+    this.elements.nextBtn?.addEventListener('click', () => this.nextStep());
+    this.elements.backBtn?.addEventListener('click', () => this.prevStep());
+    this.elements.completeBtn?.addEventListener('click', () => this.completeProfile());
 
-    this.elements.displayName.addEventListener('input', () => {
+    // display name input w/ debounce
+    this.elements.displayName?.addEventListener('input', (e) => {
+      // reset validity for current step (name)
       this.isValid[1] = false;
       this.updateButtons();
-      clearTimeout(this.typingTimeout);
+
+      if (this.typingTimeout) clearTimeout(this.typingTimeout);
+      // debounce 700ms (faster feedback)
       this.typingTimeout = setTimeout(() => {
-        console.log('Validating display name...');
         this.validateDisplayName();
-      }, 1000);
+      }, 700);
     });
 
-    this.elements.bio.addEventListener('input', () => this.updateBioCount());
-    this.elements.profilePicture.addEventListener('change', (e) => this.handleImage(e, 'pfp'));
-    this.elements.bannerImage.addEventListener('change', (e) => this.handleImage(e, 'banner'));
-    this.elements.cancelCrop.addEventListener('click', () => this.closeCropper());
-    this.elements.cropImage.addEventListener('click', () => this.crop());
+    // bio input - char count + validation
+    this.elements.bio?.addEventListener('input', () => this.updateBioCount());
 
+    // image inputs
+    this.elements.profilePicture?.addEventListener('change', (e) => this.handleImage(e, 'pfp'));
+    this.elements.bannerImage?.addEventListener('change', (e) => this.handleImage(e, 'banner'));
+
+    // cropper controls
+    this.elements.cancelCrop?.addEventListener('click', () => this.closeCropper());
+    this.elements.cropImage?.addEventListener('click', () => this.crop());
+
+    // keyboard handling: Enter to proceed (but not from textarea)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
+      const activeTag = e.target?.tagName;
+      if (e.key === 'Enter' && !e.shiftKey && activeTag !== 'TEXTAREA') {
         e.preventDefault();
-        if (this.currentStep < this.totalSteps && this.isValid[this.currentStep]) {
-          this.nextStep();
-        } else if (this.currentStep === this.totalSteps) {
+        // if on last step and valid -> complete
+        if (this.currentStep === this.totalSteps && this.isValid[this.currentStep]) {
           this.completeProfile();
+        } else if (this.isValid[this.currentStep]) {
+          this.nextStep();
         }
       }
     });
   }
 
   handleImage(event, type) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    // simple file type check
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (this.elements.imageToCrop) {
         this.elements.imageToCrop.src = e.target.result;
         this.cropType = type;
         this.openCropper();
-      };
-      reader.readAsDataURL(file);
-    }
+      } else {
+        console.warn('No imageToCrop element found');
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   openCropper() {
+    if (!this.elements.cropperModal || !this.elements.imageToCrop) return;
     this.elements.cropperModal.classList.remove('hidden');
-    let aspectRatio = this.cropType === 'pfp' ? 1 : 16 / 9;
 
-    this.cropper = new Cropper(this.elements.imageToCrop, {
-      aspectRatio,
-      viewMode: 1,
-      maxCropBoxWidth: this.cropType === 'pfp' ? 500 : 1920,
-      maxCropBoxHeight: this.cropType === 'pfp' ? 500 : 1080,
-    });
-  }
+    // determine aspect ratio
+    const aspectRatio = this.cropType === 'pfp' ? 1 : 16 / 9;
 
-  closeCropper() {
-    this.elements.cropperModal.classList.add('hidden');
+    // destroy existing cropper if any
     if (this.cropper && typeof this.cropper.destroy === 'function') {
       this.cropper.destroy();
       this.cropper = null;
     }
-  }
 
-  crop() {
-    if (this.cropper) {
-      const canvas = this.cropper.getCroppedCanvas({
-        maxWidth: this.cropType === 'pfp' ? 500 : 1920,
-        maxHeight: this.cropType === 'pfp' ? 500 : 1080,
+    // initialize Cropper — wrap in try/catch in case Cropper lib not loaded
+    try {
+      this.cropper = new Cropper(this.elements.imageToCrop, {
+        aspectRatio,
+        viewMode: 1,
+        autoCropArea: 0.9,
+        responsive: true,
+        background: false,
+        movable: true,
+        zoomable: true,
+        rotatable: false,
+        scalable: false,
+        minContainerWidth: 200,
+        minContainerHeight: 100,
+        ready: () => {
+          // optional: zoom to fit
+        }
       });
-      const croppedImageUrl = canvas.toDataURL('image/jpeg');
-
-      if (this.cropType === 'pfp') {
-        this.elements.profilePicPreview.innerHTML = `
-          <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full">
-        `;
-      } else if (this.cropType === 'banner') {
-        this.elements.bannerPreview.style.backgroundImage = `url(${croppedImageUrl})`;
-        this.elements.bannerPreview.innerHTML = '';
-      }
+    } catch (err) {
+      console.error('Cropper initialization failed:', err);
+      alert('Image cropper failed to load. Please try again.');
       this.closeCropper();
     }
   }
 
+  closeCropper() {
+    if (this.elements.cropperModal) this.elements.cropperModal.classList.add('hidden');
+    if (this.cropper && typeof this.cropper.destroy === 'function') {
+      try {
+        this.cropper.destroy();
+      } catch (err) {
+        console.warn('Error destroying cropper', err);
+      } finally {
+        this.cropper = null;
+      }
+    }
+    // clear imageToCrop src to free memory
+    if (this.elements.imageToCrop) this.elements.imageToCrop.src = '';
+  }
+
+  crop() {
+    if (!this.cropper) return;
+    try {
+      const canvas = this.cropper.getCroppedCanvas({
+        maxWidth: this.cropType === 'pfp' ? 500 : 1920,
+        maxHeight: this.cropType === 'pfp' ? 500 : 1080,
+        fillColor: '#fff'
+      });
+
+      // prefer toBlob in production, but toDataURL is fine for preview
+      const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+      if (this.cropType === 'pfp') {
+        if (this.elements.profilePicPreview) {
+          this.elements.profilePicPreview.innerHTML = `
+            <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" />
+          `;
+        }
+      } else if (this.cropType === 'banner') {
+        if (this.elements.bannerPreview) {
+          this.elements.bannerPreview.style.backgroundImage = `url("${croppedImageUrl}")`;
+          this.elements.bannerPreview.innerHTML = '';
+        }
+      }
+
+      this.closeCropper();
+    } catch (err) {
+      console.error('Crop failed:', err);
+      alert('Failed to crop image. Please try again.');
+    }
+  }
+
+  // NAME VALIDATION — defensive + debounce + abort support
   async validateDisplayName() {
-    const name = this.elements.displayName.value.trim();
-    const nameStatus = document.getElementById('nameStatus');
+    const name = this.elements.displayName?.value?.trim() ?? '';
+    const nameStatusEl = this.elements.nameStatus;
+
+    if (!nameStatusEl) {
+      console.warn('nameStatus element missing in DOM');
+    }
+
+    // clear previous message
+    if (nameStatusEl) nameStatusEl.innerHTML = '';
 
     if (name.length === 0) {
       this.isValid[1] = false;
-      nameStatus.innerHTML = '';
-    } else if (name.length < 6) {
+      if (nameStatusEl) nameStatusEl.innerHTML = '';
+      this.updateButtons();
+      return;
+    }
+    if (name.length < 6) {
       this.isValid[1] = false;
-      nameStatus.innerHTML = `
-        <ion-icon name="warning-outline" class="text-yellow-500 mt-[10px] mr-[5px]"></ion-icon>
-        <span class="text-yellow-500 mt-[10px] mr-[5px]">Name must be at least 6 characters</span>`;
-    } else if (name.length > 20) {
-      this.isValid[1] = false;
-      nameStatus.innerHTML = `
-        <ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
-        <span class="text-red-500 mt-[10px] mr-[5px]">Name must be less than 20 characters</span>`;
-    } else {
-      const [available, message, suggestion] = await checkNameAvailability(name);
-      if (!available) {
-        this.isValid[1] = false;
-        nameStatus.innerHTML = suggestion && suggestion.length > 0 && suggestion !== name
-          ? `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
-             <span class="text-red-500 mt-[10px] mr-[5px]">${message}... How about ${suggestion}?</span>`
-          : `<ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
-             <span class="text-red-500 mt-[10px] mr-[5px]">${message}</span>`;
-      } else {
-        this.isValid[1] = true;
-        nameStatus.innerHTML = `
-          <ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon>
-          <span class="text-green-500 mt-[10px] mr-[5px]">${message}</span>`;
+      if (nameStatusEl) {
+        nameStatusEl.innerHTML = `
+          <ion-icon name="warning-outline" class="text-yellow-500 mt-[10px] mr-[5px]"></ion-icon>
+          <span class="text-yellow-500 mt-[10px] mr-[5px]">Name must be at least 6 characters</span>`;
       }
+      this.updateButtons();
+      return;
+    }
+    if (name.length > 20) {
+      this.isValid[1] = false;
+      if (nameStatusEl) {
+        nameStatusEl.innerHTML = `
+          <ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
+          <span class="text-red-500 mt-[10px] mr-[5px]">Name must be less than 20 characters</span>`;
+      }
+      this.updateButtons();
+      return;
     }
 
-    this.updateButtons();
+    // cancel previous in-flight request
+    if (this.nameCheckAbort) {
+      try { this.nameCheckAbort.abort(); } catch (e) {}
+      this.nameCheckAbort = null;
+    }
+    this.nameCheckAbort = new AbortController();
+    const signal = this.nameCheckAbort.signal;
+
+    // show loading status
+    if (nameStatusEl) {
+      nameStatusEl.innerHTML = `
+        <ion-icon name="sync-outline" class="animate-spin mt-[10px] mr-[5px]"></ion-icon>
+        <span class="mt-[10px] mr-[5px]">Checking...</span>`;
+    }
+    try {
+      const [available, message, suggestion] = await checkNameAvailability(name, { signal });
+      if (!available) {
+        this.isValid[1] = false;
+        if (nameStatusEl) {
+          const suggestText = suggestion && suggestion !== name ? `... How about <strong>${suggestion}</strong>?` : '';
+          nameStatusEl.innerHTML = `
+            <ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
+            <span class="text-red-500 mt-[10px] mr-[5px]">${message} ${suggestText}</span>`;
+        }
+      } else {
+        this.isValid[1] = true;
+        if (nameStatusEl) {
+          nameStatusEl.innerHTML = `
+            <ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon>
+            <span class="text-green-500 mt-[10px] mr-[5px]">${message}</span>`;
+        }
+      }
+    } catch (err) {
+      console.error('Name availability check failed:', err);
+      this.isValid[1] = false;
+      if (nameStatusEl) {
+        nameStatusEl.innerHTML = `
+          <ion-icon name="close-circle-outline" class="text-red-500 mt-[10px] mr-[5px]"></ion-icon>
+          <span class="text-red-500 mt-[10px] mr-[5px]">Server error. Try again later.</span>`;
+      }
+    } finally {
+      this.updateButtons();
+    }
   }
 
   updateBioCount() {
-    const bio = this.elements.bio.value;
-    this.elements.bioCharCount.textContent = bio.length;
+    const bioEl = this.elements.bio;
+    const countEl = this.elements.bioCharCount;
+    if (!bioEl || !countEl) return;
 
+    const bio = bioEl.value || '';
+    countEl.textContent = bio.length;
+
+    const parent = countEl.parentElement;
     if (bio.length !== 0 && bio.length < 10) {
       this.isValid[2] = false;
-      this.elements.bioCharCount.parentElement.classList.add('text-red-500');
-      this.elements.bioCharCount.parentElement.classList.remove('text-slate-500');
+      parent?.classList.add('text-red-500');
+      parent?.classList.remove('text-slate-500');
     } else if (bio.length > 150) {
-      this.elements.bioCharCount.parentElement.classList.add('text-red-500');
-      this.elements.bioCharCount.parentElement.classList.remove('text-slate-500');
+      this.isValid[2] = false;
+      parent?.classList.add('text-red-500');
+      parent?.classList.remove('text-slate-500');
     } else {
       this.isValid[2] = true;
-      this.elements.bioCharCount.parentElement.classList.remove('text-red-500');
-      this.elements.bioCharCount.parentElement.classList.add('text-slate-500');
+      parent?.classList.remove('text-red-500');
+      parent?.classList.add('text-slate-500');
     }
 
     this.updateButtons();
   }
 
+  // PROGRESSION
   nextStep() {
     if (this.currentStep < this.totalSteps && this.isValid[this.currentStep]) {
       this.currentStep++;
@@ -213,15 +346,23 @@ class ProfileSlider {
   }
 
   updateUI() {
-    const progress = (this.currentStep / this.totalSteps) * 100;
-    this.elements.progressBar.style.width = `${progress}%`;
+    // progress: treat step1 as 0% and last as 100%
+    let progress = 0;
+    if (this.totalSteps > 1) {
+      progress = ((this.currentStep - 1) / (this.totalSteps - 1)) * 100;
+    } else {
+      progress = 100;
+    }
+    if (this.elements.progressBar) this.elements.progressBar.style.width = `${progress}%`;
 
-    const stepInfo = this.stepData[this.currentStep];
-    this.elements.stepTitle.textContent = stepInfo.title;
-    this.elements.stepDescription.textContent = stepInfo.description;
+    const stepInfo = this.stepData[this.currentStep] || {};
+    if (this.elements.stepTitle) this.elements.stepTitle.textContent = stepInfo.title || '';
+    if (this.elements.stepDescription) this.elements.stepDescription.textContent = stepInfo.description || '';
 
-    document.querySelectorAll(".step-content").forEach((step, index) => {
-      step.classList.toggle('hidden', index + 1 !== this.currentStep);
+    // show/hide step contents (assumes nodeList order corresponds to step number)
+    this.elements.steps.forEach((stepEl, index) => {
+      const shouldShow = index + 1 === this.currentStep;
+      stepEl.classList.toggle('hidden', !shouldShow);
     });
 
     this.updateButtons();
@@ -229,82 +370,122 @@ class ProfileSlider {
 
   updateButtons() {
     if (this.currentStep === 1) {
-      this.elements.backBtn.classList.add('hidden');
+      this.elements.backBtn?.classList.add('hidden');
     } else {
-      this.elements.backBtn.classList.remove('hidden');
+      this.elements.backBtn?.classList.remove('hidden');
     }
 
     if (this.currentStep === this.totalSteps) {
-      this.elements.nextBtn.classList.add('hidden');
-      this.elements.completeBtn.classList.remove('hidden');
+      this.elements.nextBtn?.classList.add('hidden');
+      this.elements.completeBtn?.classList.remove('hidden');
+      this.elements.completeBtn.disabled = !this.isValid[this.currentStep];
     } else {
-      this.elements.nextBtn.classList.remove('hidden');
-      this.elements.completeBtn.classList.add('hidden');
-      this.elements.nextBtn.disabled = !this.isValid[this.currentStep];
+      this.elements.nextBtn?.classList.remove('hidden');
+      this.elements.completeBtn?.classList.add('hidden');
+      if (this.elements.nextBtn) {
+        this.elements.nextBtn.disabled = !this.isValid[this.currentStep];
+      }
     }
   }
 
   animateStep() {
     const currentStepElement = document.querySelector(`[data-step="${this.currentStep}"]`);
-    if (currentStepElement) {
-      const formGroup = currentStepElement.querySelector('.form-group');
-      if (formGroup) {
-        formGroup.style.animation = 'none';
-        setTimeout(() => {
-          formGroup.style.animation = 'slideInUp 0.6s ease-out both';
-        }, 100);
-      }
+    if (!currentStepElement) return;
+
+    const formGroup = currentStepElement.querySelector('.form-group');
+    if (formGroup) {
+      formGroup.style.animation = 'none';
+      // small timeout to reflow so CSS animation can replay
+      setTimeout(() => {
+        formGroup.style.animation = 'slideInUp 0.6s ease-out both';
+      }, 50);
     }
 
     setTimeout(() => {
-      if (this.currentStep === 1) this.elements.displayName.focus();
-      else if (this.currentStep === 2) this.elements.bio.focus();
-    }, 400);
+      if (this.currentStep === 1) this.elements.displayName?.focus();
+      else if (this.currentStep === 2) this.elements.bio?.focus();
+    }, 300);
   }
 
   completeProfile() {
+    // basic guard
+    if (!this.isValid[1]) {
+      alert('Please fix the name before completing profile.');
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('displayName', this.elements.displayName.value.trim());
-    formData.append('bio', this.elements.bio.value.trim());
+    formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
+    formData.append('bio', this.elements.bio?.value?.trim() ?? '');
 
-    const pfpImage = this.elements.profilePicPreview.querySelector('img');
-    if (pfpImage) formData.append('profilePicture', pfpImage.src);
+    const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
+    if (pfpImg) formData.append('profilePicture', pfpImg);
 
-    const bannerImage = this.elements.bannerPreview.style.backgroundImage.slice(4, -1).replace(/"/g, "");
+    const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
+    const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
     if (bannerImage) formData.append('bannerImage', bannerImage);
 
-    this.elements.completeBtn.disabled = true;
-    this.elements.completeBtn.innerHTML = `
-      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-      <span>Creating Profile...</span>
-    `;
+    // disable button and show spinner
+    if (this.elements.completeBtn) {
+      this.elements.completeBtn.disabled = true;
+      this.elements.completeBtn.innerHTML = `
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+        <span>Creating Profile...</span>
+      `;
+    }
 
+    // simulate upload or send to API — replace with real endpoint
+    // NOTE: use fetch with multipart/form-data in real app
     setTimeout(() => {
       const entries = {};
       formData.forEach((value, key) => { entries[key] = value; });
-      console.log('Profile completed:', entries);
-    }, 2000);
+      console.log('Profile completed (simulated):', entries);
+
+      if (this.elements.completeBtn) {
+        this.elements.completeBtn.disabled = false;
+        this.elements.completeBtn.innerHTML = 'Complete';
+      }
+
+      // optionally show success UI and/or redirect
+      alert('Profile created (simulated). Check console for details.');
+    }, 1000);
   }
 }
 
-// ✅ Simplified and fixed name availability check
-async function checkNameAvailability(name) {
+// network helper for name check
+async function checkNameAvailability(name, options = {}) {
+  // options may include { signal } to support abort
   try {
+    // IMPORTANT:
+    // replace the URL below with your proper backend endpoint (https, correct domain),
+    // ensure your server sends CORS headers: Access-Control-Allow-Origin: *
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: name }),
+      signal: options.signal
     });
 
+    if (!response.ok) {
+      console.warn('Name check response not ok', response.status);
+      return [false, "Server error. Try again later.", ""];
+    }
+
     const result = await response.json();
-    console.log("Name availability result:", result);
-    return [result.available, result.message, result.suggestion || ""];
+    // expected shape: { available: boolean, message: string, suggestion?: string }
+    return [!!result.available, result.message || (result.available ? 'Available' : 'Unavailable'), result.suggestion || ""];
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log('Name check aborted');
+      throw error;
+    }
     console.error("Error checking name availability:", error);
+    // return friendly fallback
     return [false, "Server error. Try again later.", ""];
   }
 }
 
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   new ProfileSlider();
 });
