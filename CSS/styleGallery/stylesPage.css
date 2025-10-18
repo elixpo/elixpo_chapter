@@ -249,8 +249,8 @@ body {
 }
 
 .styleModal.active .modalContent {
-    opacity: 1;
-    transform: scale(1) translateY(0);
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 
 .modalContent {
@@ -386,6 +386,40 @@ body {
 
 .tryNowBtn:active {
   transform: translateY(0);
+}
+
+/* Container for each art style card */
+.art-card {
+  display: flex;
+  flex-direction: column; /* Stack image and button vertically */
+  align-items: center; /* Center horizontally */
+  margin: 20px; /* Optional spacing between cards */
+}
+
+/* Image inside the card */
+.art-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px; /* Optional styling */
+  margin-bottom: 10px; /* Space between image and button */
+}
+
+/* TRY NOW button */
+.art-card .try-now-btn {
+  display: inline-block;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #6a0dad; /* Match theme */
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.art-card .try-now-btn:hover {
+  background-color: #7c27e1; /* Slightly lighter on hover */
 }
 
 /* Scrollbar Styles */
