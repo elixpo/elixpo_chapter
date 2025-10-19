@@ -438,6 +438,8 @@ class ProfileSlider {
     }
     setTimeout(() => {
       const entries = {};
+      const date = new Date();
+      entries['completedAt'] = date.toISOString();
       formData.forEach((value, key) => { entries[key] = value; });
       console.log('Profile completed (simulated):', entries);
       
@@ -455,7 +457,8 @@ class ProfileSlider {
       }
 
       localStorage.setItem('entryProfile', JSON.stringify(entries));
-    }, 1000);
+      redirectTo("src/profile")
+    }, 500);
   }
 
   createSkipButton() {
