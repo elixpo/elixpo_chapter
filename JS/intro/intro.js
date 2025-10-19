@@ -195,7 +195,10 @@ class ProfileSlider {
   }
 
   
-  async validateDisplayName() {
+  async validateDisplayName(stepRedirect=null) {
+    this.currentStep = 1;
+    this.updateUI();
+    this.animateStep();
     const name = this.elements.displayName?.value?.trim() ?? '';
     const nameStatusEl = this.elements.nameStatus;
 
@@ -256,6 +259,12 @@ class ProfileSlider {
         }
       } else {
         this.isValid[1] = true;
+        if(stepRedirect)
+        {
+          this.currentStep = stepRedirect;
+          this.updateUI();
+          this.animateStep();
+        }
         if (nameStatusEl) {
           nameStatusEl.innerHTML = `
             <ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon>
@@ -275,7 +284,7 @@ class ProfileSlider {
     }
   }
 
-  updateBioCount() {
+  updateBioCount(stepRedirect=null) {
     const bioEl = this.elements.bio;
     const countEl = this.elements.bioCharCount;
     if (!bioEl || !countEl) return;
@@ -294,8 +303,15 @@ class ProfileSlider {
       parent?.classList.remove('text-slate-500');
     } else {
       this.isValid[2] = true;
+      if(stepRedirect)
+      {
+        this.currentStep = stepRedirect;
+        this.updateUI();
+        this.animateStep();
+      }
       parent?.classList.remove('text-red-500');
       parent?.classList.add('text-slate-500');
+
     }
 
     this.updateButtons();
@@ -391,52 +407,56 @@ class ProfileSlider {
 
   async completeProfile(options = {}) {
     const skipImages = !!options.skipImages;
-
-    if (!this.isValid[1]) {
-      alert('Please fix the name before completing profile.');
-      return;
+    this.validateDisplayName(stepRedirect=3);
+    this.updateBioCount(stepRedirect=3);
+    if (this.isValid[1] && this.isValid[2] && this.isValid[3]) {
+      const formData = new FormData();
+      formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
+      formData.append('bio', this.elements.bio?.value?.trim() ?? '');
     }
+    
 
-    const formData = new FormData();
-    formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
-    formData.append('bio', this.elements.bio?.value?.trim() ?? '');
 
-    const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-    if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
+    // const formData = new FormData();
+    // formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
+    // formData.append('bio', this.elements.bio?.value?.trim() ?? '');
 
-    const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
-    const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
-    if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
+    // const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
+    // if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
 
-    if (this.elements.completeBtn) {
-      this.elements.completeBtn.disabled = true;
-      this.elements.completeBtn.innerHTML = `
-        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-        <span>Creating Profile...</span>
-      `;
-    }
+    // const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
+    // const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
+    // if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
 
-    if (this.elements.skipBtn) {
-      this.elements.skipBtn.disabled = true;
-      this.elements.skipBtn.innerHTML = 'Skipping...';
-    }
+    // if (this.elements.completeBtn) {
+    //   this.elements.completeBtn.disabled = true;
+    //   this.elements.completeBtn.innerHTML = `
+    //     <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+    //     <span>Creating Profile...</span>
+    //   `;
+    // }
 
-    setTimeout(() => {
-      const entries = {};
-      formData.forEach((value, key) => { entries[key] = value; });
-      console.log('Profile completed (simulated):', entries);
+    // if (this.elements.skipBtn) {
+    //   this.elements.skipBtn.disabled = true;
+    //   this.elements.skipBtn.innerHTML = 'Skipping...';
+    // }
 
-      if (this.elements.completeBtn) {
-        this.elements.completeBtn.disabled = false;
-        this.elements.completeBtn.innerHTML = 'Complete Profile';
-      }
-      if (this.elements.skipBtn) {
-        this.elements.skipBtn.disabled = false;
-        this.elements.skipBtn.innerHTML = 'Skip';
-      }
+    // setTimeout(() => {
+    //   const entries = {};
+    //   formData.forEach((value, key) => { entries[key] = value; });
+    //   console.log('Profile completed (simulated):', entries);
 
-      alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
-    }, 1000);
+    //   if (this.elements.completeBtn) {
+    //     this.elements.completeBtn.disabled = false;
+    //     this.elements.completeBtn.innerHTML = 'Complete Profile';
+    //   }
+    //   if (this.elements.skipBtn) {
+    //     this.elements.skipBtn.disabled = false;
+    //     this.elements.skipBtn.innerHTML = 'Skip';
+    //   }
+
+    //   alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
+    // }, 1000);
   }
 
   createSkipButton() {
