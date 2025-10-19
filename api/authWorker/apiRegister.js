@@ -121,7 +121,7 @@ async function checkExistingUserEmail(uid)
 
 }
 
-// Function connects with api gateway
+
 export async function registerDisplayName(username, uid, req, res)
 {
     const sanitized = checkUserNameFormat(username);
@@ -145,3 +145,26 @@ export async function registerDisplayName(username, uid, req, res)
   }
 }
 
+export async function updateUserProfile(uid, req, res)
+{
+    try 
+    {
+        let data = req.body;
+        let bio = data.bio || "";
+        let displayName = data.displayName || "";
+        let profilePic = data.profilePic || "";
+        let bannerPic = data.bannerPic || "";
+        const userRef = collec.collection("users").doc(uid);
+        await userRef.update({
+            bio: bio,
+            displayName: displayName,
+            profilePic: profilePic,
+            bannerPic: bannerPic
+        });
+        return res.status(200).json({ success: true, message: "✅ Profile updated successfully!" });
+    }
+    catch (error)
+    {
+        return res.status(500).json({ success: false, message: "🔥 Internal server error while updating profile. Please try again!" });
+    }
+}

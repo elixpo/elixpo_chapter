@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - LixBlogs </title>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../../CSS/Profile/profile.css">
+    <link rel="stylesheet" href="../../CSS/skeletonLoader.css">
     <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png">
 </head>
 <body>
     <div class="container absolute flex flex-col h-full max-w-[2560px] bg-[#030712] box-border">
         <section class="w-full h-[60px]">
             <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
-                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../CSS/IMAGES/logo.png')] bg-cover"></div>
+                <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../../CSS/IMAGES/logo.png')] bg-cover"></div>
                 <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
                 <div class="absolute left-[80%] text-white text-[1.3em] cursor-pointer px-2.5 py-1.5 bg-[#10141E] border border-[#7ba8f0] rounded-[15px] flex items-center">
                     <ion-icon name="pencil" class="text-[0.8em] mr-1 text-[#7ba8f0]"></ion-icon>
@@ -37,9 +38,9 @@
                         <ion-icon name="bookmark-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
                         <p class="text-[#7ba8f0] text-[0.9em]">Library</p>
                     </div>
-                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-15 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300">
+                    <div class="controlButton relative h-[40px] w-full bg-[#1D202A] rounded-[8px] flex flex-row mb-15 px-2 cursor-pointer gap-[10px] items-center text-[1.3em] hover:bg-[#313647] hover:text-white transition-all duration-300 highlighted">
                         <ion-icon name="person-outline" class="text-[#7ba8f0] text-[0.9em]"></ion-icon>
-                        <p class="text-[#7ba8f0] text-[0.9em]">Profile</p>
+                        <p class="text-[#7ba8f0] text-[0.9em] ">Profile</p>
                     </div>
 
 
@@ -54,8 +55,8 @@
 
 
                     <div class="userInfo flex items-center gap-2 w-full h-[50px] px-3 rounded-[12px] bg-[#10141E] shadow-[6px_6px_12px_#0b0e16,-6px_-6px_12px_#171c28]">
-                        <div class="userLogo flex-shrink-0 h-[35px] w-[35px] rounded-full bg-[#888] shadow-[inset_3px_3px_6px_#777,inset_-3px_-3px_6px_#999]"></div>
-                        <span class="text-white text-lg font-medium cursor-pointer userOrganization truncate">Ayushman Bhattacharya</span>
+                        <div class="userLogo flex-shrink-0 h-[35px] w-[35px] rounded-full bg-[#888] shadow-[inset_3px_3px_6px_#777,inset_-3px_-3px_6px_#999] skeleton"></div>
+                        <span class="text-white text-lg font-medium cursor-pointer userOrganization truncate min-h-[30px] min-w-[90%] skeleton"></span>
                     </div>
 
                 </div>
@@ -64,34 +65,34 @@
             <div class="authorSection w-[80%] h-full bg-[#10141E] px-10 box-border flex flex-col ">
                 <div class="authorSectionContainer w-full h-full max-h-[calc(85%)] overflow-y-auto mt-5">
                 <div class="authorMedia relative w-full h-[200px] box-border flex items-center justify-center">
-                    <div class="authorBanner h-[200px] w-full bg-[url('../../CSS/IMAGES/SAMPLE_PICS/img_two.jpg')] bg-cover bg-center rounded-[12px]"></div>
-                    <div class="authorImage absolute left-[5%] top-[50%] h-[170px] w-[170px] bg-[url('../../CSS/IMAGES/SAMPLE_PICS/img_three.jpg')] bg-cover bg-center rounded-full border-[6px] border-[#10141E]"></div>
+                    <div class="authorBanner h-[200px] w-full bg-[url('../../CSS/IMAGES/SAMPLE_PICS/img_two.jpg')] bg-cover bg-center rounded-[12px] skeleton"></div>
+                    <div class="authorImage absolute left-[5%] top-[50%] h-[170px] w-[170px] bg-[url('../../CSS/IMAGES/SAMPLE_PICS/img_three.jpg')] bg-cover bg-center rounded-full border-[6px] border-[#10141E] skeleton"></div>
                 </div>
 
                 <div class="authorName flex flex-row mt-10 gap-5 items-center justify-between">
                     <div class="leftSection w-1/2 py-5 flex flex-row gap-5 items-center justify-start">
-                        <p class="text-white text-[2em] font-bold mt-5">Ayushman Bhattacharya</p>
-                        <p class="text-[#888] text-[1.2em] font-medium mt-5">He/Him</p>
+                        <p class="text-white text-[2em] font-bold mt-5 min-h-[40px] min-w-[250px] skeleton "></p>
+                        <p class="text-[#888] text-[1.2em] font-medium mt-5 "></p>
                     </div>
                     <div class="rightSection w-1/2 py-5 flex flex-row gap-5 items-center justify-end px-5">
-                        <div class="ownOrgIcon bg-[#888] bg-cover bg-center rounded-[8px] h-[40px] w-[40px]"></div>
-                        <p class="text-white text-[1.2em] font-medium underline select-none cursor-pointer">Elixpo Organization</p>
+                        <div class="ownOrgIcon bg-[#888] bg-cover bg-center rounded-[8px] h-[40px] w-[40px] hidden"></div>
+                        <p class="text-white text-[1.2em] font-medium underline select-none cursor-pointer hidden">Elixpo Organization</p>
                     </div>
 
                 </div>
 
                 <div class="authorBio flex flex-col gap-2">
-                    <p class="text-[#deeae3] text-[1em] font-medium">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nostrum dignissimos repudiandae aliquam nobis magni aspernatur, dolorum molestiae delectus nihil officiis aut odit repellat quidem pariatur doloribus dolore inventore illum cupiditate.</p>
+                    <p class="text-[#deeae3] text-[1em] font-medium min-h-[80px] min-w-[10px] skeleton"></p>
                     <div class="followerStats flex flex-row gap-5 items-center">
-                        <p class="text-[#888] text-[1em] font-medium">Followers: 100</p>
+                        <p class="text-[#888] text-[1em] font-medium">Followers: 0</p>
                         <div class="spacer h-[90%] w-[2px] bg-[#888]"></div>
-                        <p class="text-[#888] text-[1em] font-medium">Following: 50</p>
+                        <p class="text-[#888] text-[1em] font-medium">Following: 0</p>
                     </div>
                 </div>
 
                 <div class="horizontalSpacer h-[1px] w-[85%] my-8 mx-auto" style="background: linear-gradient(to right, transparent, #0983a5 40%, #0983a5 60%, transparent);"></div>
 
-                <div class="ownBlogsShowcase flex flex-row gap-5 flex-wrap px-10 box-border">
+                <div class="ownBlogsShowcase flex flex-row gap-5 flex-wrap px-10 box-border hidden">
 
                 <div class="recommendCard relative shrink-0 flex flex-col w-[80%] h-[250px] bg-[#1D202A] rounded-[8px] mx-auto p-5 box-border mb-5">
                     <div class="attributionCard flex flex-row gap-2 w-full h-[30px] ">
@@ -154,6 +155,10 @@
             </div>
         </section>
     </div>
+
 </div>
+<script src="../../dist/JS/notification.js"></script>
+<script src="../../dist/JS/linkRedirect.js"></script>
+<script src="../../JS/profile/profile.js"></script>
 </body>
 </html>

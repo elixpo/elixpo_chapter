@@ -1,5 +1,5 @@
 import { appExpress, router } from "../initializeExpress.js";
-import {registerRequest, verifyRegisterOTP, registerDisplayName} from './apiRegister.js';
+import {registerRequest, verifyRegisterOTP, registerDisplayName, updateUserProfile} from './apiRegister.js';
 import {authenticateToken, loginGithub, loginGoogle, loginEmail, verifyLoginOTP} from './apiLogin.js';
 import {checkUsernameRequest } from "./bloomfiltercheck.js";
 import { extractUIDFromCookie } from "./cookieHandler.js";
@@ -92,6 +92,14 @@ router.post("/uploadProfilePic", async (req, res) => {
 router.post("/uploadBannerPic", async (req, res) => {
   const { imgData, uid } = req.body;
     await uploadBannerPic(req, res, imgData, uid);
+});
+
+router.post("/updateUserProfile", async (req, res) => {
+  const uid = extractUIDFromCookie(req);
+  if (!uid) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  await updateUserProfile(uid, req, res);
 });
 
 
