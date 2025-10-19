@@ -472,8 +472,6 @@ class ProfileSlider {
     skipBtn.id = 'skipBtn';
     skipBtn.className = 'skip-btn bg-slate-500/60 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600 hidden';
     skipBtn.textContent = 'Skip';
-    // skipBtn.addEventListener('click', () => this.completeProfile({ skipImages: true }));
-
     const parent = this.elements.completeBtn.parentElement || this.elements.completeBtn.parentNode;
     if (parent) {
       parent.insertBefore(skipBtn, this.elements.completeBtn);
