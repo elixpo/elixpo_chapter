@@ -1,7 +1,5 @@
-// ProfileSlider — robust, defensive, and fixed
 class ProfileSlider {
   constructor() {
-    // state
     this.currentStep = 1;
     this.totalSteps = 3;
     this.isValid = { 1: false, 2: true, 3: true };
@@ -9,8 +7,6 @@ class ProfileSlider {
     this.cropType = null;
     this.typingTimeout = null;
     this.nameCheckAbort = null;
-
-    // element refs — safe lookups with fallbacks
     const el = (selector) => document.querySelector(selector);
     this.elements = {
       steps: document.querySelectorAll('.step-content') || [],
@@ -35,7 +31,6 @@ class ProfileSlider {
       nameStatus: el('#nameStatus')
     };
 
-    // step data
     this.stepData = {
       1: {
         title: "What's your name?",
@@ -58,7 +53,6 @@ class ProfileSlider {
   }
 
   init() {
-    // ensure minimal required elements exist
     if (!this.elements.nextBtn || !this.elements.backBtn || !this.elements.completeBtn) {
       console.warn('ProfileSlider: some core buttons are missing from DOM.');
     }
@@ -67,41 +61,27 @@ class ProfileSlider {
   }
 
   bindEvents() {
-    // buttons - guard with optional chaining
     this.elements.nextBtn?.addEventListener('click', () => this.nextStep());
     this.elements.backBtn?.addEventListener('click', () => this.prevStep());
     this.elements.completeBtn?.addEventListener('click', () => this.completeProfile());
-
-    // display name input w/ debounce
     this.elements.displayName?.addEventListener('input', (e) => {
-      // reset validity for current step (name)
       this.isValid[1] = false;
       this.updateButtons();
 
       if (this.typingTimeout) clearTimeout(this.typingTimeout);
-      // debounce 700ms (faster feedback)
       this.typingTimeout = setTimeout(() => {
         this.validateDisplayName();
-      }, 700);
+      }, 1000);
     });
-
-    // bio input - char count + validation
     this.elements.bio?.addEventListener('input', () => this.updateBioCount());
-
-    // image inputs
     this.elements.profilePicture?.addEventListener('change', (e) => this.handleImage(e, 'pfp'));
     this.elements.bannerImage?.addEventListener('change', (e) => this.handleImage(e, 'banner'));
-
-    // cropper controls
     this.elements.cancelCrop?.addEventListener('click', () => this.closeCropper());
     this.elements.cropImage?.addEventListener('click', () => this.crop());
-
-    // keyboard handling: Enter to proceed (but not from textarea)
     document.addEventListener('keydown', (e) => {
       const activeTag = e.target?.tagName;
       if (e.key === 'Enter' && !e.shiftKey && activeTag !== 'TEXTAREA') {
         e.preventDefault();
-        // if on last step and valid -> complete
         if (this.currentStep === this.totalSteps && this.isValid[this.currentStep]) {
           this.completeProfile();
         } else if (this.isValid[this.currentStep]) {
@@ -114,7 +94,6 @@ class ProfileSlider {
   handleImage(event, type) {
     const file = event?.target?.files?.[0];
     if (!file) return;
-    // simple file type check
     if (!file.type.startsWith('image/')) {
       alert('Please upload an image file.');
       return;
@@ -136,17 +115,12 @@ class ProfileSlider {
   openCropper() {
     if (!this.elements.cropperModal || !this.elements.imageToCrop) return;
     this.elements.cropperModal.classList.remove('hidden');
-
-    // determine aspect ratio
     const aspectRatio = this.cropType === 'pfp' ? 1 : 16 / 9;
-
-    // destroy existing cropper if any
     if (this.cropper && typeof this.cropper.destroy === 'function') {
       this.cropper.destroy();
       this.cropper = null;
     }
 
-    // initialize Cropper — wrap in try/catch in case Cropper lib not loaded
     try {
       this.cropper = new Cropper(this.elements.imageToCrop, {
         aspectRatio,
@@ -161,7 +135,10 @@ class ProfileSlider {
         minContainerWidth: 200,
         minContainerHeight: 100,
         ready: () => {
-          // optional: zoom to fit
+          console.log('Cropper ready');
+          if (this.cropper.zoomTo) {
+            this.cropper.zoomTo(0);
+          }
         }
       });
     } catch (err) {
@@ -182,7 +159,6 @@ class ProfileSlider {
         this.cropper = null;
       }
     }
-    // clear imageToCrop src to free memory
     if (this.elements.imageToCrop) this.elements.imageToCrop.src = '';
   }
 
@@ -195,7 +171,6 @@ class ProfileSlider {
         fillColor: '#fff'
       });
 
-      // prefer toBlob in production, but toDataURL is fine for preview
       const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
 
       if (this.cropType === 'pfp') {
@@ -218,7 +193,7 @@ class ProfileSlider {
     }
   }
 
-  // NAME VALIDATION — defensive + debounce + abort support
+  
   async validateDisplayName() {
     const name = this.elements.displayName?.value?.trim() ?? '';
     const nameStatusEl = this.elements.nameStatus;
@@ -227,7 +202,6 @@ class ProfileSlider {
       console.warn('nameStatus element missing in DOM');
     }
 
-    // clear previous message
     if (nameStatusEl) nameStatusEl.innerHTML = '';
 
     if (name.length === 0) {
@@ -257,7 +231,6 @@ class ProfileSlider {
       return;
     }
 
-    // cancel previous in-flight request
     if (this.nameCheckAbort) {
       try { this.nameCheckAbort.abort(); } catch (e) {}
       this.nameCheckAbort = null;
@@ -265,7 +238,6 @@ class ProfileSlider {
     this.nameCheckAbort = new AbortController();
     const signal = this.nameCheckAbort.signal;
 
-    // show loading status
     if (nameStatusEl) {
       nameStatusEl.innerHTML = `
         <ion-icon name="sync-outline" class="animate-spin mt-[10px] mr-[5px]"></ion-icon>
@@ -328,7 +300,6 @@ class ProfileSlider {
     this.updateButtons();
   }
 
-  // PROGRESSION
   nextStep() {
     if (this.currentStep < this.totalSteps && this.isValid[this.currentStep]) {
       this.currentStep++;
@@ -346,7 +317,6 @@ class ProfileSlider {
   }
 
   updateUI() {
-    // progress: treat step1 as 0% and last as 100%
     let progress = 0;
     if (this.totalSteps > 1) {
       progress = ((this.currentStep - 1) / (this.totalSteps - 1)) * 100;
@@ -358,8 +328,6 @@ class ProfileSlider {
     const stepInfo = this.stepData[this.currentStep] || {};
     if (this.elements.stepTitle) this.elements.stepTitle.textContent = stepInfo.title || '';
     if (this.elements.stepDescription) this.elements.stepDescription.textContent = stepInfo.description || '';
-
-    // show/hide step contents (assumes nodeList order corresponds to step number)
     this.elements.steps.forEach((stepEl, index) => {
       const shouldShow = index + 1 === this.currentStep;
       stepEl.classList.toggle('hidden', !shouldShow);
@@ -407,8 +375,8 @@ class ProfileSlider {
     }, 300);
   }
 
+  // This is dummy as of now
   completeProfile() {
-    // basic guard
     if (!this.isValid[1]) {
       alert('Please fix the name before completing profile.');
       return;
@@ -424,8 +392,6 @@ class ProfileSlider {
     const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
     const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
     if (bannerImage) formData.append('bannerImage', bannerImage);
-
-    // disable button and show spinner
     if (this.elements.completeBtn) {
       this.elements.completeBtn.disabled = true;
       this.elements.completeBtn.innerHTML = `
@@ -433,9 +399,6 @@ class ProfileSlider {
         <span>Creating Profile...</span>
       `;
     }
-
-    // simulate upload or send to API — replace with real endpoint
-    // NOTE: use fetch with multipart/form-data in real app
     setTimeout(() => {
       const entries = {};
       formData.forEach((value, key) => { entries[key] = value; });
@@ -445,20 +408,15 @@ class ProfileSlider {
         this.elements.completeBtn.disabled = false;
         this.elements.completeBtn.innerHTML = 'Complete';
       }
-
-      // optionally show success UI and/or redirect
       alert('Profile created (simulated). Check console for details.');
     }, 1000);
   }
 }
 
-// network helper for name check
+
 async function checkNameAvailability(name, options = {}) {
-  // options may include { signal } to support abort
   try {
-    // IMPORTANT:
-    // replace the URL below with your proper backend endpoint (https, correct domain),
-    // ensure your server sends CORS headers: Access-Control-Allow-Origin: *
+
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -472,8 +430,7 @@ async function checkNameAvailability(name, options = {}) {
     }
 
     const result = await response.json();
-    // expected shape: { available: boolean, message: string, suggestion?: string }
-    return [!!result.available, result.message || (result.available ? 'Available' : 'Unavailable'), result.suggestion || ""];
+    return [!!result.available, result.message || (result.available ? 'The Username is Available' : 'Oops! The Username is Unavailable'), result.suggestion || ""];
   } catch (error) {
     if (error.name === 'AbortError') {
       console.log('Name check aborted');
@@ -484,8 +441,6 @@ async function checkNameAvailability(name, options = {}) {
     return [false, "Server error. Try again later.", ""];
   }
 }
-
-// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   new ProfileSlider();
 });
