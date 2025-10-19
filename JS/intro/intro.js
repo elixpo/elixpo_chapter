@@ -17,6 +17,7 @@ class ProfileSlider {
       nextBtn: el('#nextBtn'),
       backBtn: el('#backBtn'),
       completeBtn: el('#completeBtn'),
+      skipBtn: el('#skipBtn'),
       displayName: el('#displayName'),
       bio: el('#bio'),
       bioCharCount: el('#bioCharCount'),
@@ -65,6 +66,7 @@ class ProfileSlider {
     this.elements.nextBtn?.addEventListener('click', () => this.nextStep());
     this.elements.backBtn?.addEventListener('click', () => this.prevStep());
     this.elements.completeBtn?.addEventListener('click', () => this.completeProfile());
+    this.elements.skipBtn?.addEventListener('click', () => this.completeProfile());
     this.elements.displayName?.addEventListener('input', (e) => {
       this.isValid[1] = false;
       this.updateButtons();
@@ -413,6 +415,8 @@ class ProfileSlider {
       const formData = new FormData();
       formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
       formData.append('bio', this.elements.bio?.value?.trim() ?? '');
+      const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
+      
     }
     
 
