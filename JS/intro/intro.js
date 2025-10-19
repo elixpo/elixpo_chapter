@@ -179,13 +179,15 @@ class ProfileSlider {
       if (this.cropType === 'pfp') {
         if (this.elements.profilePicPreview) {
           this.elements.profilePicPreview.innerHTML = `
-            <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" />
+            <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" data-img-type="pfp" />
           `;
         }
       } else if (this.cropType === 'banner') {
         if (this.elements.bannerPreview) {
           this.elements.bannerPreview.style.backgroundImage = `url("${croppedImageUrl}")`;
-          this.elements.bannerPreview.innerHTML = '';
+          this.elements.bannerPreview.innerHTML = `
+            <img src="${croppedImageUrl}" alt="Banner Image" class="w-full h-full object-cover" data-img-type="banner" />
+          `;
         }
       }
 
@@ -196,7 +198,6 @@ class ProfileSlider {
     }
   }
 
-  
   async validateDisplayName(stepRedirect=null) {
     this.currentStep = 1;
     this.updateUI();
@@ -242,7 +243,7 @@ class ProfileSlider {
       this.nameCheckAbort = null;
     }
     this.nameCheckAbort = new AbortController();
-    const signal = this.nameCheckAbort.signal;
+    let signal = this.nameCheckAbort.signal;
 
     if (nameStatusEl) {
       nameStatusEl.innerHTML = `
@@ -395,7 +396,6 @@ class ProfileSlider {
     const formGroup = currentStepElement.querySelector('.form-group');
     if (formGroup) {
       formGroup.style.animation = 'none';
-      // small timeout to reflow so CSS animation can replay
       setTimeout(() => {
         formGroup.style.animation = 'slideInUp 0.6s ease-out both';
       }, 50);
@@ -409,58 +409,53 @@ class ProfileSlider {
 
   async completeProfile(options = {}) {
     const skipImages = !!options.skipImages;
-    this.validateDisplayName(stepRedirect=3);
-    this.updateBioCount(stepRedirect=3);
-    if (this.isValid[1] && this.isValid[2] && this.isValid[3]) {
-      const formData = new FormData();
-      formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
-      formData.append('bio', this.elements.bio?.value?.trim() ?? '');
-      const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-      
+    await this.validateDisplayName(3);
+    this.updateBioCount(3);
+    // if (!(this.isValid[1] && this.isValid[2])) {
+    //   alert('Please fix name or bio errors before continuing.');
+    //   return;
+    // }
+
+    const formData = new FormData();
+    formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
+    formData.append('bio', this.elements.bio?.value?.trim() ?? '');
+    let pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
+    let bannerImg = this.elements.bannerPreview?.querySelector('img')?.src;
+    if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
+    if (bannerImg && !skipImages) formData.append('bannerImage', bannerImg);
+
+    if (this.elements.completeBtn) {
+      this.elements.completeBtn.disabled = true;
+      this.elements.completeBtn.innerHTML = `
+        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+        <span>Creating Profile...</span>
+      `;
     }
-    
 
+    if (this.elements.skipBtn) {
+      this.elements.skipBtn.disabled = true;
+      this.elements.skipBtn.innerHTML = 'Skipping...';
+    }
+    setTimeout(() => {
+      const entries = {};
+      formData.forEach((value, key) => { entries[key] = value; });
+      console.log('Profile completed (simulated):', entries);
+      
+      if (this.elements.completeBtn) {
+        this.elements.completeBtn.disabled = false;
+        if((pfpImg || '').trim() === "" && (bannerImg || '').trim() === "")
+        {
+          this.elements.skipBtn.innerHTML = '<span>Skipping</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
+        }
+        else if((pfpImg || '').trim() === "" || (bannerImg || '').trim() === "")
+        {
+          this.elements.skipBtn.innerHTML = '<span>Partialy Skipping</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
+        }
+        this.elements.completeBtn.innerHTML = '<span>Complete Profile</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
+      }
 
-    // const formData = new FormData();
-    // formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
-    // formData.append('bio', this.elements.bio?.value?.trim() ?? '');
-
-    // const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-    // if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
-
-    // const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
-    // const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
-    // if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
-
-    // if (this.elements.completeBtn) {
-    //   this.elements.completeBtn.disabled = true;
-    //   this.elements.completeBtn.innerHTML = `
-    //     <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-    //     <span>Creating Profile...</span>
-    //   `;
-    // }
-
-    // if (this.elements.skipBtn) {
-    //   this.elements.skipBtn.disabled = true;
-    //   this.elements.skipBtn.innerHTML = 'Skipping...';
-    // }
-
-    // setTimeout(() => {
-    //   const entries = {};
-    //   formData.forEach((value, key) => { entries[key] = value; });
-    //   console.log('Profile completed (simulated):', entries);
-
-    //   if (this.elements.completeBtn) {
-    //     this.elements.completeBtn.disabled = false;
-    //     this.elements.completeBtn.innerHTML = 'Complete Profile';
-    //   }
-    //   if (this.elements.skipBtn) {
-    //     this.elements.skipBtn.disabled = false;
-    //     this.elements.skipBtn.innerHTML = 'Skip';
-    //   }
-
-    //   alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
-    // }, 1000);
+      localStorage.setItem('entryProfile', JSON.stringify(entries));
+    }, 1000);
   }
 
   createSkipButton() {
@@ -473,7 +468,7 @@ class ProfileSlider {
     skipBtn.id = 'skipBtn';
     skipBtn.className = 'skip-btn bg-slate-500/60 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600 hidden';
     skipBtn.textContent = 'Skip';
-    skipBtn.addEventListener('click', () => this.completeProfile({ skipImages: true }));
+    // skipBtn.addEventListener('click', () => this.completeProfile({ skipImages: true }));
 
     const parent = this.elements.completeBtn.parentElement || this.elements.completeBtn.parentNode;
     if (parent) {
