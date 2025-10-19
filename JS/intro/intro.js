@@ -457,7 +457,8 @@ class ProfileSlider {
       }
 
       localStorage.setItem('entryProfile', JSON.stringify(entries));
-      redirectTo("src/profile")
+      const date_redirect = new Date();
+      redirectTo(`src/profile/?completedAt=${encodeURIComponent(date_redirect.toISOString())}&profile_set=new&scope=all`);
     }, 500);
   }
 
