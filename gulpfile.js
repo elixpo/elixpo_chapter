@@ -5,66 +5,83 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 import history from "connect-history-api-fallback";
 import ts from "gulp-typescript";
 import sourcemaps from "gulp-sourcemaps";
-import path from "path";
+import nodemon from "gulp-nodemon";
 
 const browserSync = browserSyncLib.create();
-
-// Load tsconfig.json
 const tsProject = ts.createProject("tsconfig.json");
 
-// --- Paths ---
 const paths = {
+  src: "src",
   scripts: ["src/**/*.ts"],
-  html: ["src/**/*.html"],
-  css: ["src/**/*.css"],
-  dist: "dist"
+  backendWatch: ["api/**/*.js"]
 };
 
-// --- Compile TypeScript ---
+// --- Compile TypeScript (Frontend) ---
 gulp.task("typescript", () => {
   return gulp
     .src(paths.scripts)
     .pipe(sourcemaps.init())
     .pipe(tsProject())
     .pipe(sourcemaps.write("."))
-    .pipe(gulp.dest(paths.dist));
+    .pipe(gulp.dest("src")); // 👈 output compiled JS into same src folder
 });
 
-// --- Serve with BrowserSync + Proxy + SPA Fallback ---
+// --- Run Backend Services via Nodemon ---
+gulp.task("backend", (done) => {
+  let started = false;
+
+  // Auth Worker
+  nodemon({
+    script: "api/authWorker/authService.js",
+    watch: ["api/authWorker/**/*.js"],
+    env: { NODE_ENV: "development" },
+    stdout: true
+  }).on("start", () => {
+    if (!started) {
+      started = true;
+      done();
+    }
+  });
+
+  // Redis Worker
+  nodemon({
+    script: "api/redisWorker/redisService.js",
+    watch: ["api/redisWorker/**/*.js"],
+    env: { NODE_ENV: "development" },
+    stdout: true
+  });
+});
+
+
 gulp.task("serve", () => {
-  // Proxy for /api
-  const apiProxy = createProxyMiddleware("/api", {
-    target: "http://localhost:3002",
-    changeOrigin: true,
-    logLevel: "debug"
-  });
-
   browserSync.init({
-    server: {
-      baseDir: paths.dist,
-      middleware: [
-        apiProxy,
-        history() 
-      ]
-    },
-    files: [
-      `${paths.dist}/**/*.css`,
-      `${paths.dist}/**/*.html`,
-      `${paths.dist}/**/*.js`
-    ],
-    injectChanges: true,
-    reloadOnRestart: true,
-    notify: false,
-    open: false
-  });
+  server: {
+    baseDir: "src",  // serve src as root
+    middleware: [
+      createProxyMiddleware({
+        context: ["/api"],
+        target: "http://localhost:3002",
+        changeOrigin: true,
+        logLevel: "debug"
+      }),
+      history({ index: "/index.html" }) // SPA fallback
+    ]
+  },
+  files: ["src/**/*"],
+  injectChanges: true,
+  reloadOnRestart: true,
+  notify: false,
+  open: false,
+  ghostMode: false
+});
 
-  // Watch and rebuild
+
+  
   gulp.watch(paths.scripts, gulp.series("typescript", (done) => {
     browserSync.reload();
     done();
   }));
-  gulp.watch([paths.html, paths.css]).on("change", browserSync.reload);
 });
 
-// --- Default ---
-gulp.task("default", gulp.series("typescript", "serve"));
+// --- Default Task: Run Backend + Serve Frontend ---
+gulp.task("default", gulp.parallel("backend", gulp.series("typescript", "serve")));
