@@ -39,4 +39,3 @@ async function checkURLParam()
     }
 }
 
-showNotification("test notification")
