@@ -44,7 +44,7 @@ class ProfileSlider {
       },
       3: {
         title: "Add a profile picture",
-        description: "Upload a photo or skip this step for now",
+        description: "Upload a profile picture and a banner image to personalize your profile",
         step: 3
       }
     };
@@ -56,6 +56,7 @@ class ProfileSlider {
     if (!this.elements.nextBtn || !this.elements.backBtn || !this.elements.completeBtn) {
       console.warn('ProfileSlider: some core buttons are missing from DOM.');
     }
+    this.createSkipButton();
     this.bindEvents();
     this.updateUI();
   }
@@ -347,9 +348,22 @@ class ProfileSlider {
       this.elements.nextBtn?.classList.add('hidden');
       this.elements.completeBtn?.classList.remove('hidden');
       this.elements.completeBtn.disabled = !this.isValid[this.currentStep];
+
+      const hasPfp = !!this.elements.profilePicPreview?.querySelector('img');
+      const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
+      const hasBanner = bannerStyle && bannerStyle !== 'none' && bannerStyle !== '';
+      if (!hasPfp && !hasBanner) {
+        this.showSkipButton(true);
+      } else {
+        this.showSkipButton(false);
+      }
+
+      this.elements.completeBtn?.classList.remove('hidden');
+      this.elements.completeBtn.disabled = !this.isValid[this.currentStep];
     } else {
       this.elements.nextBtn?.classList.remove('hidden');
       this.elements.completeBtn?.classList.add('hidden');
+      this.showSkipButton(false);
       if (this.elements.nextBtn) {
         this.elements.nextBtn.disabled = !this.isValid[this.currentStep];
       }
@@ -375,8 +389,9 @@ class ProfileSlider {
     }, 300);
   }
 
-  // This is dummy as of now
-  completeProfile() {
+  async completeProfile(options = {}) {
+    const skipImages = !!options.skipImages;
+
     if (!this.isValid[1]) {
       alert('Please fix the name before completing profile.');
       return;
@@ -387,11 +402,12 @@ class ProfileSlider {
     formData.append('bio', this.elements.bio?.value?.trim() ?? '');
 
     const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-    if (pfpImg) formData.append('profilePicture', pfpImg);
+    if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
 
     const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
     const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
-    if (bannerImage) formData.append('bannerImage', bannerImage);
+    if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
+
     if (this.elements.completeBtn) {
       this.elements.completeBtn.disabled = true;
       this.elements.completeBtn.innerHTML = `
@@ -399,6 +415,12 @@ class ProfileSlider {
         <span>Creating Profile...</span>
       `;
     }
+
+    if (this.elements.skipBtn) {
+      this.elements.skipBtn.disabled = true;
+      this.elements.skipBtn.innerHTML = 'Skipping...';
+    }
+
     setTimeout(() => {
       const entries = {};
       formData.forEach((value, key) => { entries[key] = value; });
@@ -406,13 +428,45 @@ class ProfileSlider {
 
       if (this.elements.completeBtn) {
         this.elements.completeBtn.disabled = false;
-        this.elements.completeBtn.innerHTML = 'Complete';
+        this.elements.completeBtn.innerHTML = 'Complete Profile';
       }
-      alert('Profile created (simulated). Check console for details.');
+      if (this.elements.skipBtn) {
+        this.elements.skipBtn.disabled = false;
+        this.elements.skipBtn.innerHTML = 'Skip';
+      }
+
+      alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
     }, 1000);
   }
-}
 
+  createSkipButton() {
+    if (!this.elements.completeBtn) return;
+
+    if (this.elements.skipBtn) return;
+
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.id = 'skipBtn';
+    skipBtn.className = 'skip-btn bg-slate-500/60 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600 hidden';
+    skipBtn.textContent = 'Skip';
+    skipBtn.addEventListener('click', () => this.completeProfile({ skipImages: true }));
+
+    const parent = this.elements.completeBtn.parentElement || this.elements.completeBtn.parentNode;
+    if (parent) {
+      parent.insertBefore(skipBtn, this.elements.completeBtn);
+      this.elements.skipBtn = skipBtn;
+    }
+  }
+
+  showSkipButton(show) {
+    if (!this.elements.skipBtn) return;
+    if (show) {
+      this.elements.skipBtn.classList.remove('hidden');
+    } else {
+      this.elements.skipBtn.classList.add('hidden');
+    }
+  }
+}
 
 async function checkNameAvailability(name, options = {}) {
   try {
@@ -437,7 +491,6 @@ async function checkNameAvailability(name, options = {}) {
       throw error;
     }
     console.error("Error checking name availability:", error);
-    // return friendly fallback
     return [false, "Server error. Try again later.", ""];
   }
 }
