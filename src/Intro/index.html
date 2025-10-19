@@ -149,15 +149,15 @@
         </div>
       </section>
 
-      <div id="cropperModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-[2000] hidden">
-        <div class="bg-slate-800 p-5 rounded-lg shadow-lg w-full max-w-lg">
-          <h2 class="text-white text-2xl mb-4">Crop Image</h2>
-          <div class="img-container">
-            <img id="imageToCrop" src="https://images.unsplash.com/photo-1529778873920-4da4926a72c2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y3V0ZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D&fm=jpg&q=60&w=3000" alt="Image to crop">
+      <div id="cropperModal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur items-center justify-center flex flex-col z-[2000] hidden">
+        <div class="bg-slate-800 p-6 w-[500px] h-[500px] rounded-lg shadow-lg flex flex-col mx-auto">
+          <h2 class="text-white text-xl font-semibold mb-4 text-center">Crop Image</h2>
+          <div class="img-container flex-1 max-w-full max-h-full overflow-hidden rounded-lg bg-slate-900">
+            <img id="imageToCrop" src="" alt="Your cool profile picture -- oops! it's not loading, check your internet please" class="w-full h-full object-contain">
           </div>
           <div class="flex justify-end gap-4 mt-4">
-            <button id="cancelCrop" class="bg-slate-600 text-white px-4 py-2 rounded-lg">Cancel</button>
-            <button id="cropImage" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Crop</button>
+            <button id="cancelCrop" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Cancel</button>
+            <button id="cropImage" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Crop</button>
           </div>
         </div>
       </div>
