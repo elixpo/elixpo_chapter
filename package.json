@@ -14,6 +14,7 @@
     "qrcode-terminal": "^0.12.0",
     "redis": "^5.8.3",
     "sharp": "^0.34.4",
+    "ts-node": "^10.9.2",
     "whatsapp-web.js": "^1.32.0"
   },
   "type": "module",
@@ -29,12 +30,11 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-  "typescript": "gulp typescript",      
-  "watch:ts": "gulp watchTS",          
-  "frontend": "lite-server",
-  "backend": "node dist/api/authWorker/authService.js",
-  "backend:dev": "concurrently \"nodemon dist/api/authWorker/authService.js\" \"nodemon dist/api/redisWorker/redisService.js\"",
-  "dev": "concurrently \"npm run typescript\" \"npm run watch:ts\" \"npm run frontend\" \"npm run backend:dev\""
-}
-
+    "typescript": "gulp typescript",
+    "watch:ts": "gulp watchTS",
+    "frontend": "lite-server",
+    "backend": "node dist/api/authWorker/authService.js",
+    "backend:dev": "concurrently \"nodemon dist/api/authWorker/authService.js\" \"nodemon dist/api/redisWorker/redisService.js\"",
+    "dev": "concurrently \"npm run typescript\" \"npm run watch:ts\" \"npm run frontend\" \"npm run backend:dev\""
+  }
 }
