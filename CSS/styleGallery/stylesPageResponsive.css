@@ -91,6 +91,15 @@
     padding: 14px 28px;
     font-size: 1rem;
   }
+  @media screen and (max-width: 768px) {
+    .art-card {
+      width: 90%; /* Almost full width on small screens */
+    }
+
+    .art-card .try-now-btn {
+      width: 100%; /* Button spans the card */
+    }
+  }
 }
 
 /* Small Mobile Styles */
