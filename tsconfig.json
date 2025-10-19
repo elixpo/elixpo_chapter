@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "ES2015", 
+    "lib": ["ES2017", "DOM", "DOM.Iterable"],
+    "outDir": "./JS",
+    "rootDir": "./JS",
+    "sourceMap": true,
+    "strict": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "declaration": false,
+    "removeComments": true,
+    "noEmitOnError": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./JS/.tsbuildinfo"
+  },
+  "include": [
+    "JS/**/*.ts",
+    "JS/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "JS/**/*.js",
+    "JS/**/*.d.ts",
+    "api/**/*"
+  ]
+}
