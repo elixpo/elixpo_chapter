@@ -40,4 +40,3 @@ async function checkURLParam()
     }
 }
 
-alert("profile loaded");
