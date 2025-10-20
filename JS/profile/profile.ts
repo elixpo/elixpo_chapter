@@ -3,16 +3,17 @@ async function checkURLParam()
     const urlParams = new URLSearchParams(window.location.search);
     if(urlParams.has("profile_set"))
     {
-        let completedAt = urlParams.get("completedAt");
-        let scope = urlParams.get("scope");
+        let completedAt : string = urlParams.get("completedAt") || "";
+        let scope : string = urlParams.get("scope") || "";
         const date = new Date();
         const time_now = date.toISOString();
 
         //get the params from the localstorage
-        let bio = localStorage.getItem("entryProfile")
-        if(completedAt - time_now < 60000 && urlParams.get("profile_set"))
+        let bio : string = localStorage.getItem("entryProfile") || "";
+        if(new Date(completedAt).getTime() - new Date(time_now).getTime() < 60000 && urlParams.get("profile_set"))
         {
-            const entries = await localStorage.getItem("entryProfile").then((res) => JSON.parse(res)) || {};
+            const entryProfileData = localStorage.getItem("entryProfile"); 
+            const entries = entryProfileData ? JSON.parse(entryProfileData) : {};
             let bio = entries.bio || "";
             let displayName = entries.displayName || "";
             let profilePic = entries.profilePic || "";
@@ -38,4 +39,3 @@ async function checkURLParam()
         }
     }
 }
-
