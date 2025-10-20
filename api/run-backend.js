@@ -1,17 +1,59 @@
-#!/usr/bin/env node
-import concurrently from "concurrently";
-import { createRequire } from "module";
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
 
-const require = createRequire(import.meta.url);
-const pkg = require("../package.json");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = dirname(__dirname);
+const backendModules = [
+  'api/authWorker/authService.js',
+  'api/redisWorker/redisService.js'
+];
 
-// commands for backend modules
-const commands = pkg.backendModules.map(file => `npx tsx --watch ${file}`);
+function startService(modulePath) {
+  const fullPath = join(projectRoot, modulePath);
+  if (!fs.existsSync(fullPath)) {
+    console.error(`❌ Service file not found: ${fullPath}`);
+    return null;
+  }
 
+  console.log(`🚀 Starting service: ${modulePath}`);
+  
+  const child = spawn('node', ['--experimental-modules', fullPath], {
+    stdio: 'pipe',
+    cwd: projectRoot,
+    env: process.env
+  });
 
-// run concurrently — v8+ automatically handles logs
-concurrently(commands, {
-  killOthers: ["failure"],
-  prefix: "name",
-  restartTries: 3
+  child.stdout.on('data', (data) => {
+    console.log(`[${modulePath}] ${data.toString().trim()}`);
+  });
+
+  child.stderr.on('data', (data) => {
+    console.error(`[${modulePath}] ❌ ${data.toString().trim()}`);
+  });
+
+  child.on('close', (code) => {
+    console.log(`[${modulePath}] Process exited with code ${code}`);
+    setTimeout(() => {
+      console.log(`🔄 Restarting service: ${modulePath}`);
+      startService(modulePath);
+    }, 2000);
+  });
+
+  return child;
+}
+
+console.log('🎯 Starting backend services...');
+backendModules.forEach(startService);
+
+process.on('SIGINT', () => {
+  console.log('\n📊 Shutting down backend services...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n📊 Shutting down backend services...');
+  process.exit(0);
 });

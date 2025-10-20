@@ -34,9 +34,5 @@
     "frontend": "gulp",
     "backend:dev": "node api/run-backend.js",
     "dev": "concurrently \"npm run serve\" \"npm run backend:dev\""
-  },
-  "backendModules": [
-    "api/authWorker/authService.js",
-    "api/redisWorker/redisService.js"
-  ]
+  }
 }
