@@ -67,152 +67,135 @@
   left: 75%;
 }
   
-  .footerElement {
-    position: absolute;
-    top: 90%;
-    height: 10%;
-    width: 100%;
-    left: 0;
-    border-top: 1px solid #fff;
-    /* justify-content: center; */
-  }
-  
-  .footerText {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%);
-    font-family: "calibri", sans-serif;
-    font-weight: 100;
-    font-size: 1.3em;
-    letter-spacing: 2px;
-    color: #a19f9f;
-    display: flex;
-  }
-  
-  .faqSection {
-    position: absolute;
-    top: 30%;
-    height: 60%;
-    width: 80%;
-    margin: 0 auto;
-    padding: 20px;
-    background: transparent;
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
-  }
-  
-  .faqSection .faqHeading {
-    font-family: "Georgia", serif;
-    font-size: 2.8em;
-    color: #ff80c0;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  .faqSection .faqDesc {
-    font-family: "Verdana", sans-serif;
-    font-size: 1.2em;
-    width: 90%;
-    color: #d1d1e9;
-    text-align: center;
-    margin: 0 auto 30px;
-  }
-  
-.extendContainer 
-{
-  display: grid;
-  gap: 1em;
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 1000px;
-  padding: 1em 0em;
-  place-self: center;
+/* FAQ Section */
+.faqSection {
+  width: 85%;
+  margin: 4em auto;
+  text-align: center;
+  background: transparent;
+}
+
+.faqHeading {
+  font-family: "Georgia", serif;
+  font-size: 2.5em;
+  color: #ff784f;
+  margin-bottom: 0.5em;
+}
+
+.faqDesc {
+  font-family: "Verdana", sans-serif;
+  font-size: 1.1em;
+  color: #c7c7d9;
+  margin-bottom: 2.5em;
+}
+
+/* Container for cards */
+.extendContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2em;
+  flex-wrap: wrap;
+}
+
+/* Individual Card */
+.extendCard {
+  background: rgba(30, 30, 30, 0.9);
+  border-radius: 1em;
+  width: 280px;
+  height: 280px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
   position: relative;
-  max-height: 300px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: calc(100% - 2em);
+  overflow: hidden;
+}
+
+.extendCard:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(255, 140, 90, 0.4);
+}
+
+/* Card inner content */
+.extendCard-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  position: relative;
   z-index: 2;
 }
-.extendContainer::-webkit-scrollbar
-{
-  display: none;
-}
-  .extendCard {
-    background-color: var(--card-color);
-    border-radius: 0.75em;
-    cursor: pointer;
-    height: 240px;
-    position: relative;
-  }
-  
-  .extendCard:hover:before {
-    opacity: 1;
-  }
-  
-  .extendCard:before {
-    background: linear-gradient(
-      45deg,
-      transparent 5%,
-      rgb(255, 215, 137) 50%,
-      transparent 99%
-    );
-    border-radius: inherit;
-    content: "";
-    inset: 0px;
-    opacity: 0;
-    position: absolute;
-    transition: opacity 400ms;
-    z-index: 0;
-  }
-  
-  .extendCard-content {
-    background-color: var(--card-color);
-    border-radius: inherit;
-    display: grid;
-    inset: 1px;
-    padding: 1em;
-    position: absolute;
-    overflow: hidden;
-    overflow-y: auto;
-  }
- .extendCard-content::-webkit-scrollbar
-  {
-    display: none;
-  }
-.extendCard-title
-{
-   position: absolute;
-   color: #555;
-   font-size: 1.4em;
-   width: 100%;
-   font-family: 'Courier New', Courier, monospace;
-   font-weight: 700;
-   left: 50%;
-   transform: translateX(-50%);
-   text-align: center;
-   top: 75%;
-}  
 
-.extendCard:hover > .extendCard-content > .extendCard-icon {
-    opacity: 1;
-    transform: scale(1.1) translateY(-5%) translateX(-50%);
-    left: 50%;
-    transform-origin: center;
-  }
-  
-  .extendCard-icon {
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 6em;
-    opacity: 0.4;
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    transform-origin: center;
-    transition: transform 250ms, opacity 250ms;
-  }
+/* Card Icon */
+.extendCard-icon {
+  font-size: 5em;
+  color: #ff9f68;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5em;
+}
+
+.extendCard:hover .extendCard-icon {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* Card Title */
+.extendCard-title {
+  font-size: 1.4em;
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 0.5em;
+}
+
+/* Card Badge */
+.extendCard-badge {
+  background: #ff9f68;
+  color: #000;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.9em;
+  margin-top: 0.7em;
+  font-weight: 600;
+}
+
+.extendCard-badge-dev {
+  background: #ffd166;
+  color: #000;
+}
+
+/* Glow animation layer */
+.extendCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #ff9f68, #ff784f, #ffd166);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.extendCard:hover::before {
+  opacity: 0.2;
+}
+
+/* Footer Section */
+.footerElement {
+  position: relative;
+  margin-top: 5em;
+  padding: 1em 0;
+  width: 100%;
+  text-align: center;
+  border-top: 1px solid #444;
+  color: #aaa;
+  font-size: 1em;
+  font-family: "Calibri", sans-serif;
+  letter-spacing: 1px;
+}
+
   
   #installCount 
   {
