@@ -7,6 +7,13 @@ class ProfileSlider {
     this.cropType = null;
     this.typingTimeout = null;
     this.nameCheckAbort = null;
+    this.imageFilters = { // Initialize filter state
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      straighten: 0, // ADDED: Initial rotation/straighten value
+    };
+    
     const el = (selector) => document.querySelector(selector);
     this.elements = {
       steps: document.querySelectorAll('.step-content') || [],
@@ -17,7 +24,6 @@ class ProfileSlider {
       nextBtn: el('#nextBtn'),
       backBtn: el('#backBtn'),
       completeBtn: el('#completeBtn'),
-      skipBtn: el('#skipBtn'),
       displayName: el('#displayName'),
       bio: el('#bio'),
       bioCharCount: el('#bioCharCount'),
@@ -29,7 +35,21 @@ class ProfileSlider {
       imageToCrop: el('#imageToCrop'),
       cancelCrop: el('#cancelCrop'),
       cropImage: el('#cropImage'),
-      nameStatus: el('#nameStatus')
+      nameStatus: el('#nameStatus'),
+      // Image Adjustment Elements
+      brightnessSlider: el('#brightness-slider'),
+      brightnessValue: el('#brightness-value'),
+      contrastSlider: el('#contrast-slider'),
+      contrastValue: el('#contrast-value'),
+      saturationSlider: el('#saturation-slider'),
+      saturationValue: el('#saturation-value'),
+      // ADDED: Straighten elements
+      straightenSlider: el('#straighten-slider'),
+      straightenValue: el('#straighten-value'),
+      // END ADDED
+      rotateLeft: el('#rotateLeft'),
+      rotateRight: el('#rotateRight'),
+      resetAdjustments: el('#resetAdjustments'),
     };
 
     this.stepData = {
@@ -66,7 +86,6 @@ class ProfileSlider {
     this.elements.nextBtn?.addEventListener('click', () => this.nextStep());
     this.elements.backBtn?.addEventListener('click', () => this.prevStep());
     this.elements.completeBtn?.addEventListener('click', () => this.completeProfile());
-    this.elements.skipBtn?.addEventListener('click', () => this.completeProfile());
     this.elements.displayName?.addEventListener('input', (e) => {
       this.isValid[1] = false;
       this.updateButtons();
@@ -81,6 +100,19 @@ class ProfileSlider {
     this.elements.bannerImage?.addEventListener('change', (e) => this.handleImage(e, 'banner'));
     this.elements.cancelCrop?.addEventListener('click', () => this.closeCropper());
     this.elements.cropImage?.addEventListener('click', () => this.crop());
+
+    // Filter, Straighten, and Rotation Event Handlers
+    this.elements.resetAdjustments?.addEventListener('click', () => this.resetImageFilters());
+    this.elements.brightnessSlider?.addEventListener('input', () => this.updateImageFilter('brightness'));
+    this.elements.contrastSlider?.addEventListener('input', () => this.updateImageFilter('contrast'));
+    this.elements.saturationSlider?.addEventListener('input', () => this.updateImageFilter('saturation'));
+    // ADDED: Straighten slider event
+    this.elements.straightenSlider?.addEventListener('input', () => this.updateStraighten());
+    // END ADDED
+    this.elements.rotateLeft?.addEventListener('click', () => this.cropper?.rotate(-90));
+    this.elements.rotateRight?.addEventListener('click', () => this.cropper?.rotate(90));
+    // END: Filter and Rotation Event Handlers
+
     document.addEventListener('keydown', (e) => {
       const activeTag = e.target?.tagName;
       if (e.key === 'Enter' && !e.shiftKey && activeTag !== 'TEXTAREA') {
@@ -93,6 +125,92 @@ class ProfileSlider {
       }
     });
   }
+
+  // --- NEW METHOD: Handles the Straighten slider ---
+  updateStraighten() {
+    const slider = this.elements.straightenSlider;
+    const valueDisplay = this.elements.straightenValue;
+    
+    if (!slider || !valueDisplay || !this.cropper) return;
+
+    this.imageFilters.straighten = parseFloat(slider.value);
+    valueDisplay.textContent = `${slider.value}°`;
+    
+    // CRITICAL: Call the Cropper.js rotateTo method to apply the new absolute angle
+    this.cropper.rotateTo(this.imageFilters.straighten);
+  }
+  // --- END NEW METHOD ---
+
+  // --- REVISED updateImageFilter for FINAL FIX ---
+  updateImageFilter(filterName) {
+    const slider = this.elements[`${filterName}Slider`];
+    const valueDisplay = this.elements[`${filterName}Value`];
+    const imageEl = this.elements.imageToCrop; 
+    
+    if (!slider || !valueDisplay || !imageEl) return;
+
+    this.imageFilters[filterName] = parseFloat(slider.value);
+    valueDisplay.textContent = `${slider.value}%`;
+    
+    // 1. Construct the complete CSS filter string
+    const filterStyle = `
+      brightness(${this.imageFilters.brightness}%) 
+      contrast(${this.imageFilters.contrast}%) 
+      saturation(${this.imageFilters.saturation}%)
+    `.trim();
+
+    // 2. Locate the image element being displayed by Cropper.js. 
+    // This element usually has the class 'cropper-canvas'.
+    // NOTE: Removed the unstable setTimeout(0).
+    const cropperImage = document.querySelector('.cropper-container .cropper-canvas');
+
+    // 3. CRITICAL: Apply the style directly, forcing it with !important.
+    // Target 1: The original image element (for safety/hiding the original if visible)
+    imageEl.style.setProperty('filter', filterStyle, 'important');
+
+    // Target 2: The actual image displayed inside the Cropper wrapper
+    if (cropperImage) {
+        cropperImage.style.setProperty('filter', filterStyle, 'important');
+    }
+  }
+
+  resetImageFilters() {
+    this.imageFilters = {
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      straighten: 0, // ADDED: Reset straighten value
+    };
+    if (this.elements.imageToCrop) {
+      this.elements.imageToCrop.style.filter = ''; // Reset CSS filter
+    }
+
+    // Reset sliders and value displays
+    if (this.elements.brightnessSlider) {
+      this.elements.brightnessSlider.value = 100;
+      this.elements.brightnessValue.textContent = '100%';
+    }
+    if (this.elements.contrastSlider) {
+      this.elements.contrastSlider.value = 100;
+      this.elements.contrastValue.textContent = '100%';
+    }
+    if (this.elements.saturationSlider) {
+      this.elements.saturationSlider.value = 100;
+      this.elements.saturationValue.textContent = '100%';
+    }
+    
+    // ADDED: Reset straighten slider and value
+    if (this.elements.straightenSlider) {
+      this.elements.straightenSlider.value = 0;
+      this.elements.straightenValue.textContent = '0°';
+    }
+
+    // Reset rotation (both 90-degree and straighten)
+    if (this.cropper) {
+      this.cropper.rotateTo(0);
+    }
+  }
+  // --- END REVISED updateImageFilter and resetImageFilters ---
 
   handleImage(event, type) {
     const file = event?.target?.files?.[0];
@@ -118,6 +236,11 @@ class ProfileSlider {
   openCropper() {
     if (!this.elements.cropperModal || !this.elements.imageToCrop) return;
     this.elements.cropperModal.classList.remove('hidden');
+
+    // CRITICAL: Reset filters and rotation before initializing cropper
+    this.elements.imageToCrop.style.filter = ''; 
+    this.resetImageFilters(); 
+
     const aspectRatio = this.cropType === 'pfp' ? 1 : 16 / 9;
     if (this.cropper && typeof this.cropper.destroy === 'function') {
       this.cropper.destroy();
@@ -133,7 +256,7 @@ class ProfileSlider {
         background: false,
         movable: true,
         zoomable: true,
-        rotatable: false,
+        rotatable: true, 
         scalable: false,
         minContainerWidth: 200,
         minContainerHeight: 100,
@@ -142,6 +265,8 @@ class ProfileSlider {
           if (this.cropper.zoomTo) {
             this.cropper.zoomTo(0);
           }
+          // CRITICAL: Trigger initial filter update (sets CSS filter to 100% defaults)
+          this.updateImageFilter('brightness'); 
         }
       });
     } catch (err) {
@@ -162,46 +287,106 @@ class ProfileSlider {
         this.cropper = null;
       }
     }
-    if (this.elements.imageToCrop) this.elements.imageToCrop.src = '';
-  }
-
-  crop() {
-    if (!this.cropper) return;
-    try {
-      const canvas = this.cropper.getCroppedCanvas({
-        maxWidth: this.cropType === 'pfp' ? 500 : 1920,
-        maxHeight: this.cropType === 'pfp' ? 500 : 1080,
-        fillColor: '#fff'
-      });
-
-      const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-      if (this.cropType === 'pfp') {
-        if (this.elements.profilePicPreview) {
-          this.elements.profilePicPreview.innerHTML = `
-            <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" data-img-type="pfp" />
-          `;
-        }
-      } else if (this.cropType === 'banner') {
-        if (this.elements.bannerPreview) {
-          this.elements.bannerPreview.style.backgroundImage = `url("${croppedImageUrl}")`;
-          this.elements.bannerPreview.innerHTML = `
-            <img src="${croppedImageUrl}" alt="Banner Image" class="w-full h-full object-cover" data-img-type="banner" />
-          `;
-        }
-      }
-
-      this.closeCropper();
-    } catch (err) {
-      console.error('Crop failed:', err);
-      alert('Failed to crop image. Please try again.');
+    if (this.elements.imageToCrop) {
+      this.elements.imageToCrop.src = '';
+      this.elements.imageToCrop.style.filter = ''; // Cleanup filter on close
     }
   }
 
-  async validateDisplayName(stepRedirect=null) {
-    this.currentStep = 1;
-    this.updateUI();
-    this.animateStep();
+  // --- The corrected pixel manipulation crop() method ---
+  crop() {
+    if (!this.cropper) return;
+
+    try {
+        // 1. Get the cropped canvas (accounts for Cropper.js rotation and crop, including the straighten angle)
+        const croppedCanvas = this.cropper.getCroppedCanvas({
+            maxWidth: this.cropType === 'pfp' ? 500 : 1920,
+            maxHeight: this.cropType === 'pfp' ? 500 : 1080,
+            fillColor: '#fff'
+        });
+
+        let finalCanvas = croppedCanvas;
+
+        // 2. Check if any filters were applied (non-default values)
+        const filtersApplied = (
+            this.imageFilters.brightness !== 100 ||
+            this.imageFilters.contrast !== 100 ||
+            this.imageFilters.saturation !== 100
+        );
+
+        if (filtersApplied) {
+            const ctx = finalCanvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, finalCanvas.width, finalCanvas.height);
+            const data = imageData.data;
+
+            // Convert percentages to multipliers/values
+            const b = this.imageFilters.brightness / 100;
+            const contrastFactor = this.imageFilters.contrast / 100;
+            const s = this.imageFilters.saturation / 100;
+
+            for (let i = 0; i < data.length; i += 4) {
+                // 1. Get original RGB values (integer)
+                let r_orig = data[i];
+                let g_orig = data[i + 1];
+                let b_orig = data[i + 2];
+                
+                // 2. --- BRIGHTNESS ---
+                let r_bright = r_orig * b;
+                let g_bright = g_orig * b;
+                let b_bright = b_orig * b;
+
+                // 3. --- CONTRAST ---
+                // Operate on the result of Brightness
+                let r_contrast = (r_bright - 128) * contrastFactor + 128;
+                let g_contrast = (g_bright - 128) * contrastFactor + 128;
+                let b_contrast = (b_bright - 128) * contrastFactor + 128;
+
+                // 4. --- SATURATION (Luma/Grayscale calculation) ---
+                // Calculate luma from the contrast-adjusted colors
+                const luma = 0.299 * r_contrast + 0.587 * g_contrast + 0.114 * b_contrast;
+                
+                // Interpolate between Luma (grayscale) and the contrast-adjusted color (r_contrast)
+                let r_final = luma * (1 - s) + r_contrast * s;
+                let g_final = luma * (1 - s) + g_contrast * s;
+                let b_final = luma * (1 - s) + b_contrast * s;
+
+                // 5. Clamp values to ensure they stay within 0-255 range and assign back
+                data[i] = Math.max(0, Math.min(255, r_final));
+                data[i + 1] = Math.max(0, Math.min(255, g_final));
+                data[i + 2] = Math.max(0, Math.min(255, b_final));
+            }
+
+            // Put the modified pixel data back onto the canvas
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // 3. Get the data URL from the filtered (or unfiltered if defaults) canvas
+        const croppedImageUrl = finalCanvas.toDataURL('image/jpeg', 0.9);
+
+        // 4. Update the preview elements
+        if (this.cropType === 'pfp') {
+            if (this.elements.profilePicPreview) {
+                this.elements.profilePicPreview.innerHTML = `
+                    <img src="${croppedImageUrl}" alt="Profile Picture" class="w-full h-full object-cover rounded-full" />
+                `;
+            }
+        } else if (this.cropType === 'banner') {
+            if (this.elements.bannerPreview) {
+                this.elements.bannerPreview.style.backgroundImage = `url("${croppedImageUrl}")`;
+                this.elements.bannerPreview.innerHTML = '';
+            }
+        }
+
+        this.closeCropper();
+    } catch (err) {
+        console.error('Crop failed:', err);
+        alert('Failed to crop image. Please try again.');
+    }
+  }
+  
+  // (Rest of the original methods like validateDisplayName, updateBioCount, etc. are included below)
+
+  async validateDisplayName() {
     const name = this.elements.displayName?.value?.trim() ?? '';
     const nameStatusEl = this.elements.nameStatus;
 
@@ -243,7 +428,7 @@ class ProfileSlider {
       this.nameCheckAbort = null;
     }
     this.nameCheckAbort = new AbortController();
-    let signal = this.nameCheckAbort.signal;
+    const signal = this.nameCheckAbort.signal;
 
     if (nameStatusEl) {
       nameStatusEl.innerHTML = `
@@ -262,12 +447,6 @@ class ProfileSlider {
         }
       } else {
         this.isValid[1] = true;
-        if(stepRedirect)
-        {
-          this.currentStep = stepRedirect;
-          this.updateUI();
-          this.animateStep();
-        }
         if (nameStatusEl) {
           nameStatusEl.innerHTML = `
             <ion-icon name="checkmark-circle-outline" class="text-green-500 mt-[10px] mr-[5px]"></ion-icon>
@@ -275,6 +454,7 @@ class ProfileSlider {
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError') return; // Ignore aborted requests
       console.error('Name availability check failed:', err);
       this.isValid[1] = false;
       if (nameStatusEl) {
@@ -287,7 +467,7 @@ class ProfileSlider {
     }
   }
 
-  updateBioCount(stepRedirect=null) {
+  updateBioCount() {
     const bioEl = this.elements.bio;
     const countEl = this.elements.bioCharCount;
     if (!bioEl || !countEl) return;
@@ -306,15 +486,8 @@ class ProfileSlider {
       parent?.classList.remove('text-slate-500');
     } else {
       this.isValid[2] = true;
-      if(stepRedirect)
-      {
-        this.currentStep = stepRedirect;
-        this.updateUI();
-        this.animateStep();
-      }
       parent?.classList.remove('text-red-500');
       parent?.classList.add('text-slate-500');
-
     }
 
     this.updateButtons();
@@ -396,6 +569,7 @@ class ProfileSlider {
     const formGroup = currentStepElement.querySelector('.form-group');
     if (formGroup) {
       formGroup.style.animation = 'none';
+      // small timeout to reflow so CSS animation can replay
       setTimeout(() => {
         formGroup.style.animation = 'slideInUp 0.6s ease-out both';
       }, 50);
@@ -409,20 +583,22 @@ class ProfileSlider {
 
   async completeProfile(options = {}) {
     const skipImages = !!options.skipImages;
-    await this.validateDisplayName(3);
-    this.updateBioCount(3);
-    // if (!(this.isValid[1] && this.isValid[2])) {
-    //   alert('Please fix name or bio errors before continuing.');
-    //   return;
-    // }
+
+    if (!this.isValid[1]) {
+      alert('Please fix the name before completing profile.');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
     formData.append('bio', this.elements.bio?.value?.trim() ?? '');
-    let pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-    let bannerImg = this.elements.bannerPreview?.querySelector('img')?.src;
+
+    const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
     if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
-    if (bannerImg && !skipImages) formData.append('bannerImage', bannerImg);
+
+    const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
+    const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
+    if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
 
     if (this.elements.completeBtn) {
       this.elements.completeBtn.disabled = true;
@@ -436,30 +612,23 @@ class ProfileSlider {
       this.elements.skipBtn.disabled = true;
       this.elements.skipBtn.innerHTML = 'Skipping...';
     }
+
     setTimeout(() => {
       const entries = {};
-      const date = new Date();
-      entries['completedAt'] = date.toISOString();
       formData.forEach((value, key) => { entries[key] = value; });
       console.log('Profile completed (simulated):', entries);
-      
+
       if (this.elements.completeBtn) {
         this.elements.completeBtn.disabled = false;
-        if((pfpImg || '').trim() === "" && (bannerImg || '').trim() === "")
-        {
-          this.elements.skipBtn.innerHTML = '<span>Skipping</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
-        }
-        else if((pfpImg || '').trim() === "" || (bannerImg || '').trim() === "")
-        {
-          this.elements.skipBtn.innerHTML = '<span>Partialy Skipping</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
-        }
-        this.elements.completeBtn.innerHTML = '<span>Complete Profile</span><ion-icon name="checkmark" class="text-base"></ion-icon>';
+        this.elements.completeBtn.innerHTML = 'Complete Profile';
+      }
+      if (this.elements.skipBtn) {
+        this.elements.skipBtn.disabled = false;
+        this.elements.skipBtn.innerHTML = 'Skip';
       }
 
-      localStorage.setItem('entryProfile', JSON.stringify(entries));
-      const date_redirect = new Date();
-      redirectTo(`src/profile/?completedAt=${encodeURIComponent(date_redirect.toISOString())}&profile_set=new&scope=all`);
-    }, 500);
+      alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
+    }, 1000);
   }
 
   createSkipButton() {
@@ -472,6 +641,8 @@ class ProfileSlider {
     skipBtn.id = 'skipBtn';
     skipBtn.className = 'skip-btn bg-slate-500/60 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600 hidden';
     skipBtn.textContent = 'Skip';
+    skipBtn.addEventListener('click', () => this.completeProfile({ skipImages: true }));
+
     const parent = this.elements.completeBtn.parentElement || this.elements.completeBtn.parentNode;
     if (parent) {
       parent.insertBefore(skipBtn, this.elements.completeBtn);
