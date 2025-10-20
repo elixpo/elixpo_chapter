@@ -3,13 +3,13 @@ import browserSyncLib from "browser-sync";
 import ts from "typescript";
 import fs from "fs";
 import path from "path";
-import LRU from "lru-cache";
+import { LRUCache } from "lru-cache";
 
 const browserSync = browserSyncLib.create();
 const srcDir = "JS"; // your TypeScript folder
 
 // 🔹 LRU cache setup — keeps recent compiled files in memory
-const cache = new LRU({
+const cache = new LRUCache({
   max: 100,              // up to 100 compiled files
   ttl: 1000 * 60 * 5,    // each cached item expires after 5 minutes
 });

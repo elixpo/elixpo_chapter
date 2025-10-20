@@ -1,24 +1,22 @@
 {
+  "name": "your-project",
+  "type": "module",
   "dependencies": {
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
-    "fs": "^0.0.1-security",
     "google-auth-library": "^10.3.0",
     "jsonwebtoken": "^9.0.2",
     "lru-cache": "^11.2.2",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
-    "nodemon": "^3.1.10",
     "qrcode-terminal": "^0.12.0",
     "redis": "^5.8.3",
     "sharp": "^0.34.4",
-    "ts-node": "^10.9.2",
     "whatsapp-web.js": "^1.32.0"
   },
-  "type": "module",
   "devDependencies": {
     "browser-sync": "^3.0.4",
     "concurrently": "^8.2.2",
@@ -26,14 +24,19 @@
     "gulp": "^5.0.1",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
-    "http-proxy-middleware": "^3.0.5",
     "lite-server": "^2.6.1",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "scripts": {
     "serve": "gulp",
     "frontend": "gulp",
-    "backend:dev": "concurrently \"nodemon api/authWorker/authService.js\" \"nodemon api/redisWorker/redisService.js\"",
+    "backend:dev": "node api/run-backend.js",
     "dev": "concurrently \"npm run serve\" \"npm run backend:dev\""
-  }
+  },
+  "backendModules": [
+    "api/authWorker/authService.js",
+    "api/redisWorker/redisService.js"
+  ]
 }
