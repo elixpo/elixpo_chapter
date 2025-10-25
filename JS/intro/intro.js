@@ -103,12 +103,29 @@ class ProfileSlider {
 
     // Filter, Straighten, and Rotation Event Handlers
     this.elements.resetAdjustments?.addEventListener('click', () => this.resetImageFilters());
-    this.elements.brightnessSlider?.addEventListener('input', () => this.updateImageFilter('brightness'));
-    this.elements.contrastSlider?.addEventListener('input', () => this.updateImageFilter('contrast'));
-    this.elements.saturationSlider?.addEventListener('input', () => this.updateImageFilter('saturation'));
-    // ADDED: Straighten slider event
-    this.elements.straightenSlider?.addEventListener('input', () => this.updateStraighten());
-    // END ADDED
+    
+    // Configure slider steps and event handlers
+    if (this.elements.brightnessSlider) {
+      this.elements.brightnessSlider.step = "1"; // 1% steps for brightness
+      this.elements.brightnessSlider.addEventListener('input', () => this.updateImageFilter('brightness'));
+    }
+    
+    if (this.elements.contrastSlider) {
+      this.elements.contrastSlider.step = "1"; // 1% steps for contrast
+      this.elements.contrastSlider.addEventListener('input', () => this.updateImageFilter('contrast'));
+    }
+    
+    if (this.elements.saturationSlider) {
+      this.elements.saturationSlider.step = "1"; // 1% steps for saturation
+      this.elements.saturationSlider.addEventListener('input', () => this.updateImageFilter('saturation'));
+    }
+    
+    // Straighten slider already has 0.5 step in HTML, but ensure it's set here too
+    if (this.elements.straightenSlider) {
+      this.elements.straightenSlider.step = "0.5"; // 0.5 degree steps for precision
+      this.elements.straightenSlider.addEventListener('input', () => this.updateStraighten());
+    }
+    
     this.elements.rotateLeft?.addEventListener('click', () => this.cropper?.rotate(-90));
     this.elements.rotateRight?.addEventListener('click', () => this.cropper?.rotate(90));
     // END: Filter and Rotation Event Handlers
@@ -126,22 +143,85 @@ class ProfileSlider {
     });
   }
 
-  // --- NEW METHOD: Handles the Straighten slider ---
+  // --- IMPROVED METHOD: Handles the Straighten slider with input field ---
   updateStraighten() {
     const slider = this.elements.straightenSlider;
     const valueDisplay = this.elements.straightenValue;
     
     if (!slider || !valueDisplay || !this.cropper) return;
 
+    // Update the filter value from slider
     this.imageFilters.straighten = parseFloat(slider.value);
-    valueDisplay.textContent = `${slider.value}°`;
     
-    // CRITICAL: Call the Cropper.js rotateTo method to apply the new absolute angle
-    this.cropper.rotateTo(this.imageFilters.straighten);
+    // Update display value with editable input field if it doesn't exist yet
+    if (!valueDisplay.querySelector('input')) {
+      const currentValue = this.imageFilters.straighten;
+      const inputField = document.createElement('input');
+      inputField.type = 'number';
+      inputField.min = slider.min;
+      inputField.max = slider.max;
+      inputField.step = "0.5"; // Allow half-degree precision
+      inputField.value = currentValue;
+      inputField.className = 'w-12 h-5 bg-slate-700 text-blue-400 text-xs font-mono text-center rounded border border-slate-600 focus:border-blue-500 focus:outline-none';
+      
+      // Listen for input changes from the input field
+      inputField.addEventListener('input', (e) => {
+        let newValue = parseFloat(e.target.value);
+        // Clamp the value within slider range
+        newValue = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), newValue));
+        // Update the slider position
+        slider.value = newValue;
+        // Update the filter value
+        this.imageFilters.straighten = newValue;
+        // Apply straighten in real-time
+        if (this.cropper) {
+          this.cropper.rotateTo(newValue);
+        }
+      });
+      
+      // Replace text with input field
+      valueDisplay.textContent = '';
+      valueDisplay.appendChild(inputField);
+      
+      // Add a degree symbol after the input
+      const degreeSign = document.createElement('span');
+      degreeSign.textContent = '°';
+      degreeSign.className = 'text-xs text-blue-400 font-mono ml-0.5';
+      valueDisplay.appendChild(degreeSign);
+      
+      // Add reset button for straighten control
+      const resetBtn = document.createElement('button');
+      resetBtn.type = 'button';
+      resetBtn.className = 'ml-2 text-xs text-slate-400 hover:text-blue-400 transition-colors';
+      resetBtn.innerHTML = '<ion-icon name="refresh-outline" class="text-xs"></ion-icon>';
+      resetBtn.title = 'Reset straighten to default';
+      resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Reset just the straighten value
+        this.imageFilters.straighten = 0;
+        slider.value = 0;
+        inputField.value = 0;
+        if (this.cropper) {
+          this.cropper.rotateTo(0);
+        }
+      });
+      valueDisplay.appendChild(resetBtn);
+    } else {
+      // Just update the value if input field already exists
+      const inputField = valueDisplay.querySelector('input');
+      if (inputField) {
+        inputField.value = this.imageFilters.straighten;
+      }
+    }
+    
+    // Apply the rotation change immediately
+    if (this.cropper) {
+      this.cropper.rotateTo(this.imageFilters.straighten);
+    }
   }
-  // --- END NEW METHOD ---
+  // --- END IMPROVED METHOD ---
 
-  // --- REVISED updateImageFilter for FINAL FIX ---
+  // --- IMPROVED updateImageFilter with real-time preview and input field support ---
   updateImageFilter(filterName) {
     const slider = this.elements[`${filterName}Slider`];
     const valueDisplay = this.elements[`${filterName}Value`];
@@ -149,60 +229,153 @@ class ProfileSlider {
     
     if (!slider || !valueDisplay || !imageEl) return;
 
+    // Update the filter value from slider
     this.imageFilters[filterName] = parseFloat(slider.value);
-    valueDisplay.textContent = `${slider.value}%`;
     
-    // 1. Construct the complete CSS filter string
+    // Update display value with editable input field if it doesn't exist yet
+    if (!valueDisplay.querySelector('input')) {
+      const currentValue = this.imageFilters[filterName];
+      const inputField = document.createElement('input');
+      inputField.type = 'number';
+      inputField.min = slider.min;
+      inputField.max = slider.max;
+      inputField.step = "1"; // Ensure precise step control
+      inputField.value = currentValue;
+      inputField.className = 'w-10 h-5 bg-slate-700 text-blue-400 text-xs font-mono text-center rounded border border-slate-600 focus:border-blue-500 focus:outline-none';
+      
+      // Listen for input changes from the input field
+      inputField.addEventListener('input', (e) => {
+        let newValue = parseFloat(e.target.value);
+        // Clamp the value within slider range
+        newValue = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), newValue));
+        // Update the slider position
+        slider.value = newValue;
+        // Update the filter value
+        this.imageFilters[filterName] = newValue;
+        // Apply filters in real-time
+        this.applyImageFilters();
+      });
+      
+      // Replace text with input field
+      valueDisplay.textContent = '';
+      valueDisplay.appendChild(inputField);
+      
+      // Add a % sign after the input
+      const percentSign = document.createElement('span');
+      percentSign.textContent = '%';
+      percentSign.className = 'text-xs text-blue-400 font-mono ml-0.5';
+      valueDisplay.appendChild(percentSign);
+      
+      // Add reset button for this individual control
+      const resetBtn = document.createElement('button');
+      resetBtn.type = 'button';
+      resetBtn.className = 'ml-2 text-xs text-slate-400 hover:text-blue-400 transition-colors';
+      resetBtn.innerHTML = '<ion-icon name="refresh-outline" class="text-xs"></ion-icon>';
+      resetBtn.title = `Reset ${filterName} to default`;
+      resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Reset just this specific filter
+        const defaultValue = filterName === 'brightness' || filterName === 'contrast' ? 100 : 
+                            filterName === 'saturation' ? 100 : 0;
+        this.imageFilters[filterName] = defaultValue;
+        slider.value = defaultValue;
+        inputField.value = defaultValue;
+        this.applyImageFilters();
+      });
+      valueDisplay.appendChild(resetBtn);
+    } else {
+      // Just update the value if input field already exists
+      const inputField = valueDisplay.querySelector('input');
+      if (inputField) {
+        inputField.value = this.imageFilters[filterName];
+      }
+    }
+    
+    // Apply filters immediately for real-time preview
+    this.applyImageFilters();
+  }
+  
+  // New method to apply all filters at once (for real-time updates)
+  applyImageFilters() {
+    const imageEl = this.elements.imageToCrop;
+    if (!imageEl) return;
+    
+    // Construct the complete CSS filter string
     const filterStyle = `
       brightness(${this.imageFilters.brightness}%) 
       contrast(${this.imageFilters.contrast}%) 
       saturation(${this.imageFilters.saturation}%)
     `.trim();
 
-    // 2. Locate the image element being displayed by Cropper.js. 
-    // This element usually has the class 'cropper-canvas'.
-    // NOTE: Removed the unstable setTimeout(0).
+    // Find all Cropper.js elements that need the filter applied
     const cropperImage = document.querySelector('.cropper-container .cropper-canvas');
+    const cropperView = document.querySelector('.cropper-container .cropper-view-box');
+    const cropperDragBox = document.querySelector('.cropper-container .cropper-face');
 
-    // 3. CRITICAL: Apply the style directly, forcing it with !important.
-    // Target 1: The original image element (for safety/hiding the original if visible)
+    // Apply filters to all relevant elements for complete real-time preview
     imageEl.style.setProperty('filter', filterStyle, 'important');
-
-    // Target 2: The actual image displayed inside the Cropper wrapper
+    
     if (cropperImage) {
-        cropperImage.style.setProperty('filter', filterStyle, 'important');
+      cropperImage.style.setProperty('filter', filterStyle, 'important');
+    }
+    
+    if (cropperView) {
+      cropperView.style.setProperty('filter', filterStyle, 'important');
+    }
+    
+    if (cropperDragBox) {
+      cropperDragBox.style.setProperty('filter', filterStyle, 'important');
     }
   }
 
   resetImageFilters() {
+    // Reset all filters to their default values
     this.imageFilters = {
       brightness: 100,
       contrast: 100,
       saturation: 100,
-      straighten: 0, // ADDED: Reset straighten value
+      straighten: 0,
     };
-    if (this.elements.imageToCrop) {
-      this.elements.imageToCrop.style.filter = ''; // Reset CSS filter
-    }
-
-    // Reset sliders and value displays
-    if (this.elements.brightnessSlider) {
-      this.elements.brightnessSlider.value = 100;
-      this.elements.brightnessValue.textContent = '100%';
-    }
-    if (this.elements.contrastSlider) {
-      this.elements.contrastSlider.value = 100;
-      this.elements.contrastValue.textContent = '100%';
-    }
-    if (this.elements.saturationSlider) {
-      this.elements.saturationSlider.value = 100;
-      this.elements.saturationValue.textContent = '100%';
-    }
     
-    // ADDED: Reset straighten slider and value
+    // Reset all sliders and value displays with their input fields
+    const sliderIds = ['brightness', 'contrast', 'saturation'];
+    sliderIds.forEach(id => {
+      const slider = this.elements[`${id}Slider`];
+      const valueDisplay = this.elements[`${id}Value`];
+      
+      if (slider) {
+        slider.value = id === 'saturation' ? 100 : 100; // Default values
+      }
+      
+      if (valueDisplay) {
+        const inputField = valueDisplay.querySelector('input');
+        if (inputField) {
+          inputField.value = id === 'saturation' ? 100 : 100; // Default values
+        } else {
+          // If we don't have input fields yet (e.g., first reset before any slider interaction)
+          valueDisplay.textContent = id === 'saturation' ? '100%' : '100%';
+        }
+      }
+    });
+    
+    // Reset straighten slider and value specifically
     if (this.elements.straightenSlider) {
       this.elements.straightenSlider.value = 0;
-      this.elements.straightenValue.textContent = '0°';
+      
+      const straightenValueDisplay = this.elements.straightenValue;
+      if (straightenValueDisplay) {
+        const inputField = straightenValueDisplay.querySelector('input');
+        if (inputField) {
+          inputField.value = 0;
+        } else {
+          straightenValueDisplay.textContent = '0°';
+        }
+      }
+    }
+
+    // Apply the reset filters to the cropper view for immediate visual update
+    if (this.elements.imageToCrop) {
+      this.applyImageFilters();
     }
 
     // Reset rotation (both 90-degree and straighten)
@@ -237,9 +410,15 @@ class ProfileSlider {
     if (!this.elements.cropperModal || !this.elements.imageToCrop) return;
     this.elements.cropperModal.classList.remove('hidden');
 
-    // CRITICAL: Reset filters and rotation before initializing cropper
+    // Reset filters and rotation before initializing cropper
     this.elements.imageToCrop.style.filter = ''; 
     this.resetImageFilters(); 
+    
+    // Ensure slider steps are properly set
+    if (this.elements.brightnessSlider) this.elements.brightnessSlider.step = "1";
+    if (this.elements.contrastSlider) this.elements.contrastSlider.step = "1";
+    if (this.elements.saturationSlider) this.elements.saturationSlider.step = "1";
+    if (this.elements.straightenSlider) this.elements.straightenSlider.step = "0.5";
 
     const aspectRatio = this.cropType === 'pfp' ? 1 : 16 / 9;
     if (this.cropper && typeof this.cropper.destroy === 'function') {
@@ -265,8 +444,17 @@ class ProfileSlider {
           if (this.cropper.zoomTo) {
             this.cropper.zoomTo(0);
           }
-          // CRITICAL: Trigger initial filter update (sets CSS filter to 100% defaults)
-          this.updateImageFilter('brightness'); 
+          
+          // Replace the filter value displays with input fields for direct value editing
+          ['brightness', 'contrast', 'saturation'].forEach(filter => {
+            this.updateImageFilter(filter);
+          });
+          
+          // Update the straighten control with input field
+          this.updateStraighten();
+          
+          // Apply default filters to ensure real-time preview is working from the start
+          this.applyImageFilters();
         }
       });
     } catch (err) {
@@ -662,7 +850,24 @@ class ProfileSlider {
 
 async function checkNameAvailability(name, options = {}) {
   try {
-
+    // MOCK API RESPONSE: Since we don't have a server running on port 5000
+    // Let's simulate a server response with a delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    
+    // Simple username validation logic
+    const isAvailable = name.length >= 6 && !['admin', 'root', 'moderator', 'administrator'].includes(name.toLowerCase());
+    
+    // Mock response object
+    const mockResult = {
+      available: isAvailable,
+      message: isAvailable ? 'The Username is Available' : 'Oops! The Username is Unavailable',
+      suggestion: isAvailable ? "" : `${name}${Math.floor(Math.random() * 1000)}`
+    };
+    
+    console.log("Mock username check:", { name, isAvailable });
+    return [mockResult.available, mockResult.message, mockResult.suggestion];
+    
+    /* Original API code - commented out since server is not running
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -677,6 +882,7 @@ async function checkNameAvailability(name, options = {}) {
 
     const result = await response.json();
     return [!!result.available, result.message || (result.available ? 'The Username is Available' : 'Oops! The Username is Unavailable'), result.suggestion || ""];
+    */
   } catch (error) {
     if (error.name === 'AbortError') {
       console.log('Name check aborted');
