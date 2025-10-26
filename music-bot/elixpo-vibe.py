@@ -5,6 +5,7 @@ from discord import Embed, FFmpegPCMAudio, Interaction, ButtonStyle
 from discord.ui import View, Button
 from dotenv import load_dotenv
 import yt_dlp
+import random
 
 # Load environment variables
 load_dotenv()
@@ -529,6 +530,18 @@ async def disconnect(interaction: discord.Interaction):
         await interaction.response.send_message(f"Disconnected from the voice channel. Disconnected by {interaction.user.mention}.", ephemeral=False)
     else:
         await interaction.response.send_message("The bot is not connected to any voice channel.", ephemeral=True)
+
+
+@bot.tree.command(name='shuffle_queue', description="Shuffle the current queue")
+async def shuffle(interaction: discord.Interaction):
+    global song_queue
+    if song_queue:
+        random.shuffle(song_queue)
+        queue_list = [f"{i+1}. **{song[1]}**" for i, song in enumerate(song_queue)]
+        embed = discord.Embed(title="🔀 Shuffled Queue", description="\n".join(queue_list), color=discord.Color.green())
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+    else:
+        await interaction.response.send_message("The queue is empty, nothing to shuffle!", ephemeral=True)
 
 @bot.tree.command(name='clear_queue', description="Clear the current song queue")
 async def clear_queue(interaction: discord.Interaction):
