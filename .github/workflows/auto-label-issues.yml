@@ -1,0 +1,76 @@
+name: Auto Label Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Check if user is repository member
+        id: check-membership
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueAuthor = context.payload.issue.user.login;
+            
+            try {
+              // Check if user is a collaborator (has write access or higher)
+              const { data: collaboration } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner,
+                repo,
+                username: issueAuthor
+              });
+              
+              const permission = collaboration.permission;
+              const isMember = ['admin', 'write', 'maintain'].includes(permission);
+              
+              console.log(`User ${issueAuthor} has permission: ${permission}`);
+              console.log(`Is member: ${isMember}`);
+              
+              return isMember;
+            } catch (error) {
+              // If user is not a collaborator, the API returns 404
+              console.log(`User ${issueAuthor} is not a collaborator`);
+              return false;
+            }
+
+      - name: Add INTERNAL label for repository members
+        if: steps.check-membership.outputs.result == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+            
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels: ['INTERNAL']
+            });
+            
+            console.log('Added INTERNAL label to issue');
+
+      - name: Add COMMUNITY label for external users
+        if: steps.check-membership.outputs.result == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue.number;
+            
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels: ['COMMUNITY']
+            });
+            
+            console.log('Added COMMUNITY label to issue');
