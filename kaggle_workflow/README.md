@@ -51,3 +51,20 @@ This section utilizes the T5 model for generating text based on a descriptive pr
 ## Conclusion
 
 This notebook demonstrates a comprehensive workflow for text classification and generation using various models and techniques. It provides practical insights into loading data, preprocessing text, training machine learning models, and generating creative outputs. The techniques covered can be further extended or modified for more advanced applications in natural language processing.
+
+# Kaggle Workflow – Template
+
+This folder provides a **basic template** to help you start a typical Kaggle-style data-science workflow:
+- Load a dataset (CSV)  
+- Inspect basic info  
+- Save processed output  
+
+## How to use
+
+1. Copy the `templates/` folder to your working directory or fork this repository.  
+2. Place your dataset CSV file at `data/your_dataset.csv` (or update `config.yaml`).  
+3. Adjust `config.yaml` to your paths and preferences.  
+4. Run:
+
+   ```bash
+   python templates/dataset_loader.py

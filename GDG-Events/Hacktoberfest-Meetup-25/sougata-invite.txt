@@ -1,0 +1,27 @@
+Dear Sougata Sarkar,
+
+I hope this message finds you well. I am Ayushman Bhattacharya, Organizer at GDG JISU, and I’m delighted to invite you as a guest speaker for our upcoming Hacktoberfest Meetup – Kolkata, scheduled on October 27th, 2025.
+
+Event Details:
+
+Date: October 27, 2025
+
+Time: 10:00 AM – 4:00 PM
+
+Session Duration: 30 minutes
+
+Expected Arrival: 10:00 AM
+
+Allotted Time for Talk: 3:00 PM - 3:30 PM (to be adjusted in venue)
+
+Venue: JIS University, Room No. 1109
+
+We’d love for your session to include a live demonstration, technical explanation, or an interactive open source segment to keep the audience engaged. The attendees will primarily be Computer Science students from all academic years, making this a great opportunity to inspire and guide the next generation of developers.
+
+We truly look forward to your positive response and an exciting collaboration for this event.
+
+Thank you for considering our invitation.
+
+Warm regards,
+Ayushman Bhattacharya
+GDG JISU Organizer

@@ -1,3 +1,5 @@
+// --- ORIGINAL CODE ---
+
 function generateImage() {
     // console.log("generate button has been clicked");
     // console.log(selectedText);
@@ -75,20 +77,38 @@ async function createImage(prompt, h, w, s)
     let suffixPrompt = "";
     let customInst = document.getElementById("promptInstruction").value.trim();
     try {
-    if(customInst)
-    {
-        suffixPrompt = customInst;
-    }
-    else 
-    {
-        suffixPrompt = getSuffix();
-    }
-    const fullPrompt = `${prompt} -- rendered in vibrant, whimsical storybook style with warm colors and playful details ${suffixPrompt}`;
-    type(`Trying to generate an image with the specs ${fullPrompt}`);
+        if(customInst) {
+            suffixPrompt = customInst;
+        } else {
+            suffixPrompt = getSuffix();
+        }
+        const fullPrompt = `${prompt} -- rendered in vibrant, whimsical storybook style with warm colors and playful details ${suffixPrompt}`;
+        type(`Trying to generate an image with the specs ${fullPrompt}`);
     
-        const url = `https://imgelixpo.vercel.app/c/${encodeURIComponent(fullPrompt)}&height=${h}&width=${w}$seed=${s}`;
-        const response = await fetch(url, { method: "GET" });
-        if (!response.ok) throw new Error(`Failed to fetch image ${idx + 1}`);
+        // THE FIX: Use a POST request to send the long prompt in the body
+        const url = `https://imgelixpo.vercel.app/c/`; // URL without the prompt
+        
+        const response = await fetch(url, {
+            method: "POST", // Use POST method
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // Send all parameters in the body
+            body: JSON.stringify({
+                prompt: fullPrompt,
+                height: h,
+                width: w,
+                seed: s
+            })
+        });
+
+        if (!response.ok) {
+            // Try to get a more specific error from the server response
+            const errorBody = await response.text();
+            console.error("API Error:", errorBody);
+            throw new Error(`Failed to fetch image. Status: ${response.status}`);
+        }
+        
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
         document.getElementById("picContainer").style.backgroundImage = `url('${objectUrl}')`;
@@ -98,14 +118,17 @@ async function createImage(prompt, h, w, s)
         document.getElementById("downloadBtn").style.pointerEvents = "all";
         type("Well, here's the image you had requesteed for! You can download it now from the green button, Thank you for choosing Elixpo.");
     } catch (error) {
-        // console.error(`Error fetching image`, error);
-        type("There was an error generating the picture, please try once again, selecting the same text")
+        console.error("Error in createImage:", error);
+        type("There was an error generating the picture, please try once again, selecting the same text.")
         setTimeout(() => {
-            node.remove();
-        }, 5000)
+            const wrapper = document.querySelector(".elixpo-wrapper");
+            if (wrapper) {
+                wrapper.remove();
+            }
+            wrapperCreated = false;
+        }, 5000);
     }
 }
-
 
 
 

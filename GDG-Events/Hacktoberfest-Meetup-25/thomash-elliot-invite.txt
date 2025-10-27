@@ -1,0 +1,27 @@
+Hello Thomash and Elliot,
+
+I hope you’re both doing great.
+
+On behalf of GDG JISU, I’m delighted to invite you to join us virtually for a special guest session at our upcoming Hacktoberfest Meetup – Kolkata, scheduled on October 27th, 2025.
+
+We’d love to have you on FaceTime from 2:00 PM to 3:00 PM IST to share your insights on open-source ideation at Pollinations.ai, the story of how you had planned pollinations and the journey of the same. You can also touch down on how we first connected, and how I became part of pollinations discovering from github open-source back in April 2024. The talk can cover on the technical side of modern ai and a desk talk of pollinations as a growing community so that folks here can showcase their skills making projects with pollination integration and more. 
+
+The requested talk has been planned for 1.5 hours, but at your convenience you can find the best fit for the same. We would love to have you both for the full requested period. 
+
+The session will also explore how open source empowers developers, encourages creativity, and builds global communities — making it an engaging one-hour talk for our participants.
+
+I cordially invite you both on the meet:- 
+
+Hacktoberfest Meetup x Pollinations.ai
+
+Monday, 27 October · 2:00 – 3:30pm
+Time zone: Asia/Kolkata
+Google Meet joining info
+Video call link: https://meet.google.com/whk-ssei-aee
+The audience will include students, contributors, and delegates passionate about open-source and AI innovation, and your session would truly inspire them.
+
+We’re really delighted to have pollinations as our chapter partner at GDG JISU, India. We are looking forward to having you with us and making this a memorable part of the event!
+
+Warm regards,
+Ayushman Bhattacharya
+GDG JISU Organizer

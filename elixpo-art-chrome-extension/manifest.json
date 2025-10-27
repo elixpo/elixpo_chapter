@@ -3,7 +3,11 @@
   "name": "Elixpo Art: Select Text and Transform to Picture",
   "version": "5",
   "description": "Converts Text to Your Imaginary Picture - Powered by Elixpo",
-  "permissions": ["commands"],
+  "permissions": [
+    "commands",
+    "contextMenus",
+    "storage"
+  ],
   "background": {
     "service_worker": "service.js"
   },
@@ -26,18 +30,27 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["shines.png",
-      "assests/*"
-    ],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "shines.png",
+        "assests/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "css": ["elixpo_art_rem.css"],
-      "js": ["nodeStructure.js", "imageGen.js"]
-  
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "elixpo_art_rem.css"
+      ],
+      "js": [
+        "nodeStructure.js",
+        "imageGen.js"
+      ]
     }
   ]
 }

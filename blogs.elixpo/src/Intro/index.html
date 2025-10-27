@@ -1,169 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LixBlogs - Complete Your Profile</title>
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png" />
-    <link rel="stylesheet" href="../../CSS/intro/introStyle.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
-  </head>
-<body>
-    <div class="min-h-screen min-w-screen items-center flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-x-hidden">
-      <section class="w-full h-[60px]">
-        <div class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
-          <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../../CSS/IMAGES/logo.png')] bg-cover"></div>
-          <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
-          <ion-icon name="logo-github" class="githubLogo absolute left-[95%] text-[#888] text-2xl"></ion-icon>
-        </div>
-      </section>
 
-      <section class="max-w-[60%] max-auto bg-transparent mt-5 border-2 border-[#888] rounded-[15px] shadow-2xl w-full p-5 relative z-10 animate-fade-in-up">
-        <div class="progress-container mb-8 items-center justify-center w-full">
-          <div class="flex justify-between items-center mb-4">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LixBlogs - Complete Your Profile</title>
+  <script src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png" />
+  <link rel="stylesheet" href="../../CSS/intro/introStyle.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/x-icon" href="../../CSS/IMAGES/logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+</head>
+
+<body>
+  <div
+    class="min-h-screen min-w-screen items-center flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-x-hidden">
+    <section class="w-full h-[60px]">
+      <div
+        class="relative top-0 left-0 w-full h-[60px] border-b-2 border-[#1D202A] flex items-center bg-[#030712] z-[1000]">
+        <div class="absolute left-[3%] h-10 w-10 rounded-full bg-[url('../../CSS/IMAGES/logo.png')] bg-cover"></div>
+        <p class="absolute left-[5%] text-3xl font-bold font-[Kanit,serif] text-white cursor-pointer">LixBlogs</p>
+        <ion-icon name="logo-github" class="githubLogo absolute left-[95%] text-[#888] text-2xl"></ion-icon>
+      </div>
+    </section>
+
+    <section
+      class="max-w-[60%] max-auto bg-transparent mt-5 border-2 border-[#888] rounded-[15px] shadow-2xl w-full p-5 relative z-10 animate-fade-in-up">
+      <div class="progress-container mb-8 items-center justify-center w-full">
+        <div class="flex justify-between items-center mb-4">
           <div class="step-indicator flex items-center gap-4">
             <div class="step active" id="step1-indicator">
-            <div class="step-circle">1</div>
-            <span class="step-label">Name</span>
+              <div class="step-circle">1</div>
+              <span class="step-label">Name</span>
             </div>
             <div class="step-line"></div>
             <div class="step" id="step2-indicator">
-            <div class="step-circle">2</div>
-            <span class="step-label">Bio</span>
+              <div class="step-circle">2</div>
+              <span class="step-label">Bio</span>
             </div>
             <div class="step-line"></div>
             <div class="step" id="step3-indicator">
-            <div class="step-circle">3</div>
-            <span class="step-label">Photo</span>
+              <div class="step-circle">3</div>
+              <span class="step-label">Photo</span>
             </div>
           </div>
-          </div>
-          <div class="progress-bar bg-slate-700/50 rounded-full h-2 overflow-hidden">
-          <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 33.33%" id="progressBar"></div>
-          </div>
+        </div>
+        <div class="progress-bar bg-slate-700/50 rounded-full h-2 overflow-hidden">
+          <div
+            class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-in-out"
+            style="width: 33.33%" id="progressBar"></div>
+        </div>
 
-          <div class="welcome-section mx-auto text-center mt-5">
-          <h1 class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent" id="stepTitle">
+        <div class="welcome-section mx-auto text-center mt-5">
+          <h1
+            class="text-slate-50 text-3xl font-bold mb-3 bg-gradient-to-br from-slate-50 to-slate-300 bg-clip-text text-transparent"
+            id="stepTitle">
             What's your name?
           </h1>
           <p class="text-slate-400 text-base leading-relaxed font-normal" id="stepDescription">
             This will be your display name on LixBlogs
           </p>
+        </div>
+      </div>
+
+      <div class="blog-content w-full p-1 flex flex-col items-center justify-center">
+
+        <div class="step-content w-full" id="step1" data-step="1">
+          <label for="displayName" class="block mb-2 text-slate-200 font-medium text-md uppercase tracking-wider">
+            Display Name *
+          </label>
+          <input type="text" id="displayName" name="displayName" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-md placeholder:text-md sm:text-sm text-slate-200"
+            placeholder="Enter your display name">
+          <div class="name-status text-sm font-medium min-h-5 flex items-center gap-2 mt-2" id="nameStatus">
           </div>
         </div>
 
-        <div class="blog-content w-full p-1 flex flex-col items-center justify-center">
+        <div class="step-content w-full hidden" id="step2" data-step="2">
+          <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
+            Bio (Optional)
+          </label>
+          <textarea id="bio" name="bio" placeholder="Wassup Buddy! Let us know your glorious self in a few words..."
+            spellcheck="false" autocomplete="off" rows="3" maxlength="150"
+            class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"></textarea>
+          <div class="char-count mt-2 text-xs text-slate-500 text-right">
+            <span id="bioCharCount">0</span>/150 characters
+          </div>
+        </div>
 
-          <div class="step-content w-full" id="step1">
-           <label for="displayName" class="block mb-2 text-slate-200 font-medium text-md uppercase tracking-wider">
-              Display Name *
-            </label>
-            <input type="text" id="displayName" name="displayName" spellcheck="false" value="ayushman_bhatt" autocomplete="off" required class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-md placeholder:text-md sm:text-sm text-slate-200" placeholder="Enter your display name">
-            <div class="name-status text-sm font-medium min-h-5 flex items-center gap-2 mt-2" id="nameStatus"> 
+        <div class="step-content w-full hidden" id="step3" data-step="3">
+          <div class="profile-banner-container relative w-full max-w-md mx-auto">
+            <div
+              class="banner-preview w-full h-32 rounded-t-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-2 border-dashed border-slate-600/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-purple-400 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20 group"
+              id="bannerPreview" onclick="document.getElementById('bannerImage').click()">
+              <ion-icon name="image-outline"
+                class="text-3xl mb-1 group-hover:text-purple-400 transition-colors duration-300"></ion-icon>
+              <span class="group-hover:text-purple-400 transition-colors duration-300 text-xs">Add banner photo</span>
             </div>
-          </div>
 
-          <div class="step-content w-full hidden" id="step2" data-step="2">
-                  <label for="bio" class="block mb-2 text-slate-200 font-medium text-sm uppercase tracking-wider">
-                    Bio (Optional)
-                  </label>
-                  <textarea 
-                    id="bio" 
-                    name="bio" 
-                    placeholder="Wassup Buddy! Let us know your glorious self in a few words..."
-                    spellcheck="false" 
-                    autocomplete="off" 
-                    rows="3" 
-                    maxlength="150"
-                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600/20 rounded-xl text-slate-50 text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-slate-900/80 placeholder-slate-500 resize-none"
-                  >Mentor @OSCI | Mentor GSSOC’25 | GDG Campus Lead | Developer @pollinations | Excellence SOF NCO 19’ | 3rd, 2nd SOF NCO 14’ 18’ | 5x Hackathon Winner | Founder Elixpo OSR</textarea>
-                  <div class="char-count mt-2 text-xs text-slate-500 text-right">
-                    <span id="bioCharCount">0</span>/150 characters
-                  </div>
-          </div>
-
-            <div class="step-content w-full hidden" id="step3" data-step="3">
-              <div class="profile-banner-container relative w-full max-w-md mx-auto">
-                <div 
-                  class="banner-preview w-full h-32 rounded-t-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-2 border-dashed border-slate-600/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-purple-400 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20 group" 
-                  id="bannerPreview"
-                  onclick="document.getElementById('bannerImage').click()"
-                >
-                  <ion-icon name="image-outline" class="text-3xl mb-1 group-hover:text-purple-400 transition-colors duration-300"></ion-icon>
-                  <span class="group-hover:text-purple-400 transition-colors duration-300 text-xs">Add banner photo</span>
-                </div>
-                
-                <div class="absolute -bottom-12 left-6">
-                  <div 
-                    class="profile-pic-preview w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-blue-400 hover:bg-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 group" 
-                    id="profilePicPreview"
-                    onclick="document.getElementById('profilePicture').click()"
-                  >
-                    <ion-icon name="person-outline" class="text-2xl group-hover:text-blue-400 transition-colors duration-300"></ion-icon>
-                  </div>
-                </div>
-                
-                <div class="h-12 bg-slate-800/20 border-2 border-t-0 border-dashed border-slate-600/50 rounded-b-xl"></div>
-                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
-                <input type="file" id="bannerImage" name="bannerImage" accept="image/*" class="hidden" />
+            <div class="absolute -bottom-12 left-6">
+              <div
+                class="profile-pic-preview w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ease-in-out text-slate-400 text-sm text-center relative overflow-hidden hover:border-blue-400 hover:bg-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 group"
+                id="profilePicPreview" onclick="document.getElementById('profilePicture').click()">
+                <ion-icon name="person-outline"
+                  class="text-2xl group-hover:text-blue-400 transition-colors duration-300"></ion-icon>
               </div>
             </div>
 
+            <div class="h-12 bg-slate-800/20 border-2 border-t-0 border-dashed border-slate-600/50 rounded-b-xl"></div>
+            <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden" />
+            <input type="file" id="bannerImage" name="bannerImage" accept="image/*" class="hidden" />
+          </div>
         </div>
 
-            <div class="form-actions flex justify-between items-center px-5">
-              <button 
-                type="button" 
-                class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden" 
-                id="backBtn"
-              >
-                    <ion-icon name="arrow-back" class="text-base"></ion-icon>
-                    <span>Back</span>
-                  </button>
-                  
-                  <div class="flex gap-3 ml-auto">
-                    <button 
-                      type="button" 
-                      class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" 
-                      id="nextBtn" 
-                      disabled
-                    >
-                      <span>Next</span>
-                      <ion-icon name="arrow-forward" class="text-base"></ion-icon>
-                    </button>
-                    
-                    <button 
-                      type="submit" 
-                      class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden" 
-                      id="completeBtn"
-                    >
-                      <span>Complete Profile</span>
-                      <ion-icon name="checkmark" class="text-base"></ion-icon>
-                    </button>
-                  </div>
-                </div>
-        </div>
-      </section>
+      </div>
 
-      <div id="cropperModal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur items-center justify-center flex flex-col z-[2000] hidden">
-        <div class="bg-slate-800 p-6 w-[500px] h-[500px] rounded-lg shadow-lg flex flex-col mx-auto">
-          <h2 class="text-white text-xl font-semibold mb-4 text-center">Crop Image</h2>
-          <div class="img-container flex-1 max-w-full max-h-full overflow-hidden rounded-lg bg-slate-900">
-            <img id="imageToCrop" src="" alt="Your cool profile picture -- oops! it's not loading, check your internet please" class="w-full h-full object-contain">
-          </div>
-          <div class="flex justify-end gap-4 mt-4">
-            <button id="cancelCrop" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Cancel</button>
-            <button id="cropImage" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Crop</button>
-          </div>
+      <div class="form-actions flex justify-between items-center px-5">
+        <button type="button"
+          class="back-btn bg-slate-600/50 text-slate-300 border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-slate-600/70 hidden"
+          id="backBtn">
+          <ion-icon name="arrow-back" class="text-base"></ion-icon>
+          <span>Back</span>
+        </button>
+
+        <div class="flex gap-3 ml-auto">
+          <button type="button"
+            class="next-btn bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 disabled:from-slate-500/30 disabled:to-slate-500/30 disabled:text-slate-400/50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+            id="nextBtn" disabled>
+            <span>Next</span>
+            <ion-icon name="arrow-forward" class="text-base"></ion-icon>
+          </button>
+
+          <button type="submit"
+            class="complete-btn bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-none rounded-xl px-6 py-3 cursor-pointer text-sm font-semibold flex items-center gap-2 transition-all duration-300 ease-in-out hover:from-emerald-700 hover:to-emerald-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 hidden"
+            id="completeBtn">
+            <span>Complete Profile</span>
+            <ion-icon name="checkmark" class="text-base"></ion-icon>
+          </button>
         </div>
       </div>
-      
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
-      <script src="../../JS/linkRedirect.js"></script>
-      <script src="../../JS/intro/intro.js"></script>
+  </div>
+  </section>
+
+  <div id="cropperModal"
+    class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur items-center justify-center flex flex-col z-[2000] hidden">
+    <div
+      class="bg-slate-800 p-6 w-[90%] max-w-[700px] rounded-lg shadow-2xl flex flex-col mx-auto border border-slate-700/50">
+      <h2 class="text-white text-xl font-semibold mb-4 text-center border-b border-slate-700 pb-2">Edit & Crop Image
+      </h2>
+
+      <div class="flex flex-col md:flex-row gap-6 flex-1 min-h-[400px]">
+
+        <div
+          class="img-container flex-1 max-w-full max-h-full overflow-hidden rounded-lg bg-slate-900 border border-slate-700">
+          <img id="imageToCrop" src="" alt="Image to Crop" class="w-full h-full object-contain">
+        </div>
+
+        <div
+          class="edit-controls w-full md:w-60 bg-slate-700/50 p-4 rounded-lg flex flex-col gap-4 border border-slate-700">
+          <h3 class="text-slate-200 text-lg font-medium mb-2 border-b border-slate-600 pb-2">Adjustments (real-time preview)</h3>
+
+          <div class="control-group">
+            <div class="flex items-center justify-between mb-2">
+              <label for="brightness-slider" class="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <ion-icon name="sunny-outline" class="text-lg"></ion-icon>
+                <span>Brightness</span>
+              </label>
+              <span id="brightness-value" class="text-xs text-blue-400 font-mono">100%</span>
+            </div>
+            <input type="range" id="brightness-slider" min="50" max="150" value="100"
+              class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer range-lg slider-thumb-blue">
+          </div>
+
+          <div class="control-group">
+            <div class="flex items-center justify-between mb-2">
+              <label for="contrast-slider" class="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <ion-icon name="contrast-outline" class="text-lg"></ion-icon>
+                <span>Contrast</span>
+              </label>
+              <span id="contrast-value" class="text-xs text-blue-400 font-mono">100%</span>
+            </div>
+            <input type="range" id="contrast-slider" min="50" max="150" value="100"
+              class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer range-lg slider-thumb-blue">
+          </div>
+
+          <div class="control-group">
+            <div class="flex items-center justify-between mb-2">
+              <label for="saturation-slider" class="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <ion-icon name="color-palette-outline" class="text-lg"></ion-icon>
+                <span>Saturation</span>
+              </label>
+              <span id="saturation-value" class="text-xs text-blue-400 font-mono">100%</span>
+            </div>
+            <input type="range" id="saturation-slider" min="0" max="200" value="100"
+              class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer range-lg slider-thumb-blue">
+          </div>
+
+          <div class="control-group">
+            <div class="flex items-center justify-between mb-2">
+              <label for="straighten-slider" class="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <ion-icon name="scan-outline" class="text-lg"></ion-icon>
+                <span>Straighten</span>
+              </label>
+              <span id="straighten-value" class="text-xs text-blue-400 font-mono">0°</span>
+            </div>
+            <input type="range" id="straighten-slider" min="-45" max="45" value="0" step="0.5"
+              class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer range-lg slider-thumb-blue">
+          </div>
+          <div class="control-group mt-2">
+            <h4 class="text-slate-300 text-sm font-medium flex items-center gap-2 mb-2">
+              <ion-icon name="refresh-outline" class="text-lg"></ion-icon>
+              <span>Rotate</span>
+            </h4>
+            <div class="flex justify-between gap-2">
+              <button id="rotateLeft"
+                class="flex-1 bg-slate-600 hover:bg-slate-500 text-white p-2 rounded-lg font-medium transition-colors duration-200 text-sm flex items-center justify-center gap-1">
+                <ion-icon name="return-down-back-outline" class="text-lg transform -scale-x-100"></ion-icon>
+                90°
+              </button>
+              <button id="rotateRight"
+                class="flex-1 bg-slate-600 hover:bg-slate-500 text-white p-2 rounded-lg font-medium transition-colors duration-200 text-sm flex items-center justify-center gap-1">
+                <ion-icon name="return-down-forward-outline" class="text-lg"></ion-icon>
+                90°
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="flex justify-between mt-6 pt-4 border-t border-slate-700">
+        <button id="resetAdjustments"
+          class="bg-slate-600/50 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm">
+          <ion-icon name="refresh-circle-outline"></ion-icon>
+          <span>Reset</span>
+        </button>
+        <div class="flex gap-4">
+          <button id="cancelCrop"
+            class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Cancel</button>
+          <button id="cropImage"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Apply
+            & Crop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="sliderTemplates" style="display: none; visibility: hidden;">
+    <input type="range" id="brightnessSlider" min="50" max="200" value="100" step="1" class="slider-template">
+    <input type="range" id="contrastSlider" min="50" max="200" value="100" step="1" class="slider-template">
+    <input type="range" id="saturationSlider" min="0" max="200" value="100" step="1" class="slider-template">
+    <input type="range" id="straightenSlider" min="-45" max="45" value="0" step="0.5" class="slider-template">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script src="../../JS/intro/intro.js"></script>
 </body>
+
 </html>

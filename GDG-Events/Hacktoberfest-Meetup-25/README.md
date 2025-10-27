@@ -28,6 +28,8 @@
 - **Nazreen Imam** - GNIT GDG Lead
 - **Saugata Sarkar** - Incoming SDE1 at Hyland
 - **Sawan** - Developer at Keyshade
+- **Thomash Haferlach** - Founder at Pollinations.ai
+- **Elliot Fouchy** - Co-Founder at Pollinations.ai
 
 ## 11:00am - 11:15am -- [INFO SESSION CORE TEAM 2025 INTRODUCTION]
 - **11:00am - 11:05am** - WORD ON GDG JISU BY OUR CURRENT GDG LEAD - Ayushman Bhattacharya
@@ -70,10 +72,12 @@
 ---
 ### 1:00pm - 1:50pm - LUNCH BREAK / RECESS
 ---
-### 2:00pm - 3:30pm
-> **HACKTOBERFEST TALK SESSION BY ABHISEKH Kushwaha AND THE GUEST SPEAKERS**
+
+
+### 2:00pm - 3:00pm
+> **HACKTOBERFEST TALK SESSION BY THOMASH & ELLIOT FROM POLLINATIONS.AI**
 ---
-### 3:30pm - 3:45pm
+### 3:00pm - 3:45pm
 > **QUIZ & FUN STUFF & STICKERS + PEN TO THE QUIZ TOP 3 RANKERS**
 ---
 

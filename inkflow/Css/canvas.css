@@ -12,19 +12,6 @@ html {
     background-color: #101011;
 }
 
-#sign-in-button {
-    margin-top: 10px;
-    background-color: #3182ED;
-    color: white;
-    font-weight: bold;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
 #canvas {
     background-color: #101011;
     cursor: crosshair;
@@ -195,13 +182,6 @@ html {
     background-color: #3182ED;
 }
 
-#auth-button-container {
-    position: fixed;
-    top: 10px;
-    right: 20px; 
-    z-index: 10;
-}
-
 .color-palate {
     position: fixed;
     top: 20px;
@@ -210,28 +190,11 @@ html {
     border-radius: 10px;
     transition: all 0.3s ease, transform 0.3s ease;
     position: fixed;
-    right: 165px;
+    right: 20px;
     padding: 5px 5px;
     display: flex;
     font-size: 20px;
 }
-#sign-in-button {
-    background-color: #3182ED;
-    color: white;
-    padding: 12px 16px;
-    font-size: 15px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    /* font-family: 'Lato', sans-serif; */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-#sign-in-button:hover {
-    background-color: #2566c5;
-}
-
 
 .colorpalatebtn {
     width: 40px;

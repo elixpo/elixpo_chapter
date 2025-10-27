@@ -9,6 +9,8 @@ let selectedTheme = "Normal";
 let selectedText = "";
 let shineButton = null;
 let wrapperCreated = false;
+// Flag to ensure we only add the animation style to the page once
+let animationStyleAdded = false; 
 
 document.addEventListener("mouseup", function (event) {
   if (wrapperCreated) {
@@ -17,7 +19,6 @@ document.addEventListener("mouseup", function (event) {
   let selection = window.getSelection();
   selectedText = selection.toString().trim();
   setTimeout(() => {
-    // console.log(selection.toString().trim())
     if (selection.toString().trim() == "") {
       if (document.querySelector(".shine-button")) {
         document.querySelector(".shine-button").remove();
@@ -29,6 +30,10 @@ document.addEventListener("mouseup", function (event) {
   }, 200);
 
   if (selectionLock) {
+    return;
+  }
+  
+  if (selection.rangeCount === 0) {
     return;
   }
 
@@ -110,7 +115,6 @@ document.addEventListener("mouseup", function (event) {
                 <p class="pimp-text" id="pimpText"></p>
             `;
 
-      // Get references to elements
       let contentContainer = node.querySelector(".content-container");
       let picContainer = node.querySelector("#picContainer");
       let loaderDiv = node.querySelector("#loader");
@@ -124,7 +128,6 @@ document.addEventListener("mouseup", function (event) {
       let closeIcon = node.querySelector("#closePopup");
       let pimpText = node.querySelector("#pimpText");
 
-      // Create theme items dynamically
       for (let i = 0; i < themes.length; i++) {
         let themeDiv = document.createElement("div");
         themeDiv.classList.add("theme-item");
@@ -182,7 +185,6 @@ document.addEventListener("mouseup", function (event) {
         });
       }
 
-      // Create aspect ratio items dynamically
       for (let i = 0; i < aspectRatios.length; i++) {
         let aspectDiv = document.createElement("div");
         aspectDiv.classList.add("aspect-item");
@@ -217,7 +219,6 @@ document.addEventListener("mouseup", function (event) {
         });
       }
 
-      // Apply styles
       Object.assign(node.style, {
         width: "70%",
         borderRadius: "8px",
@@ -425,20 +426,23 @@ document.addEventListener("mouseup", function (event) {
         scrollbarWidth: "none",
       });
 
-      // Add CSS animation
-      const styleSheet = document.styleSheets[0];
-      styleSheet.insertRule(
-        `
-                @keyframes backgroundShift {
-                    0% { background-position: 0% 50%; }
-                    25% { background-position: 50% 50%; }
-                    50% { background-position: 100% 50%; }
-                    75% { background-position: 50% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-            `,
-        styleSheet.cssRules.length
-      );
+      // ** THE FIX IS HERE **
+      // This new block safely creates a <style> tag for the animation,
+      // preventing the security error on certain websites.
+      if (!animationStyleAdded) {
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes backgroundShift {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 50% 50%; }
+            50% { background-position: 100% 50%; }
+            75% { background-position: 50% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `;
+        document.head.appendChild(style);
+        animationStyleAdded = true; // Set flag to prevent adding it again
+      }
 
       // Event listeners
       closeIcon.onclick = function () {
@@ -510,4 +514,79 @@ function type(text) {
 
   cancelAnimationFrame(typingTimeout);
   typeChar();
+}
+
+// --- NEW CODE for handling the "Reimagine" feature ---
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "REIMAGINE_IMAGE" && message.imageUrl) {
+    const existingWrapper = document.querySelector(".elixpo-wrapper");
+    if (existingWrapper) {
+      existingWrapper.remove();
+    }
+    
+    displayReimaginedImage(message.imageUrl);
+  }
+});
+
+function displayReimaginedImage(imageUrl) {
+  wrapperCreated = true;
+  removeShineButton();
+
+  let node = document.createElement("div");
+  node.classList.add("elixpo-wrapper");
+
+  node.innerHTML = `
+      <div class="promptcontrol" style="width: 100%; justify-content: flex-end; padding: 0; margin-bottom: 10px;">
+          <svg id="closePopup" class="ionicon" viewBox="0 0 512 512" width="24" height="24" style="cursor: pointer;">
+              <path d="M289.94 256l95-95A24 24 0 00351 127l-95 95-95-95a24 24 0 00-34 34l95 95-95 95a24 24 0 1034 34l95-95 95 95a24 24 0 0034-34z" fill="red"></path>
+          </svg>
+      </div>
+      <div class="pic-container" id="picContainer" style="width:100%; height: 400px; background-color: #111; border-radius: 8px;"></div>
+      <div class="promptcontrol" style="width: 100%; justify-content: center; padding: 0; margin-top: 10px;">
+          <button class="downloadBtn" id="downloadBtn" style="opacity: 1; pointer-events: all; width: 120px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: rgb(6, 212, 109); cursor: pointer;">
+              Download
+              <svg class="ionicon" viewBox="0 0 512 512" width="20" height="20" style="margin-left: 8px;">
+                  <path d="M376 160H272v153.37l52.69-52.68a16 16 0 0122.62 22.62l-80 80a16 16 0 01-22.62 0l-80-80a16 16 0 0122.62-22.62L240 313.37V160H136a56.06 56.06 0 00-56 56v208a56.06 56.06 0 0056 56h240a56.06 56.06 0 0056-56V216a56.06 56.06 0 00-56-56zM272 48a16 16 0 00-32 0v112h32z" fill="black"></path>
+              </svg>
+          </button>
+      </div>
+  `;
+
+  Object.assign(node.style, {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: "90%",
+    maxWidth: "500px",
+    borderRadius: "8px",
+    background: "rgba(22, 21, 21, 0.95)",
+    backdropFilter: "blur(10px)",
+    zIndex: "2147483647", // Max z-index
+    border: "3px solid rgb(255, 208, 0)",
+    padding: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    boxSizing: 'border-box'
+  });
+  
+  document.body.appendChild(node);
+  
+  const picContainer = node.querySelector("#picContainer");
+  picContainer.style.backgroundImage = `url('${imageUrl}')`;
+  picContainer.style.backgroundSize = "contain";
+  picContainer.style.backgroundRepeat = "no-repeat";
+  picContainer.style.backgroundPosition = "center";
+
+  node.querySelector("#closePopup").onclick = () => { node.remove(); wrapperCreated = false; };
+  node.querySelector("#downloadBtn").onclick = () => {
+    if (typeof downloadImage === 'function') {
+      const mainPicContainer = document.getElementById('picContainer') || picContainer;
+      const originalBg = mainPicContainer.style.backgroundImage;
+      mainPicContainer.style.backgroundImage = `url('${imageUrl}')`;
+      downloadImage();
+      mainPicContainer.style.backgroundImage = originalBg;
+    }
+  };
 }

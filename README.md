@@ -61,8 +61,10 @@ This monorepo hosts a diverse collection of projects, each with its own developm
 | **Pollinations UI**  | An improved user interface for the Pollinations project website.                                | `polli.elixpo`                                                                                                                                            |
 | **Elixpo Portfolio** | The personal portfolio of the project founder.                                                  | `elixpo`                                                                                                                                                  |
 | **Inkflow**          | A minimalist canvas developed by [**Ez-Vivek**](https://github.com/ez-vivek).                   | `inkflow`                                                                                                                                                 |
-| **Fing & Fing-UI**   | A vibe-coding platform and React UI library by [**Subhro Koley**](https://github.com/IgYaHiko). | `fing`, `fing-ui`                                                                                                                                         |
+| **Fing & Fing-UI**   | A vibe-coding platform and React UI library by [**Subhro Koley**](https://github.com/IgYaHiko). | `igyahiko.fing`, `igyahiko.fing-ui`                                                                                                                                         |
 | **CortexOne**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `itachi.cortexOne`                                                                                                                                        |
+| **Vision**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `igyahiko.vision`                                                                                                                                        |
+| **Memory-Arc**        | An application to use LSTM to track conversations with an NLP model.                   | `itachi.memory-arc`                                                                                                                                        |
 
 ## 👑 Key Achievements
 

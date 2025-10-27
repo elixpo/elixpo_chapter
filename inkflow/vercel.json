@@ -5,6 +5,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/sw.js",
+      "destination": "/sw.js"
+    },
+    {
       "source": "/logo.png",
       "destination": "/Images/logo.png"
     },

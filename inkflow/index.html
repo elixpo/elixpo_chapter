@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InkFlow | Canvas</title>
+    <title>InkFlow Canvas</title>
     <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="Css/light-theme.css">
     <link rel="stylesheet" href="Css/canvas.css">
     <link rel="stylesheet" href="Css/canvas-responsive.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
@@ -328,22 +329,10 @@
         <button class="redo-btn" id="redo" title="Redo | Ctrl + Y"><i class="bi bi-arrow-90deg-right"></i></button>
     </div>
 
-<div id="color-palate" class="color-palate">
-    <button class="colorpalatebtn" id="colorpalatebtn" title="Colors & Shape" onclick="toggleFloatingTab()">
-        <i class="bi bi-palette"></i>
-    </button>
-</div>
-
-<!-- Sign In Button (Separate and styled) -->
-<div id="auth-button-container">
-    <button type="button" draggable="false"
-        class="tla-primary-button _ctaButton_jxfdw_1"
-        data-testid="tla-sign-in-button"
-        id="sign-in-button"
-        onclick="window,location.href='html/auth.html'">
-        <span class="i18n-msg">Sign in to share</span>
-    </button>
-</div>
+    <div id="color-palate" class="color-palate">
+        <button class="colorpalatebtn" id="colorpalatebtn" title="Colors & Shape" onclick="toggleFloatingTab()"><i
+                class="bi bi-palette"></i></button>
+    </div>
 
     <div id="floating-tab" class="floating-tab hidden">
         <div class="section-header">Border & Fill Colors</div>

@@ -1998,6 +1998,12 @@ function drawCross(ctx, x1, y1, x2, y2, options) {
     ctx.moveTo(centerX + size / 2, centerY - size / 2);
     ctx.lineTo(centerX + size / 2, centerY - size / 2 + thickness);
     ctx.lineTo(centerX - size / 2 + thickness, centerY + size / 2);
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('service worker registered', reg))
+            .catch(err => console.log('service worker not registered', err));
+    }
     ctx.lineTo(centerX - size / 2, centerY + size / 2);
     ctx.lineTo(centerX - size / 2, centerY + size / 2 - thickness);
     ctx.lineTo(centerX + size / 2 - thickness, centerY - size / 2);
