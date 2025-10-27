@@ -4,8 +4,10 @@ import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
 import Link from "next/link"
-import { ArrowUpRight, Circle } from "lucide-react"
+import Image from "next/image"
+import { ArrowUpRight, Circle, Github, Linkedin, Twitter, Mail } from "lucide-react"
 import { motion, useScroll, useTransform } from "framer-motion"
+import { logos } from "../../../../public/assets/images/images"
 
 
 // Vertex Shader
@@ -202,12 +204,13 @@ const Footer = () => {
           {/* Parallax Text - centered inside canvas */}
           <motion.div
             style={{ y, opacity }}
-            className=" absolute inset-0 flex flex-col items-center justify-center font-medium text-4xl md:text-6xl"
+            className=" absolute inset-0 flex flex-col items-center justify-center font-medium text-4xl md:text-5xl text-black dark:text-white"
           >
-            <p>Join the Fing Developer Community</p>
-            <p>Let's Build the Future Together</p>
+            <p>From intuitive design to powerful features,</p>
+            <p>our app has become an essential </p>
+            <p>tool for users across India!</p>
 
-            <p className="border border-white px-4 py-1 rounded-2xl mt-2 font-mono text-base">
+            <p className="border border-black dark:border-white px-4 py-1 rounded-2xl mt-2 font-mono text-base text-black dark:text-white">
               <Link href={"/"} className="flex items-center gap-2">
                 Let&apos;s Reach us <Circle className="size-4" />
               </Link>
@@ -215,75 +218,81 @@ const Footer = () => {
           </motion.div>
         </div>
 
-        {/* Footer Links Section - with Product, Resources, Company */}
-        <div className="w-full flex flex-col md:flex-row justify-between items-start gap-10 text-sm">
-          {/* Product Section */}
-          <div>
-            <h3 className="font-bold text-lg mb-3 text-white">Product</h3>
-            <div className="flex flex-col gap-2">
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Features
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Pricing
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Integration
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Changelog
-              </Link>
+        {/* Footer Links Section - with Product, Resources, Company on right side like fing-ui */}
+        <div className="w-full flex flex-col md:flex-row justify-between items-start gap-6 text-sm">
+          {/* Left side - Logo and Social Media Icons */}
+          <div className="flex flex-col items-start gap-4">
+            {/* FingAI Logo and Text */}
+            <div className="flex items-center gap-2">
+              <Image
+                src={logos.logo7}
+                alt="FingAI Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="font-bold text-lg text-black dark:text-white" style={{ fontFamily: "poppins", fontWeight: 800 }}>
+                FingAI.
+              </span>
+            </div>
+            
+            {/* Social Media Icons */}
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition" title="GitHub">
+                <Github className="w-6 h-6" />
+              </a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition" title="Twitter">
+                <Twitter className="w-6 h-6" />
+              </a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition" title="LinkedIn">
+                <Linkedin className="w-6 h-6" />
+              </a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition" title="Email">
+                <Mail className="w-6 h-6" />
+              </a>
             </div>
           </div>
 
-          {/* Resources Section */}
-          <div>
-            <h3 className="font-bold text-lg mb-3 text-white">Resources</h3>
-            <div className="flex flex-col gap-2">
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Documentation
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Tutorials
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Blog
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Support
-              </Link>
+          {/* Right side - Product, Resources, Company in columns like fing-ui */}
+          <div className="flex flex-wrap justify-end gap-16 text-xs font-mono">
+            {/* Product Section */}
+            <div className="flex flex-col gap-1 items-start">
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition font-bold">Features</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Pricing</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Integration</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Changelog</a>
             </div>
-          </div>
 
-          {/* Company Section */}
-          <div>
-            <h3 className="font-bold text-lg mb-3 text-white">Company</h3>
-            <div className="flex flex-col gap-2">
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                About
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Careers
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Contact
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition">
-                Partner
-              </Link>
+            {/* Resources Section */}
+            <div className="flex flex-col gap-1 items-start">
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition font-bold">Documentation</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Tutorials</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Blog</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Support</a>
+            </div>
+
+            {/* Company Section */}
+            <div className="flex flex-col gap-1 items-start">
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition font-bold">About</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Careers</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Contact</a>
+              <a href="#" className="text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white transition">Partner</a>
             </div>
           </div>
         </div>
 
         {/* Footer Bottom */}
-        <div className="w-full border-t border-gray-700 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-400">
+        <div className="w-full border-t border-gray-300 dark:border-gray-700 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 dark:text-gray-400">
           <p>© 2025 Fing. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="#" className="hover:text-white transition">
+            <Link href="#" className="hover:text-black dark:hover:text-white transition">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:text-white transition">
+            <Link href="#" className="hover:text-black dark:hover:text-white transition">
               Terms of Service
+            </Link>
+            <Link href="#" className="hover:text-black dark:hover:text-white transition">
+              Cookie Settings
             </Link>
           </div>
         </div>
