@@ -1,0 +1,43 @@
+name: Auto Label Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  label-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add COMMUNITY or INTERNAL label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueAuthor = context.payload.issue.user.login;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Fetch repo collaborators
+            const { data: collaborators } = await github.rest.repos.listCollaborators({
+              owner,
+              repo
+            });
+
+            // Check if author is a collaborator or the repo owner
+            const isInternal = collaborators.some(user => user.login === issueAuthor) || issueAuthor === owner;
+
+            const labelToAdd = isInternal ? "INTERNAL" : "COMMUNITY";
+
+            // Add label
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: context.payload.issue.number,
+              labels: [labelToAdd],
+            });
+
+            console.log(`Added label ${labelToAdd} to issue #${context.payload.issue.number}`);
