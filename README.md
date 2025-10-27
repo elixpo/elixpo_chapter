@@ -174,7 +174,7 @@ Here are some of our latest releases and live demos:
 
 ---
 
-# Our Vision
+# Our Visionsww
 
 At Elixpo-ai-chapter, we are dedicated to shaping a future where AI is:
 
