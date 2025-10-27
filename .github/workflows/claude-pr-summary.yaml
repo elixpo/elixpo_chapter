@@ -1,0 +1,52 @@
+name: Claude PR Summarization
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  summarize:
+    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧰 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🧠 Set Variables
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "prompt=Summarize this pull request in a professional, concise way:\n\nTitle: ${{ github.event.pull_request.title }}\n\nDescription: ${{ github.event.pull_request.body }}" >> $GITHUB_OUTPUT
+          else
+            echo "prompt=${{ github.event.comment.body }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 💬 Call Pollinations API (Claude via openai model)
+        id: pollinations
+        run: |
+          echo "Sending request to Pollinations API..."
+          RESPONSE=$(curl -s -X POST "https://text.pollinations.ai/" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "openai",
+              "messages": [
+                {"role": "system", "content": "You are Claude, an AI that summarizes GitHub pull requests and replies to comments."},
+                {"role": "user", "content": "${{ steps.vars.outputs.prompt }}"}
+              ]
+            }')
+          SUMMARY=$(echo "$RESPONSE" | jq -r '.response // .message // "No response from Claude."')
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 📝 Post Comment to PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          body: |
+            🤖 **Claude says:**
+
+            ${{ steps.pollinations.outputs.summary }}
