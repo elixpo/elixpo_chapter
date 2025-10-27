@@ -8,23 +8,28 @@ jobs:
   label-issue:
     runs-on: ubuntu-latest
     permissions:
-      issues: write
       contents: read
-      repository-projects: read
+      issues: write
+      metadata: read
       pull-requests: read
     
     steps:
-      - name: Check if user is repository member
-        id: check-membership
+      - name: Check if user is repository member and add appropriate label
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const issueAuthor = context.payload.issue.user.login;
+            const issueNumber = context.payload.issue.number;
+            
+            console.log(`Processing issue #${issueNumber} by ${issueAuthor}`);
+            
+            let isMember = false;
+            let labelToAdd = 'COMMUNITY';
             
             try {
-              // Check if user is a collaborator (has write access or higher)
+              // First, try to check if user is a collaborator
               const { data: collaboration } = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner,
                 repo,
@@ -32,58 +37,57 @@ jobs:
               });
               
               const permission = collaboration.permission;
-              const isMember = ['admin', 'write', 'maintain'].includes(permission);
+              isMember = ['admin', 'write', 'maintain'].includes(permission);
               
               console.log(`User ${issueAuthor} has permission: ${permission}`);
               console.log(`Is member: ${isMember}`);
               
-              return isMember;
+              if (isMember) {
+                labelToAdd = 'INTERNAL';
+              }
             } catch (error) {
               // If user is not a collaborator, the API returns 404
               console.log(`User ${issueAuthor} is not a collaborator: ${error.message}`);
-              return false;
+              // Keep labelToAdd as 'COMMUNITY'
             }
-
-      - name: Add INTERNAL label for repository members
-        if: steps.check-membership.outputs.result == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { owner, repo } = context.repo;
-            const issueNumber = context.payload.issue.number;
             
+            // Ensure the label exists first
+            try {
+              await github.rest.issues.getLabel({
+                owner,
+                repo,
+                name: labelToAdd
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                // Create the label if it doesn't exist
+                const labelColor = labelToAdd === 'INTERNAL' ? '0052cc' : '7057ff';
+                const labelDescription = labelToAdd === 'INTERNAL' 
+                  ? 'Issue created by repository member' 
+                  : 'Issue created by community member';
+                
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name: labelToAdd,
+                  color: labelColor,
+                  description: labelDescription
+                });
+                console.log(`Created label: ${labelToAdd}`);
+              }
+            }
+            
+            // Add the label to the issue
             try {
               await github.rest.issues.addLabels({
                 owner,
                 repo,
                 issue_number: issueNumber,
-                labels: ['INTERNAL']
+                labels: [labelToAdd]
               });
-              console.log('Added INTERNAL label to issue');
+              console.log(`Successfully added ${labelToAdd} label to issue #${issueNumber}`);
             } catch (error) {
-              console.error('Failed to add INTERNAL label:', error.message);
-              core.setFailed(`Failed to add INTERNAL label: ${error.message}`);
+              console.error(`Failed to add ${labelToAdd} label:`, error.message);
+              throw error;
             }
 
-      - name: Add COMMUNITY label for external users
-        if: steps.check-membership.outputs.result == 'false'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { owner, repo } = context.repo;
-            const issueNumber = context.payload.issue.number;
-            
-            try {
-              await github.rest.issues.addLabels({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                labels: ['COMMUNITY']
-              });
-              console.log('Added COMMUNITY label to issue');
-            } catch (error) {
-              console.error('Failed to add COMMUNITY label:', error.message);
-              core.setFailed(`Failed to add COMMUNITY label: ${error.message}`);
-            }
