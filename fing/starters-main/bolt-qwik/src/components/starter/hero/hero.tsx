@@ -1,82 +1,120 @@
-import { component$ } from '@builder.io/qwik';
-import styles from './hero.module.css';
-import ImgThunder from '../../../media/thunder.png?jsx';
+"use client";
 
-export default component$(() => {
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/pagination";
+import { Pagination, Autoplay } from "swiper/modules";
+import { useEffect, useState } from "react";
+
+export default function Hero() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 150);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <div class={['container', styles.hero]}>
-      <ImgThunder class={styles['hero-image']} alt="Image thunder" />
-      <h1>
-        So <span class="highlight">fantastic</span>
-        <br />
-        to have <span class="highlight">you</span> here
-      </h1>
-      <p>Have fun building your App with Qwik.</p>
-      <div class={styles['button-group']}>
-        <button
-          onClick$={async () => {
-            const defaults = {
-              spread: 360,
-              ticks: 70,
-              gravity: 0,
-              decay: 0.95,
-              startVelocity: 30,
-              colors: ['006ce9', 'ac7ff4', '18b6f6', '713fc2', 'ffffff'],
-              origin: {
-                x: 0.5,
-                y: 0.35,
-              },
-            };
+    <section className="relative flex flex-col items-center justify-center overflow-hidden py-24 px-6 text-center bg-gradient-to-b from-background to-muted/50">
+      {/* Background Glass + Gradient Glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent blur-3xl opacity-40 pointer-events-none" />
+      <div className="absolute inset-0 backdrop-blur-xl bg-white/5 dark:bg-black/10 pointer-events-none" />
 
-            function loadConfetti() {
-              return new Promise<(opts: any) => void>((resolve, reject) => {
-                if ((globalThis as any).confetti) {
-                  return resolve((globalThis as any).confetti as any);
-                }
-                const script = document.createElement('script');
-                script.src =
-                  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js';
-                script.onload = () =>
-                  resolve((globalThis as any).confetti as any);
-                script.onerror = reject;
-                document.head.appendChild(script);
-                script.remove();
-              });
-            }
+      {/* Main Hero Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: "easeOut" }}
+        className="z-10 max-w-3xl"
+      >
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-foreground">
+          Build Smarter with{" "}
+          <span className="text-primary drop-shadow-sm">FingUI</span>
+        </h1>
 
-            const confetti = await loadConfetti();
+        <p className="text-muted-foreground text-lg md:text-xl mb-10">
+          Sleek, consistent, and powerful UI components — crafted for modern
+          web experiences.
+        </p>
 
-            function shoot() {
-              confetti({
-                ...defaults,
-                particleCount: 80,
-                scalar: 1.2,
-              });
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            size="lg"
+            className="rounded-full font-medium transition-transform hover:scale-105"
+          >
+            Get Started <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-full backdrop-blur-sm bg-background/60 transition-transform hover:scale-105"
+          >
+            View Docs
+          </Button>
+        </div>
+      </motion.div>
 
-              confetti({
-                ...defaults,
-                particleCount: 60,
-                scalar: 0.75,
-              });
-            }
-
-            setTimeout(shoot, 0);
-            setTimeout(shoot, 100);
-            setTimeout(shoot, 200);
-            setTimeout(shoot, 300);
-            setTimeout(shoot, 400);
-          }}
+      {/* Swiper Carousel Section */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1, delay: 0.2 }}
+        className="mt-16 w-full max-w-4xl"
+      >
+        <Swiper
+          modules={[Pagination, Autoplay]}
+          pagination={{ clickable: true }}
+          autoplay={{ delay: 3500, disableOnInteraction: false }}
+          loop
+          className="rounded-3xl shadow-lg"
         >
-          Time to celebrate
-        </button>
-        <a
-          href="https://qwik.dev/docs"
-          target="_blank"
-          class="button button-dark"
+          <SwiperSlide>
+            <Image
+              src="/assets/hero-slide1.png"
+              alt="FingUI Dashboard Preview"
+              width={1200}
+              height={600}
+              className="rounded-3xl object-cover"
+            />
+          </SwiperSlide>
+          <SwiperSlide>
+            <Image
+              src="/assets/hero-slide2.png"
+              alt="FingUI Components"
+              width={1200}
+              height={600}
+              className="rounded-3xl object-cover"
+            />
+          </SwiperSlide>
+          <SwiperSlide>
+            <Image
+              src="/assets/hero-slide3.png"
+              alt="FingUI Integration"
+              width={1200}
+              height={600}
+              className="rounded-3xl object-cover"
+            />
+          </SwiperSlide>
+        </Swiper>
+      </motion.div>
+
+      {/* Scroll-to-top Button */}
+      {show && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 bg-primary text-white rounded-full p-3 shadow-md hover:scale-110 transition-transform z-50"
         >
-          Explore the docs
-        </a>
-      </div>
-    </div>
+          <ArrowRight className="rotate-[-90deg]" />
+        </motion.button>
+      )}
+    </section>
   );
-});
+}
