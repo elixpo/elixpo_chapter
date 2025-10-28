@@ -72,7 +72,12 @@ You'll need a modern web browser that supports HTML5 and JavaScript.
     ```sh
     cd InkFlow-Canvas
     ```
-3.  Open `index.html` in your browser.
+3.  Run the application
+    - Open `index.html` in your web browser.
+    - Alternatively, you can use a local server. If you have Node.js installed, you can run:
+      ```sh
+      npm start
+      ```
 
 ## 🤝 Contributing
 

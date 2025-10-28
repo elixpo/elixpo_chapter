@@ -1,11 +1,9 @@
 {
-  "name": "inkflow-canvas",
+  "name": "InkFlow-Canvas",
   "version": "1.0.0",
-  "description": "<p align=\"center\">\r   <img src=\"Images/logo.png\" alt=\"InkFlow-Canvas Logo\" width=\"200\"/>\r </p>",
-  "main": "sw.js",
+  "description": "InkFlow Canvas project",
   "scripts": {
-    "start": "http-server -c-1",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npx http-server . -p 3000"
   },
   "repository": {
     "type": "git",
