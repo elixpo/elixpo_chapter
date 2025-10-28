@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (this.checked) {
             profileImage.src = defaultAvatar;
             localStorage.removeItem('profileImage');
+        } else {
+            // If unchecked, try to restore from localStorage
+            const restoredImage = localStorage.getItem('profileImage');
+            if (restoredImage) {
+                profileImage.src = restoredImage;
+            }
         }
     });
 
@@ -25,20 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 profileImage.src = event.target.result;
                 // Save to localStorage
                 localStorage.setItem('profileImage', event.target.result);
+                // Uncheck the 'hide' box, since user is uploading a new image
+                hideProfileCheckbox.checked = false;
             };
             reader.readAsDataURL(file);
         }
-    });
-
-    // Notification Section Handling
-    document.querySelector('.menu-item:nth-child(2)').addEventListener('click', function (e) {
-        e.preventDefault();
-        document.querySelectorAll('.card').forEach(card => card.style.display = 'none');
-        document.querySelector('.notification-section').style.display = 'block';
-
-        // Update active menu item
-        document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-        this.classList.add('active');
     });
 
     // Handle notification actions
@@ -84,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hide all sections first
             document.querySelectorAll('.card').forEach(card => {
-                card.style.display = 'none';
+                if(card) card.style.display = 'none';
             });
 
             // Show relevant sections
@@ -104,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     sections['Account'].forEach(section => {
         if (section) section.style.display = 'block';
     });
+    
+    // Set 'Account' as the active menu item on load
+    // Assuming 'Account' is the first menu item
+    if (menuItems.length > 0) {
+        menuItems[0].classList.add('active');
+    }
 
     // Add delete account confirmation
     document.getElementById('deleteAccountBtn').addEventListener('click', function () {
