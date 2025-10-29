@@ -1,17 +1,34 @@
-
 import prisma from "@/lib/db";
 import { createTRPCRouter, protechedRoute } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { revalidatePath } from "next/cache";
+import { ca } from "date-fns/locale";
 import { z } from "zod";
+
+let revalidatePath: (path: string) => Promise<void> = async () => {};
+
+// Safely load next/cache without top-level await — use promise .then/.catch to avoid parser issues
+import("next/cache")
+  .then((mod) => {
+    if (mod && typeof mod.revalidatePath === "function") {
+      revalidatePath = async (path: string) => {
+        try {
+          await mod.revalidatePath(path);
+        } catch (_) {
+          /* no-op */
+        }
+      };
+    }
+  })
+  .catch(() => {
+    /* next/cache not available — keep no-op */
+  });
 
 // Define your template enum as a constant to reuse
 const TEMPLATES = ["REACT", "NEXTJS", "EXPRESS", "HONO", "ANGULAR", "VUE"] as const;
 type Template = typeof TEMPLATES[number];
 
 export const playGroundRouter = createTRPCRouter({
-  // Create a new Playground
-  createPlayground: protechedRoute.input(
+    createPlayground: protechedRoute.input(
       z.object({
         title: z.string().min(1, "Title is required"),
         description: z.string().optional(),
@@ -19,39 +36,61 @@ export const playGroundRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      try {
-        return await prisma.playground.create({
-          data: {
-            title: input.title,
-            describtion: input.description, // Note: Fixing typo to match your schema
-            template: input.template,
-            userId: ctx.auth.userId,
-          },
-        });
-      } catch (error) {
+      const userId = ctx.auth?.userId;
+      console.log('🔨 createPlayground - userId:', userId, 'title:', input.title);
+      
+      if (!userId) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to create playground",
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
         });
       }
-    }),
+       try {
+         const result = await prisma.playground.create({
+           data: {
+             title: input.title,
+             describtion: input.description,
+             template: input.template,
+             userId,
+           },
+         });
+         console.log('✅ Playground created:', result.id);
+         return result;
+       } catch (error) {
+         console.error('❌ createPlayground error:', error);
+         throw new TRPCError({
+           code: "INTERNAL_SERVER_ERROR",
+           message: error instanceof Error ? error.message : "Failed to create playground",
+         });
+       }
+     }),
 
   // Get all playgrounds for the logged-in user with starred status
   getAllPlaygrounds: protechedRoute.query(async ({ ctx }) => {
-    try {
-      const playgrounds = await prisma.playground.findMany({
-        where: { userId: ctx.auth.userId },
-        include: {
-          startMark: {
-            where: { userId: ctx.auth.userId },
-            select: { isMarked: true },
-            orderBy: { createdAt: "desc" },
-            take: 1, // Only get the most recent mark
-          },
-        },
-        
-        orderBy: { createdAt: "desc" },
+    const userId = ctx.auth?.userId;
+    console.log('📊 getAllPlaygrounds - userId:', userId);
+    
+    if (!userId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
       });
+    }
+    try {
+       const playgrounds = await prisma.playground.findMany({
+         where: { userId },
+         include: {
+           startMark: {
+             where: { userId: ctx.auth.userId },
+             select: { isMarked: true },
+             orderBy: { createdAt: "desc" },
+             take: 1,
+           },
+         },
+         orderBy: { createdAt: "desc" },
+       });
+
+      console.log('✅ Playgrounds fetched:', playgrounds.length);
 
       // Transform the data to a more client-friendly format
       return playgrounds.map(playground => ({
@@ -59,6 +98,7 @@ export const playGroundRouter = createTRPCRouter({
         isStarred: playground.startMark[0]?.isMarked ?? false,
       }));
     } catch (error) {
+      console.error('❌ getAllPlaygrounds error:', error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: error instanceof Error ? error.message : "Failed to fetch playgrounds",
@@ -317,15 +357,22 @@ saveCode: protechedRoute
     })
   )
   .mutation(async ({ ctx, input }) => {
-    console.log('🔵 saveCode mutation called, data length:', input.data.length);
-
-    // Verify playground exists and belongs to user
-    const playground = await prisma.playground.findUnique({
-      where: {
-        id: input.playgroundId,
-        userId: ctx.auth.userId
-      }
-    });
+    const userId = ctx.auth?.userId;
+    if (!userId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+      });
+    }
+     console.log('🔵 saveCode mutation called, data length:', input.data.length);
+ 
+ // Verify playground exists and belongs to user
+ const playground = await prisma.playground.findUnique({
+   where: {
+     id: input.playgroundId,
+     userId: ctx.auth.userId
+   }
+ });
 
     if (!playground) {
       throw new TRPCError({

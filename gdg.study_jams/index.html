@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A community-driven leaderboard for the GDG on Campus - JISU, Agarpara Cloud Skills Challenge.">
     <title>GDG Cloud Skills Leaderboard</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <link rel="icon" type="image/x-icon" href="https://media.licdn.com/dms/image/v2/C4D0BAQHrcZnq9pTxJQ/company-logo_100_100/company-logo_100_100/0/1659965576912?e=1762992000&v=beta&t=i1UVNnf2Vj-174BrIV22WDG1sSFVHlxdjQosmYeJ_4Y">
     <link rel="stylesheet" href="CSS/style.css">
+    
+    <script src="JS/script.js" defer></script>
 </head>
 <body>
     <div class="app">
@@ -20,23 +25,20 @@
                         <div class="brand-text">
                             <h1>Cloud Skills Leaderboard</h1>
                             <p>GDG on Campus - JISU, Agarpara</p>
-                            <div class="Updatedcontainer">
-                                <p>Last updated: <span id="lastUpdated"></span></p>
-                            </div>
+                            <p class="last-updated">Last updated: <span id="lastUpdated"></span></p>
                         </div>
-                        
                     </div>
-                    <div class="header-stats">
-                        <div class="stat-item">
+                    
+                    <ul class="header-stats">
+                        <li class="stat-item">
                             <span class="stat-number" id="totalUsers">0</span>
                             <span class="stat-label">Participants</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
+                        </li>
+                        <li class="stat-item">
                             <span class="stat-number" id="completedUsers">0</span>
                             <span class="stat-label">Completed</span>
-                        </div>
-                    </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </header>
@@ -44,20 +46,24 @@
         <main class="main">
             <div class="container">
                 <div class="controls">
-                    <div class="search-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none">
-                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            class="search-input" 
-                            placeholder="Search participants..."
-                            autocomplete="off"
-                        >
-                    </div>
-                    <div class="filter-group">
+                    <form class="search-form" role="search" onsubmit="return false;">
+                        <label for="searchInput" class="sr-only">Search participants</label>
+                        <div class="search-wrapper">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <input
+                                type="search" 
+                                id="searchInput"
+                                class="search-input"
+                                placeholder="Search participants..."
+                                autocomplete="off"
+                            >
+                        </div>
+                    </form>
+                    
+                    <div class="filter-group" role="group" aria-label="Leaderboard filters">
                         <button class="filter-btn active" data-filter="all">
                             All
                         </button>
@@ -71,13 +77,14 @@
                 </div>
 
                 <div class="leaderboard">
-                    <div id="loadingState" class="loading">
+                    <div id="loadingState" class="loading" role="status" aria-live="polite">
                         <div class="loader"></div>
                         <p>Loading leaderboard...</p>
                     </div>
 
-                    <div id="emptyState" class="empty" style="display: none;">
-                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none">
+                    <div id="emptyState" class="empty" style="display: none;" role="status" aria-live="polite">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" role="img" aria-labelledby="emptyIconTitle" focusable="false">
+                            <title id="emptyIconTitle">Sad face icon</title>
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                             <path d="M8 15h8M9 9h.01M15 9h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
@@ -88,23 +95,21 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th class="th-rank">Rank</th>
-                                    <th class="th-name">Participant</th>
-                                    <th class="th-center">Badges</th>
-                                    <th class="th-center">Games</th>
-                                    <th class="th-center">Redeemed</th>
-                                    <th class="th-status">Status</th>
+                                    <th class="th-rank" scope="col">Rank</th>
+                                    <th class="th-name" scope="col">Participant</th>
+                                    <th class="th-center" scope="col">Badges</th>
+                                    <th class="th-center" scope="col">Games</th>
+                                    <th class="th-center" scope="col">Redeemed</th>
+                                    <th class="th-status" scope="col">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboardBody">
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-
-    <script src="JS/script.js"></script>
 </body>
 </html>

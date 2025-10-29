@@ -1,89 +1,144 @@
 @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100;400&family=Sevillana&family=Style+Script&display=swap');
 
-.lineFirst {
-    display: flex;
-    justify-content: space-between;
-    
-  }
+:root {
+  --font-primary: 'Josefin Sans', sans-serif;
+  --font-special-1: 'Sevillana', cursive;
+  --font-special-2: 'Style Script', cursive;
+
+  --grad-default: linear-gradient(0deg, #08AEEA 0%, #2AF598 100%);
+  --grad-hover: linear-gradient(62deg, #FBAB7E 0%, #F7CE68 100%);
   
-  .wordFirst {
-    position: absolute;
-    top: 670px;
+  --text-shadow-hover: 0 0 20px #000;
+  
+  --transition-opacity: 250ms ease;
+  --transition-transform-short: 350ms ease;
+  --transition-transform-long: 800ms;
+  --transition-letter-hover: 500ms;
+  
+  --word-top-position: 670px;
+}
+
+body {
+  background-color: #111;
+  color: white;
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-primary);
+}
+
+#text {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+ 
+.wordFirst {
+  position: absolute;
+  top: var(--word-top-position); 
   left: 50%;
   transform: translateX(-50%);
 
   -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+  
   font-size: clamp(1rem, 6vw, 9rem);
-  font-family: 'Josefin Sans', sans-serif;
-  margin: 0rem;
-  transition: opacity 250ms ease;
-    cursor: pointer;
-  }
+  font-family: var(--font-primary);
+  margin: 0;
+  transition: opacity var(--transition-opacity);
+  cursor: pointer;
+}
 
+a {
+  text-decoration: none;
+}
+ 
+#text:has(.fancyFirst:hover) .wordFirst:not(.fancyFirst:hover) {
+  opacity: 0.2;
+}
+ 
+.fancyFirst .letter {
+  display: inline-block;
+  
+  background-image: var(--grad-default);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+}
+ 
+.fancyFirst > .outer {
+  transition: transform var(--transition-transform-short);
+  display: inline-block;
+}
+ 
+.fancyFirst:hover > .outer {
+  transition-duration: var(--transition-transform-long);
+}
+ 
+.fancyFirst:hover > .outer > .inner {
+  animation: float 5s ease infinite;
+  display: inline-block;
+}
+ 
+.fancyFirst:hover > .outer > .inner > .letter {
+  background-image: var(--grad-hover);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+  
+  transition: var(--transition-letter-hover);
+  text-shadow: var(--text-shadow-hover);
+  
+  background-size: 300% 300%;
+  animation: background-pan 150s linear infinite;
+}
 
+.fancyFirst:hover > .outer:nth-child(1) {
+  transform: translate(-80%, 40%) rotate(8deg);
+}
+ 
+.fancyFirst:hover > .outer:nth-child(2) {
+  transform: translate(-40%, 10%) rotate(4deg);
+}
+ 
+.fancyFirst:hover > .outer:nth-child(3) {
+  transform: translate(-10%, 50%) rotate(-6deg);
+}
+ 
+.fancyFirst:hover > .outer:nth-child(4) {
+  transform: translate(0%, 8%) rotate(-8deg);
+}
+ 
+.fancyFirst:hover > .outer:nth-child(5) {
+  transform: translate(0%, -10%) rotate(5deg);
+}
+ E.g.,
+.fancyFirst:hover > .outer:nth-child(6) {
+  transform: translate(0%, 10%) rotate(-3deg);
+}
+ 
+.fancyFirst:hover > .outer:nth-child(7) {
+  transform: translate(0%, -40%) rotate(-5deg);
+}
 
-  a {
-    text-decoration: none;
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(1deg);
   }
-  
-  #text:has(.fancyFirst:hover) .wordFirst:not(.fancyFirst:hover) {
-    opacity: 0.2;
+  50% {
+    transform: translateY(-10px) rotate(-1deg);
   }
-  
-  .fancyFirst span {
-    display: inline-block;
-    background-color: #08AEEA;
-    background-image: linear-gradient(0deg, #08AEEA 0%, #2AF598 100%);
-    -webkit-background-clip: text;
+}
+
+@keyframes background-pan {
+  0% {
+    background-position: 0% 50%;
   }
-  
-  .fancyFirst > .outer {
-    transition: transform 350ms ease;
+  50% {
+    background-position: 100% 50%;
   }
-  
-  .fancyFirst:hover > .outer {
-    transition-duration: 800ms;
+  100% {
+    background-position: 0% 50%;
   }
-  
-  .fancyFirst:hover > .outer > .inner {
-    animation: float 5s ease infinite;
-  }
-  
-  .fancyFirst:hover > .outer > .inner > .letter {
-    background-color: #FBAB7E;
-    background-image: linear-gradient(62deg, #FBAB7E 0%, #F7CE68 100%);    
-      -webkit-background-clip: text;
-      transition: 0.5s;
-      text-shadow: 0 0 20px #000;
-      -webkit-text-fill-color: transparent;
-    animation: background-pan 150s linear infinite;
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(1) {
-    transform: translate(-80%, 40%) rotate(8deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(2) {
-    transform: translate(-40%, 10%) rotate(4deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(3) {
-    transform: translate(-10%, 50%) rotate(-6deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(4) {
-    transform: translate(0%, 8%) rotate(-8deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(5) {
-    transform: translate(0%, -10%) rotate(5deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(6) {
-    transform: translate(0%, 10%) rotate(-3deg);
-  }
-  
-  .fancyFirst:hover > .outer:nth-child(7) {
-    transform: translate(0%, -40%) rotate(-5deg);
-  }
-  
+}
