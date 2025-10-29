@@ -21,8 +21,8 @@ A Discord bot for generating, remixing, and managing AI-generated images using s
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/elixpo-discord-bot.git
-cd elixpo-discord-bot
+git clone https://github.com/Circuit-Overtime/elixpo_chapter.git
+cd elixpo_chapter/jackey.elixpo
 npm install
 ```
 
