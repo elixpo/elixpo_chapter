@@ -36,7 +36,7 @@ At Elixpo, we are dedicated to building a future where AI is **open, ethical, an
 
 **Hacktoberfest is live!** We enthusiastically welcome contributions from developers around the world.
 
-- **Find Issues:** We have curated issues perfect for new contributors.Look for them which is tagged with `hacktoberfest` in our [issue tracker](https://github.com/Circuit-Overtime/elixpo_chapter/issues).
+- **Find Issues:** We have curated issues perfect for new contributors.Look for them which is tagged with `hacktoberfest accepted` , `hacktoberfest2025` in our [issue tracker](https://github.com/Circuit-Overtime/elixpo_chapter/issues).
 - **Read the Guidelines:** Before submitting a PR, please review our [**Code of Conduct**](./CODE_OF_CONDUCT.md) and [**Contributing Guidelines**](./CONTRIBUTING.md).
 
 Let's build something amazing together!
@@ -178,6 +178,8 @@ At Elixpo_Chapter, we are dedicated to shaping a future where projects are:
 - **Community-Driven**: Our platform thrives on collaboration, inviting developers, creators, and enthusiasts to contribute and innovate together.
 - **Interconnected**: We’re building an ecosystem where AI tools and services integrate seamlessly, enabling composable and synergistic solutions.
 - **Continuously Evolving**: We embrace rapid advancements in AI, adapting and improving while upholding our core values of openness and accessibility.
+- **A Platform for Learning**: We are more than just tools; we are a learning ecosystem. We are committed to being a welcoming space for new developers, empowering contributors of all skill levels to learn, grow, and teach others.
+- **Prioritizing the Developer Experience**: We put the developer experience at the forefront of our work. Our tools are built to be flexible, well-documented, and a joy to use, empowering developers to build, test, and deploy with confidence.
 
 Our mission is to advance AI for the benefit of all—respecting ethical standards, fostering responsible innovation, and building a collaborative community. Join us in making AI open, ethical, and impactful for everyone.
 
