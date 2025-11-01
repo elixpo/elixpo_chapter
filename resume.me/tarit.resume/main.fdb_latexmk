@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1761902047.09647 "e:/elixpo_ai_chapter/resume.me/tarit.resume/main.tex" "main.pdf" "main" 1761902048.07517 0
+["pdflatex"] 1761976867.41147 "e:/elixpo_ai_chapter/resume.me/tarit.resume/main.tex" "main.pdf" "main" 1761976872.95439 0
   "C:/Users/ELIXPO/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1757393968 83637 15e7234f7f0768b75cfac8317adcc5d1 ""
   "C:/Users/ELIXPO/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1745425517 24208634 1a9349a96e909d75bc11ed8d983c9d71 ""
   "D:/miktex/fonts/enc/dvips/fontawesome5/fa5free1.enc" 1651500229 3042 0e2b14b9be7d01075a4c4591d5d1781b ""
@@ -120,10 +120,10 @@
   "D:/miktex/tex/latex/tools/tabularx.sty" 1700599895 7147 d45559f8a31b8c53ada0640516660003 ""
   "D:/miktex/tex/latex/tools/verbatim.sty" 1700599895 7500 db31c3d04f8bc9010e47a5efbbace9ff ""
   "D:/miktex/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
-  "e:/elixpo_ai_chapter/resume.me/tarit.resume/main.tex" 1761902046 9164 e89243c744bd27b5a6f225a1b1020a06 ""
-  "main.aux" 1761902047 1370 b6a3146dd1e8eaad85da6ac1264fc716 "pdflatex"
-  "main.out" 1761902047 1236 724303f78978048c2a88875b1b3094dd "pdflatex"
-  "main.tex" 1761902046 9164 e89243c744bd27b5a6f225a1b1020a06 ""
+  "e:/elixpo_ai_chapter/resume.me/tarit.resume/main.tex" 1761976860 9086 ab38882ec74f3dc48e9d03201c299132 ""
+  "main.aux" 1761976872 1370 b6a3146dd1e8eaad85da6ac1264fc716 "pdflatex"
+  "main.out" 1761976872 1236 724303f78978048c2a88875b1b3094dd "pdflatex"
+  "main.tex" 1761976860 9086 ab38882ec74f3dc48e9d03201c299132 ""
   (generated)
   "main.aux"
   "main.log"
