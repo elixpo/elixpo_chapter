@@ -5,16 +5,14 @@ from getImagePrompt import generate_prompt_from_image, replyFromImage
 from tools import tools
 from datetime import datetime, timezone
 from getTimeZone import get_local_time
-from utility import fetch_youtube_parallel, agent_manager, fetch_url_content_parallel
+from utility import fetch_youtube_parallel, fetch_url_content_parallel, webSearch, imageSearch
 import random
 import logging
 import dotenv
 import os
 import asyncio
 import concurrent.futures
-from model_client import parent_conn, p
 from functools import lru_cache
-from yahooSearch import agent_pool, image_search
 import time
 
 
@@ -28,17 +26,6 @@ REFRRER = os.getenv("REFERRER")
 POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 print(MODEL, POLLINATIONS_TOKEN)
 
-async def initialize_search_agents():
-    if not agent_pool.initialized:
-        logger.info("Initializing search agent pool...")
-        await agent_pool.initialize_pool()
-        logger.info("Search agent pool pre-warmed and ready")
-        status = await agent_pool.get_status()
-        logger.info(f"Agent pool status: {status}")
-    else:
-        logger.info("Search agent pool already initialized")
-
-# model = get_embedding_model()
 
 @lru_cache(maxsize=100)
 def cached_web_search_key(query: str) -> str:
@@ -63,9 +50,11 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             result = f"Location: {location_name} and Local Time is: {localTime}, Please mention the location and time when making the final response!"
             memoized_results["timezone_info"][location_name] = result
             yield result
+
         elif function_name == "web_search":
             start_time = time.time()
             search_query = function_args.get("query")
+            memoized_results["search_query"] = search_query
             web_event = emit_event_func("INFO", f"<TASK>Searching for '{search_query}'</TASK>")
             if web_event:
                 yield web_event
@@ -73,17 +62,15 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             if cache_key in memoized_results["web_searches"]:
                 logger.info(f"Using cached web search for: {search_query}")
                 yield memoized_results["web_searches"][cache_key]
-            
             logger.info(f"Performing optimized web search for: {search_query}")
-            parent_conn.send({"cmd": "search", "query": f"{search_query}", "max_chars": 2000})
-            response = parent_conn.recv()
-            tool_result = response.get("result")
-            source_urls = response.get("urls")
+            tool_result = webSearch(search_query)
+            source_urls = tool_result
             memoized_results["web_searches"][cache_key] = tool_result
             if "current_search_urls" not in memoized_results:
                 memoized_results["current_search_urls"] = []
             memoized_results["current_search_urls"] = source_urls
             yield tool_result
+
         elif function_name == "generate_prompt_from_image":
             web_event = emit_event_func("INFO", f"<TASK>Analyzing Image</TASK>")
             if web_event:
@@ -95,6 +82,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             result = f"Generated Search Query: {get_prompt}"
             logger.info(f"Generated prompt: {get_prompt}")
             yield result
+
         elif function_name == "replyFromImage":
             web_event = emit_event_func("INFO", f"<TASK>Processing Image Query</TASK>")
             if web_event:
@@ -105,6 +93,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             result = f"Reply from Image: {reply}"
             logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
             yield result
+
         elif function_name == "image_search":
             start_time = time.time()
             web_event = emit_event_func("INFO", f"<TASK>Finding Images</TASK>")
@@ -117,7 +106,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                     yield web_event
             image_query = function_args.get("image_query")
             max_images = function_args.get("max_images", 10)
-            search_results_raw = await image_search(image_query, max_images=max_images)
+            search_results_raw = await imageSearch(image_query, max_images=max_images)
             logger.info(f"Image search for '{image_query[:50]}...' completed.")
             image_urls = []
             url_context = ""
@@ -136,6 +125,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             except Exception as e:
                 logger.error(f"Failed to process image search results: {e}")
                 yield ("Image search completed but results processing failed", [])
+
         elif function_name == "get_youtube_metadata":
             logger.info(f"Getting YouTube metadata")
             urls = [function_args.get("url")]
@@ -146,6 +136,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 result = json.dumps(metadata)
                 memoized_results["youtube_metadata"][url] = result
                 yield result
+
         elif function_name == "get_youtube_transcript":
             logger.info(f"Getting YouTube transcript")
             web_event = emit_event_func("INFO", f"<TASK>Processing Video</TASK>")
@@ -159,6 +150,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 result = f"YouTube Transcript for {url}:\n{transcript if transcript else '[No transcript available]'}"
                 memoized_results["youtube_transcripts"][url] = result
                 yield result
+
         elif function_name == "fetch_full_text":
             logger.info(f"Fetching webpage content")
             web_event = emit_event_func("INFO", f"<TASK>Reading Webpage</TASK>")
@@ -166,7 +158,10 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 yield web_event
             urls = [function_args.get("url")]
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fetch_url_content_parallel, urls)
+                queries = memoized_results.get("search_query", "")
+                if isinstance(queries, str):
+                    queries = [queries]
+                future = executor.submit(fetch_url_content_parallel, queries, urls)
                 parallel_results = future.result(timeout=10)
             yield parallel_results if parallel_results else "[No content fetched from URL]"
         else:
@@ -430,7 +425,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 if __name__ == "__main__":
     import asyncio
     async def main():
-        await initialize_search_agents()
         user_query = "latest news from ai in india 2025"
         user_image = None
         event_id = None
@@ -465,6 +459,4 @@ if __name__ == "__main__":
             print(f"\n--- Final Answer Received in {processing_time:.2f}s ---\n{answer}")
         else:
             print(f"\n--- No answer received after {processing_time:.2f}s ---")
-        status = await agent_manager.get_agent_status()
-        print(f"\nFinal Agent Status: {status}")
     asyncio.run(main())

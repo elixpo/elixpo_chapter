@@ -13,8 +13,8 @@
     <link rel="icon" type="image/x-icon" href="CSS/IMAGES/ElixpoSearchIcon.png">
     </head>
 <body>
-    <div class="app h-[100vh] flex flex-col bg-[#18191a]">
-        <div class="sideNavBar absolute w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
+    <div class="app h-[100vh] flex flex-row bg-[#18191a]">
+        <div class="sideNavBar w-[5%] h-full bg-[#18191a] border-r-2 border-[#333]">
             <div class="logoHeader w-full px-4 flex flex-row gap-3 justify-center items-center mt-8 mb-6">
                 <div class="logo bg-cover bg-center bg-[url(CSS/IMAGES/ElixpoSearchIcon.png)] h-[20px] w-[20px] invert-[1]"></div>
             </div>
@@ -34,25 +34,167 @@
             </div>
         </div>
 
+        
+        <div class="sidebar home w-[15%] h-full flex flex-col bg-[#1F2121a1] backdrop-blur-[5px] left-[5%]">
+            <div class="sidebarName text-[1em] text-white px-[20px] py-5 flex h-[40px] w-full justify-between">
+                <p>Home</p>
+                <ion-icon name="lock-closed-outline" class=" text-[#555] mt-2 cursor-pointer transition-colors hover:text-[#fff]"></ion-icon>
+            </div>
+            <div class="spacer w-[85%] mx-auto mt-5 h-[2px] bg-[#333] "></div>
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] flex justify-between items-center mt-2 font-bold "> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Library </span> 
+                    <ion-icon class="text-white transition-ease p-1 rounded-[5px] hover:bg-[#222] cursor-pointer" name="add"></ion-icon>
+                </span>
 
-        <div class="appHeader w-full h-[60px] flex flex-col items-center justify-center bg-transparent border-b-2 border-[#333] flex flex-row items-center px-6">
-            <div class="headerContent w-[60%] flex flex-row mx-auto justify-between h-full items-center px-2 ">
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Hi </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Latest news  </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+            </div>
 
-                <div class="name flex h-full items-center gap-2 ">
-                    <ion-icon class="text-white text-[1.5em] mt-[5px]" name="book-outline"></ion-icon>
-                    <span class="text-white text-[1.5em] font-semibold">Library</span>
-                </div>
+            <span class="sectionTitle text-[#888] text-[0.9em] px-[20px] flex justify-between items-center mt-2 font-bold "> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Pages </span> 
+                    <ion-icon class="text-white transition-ease p-1 rounded-[5px] hover:bg-[#222] cursor-pointer" name="add"></ion-icon>
+                </span>
 
-                <div class="name flex h-[40px] items-center gap-2 ">
-                    <div class="newDiscussionButton h-full px-4 py-2 bg-transparent border-2 border-[#222] rounded-[10px] flex flex-row items-center gap-2 cursor-pointer hover:bg-[#888e0]">
-                        <span class="text-[#888] text-[1em] font-semibold">New Talk</span>
-                        <ion-icon class="text-[#888] text-[1.2em] mt-[2px]" name="barcode-outline"></ion-icon>
-                    </div>
-                </div>
+            <div class="preSearches w-full mt-2 flex flex-col gap-2 px-[20px] text-[#ccc] overflow-y-auto">
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> Bike Racing </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
+                <span class="cursor-pointer flex justify-between items-center px-2 hover:text-white transition-colors px-[10px] py-[2px] transition-ease hover:bg-[#333] rounded-[8px] text-ellipsis overflow-hidden whitespace-nowrap"> 
+                    <span class="text-ellipsis overflow-hidden whitespace-nowrap"> OS Writeup </span> 
+                    <ion-icon class=" transition-ease p-1 rounded-[5px] hover:bg-[#222]" name="ellipsis-horizontal-outline"></ion-icon>
+                </span>
             </div>
 
         </div>
 
+
+        <div class="librarySection w-[80%] h-full mx-auto right-0 flex flex-col">
+
+            <div class="appHeader w-full h-[60px] flex flex-col items-center justify-center bg-transparent border-b-2 border-[#333] flex flex-row items-center px-6">
+                <div class="headerContent w-full flex flex-row mx-auto justify-between h-full items-center px-2 ">
+
+                    <div class="name flex h-full items-center gap-2 ">
+                        <ion-icon class="text-white text-[1.5em] mt-[5px]" name="book-outline"></ion-icon>
+                        <span class="text-white text-[1.5em] font-semibold">Library</span>
+                    </div>
+
+                    <div class="name flex h-[40px] items-center gap-2 ">
+                        <div class="newDiscussionButton h-full px-4 py-2 bg-transparent border-2 border-[#222] rounded-[10px] flex flex-row items-center gap-2 cursor-pointer hover:bg-[#888e0]">
+                            <span class="text-[#888] text-[1em] font-semibold">New Talk</span>
+                            <ion-icon class="text-[#888] text-[1.2em] mt-[2px]" name="barcode-outline"></ion-icon>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+        <div class="navHeader w-full h-[60px] flex flex-row items-center justify-start flex flex-row gap-2 mt-2 px-6">
+            <div class="navItem h-full px-4 py-2 bg-transparent flex flex-row items-center gap-[25px] cursor-pointer">
+                <span class="text-[#fff] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
+                    <p>Talks</p>
+                    <div class="selectedOutline mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
+                </span>
+
+                <span class="text-[#555] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
+                    <p>Pages</p>
+                    <div class="selectedOutline opacity-[0] mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
+                </span>
+
+                <span class="text-[#555] cursor-pointer text-[1.2em] items-center justify-center text-center font-semibold ">
+                    <p>Media</p>
+                    <div class="selectedOutline opacity-[0] mt-2 h-[4px] bg-[#fff] rounded-tl-[3px] rounded-tr-[3px] px-[15px]"></div>
+                </span>
+                
+            </div>
+        </div>
+
+        <div class="threadSearcher w-full h-[60px] flex flex-row items-center justify-start flex flex-row gap-2 mt-2 px-6">
+            <div class="searchBar w-full h-[40px] bg-[#222] rounded-[10px] flex flex-row items-center gap-2 px-3">
+                <ion-icon class="text-[#555] text-[1.2em]" name="search-outline"></ion-icon>
+                <input type="text" placeholder="Search Library" class="w-full h-full bg-transparent outline-none border-none text-[#ccc] placeholder:text-[#888] text-[1em]"/>
+            </div>
+
+        </div>
+
+        <div class="libaryItems w-full flex flex-col gap-4 px-6 justify-center items-center overflow-y-auto pt-4 mt-[20px]  max-h-[80vh] ">
+           <div class="libraryItem w-[90%] flex flex-col gap-2 select-none cursor-pointer">
+                <div class="itemHeader w-full justify-between flex flex-row items-center">
+                    <span class="text-[#fff] font-bold leading-[2px] select-none cursor-pointer transition-ease hover:text-[#ffc]"> Make an image of a vintage space suit</span>
+                    <ion-icon name="ellipsis-horizontal" class="text-[#ccc] p-1 rounded-[5px] transition-ease cursor-pointer hover:bg-[#444]"></ion-icon>
+                </div>
+                <span class="itemDesc text-[#ccc] text-[1em] max-w-full max-h-[60px] overflow-hidden text-ellipsis">
+                    Create a detailed image of a vintage space suit, focusing on the textures and materials used in the original design.
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Obcaecati, vel inventore? Iste voluptas illo necessitatibus magni.
+                </span>
+                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px]">
+                    <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                    <span> Sep 23, 2025</span>
+                </div>
+
+           </div>
+
+           <div class="libraryItem w-[90%] flex flex-col gap-2 select-none cursor-pointer">
+                <div class="itemHeader w-full justify-between flex flex-row items-center">
+                    <span class="text-[#fff] font-bold leading-[2px] select-none cursor-pointer transition-ease hover:text-[#ffc]"> Make an image of a vintage space suit</span>
+                    <ion-icon name="ellipsis-horizontal" class="text-[#ccc] p-1 rounded-[5px] transition-ease cursor-pointer hover:bg-[#444]"></ion-icon>
+                </div>
+                <span class="itemDesc text-[#ccc] text-[1em] max-w-full max-h-[60px] overflow-hidden text-ellipsis">
+                    Create a detailed image of a vintage space suit, focusing on the textures and materials used in the original design.
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Obcaecati, vel inventore? Iste voluptas illo necessitatibus magni.
+                </span>
+                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px]">
+                    <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                    <span> Sep 23, 2025</span>
+                </div>
+
+           </div>
+
+           <div class="libraryItem w-[90%] flex flex-col gap-2 select-none cursor-pointer">
+                <div class="itemHeader w-full justify-between flex flex-row items-center">
+                    <span class="text-[#fff] font-bold leading-[2px] select-none cursor-pointer transition-ease hover:text-[#ffc]"> Make an image of a vintage space suit</span>
+                    <ion-icon name="ellipsis-horizontal" class="text-[#ccc] p-1 rounded-[5px] transition-ease cursor-pointer hover:bg-[#444]"></ion-icon>
+                </div>
+                <span class="itemDesc text-[#ccc] text-[1em] max-w-full max-h-[60px] overflow-hidden text-ellipsis">
+                    Create a detailed image of a vintage space suit, focusing on the textures and materials used in the original design.
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Obcaecati, vel inventore? Iste voluptas illo necessitatibus magni.
+                </span>
+                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px]">
+                    <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                    <span> Sep 23, 2025</span>
+                </div>
+
+           </div>
+
+           <div class="libraryItem w-[90%] flex flex-col gap-2 select-none cursor-pointer">
+                <div class="itemHeader w-full justify-between flex flex-row items-center">
+                    <span class="text-[#fff] font-bold leading-[2px] select-none cursor-pointer transition-ease hover:text-[#ffc]"> Make an image of a vintage space suit</span>
+                    <ion-icon name="ellipsis-horizontal" class="text-[#ccc] p-1 rounded-[5px] transition-ease cursor-pointer hover:bg-[#444]"></ion-icon>
+                </div>
+                <span class="itemDesc text-[#ccc] text-[1em] max-w-full max-h-[60px] overflow-hidden text-ellipsis">
+                    Create a detailed image of a vintage space suit, focusing on the textures and materials used in the original design.
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Obcaecati, vel inventore? Iste voluptas illo necessitatibus magni.
+                </span>
+                <div class="itemTime text-[#aaa] text-[0.8em] flex flex-row gap-2 items-center justify-start mt-[10px]">
+                    <ion-icon name="time-outline" class="text-[1.2em]"></ion-icon>
+                    <span> Sep 23, 2025</span>
+                </div>
+
+           </div>
+           
+           
+
+        </div>
+
+        
+
+        </div>
     </div>
 </body>
 </html>

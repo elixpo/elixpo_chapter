@@ -545,10 +545,65 @@ async def transcript():
 async def health():
     return jsonify({"status": "ok"})
 
+@app.route("/embedding/health", methods=["GET"])
+async def embedding_health():
+    """Check embedding server connectivity and status"""
+    try:
+        from embeddingClient import get_embedding_client
+        client = get_embedding_client()
+        active_ops = client.get_active_operations_count()
+        
+        return jsonify({
+            "status": "ok",
+            "embedding_server": "connected", 
+            "active_operations": active_ops,
+            "ipc_enabled": True
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "degraded",
+            "embedding_server": "disconnected",
+            "error": str(e),
+            "ipc_enabled": False
+        }), 503
+
+@app.route("/embedding/stats", methods=["GET"])
+async def embedding_stats():
+    """Get detailed embedding server statistics"""
+    try:
+        from embeddingClient import get_embedding_client
+        from textEmbedModel import is_using_ipc_embedding
+        
+        client = get_embedding_client()
+        active_ops = client.get_active_operations_count()
+        
+        return jsonify({
+            "status": "ok",
+            "ipc_mode": is_using_ipc_embedding(),
+            "server_address": "localhost:5002",
+            "active_operations": active_ops,
+            "total_requests": global_stats["total_requests"],
+            "successful_requests": global_stats["successful_requests"], 
+            "failed_requests": global_stats["failed_requests"],
+            "uptime": time.time() - global_stats["start_time"]
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
 if __name__ == "__main__":
+    import os
+    
+    # Get port from environment variable, default to 5000
+    port = int(os.getenv("PORT", 5000))
+    
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = [f"0.0.0.0:{port}"]
     config.use_reloader = False
     config.workers = 15
-    config.backlog = 1000  
+    config.backlog = 1000
+    
+    print(f"Starting Elixpo Search API on port {port}")
     asyncio.run(hypercorn.asyncio.serve(app, config))

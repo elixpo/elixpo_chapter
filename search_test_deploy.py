@@ -1,13 +1,21 @@
 import requests
 import json
 import urllib.parse
-url = "https://search.pollinations.ai/search"
+messages = "hi"
+url = "https://apisearch.elixpo.com/search"
 headers = {"Content-Type": "application/json"}
-data = {
-    "messages": [
-        {"role": "user", "content": "What is the latest information of the stock market?"}
-    ]
+data = { "messages": [
+    {"role": "user", "content": "hi my name is anwesha"}, 
+    ],
+    "stream" : True,
+    "deep" : True,
 }
 
+data2 = { messages : messages }
+
 response = requests.post(url, headers=headers, data=json.dumps(data))
-print(response.text)
+value = response.json()
+print(value)
+
+
+

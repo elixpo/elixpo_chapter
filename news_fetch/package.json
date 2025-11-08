@@ -1,0 +1,17 @@
+{
+  "name": "news_fetch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "fetchNews.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3"
+  }
+}
