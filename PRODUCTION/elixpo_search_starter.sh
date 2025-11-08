@@ -1,10 +1,5 @@
-#!/bin/bash
+cd ~/scratch/elixpo-search-agent/PRODUCTION || { echo "Directory not found"; exit 1; }
 
-# Navigate to the project directory
-cd ~/elixpo-search-agent/PRODUCTION || { echo "Directory not found"; exit 1; }
-
-
-# Clear port 5000 if in use
 echo "Checking if port 5000 is in use and clearing it..."
 sudo lsof -ti:5000 | xargs -r sudo kill -9
 
@@ -14,15 +9,12 @@ if [ ! -d "venv" ]; then
     python3 -m venv venv
 fi
 
-# Activate virtual environment
 echo "Activating virtual environment..."
 source venv/bin/activate
 
-# Upgrade pip and install dependencies
 echo "Installing Python requirements..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Start the app with Waitress
 echo "Starting the app on port 5000..."
 python3 src/app.py &

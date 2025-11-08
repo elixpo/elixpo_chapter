@@ -9,6 +9,7 @@ pytube
 youtube-transcript-api
 selectolax
 timezonefinder
+timezonefinderL
 geopy
 quart
 uvicorn

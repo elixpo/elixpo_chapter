@@ -1,27 +1,54 @@
-import random
+
 from collections import deque
-import asyncio 
 from loguru import logger
-import json
 from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
 import os
-
+import re
+import asyncio
+import random
 _deepsearch_store = {}
 
-# Remove the entire SearchAgentManager class since we have agent_pool in yahooSearch.py
+class modelManager(BaseManager): pass
+modelManager.register("accessSearchAgents")
+modelManager.register("ipcService")
+manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+manager.connect()
+search_service = manager.accessSearchAgents()
+embedModelService = manager.ipcService()
 
-# Simple wrapper functions that use the agent pool from yahooSearch
-async def web_search(query, agent=None):
-    from yahooSearch import web_search as yahoo_web_search
-    return await yahoo_web_search(query)
 
-async def image_search(query, agent=None, max_images=10):
-    from yahooSearch import image_search as yahoo_image_search
-    return await yahoo_image_search(query, max_images)
+def webSearch(query: str):
+    urls = search_service.web_search(query)
+    return urls
 
-def fetch_url_content_parallel(urls, max_workers=10):
+def imageSearch(query: str):
+    urls = search_service.image_search(query)
+    return urls
+
+def preprocess_text(text):
+    # Remove URLs, special characters, and clean up
+    text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+    text = re.sub(r'[^\w\s.,!?;:]', ' ', text)
+    
+    # Split into sentences more intelligently
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    
+    # Filter out short or meaningless sentences
+    meaningful_sentences = []
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if len(sentence) > 20 and len(sentence.split()) > 3:
+            # Remove sentences that are mostly navigation/UI elements
+            if not any(word in sentence.lower() for word in ['feedback', 'menu', 'navigation', 'click', 'download']):
+                meaningful_sentences.append(sentence)
+    
+    return meaningful_sentences
+
+
+def fetch_url_content_parallel(queries, urls, max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(fetch_full_text, url): url for url in urls}
         results = ""
@@ -37,7 +64,14 @@ def fetch_url_content_parallel(urls, max_workers=10):
                 logger.error(f"Failed fetching {url}: {e}")
                 results += f"\nURL: {url}\n Failed to fetch content of this URL"
         logger.info(f"Fetched all URL information in parallel.")
-        return results
+        sentences = preprocess_text(results)
+        data_embed, query_embed = embedModelService.encodeSemantic(sentences, list(queries))
+        scores = embedModelService.cosineScore(query_embed, data_embed, k=5)
+        for idx, score in scores:
+            if score > 0.8:  
+                sentences[idx]
+
+        return sentences
 
 def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -56,26 +90,14 @@ def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
                 results[url] = '[Failed]'
         return results
 
-# Keep agent_manager for backward compatibility but make it use the agent pool
-class DummyAgentManager:
-    async def get_agent_status(self):
-            from yahooSearch import get_agent_pool_status
-            try:
-                return await get_agent_pool_status()
-            except Exception as e:
-                return {"error": str(e), "agent_pool_status": "error"}
 
-agent_manager = DummyAgentManager()
 
 def storeDeepSearchQuery(query: list, sessionID: str):
-    """Store deep search queries in RAM (in-memory dictionary)."""
     _deepsearch_store[sessionID] = query
 
 def getDeepSearchQuery(sessionID: str):
-    """Retrieve deep search query for a session from memory."""
     return _deepsearch_store.get(sessionID)
 
 def cleanDeepSearchQuery(sessionID: str):
-    """Clean up deep search query for a session from memory."""
     if sessionID in _deepsearch_store:
         del _deepsearch_store[sessionID]
