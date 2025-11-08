@@ -1,0 +1,118 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "profile": {
+                "age": 28,
+                "location": "New York",
+                "preferences": {
+                    "theme": "dark",
+                    "notifications": true,
+                    "language": "en"
+                }
+            },
+            "orders": [
+                {
+                    "orderId": "ORD-001",
+                    "amount": 99.99,
+                    "status": "completed"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Jane Smith",
+            "email": "jane.smith@example.com",
+            "profile": {
+                "age": 34,
+                "location": "Los Angeles",
+                "preferences": {
+                    "theme": "light",
+                    "notifications": false,
+                    "language": "en"
+                }
+            },
+            "orders": [
+                {
+                    "orderId": "ORD-002",
+                    "amount": 149.50,
+                    "status": "pending"
+                },
+                {
+                    "orderId": "ORD-003",
+                    "amount": 75.25,
+                    "status": "completed"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Mike Johnson",
+            "email": "mike.j@example.com",
+            "profile": {
+                "age": 42,
+                "location": "Chicago",
+                "preferences": {
+                    "theme": "auto",
+                    "notifications": true,
+                    "language": "es"
+                }
+            },
+            "orders": []
+        },
+        {
+            "id": 4,
+            "name": "Sarah Wilson",
+            "email": "sarah.w@example.com",
+            "profile": {
+                "age": 29,
+                "location": "Miami",
+                "preferences": {
+                    "theme": "dark",
+                    "notifications": true,
+                    "language": "fr"
+                }
+            },
+            "orders": [
+                {
+                    "orderId": "ORD-004",
+                    "amount": 299.99,
+                    "status": "shipped"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "David Brown",
+            "email": "david.brown@example.com",
+            "profile": {
+                "age": 37,
+                "location": "Seattle",
+                "preferences": {
+                    "theme": "light",
+                    "notifications": false,
+                    "language": "en"
+                }
+            },
+            "orders": [
+                {
+                    "orderId": "ORD-005",
+                    "amount": 199.00,
+                    "status": "processing"
+                },
+                {
+                    "orderId": "ORD-006",
+                    "amount": 89.99,
+                    "status": "completed"
+                },
+                {
+                    "orderId": "ORD-007",
+                    "amount": 45.50,
+                    "status": "cancelled"
+                }
+            ]
+        }
+    ]
+}
