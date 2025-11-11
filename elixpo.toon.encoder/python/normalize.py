@@ -9,10 +9,10 @@ def normalizeValue(value) -> JsonValue:
         return None
     elif isinstance(value, (str,bool)):
         return value
-    elif isinstance(value, (int,float)):
-        if(object.__getattribute__(value) == -0):
+    elif isinstance(value, (int, float)):
+        if value == 0 and str(value).startswith('-'):
             return 0
-        if(not isinstance(value, int) and (not isfinite(value))):
+        if not isfinite(value):
             return None
         return value
     elif isinstance(value, datetime):
@@ -36,20 +36,20 @@ def normalizeValue(value) -> JsonValue:
     else:
         return None
     
-def isJsonPrimitive(value: object) -> bool:
+def isJsonPrimitive(value) -> bool:
     return isinstance(value, JsonPrimitive) or value is None
 
-def isJsonObject(value: object) -> bool:
-    return value != None and isinstance(value, object) and not isinstance(value, list)
+def isJsonObject(value) -> bool:
+    return value != None and isinstance(value, dict) and not isinstance(value, list)
 
 def isJsonArray(value) -> JsonArray:
     return isinstance(value, list)
 
 def isPlainObject(value) -> str:
-    if(value == None or not isinstance(value, object)):
+    if(value == None or not isinstance(value, dict)):
         return False
     prototype = type(value)
-    return prototype == None or prototype == object
+    return prototype == None or prototype == dict
 
 def isArrayOfPrimitives(value: JsonArray) -> JsonPrimitive:
     return all(isJsonPrimitive(item) for item in value)
