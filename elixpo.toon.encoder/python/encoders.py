@@ -200,7 +200,37 @@ def encodeObjectAsListItem(
             writer.pushListItem(depth, f"{encodedKey}:")
             encodeObjectAsListItem(firstValue, writer, depth + 2, options)
     
-    for i in reange(1, len(keys)):
+    for i in range(1, len(keys)):
         key = keys[i] if keys else None
-        encodeValuePair(key, obj[key] if key and key in obj else None, writer, depth + 1, options)
+        encodeKeyValuePair(key, obj[key] if key and key in obj else None, writer, depth + 1, options)
 
+
+def encodeKeyValuePair(key: str, value: JsonValue, writer: LineWriter, depth: Depth, options: ResolvedEncodeOptions) -> None:
+    encodeKey = encodeKey(key)
+    if(isJsonPrimitive(value)):
+        writer.push(depth, f"{encodeKey} {encodePrimitive(value, options['delimiter'])}")
+    elif (isJsonArray(value)):
+        encodeArray(key, value, writer, depth, options)
+    elif (isJsonObject(value)):
+        nestedKeys = list(value.keys())
+        if(len(nestedKeys) == 0):
+            writer.push(depth, f"{encodeKey}:")
+        else:
+            writer.push(depth, f"{encodeKey}:")
+            encodeObjectAsListItem(value, writer, depth + 1, options)  
+
+
+def encodeListItemValue(
+        value: JsonValue,
+        writer: LineWriter,
+        depth: Depth,
+        options: ResolvedEncodeOptions
+) -> None:
+    if(isJsonPrimitive(value)):
+        writer.pushListItem(depth, encodePrimitive(value, options['delimiter']))
+    elif (isJsonArray(value) and isArrayOfPrimitives(value)):
+        inline = encodeInlineArrayLine(value, options['delimiter'], None, options['lengthMarker'])
+        writer.pushListItem(depth, inline)
+    elif (isJsonObject(value)):
+        encodeObjectAsListItem(value, writer, depth, options)
+        
