@@ -381,7 +381,6 @@ async def search_sse(forwarded_data=None):
                                 "delta": {"content": ""},
                                 "logprobs": None,
                                 "finish_reason": "stop",
-                                "stop_reason": None
                             }]
                         }
                         yield f"data: {json.dumps(finish_obj)}\n\n"

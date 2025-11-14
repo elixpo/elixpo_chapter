@@ -260,24 +260,37 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
         while current_iteration < max_iterations:
             current_iteration += 1
+            for m in messages:
+                if m["role"] == "assistant":
+                    if m.get("content") is None:
+                        m["content"] = "Processing your request..."
+                    if "tool_calls" in m and not m.get("content"):
+                        m["content"] = "Processing your request..."
+
             iteration_event = emit_event("INFO", f"<TASK>Analysing a sub-task.</TASK>")
             if iteration_event:
                 yield iteration_event
             payload = {
-                "model": MODEL,
-                "messages": messages,
-                "tools": tools,
-                "tool_choice": "auto",
-                "parallel_tool_calls": True,
-                "referrer": REFRRER,
-                "private": True,
-                "seed": random.randint(1000, 9999),
-                "max_tokens": 3000,
-                "frequency_penalty": 0,
-                "logit_bias": None,
-                "logprobs": False,
-                "top_logprobs": 0,
-            }
+            "model": MODEL,
+            "messages": messages,
+
+            "tools": tools,
+            "tool_choice": "auto",
+            "parallel_tool_calls": True,
+            "response_format": { "type": "text" },
+            "function_call": "none",
+            "n": 1,
+            "thinking": { "type": "disabled", "budget_tokens": 1 },
+            "referrer": REFRRER,
+            "private": True,
+            "seed": random.randint(1000, 9999),
+            "max_tokens": 3000,
+            "temperature": 1,
+            "top_p": 1,
+            "stream": False,
+            "stream_options": { "include_usage": True }
+        }
+
             try:
                 loop = asyncio.get_event_loop()
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -297,10 +310,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     yield format_sse("error", f"<TASK>Connection Error - Retrying</TASK>{error_detail}")
                 break
             assistant_message = response_data["choices"][0]["message"]
-            if not assistant_message.get("content") and assistant_message.get("tool_calls"):
-                assistant_message["content"] = "I'll help you with that. Let me gather the information you need."
-            elif not assistant_message.get("content"):
-                assistant_message["content"] = "Processing your request..."
+            
+            # Fix: Ensure content is always a string
+            if not assistant_message.get("content"):
+                if assistant_message.get("tool_calls"):
+                    assistant_message["content"] = "I'll help you with that. Let me gather the information you need."
+                else:
+                    assistant_message["content"] = "Processing your request..."
+            
+            # Fix: Ensure content is a string, not None
+            if assistant_message.get("content") is None:
+                assistant_message["content"] = ""
+                
             messages.append(assistant_message)
             tool_calls = assistant_message.get("tool_calls")
             logger.info(f"Tool calls suggested by model: {len(tool_calls) if tool_calls else 0} tools")
@@ -368,14 +389,22 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             }
             messages.append(synthesis_prompt)
             payload = {
-                "model": MODEL,
-                "messages": messages,
-                "key": POLLINATIONS_TOKEN,
-                "referrer": REFRRER,
-                "private": True,
-                "seed": random.randint(1000, 9999),
-                "max_tokens": 3000
-            }
+            "model": MODEL,
+            "messages": messages,
+            "response_format": { "type": "text" },
+            "function_call": "none",
+            "n": 1,
+            "thinking": { "type": "disabled", "budget_tokens": 1 },
+            "referrer": REFRRER,
+            "private": True,
+            "seed": random.randint(1000, 9999),
+            "max_tokens": 3000,
+            "temperature": 1,
+            "top_p": 1,
+            "stream": False,
+            "stream_options": { "include_usage": True }
+        }
+
             try:
                 response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload, timeout=25)
                 response.raise_for_status()
