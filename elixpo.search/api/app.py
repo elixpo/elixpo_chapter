@@ -5,8 +5,8 @@ import random
 import logging
 import sys
 import uuid
-from searchPipeline import run_elixposearch_pipeline, initialize_search_agents
-from deepSearchPipeline import run_deep_research_pipeline
+from searchPipeline import run_elixposearch_pipeline
+# from deepSearchPipeline import run_deep_research_pipeline
 import asyncio
 import hypercorn.asyncio
 import json
@@ -178,7 +178,6 @@ app.logger.setLevel(logging.INFO)
 @app.before_serving
 async def startup():
     try:
-        await initialize_search_agents()
         app.logger.info("Search agents pre-warmed and ready for cold start")
     except Exception as e:
         app.logger.error(f"Failed to initialize search agents: {e}")
@@ -266,7 +265,7 @@ async def search_sse(forwarded_data=None):
             async with processing_semaphore:
                 # Choose pipeline based on deep_flag
                 if deep_flag:
-                    pipeline = run_deep_research_pipeline
+                    pipeline = run_elixposearch_pipeline
                 else:
                     pipeline = run_elixposearch_pipeline
 
@@ -382,7 +381,6 @@ async def search_sse(forwarded_data=None):
                                 "delta": {"content": ""},
                                 "logprobs": None,
                                 "finish_reason": "stop",
-                                "stop_reason": None
                             }]
                         }
                         yield f"data: {json.dumps(finish_obj)}\n\n"
@@ -602,7 +600,7 @@ if __name__ == "__main__":
     config = Config()
     config.bind = [f"0.0.0.0:{port}"]
     config.use_reloader = False
-    config.workers = 15
+    config.workers = 1
     config.backlog = 1000
     
     print(f"Starting Elixpo Search API on port {port}")

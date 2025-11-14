@@ -6,3 +6,4 @@ scrape_website_show_log = True
 SCRAPE_IMAGE=True
 MAX_LINKS_TO_TAKE = 6
 isHeadless=True
+POLLINATIONS_ENDPOINT = "https://enter.pollinations.ai/api/generate/v1/chat/completions"

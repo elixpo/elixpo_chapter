@@ -15,15 +15,13 @@ import concurrent.futures
 from functools import lru_cache
 import time
 
-
-
+POLLINATIONS_ENDPOINT = "https://enter.pollinations.ai/api/generate/v1/chat/completions"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
 POLLINATIONS_TOKEN = os.getenv("TOKEN")
 MODEL = os.getenv("MODEL")
 REFRRER = os.getenv("REFERRER")
-POLLINATIONS_ENDPOINT = "https://text.pollinations.ai/openai"
 print(MODEL, POLLINATIONS_TOKEN)
 
 
@@ -186,7 +184,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         yield initial_event
     try:
         current_utc_time = datetime.now(timezone.utc)
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json",
+                   "Authorization": f"Bearer {POLLINATIONS_TOKEN}"}
+                   
         memoized_results = {
             "timezone_info": {},
             "web_searches": {},
@@ -198,6 +198,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         messages = [
             {
                 "role": "system",
+                "name": "elixposearch-agent-system",
                 "content": f"""
                 Mission: Provide comprehensive, detailed, and well-researched answers that synthesize ALL gathered information into rich content.
                 CRITICAL CONTENT REQUIREMENTS:
@@ -246,6 +247,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             },
             {
                 "role": "user",
+                "name": "elixposearch-agent-user",
                 "content": f"""Query: {user_query} {"Image: " + user_image if user_image else ''}"""
             }
         ]
@@ -258,6 +260,13 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
         while current_iteration < max_iterations:
             current_iteration += 1
+            for m in messages:
+                if m["role"] == "assistant":
+                    if m.get("content") is None:
+                        m["content"] = "Processing your request..."
+                    if "tool_calls" in m and not m.get("content"):
+                        m["content"] = "Processing your request..."
+
             iteration_event = emit_event("INFO", f"<TASK>Analysing a sub-task.</TASK>")
             if iteration_event:
                 yield iteration_event
@@ -266,12 +275,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "auto",
-                "token": POLLINATIONS_TOKEN,
-                "referrer": REFRRER,
-                "private": True,
+                "n": 1,
                 "seed": random.randint(1000, 9999),
-                "max_tokens": 3000
+                "max_tokens": 3000,
+                "temperature": 1,
+                "top_p": 1,
+                "stream": False,
+                "retry": {
+                    "max_attempts": 3,
+                    "backoff_factor": 1.5
+                }
             }
+
             try:
                 loop = asyncio.get_event_loop()
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -291,10 +306,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     yield format_sse("error", f"<TASK>Connection Error - Retrying</TASK>{error_detail}")
                 break
             assistant_message = response_data["choices"][0]["message"]
-            if not assistant_message.get("content") and assistant_message.get("tool_calls"):
-                assistant_message["content"] = "I'll help you with that. Let me gather the information you need."
-            elif not assistant_message.get("content"):
-                assistant_message["content"] = "Processing your request..."
+            
+            # Fix: Ensure content is always a string
+            if not assistant_message.get("content"):
+                if assistant_message.get("tool_calls"):
+                    assistant_message["content"] = "I'll help you with that. Let me gather the information you need."
+                else:
+                    assistant_message["content"] = "Processing your request..."
+            
+            # Fix: Ensure content is a string, not None
+            if assistant_message.get("content") is None:
+                assistant_message["content"] = ""
+                
             messages.append(assistant_message)
             tool_calls = assistant_message.get("tool_calls")
             logger.info(f"Tool calls suggested by model: {len(tool_calls) if tool_calls else 0} tools")
@@ -364,12 +387,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             payload = {
                 "model": MODEL,
                 "messages": messages,
-                "token": POLLINATIONS_TOKEN,
-                "referrer": REFRRER,
-                "private": True,
+                "n": 1,
                 "seed": random.randint(1000, 9999),
-                "max_tokens": 3000
+                "max_tokens": 3000,
+                "temperature": 1,
+                "top_p": 1,
+                "stream": False,
+                "retry": {
+                    "max_attempts": 3,
+                    "backoff_factor": 1.5
+                }
             }
+
             try:
                 response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload, timeout=25)
                 response.raise_for_status()
