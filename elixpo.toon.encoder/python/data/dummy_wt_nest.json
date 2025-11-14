@@ -1,0 +1,62 @@
+[
+    {
+        "id": 1,
+        "username": "john_doe",
+        "email": "john.doe@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "age": 30,
+        "isActive": true,
+        "role": "user",
+        "createdAt": "2024-01-15T10:30:00Z",
+        "lastLogin": "2024-01-20T14:45:00Z"
+    },
+    {
+        "id": 2,
+        "username": "david_brown",
+        "email": "david.brown@example.com",
+        "firstName": "David",
+        "lastName": "Brown",
+        "age": 28,
+        "isActive": true,
+        "role": "admin",
+        "createdAt": "2024-02-10T09:20:00Z",
+        "lastLogin": "2024-02-15T11:00:00Z"
+    },
+    {
+        "id": 3,
+        "username": "michael_brown",
+        "email": "michael.brown@example.com",
+        "firstName": "Michael",
+        "lastName": "Brown",
+        "age": 35,
+        "isActive": false,
+        "role": "user",
+        "createdAt": "2024-03-05T08:15:00Z",
+        "lastLogin": "2024-03-10T16:30:00Z"
+    },
+    {
+        "id": 4,
+        "username": "emily_jones",
+        "email": "emily.jones@example.com",
+        "firstName": "Emily",
+        "lastName": "Jones",
+        "age": 26,
+        "isActive": true,
+        "role": "moderator",
+        "createdAt": "2024-04-12T13:40:00Z",
+        "lastLogin": "2024-04-18T10:25:00Z"
+    },
+    {
+        "id": 5,
+        "username": "david_lee",
+        "email": "david.lee@example.com",
+        "firstName": "David",
+        "lastName": "Lee",
+        "age": 32,
+        "isActive": false,
+        "role": "user",
+        "createdAt": "2024-05-01T07:50:00Z",
+        "lastLogin": "2024-05-06T12:10:00Z"
+    }
+]
