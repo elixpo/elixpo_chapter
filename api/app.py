@@ -600,7 +600,7 @@ if __name__ == "__main__":
     config = Config()
     config.bind = [f"0.0.0.0:{port}"]
     config.use_reloader = False
-    config.workers = 15
+    config.workers = 1
     config.backlog = 1000
     
     print(f"Starting Elixpo Search API on port {port}")

@@ -14,9 +14,8 @@ import asyncio
 import concurrent.futures
 from functools import lru_cache
 import time
-from config import POLLINATIONS_ENDPOINT
 
-
+POLLINATIONS_ENDPOINT = "https://enter.pollinations.ai/api/generate/v1/chat/completions"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
@@ -248,6 +247,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             },
             {
                 "role": "user",
+                "name": "elixposearch-agent-user",
                 "content": f"""Query: {user_query} {"Image: " + user_image if user_image else ''}"""
             }
         ]
@@ -271,25 +271,21 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if iteration_event:
                 yield iteration_event
             payload = {
-            "model": MODEL,
-            "messages": messages,
-
-            "tools": tools,
-            "tool_choice": "auto",
-            "parallel_tool_calls": True,
-            "response_format": { "type": "text" },
-            "function_call": "none",
-            "n": 1,
-            "thinking": { "type": "disabled", "budget_tokens": 1 },
-            "referrer": REFRRER,
-            "private": True,
-            "seed": random.randint(1000, 9999),
-            "max_tokens": 3000,
-            "temperature": 1,
-            "top_p": 1,
-            "stream": False,
-            "stream_options": { "include_usage": True }
-        }
+                "model": MODEL,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": "auto",
+                "n": 1,
+                "seed": random.randint(1000, 9999),
+                "max_tokens": 3000,
+                "temperature": 1,
+                "top_p": 1,
+                "stream": False,
+                "retry": {
+                    "max_attempts": 3,
+                    "backoff_factor": 1.5
+                }
+            }
 
             try:
                 loop = asyncio.get_event_loop()
@@ -389,21 +385,19 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             }
             messages.append(synthesis_prompt)
             payload = {
-            "model": MODEL,
-            "messages": messages,
-            "response_format": { "type": "text" },
-            "function_call": "none",
-            "n": 1,
-            "thinking": { "type": "disabled", "budget_tokens": 1 },
-            "referrer": REFRRER,
-            "private": True,
-            "seed": random.randint(1000, 9999),
-            "max_tokens": 3000,
-            "temperature": 1,
-            "top_p": 1,
-            "stream": False,
-            "stream_options": { "include_usage": True }
-        }
+                "model": MODEL,
+                "messages": messages,
+                "n": 1,
+                "seed": random.randint(1000, 9999),
+                "max_tokens": 3000,
+                "temperature": 1,
+                "top_p": 1,
+                "stream": False,
+                "retry": {
+                    "max_attempts": 3,
+                    "backoff_factor": 1.5
+                }
+            }
 
             try:
                 response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload, timeout=25)
