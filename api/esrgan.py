@@ -12,20 +12,15 @@ from config import MODEL_DIR, MODEL_PATH_x2, MODEL_PATH_x4
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-print("Connecting to model servers...")
-
-# ---------------------------
-# IPC Model Server Setup
-# ---------------------------
+print("Connecting to model servers")
 
 class ModelManager(BaseManager): 
     pass
 
 ModelManager.register("ipcService")
 
-# Create connections to multiple model server instances
 MODEL_SERVERS = []
-NUM_SERVERS = 3  # Total 3 instances
+NUM_SERVERS = 5  
 current_server_index = 0
 server_lock = threading.Lock()
 
@@ -53,12 +48,7 @@ def get_next_server():
         current_server_index = (current_server_index + 1) % len(MODEL_SERVERS)
         return server
 
-# Initialize connections on import
 initialize_model_servers()
-
-# ---------------------------
-# Base64 <-> Image Converters
-# ---------------------------
 
 def b64_to_image(b64_string):
     decoded = base64.b64decode(b64_string)
@@ -67,45 +57,35 @@ def b64_to_image(b64_string):
         img = img.convert('RGBA' if 'transparency' in img.info else 'RGB')
     return img
 
-
 def image_to_b64(img):
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode()
 
-
-# ---------------------------
-# Upscaling Function with IPC
-# ---------------------------
-
 def upscale_b64(b64_image, scale: int = 2):
     if scale not in [2, 4]:
         raise ValueError("Unsupported scale. Use scale=2 or scale=4.")
-    
-    # Get a model server instance using round-robin
+
     server = get_next_server()
     
-    # Select the appropriate upsampler from the server
-    upsampler = server.upsampler_x2 if scale == 2 else server.upsampler_x4
-    
     img = b64_to_image(b64_image)
-    
-    # --------- RGBA handling ----------
     if img.mode == 'RGBA':
         r, g, b, a = img.split()
         rgb_img = Image.merge('RGB', (r, g, b))
-
-        # RGB upscale
         rgb_np = np.array(rgb_img)
-        upscaled_rgb, _ = upsampler.enhance(rgb_np, outscale=scale)
-
-        # Alpha = upscale separately as grayscale
+        if scale == 2:
+            upscaled_rgb, _ = server.enhance_x2(rgb_np, outscale=scale)
+        else:  
+            upscaled_rgb, _ = server.enhance_x4(rgb_np, outscale=scale)
         alpha_np = np.array(a)
         alpha_3ch = np.repeat(alpha_np[:, :, None], 3, axis=2)
-        upscaled_alpha_3ch, _ = upsampler.enhance(alpha_3ch, outscale=scale)
+        if scale == 2:
+            upscaled_alpha_3ch, _ = server.enhance_x2(alpha_3ch, outscale=scale)
+        else:  
+            upscaled_alpha_3ch, _ = server.enhance_x4(alpha_3ch, outscale=scale)
         upscaled_alpha = upscaled_alpha_3ch[:, :, 0]
 
-        # Merge RGBA back
+        
         out_img = Image.fromarray(
             np.dstack([upscaled_rgb[:, :, 0],
                        upscaled_rgb[:, :, 1],
@@ -114,13 +94,14 @@ def upscale_b64(b64_image, scale: int = 2):
             mode='RGBA'
         )
 
-    # --------- RGB handling ----------
     else:
         img_np = np.array(img)
-        output_np, _ = upsampler.enhance(img_np, outscale=scale)
+        if scale == 2:
+            output_np, _ = server.enhance_x2(img_np, outscale=scale)
+        else:  
+            output_np, _ = server.enhance_x4(img_np, outscale=scale)
         out_img = Image.fromarray(output_np)
 
-    # Save file
     os.makedirs("uploads", exist_ok=True)
     output_path = f"uploads/upscaled_{int(time.time())}.png"
     out_img.save(output_path)
@@ -130,14 +111,12 @@ def upscale_b64(b64_image, scale: int = 2):
         "base64": image_to_b64(out_img)
     }
 
-# ---------------------------
-# Test Run
-# ---------------------------
+
 
 if __name__ == "__main__":
     with open("input.png", "rb") as f:
         b64_input = base64.b64encode(f.read()).decode()
 
-    result = upscale_b64(b64_input, scale=2)  # choose 2 or 4
+    result = upscale_b64(b64_input, scale=2)  
     print("Saved:", result["file_path"])
     print(result["base64"][:200])

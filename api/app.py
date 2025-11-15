@@ -15,24 +15,20 @@ from concurrent.futures import ThreadPoolExecutor
 app = Quart(__name__)
 
 # Configuration
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
+MAX_FILE_SIZE = 7 * 1024 * 1024  
 MAX_IMAGE_DIMENSION = 2048 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'bmp'}
-CLEANUP_INTERVAL = 300  # 5 minutes in seconds
-FILE_MAX_AGE = 300  # 5 minutes in seconds
+CLEANUP_INTERVAL = 300  #in seconds has been counted
+FILE_MAX_AGE = 300  #in seconds has been counted
 
-# Thread pool for CPU-bound operations
 executor = ThreadPoolExecutor(max_workers=10)
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Background cleanup task
 cleanup_task = None
 cleanup_running = True
 
 async def cleanup_old_files():
-    """Background task to clean up old files"""
     global cleanup_running
     logger.info("Starting cleanup background task...")
     
@@ -45,11 +41,10 @@ async def cleanup_old_files():
             deleted_count = 0
             for file_path in files_to_check:
                 try:
-                    # Skip directories
                     if os.path.isdir(file_path):
                         continue
                     
-                    # Check file age
+                    
                     file_mtime = os.path.getmtime(file_path)
                     file_age = current_time - file_mtime
                     
@@ -72,14 +67,12 @@ async def cleanup_old_files():
 
 @app.before_serving
 async def startup():
-    """Start background tasks when app starts"""
     global cleanup_task
     cleanup_task = asyncio.create_task(cleanup_old_files())
     logger.info("Background cleanup task started")
 
 @app.after_serving
 async def shutdown():
-    """Clean up background tasks when app shuts down"""
     global cleanup_running, cleanup_task
     cleanup_running = False
     
@@ -98,7 +91,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_image_size_from_base64(b64_string):
-    """Get image size in bytes from base64 string"""
     try:
         decoded = base64.b64decode(b64_string)
         return len(decoded)
@@ -106,11 +98,9 @@ def get_image_size_from_base64(b64_string):
         return 0
 
 def get_image_dimensions(img):
-    """Get image dimensions"""
-    return img.size  # Returns (width, height)
+    return img.size  
 
 async def download_image(url: str) -> bytes:
-    """Download image from URL"""
     try:
         timeout = aiohttp.ClientTimeout(total=30)
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -118,12 +108,10 @@ async def download_image(url: str) -> bytes:
                 if response.status != 200:
                     raise Exception(f"HTTP {response.status}: Failed to download image")
                 
-                # Check content length
                 content_length = response.headers.get('content-length')
                 if content_length and int(content_length) > MAX_FILE_SIZE:
                     raise Exception(f"Image too large: {content_length} bytes (max: {MAX_FILE_SIZE})")
                 
-                # Download with size limit
                 data = b""
                 async for chunk in response.content.iter_chunked(8192):
                     data += chunk
@@ -137,21 +125,17 @@ async def download_image(url: str) -> bytes:
         raise Exception(f"Failed to download image: {str(e)}")
 
 def validate_and_prepare_image(image_data: bytes):
-    """Validate image and convert to base64"""
     try:
-        # Check file size
         if len(image_data) > MAX_FILE_SIZE:
             raise Exception(f"Image too large: {len(image_data)} bytes (max: {MAX_FILE_SIZE})")
-        
-        # Open and validate image
         img = Image.open(io.BytesIO(image_data))
         width, height = img.size
         
-        # Check dimensions
+        
         if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
             raise Exception(f"Image dimensions too large: {width}x{height} (max: {MAX_IMAGE_DIMENSION})")
         
-        # Convert to base64
+        
         b64_string = base64.b64encode(image_data).decode()
         
         return b64_string, width, height, img.format
@@ -159,7 +143,6 @@ def validate_and_prepare_image(image_data: bytes):
         raise Exception(f"Invalid image: {str(e)}")
 
 async def process_upscale(b64_image: str, scale: int):
-    """Process upscaling in thread pool"""
     loop = asyncio.get_event_loop()
     try:
         result = await loop.run_in_executor(executor, upscale_b64, b64_image, scale)
@@ -170,22 +153,18 @@ async def process_upscale(b64_image: str, scale: int):
 
 @app.route('/upscale', methods=['POST', 'GET'])
 async def upscale_endpoint():
-    """Upscale image endpoint"""
     try:
         data = await request.get_json()
         
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
         
-        # Get parameters
         img_url = data.get('img_url')
         scale = data.get('scale', 2)
         
-        # Validate scale
         if scale not in [2, 4]:
             return jsonify({"error": "Scale must be 2 or 4"}), 400
         
-        # Validate img_url
         if not img_url:
             return jsonify({"error": "img_url is required"}), 400
         
@@ -194,15 +173,13 @@ async def upscale_endpoint():
         
         start_time = time.time()
         
-        # Download image
         try:
             logger.info(f"Downloading image from: {img_url}")
             image_data = await download_image(img_url)
         except Exception as e:
             logger.error(f"Download failed: {e}")
             return jsonify({"error": str(e)}), 400
-        
-        # Validate and prepare image
+
         try:
             b64_image, width, height, img_format = validate_and_prepare_image(image_data)
             logger.info(f"Image validated: {width}x{height}, format: {img_format}, size: {len(image_data)} bytes")
@@ -210,7 +187,6 @@ async def upscale_endpoint():
             logger.error(f"Image validation failed: {e}")
             return jsonify({"error": str(e)}), 400
         
-        # Check if image is already too large (>5MB after base64 encoding)
         b64_size = get_image_size_from_base64(b64_image)
         if b64_size > MAX_FILE_SIZE:
             return jsonify({
@@ -218,16 +194,16 @@ async def upscale_endpoint():
                 "original_size": {"width": width, "height": height, "bytes": len(image_data)}
             }), 400
         
-        # Estimate output size (rough calculation)
+        
         estimated_output_size = len(image_data) * (scale ** 2)
-        if estimated_output_size > MAX_FILE_SIZE * 2:  # Allow some overhead
+        if estimated_output_size > MAX_FILE_SIZE * 2:  
             return jsonify({
                 "error": f"Upscaled image would be too large: ~{estimated_output_size} bytes",
                 "original_size": {"width": width, "height": height, "bytes": len(image_data)},
                 "scale": scale
             }), 400
         
-        # Process upscaling
+        
         try:
             logger.info(f"Starting upscaling: {width}x{height} -> {width*scale}x{height*scale}")
             result = await process_upscale(b64_image, scale)
@@ -262,7 +238,6 @@ async def upscale_endpoint():
 
 @app.route('/health', methods=['GET'])
 async def health_check():
-    """Health check endpoint"""
     return jsonify({
         "status": "healthy",
         "timestamp": time.time(),
@@ -275,10 +250,7 @@ async def health_check():
 
 @app.route('/status', methods=['GET'])
 async def status():
-    """Status endpoint with model server information"""
     from esrgan import MODEL_SERVERS
-    
-    # Get upload folder statistics
     upload_stats = {"total_files": 0, "total_size_mb": 0}
     try:
         files_pattern = os.path.join(UPLOAD_FOLDER, "*")
@@ -306,7 +278,6 @@ async def status():
 
 @app.route('/cleanup', methods=['POST'])
 async def manual_cleanup():
-    """Manual cleanup endpoint for testing/debugging"""
     try:
         current_time = time.time()
         files_pattern = os.path.join(UPLOAD_FOLDER, "*")
