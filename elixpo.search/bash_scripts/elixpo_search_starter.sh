@@ -32,6 +32,4 @@ APP_PID=$!
 
 echo "Model server (PID: $MODEL_PID) and App (PID: $APP_PID) started"
 echo "To stop: kill $MODEL_PID $APP_PID"
-
-# Keep script running
 wait
