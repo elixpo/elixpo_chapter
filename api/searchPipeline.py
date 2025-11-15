@@ -281,10 +281,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "temperature": 1,
                 "top_p": 1,
                 "stream": False,
-                "retry": {
-                    "max_attempts": 3,
-                    "backoff_factor": 1.5
-                }
+                "retry": {}
             }
 
             try:
@@ -393,10 +390,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "temperature": 1,
                 "top_p": 1,
                 "stream": False,
-                "retry": {
-                    "max_attempts": 3,
-                    "backoff_factor": 1.5
-                }
+                "retry": {}
             }
 
             try:
