@@ -55,7 +55,7 @@ async def sendPayload():
             raise Exception(f"API request failed with status {response.status_code}: {response.text}")
         
         data = await response.json()
-        data_resp = data.chouces[0].message.content
+        data_resp = data.choices[0].message.content
         print("Full Response:", data)
         print("Response from Pollinations API:", data_resp)
     except Exception as e:
