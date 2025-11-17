@@ -181,7 +181,7 @@ OUTPUT:
 
 if __name__ == "__main__":
     async def main():
-        user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ and tell me what's in this document url https://www.w3.org/"
         reply = await generate_plan(user_prompt)
         reqID = "test123"
         try:
