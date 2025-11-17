@@ -11,3 +11,5 @@ __pycache__/
 *.pyc
 minikube-linux-amd64
 pip_cache/
+searchSessions/
+.*json
