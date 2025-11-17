@@ -11,8 +11,8 @@ embedModelService = manager.ipcService()
 def mainQueryResponse(reqID: str):
     with open(f"searchSessions/{reqID}/{reqID}_planning.json", "r") as f:
         planning_data = json.load(f)
-        planning_data = planning_data["subqueries"][0]
-        query = planning_data["q"]
+        planning_data = planning_data["main_query"]
+        query = planning_data
         get_url = webSearch(query)
         information = fetch_url_content_parallel(query, get_url)
         reranked_info = rerank(reqID, query, information)
@@ -20,10 +20,10 @@ def mainQueryResponse(reqID: str):
             "query": query,
             "urls": get_url,
             "information": reranked_info,
-            "id" : planning_data["id"],
-            "priority": planning_data["priority"]
+            "id" : 0,
+            "priority": "high"
         }
-        fileName = f"searchSessions/{reqID}/results/{reqID}_mainquery_{planning_data['id']}.json"
+        fileName = f"searchSessions/{reqID}/results/{reqID}_mainquery.json"
         with open(fileName, "w") as f_out:
             json.dump(struct, f_out, indent=4)
         deepsearchFlow(reqID)
