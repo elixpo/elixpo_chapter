@@ -8,7 +8,7 @@ manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
 manager.connect()
 embedModelService = manager.ipcService()
 
-def mainQueryResponse(reqID: str):
+def mainQueryPlan(reqID: str):
     with open(f"searchSessions/{reqID}/{reqID}_planning.json", "r") as f:
         planning_data = json.load(f)
         planning_data = planning_data["main_query"]
@@ -26,26 +26,49 @@ def mainQueryResponse(reqID: str):
         fileName = f"searchSessions/{reqID}/results/{reqID}_mainquery.json"
         with open(fileName, "w") as f_out:
             json.dump(struct, f_out, indent=4)
-        deepsearchFlow(reqID)
+        subQueryPlan(reqID)
+        return fileName
 
-def deepsearchFlow(reqID: str):
+def subQueryPlan(reqID: str):
+    results_path = f"searchSessions/{reqID}/results"
+    combined_file = f"{results_path}/{reqID}_deepsearch.json"
+
+    # Create file if doesn't exist
+    if not os.path.exists(combined_file):
+        with open(combined_file, "w") as f:
+            json.dump([], f)
+
+    # Load existing combined results (list)
+    with open(combined_file, "r") as f:
+        combined_data = json.load(f)
+
+    # Load the planning file
     with open(f"searchSessions/{reqID}/{reqID}_planning.json", "r") as f:
-        planning_data = json.load(f)
-        for planning_data in planning_data["subqueries"]:
-            query = planning_data["q"]
-            get_url = webSearch(query)
-            information = fetch_url_content_parallel(query, get_url)
-            reranked_info = rerank(reqID, query, information)
-            struct = {
-                "query": query,
-                "urls": get_url,
-                "information": reranked_info,
-                "id" : planning_data["id"],
-                "priority": planning_data["priority"]
+        planning_data = json.load(f)["subqueries"]
+
+    # Process each subquery
+    for item in planning_data:
+        query = item["q"]
+        get_url = webSearch(query)
+        information = fetch_url_content_parallel(query, get_url)
+        reranked_info = rerank(reqID, query, information)
+
+        struct = {
+            "query": query,
+            "urls": get_url,
+            "information": reranked_info,
+            "id": item["id"],
+            "priority": item["priority"]
         }
-        fileName = f"searchSessions/{reqID}/results/{reqID}_deepsearch_{planning_data['id']}.json"
-        with open(fileName, "w") as f_out:
-            json.dump(struct, f_out, indent=4)
+
+        # Append to combined list
+        combined_data.append(struct)
+
+    # Save back to one single file
+    with open(combined_file, "w") as f_out:
+        json.dump(combined_data, f_out, indent=4)
+    return combined_file
+            
         
 
 
