@@ -55,12 +55,13 @@ async def generate_plan(prompt: str, max_tokens: Optional[int] = 120) -> str:
         }
     ],
     "targets": ["web", "pdf", "academic", "youtube"],
-    "depth": <1 to 4 based on complexity>
+    "depth": <1 to 6 based on complexity>
     }
 
     Rules:
     - Never output explanatory text outside JSON.
     - Never include emojis.
+    - Use atleast 2 subqueries for complex topics.
     - Classify: does the subquery need native knowledge (direct_text), YouTube fetch, document scrape, or time context?
     - Detect YouTube URLs automatically.
     - Detect document/PDF/article URLs automatically.
