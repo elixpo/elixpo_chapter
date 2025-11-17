@@ -10,7 +10,7 @@ import json
 
 load_dotenv()
 
-async def generate_reply(prompt: str, max_tokens: Optional[int] = 120) -> str:
+async def generate_plan(prompt: str, max_tokens: Optional[int] = 120) -> str:
     logger.info(f"Generating planning for prompt: {prompt} with max tokens: {max_tokens}")
 
     system_prompt = """
@@ -102,7 +102,7 @@ async def generate_reply(prompt: str, max_tokens: Optional[int] = 120) -> str:
 if __name__ == "__main__":
     async def main():
         user_prompt = "Who invented the light bulb and what were the key challenges they faced?"
-        reply = await generate_reply(user_prompt)
+        reply = await generate_plan(user_prompt)
         reqID = "test123"
         try:
             reply_json = json.loads(reply)
