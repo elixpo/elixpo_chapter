@@ -1,6 +1,9 @@
 from planning import generate_plan
 from searcher import mainQueryPlan, subQueryPlan
 from responseGenerator import generate_intermediate_response
+from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+from utility import fetch_url_content_parallel
+from getTimeZone import get_local_time
 import json
 import os
 import asyncio
@@ -11,9 +14,6 @@ def format_sse(event: str, data: str) -> str:
     return f"event: {event}\n{data_str}\n\n"
 
 async def deepSearchPipeline(query: str, reqID: str, event_id: str = None):
-    """
-    Deep search pipeline that yields streaming responses with status updates
-    """
     def emit_event(event_type, message):
         if event_id:
             return format_sse(event_type, message)

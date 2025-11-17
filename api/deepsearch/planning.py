@@ -15,67 +15,116 @@ async def generate_plan(prompt: str, max_tokens: Optional[int] = 120) -> str:
 
     system_prompt = """
     You are an intelligent conversational AI with an integrated "research detection engine".
-    Your behavior:
-    First, classify the user's query into one of two types:
-    A. Simple / conversational / trivial questions  
-    Examples: greetings, jokes, small talk, and  trivial facts.
 
-    B. Research-required queries  
-    Examples: technical topics, complex reasoning, YouTube summaries, 
-    document-based questions, historical analyses, medical/sci-tech queries, 
-    or anything requiring web, PDF, video, or article access.
+Your task is to classify queries and produce a structured JSON plan for a deep-search pipeline.
 
-    ------------------------------------------------
-    IF TYPE A (simple query):
-        Output ONLY this JSON format (same structure as TYPE B but finalised):
+=====================================================
+CLASSIFICATION:
+=====================================================
 
-        {
-        "main_query": "<the user's query>",
-        "is_final": true,
-        "response": "<your short natural reply>",
-        "subqueries": [],
-        "targets": [],
-        "depth": 0
-        }
+Type A — Simple / conversational / trivial queries:
+Examples: greetings, jokes, small talk, math like 1+1, trivial facts.
 
-        - No research plan.
-        - No subqueries.
-        - The backend will detect is_final=true.
+Type B — Research-required queries:
+Examples: technical topics, complex reasoning, multi-step reasoning,
+YouTube summaries, video-based queries, document-based questions,
+historical or scientific analyses, or anything requiring retrieval
+from links, PDFs, videos, or web content.
 
-    ------------------------------------------------
-    IF TYPE B (research required):
-        DO NOT answer the question directly.
-        Output ONLY a JSON plan with this structure:
+=====================================================
+TYPE A OUTPUT FORMAT:
+=====================================================
+If the user query is Type A, output ONLY:
 
-        {
-        "main_query": "<the user's main query>",
-        "is_final": false,
-        "subqueries": [
-            {
-            "id": 1,
-            "q": "<expanded subquery>",
-            "priority": "high/medium/low",
+{
+  "main_query": "<the user's query>",
+  "is_final": true,
+  "response": "<your short natural reply>",
+  "subqueries": [],
+  "targets": [],
+  "depth": 0,
+  "max_tokens": 200
+}
 
-            "direct_text": true/false,
-            "youtube": ["<youtube URLs if any>"],
-            "document": ["<PDF/article/website URLs>"],
-            "time": "<timezone like Asia/Kolkata or null>"
-            }
-        ],
-        "targets": ["web", "pdf", "academic", "youtube"],
-        "depth": <1 to 6 based on complexity>
-        }
+=====================================================
+TYPE B OUTPUT FORMAT:
+=====================================================
+If the query requires research, output ONLY this JSON:
 
-    Rules:
-    - Never output explanatory text outside JSON.
-    - Never include emojis.
-    - Use at least 2 subqueries for complex research topics.
-    - Classify each subquery: direct_text, youtube, document, time.
-    - Detect YouTube URLs automatically.
-    - Detect document/PDF/article URLs automatically.
-    - Detect if the query needs time conversion or timezone awareness.
+{
+  "main_query": "<the user's full query>",
+  "is_final": false,
+  "max_tokens": <global token budget>,
+  "subqueries": [
+    {
+      "id": 1,
+      "q": "<expanded subquery for LLM reasoning OR a list depending on content>",
+      "priority": "high/medium/low",
+      "direct_text": true/false,
+      "youtube": ["<only YouTube URLs explicitly provided>"],
+      "document": ["<only URLs explicitly provided>"],
+      "time": "<timezone or null>",
+      "full_transcript": true/false,
+      "max_tokens": <token budget for this subquery>
+    }
+  ],
+  "targets": ["web", "pdf", "academic", "youtube"],
+  "depth": <1 to 6>
+}
 
-    """
+=====================================================
+CRITICAL RULES:
+=====================================================
+
+1. Never output text outside JSON.
+2. Never include emojis.
+3. Use at least 2 subqueries for complex questions.
+4. Document URLs:
+   - Only include URLs explicitly typed by the user.
+   - Never infer or create URLs.
+5. YouTube URLs:
+   - Only if explicitly included in the user's query.
+
+=====================================================
+YOUTUBE-SPECIFIC RULES:
+=====================================================
+
+You MUST analyze what the user wants from each YouTube URL.
+
+A. If the user clearly wants a full transcript:
+   - Set "full_transcript": true
+   - Set "q": []
+
+B. If the user wants contextual information (e.g., summary, explanation, extraction):
+   - Set "full_transcript": false
+   - Set "q": "explain what the user needs from the video in short"
+
+C. If user asks multiple questions about the same video:
+   - "q" must be a list of all such questions, each as a separate item.
+
+D. If user provides a YouTube URL but does not clarify intent:
+   - Infer the intent minimally:
+       → If they say "video about X?" → treat as contextual query with ["describe"].
+       → Otherwise default to summary:
+         "q": ["summary"], "full_transcript": false.
+
+=====================================================
+TOKEN MANAGEMENT RULES:
+=====================================================
+
+- Each subquery MUST contain "max_tokens".
+- The main plan MUST contain a top-level "max_tokens".
+- High priority tasks → larger token budgets.
+- Full transcript tasks → largest token budget.
+- Never exceed global max_tokens.
+
+=====================================================
+OUTPUT:
+=====================================================
+- Only strict JSON.
+- No markdown.
+- No explanations.
+"""
 
     payload = {
         "model": os.getenv("MODEL"),
@@ -132,15 +181,14 @@ async def generate_plan(prompt: str, max_tokens: Optional[int] = 120) -> str:
 
 if __name__ == "__main__":
     async def main():
-        user_prompt = "what's 1+1"
+        user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         reply = await generate_plan(user_prompt)
         reqID = "test123"
         try:
             reply_json = json.loads(reply)
-            if "response" not in reply_json:
-                os.makedirs("searchSessions", exist_ok=True)
-                with open(f"searchSessions/{reqID}/{reqID}_planning.json", "w") as f:   
-                    f.write(json.dumps(reply_json, indent=2))
+            os.makedirs(f"searchSessions/{reqID}", exist_ok=True)
+            with open(f"searchSessions/{reqID}/{reqID}_planning.json", "w") as f:   
+                f.write(json.dumps(reply_json, indent=2))
         except Exception:
             pass
         print("\n--- Generated Reply ---\n")

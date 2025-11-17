@@ -7,6 +7,14 @@ from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisable
 from youtube_transcript_api.formatters import TextFormatter
 import yt_dlp
 from config import MAX_TRANSCRIPT_WORD_COUNT, get_youtube_video_metadata_show_log
+from multiprocessing.managers import BaseManager
+
+class modelManager(BaseManager): pass
+modelManager.register("ipcService")
+manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
+manager.connect()
+embedModelService = manager.ipcService()
+
 
 
 def get_youtube_video_id(url):
@@ -53,7 +61,7 @@ def get_youtube_metadata(url):
 
 
 
-def get_youtube_transcript(url, languages: Iterable[str] = ("en",),preserve_formatting: bool = False,):
+def get_youtube_transcript(url, query, languages: Iterable[str] = ("en",),preserve_formatting: bool = False,):
     print("[INFO] Getting Youtube Transcript")
     video_id = get_youtube_video_id(url)
     if not video_id:
@@ -79,10 +87,8 @@ def get_youtube_transcript(url, languages: Iterable[str] = ("en",),preserve_form
             raise ValueError("Transcript fetch returned no entries.")
         full_text = " ".join(entry.text for entry in entries)
         
-        words = full_text.split()
-        if len(words) > MAX_TRANSCRIPT_WORD_COUNT:
-            print(f"Transcript length ({len(words)} words) exceeds MAX_TRANSCRIPT_WORD_COUNT ({MAX_TRANSCRIPT_WORD_COUNT}). Truncating.")
-            return " ".join(words[:MAX_TRANSCRIPT_WORD_COUNT]) + "..."
+        full_text = full_text.strip()
+
         return full_text
         
         
