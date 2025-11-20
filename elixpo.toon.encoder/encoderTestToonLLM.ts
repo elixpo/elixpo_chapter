@@ -1,11 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { encodeValue } from './encode/encoders.ts';
-import users from './dummy_wt_nest.json' assert { type: 'json' };
-
+import { encodeValue } from './typescript/encode/encoders.ts';
+import users from './typescript/dummy_wt_nest.json' assert { type: 'json' };
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import { encode } from 'punycode';
 
 dotenv.config();
 const polliToken = process.env.polli_token;
