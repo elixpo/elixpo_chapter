@@ -20,7 +20,7 @@ async function sendPayload() {
         content: `Tell me something about David Brown from the data -- ${JSON.stringify(users)}`,
       },
     ],
-    model: "openai",
+    model: "grok",
     frequency_penalty: 0,
     logit_bias: null,
     logprobs: false,
@@ -38,9 +38,10 @@ async function sendPayload() {
       include_usage: true,
     },
     thinking: {
-      type: "disabled",
+      type: "enabled",
       budget_tokens: 1,
     },
+    reasoning_effort: "high",
     temperature: 1,
     top_p: 1,
   };
