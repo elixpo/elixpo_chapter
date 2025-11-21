@@ -3,14 +3,18 @@ import { LIST_ITEM_MARKER } from '../constants'
 import { isArrayOfArrays, isArrayOfObjects, isArrayOfPrimitives, isJsonArray, isJsonObject, isJsonPrimitive } from './normalize'
 import { encodeAndJoinPrimitives, encodeKey, encodePrimitive, formatHeader } from './primitives'
 import { LineWriter } from './writer'
+import {hasNesting, flattenJson} from './nestedCheck'
 
 // #region Encode normalized JsonValue
 
 export function encodeValue(value: JsonValue, options: ResolvedEncodeOptions): string {
+  if (hasNesting(value) === true) {
+    const [flattened, keyMap] = flattenJson(value)
+    value = flattened
+  }
   if (isJsonPrimitive(value)) {
     return encodePrimitive(value, options.delimiter)
   }
-
   const writer = new LineWriter(options.indent)
 
   if (isJsonArray(value)) {
