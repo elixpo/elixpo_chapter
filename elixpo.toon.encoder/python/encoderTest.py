@@ -21,10 +21,14 @@ encoded_flat_direct = encodeValue(
 )
 
 val, key = flatten_json(users)
+print(f"The flattened json {val}")
+print("==================================================")
 encoded_flat_module = encodeValue(
     val,
     options={"indent": 2, "delimiter": ", ", "lengthMarker": True}
 )
+print("==================================================")
+print(f"The encoded flat json {encoded_flat_module}")
 min_str = json.dumps(users, indent=2)
 
 
