@@ -2,14 +2,16 @@ from dataTypes import Depth, JsonArray, JsonObject, JsonPrimitive, JsonValue, Re
 from constants import LIST_ITEM_MARKER
 from normalize import isArrayOfArrays, isArrayOfObjects, isArrayOfPrimitives, isJsonArray, isJsonObject, isJsonPrimitive
 from primitive import encodePrimitive, encodeAndJoinPrimitives, encodeKey, formatHeader
+from nestedCheck import has_nesting, flatten_json
 from writer import LineWriter
 from typing import Optional, Sequence
 
 
 def encodeValue(value: JsonValue, options: ResolvedEncodeOptions) -> str:
+    if (has_nesting(value) == True):
+        value, key = flatten_json(value)
     if isJsonPrimitive(value):
         return encodePrimitive(value, options['delimiter'])
-
     writer = LineWriter(options['indent'])
 
     if isJsonArray(value):

@@ -1,5 +1,5 @@
 import { encodeValue } from './typescript/encode/encoders.ts';
-import users from './typescript/dummy_wt_nest.json' assert { type: 'json' };
+import users from './typescript/dummy_w_nest.json' assert { type: 'json' };
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 
@@ -17,7 +17,7 @@ async function sendPayload() {
       },
       {
         role: "user",
-        content: `Tell me something about David Brown from the data -- ${JSON.stringify(users)}`,
+        content: `Tell me something about David Brown from the data -- ${JSON.stringify(encodeValue(users, { indent: 2, delimiter: ",", lengthMarker: "#" }))}`,
       },
     ],
     model: "grok",
