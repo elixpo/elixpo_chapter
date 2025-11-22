@@ -47,7 +47,18 @@ def flatten_json(data, parent_key="", out=None):
     else:
         out[parent_key] = data
 
-    return out
+    compacted_out = compact_string(out)
+    return compacted_out
+
+
+def compact_string(flat_dict):
+    parts = []
+    for k, v in flat_dict.items():
+        if isinstance(v, str):
+            parts.append(f"{k}:{v}")
+        else:
+            parts.append(f"{k}:{v}")
+    return "{"+",".join(parts)+"}"
 
 
 if __name__ == "__main__":
