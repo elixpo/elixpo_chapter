@@ -43,10 +43,6 @@ non_nested_tokens = count_tokens(non_nested_json)
 
 flat_data = flatten_json(users_nested)
 print(f"Flattened entries: {len(flat_data)}")
-print(f"Sample (first 5):")
-for i, (k, v) in enumerate(list(flat_data.items())[:5]):
-    print(f"  {k}: {v}")
-print()
 
 
 flat__nested_json = json.dumps(flat_data, indent=2)
