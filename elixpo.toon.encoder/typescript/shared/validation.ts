@@ -1,4 +1,4 @@
-import { COMMA, LIST_ITEM_MARKER } from '../constants'
+import { DEFAULT_DELIMITER, LIST_ITEM_MARKER } from '../constants'
 import { isBooleanOrNullLiteral } from './literal-utils'
 
 /**
@@ -10,6 +10,19 @@ import { isBooleanOrNullLiteral } from './literal-utils'
  */
 export function isValidUnquotedKey(key: string): boolean {
   return /^[A-Z_][\w.]*$/i.test(key)
+}
+
+/**
+ * Checks if a key segment is a valid identifier for safe folding/expansion.
+ *
+ * @remarks
+ * Identifier segments are more restrictive than unquoted keys:
+ * - Must start with a letter or underscore
+ * - Followed only by letters, digits, or underscores (no dots)
+ * - Used for safe key folding and path expansion
+ */
+export function isIdentifierSegment(key: string): boolean {
+  return /^[A-Z_]\w*$/i.test(key)
 }
 
 /**
@@ -26,7 +39,7 @@ export function isValidUnquotedKey(key: string): boolean {
  * - Contains the active delimiter
  * - Starts with a list marker (hyphen)
  */
-export function isSafeUnquoted(value: string, delimiter: string = COMMA): boolean {
+export function isSafeUnquoted(value: string, delimiter: string = DEFAULT_DELIMITER): boolean {
   if (!value) {
     return false
   }

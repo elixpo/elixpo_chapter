@@ -21,7 +21,7 @@ export function encodePrimitive(value: JsonPrimitive, delimiter?: string): strin
   return encodeStringLiteral(value, delimiter)
 }
 
-export function encodeStringLiteral(value: string, delimiter: string = COMMA): string {
+export function encodeStringLiteral(value: string, delimiter: string = DEFAULT_DELIMITER): string {
   if (isSafeUnquoted(value, delimiter)) {
     return value
   }
@@ -45,7 +45,7 @@ export function encodeKey(key: string): string {
 
 // #region Value joining
 
-export function encodeAndJoinPrimitives(values: readonly JsonPrimitive[], delimiter: string = COMMA): string {
+export function encodeAndJoinPrimitives(values: readonly JsonPrimitive[], delimiter: string = DEFAULT_DELIMITER): string {
   return values.map(v => encodePrimitive(v, delimiter)).join(delimiter)
 }
 
@@ -59,13 +59,11 @@ export function formatHeader(
     key?: string
     fields?: readonly string[]
     delimiter?: string
-    lengthMarker?: '#' | false
   },
 ): string {
   const key = options?.key
   const fields = options?.fields
   const delimiter = options?.delimiter ?? COMMA
-  const lengthMarker = options?.lengthMarker ?? false
 
   let header = ''
 
@@ -74,7 +72,7 @@ export function formatHeader(
   }
 
   // Only include delimiter if it's not the default (comma)
-  header += `[${lengthMarker || ''}${length}${delimiter !== DEFAULT_DELIMITER ? delimiter : ''}]`
+  header += `[${length}${delimiter !== DEFAULT_DELIMITER ? delimiter : ''}]`
 
   if (fields) {
     const quotedFields = fields.map(f => encodeKey(f))

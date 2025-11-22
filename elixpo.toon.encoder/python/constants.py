@@ -8,6 +8,7 @@ COMMA = ','
 COLON = ':'
 SPACE = ' '
 PIPE = '|'
+DOT = '.'
 HASH = '#'
 
 OPEN_BRACKET = '['
