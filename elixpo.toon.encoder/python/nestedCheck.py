@@ -30,7 +30,7 @@ def has_nesting(data):
         return any(isinstance(item, dict) and any(isinstance(v, (dict, list)) for v in item.values()) for item in data)
     return False
 
-def flatten_json(data, parent_key="", out=None):
+def flatten_json(data, parent_key="", out=None, compacted=False):
     if out is None:
         out = {}
 
@@ -46,9 +46,10 @@ def flatten_json(data, parent_key="", out=None):
 
     else:
         out[parent_key] = data
-
-    compacted_out = compact_string(out)
-    return compacted_out
+    if compacted:
+        compacted_out = compact_string(out)
+        return compacted_out
+    return out
 
 
 def compact_string(flat_dict):

@@ -1,6 +1,4 @@
 import json
-import os
-import requests
 from encoders import encodeValue
 import tiktoken
 import dotenv
@@ -33,15 +31,13 @@ def _count_keys(obj):
 
 
 print("=== LOSSLESS FLATTENING ANALYSIS ===\n")
-
-# Original nested
 nested_json = json.dumps(users_nested, indent=2)
 nested_tokens = count_tokens(nested_json)
 non_nested_json = json.dumps(users_not_nested, indent=2)
 non_nested_tokens = count_tokens(non_nested_json)
 
 
-flat_data = flatten_json(users_nested)
+flat_data = flatten_json(users_nested, compacted=False)
 print(f"Flattened entries: {len(flat_data)}")
 
 
