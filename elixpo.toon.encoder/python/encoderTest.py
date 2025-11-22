@@ -3,7 +3,7 @@ from encoders import encodeValue
 from decoder import decode_value_from_lines, LineCursor, ParsedLine
 import tiktoken
 import dotenv
-from nestedCheck import flatten_json, unflatten_json
+from nestedCheck import flatten_json, unflatten_json, is_lossless
 
 dotenv.load_dotenv()
 
@@ -99,77 +99,6 @@ def test_roundtrip_with_unflatten(original_data, test_name: str, should_flatten=
         traceback.print_exc()
         return False
 
-
-print("\n" + "="*60)
-print("ROUNDTRIP TESTS: encode -> decode -> unflatten")
-print("="*60)
-
-tests_passed = 0
-tests_total = 0
-
-tests_total += 1
-if test_roundtrip_with_unflatten(users_not_nested, "Non-Nested JSON Data", should_flatten=False):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten(users_nested, "Nested JSON Data", should_flatten=True):
-    tests_passed += 1
-
-tests_total += 1
-if test_roundtrip_with_unflatten(
-    {"name": "John", "age": 30, "city": "NYC"},
-    "Simple Object",
-    should_flatten=False
-):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten(
-    [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
-    "Array of Objects (Tabular)",
-    should_flatten=False
-):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten(
-    [1, 2, 3, 4, 5],
-    "Array of Primitives",
-    should_flatten=False
-):
-    tests_passed += 1
-
-tests_total += 1
-if test_roundtrip_with_unflatten(
-    {"user": {"name": "John", "address": {"city": "NYC", "zip": "10001"}}},
-    "Nested Object",
-    should_flatten=True
-):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten([], "Empty Array", should_flatten=False):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten({}, "Empty Object", should_flatten=False):
-    tests_passed += 1
-tests_total += 1
-if test_roundtrip_with_unflatten(
-    {
-        "name": "Test",
-        "values": [1, 2, 3],
-        "metadata": {"version": "1.0", "active": True}
-    },
-    "Mixed Types Object",
-    should_flatten=True
-):
-    tests_passed += 1
-
-
-print(f"\n\n{'='*60}")
-print("TEST SUMMARY")
-print(f"{'='*60}")
-print(f"Passed: {tests_passed}/{tests_total}")
-print(f"Failed: {tests_total - tests_passed}/{tests_total}")
-print(f"Success Rate: {(tests_passed/tests_total)*100:.1f}%")
-print("="*60)
-
 print("\n" + "="*60)
 print("LOSSLESS FLATTENING ANALYSIS")
 print("="*60 + "\n")
@@ -179,7 +108,7 @@ nested_tokens = count_tokens(nested_json)
 non_nested_json = json.dumps(users_not_nested, indent=2)
 non_nested_tokens = count_tokens(non_nested_json)
 
-flat_data = flatten_json(users_nested, compacted=False)
+flat_data = flatten_json(users_nested)
 print(f"Flattened entries: {len(flat_data)}")
 
 flat__nested_json = json.dumps(flat_data, indent=2)
@@ -197,3 +126,4 @@ savings_nested = ((nested_tokens - flatten_toon_tokens_nested) / nested_tokens) 
 savings_non_nested = ((non_nested_tokens - flatten_toon_tokens_non_nested) / non_nested_tokens) * 100
 print(f"\nToken Savings for non-nested: {savings_non_nested:.1f}%")
 print(f"Token Savings for nested: {savings_nested:.1f}%")
+print(f"Loss less flattening test: {is_lossless(users_nested, unflatten_json(flatten_json(users_nested)))}")
