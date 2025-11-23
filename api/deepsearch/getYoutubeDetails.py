@@ -109,10 +109,21 @@ def get_youtube_transcript(url, query, full_transcript: bool = False, languages:
 
 
 if __name__ == "__main__":
-    # metadata = get_youtube_metadata("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
-    # print("Metadata:", metadata)
-    transcript = get_youtube_transcript("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
-    print("Transcript:", transcript)
-
+    data_block = {
+            "id": 4,
+            "q": "summarize the video",
+            "priority": "high",
+            "direct_text": False,
+            "youtube": [
+                "https://www.youtube.com/watch?v=FLal-KvTNAQ"
+            ],
+            "document": [],
+            "time": None,
+            "full_transcript": False,
+            "max_tokens": 700
+        },
+    
+    id = list(data_block["youtube"])
+    print("Video ID:", id)
 
 
