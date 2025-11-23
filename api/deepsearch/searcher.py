@@ -23,7 +23,7 @@ def subQueryPlan(block, reqID):
         "information": reranked_info,
         "id": block["id"],
         "priority": block["priority"],
-        "time_taken": end_time - start_time,
+        "time_taken": f"{end_time - start_time:.2f}s",
         "reqID": reqID
 
     }
@@ -33,16 +33,14 @@ def subQueryPlan(block, reqID):
         
             
         
-
-
 def rerank(query, information):
     sentences = information if isinstance(information, list) else preprocess_text(str(information))
     data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
-    scores = embedModelService.cosineScore(query_embed, data_embed, k=10)  
+    scores = embedModelService.cosineScore(query_embed, data_embed, k=5)  
     information_piece = ""
     seen_sentences = set()  
     for idx, score in scores:
-        if score > 0.6:  
+        if score > 0.8:  
             sentence = sentences[idx].strip()
             if sentence not in seen_sentences and len(sentence) > 20: 
                 information_piece += sentence + " "
