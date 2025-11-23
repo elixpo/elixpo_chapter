@@ -14,8 +14,7 @@ import asyncio
 import concurrent.futures
 from functools import lru_cache
 import time
-
-POLLINATIONS_ENDPOINT = "https://enter.pollinations.ai/api/generate/v1/chat/completions"
+from config import POLLINATIONS_ENDPOINT
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
