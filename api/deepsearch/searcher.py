@@ -1,81 +1,41 @@
 import json
 from utility import fetch_url_content_parallel, webSearch, preprocess_text
 from multiprocessing.managers import BaseManager
+import os 
+import time
 
 class modelManager(BaseManager): pass
 modelManager.register("ipcService")
-manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
 manager.connect()
 embedModelService = manager.ipcService()
 
-def mainQueryPlan(reqID: str):
-    with open(f"searchSessions/{reqID}/{reqID}_planning.json", "r") as f:
-        planning_data = json.load(f)
-        planning_data = planning_data["main_query"]
-        query = planning_data
-        get_url = webSearch(query)
-        information = fetch_url_content_parallel(query, get_url)
-        reranked_info = rerank(reqID, query, information)
-        struct = {
-            "query": query,
-            "urls": get_url,
-            "information": reranked_info,
-            "id" : 0,
-            "priority": "high"
-        }
-        fileName = f"searchSessions/{reqID}/results/{reqID}_mainquery.json"
-        with open(fileName, "w") as f_out:
-            json.dump(struct, f_out, indent=4)
-        subQueryPlan(reqID)
-        return fileName
+def subQueryPlan(block, reqID):
+    start_time = time.time()
+    query = block["q"]
+    get_url = webSearch(query)
+    information = fetch_url_content_parallel(query, get_url)
+    reranked_info = rerank(query, information)
+    end_time = time.time()
+    struct = {
+        "query": query,
+        "urls": get_url,
+        "information": reranked_info,
+        "id": block["id"],
+        "priority": block["priority"],
+        "time_taken": end_time - start_time,
+        "reqID": reqID
 
-def subQueryPlan(reqID: str):
-    results_path = f"searchSessions/{reqID}/results"
-    combined_file = f"{results_path}/{reqID}_deepsearch.json"
+    }
 
-    # Create file if doesn't exist
-    if not os.path.exists(combined_file):
-        with open(combined_file, "w") as f:
-            json.dump([], f)
-
-    # Load existing combined results (list)
-    with open(combined_file, "r") as f:
-        combined_data = json.load(f)
-
-    # Load the planning file
-    with open(f"searchSessions/{reqID}/{reqID}_planning.json", "r") as f:
-        planning_data = json.load(f)["subqueries"]
-
-    # Process each subquery
-    for item in planning_data:
-        query = item["q"]
-        get_url = webSearch(query)
-        information = fetch_url_content_parallel(query, get_url)
-        reranked_info = rerank(reqID, query, information)
-
-        struct = {
-            "query": query,
-            "urls": get_url,
-            "information": reranked_info,
-            "id": item["id"],
-            "priority": item["priority"]
-        }
-
-        # Append to combined list
-        combined_data.append(struct)
-
-    # Save back to one single file
-    with open(combined_file, "w") as f_out:
-        json.dump(combined_data, f_out, indent=4)
-    return combined_file
+    print(f"Subquery processed: {query}")
+    print(f"Reranked Information: {json.dumps(struct, indent=2)}")  
+        
             
         
 
 
-def rerank(reqID, query, information):
-    # with open(f"searchSessions/{reqID}/results/{reqID}_deepsearch_1.json", "r") as f:
-    #     data = json.load(f)
-    #     information = data["information"]
+def rerank(query, information):
     sentences = information if isinstance(information, list) else preprocess_text(str(information))
     data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
     scores = embedModelService.cosineScore(query_embed, data_embed, k=10)  
@@ -90,4 +50,4 @@ def rerank(reqID, query, information):
     return information_piece.strip()
 
 if __name__ == "__main__":
-    mainQueryResponse("test123")
+    subQueryPlan({"q": "capital of france", "id": "test123", "priority": "high"}, "test123")
