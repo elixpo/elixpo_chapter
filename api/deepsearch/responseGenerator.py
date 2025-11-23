@@ -16,19 +16,21 @@ token_map = {
 async def generate_intermediate_response(urls, query, information, priority) -> str:
     logger.info(f"Generating intermediate response for query: {query}")
     system_prompt = f"""You are an expert research assistant. Your task is to create a comprehensive, well-structured markdown response based on the provided search results.
-    Requirements:
-    Start with the query as an H1 heading
-    Provide a detailed, elaborate explanation of the topic
-    Use proper markdown formatting (headings, lists, emphasis)
-    Structure the information logically
-    Be comprehensive and informative
-    Use clear, engaging language
-    Include relevant details and context
-    Take the information of the URLs only if provided by the user and then cite them as [1][2] with the URLs at the end mapped with numberings 
-    appropriately in the response [this is a must]
-    Format your response in clean markdown without code blocks.
-    Output max tokens of  {token_map[priority]} for this query
-    """
+Requirements:
+- Start with the query as an H1 heading.
+- Provide a detailed, elaborate explanation of the topic.
+- Use proper markdown formatting (headings, lists, emphasis).
+- Structure the information logically.
+- Be comprehensive and informative.
+- Use clear, engaging language.
+- Include relevant details and context.
+- When using information from the provided URLs, cite them in the text as [1], [2], etc., corresponding 
+to the order of the URLs given. At the end of your response, include a "References" section listing each URL with its number.
+Don't put more than 2 citations together in one sentence and make them into seperate [x].
+- Only cite URLs if you use information from them.
+- Format your response in clean markdown without code blocks.
+- Output should not exceed {token_map[priority]} tokens.
+"""
     user_prompt = f"""Based on this search information, create a comprehensive markdown response:
     Query: {query}
     Information: {information}
