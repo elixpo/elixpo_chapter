@@ -1,6 +1,5 @@
 import json
 from encoders import encodeValue
-from decoder import decode_value_from_lines, LineCursor, ParsedLine
 import tiktoken
 import dotenv
 from nestedCheck import flatten, unflatten, is_lossless

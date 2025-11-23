@@ -1,6 +1,4 @@
 import json
-import urllib.parse
-
 
 with open("data/dummy_w_nest.json", "r", encoding="utf-8") as f:
     dummy_data = json.load(f)
@@ -44,17 +42,14 @@ def unflatten(flat):
                 idx = int(part)
 
                 if not isinstance(curr, list):
-                    # convert dict into list at this point
                     parent_key = parts[i-1] if i > 0 else None
                     new_list = []
                     if parent_key is None:
-                        # ROOT-LEVEL FIX: replace root with list
                         root = new_list
                         curr = new_list
                     else:
                         curr[parent_key] = new_list
                         curr = new_list
-
                 while len(curr) <= idx:
                     curr.append(None)
 
@@ -65,7 +60,6 @@ def unflatten(flat):
                         next_is_digit = parts[i+1].isdigit()
                         curr[idx] = [] if next_is_digit else {}
                     curr = curr[idx]
-
             else:
                 if not isinstance(curr, dict):
                     raise TypeError("Mismatch while unflattening")
@@ -111,6 +105,6 @@ if __name__ == "__main__":
         print("\n=== UNFLATTENED DATA ===")
         unflat = unflatten(flat)
         unflat = normalize_unflattened(dummy_data, unflat)
-        # print(json.dumps(unflat, indent=2))
+        print(json.dumps(unflat, indent=2))
         print("\n=== COMPARISON DATA ===")
         print(f"Lossless flattening test: {is_lossless(dummy_data, unflat)}")
