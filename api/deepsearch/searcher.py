@@ -3,6 +3,7 @@ from utility import fetch_url_content_parallel, webSearch, preprocess_text
 from multiprocessing.managers import BaseManager
 import os 
 import time
+from typing import Optional
 
 class modelManager(BaseManager): pass
 modelManager.register("ipcService")
@@ -32,7 +33,10 @@ def subQueryPlan(block, reqID):
     print(f"Reranked Information: {json.dumps(struct, indent=2)}")  
         
             
-        
+
+
+
+
 def rerank(query, information):
     sentences = information if isinstance(information, list) else preprocess_text(str(information))
     data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
