@@ -4,6 +4,9 @@ from multiprocessing.managers import BaseManager
 import os 
 import time
 from typing import Optional
+from responseGenerator import generate_intermediate_response
+import asyncio
+
 
 class modelManager(BaseManager): pass
 modelManager.register("ipcService")
@@ -11,7 +14,7 @@ manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
 manager.connect()
 embedModelService = manager.ipcService()
 
-def subQueryPlan(block, reqID):
+async def subQueryPlan(block, reqID):
     start_time = time.time()
     query = block["q"]
     get_url = webSearch(query)
@@ -28,7 +31,8 @@ def subQueryPlan(block, reqID):
         "reqID": reqID
 
     }
-
+    response = await generate_intermediate_response(struct["urls"], struct["query"], struct["information"], struct["priority"])
+    struct["information"] = response
     print(f"Subquery processed: {query}")
     print(f"Reranked Information: {json.dumps(struct, indent=2)}")  
         
@@ -52,4 +56,4 @@ def rerank(query, information):
     return information_piece.strip()
 
 if __name__ == "__main__":
-    subQueryPlan({"q": "capital of france", "id": "test123", "priority": "high"}, "test123")
+    asyncio.run(subQueryPlan({"q": "capital of france", "id": "test123", "priority": "high"}, "test123"))

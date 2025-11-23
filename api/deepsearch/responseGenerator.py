@@ -8,37 +8,34 @@ import random
 import json
 load_dotenv()
 
-async def generate_intermediate_response(json_data: dict) -> str:
-    logger.info(f"Generating intermediate response for query: {json_data.get('query', 'Unknown')}")
-    query = json_data.get('query', 'Research Query')
-    information = json_data.get('information', '')
-    urls = json_data.get('urls', [])
-    priority = json_data.get('priority', 'medium')
-    system_prompt = """
-    You are an expert research assistant. Your task is to create a comprehensive, well-structured markdown response based on the provided search results.
-
+token_map = {
+    "high" : 300,
+    "medium" : 100,
+    "low" : 50
+}
+async def generate_intermediate_response(urls, query, information, priority) -> str:
+    logger.info(f"Generating intermediate response for query: {query}")
+    system_prompt = f"""You are an expert research assistant. Your task is to create a comprehensive, well-structured markdown response based on the provided search results.
     Requirements:
-    1. Start with the query as an H1 heading
-    2. Provide a detailed, elaborate explanation of the topic
-    3. Use proper markdown formatting (headings, lists, emphasis)
-    4. Structure the information logically
-    5. Be comprehensive and informative
-    6. Use clear, engaging language
-    7. Include relevant details and context
-    8. Do not mention sources or URLs in the content
-
+    Start with the query as an H1 heading
+    Provide a detailed, elaborate explanation of the topic
+    Use proper markdown formatting (headings, lists, emphasis)
+    Structure the information logically
+    Be comprehensive and informative
+    Use clear, engaging language
+    Include relevant details and context
+    Take the information of the URLs only if provided by the user and then cite them as [1][2] with the URLs at the end mapped with numberings 
+    appropriately in the response [this is a must]
     Format your response in clean markdown without code blocks.
+    Output max tokens of  {token_map[priority]} for this query
     """
-    user_prompt = f"""
-    Based on this search information, create a comprehensive markdown response:
-    
+    user_prompt = f"""Based on this search information, create a comprehensive markdown response:
     Query: {query}
     Information: {information}
     Priority: {priority}
-    
+    URLs: {", ".join(urls) if urls else "No URLs provided"}
     Please provide a detailed, well-structured markdown response that thoroughly explains the topic.
     """
-    
     payload = {
         "model": os.getenv("MODEL"),
         "messages": [
@@ -55,7 +52,7 @@ async def generate_intermediate_response(json_data: dict) -> str:
         "stream": False,
         "private": True,
         "referrer": "elixpoart",
-        "max_tokens": 500, 
+        "max_tokens": token_map[priority],
         "seed": random.randint(1000, 1000000)
     }
 
@@ -95,18 +92,25 @@ async def generate_intermediate_response(json_data: dict) -> str:
 
 if __name__ == "__main__":
     async def main():
-        test_json = {
-            "query": "Who is credited with the invention of the incandescent light bulb?",
+        plan_data = {
+            "query": "capital of france",
             "urls": [
-                "https://www.sciencefocus.com/science/who-really-invented-the-light-bulb",
-                "https://www.energy.gov/articles/history-light-bulb"
+                "https://en.wikipedia.org/wiki/Paris",
+                "https://www.britannica.com/place/Paris",
+                "https://www.mappr.co/capital-cities/france/",
+                "https://theworldcountries.com/geo/capital-city/Paris",
+                "https://www.newworldencyclopedia.org/entry/Paris,_France",
+                "https://www.countryaah.com/france-faqs/",
+                "https://alea-quiz.com/en/what-is-the-capital-of-france/"
             ],
-            "information": "Who really invented the light bulb? While perhaps the most famous creation attributed to inventor extraordinaire Thomas Edison, the incandescent light bulb was actually in development for nearly a century before Edison finally perfected it and brought it to the masses.",
-            "id": 1,
-            "priority": "high"
+            "information": "The capital of France is Paris. geography What is the capital of France? geography  What is the capital of France? Answer The capital of France is Paris.",
+            "id": 2,
+            "priority": "low",
+            "time_taken": "5.10s",
+            "reqID": "test123"
         }
         
-        markdown_response = await generate_intermediate_response(test_json)
+        markdown_response = await generate_intermediate_response(plan_data["urls"], plan_data["query"], plan_data["information"], plan_data["priority"])
         print("\n--- Generated Markdown Response ---\n")
         print(markdown_response)
 
