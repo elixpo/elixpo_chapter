@@ -77,7 +77,7 @@ async def download_audio(url):
     
     return wav_path
 
-def transcribe_audio(url,full_transcript: Optional[str] = None, query: Optional[str] = None):
+def transcribe_audio(url, full_transcript: Optional[str] = None, query: Optional[str] = None):
     wav_path = asyncio.run(download_audio(url))
     videoID = get_youtube_video_id(url)
     videoTitle = youtubeMetadata(url)
@@ -85,15 +85,14 @@ def transcribe_audio(url,full_transcript: Optional[str] = None, query: Optional[
     if full_transcript:
         transcription = full_transcript
     elif query:
-        modelService = rerank(transcription, [query])
-        transcription = " ".join(modelService)
+        reranked_results = rerank(transcription, [query])
+        transcription = " ".join(reranked_results)
         transcription = generate_intermediate_response(url, query, transcription, "high")
     return {
         "video_id": videoID,
         "video_title": videoTitle,
         "transcription": transcription
     }
-
 
 if __name__ == "__main__":
     url = "https://www.youtube.com/watch?v=a_hdKTJGukk"
