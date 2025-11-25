@@ -534,6 +534,9 @@ class accessSearchAgents:
     def web_search(self, query):
         return run_async_on_bg_loop(self._async_web_search(query))
     
+    def youtube_metadata(self, url):
+        return run_async_on_bg_loop(self._async_get_youtube_metadata(url))
+    
     def image_search(self, query, max_images=10):
         return run_async_on_bg_loop(self._async_image_search(query, max_images))
     
