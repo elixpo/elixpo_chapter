@@ -2,7 +2,6 @@ from urllib.parse import urlparse, parse_qs
 from typing import Optional, Iterable
 from collections import deque
 from loguru import logger
-from getYoutubeDetails import get_youtube_transcript
 from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
@@ -91,7 +90,19 @@ def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
                 results[url] = '[Failed]'
         return results
 
+def get_youtube_metadata(url):
+    print("[INFO] Getting Youtube Metadata")
+    parsed_url = urlparse(url)
+    if "youtube.com" not in parsed_url.netloc and "youtu.be" not in parsed_url.netloc:
+        print("Not a valid YouTube URL.")
+        return None
 
+    try:
+        metadata = youtubeMetadata(url)
+        return metadata
+    except Exception as e:
+        print(f"Error fetching metadata for {url}: {type(e).__name__} - {e}")
+        return None
 
 
 def get_youtube_video_id(url):
@@ -176,6 +187,17 @@ def testYoutubeMetadata():
     metadata = youtubeMetadata(youtube_url)
     print("Metadata:", metadata)
 
+
+def testYoutubeTranscript():
+    url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
+    query = "summarize me the video "
+    transcript = get_youtube_transcript(url, query, full_transcript=False)
+    print("Transcript snippet:", transcript[:500])
+    print("="*50)
+    metadata = get_youtube_metadata(url)
+    print("Metadata:", metadata)
+
+
 def testSearching():
     test_queries = ["Latest news from Nepal", "Political updates in Nepal"]
     test_urls = [
@@ -191,4 +213,4 @@ def testSearching():
 
 
 if __name__ == "__main__":
-    testSearching()
+    testYoutubeTranscript()
