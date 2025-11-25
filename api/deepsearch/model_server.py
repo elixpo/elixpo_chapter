@@ -15,7 +15,10 @@ from urllib.parse import quote
 from config import MAX_LINKS_TO_TAKE, isHeadless
 import json
 import atexit
+import whisper
 import time
+from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
+
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -43,18 +46,25 @@ async def handle_accept_popup(page):
 
 class ipcModules:
     def __init__(self):
-        logger.info("Loading embedding model...")
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        logger.info("Loading embedding embed_model...")
+        self.embed_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = self.model.to(self.device)
-        logger.info(f"Model loaded on device: {self.device}")
+        self.embed_model = self.embed_model.to(self.device)
+        logger.info(f"embed_model loaded on device: {self.device}")
         self.executor = ThreadPoolExecutor(max_workers=2)
         self._gpu_lock = threading.Lock()
         self._operation_semaphore = threading.Semaphore(2)
 
+    def transcribeAudio(self, audio_path: str):
+        with self._gpu_lock:
+            result = self.transcribe_model.transcribe(audio_path, language="en")
+            final_text = result["text"]
+        return final_text
+    
     def encodeSemantic(self, data: list[str], query: list[str]):
-        data_embedding = self.model.encode(data, convert_to_tensor=True)
-        query_embedding = self.model.encode(query, convert_to_tensor=True)
+        data_embedding = self.embed_model.encode(data, convert_to_tensor=True)
+        query_embedding = self.embed_model.encode(query, convert_to_tensor=True)
         return data_embedding.cpu().numpy(), query_embedding.cpu().numpy()
 
     def cosineScore(self, query_embedding, data_embedding, k=3):
