@@ -85,7 +85,6 @@ def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
 
 
 
-
 def storeDeepSearchQuery(query: list, sessionID: str):
     _deepsearch_store[sessionID] = query
 

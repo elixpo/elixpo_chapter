@@ -307,6 +307,60 @@ class YahooSearchAgentText:
         
         return results
 
+    async def youtube_metadata(self, url, max_links=MAX_LINKS_TO_TAKE, agent_idx=None):
+        blacklist = [
+            "yahoo.com/preferences",
+            "yahoo.com/account",
+            "login.yahoo.com",
+            "yahoo.com/gdpr",
+        ]
+        results = []
+        page = None
+        try:
+            self.tab_count += 1
+            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            
+            # Open new tab for this search
+            page = await self.context.new_page()
+            search_url = f"{url}"
+            await page.goto(search_url, timeout=50000)
+
+            # Handle "Accept" popup
+            await handle_accept_popup(page)
+
+            # Simulate human behavior
+            await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
+            await page.wait_for_timeout(random.randint(1000, 2000))
+
+            await page.wait_for_selector("div#title > h1 > yt-formatted-string.ytd-watch-metadata", timeout=55000)
+
+            link_elements = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
+            for link in link_elements:
+                if len(results) >= max_links:
+                    break
+                href = await link.get_attribute("href")
+                if href and href.startswith("http") and not any(b in href for b in blacklist):
+                    results.append(href)
+
+            print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+                
+        except Exception as e:
+            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+        
+        return results
+
     async def close(self):
         try:
             if self.context:
@@ -453,6 +507,14 @@ class accessSearchAgents:
         
         agent, agent_idx = await agent_pool.get_text_agent()
         results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
+        return results
+    
+    async def _async_get_youtube_metadata(self, url):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        
+        agent, agent_idx = await agent_pool.get_text_agent()
+        results = await agent.youtube_metadata(url, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
         return results
     
     async def _async_image_search(self, query, max_images=10):
