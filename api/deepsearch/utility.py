@@ -1,7 +1,7 @@
 
 from collections import deque
 from loguru import logger
-from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
+from getYoutubeDetails import get_youtube_transcript
 from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
@@ -24,6 +24,10 @@ def webSearch(query: str):
 def imageSearch(query: str):
     urls = search_service.image_search(query)
     return urls
+
+def youtubeMetadata(url: str):
+    metadata = search_service.get_youtube_metadata(url)
+    return metadata
 
 def preprocess_text(text):
     text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
@@ -68,7 +72,7 @@ def fetch_url_content_parallel(queries, urls, max_workers=10):
 def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         if mode == 'metadata':
-            futures = {executor.submit(get_youtube_metadata, url): url for url in urls}
+            futures = {executor.submit(youtubeMetadata, url): url for url in urls}
         else:
             futures = {executor.submit(get_youtube_transcript, url): url for url in urls}
 
@@ -103,10 +107,10 @@ def testSearching():
         "https://apnews.com/article/nepal-gen-z-protests-army-kathmandu-2e4d9e835216b11fa238d7bcf8915cbf",
         "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     ]
-    content = fetch_url_content_parallel(test_queries, test_urls)
-    print("\n--- Fetched Content ---\n")
-    for item in content:
-        print(item)
+    # content = fetch_url_content_parallel(test_queries, test_urls)
+    youtube_url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
+    metadata = youtubeMetadata(youtube_url)
+    print("Metadata:", metadata)
 
 
 if __name__ == "__main__":

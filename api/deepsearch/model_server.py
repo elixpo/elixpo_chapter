@@ -307,7 +307,7 @@ class YahooSearchAgentText:
         
         return results
 
-    async def youtube_metadata(self, url, max_links=MAX_LINKS_TO_TAKE, agent_idx=None):
+    async def youtube_metadata(self, url, agent_idx=None):
         blacklist = [
             "yahoo.com/preferences",
             "yahoo.com/account",
@@ -334,13 +334,7 @@ class YahooSearchAgentText:
 
             await page.wait_for_selector("div#title > h1 > yt-formatted-string.ytd-watch-metadata", timeout=55000)
 
-            link_elements = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
-            for link in link_elements:
-                if len(results) >= max_links:
-                    break
-                href = await link.get_attribute("href")
-                if href and href.startswith("http") and not any(b in href for b in blacklist):
-                    results.append(href)
+            meta_title = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
 
             print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
             
@@ -359,7 +353,7 @@ class YahooSearchAgentText:
                 except Exception as e:
                     print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
         
-        return results
+        return meta_title
 
     async def close(self):
         try:
@@ -534,7 +528,7 @@ class accessSearchAgents:
     def web_search(self, query):
         return run_async_on_bg_loop(self._async_web_search(query))
     
-    def youtube_metadata(self, url):
+    def get_youtube_metadata(self, url):
         return run_async_on_bg_loop(self._async_get_youtube_metadata(url))
     
     def image_search(self, query, max_images=10):
