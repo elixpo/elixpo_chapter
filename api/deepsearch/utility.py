@@ -99,6 +99,10 @@ def cleanDeepSearchQuery(sessionID: str):
     if sessionID in _deepsearch_store:
         del _deepsearch_store[sessionID]
 
+def testYoutubeMetadata():
+    youtube_url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
+    metadata = youtubeMetadata(youtube_url)
+    print("Metadata:", metadata)
 
 def testSearching():
     test_queries = ["Latest news from Nepal", "Political updates in Nepal"]
@@ -107,11 +111,12 @@ def testSearching():
         "https://apnews.com/article/nepal-gen-z-protests-army-kathmandu-2e4d9e835216b11fa238d7bcf8915cbf",
         "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     ]
-    # content = fetch_url_content_parallel(test_queries, test_urls)
-    youtube_url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
-    metadata = youtubeMetadata(youtube_url)
-    print("Metadata:", metadata)
+    contents = fetch_url_content_parallel(test_queries, test_urls)
+    for idx, content in enumerate(contents):
+        print(f"Content snippet {idx+1}:", content[:200])
+    
+    
 
 
 if __name__ == "__main__":
-    pass
+    testSearching()
