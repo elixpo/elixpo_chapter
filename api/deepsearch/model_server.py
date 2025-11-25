@@ -18,6 +18,7 @@ import atexit
 import whisper
 import time
 from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
+import schedule
 
 
 USER_AGENTS = [
@@ -73,6 +74,8 @@ class ipcModules:
         cosine_scores = util.cos_sim(query_tensor, data_tensor)[0]
         top_k = torch.topk(cosine_scores, k=k)
         return [(int(idx), float(score)) for score, idx in zip(top_k.values, top_k.indices)]
+
+
 class searchPortManager:
     def __init__(self, start_port=10000, end_port=19999):
         self.start_port = start_port
@@ -685,6 +688,7 @@ async def _close_all_agents():
 def shutdown_graceful(timeout=5):
     global _event_loop, _event_loop_thread
     try:
+        cache_cleanup.stop()  
         if _event_loop is None:
             return
         try:
@@ -709,6 +713,64 @@ def shutdown_graceful(timeout=5):
         _event_loop_thread = None
         
 atexit.register(shutdown_graceful)
+
+class CacheCleanupJob:
+    def __init__(self, cache_dir=BASE_CACHE_DIR, max_age_minutes=10, check_interval_minutes=5):
+        self.cache_dir = cache_dir
+        self.max_age_seconds = max_age_minutes * 60
+        self.check_interval_minutes = check_interval_minutes
+        self.scheduler_thread = None
+        self.running = False
+    
+    def cleanup_old_cache(self):
+        if not os.path.exists(self.cache_dir):
+            return
+        
+        current_time = time.time()
+        try:
+            for folder in os.listdir(self.cache_dir):
+                folder_path = os.path.join(self.cache_dir, folder)
+                if os.path.isdir(folder_path):
+                    folder_age = current_time - os.path.getmtime(folder_path)
+                    if folder_age > self.max_age_seconds:
+                        try:
+                            # Handle permission issues on Linux
+                            for root, dirs, files in os.walk(folder_path, topdown=False):
+                                for file in files:
+                                    file_path = os.path.join(root, file)
+                                    os.chmod(file_path, stat.S_IWUSR | stat.S_IRUSR)
+                                    os.remove(file_path)
+                                for dir in dirs:
+                                    dir_path = os.path.join(root, dir)
+                                    os.chmod(dir_path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IXUSR)
+                                    os.rmdir(dir_path)
+                            os.rmdir(folder_path)
+                            print(f"[CACHE] Deleted old cache folder: {folder_path}")
+                        except Exception as e:
+                            print(f"[CACHE] Error deleting {folder_path}: {e}")
+        except Exception as e:
+            print(f"[CACHE] Error during cleanup: {e}")
+    
+    def _run_scheduler(self):
+        schedule.every(self.check_interval_minutes).minutes.do(self.cleanup_old_cache)
+        while self.running:
+            schedule.run_pending()
+            time.sleep(1)
+    
+    def start(self):
+        if not self.running:
+            self.running = True
+            self.scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
+            self.scheduler_thread.start()
+            print(f"[CACHE] Cleanup job started - checking every {self.check_interval_minutes} minutes for folders older than {self.max_age_seconds // 60} minutes")
+    
+    def stop(self):
+        self.running = False
+        self.cleanup_old_cache()
+        print("[CACHE] Cleanup job stopped and final cache cleared")
+
+
+cache_cleanup = CacheCleanupJob(cache_dir=BASE_CACHE_DIR, max_age_minutes=10, check_interval_minutes=5)
 
 if __name__ == "__main__":
     class modelManager(BaseManager): pass
