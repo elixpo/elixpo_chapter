@@ -1,11 +1,11 @@
-from urllib.parse import urlparse, parse_qs
-from typing import Optional, Iterable
 from collections import deque
 from loguru import logger
 from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
 import re
+from urllib.parse import urlparse, parse_qs
+
 
 
 _deepsearch_store = {}
@@ -28,8 +28,17 @@ def imageSearch(query: str):
     return urls
 
 def youtubeMetadata(url: str):
-    metadata = search_service.get_youtube_metadata(url)
-    return metadata
+    print("[INFO] Getting Youtube Metadata")
+    parsed_url = urlparse(url)
+    if "youtube.com" not in parsed_url.netloc and "youtu.be" not in parsed_url.netloc:
+        print("Not a valid YouTube URL.")
+        return None
+    try:
+        metadata = search_service.get_youtube_metadata(url)
+        return metadata
+    except Exception as e:
+        print(f"Error fetching metadata for {url}: {type(e).__name__} - {e}")
+        return None
 
 def preprocess_text(text):
     text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
@@ -71,39 +80,24 @@ def fetch_url_content_parallel(queries, urls, max_workers=10):
 
         return sentences
 
-def get_youtube_metadata(url):
-    print("[INFO] Getting Youtube Metadata")
-    parsed_url = urlparse(url)
-    if "youtube.com" not in parsed_url.netloc and "youtu.be" not in parsed_url.netloc:
-        print("Not a valid YouTube URL.")
-        return None
-
-    try:
-        metadata = youtubeMetadata(url)
-        return metadata
-    except Exception as e:
-        print(f"Error fetching metadata for {url}: {type(e).__name__} - {e}")
-        return None
 
 
-def get_youtube_video_id(url):
-    print("[INFO] Getting Youtube video ID")
-    parsed_url = urlparse(url)
-    if "youtube.com" in parsed_url.netloc:
-        video_id = parse_qs(parsed_url.query).get('v')
-        if video_id:
-            return video_id[0]
-        if parsed_url.path:
-            match = re.search(r'/(?:embed|v)/([^/?#&]+)', parsed_url.path)
-            if match:
-                return match.group(1)
-    elif "youtu.be" in parsed_url.netloc:
-        path = parsed_url.path.lstrip('/')
-        if path:
-            video_id = path.split('/')[0].split('?')[0].split('#')[0]
-            video_id = video_id.split('&')[0]
-            return video_id
-    return None
+
+
+def rerank(query, information):
+    sentences = information if isinstance(information, list) else preprocess_text(str(information))
+    data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
+    scores = embedModelService.cosineScore(query_embed, data_embed, k=5)  
+    information_piece = ""
+    seen_sentences = set()  
+    for idx, score in scores:
+        if score > 0.8:  
+            sentence = sentences[idx].strip()
+            if sentence not in seen_sentences and len(sentence) > 20: 
+                information_piece += sentence + " "
+                seen_sentences.add(sentence)
+    return information_piece.strip()
+
 
 
 def storeDeepSearchQuery(query: list, sessionID: str):

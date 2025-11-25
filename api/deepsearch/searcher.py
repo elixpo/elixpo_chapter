@@ -6,6 +6,7 @@ import time
 from typing import Optional
 from responseGenerator import generate_intermediate_response
 import asyncio
+from utility import rerank
 
 
 class modelManager(BaseManager): pass
@@ -38,22 +39,6 @@ async def subQueryPlan(block, reqID):
         
             
 
-
-
-
-def rerank(query, information):
-    sentences = information if isinstance(information, list) else preprocess_text(str(information))
-    data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
-    scores = embedModelService.cosineScore(query_embed, data_embed, k=5)  
-    information_piece = ""
-    seen_sentences = set()  
-    for idx, score in scores:
-        if score > 0.8:  
-            sentence = sentences[idx].strip()
-            if sentence not in seen_sentences and len(sentence) > 20: 
-                information_piece += sentence + " "
-                seen_sentences.add(sentence)
-    return information_piece.strip()
 
 if __name__ == "__main__":
     asyncio.run(subQueryPlan({"q": "capital of france", "id": "test123", "priority": "high"}, "test123"))
