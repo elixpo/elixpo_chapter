@@ -334,7 +334,12 @@ class YahooSearchAgentText:
 
             await page.wait_for_selector("div#title > h1 > yt-formatted-string.ytd-watch-metadata", timeout=55000)
 
-            meta_title = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
+            meta_title_elements = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
+            meta_title = None
+            if meta_title_elements:
+                meta_title = await meta_title_elements[0].text_content()
+            else:
+                meta_title = ""
 
             print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
             
@@ -508,7 +513,7 @@ class accessSearchAgents:
             await agent_pool.initialize_pool()
         
         agent, agent_idx = await agent_pool.get_text_agent()
-        results = await agent.youtube_metadata(url, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
+        results = await agent.youtube_metadata(url, agent_idx=agent_idx)
         return results
     
     async def _async_image_search(self, query, max_images=10):
