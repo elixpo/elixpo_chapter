@@ -307,6 +307,67 @@ class YahooSearchAgentText:
         
         return results
 
+    async def youtube_transcript_url(self, url, agent_idx=None):
+        page = None
+        try:
+            self.tab_count += 1
+            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            
+            transcript_url = None
+            page = await self.context.new_page()
+            search_url = f"{url}"
+            await page.goto(search_url, timeout=50000)
+
+            # Handle "Accept" popup
+            await handle_accept_popup(page)
+            page.on("request", lambda req: capture_url(req, lambda url: set_transcript(url)))
+
+            def capture_url(req, callback):
+                url = req.url
+                if (
+                    "timedtext" in url or
+                    "texttrack" in url or
+                    "caption" in url
+                ):
+                    callback(url)
+
+            def set_transcript(url):
+                nonlocal transcript_url
+                transcript_url = url
+
+            await page.goto(url, wait_until="networkidle")
+            # Simulate human behavior
+            await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
+            await page.wait_for_timeout(random.randint(1000, 2000))
+
+            await page.wait_for_selector("button.ytp-subtitles-button.ytp-button", timeout=55000)
+
+            meta_title_elements = await page.query_selector_all("button.ytp-subtitles-button.ytp-button")
+            meta_title = None
+            if meta_title_elements:
+                meta_title = await meta_title_elements[0].text_content()
+            else:
+                meta_title = ""
+
+            print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+                
+        except Exception as e:
+            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+        
+        return meta_title
+
     async def youtube_metadata(self, url, agent_idx=None):
         blacklist = [
             "yahoo.com/preferences",
@@ -538,6 +599,9 @@ class accessSearchAgents:
     
     def image_search(self, query, max_images=10):
         return run_async_on_bg_loop(self._async_image_search(query, max_images))
+    
+    def get_transcript_url(self, url):
+        pass
     
     def get_agent_pool_status(self):
         return run_async_on_bg_loop(self._async_get_agent_pool_status())
