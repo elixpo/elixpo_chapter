@@ -13,3 +13,5 @@ minikube-linux-amd64
 pip_cache/
 searchSessions/
 .*json
+node_modules/
+cached_audio/

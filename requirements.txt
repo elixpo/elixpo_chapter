@@ -23,4 +23,6 @@ sentence-transformers
 faiss-cpu
 aiohttp
 torch
+openai-whisper
+pydub
 psutil
