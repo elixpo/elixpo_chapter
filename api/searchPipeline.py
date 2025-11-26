@@ -441,7 +441,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 if __name__ == "__main__":
     import asyncio
     async def main():
-        user_query = "latest news from ai in india 2025"
+        user_query = "summarize me this youtube video https://www.youtube.com/watch?v=a_hdKTJGukk"
         user_image = None
         event_id = None
         start_time = asyncio.get_event_loop().time()
