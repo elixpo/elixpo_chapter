@@ -17,9 +17,10 @@ import json
 import atexit
 import whisper
 import time
+import numpy as np
 from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
 import schedule
-
+from embed_utils import mmr, split_sentences
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -48,7 +49,7 @@ async def handle_accept_popup(page):
 class ipcModules:
     def __init__(self):
         logger.info("Loading embedding embed_model...")
-        self.embed_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.embed_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
         self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.embed_model = self.embed_model.to(self.device)
@@ -63,17 +64,42 @@ class ipcModules:
             final_text = result["text"]
         return final_text
     
-    def encodeSemantic(self, data: list[str], query: list[str]):
-        data_embedding = self.embed_model.encode(data, convert_to_tensor=True)
-        query_embedding = self.embed_model.encode(query, convert_to_tensor=True)
-        return data_embedding.cpu().numpy(), query_embedding.cpu().numpy()
+    def extract_relevant(self, text, query, batch_size=64, diversity=0.4):
+        def embed_texts(texts):
+            if isinstance(texts, str):
+                texts = [texts]
+            emb = self.embed_model.encode(
+                texts,
+                convert_to_numpy=True,
+                normalize_embeddings=True,
+                batch_size=batch_size,
+                show_progress_bar=False
+            )
+            emb = np.asarray(emb)
+            if emb.ndim == 1:
+                emb = emb.reshape(1, -1)
+            return emb
 
-    def cosineScore(self, query_embedding, data_embedding, k=3):
-        query_tensor = torch.tensor(query_embedding)
-        data_tensor = torch.tensor(data_embedding)
-        cosine_scores = util.cos_sim(query_tensor, data_tensor)[0]
-        top_k = torch.topk(cosine_scores, k=k)
-        return [(int(idx), float(score)) for score, idx in zip(top_k.values, top_k.indices)]
+        sentences = split_sentences(text)
+        top_k = len(sentences) // 2 + 1
+        print(f"[info] {len(sentences)} sentences extracted")
+
+        if not sentences:
+            return []
+
+        sent_emb = embed_texts(sentences)
+        query_emb = embed_texts(query)[0]
+
+        return mmr(
+            doc_embedding=query_emb,
+            candidate_embeddings=sent_emb,
+            sentences=sentences,
+            diversity=diversity
+        )
+
+
+
+    
 
 
 class searchPortManager:
