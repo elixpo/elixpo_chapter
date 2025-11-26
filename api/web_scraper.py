@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
-from config import SCRAPE_IMAGE, MAX_TOTAL_SCRAPE_WORD_COUNT
+from config import MAX_TOTAL_SCRAPE_WORD_COUNT
 
 
 def fetch_full_text(
