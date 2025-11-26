@@ -9,10 +9,6 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-RUN  sudo apt install -y xvfb \
-sudo apt install -y pulseaudio chromium-codecs-ffmpeg-extra
-
-
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \

@@ -26,3 +26,4 @@ torch
 openai-whisper
 pydub
 psutil
+schedule
