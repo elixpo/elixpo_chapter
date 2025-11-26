@@ -13,7 +13,7 @@ from typing import Optional, Iterable
 class modelManager(BaseManager): pass
 modelManager.register("accessSearchAgents")
 modelManager.register("ipcService")
-manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
 manager.connect()
 search_service = manager.accessSearchAgents()
 modelService = manager.ipcService()
