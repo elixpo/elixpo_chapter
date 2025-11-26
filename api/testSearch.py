@@ -1,5 +1,5 @@
 from multiprocessing.managers import BaseManager
-from api.utility import fetch_url_content_parallel
+from utility import fetch_url_content_parallel
 import re
 
 class modelManager(BaseManager): pass

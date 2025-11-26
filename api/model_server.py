@@ -308,7 +308,7 @@ class YahooSearchAgentText:
             
             # Open new tab for this search
             page = await self.context.new_page()
-            search_url = f"https://search.yahoo.com/search?p={quote(query)}"
+            search_url = f"https://search.yahoo.com/search?p={quote(query)}&fr=yfp-t&fr2=p%3Afp%2Cm%3Asb&fp=1"
             await page.goto(search_url, timeout=50000)
 
             # Handle "Accept" popup
@@ -344,7 +344,7 @@ class YahooSearchAgentText:
                     print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
                 except Exception as e:
                     print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
-        
+        print(results)
         return results
 
     async def youtube_transcript_url(self, url, agent_idx=None):

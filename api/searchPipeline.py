@@ -15,6 +15,8 @@ import concurrent.futures
 from functools import lru_cache
 import time
 from config import POLLINATIONS_ENDPOINT
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elixpo")
 dotenv.load_dotenv()
@@ -190,7 +192,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "base64_cache": {}
         }
         messages = [
-            {
+                    {
                 "role": "system",
                 "name": "elixposearch-agent-system",
                 "content": f"""
@@ -215,6 +217,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 - Current events or time-sensitive information
                 - User provides an image
                 - Explicit research requested
+                - Unknown names or new names not in your training data
+                - In-depth explanations requiring up-to-date data
+                
+                **MANDATORY WEB SEARCH RULE**: If you encounter ANY person's name, company, product, location, event, or concept that you are NOT 100% certain about or that might be new/recent, you MUST use web_search. When in doubt about ANY information, always search first. This includes:
+                - People's names (celebrities, politicians, professionals, etc.)
+                - Company names or brands
+                - Recent products or services
+                - Locations you're unsure about
+                - Events, incidents, or news
+                - Technical terms or concepts you're not completely familiar with
+                - Any proper nouns that could be recent or unfamiliar
+                
                 When you use tools, INTEGRATE the results into your main response content, don't just list sources.
                 Available Tools:
                 - cleanQuery(query: str)
