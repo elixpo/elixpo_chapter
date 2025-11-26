@@ -1,15 +1,10 @@
 
 from collections import deque
 from loguru import logger
-from getYoutubeDetails import get_youtube_metadata, get_youtube_transcript
 from multiprocessing.managers import BaseManager
 from scrape import fetch_full_text
 import concurrent 
-import os
 import re
-import asyncio
-import random
-_deepsearch_store = {}
 
 class modelManager(BaseManager): pass
 modelManager.register("accessSearchAgents")
@@ -64,40 +59,12 @@ def fetch_url_content_parallel(queries, urls, max_workers=10):
                 logger.error(f"Failed fetching {url}: {e}")
                 results += f"\nURL: {url}\n Failed to fetch content of this URL"
         logger.info(f"Fetched all URL information in parallel.")
-        sentences = preprocess_text(results)
-        data_embed, query_embed = embedModelService.encodeSemantic(sentences, list(queries))
-        scores = embedModelService.cosineScore(query_embed, data_embed, k=5)
-        for idx, score in scores:
-            if score > 0.8:  
-                sentences[idx]
-
-        return sentences
-
-def fetch_youtube_parallel(urls, mode='metadata', max_workers=10):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        if mode == 'metadata':
-            futures = {executor.submit(get_youtube_metadata, url): url for url in urls}
-        else:
-            futures = {executor.submit(get_youtube_transcript, url): url for url in urls}
-
-        results = {}
-        for future in concurrent.futures.as_completed(futures):
-            url = futures[future]
-            try:
-                results[url] = future.result()
-            except Exception as e:
-                logger.error(f"YouTube {mode} failed for {url}: {e}")
-                results[url] = '[Failed]'
+        information = embedModelService.extract_relevant(results, queries)
+        for i in information:
+            sentences = []
+            for piece in i:
+                sentences.extend([s.strip() for s in piece.split('.') if s.strip()])
+            result += '. '.join(sentences) + '. '
         return results
 
 
-
-def storeDeepSearchQuery(query: list, sessionID: str):
-    _deepsearch_store[sessionID] = query
-
-def getDeepSearchQuery(sessionID: str):
-    return _deepsearch_store.get(sessionID)
-
-def cleanDeepSearchQuery(sessionID: str):
-    if sessionID in _deepsearch_store:
-        del _deepsearch_store[sessionID]

@@ -97,11 +97,11 @@ async def transcribe_audio(url, full_transcript: Optional[str] = None, query: Op
             sentences = []
             for piece in i:
                 sentences.extend([s.strip() for s in piece.split('.') if s.strip()])
-            result += '. '.join(sentences) + '. '
-    result += f"Video Titled as {meta_data}"
+            transcription += '. '.join(sentences) + '. '
+    transcription += f"Video Titled as {meta_data}"
     end_time = time.time()
     print(f"[INFO] Transcription and extraction took {end_time - start_time:.2f} seconds.")
-    transcription = await generate_intermediate_response(url, query, result, priority)
+    transcription = await generate_intermediate_response(url, query, transcription, priority)
     print(f"[INFO] LLM response: {transcription}")
 
     return {

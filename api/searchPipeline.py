@@ -4,8 +4,9 @@ from clean_query import cleanQuery
 from getImagePrompt import generate_prompt_from_image, replyFromImage
 from tools import tools
 from datetime import datetime, timezone
+from getYoutubeDetails import transcribe_audio, youtubeMetadata
 from getTimeZone import get_local_time
-from utility import fetch_youtube_parallel, fetch_url_content_parallel, webSearch, imageSearch
+from utility import fetch_url_content_parallel, webSearch, imageSearch
 import random
 import logging
 import dotenv
@@ -123,30 +124,24 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 logger.error(f"Failed to process image search results: {e}")
                 yield ("Image search completed but results processing failed", [])
 
-        elif function_name == "get_youtube_metadata":
-            logger.info(f"Getting YouTube metadata")
-            urls = [function_args.get("url")]
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fetch_youtube_parallel, urls, 'metadata')
-                results = future.result(timeout=10)
-            for url, metadata in results.items():
-                result = json.dumps(metadata)
-                memoized_results["youtube_metadata"][url] = result
-                yield result
-
-        elif function_name == "get_youtube_transcript":
+        elif function_name == "transcribe_audio":
             logger.info(f"Getting YouTube transcript")
-            web_event = emit_event_func("INFO", f"<TASK>Processing Video</TASK>")
+            web_event = emit_event_func("INFO", f"<TASK>Processing Video, This will take a minute</TASK>")
             if web_event:
                 yield web_event
             urls = [function_args.get("url")]
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fetch_youtube_parallel, urls, 'transcript')
-                results = future.result(timeout=15)
-            for url, transcript in results.items():
-                result = f"YouTube Transcript for {url}:\n{transcript if transcript else '[No transcript available]'}"
-                memoized_results["youtube_transcripts"][url] = result
+            loop = asyncio.get_event_loop()
+            try:
+                results = await transcribe_audio(urls[0], full_transcript=False, query=memoized_results.get("search_query", ""))
+                result = f"YouTube Transcript:\n{results if results else '[No transcript available]'}"
+                memoized_results["youtube_transcripts"][urls[0]] = result
                 yield result
+            except asyncio.TimeoutError:
+                logger.warning("Transcribe audio timed out")
+                yield "[TIMEOUT] Video transcription took too long"
+            except Exception as e:
+                logger.error(f"Transcription error: {e}")
+                yield f"[ERROR] Failed to transcribe: {str(e)[:100]}"
 
         elif function_name == "fetch_full_text":
             logger.info(f"Fetching webpage content")
@@ -225,8 +220,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 - cleanQuery(query: str)
                 - web_search(query: str) - Optimized for speed, limit to 3-4 searches
                 - fetch_full_text(url: str)
-                - get_youtube_metadata(url: str)
-                - get_youtube_transcript(url: str)
+                - transcribe_audio(url: str, full_transcript: bool, query: str)
                 - get_local_time(location: str)
                 - generate_prompt_from_image(imgURL: str)
                 - replyFromImage(imgURL: str, query: str)
@@ -348,7 +342,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             collected_images_from_web.extend(image_urls[:10])
                 else:
                     tool_result = await tool_result_gen if asyncio.iscoroutine(tool_result_gen) else tool_result_gen
-                if function_name in ["get_youtube_metadata", "get_youtube_transcript"]:
+                if function_name in ["transcribe_audio"]:
                     collected_sources.append(function_args.get("url"))
                 elif function_name == "web_search":
                     if "current_search_urls" in memoized_results:

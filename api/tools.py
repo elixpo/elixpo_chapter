@@ -53,31 +53,22 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "get_youtube_metadata",
-            "description": "Get metadata from a YouTube URL",
+            "name": "transcribe_audio",
+            "description": "Transcribe audio from a YouTube URL, optionally using a provided transcript or extracting relevant information based on a query.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "url": {
                         "type": "string",
                         "description": "The YouTube URL"
-                    }
-                },
-                "required": ["url"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_youtube_transcript",
-            "description": "Get transcript from a YouTube URL",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {
+                    },
+                    "full_transcript": {
+                        "type": "boolean",
+                        "description": "Optional boolean, if user wants full transcript or some part of it based on query",
+                    },
+                    "query": {
                         "type": "string",
-                        "description": "The YouTube URL"
+                        "description": "Optional query to extract relevant information from the transcript",
                     }
                 },
                 "required": ["url"]
