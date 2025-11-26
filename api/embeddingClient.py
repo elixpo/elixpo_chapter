@@ -12,7 +12,7 @@ class EmbeddingModelManager(BaseManager):
 EmbeddingModelManager.register("EmbeddingService")
 
 class EmbeddingClient:
-    def __init__(self, address=("localhost", 5002), authkey=b"embedding_secret", max_retries=3, retry_delay=1.0):
+    def __init__(self, address=("localhost", 5010), authkey=b"embedding_secret", max_retries=3, retry_delay=1.0):
         self.address = address
         self.authkey = authkey
         self.max_retries = max_retries

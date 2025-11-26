@@ -13,7 +13,6 @@ import json
 import uuid
 import multiprocessing as mp
 from hypercorn.config import Config
-from getYoutubeDetails import get_youtube_transcript
 from collections import deque
 from datetime import datetime
 import requests
@@ -507,36 +506,6 @@ async def testResponse():
     })
 
 
-@app.route("/transcript", methods=["GET"])
-async def transcript():
-    now = datetime.utcnow()
-    window = transcript_rate_limit["window"]
-    limit = transcript_rate_limit["limit"]
-    reqs = transcript_rate_limit["requests"]
-
-    while reqs and (now - reqs[0]).total_seconds() > window:
-        reqs.popleft()
-    if len(reqs) >= limit:
-        return jsonify({"error": "Rate limit exceeded. Max 20 requests per minute."}), 429
-    reqs.append(now)
-
-    video_url = request.args.get("url") or request.args.get("video_url")
-    video_id = request.args.get("id") or request.args.get("video_id")
-    if not video_url and not video_id:
-        return jsonify({"error": "Missing 'url' or 'id' parameter"}), 400
-
-    if not video_url and video_id:
-        video_url = f"https://youtu.be/{video_id}"
-
-    loop = asyncio.get_event_loop()
-    transcript_text = await loop.run_in_executor(
-        None, lambda: get_youtube_transcript(video_url)
-    )
-
-    if not transcript_text:
-        return jsonify({"error": "Transcript not available"}), 404
-
-    return jsonify({"transcript": transcript_text})
 
 
 @app.route("/health", methods=["GET"])
@@ -578,7 +547,7 @@ async def embedding_stats():
         return jsonify({
             "status": "ok",
             "ipc_mode": is_using_ipc_embedding(),
-            "server_address": "localhost:5002",
+            "server_address": "localhost:5010",
             "active_operations": active_ops,
             "total_requests": global_stats["total_requests"],
             "successful_requests": global_stats["successful_requests"], 
