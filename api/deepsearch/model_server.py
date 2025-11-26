@@ -94,7 +94,8 @@ class ipcModules:
             doc_embedding=query_emb,
             candidate_embeddings=sent_emb,
             sentences=sentences,
-            diversity=diversity
+            diversity=diversity,
+            top_k=top_k
         )
 
 
