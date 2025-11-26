@@ -26,10 +26,13 @@ def write_to_plan(reqID: str, plan_data: Optional[dict] = None):
         for item in planning_data["subqueries"]:
             if(item["id"] == plan_data["id"]):
                 print(item)
+                item["query"] = plan_data["query"]
                 item["urls"] = plan_data["urls"]
                 item["response"] = plan_data["information"]
                 item["time_taken"] = plan_data["time_taken"]
                 item["reqID"] = plan_data["reqID"]
+                item["videoTitle"] = plan_data.get("videoTitle", "")
+                
     with open(f"searchSessions/{reqID}/{reqID}_planning.json", "w") as f:
         json.dump(planning_data, f, indent=4)
 

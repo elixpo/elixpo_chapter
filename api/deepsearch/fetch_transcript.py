@@ -5,9 +5,12 @@ from pydub import AudioSegment
 from multiprocessing.managers import BaseManager
 import asyncio
 import re
+import time
 from urllib.parse import urlparse, parse_qs
 from typing import Optional, Iterable
 from responseGenerator import generate_intermediate_response
+from writer import write_to_plan
+
 
 class modelManager(BaseManager): pass
 modelManager.register("accessSearchAgents")
@@ -71,7 +74,8 @@ async def download_audio(url):
     return wav_path
 
 
-async def transcribe_audio(url, full_transcript: Optional[str] = None, query: Optional[str] = None):
+async def transcribe_audio(url, full_transcript: Optional[str] = None, query: Optional[str] = None, priority: str = "high", reqID: str = "", id: int = 0):
+    start_time = time.time()
     transcription = ""
     video_id = get_youtube_video_id(url)
     print(f"[INFO] Starting transcription for video ID: {video_id}")
@@ -95,14 +99,45 @@ async def transcribe_audio(url, full_transcript: Optional[str] = None, query: Op
                 sentences.extend([s.strip() for s in piece.split('.') if s.strip()])
             result += '. '.join(sentences) + '. '
     result += f"Video Titled as {meta_data}"
-    transcription = await generate_intermediate_response(url, query, result, "high")
+    end_time = time.time()
+    print(f"[INFO] Transcription and extraction took {end_time - start_time:.2f} seconds.")
+    transcription = await generate_intermediate_response(url, query, result, priority)
     print(f"[INFO] LLM response: {transcription}")
+
     return {
-        "video_id": video_id,
-        "video_title": meta_data,
-        "matched_pieces": transcription,
+        "query": query,
+        "id" : id,
+        "url": url,
+        "priority": priority,
+        "time_taken" : f"{(end_time - start_time):.2f}s",
+        "videoTitle": meta_data,
+        "information": transcription,
     }
 
 if __name__ == "__main__":
-    url = "https://www.youtube.com/watch?v=a_hdKTJGukk"
-    transcript = asyncio.run(transcribe_audio(url, full_transcript=None, query=None))
+    data_block = {
+            "id": 4,
+            "q": "summarize the video",
+            "priority": "high",
+            "direct_text": False,
+            "youtube": [
+                {
+                    "url" : "https://www.youtube.com/watch?v=FLal-KvTNAQ",
+                    "full_transcript": False
+                }
+            ],
+            "document": [],
+            "time": None,
+            "full_transcript": False,
+            "max_tokens": 700,
+            "requestID": "test123"
+        },
+    url = data_block["youtube"][0]["url"]
+    full_transcript = data_block["youtube"][0].get("full_transcript", None)
+    query = data_block["q"]
+    priority = data_block["priority"]
+    reqID = data_block["requestID"]
+    id = data_block["id"]
+
+    transcript = asyncio.run(transcribe_audio(url, full_transcript, query, priority, reqID, id))
+    write_to_plan(reqID, transcript)
