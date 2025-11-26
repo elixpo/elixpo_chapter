@@ -1,14 +1,31 @@
+import os
+from config import BASE_CACHE_DIR
+from pytubefix import AsyncYouTube
+from pydub import AudioSegment
+from multiprocessing.managers import BaseManager
+import asyncio
+import re
+import time
 from urllib.parse import urlparse, parse_qs
 from typing import Optional, Iterable
-import re
-from conditional_print import conditional_print
-from pytube import YouTube, exceptions
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
-from youtube_transcript_api.formatters import TextFormatter
-import yt_dlp
-from config import MAX_TRANSCRIPT_WORD_COUNT, get_youtube_video_metadata_show_log
 
+
+class modelManager(BaseManager): pass
+modelManager.register("accessSearchAgents")
+modelManager.register("ipcService")
+manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+manager.connect()
+search_service = manager.accessSearchAgents()
+modelService = manager.ipcService()
+
+def youtubeMetadata(url: str):
+    metadata = search_service.get_youtube_metadata(url)
+    return metadata
+
+def ensure_cache_dir(video_id):
+    path = os.path.join(BASE_CACHE_DIR, video_id)
+    os.makedirs(path, exist_ok=True)
+    return path
 
 def get_youtube_video_id(url):
     print("[INFO] Getting Youtube video ID")
@@ -29,81 +46,64 @@ def get_youtube_video_id(url):
             return video_id
     return None
 
-
-def get_youtube_metadata(url, show_logs=get_youtube_video_metadata_show_log):
-    print("[INFO] Getting Youtube Metadata")
+async def download_audio(url):
     video_id = get_youtube_video_id(url)
-    if not video_id:
-        conditional_print(f"[yt-dlp] Invalid URL provided for metadata: {url}", show_logs)
-        return None
-    url = f"https://youtu.be/{video_id}" 
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'simulate': True,
-        'extract_flat': True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        title = info.get('title')
-        duration = info.get('duration', 0)
-        duration_m, duration_s = divmod(duration, 60)
-        finalDetails = f"{title} ({duration_m}m {duration_s}s)"
-        return finalDetails
+    cache_folder = ensure_cache_dir(video_id)
+    wav_path = os.path.join(cache_folder, f"{video_id}.wav")
+    
+    if os.path.exists(wav_path):
+        return wav_path
+    
+    yt = AsyncYouTube(url, use_oauth=True, allow_oauth_cache=True)
+    streams = await yt.streams()
+    audio_streams = streams.filter(only_audio=True)
+    preferred_codecs = ["opus", "aac", "mp4a.40.2", "vorbis"]
+    audio_streams = [s for s in audio_streams if s.audio_codec in preferred_codecs]
+    audio_stream = max(audio_streams, key=lambda s: int(s.abr.replace("kbps", "")))
+    
+    extension = audio_stream.mime_type.split("/")[1]
+    tmp_path = os.path.join(cache_folder, f"{video_id}.{extension}")
+    audio_stream.download(output_path=os.path.dirname(tmp_path), filename=os.path.basename(tmp_path))
+    
+    audio = AudioSegment.from_file(tmp_path, format=extension)
+    audio.export(wav_path, format="wav")
+    os.remove(tmp_path)
+    
+    return wav_path
 
 
-
-def get_youtube_transcript(url, show_logs=True, languages: Iterable[str] = ("en",),preserve_formatting: bool = False,):
-    print("[INFO] Getting Youtube Transcript")
+async def transcribe_audio(url, full_transcript: Optional[str] = None, query: Optional[str] = None):
+    start_time = time.time()
+    transcription = ""
     video_id = get_youtube_video_id(url)
-    if not video_id:
-        conditional_print("Attempted to get transcript with no video ID.", show_logs)
-        return None
-
-    try:
-        try:
-            entries = YouTubeTranscriptApi().list(video_id).find_transcript(languages).fetch(preserve_formatting=preserve_formatting)
-            conditional_print(f"Found English ('en') transcript for video ID: {video_id}", show_logs)
-        except NoTranscriptFound:
-            conditional_print(f"No 'en' transcript found. Trying other available languages.", show_logs)
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            available = list(transcript_list._manually_created_transcripts.values()) + list(transcript_list._generated_transcripts.values())
-            if not available:
-                conditional_print(f"No transcripts found in any language for video ID: {video_id}", show_logs)
-                return None
-            transcript = available[0]
-            conditional_print(f"Using transcript in '{transcript.language_code}'", show_logs)
-            entries = transcript.fetch()
-
-        if not entries:
-            raise ValueError("Transcript fetch returned no entries.")
-        full_text = " ".join(entry.text for entry in entries)
-        
-        words = full_text.split()
-        if len(words) > MAX_TRANSCRIPT_WORD_COUNT:
-            conditional_print(f"Transcript length ({len(words)} words) exceeds MAX_TRANSCRIPT_WORD_COUNT ({MAX_TRANSCRIPT_WORD_COUNT}). Truncating.", show_logs)
-            return " ".join(words[:MAX_TRANSCRIPT_WORD_COUNT]) + "..."
-        return full_text
-        
-        
-
-    except NoTranscriptFound:
-        conditional_print(f"No transcript available for video ID: {video_id}", show_logs)
-    except TranscriptsDisabled:
-        conditional_print(f"Transcripts are disabled for video ID: {video_id}", show_logs)
-    except Exception as e:
-        conditional_print(f"Unexpected error while fetching transcript for {video_id}: {type(e).__name__} - {e}", show_logs)
-
-    return None
-
-
+    print(f"[INFO] Starting transcription for video ID: {video_id}")
+    meta_data = youtubeMetadata(url)
+    print(f"[INFO] Video title: {meta_data}")
+    audio = await download_audio(url)
+    transcription = modelService.transcribeAudio(audio)
+    print(f"[INFO] Completed transcription for video ID: {video_id}")
+    if full_transcript:
+        print("[INFO] Using provided full transcript.")
+        transcription = full_transcript
+    else:
+        query = query or "Provide a brief summary of the video content."
+        print("[INFO] Using generated transcription for query inference.")
+        information_piece = modelService.extract_relevant(transcription, query)
+        print(f"[INFO] Extracted {len(information_piece)} relevant pieces.")
+        for i in information_piece:
+            sentences = []
+            for piece in i:
+                sentences.extend([s.strip() for s in piece.split('.') if s.strip()])
+            transcription += '. '.join(sentences) + '. '
+    transcription += f"Video Titled as {meta_data}"
+    end_time = time.time()
+    print(f"[INFO] Transcription and extraction took {end_time - start_time:.2f} seconds.")
+    return transcription
 
 if __name__ == "__main__":
-    # metadata = get_youtube_metadata("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
-    # print("Metadata:", metadata)
-    transcript = get_youtube_transcript("https://youtu.be/S39b5laVmjs?si=myqFLQIM_A8QuyLv")
-    print("Transcript:", transcript)
+    url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
+    full_transcript = True
+    query = None
 
-
-
+    transcript = asyncio.run(transcribe_audio(url, full_transcript, query))
+    

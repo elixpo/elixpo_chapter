@@ -15,7 +15,12 @@ from urllib.parse import quote
 from config import MAX_LINKS_TO_TAKE, isHeadless
 import json
 import atexit
+import whisper
 import time
+import numpy as np
+from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
+import schedule
+from embed_utils import mmr, split_sentences
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -43,28 +48,63 @@ async def handle_accept_popup(page):
 
 class ipcModules:
     def __init__(self):
-        logger.info("Loading embedding model...")
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        logger.info("Loading embedding embed_model...")
+        self.embed_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
+        self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = self.model.to(self.device)
-        logger.info(f"Model loaded on device: {self.device}")
+        self.embed_model = self.embed_model.to(self.device)
+        logger.info(f"embed_model loaded on device: {self.device}")
         self.executor = ThreadPoolExecutor(max_workers=2)
         self._gpu_lock = threading.Lock()
         self._operation_semaphore = threading.Semaphore(2)
 
-    def encodeSemantic(self, data: list[str], query: list[str]):
-        data_embedding = self.model.encode(data, convert_to_tensor=True)
-        query_embedding = self.model.encode(query, convert_to_tensor=True)
-        return data_embedding.cpu().numpy(), query_embedding.cpu().numpy()
+    def transcribeAudio(self, audio_path: str):
+        with self._gpu_lock:
+            result = self.transcribe_model.transcribe(audio_path, language="en")
+            final_text = result["text"]
+        return final_text
+    
+    def extract_relevant(self, text, query, batch_size=64, diversity=0.4):
+        def embed_texts(texts):
+            if isinstance(texts, str):
+                texts = [texts]
+            emb = self.embed_model.encode(
+                texts,
+                convert_to_numpy=True,
+                normalize_embeddings=True,
+                batch_size=batch_size,
+                show_progress_bar=False
+            )
+            emb = np.asarray(emb)
+            if emb.ndim == 1:
+                emb = emb.reshape(1, -1)
+            return emb
 
-    def cosineScore(self, query_embedding, data_embedding, k=3):
-        query_tensor = torch.tensor(query_embedding)
-        data_tensor = torch.tensor(data_embedding)
-        cosine_scores = util.cos_sim(query_tensor, data_tensor)[0]
-        top_k = torch.topk(cosine_scores, k=k)
-        return [(int(idx), float(score)) for score, idx in zip(top_k.values, top_k.indices)]
+        sentences = split_sentences(text)
+        top_k = len(sentences) // 2 + 1
+        print(f"[info] {len(sentences)} sentences extracted")
+
+        if not sentences:
+            return []
+
+        sent_emb = embed_texts(sentences)
+        query_emb = embed_texts(query)[0]
+
+        return mmr(
+            doc_embedding=query_emb,
+            candidate_embeddings=sent_emb,
+            sentences=sentences,
+            diversity=diversity,
+            top_k=top_k
+        )
+
+
+
+    
+
+
 class searchPortManager:
-    def __init__(self, start_port=9000, end_port=9999):
+    def __init__(self, start_port=10000, end_port=19999):
         self.start_port = start_port
         self.end_port = end_port
         self.used_ports = set()
@@ -307,6 +347,112 @@ class YahooSearchAgentText:
         
         return results
 
+    async def youtube_transcript_url(self, url, agent_idx=None):
+        page = None
+        try:
+            self.tab_count += 1
+            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            
+            transcript_url = None
+            page = await self.context.new_page()
+            search_url = f"{url}"
+            await page.goto(search_url, timeout=50000)
+            await handle_accept_popup(page)
+            page.on("request", lambda req: capture_url(req, lambda url: set_transcript(url)))
+
+            def capture_url(req, callback):
+                url = req.url
+                if (
+                    "timedtext" in url or
+                    "texttrack" in url or
+                    "caption" in url
+                ):
+                    callback(url)
+
+            def set_transcript(url):
+                nonlocal transcript_url
+                transcript_url = url
+
+            await page.goto(url, wait_until="networkidle")
+            await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
+            await page.wait_for_timeout(random.randint(1000, 2000))
+
+            await page.wait_for_selector("button.ytp-subtitles-button.ytp-button", timeout=55000)
+            await page.click('button.ytp-subtitles-button.ytp-button')
+            await page.wait_for_timeout(6000)
+            print(f"[SEARCH] Tab #{self.tab_count} has found transcript fetch url of  the video url {url}  on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+                
+        except Exception as e:
+            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+        
+        return transcript_url
+
+    async def youtube_metadata(self, url, agent_idx=None):
+        blacklist = [
+            "yahoo.com/preferences",
+            "yahoo.com/account",
+            "login.yahoo.com",
+            "yahoo.com/gdpr",
+        ]
+        results = []
+        page = None
+        try:
+            self.tab_count += 1
+            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            
+            # Open new tab for this search
+            page = await self.context.new_page()
+            search_url = f"{url}"
+            await page.goto(search_url, timeout=50000)
+
+            # Handle "Accept" popup
+            await handle_accept_popup(page)
+
+            # Simulate human behavior
+            await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
+            await page.wait_for_timeout(random.randint(1000, 2000))
+
+            await page.wait_for_selector("div#title > h1 > yt-formatted-string.ytd-watch-metadata", timeout=55000)
+
+            meta_title_elements = await page.query_selector_all("div#title > h1 > yt-formatted-string.ytd-watch-metadata")
+            meta_title = None
+            if meta_title_elements:
+                meta_title = await meta_title_elements[0].text_content()
+            else:
+                meta_title = ""
+
+            print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
+            
+            # Increment pool tab count
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+                
+        except Exception as e:
+            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+        finally:
+            # Always close the tab after search
+            if page:
+                try:
+                    await page.close()
+                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                except Exception as e:
+                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+        
+        return meta_title
+    
+
     async def close(self):
         try:
             if self.context:
@@ -455,6 +601,22 @@ class accessSearchAgents:
         results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
         return results
     
+    async def _async_get_youtube_metadata(self, url):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        
+        agent, agent_idx = await agent_pool.get_text_agent()
+        results = await agent.youtube_metadata(url, agent_idx=agent_idx)
+        return results
+    
+    async def _async_get_youtube_transcript_url(self, url):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        
+        agent, agent_idx = await agent_pool.get_text_agent()
+        results = await agent.youtube_transcript_url(url, agent_idx=agent_idx)
+        return results
+    
     async def _async_image_search(self, query, max_images=10):
         if not agent_pool.initialized:
             await agent_pool.initialize_pool()
@@ -472,8 +634,14 @@ class accessSearchAgents:
     def web_search(self, query):
         return run_async_on_bg_loop(self._async_web_search(query))
     
+    def get_youtube_metadata(self, url):
+        return run_async_on_bg_loop(self._async_get_youtube_metadata(url))
+    
     def image_search(self, query, max_images=10):
         return run_async_on_bg_loop(self._async_image_search(query, max_images))
+    
+    def get_transcript_url(self, url):
+        return run_async_on_bg_loop(self._async_get_youtube_transcript_url(url))
     
     def get_agent_pool_status(self):
         return run_async_on_bg_loop(self._async_get_agent_pool_status())
@@ -483,7 +651,7 @@ def get_port_status():
     return port_manager.get_status()
 
 
-port_manager = searchPortManager(start_port=9000, end_port=9999)
+port_manager = searchPortManager(start_port=10000, end_port=19999)
 agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
 _event_loop = None
 _event_loop_thread = None
@@ -531,7 +699,7 @@ async def _close_all_agents():
 
 def shutdown_graceful(timeout=5):
     global _event_loop, _event_loop_thread
-    try:
+    try:  
         if _event_loop is None:
             return
         try:
@@ -557,14 +725,70 @@ def shutdown_graceful(timeout=5):
         
 atexit.register(shutdown_graceful)
 
+class CacheCleanupJob:
+    def __init__(self, cache_dir=BASE_CACHE_DIR, max_age_minutes=10, check_interval_minutes=5):
+        self.cache_dir = cache_dir
+        self.max_age_seconds = max_age_minutes * 60
+        self.check_interval_minutes = check_interval_minutes
+        self.scheduler_thread = None
+        self.running = False
+    
+    def cleanup_old_cache(self):
+        if not os.path.exists(self.cache_dir):
+            return
+        
+        current_time = time.time()
+        try:
+            for folder in os.listdir(self.cache_dir):
+                folder_path = os.path.join(self.cache_dir, folder)
+                if os.path.isdir(folder_path):
+                    folder_age = current_time - os.path.getmtime(folder_path)
+                    if folder_age > self.max_age_seconds:
+                        try:
+                            # Handle permission issues on Linux
+                            for root, dirs, files in os.walk(folder_path, topdown=False):
+                                for file in files:
+                                    file_path = os.path.join(root, file)
+                                    os.chmod(file_path, stat.S_IWUSR | stat.S_IRUSR)
+                                    os.remove(file_path)
+                                for dir in dirs:
+                                    dir_path = os.path.join(root, dir)
+                                    os.chmod(dir_path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IXUSR)
+                                    os.rmdir(dir_path)
+                            os.rmdir(folder_path)
+                            print(f"[CACHE] Deleted old cache folder: {folder_path}")
+                        except Exception as e:
+                            print(f"[CACHE] Error deleting {folder_path}: {e}")
+        except Exception as e:
+            print(f"[CACHE] Error during cleanup: {e}")
+    
+    def _run_scheduler(self):
+        schedule.every(self.check_interval_minutes).minutes.do(self.cleanup_old_cache)
+        while self.running:
+            schedule.run_pending()
+            time.sleep(1)
+    
+    def start(self):
+        if not self.running:
+            self.running = True
+            self.scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
+            self.scheduler_thread.start()
+            print(f"[CACHE] Cleanup job started - checking every {self.check_interval_minutes} minutes for folders older than {self.max_age_seconds // 60} minutes")
+    
+    def stop(self):
+        self.running = False
+        self.cleanup_old_cache()
+        print("[CACHE] Cleanup job stopped and final cache cleared")
+
+
 if __name__ == "__main__":
     class modelManager(BaseManager): pass
     modelManager.register("ipcService", ipcModules)
     modelManager.register("accessSearchAgents", accessSearchAgents)
     agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
-    manager = modelManager(address=("localhost", 5002), authkey=b"ipcService")
+    manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
     server = manager.get_server()
-    logger.info("Starting embedding service on port 5002...")
+    logger.info("Starting embedding service on port 5010...")
 
     try:
         _ensure_background_loop()
