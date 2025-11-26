@@ -1,12 +1,11 @@
 import requests
 import json
-from clean_query import cleanQuery
 from getImagePrompt import generate_prompt_from_image, replyFromImage
 from tools import tools
 from datetime import datetime, timezone
 from getYoutubeDetails import transcribe_audio, youtubeMetadata
 from getTimeZone import get_local_time
-from utility import fetch_url_content_parallel, webSearch, imageSearch
+from utility import fetch_url_content_parallel, webSearch, imageSearch, cleanQuery
 import random
 import logging
 import dotenv
@@ -40,6 +39,7 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
         if function_name == "cleanQuery":
             websites, youtube, cleaned_query = cleanQuery(function_args.get("query"))
             yield f"Cleaned Query: {cleaned_query}\nWebsites: {websites}\nYouTube URLs: {youtube}"
+
         elif function_name == "get_local_time":
             location_name = function_args.get("location_name")
             if location_name in memoized_results["timezone_info"]:
