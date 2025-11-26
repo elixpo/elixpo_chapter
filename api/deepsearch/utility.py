@@ -85,7 +85,7 @@ def fetch_url_content_parallel(queries, urls, max_workers=10):
 
 
 def rerank(query, information):
-    sentences = information if isinstance(information, list) else preprocess_text(str(information))
+    sentences = preprocess_text(information)
     data_embed, query_embed = embedModelService.encodeSemantic(sentences, [query])
     scores = embedModelService.cosineScore(query_embed, data_embed, k=5)  
     information_piece = ""
