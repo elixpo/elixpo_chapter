@@ -1,9 +1,9 @@
 import numpy as np
 import re
-from config import transcription   # your text
 
-def mmr(doc_embedding, candidate_embeddings, sentences,diversity=0.2):
-    top_k = len(sentences) // 2 + 1
+def mmr(doc_embedding, candidate_embeddings, sentences,diversity=0.2, top_k=None):
+    if top_k is None:
+        top_k = len(sentences) // 2 + 1
     candidate_embeddings = np.asarray(candidate_embeddings)
     doc_embedding = np.asarray(doc_embedding).reshape(-1)
 
