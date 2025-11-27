@@ -4,25 +4,25 @@ let spotlightNews = [
     "title": "Anwesha's Birthday Bash",
     "date": "2025-07-06",
     "description": "It's Anwesha's birthday! 🎉 She tried to bake a cake, but the fire alarm had other plans. Still, she managed to blow out the candles (after the firemen left). Gifts, giggles, and a lot of cake crumbs everywhere.",
-    "image": "../CSS/ASSESTS/spotlight/birthday-cake.png"
+    "image": "../CSS/ASSESTS/spotlight/asciiArt.png"
   },
   {
     "title": "Love at First Byte",
     "date": "2025-02-14",
     "description": "Anwesha's code wasn't the only thing compiling—her heart was too! She met a mysterious stranger at the coffee shop who debugged her JavaScript and stole her heart. Now she's writing love letters in Python.",
-    "image": "../CSS/ASSESTS/spotlight/love-byte.png"
+    "image": "../CSS/ASSESTS/spotlight/asciiArt.png"
   },
   {
     "title": "Portfolio Panic",
     "date": "2025-04-01",
     "description": "Anwesha accidentally uploaded her childhood diary instead of her resume. Now recruiters know about her secret crush on her math teacher and her dream to become a unicorn. Oops!",
-    "image": "../CSS/ASSESTS/spotlight/portfolio-panic.png"
+    "image": "../CSS/ASSESTS/spotlight/asciiArt.png"
   },
   {
     "title": "Falling for Bugs",
     "date": "2025-04-06",
     "description": "Debugging at midnight, Anwesha realized she was falling... for both the bugs and someone special. Turns out, love and JavaScript errors both keep her up at night. Happy endings (and semicolons) await!",
-    "image": "../CSS/ASSESTS/spotlight/falling-for-bugs.png"
+    "image": "../CSS/ASSESTS/spotlight/asciiArt.png"
   }
 ]
 

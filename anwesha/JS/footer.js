@@ -8,15 +8,15 @@ if(document.querySelector(".contactMe"))
 const socials = [
     {
         selector: '.footerContent .socialIcon[name="logo-github"], .footerContent .socialIcon:nth-child(1)',
-        url: "https://github.com/Circuit-Overtime"
+        url: "https://github.com/CSE-Anwesha"
     },
     {
         selector: '.footerContent .socialIcon[name="logo-linkedin"], .footerContent .socialIcon:nth-child(3)',
-        url: "https://linkedin.com/in/elixpo"
+        url: "https://linkedin.com/in/anwe"
     },
     {
         selector: '.footerContent .socialIcon[name="logo-instagram"], .footerContent .socialIcon:nth-child(5)',
-        url: "https://instagram.com/elixpo_"
+        url: "https://instagram.com/itz_anwesha_"
     },
     {
         selector: '.footerContent .socialIcon[name="logo-youtube"], .footerContent .socialIcon:nth-child(7)',
