@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
+    <title>Elixpo - Publications</title>
+    <link rel="stylesheet" href="../CSS/general.css" />
+    <link rel="stylesheet" href="../CSS/publications.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="https://cdn.discordapp.com/app-icons/1214916249222643752/f60abd68fff5f65f72076a5aaac5afb8.png?size=512">
+</head>
+    <body class="relative min-h-screen min-w-screen bg-white overflow-hidden items-center">
+      <canvas id="above-canvas"></canvas> 
+        <div class="absolute top-0 left-0 w-screen h-screen opacity-55 bg-[url('../CSS/ASSESTS/paperTexture.jpg')] bg-contain bg-repeat bg-center brightness-[55%] sepia-[65%] "></div>
+        <div class="navBar static h-[80px] flex items-center justify-between border-b-2 border-[#888] px-[50px] box-border mb-[5px]">
+          <p class="location text-[1.5em] z-10">WB,IN</p>
+          <p id="rootRedirect"  class="name text-[3em] cursor-pointer z-10"> Elixpo </p>
+          <ion-icon name="list" class="cursor-pointer" id="scrollInMenu"></ion-icon>
+        </div>
+
+            <div id="menuSection" class=" hidden menuSection bg-[#1D1D1B] h-full w-full fixed top-0 left-0 z-50 flex flex-col items-center justify-center gap-5 text-[#E2D9C8] text-[2em] font-extrabold tracking-widest">
+              <div class="navBar absolute top-0 h-[80px] w-full flex items-center justify-between px-[50px] box-border mb-[13px]">
+                <ion-icon name="close" id="scrollOutMenu" class="absolute right-[30px] cursor-pointer hover:text-[#ffc300] transition-[0.25s]" style="font-size: 1.5em;"></ion-icon>
+              </div>
+          
+          
+                  <div id="rootMenu" class="menuItem cursor-pointer opacity-0 font-extrabold text-[4em] leading-[120px] hover:scale-105 hover:tracking-[0.03em] transition-all duration-300 text-center uppercase mt-0 mb-0 tracking-[-0.05em] font-[Canopee,sans-serif]">Home</div>
+                  <div id="aboutMenu" class="menuItem cursor-pointer opacity-0 font-extrabold text-[4em] leading-[120px] hover:scale-105 hover:tracking-[0.03em] transition-all duration-300 text-center uppercase mt-0 mb-0 tracking-[-0.05em] font-[Canopee,sans-serif]">About</div>
+                  <div id="projectsMenu" class="menuItem cursor-pointer opacity-0 font-extrabold text-[4em] leading-[120px] hover:scale-105 hover:tracking-[0.03em] transition-all duration-300 text-center uppercase mt-0 mb-0 tracking-[-0.05em] font-[Canopee,sans-serif]">Projects</div>
+                  <div id="publicationsMenu" class="menuItem cursor-pointer opacity-0 font-extrabold text-[4em] leading-[120px] hover:scale-105 hover:tracking-[0.03em] transition-all duration-300 text-center uppercase mt-0 mb-0 tracking-[-0.05em] font-[Canopee,sans-serif]">Publications</div>
+          
+            </div>
+            <div id="toastNotification" class="fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg text-[#1B1B19] bg-[#E2D9C8] border border-[#c8c1ae] opacity-0 pointer-events-none transition-all duration-500">
+              <ion-icon name="checkmark-circle" class="text-[2em] text-[#ffc300]"></ion-icon>
+              <span class="font-bold text-[1.1em]">This is a toast notification!</span>
+            </div>
+            
+        <div id="appContainer" class="appContainer relative top-0 mx-auto w-full max-w-[1440px] h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]  overflow-y-auto overflow-x-hidden p-10" >
+            <section class="introSection mt-5 px-10 flex flex-col items-center w-full">
+                <div class="headingText text-[14em] lg:text-[12em] w-full h-[350px] flex justify-center items-center bg-[#1B1B19] text-center opacity-90 select-none rounded-[15px] tracking-[5px]">
+                    <p class="text-[#E2D9C8] transform scale-y-[1.6]">PUBLICATIONS</p>
+                  </div>
+                <div  class="descriptionText text-[5em] lg:text-[4.5em] mt-5 w-full text-left leading-[80px]">
+                    <p class="text-[#1B1B19]">Explore our latest publications, showcasing the innovative research and insights from Elixpo.</p>
+            </section>
+
+            <section class="prePublication relative mt-5 p-10 flex flex-row w-full justify-center gap-5"> 
+                <div class="stampImage bg-[url(../CSS/ASSESTS/publication/sq-1.png)] bg-cover bg-center h-[750px] w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
+                <div class="stampImage bg-[url(../CSS/ASSESTS/about/ptr-11.png)] bg-cover bg-center h-[750px] w-1/2 rounded-[10px] sepia-[65%] saturate-[200%] border-2 border-[#222]"></div>
+
+            </section>  
+
+            <section id="publications" class="publications mt-5 p-10 flex flex-col items-left w-full gap-5 overflow-hidden">
+
+            </section>
+            <section class="contactMeWrapper overflow-hidden w-full border-y-2 border-[#111] mt-10 pt-5 pb-5 justify-center select-none overflow-y-hidden">
+                <div class="contactMe animate-scroll whitespace-nowrap flex flex-row gap-[10px] w-max">
+                  <p class="contactMeText font-bold text-left text-[5em] text-[#1B1B19]"> Let's Collaborate Together!</p>
+                  <div class="contactMeBox text-[5em] flex items-center justify-center p-2 bg-[#1B1B19] text-center opacity-90 select-none rounded-[8px] cursor-pointer">
+                    <p class="text-[#E2D9C8] tracking-wide  leading-[100px] font-bold whitespace-nowrap">CONNECT WITH ME</p>
+                  </div>
+                  <p class="contactMeText font-bold text-left text-[5em] text-[#1B1B19]"> Let's Collaborate Together!</p>
+                  <div class="contactMeBox text-[5em] flex items-center justify-center p-2 bg-[#1B1B19] text-center opacity-90 select-none rounded-[8px] cursor-pointer">
+                    <p class="text-[#E2D9C8] tracking-wide  leading-[100px] font-bold whitespace-nowrap">CONNECT WITH ME</p>
+                  </div>
+                  <p class="contactMeText font-bold text-left text-[5em] text-[#1B1B19]"> Let's Collaborate Together!</p>
+                </div>
+              </section>
+
+              <footer class="w-screen left-1/2 -translate-x-1/2 relative">
+                <div class="footerContent flex flex-row justify-around mt-5 h-[40px] w-full items-left">
+                  <p class="footerName select-none text-[#111] text-[3em]"> ELIXPO </p>
+                  <div class="socials flex flex-row gap-5 mt-5 h-full items-center">
+                    <ion-icon name="logo-github" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
+                    <div class="spacer h-[10px] w-[10px] rounded-[50%] bg-[#111]"></div>
+                    <ion-icon name="logo-linkedin" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
+                    <div class="spacer h-[10px] w-[10px] rounded-[50%] bg-[#111]"></div>
+                    <ion-icon name="logo-instagram" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
+                    <div class="spacer h-[10px] w-[10px] rounded-[50%] bg-[#111]"></div>
+                    <ion-icon name="logo-youtube" class="socialIcon text-[2em] cursor-pointer hover:rotate-[10deg] transition-[0.25s]"></ion-icon>
+                  </div>
+                </div>
+              </footer>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+        <script src="../JS/BSCONFIGSCR.js" ></script>
+        <script src="../JS/linkRedirect.js" ></script>
+        <script src="../JS/fadeInReveal.js"></script>
+        <script type="module" src="../JS/curtain2.js" defer></script>
+        <script type="module" src="../JS/menu.js" defer></script>
+        <script src="../JS/scroll.js" ></script>
+        <script src="../JS/publications.js" ></script>
+        <script src="../JS/notification.js"></script>
+        <script src="../JS/footer.js"></script>
+</body>
+</html>
