@@ -1,0 +1,30 @@
+.paperTitle 
+{
+  
+  font-family: "Pathway Gothic One", sans-serif;
+}
+.paperDate 
+{
+  font-family: "Canopee", system-ui;
+}
+
+.footerName 
+{
+  font-family: "Bitcount Grid Double", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@keyframes scroll-horizontal {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll-horizontal 10s linear infinite;
+}
