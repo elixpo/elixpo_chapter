@@ -1,45 +1,40 @@
-// filepath: /e:/elixpo/JS/about.js
 
 const workExperiences = [
-    {
-        jobTitle: "Looking For a New Experience! Hire Me",
-        timeline: "Since April, 2025",
-        description: `I am a pre-final year undergraduate at JIS University. If this portfolio hooks you up a while, let's have a talk over our common interestes. 
-        Guess what? It would be awesome if I can help you with your next project or product.`
-    },
-    {
-        jobTitle: "DevOps at Pollinations",
-        timeline: "Jan 2024 - Present",
-        description: `Contributed as a DevOps Engineer at Pollinations, building community apps and helped in backend development and other 
-        open source assigmnments.`
-    },
-    {
-        jobTitle: "GDG Campus Lead",
-        timeline: "July 2025 - Present",
-        description: `Positioned as the GDG Campus Lead at JIS University, organizing events and workshops to promote Google technologies and foster a strong developer community.`
-    },
-    {
-        jobTitle: "GDG Web Dev Associate",
-        timeline: "June 2024 - 2025",
-        description: `I was a web dev associate for the Google Developers Group Club of JIS University, where I had conducted 3 engaging tech-talk sessions, with 
-        statisfactory participation, with the previlage of collaborating with other GDG clubs and speakers in my tenure`
-    },
-    {
-        jobTitle: "OSCI Mentor",
-        timeline: "August 2025 - Sept 2025",
-        description: `Positioned as an OSCI Mentor, guiding and supporting students in their open-source contributions and helping them navigate the complexities of collaborative software development.`
-    },
-    {
-        jobTitle: "GSSoc Mentor",
-        timeline: "May 2025 - Nov 2025",
-        description: `Positioned as the GSSoc Mentor, guiding and supporting students in their open-source contributions and helping them navigate the complexities of collaborative software development.`
-    },
-    {
-        jobTitle: "Mod Developer at Modrinth",
-        timeline: "April 2024 - Nov 2024",
-        description: `I used to develop mods for minecraft on modrinth, my overall downloads are 1K+ and the projects are still listed on the modrinth page! It was a fun part 
-        time involvement, while I was learning JAVA.`
-    }
+  {
+    jobTitle: "Birthday Girl in Love 💖",
+    timeline: "Since June 2025",
+    description: `Hi, I'm Anwesha! Today is my birthday and, plot twist, I think I'm falling in love (with coding... or maybe someone special? 🤭). If you’re here, you’re already part of my story. Let’s make this portfolio a little more magical together!`
+  },
+  {
+    jobTitle: "Professional Cake Eater",
+    timeline: "June 2025 - Present",
+    description: `On birthdays, calories don’t count. I’ve mastered the art of eating cake while debugging JavaScript. If you need someone who can multitask between sugar rushes and code crashes, I’m your girl!`
+  },
+  {
+    jobTitle: "Hopeless Romantic (and Coder)",
+    timeline: "2025 - Present",
+    description: `I write code and love letters with equal passion. Sometimes my variables are named after my crush. If you spot a 'let heart = true;', just smile and scroll on.`
+  },
+  {
+    jobTitle: "Chief Meme Officer",
+    timeline: "2024 - Present",
+    description: `I believe every project needs a meme repo. My pull requests come with a side of laughter. If you want your standups to be less boring, I’m available for hire (and for puns).`
+  },
+  {
+    jobTitle: "Birthday Wish Granter",
+    timeline: "Today Only!",
+    description: `It’s my birthday, so I’m granting wishes! Want a bug fixed? A feature shipped? Or just a virtual cupcake? Drop a message and let’s make it happen.`
+  },
+  {
+    jobTitle: "Love-struck Debugger",
+    timeline: "2025",
+    description: `Debugging code is easy. Debugging feelings? Not so much. If you see me staring at my screen and smiling, I’m probably thinking about you (or that one perfect for-loop).`
+  },
+  {
+    jobTitle: "Portfolio Queen 👑",
+    timeline: "Forever",
+    description: `This is Anwesha’s world, and you’re just scrolling in it. Thanks for visiting my portfolio on my special day. May your bugs be few and your birthdays be sweet!`
+  }
 ];
 
 const workExpSection = document.getElementById('workExperience');
