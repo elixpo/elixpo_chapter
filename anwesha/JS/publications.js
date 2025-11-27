@@ -2,21 +2,20 @@
 
 const publications = [
     {
-        title: "Exploring Microcode CPU Instructions with RISC-V Breadboard Computer",
+        title: "Anwesha Discovers JavaScript: A Love Story in 404 Lines",
         year: "2025",
         isNew: true
     },
     {
-        title: "Decoding the Vulnerabilities of Large AI Models: Practical Demonstrations and Defensive Strategies Against Poisoning, Extraction, and Prompt Injection Attacks",
+        title: "Debugging Her Heart: Anwesha's Guide to Catching Feelings (and Exceptions)",
         year: "2025",
         isNew: false
     },
     {
-        title: "Predictive Analysis of Autism Spectrum Disorder (ASD) Traits: Integrating Supervised Machine Learning and Exploratory Data Insights",
+        title: "Birthday Breakpoints: How Anwesha Paused the World for Cake and Romance",
         year: "2024",
         isNew: false
     },
-    
 ];
 
 function renderPublications(publications) {

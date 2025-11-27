@@ -1,28 +1,28 @@
 let recommendations = [
-    {
-      "content" : "I worked with Ayushman on the Pollinations project where he contributed to our search infrastructure and API documentation. He implemented reliable fallback systems, maintained key services, and took initiative on additional improvements that benefited the project.",
-      "name" : "Thomash Haferlach",
-      "designation" : "Beekeeper at Pollinations.AI",
-      "image": "https://media.licdn.com/dms/image/v2/D4D03AQH5H0wOkQnXaw/profile-displayphoto-shrink_400_400/B4DZcWBd8cGcAg-/0/1748421173380?e=1761782400&v=beta&t=dTSqdbz31BbOFoX9mNUVjvB3_m3X_Oo3GS5EfxxK-y4"
-    },
-    {
-    "content" : "Ayushman has strong problem-solving skills and a great spirit for collaboration. Additionally, Ayushman is a quick learner making him an asset to any academic or professional setting.",
-    "name" : "Dr. Subarsha Banerjee",
-    "designation" : "Assistant Professor in JIS University",
-    "image": "https://media.licdn.com/dms/image/v2/C4E03AQGIk84i2XqYkQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1649254631143?e=1761782400&v=beta&t=Ui71bPx1cwn4nbtJBvivl57SyhJhARc4YvDjlAklEX4"
-    },
-    {
-    "content" : "As a student, Ayushman has consistently demonstrated a deep curiosity and dedication towards learning. His academic performance has been marked by a strong grasp of complex concepts and a remarkable ability to apply theoretical knowledge in practical situations. Whether it was through class participation, project work, or independent research, Ayushman has shown a commitment to excellence that sets him apart.",
-    "name" : "Dr. Bidisha Bhabani",
-    "designation" : "Assistant Professor in JIS University",
-    "image": "https://media.licdn.com/dms/image/v2/D5603AQFVTKreK1ABIQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1705933823066?e=1761782400&v=beta&t=-7b2O9bNG1hB-s2FowKVZkDsckX9EBIzvkovlhRLsUw"
-    },
-    {
-      "content" : "I had the pleasure of working closely with Ayushman Bhattacharya on an AI-driven project, and honestly, I couldn’t have asked for a better collaborator. From day one, Ayushman really impressed me with his technical expertise and his willingness to jump right in. He has a great grasp of backend development and AI workflows, and he always managed to deliver solid, reliable solutions that genuinely boosted our project’s performance.",
-      "name" : "Abhishek Kushwaha",
-      "designation" : "Co-Founder & CTO @hyrecruitai",
-      "image" : "https://media.licdn.com/dms/image/v2/D4D03AQE-GqMi1cMCPg/profile-displayphoto-scale_400_400/B4DZisNp9WHwAo-/0/1755235919555?e=1761782400&v=beta&t=JvUdm1GUB77j-D1_Dq1hrRSgoi3UnoSLGfAwCgrRmyU"
-    }
+  {
+    "content" : "Working with Anwesha is like debugging with a cup of coffee—full of surprises and occasional heart palpitations. She once refactored my code and my heart at the same time. If you ever need someone to turn a bug into a feature (or a frown into a smile), she's your girl. Happy birthday Anwesha, may your commits be bug-free and your crushes reciprocated!",
+    "name" : "Cupid DevOps",
+    "designation" : "Love Deployment Engineer",
+    "image": "https://randomuser.me/api/portraits/women/44.jpg"
+  },
+  {
+    "content" : "Anwesha doesn’t just write code, she writes love letters in JavaScript. Her pull requests are as sweet as birthday cake, and her merge conflicts are always resolved with a smile. If falling in love was a sprint, she’d already be in production. Happy birthday to the queen of both hearts and GitHub!",
+    "name" : "Heartful Reviewer",
+    "designation" : "Senior Romantic Coder",
+    "image": "https://randomuser.me/api/portraits/women/47.jpg"
+  },
+  {
+    "content" : "Every time Anwesha pushes to main, my heart skips a beat. She’s the only developer who can cause a merge conflict in my feelings. On her birthday, may her code compile on the first try and her love life be as smooth as a successful npm install.",
+    "name" : "Secret Admirer",
+    "designation" : "Anonymous Code Enthusiast",
+    "image": "https://randomuser.me/api/portraits/lego/6.jpg"
+  },
+  {
+    "content" : "Anwesha’s portfolio is like a rom-com: full of unexpected twists, heartfelt moments, and a happy ending. She’s the only one who can debug my loneliness and refactor my sadness. Happy birthday Anwesha—may your love story be as epic as your JavaScript skills!",
+    "name" : "Romantic Algorithm",
+    "designation" : "Love Story Architect",
+    "image": "https://randomuser.me/api/portraits/women/68.jpg"
+  }
 ]
 
 
