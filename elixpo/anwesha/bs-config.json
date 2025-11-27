@@ -17,7 +17,14 @@
       }
     }
   },
+  "watch": true,
   "files": ["*.html", "css/*.css", "js/*.js"],
+  "watchOptions": {
+    "ignoreInitial": true,
+    "ignored": ["node_modules", ".git", "*.json"]
+  },
   "injectChanges": true,
-  "codeSync": false
+  "codeSync": true,
+  "reloadDelay": 500,
+  "notify": true
 }
