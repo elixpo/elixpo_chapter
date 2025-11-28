@@ -18,6 +18,25 @@
 
 ---
 
+---
+
+## 🎂✨ Happy Birthday, Anwesha Chakraborty! ✨🎂
+
+<div align="center">
+
+<img src="https://img.icons8.com/color/96/000000/birthday-cake.png" alt="Birthday Cake" width="96" />
+
+# 🥳 **Anwesha's Special Day!** 🥳
+
+</div>
+
+> **Wishing a fantastic birthday to Anwesha Chakraborty — our brilliant CSE star, creative mind, and cherished collaborator!**
+
+
+> _From all of us at Elixpo: Have a spectacular birthday, Anwesha!_ 🎂🚀
+
+--- 
+
 ## 🚀 Our Mission & Vision
 
 At Elixpo, we are dedicated to building a future where AI is **open, ethical, and accessible to everyone**. Our mission is to create a community-driven ecosystem where developers, creators, and enthusiasts can collaborate, learn, and innovate without barriers like paywalls or proprietary restrictions. We believe in transparency, responsible development, and the power of interconnected tools to build a better future.
