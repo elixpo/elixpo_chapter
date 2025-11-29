@@ -34,7 +34,7 @@ async def generate_prompt_from_image(imgURL: str) -> str:
     )
 
     data = {
-        "model": "openai-large",
+        "model": os.getenv("MODEL"),
         "messages": [
             {
                 "role": "user",
@@ -83,7 +83,7 @@ async def replyFromImage(imgURL: str, query: str) -> str:
     )
 
     data = {
-        "model": "openai",
+        "model": os.getenv("MODEL"),
         "messages": [
             {
                 "role": "user",
