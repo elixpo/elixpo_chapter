@@ -5,10 +5,15 @@ from dotenv import load_dotenv
 import os
 import requests
 
+load_dotenv()
+
 async def generate_prompt_from_image(imgURL: str) -> str:
     imageBase64 = image_url_to_base64(imgURL)   
-    api_url = "https://text.pollinations.ai/openai"
-    headers = {"Content-Type": "application/json"}
+    api_url = "https://enter.pollinations.ai/api/generate/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('TOKEN')}"
+        }
 
 
     instruction = (
@@ -39,7 +44,6 @@ async def generate_prompt_from_image(imgURL: str) -> str:
                 ]
             }
         ],
-        "token": os.getenv("TOKEN"),
         "max_tokens": 50
     }
 
@@ -53,8 +57,11 @@ async def generate_prompt_from_image(imgURL: str) -> str:
 
 async def replyFromImage(imgURL: str, query: str) -> str:
     imageBase64 = image_url_to_base64(imgURL)  
-    api_url = "https://text.pollinations.ai/openai"
-    headers = {"Content-Type": "application/json"}
+    api_url = "https://enter.pollinations.ai/api/generate/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('TOKEN')}"
+        }
 
     instruction = (
         
@@ -87,7 +94,7 @@ async def replyFromImage(imgURL: str, query: str) -> str:
                 ]
             }
         ],
-        "token": os.getenv("TOKEN")
+
     }
 
     response = requests.post(api_url, headers=headers, json=data)
@@ -105,7 +112,7 @@ def image_url_to_base64(image_url):
 
 if __name__ == "__main__":
     async def main():
-        image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg/500px-Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg" 
+        image_url = "https://media.architecturaldigest.com/photos/66a951edce728792a48166e6/16:9/w_1920,c_limit/GettyImages-955441104.jpg" 
         prompt = await generate_prompt_from_image(image_url)
         print(prompt)
     asyncio.run(main()) 
