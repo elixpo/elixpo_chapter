@@ -21,6 +21,7 @@ import numpy as np
 from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
 import schedule
 from embed_utils import mmr, split_sentences
+import uuid
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -47,13 +48,15 @@ async def handle_accept_popup(page):
         print(f"[WARN] No accept popup found: {e}")
 
 class ipcModules:
+    _instance_id = None
     def __init__(self):
-        logger.info("Loading embedding embed_model...")
+        ipcModules._instance_id = str(uuid.uuid4())[:8]
+        logger.info(f"[INSTANCE {ipcModules._instance_id}] Loading embedding model...")
         self.embed_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
         self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.embed_model = self.embed_model.to(self.device)
-        logger.info(f"embed_model loaded on device: {self.device}")
+        logger.info(f"[INSTANCE {ipcModules._instance_id}] embedding model loaded on device: {self.device}")
         self.executor = ThreadPoolExecutor(max_workers=2)
         self._gpu_lock = threading.Lock()
         self._operation_semaphore = threading.Semaphore(2)
@@ -65,6 +68,7 @@ class ipcModules:
         return final_text
     
     def extract_relevant(self, text, query, batch_size=64, diversity=0.4):
+        logger.info(f"[INSTANCE {ipcModules._instance_id}] extract_relevant called")
         def embed_texts(texts):
             if isinstance(texts, str):
                 texts = [texts]
@@ -542,9 +546,9 @@ class YahooSearchAgentImage:
             await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
             await page.wait_for_timeout(random.randint(1000, 2000))
 
-            await page.wait_for_selector("li > a.redesign-img > img", timeout=15000)
+            await page.wait_for_selector("div.sres-cntr > ul#sres > li.ld > a.redesign-img > img", timeout=5000)
 
-            img_elements = await page.query_selector_all("li > a.redesign-img > img")
+            img_elements = await page.query_selector_all("div.sres-cntr > ul#sres > li.ld > a.redesign-img > img")
             for img in img_elements[:max_images]:
                 src = await img.get_attribute("data-src") or await img.get_attribute("src")
                 if src and src.startswith("http"):

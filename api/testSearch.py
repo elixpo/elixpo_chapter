@@ -14,7 +14,7 @@ search_service = manager.accessSearchAgents()
 
 
 def main():
-    urls = search_service.web_search("elixpo_chapter")
+    urls = search_service.image_search("eiffel_tower")
     print(urls)
 
 if __name__ == "__main__":

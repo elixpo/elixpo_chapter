@@ -6,7 +6,7 @@ from loguru import logger
 import asyncio
 import random
 import json
-
+import textwrap
 
 load_dotenv()
 
@@ -37,16 +37,14 @@ async def generate_plan(prompt: str, max_tokens: Optional[int] = 600) -> str:
         }
         ]
     }
-        Never output text outside JSON.
-        Never include emojis.
+        Never output text outside JSON. Never include emojis.
         Use at least 2 subqueries for complex questions.
-        Document URLs:
-        Only include URLs explicitly typed by the user.
-        Never infer or create URLs.
+        Document URLs/Youtube URLs: Only include URLs explicitly typed by the user.
         Don't mention youtube urls in queries, just extract them to the youtube field.
         Prioritize direct_response true for simple factual queries.
         Allocate token budgets based on subquery complexity.
         Ensure the final JSON is syntactically correct.
+        Make the user made queries better with sentence case.
 """
 
     payload = {
@@ -108,17 +106,65 @@ async def generate_plan(prompt: str, max_tokens: Optional[int] = 600) -> str:
 
 if __name__ == "__main__":
     async def main():
-        user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ and tell me what's in this document url https://www.w3.org/"
-        reply = await generate_plan(user_prompt)
+        # user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ and tell me what's in this document url https://www.w3.org/"
+        # reply = await generate_plan(user_prompt)
         reqID = "test124"
-        try:
-            reply_json = json.loads(reply)
-            os.makedirs(f"searchSessions/{reqID}", exist_ok=True)
-            with open(f"searchSessions/{reqID}/{reqID}_planning.json", "w") as f:   
-                f.write(json.dumps(reply_json, indent=2))
-        except Exception:
-            print("Error parsing JSON or writing file.")
-        print("\n--- Generated Reply ---\n")
-        print(reply)
+        reply = """
+        {
+            "main_query": "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ and tell me what's in this document url https://www.w3.org/",
+            "max_tokens": 1500,
+            "subqueries": [
+                {
+                    "id": 1,
+                    "q": "What is 1+1?",
+                    "priority": "high",
+                    "direct_response": true,
+                    "max_tokens": 100
+                },
+                {
+                    "id": 2,
+                    "q": "Who invented zero?",
+                    "priority": "high",
+                    "direct_response": true,
+                    "max_tokens": 200
+                },
+                {
+                    "id": 3,
+                    "q": "What is the current time in Kolkata?",
+                    "priority": "high",
+                    "direct_response": true,
+                    "time_based_query": "Asia/Kolkata",
+                    "max_tokens": 100
+                },
+                {
+                    "id": 4,
+                    "q": "Summarize the content of the YouTube video.",
+                    "priority": "high",
+                    "direct_response": false,
+                    "youtube": [
+                        {
+                            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                            "full_text": true
+                        }
+                    ],
+                    "max_tokens": 800
+                },
+                {
+                    "id": 5,
+                    "q": "What is the World Wide Web Consortium (W3C)?",
+                    "priority": "medium",
+                    "direct_response": false,
+                    "document": [
+                        {
+                            "url": "https://www.w3.org/",
+                            "query": "Provide a summary of the W3C organization and its mission."
+                        }
+                    ],
+                    "max_tokens": 300
+                }
+            ]
+        }"""
+        
+            
 
     asyncio.run(main())
