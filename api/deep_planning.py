@@ -10,120 +10,43 @@ import json
 
 load_dotenv()
 
-async def generate_plan(prompt: str, max_tokens: Optional[int] = 120) -> str:
+async def generate_plan(prompt: str, max_tokens: Optional[int] = 600) -> str:
     logger.info(f"Generating planning for prompt: {prompt} with max tokens: {max_tokens}")
 
-    system_prompt = """
-    You are an intelligent conversational AI with an integrated "research detection engine".
-
-Your task is to classify queries and produce a structured JSON plan for a deep-search pipeline.
-
-=====================================================
-CLASSIFICATION:
-=====================================================
-
-Type A — Simple / conversational / trivial queries:
-Examples: greetings, jokes, small talk, math like 1+1, trivial facts.
-
-Type B — Research-required queries:
-Examples: technical topics, complex reasoning, multi-step reasoning,
-YouTube summaries, video-based queries, document-based questions,
-historical or scientific analyses, or anything requiring retrieval
-from links, PDFs, videos, or web content.
-
-=====================================================
-TYPE A OUTPUT FORMAT:
-=====================================================
-If the user query is Type A, output ONLY:
-
-{
-  "main_query": "<the user's query>",
-  "is_final": true,
-  "response": "<your short natural reply>",
-  "subqueries": [],
-  "targets": [],
-  "depth": 0,
-  "max_tokens": 200
-}
-
-=====================================================
-TYPE B OUTPUT FORMAT:
-=====================================================
-If the query requires research, output ONLY this JSON:
-
-{
-  "main_query": "<the user's full query>",
-  "is_final": false,
-  "max_tokens": <global token budget>,
-  "subqueries": [
+    system_prompt = """You are an intelligent conversational AI with an integrated "research detection engine".
+    Your task is to classify queries and produce a structured JSON plan for a deep-search pipeline.
     {
-      "id": 1,
-      "q": "<expanded subquery for LLM reasoning OR a list depending on content>",
-      "priority": "high/medium/low",
-      "direct_text": true/false,
-      "youtube": ["<only YouTube URLs explicitly provided>"],
-      "document": ["<only URLs explicitly provided>"],
-      "time": "<timezone or null>",
-      "full_transcript": true/false,
-      "max_tokens": <token budget for this subquery>
+    "main_query": "<the user's full query>",
+    "max_tokens": <global token budget>,
+    "subqueries": [
+        {
+        "id": 1,
+        "q": "<expanded subquery for LLM reasoning OR a list depending on content>",
+        "priority": "high/medium/low",
+        "direct_response": true/false,
+        "youtube": [
+            {"url": "<youtube video URL>"},
+            {"full_text": true/false}
+        ],
+        "document": [
+            {"url": "<document URL given by user>"},
+            {"query" : "<specific info to extract from the document>"}
+        ],
+        "time_based_query": "<timezone or null>",
+        "max_tokens": <token budget for this subquery>
+        }
+        ]
     }
-  ],
-  "targets": ["web", "pdf", "academic", "youtube"],
-  "depth": <1 to 6>
-}
-
-=====================================================
-CRITICAL RULES:
-=====================================================
-
-1. Never output text outside JSON.
-2. Never include emojis.
-3. Use at least 2 subqueries for complex questions.
-4. Document URLs:
-   - Only include URLs explicitly typed by the user.
-   - Never infer or create URLs.
-5. YouTube URLs:
-   - Only if explicitly included in the user's query.
-
-=====================================================
-YOUTUBE-SPECIFIC RULES:
-=====================================================
-
-You MUST analyze what the user wants from each YouTube URL.
-
-A. If the user clearly wants a full transcript:
-   - Set "full_transcript": true
-   - Set "q": []
-
-B. If the user wants contextual information (e.g., summary, explanation, extraction):
-   - Set "full_transcript": false
-   - Set "q": "explain what the user needs from the video in short"
-
-C. If user asks multiple questions about the same video:
-   - "q" must be a list of all such questions, each as a separate item.
-
-D. If user provides a YouTube URL but does not clarify intent:
-   - Infer the intent minimally:
-       → If they say "video about X?" → treat as contextual query with ["describe"].
-       → Otherwise default to summary:
-         "q": ["summary"], "full_transcript": false.
-
-=====================================================
-TOKEN MANAGEMENT RULES:
-=====================================================
-
-- Each subquery MUST contain "max_tokens".
-- The main plan MUST contain a top-level "max_tokens".
-- High priority tasks → larger token budgets.
-- Full transcript tasks → largest token budget.
-- Never exceed global max_tokens.
-
-=====================================================
-OUTPUT:
-=====================================================
-- Only strict JSON.
-- No markdown.
-- No explanations.
+        Never output text outside JSON.
+        Never include emojis.
+        Use at least 2 subqueries for complex questions.
+        Document URLs:
+        Only include URLs explicitly typed by the user.
+        Never infer or create URLs.
+        Don't mention youtube urls in queries, just extract them to the youtube field.
+        Prioritize direct_response true for simple factual queries.
+        Allocate token budgets based on subquery complexity.
+        Ensure the final JSON is syntactically correct.
 """
 
     payload = {
@@ -183,7 +106,7 @@ if __name__ == "__main__":
     async def main():
         user_prompt = "what's 1+1 and who invented zero, what's the time of kolkata now? and summarize the youtube video https://www.youtube.com/watch?v=dQw4w9WgXcQ and tell me what's in this document url https://www.w3.org/"
         reply = await generate_plan(user_prompt)
-        reqID = "test123"
+        reqID = "test124"
         try:
             reply_json = json.loads(reply)
             os.makedirs(f"searchSessions/{reqID}", exist_ok=True)
