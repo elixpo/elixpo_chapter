@@ -18,7 +18,7 @@
 
 ---
 
-## 🌟 Nominate Me for GitHub Stars Please!
+## 🌟 GitHub Stars Program!
 ## If you value our work and want to help us grow --  Please consider [Nominate Me for GitHub Stars](https://stars.github.com/nominate/).  
 
 ### **Your support amplifies our reach, inspires contributors, and strengthens the open-source community!**
