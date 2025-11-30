@@ -19,7 +19,8 @@
 ---
 ## 🌟 GitHub Stars Program — Your Support Matters!
 
-<!-- Here's goes the image -->
+![nominations](https://github.com/user-attachments/assets/465db80e-83a8-4607-840d-d7f2239e15cf)
+
 Hey everyone! I’m putting in a nomination for the GitHub Stars Program. If my Hacktoberfest or Google Developer Groups has ever helped you, or if I’ve made open source a bit easier to navigate in your CS journey, a quick nomination from you would mean the world to me.
 
 It takes less than 20 seconds:
