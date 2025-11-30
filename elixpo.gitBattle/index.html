@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Battle Report: Christmas Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Courier+Prime:wght@700&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        .vs-text-large {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff6b6b, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 107, 107, 0.1);
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .battle-button {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            transition: all 0.3s ease;
+        }
+
+        .battle-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+        }
+
+        .pdf-button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            transition: all 0.3s ease;
+        }
+
+        .pdf-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+        }
+
+        .player-card {
+            border: 3px solid;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .player-1 {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(255, 107, 107, 0.1));
+        }
+
+        .player-2 {
+            border-color: #4169E1;
+            background: linear-gradient(135deg, rgba(65, 105, 225, 0.05), rgba(65, 105, 225, 0.1));
+        }
+
+        .player-avatar img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid;
+            margin: 0 auto 1rem;
+            object-fit: cover;
+        }
+
+        .player-1 .player-avatar img {
+            border-color: #ff6b6b;
+        }
+
+        .player-2 .player-avatar img {
+            border-color: #4169E1;
+        }
+
+        .roast-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-style: italic;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-card {
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.1));
+            text-align: center;
+        }
+
+        .metric-title {
+            font-weight: 600;
+            color: #ff6b6b;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-roast {
+            font-size: 0.9rem;
+            color: #333;
+            font-style: italic;
+        }
+
+        .repo-card {
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(76, 175, 80, 0.1));
+        }
+
+        .repo-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            font-weight: 600;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .winner-badge {
+            display: inline-block;
+            background: #ffd700;
+            color: #333;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .sarcasm-box {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.1));
+            border-left: 5px solid #ff6b6b;
+            padding: 2rem;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            line-height: 1.8;
+            font-style: italic;
+        }
+
+        .verdict-box {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .meme-canvas {
+            max-width: 100%;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            margin: 1rem 0;
+            background: white;
+        }
+
+        .scoreboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .scoreboard-winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-gray-900">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 text-white py-8 px-4">
+            <div class="max-w-6xl mx-auto text-center">
+                <h1 class="text-5xl font-bold mb-2">⚔️ GitHub Battle Report: Christmas Edition ⚔️</h1>
+                <p class="text-xl opacity-90">Two developers enter. Roasts emerge. Memes generated. PDF exported. 🎄</p>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <div class="max-w-6xl mx-auto px-4 py-8">
+
+            <!-- Input Section -->
+            <section class="bg-white rounded-lg shadow-xl p-8 mb-8">
+                <div class="space-y-6">
+                    <!-- Username Inputs -->
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <input 
+                            type="text" 
+                            id="user1" 
+                            placeholder="Enter first GitHub username" 
+                            class="flex-1 px-4 py-3 border-2 border-red-400 rounded-lg focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-300"
+                        >
+                        <div class="text-2xl font-bold text-red-600 hidden md:block">VS</div>
+                        <input 
+                            type="text" 
+                            id="user2" 
+                            placeholder="Enter second GitHub username" 
+                            class="flex-1 px-4 py-3 border-2 border-blue-400 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-300"
+                        >
+                    </div>
+
+                    <!-- Controls Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Roast Modes -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">Roast Mode:</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="roast-mode" value="friendly" checked class="mr-2">
+                                    <span>Friendly 🥰</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="roast-mode" value="gen-z" class="mr-2">
+                                    <span>Gen-Z 💀</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="roast-mode" value="toxic" class="mr-2">
+                                    <span>Toxic (Funny) 🔥</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Theme Modes -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">Theme:</label>
+                            <select id="theme-select" class="w-full px-4 py-2 border-2 border-yellow-400 rounded-lg focus:outline-none focus:border-yellow-600">
+                                <option value="christmas">🎄 Christmas Theme</option>
+                                <option value="hacktoberfest">🎃 Hacktoberfest</option>
+                                <option value="stars">⭐ GitHub Stars</option>
+                                <option value="devops">⚙️ DevOps Chaos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <button id="battle-btn" class="battle-button flex-1 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                            🎯 GENERATE BATTLE REPORT
+                        </button>
+                        <button id="pdf-btn" class="pdf-button flex-1 text-white font-bold py-3 px-6 rounded-lg text-lg" style="display: none;">
+                            📄 Download PDF Battle Report
+                        </button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loading" class="hidden text-center py-8">
+                        <div class="spinner mx-auto mb-4"></div>
+                        <p class="text-lg font-semibold text-gray-700">Fetching GitHub profiles... Preparing roasts...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="error" class="hidden bg-red-100 border-2 border-red-400 rounded-lg p-6 mb-8">
+                <p id="error-message" class="text-red-800 font-semibold"></p>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results" class="hidden space-y-8">
+                
+                <!-- Player Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Player 1 -->
+                    <div class="player-card player-1">
+                        <div class="player-avatar">
+                            <img id="avatar1" src="" alt="User 1">
+                        </div>
+                        <h2 id="name1" class="text-2xl font-bold mb-2"></h2>
+                        <p id="bio1" class="bio text-sm text-gray-600 mb-4"></p>
+                        <div class="space-y-3 mb-4">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Repos:</span>
+                                <span id="repos1" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Followers:</span>
+                                <span id="followers1" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Stars:</span>
+                                <span id="stars1" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold">Account Age:</span>
+                                <span id="age1" class="text-lg font-bold">-</span>
+                            </div>
+                        </div>
+                        <div class="roast-box" id="roast1"></div>
+                    </div>
+
+                    <!-- VS Divider -->
+                    <div class="flex flex-col justify-center items-center">
+                        <div class="vs-text-large">VS</div>
+                    </div>
+
+                    <!-- Player 2 -->
+                    <div class="player-card player-2">
+                        <div class="player-avatar">
+                            <img id="avatar2" src="" alt="User 2">
+                        </div>
+                        <h2 id="name2" class="text-2xl font-bold mb-2"></h2>
+                        <p id="bio2" class="bio text-sm text-gray-600 mb-4"></p>
+                        <div class="space-y-3 mb-4">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Repos:</span>
+                                <span id="repos2" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Followers:</span>
+                                <span id="followers2" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold">Stars:</span>
+                                <span id="stars2" class="text-lg font-bold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold">Account Age:</span>
+                                <span id="age2" class="text-lg font-bold">-</span>
+                            </div>
+                        </div>
+                        <div class="roast-box" id="roast2"></div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">⚡ Detailed Battle Stats ⚡</h2>
+                    <div class="overflow-x-auto">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th id="user1-header"></th>
+                                    <th>Metric</th>
+                                    <th id="user2-header"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparison-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Fun Metrics -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">🎪 Fun Metrics & Roasts 🎪</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="metrics-grid">
+                    </div>
+                </div>
+
+                <!-- Top Repos -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">🏆 Top 3 Repos Battle 🏆</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="repos-container">
+                    </div>
+                </div>
+
+                <!-- Meme Gallery -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">😂 Meme Gallery 😂</h2>
+                    <div class="grid grid-cols-1 gap-8" id="meme-gallery">
+                    </div>
+                </div>
+
+                <!-- AI Sarcastic Roast -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">🤖 AI Sarcastic Battle Commentary 🤖</h2>
+                    <div class="sarcasm-box" id="sarcasm-box"></div>
+                </div>
+
+                <!-- Scoreboard -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">🏅 Final Scoreboard 🏅</h2>
+                    <div class="space-y-3" id="scoreboard"></div>
+                </div>
+
+                <!-- Verdict -->
+                <div class="verdict-box" id="verdict-box"></div>
+
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Hidden canvas for meme generation -->
+    <canvas id="meme-canvas" style="display: none;"></canvas>
+
+    <script src="script.js"></script>
+</body>
+</html>
