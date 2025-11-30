@@ -17,14 +17,22 @@
 ![Hacktoberfest](https://img.shields.io/badge/Hacktoberfest-OSS-0f172a?style=for-the-badge&logo=hacktoberfest&logoColor=#ff6f61)
 
 ---
+## 🌟 GitHub Stars Program — Your Support Matters!
 
-## 🌟 GitHub Stars Program!
-## If you value our work and want to help us grow --  Please consider [Nominate Me for GitHub Stars](https://stars.github.com/nominate/).  
+<!-- Here's goes the image -->
+Hey everyone! I’m putting in a nomination for the GitHub Stars Program. If my Hacktoberfest or Google Developer Groups has ever helped you, or if I’ve made open source a bit easier to navigate in your CS journey, a quick nomination from you would mean the world to me.
 
-### **Your support amplifies our reach, inspires contributors, and strengthens the open-source community!**
+It takes less than 20 seconds:
 
-> ### **My GitHub Username**: `Circuit-Overtime`
-<img width="1165" height="382" alt="image" src="https://github.com/user-attachments/assets/52e55621-b822-446a-ac45-a92f753bf0c8" />
+1. Go to [stars.github.com/nominate](https://stars.github.com/nominate/)
+2. Sign in with your GitHub account (required for the nomination to work)
+3. Enter my GitHub username: `Circuit-Overtime` (beside the @ sign) ⭐
+4. Optionally, write a short note (under 180 characters) about how I’ve supported you — please be honest and genuine!
+
+Your support amplifies our reach, inspires contributors, and strengthens the open-source community. If I’ve helped you even once on your dev journey, thank you for taking a moment to back me up. It truly means a lot!
+
+
+
 
 
 <p align="center">
@@ -32,6 +40,9 @@
     <img src="https://img.shields.io/badge/Nominate%20Me-GitHub%20Stars-24292f?style=for-the-badge&logo=github&logoColor=white" alt="Nominate for GitHub Stars" />
   </a>
 </p>
+
+> **My GitHub Username:** `Circuit-Overtime`
+
 
 ## 🚀 Our Mission & Vision
 
