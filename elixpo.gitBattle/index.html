@@ -11,34 +11,27 @@
 </head>
 <body class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen">
     <div class="min-h-screen flex flex-col">
-        <!-- Header -->
         <header class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-purple-500/30 backdrop-blur-sm sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <h1 class="text-4xl sm:text-5xl font-bold text-center mb-2 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-                    ⚔️ GitHub Battle Report: Christmas Edition ⚔️
+                <h1 class="text-[1.2em] sm:text-5xl font-bold text-center mb-2 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    GitHub Battle Report: Christmas Edition
                 </h1>
-                <p class="text-center text-gray-400 text-sm sm:text-base">Two developers enter. Roasts emerge. Memes generated. PDF exported. 🎄</p>
             </div>
         </header>
 
-        <!-- Main Container -->
         <div class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
-
-            <!-- Welcome Section -->
-            <section class="mb-12 hidden" id="welcome-section">
+            <section class="mb-2 hidden" id="welcome-section">
                 <div class="text-center mb-8 animate-fade-in">
                     <p class="text-gray-300 text-lg mb-4">Select two GitHub developers to compare their coding prowess and witness the ultimate battle.</p>
                 </div>
             </section>
 
-            <!-- Input Section - Homepage -->
-            <section id="input-section" class="mb-8">
+            <section id="input-section">
                 <div class="space-y-8">
-                    <!-- Nomination Card -->
                     <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-purple-500/20 backdrop-blur-sm p-8 sm:p-12">
                         <div class="mb-8">
                             <label class="block text-center">
-                                <span class="text-2xl sm:text-3xl font-bold mb-4 block">I nominate</span>
+                                <span class="text-2xl sm:text-3xl font-bold mb-4 block">Who's the first warrior?</span>
                                 <div class="relative inline-block w-full max-w-sm mb-6">
                                     <input 
                                         type="text" 
@@ -49,7 +42,6 @@
                                     <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-12 bg-purple-400/50"></div>
                                 </div>
                             </label>
-                            <p class="text-center text-gray-400 text-sm mt-4 mb-8">as a GitHub Star because they're <span class="text-purple-300 underline">constantly inspiring, educating and contributing their knowledge and expertise to the community.</span></p>
                         </div>
 
                         <!-- VS Divider -->
@@ -62,7 +54,7 @@
                         <!-- Second Username -->
                         <div class="mb-8">
                             <label class="block text-center">
-                                <span class="text-2xl sm:text-3xl font-bold mb-4 block">Versus</span>
+                                <span class="text-2xl sm:text-3xl font-bold mb-4 block">Who's the second warrior?</span>
                                 <div class="relative inline-block w-full max-w-sm">
                                     <input 
                                         type="text" 
@@ -76,45 +68,13 @@
                         </div>
                     </div>
 
-                    <!-- Controls Section -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Roast Mode -->
-                        <div class="bg-slate-800/40 rounded-xl border border-purple-500/20 backdrop-blur-sm p-6">
-                            <label class="block text-sm font-semibold text-purple-300 mb-4 uppercase tracking-wider">Roast Mode</label>
-                            <div class="space-y-3">
-                                <label class="flex items-center cursor-pointer group">
-                                    <input type="radio" name="roast-mode" value="friendly" checked class="w-4 h-4 accent-purple-500 cursor-pointer">
-                                    <span class="ml-3 group-hover:text-purple-300 transition-colors">Friendly 🥰</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer group">
-                                    <input type="radio" name="roast-mode" value="gen-z" class="w-4 h-4 accent-purple-500 cursor-pointer">
-                                    <span class="ml-3 group-hover:text-purple-300 transition-colors">Gen-Z 💀</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer group">
-                                    <input type="radio" name="roast-mode" value="toxic" class="w-4 h-4 accent-purple-500 cursor-pointer">
-                                    <span class="ml-3 group-hover:text-purple-300 transition-colors">Toxic (Funny) 🔥</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Theme Mode -->
-                        <div class="bg-slate-800/40 rounded-xl border border-cyan-500/20 backdrop-blur-sm p-6">
-                            <label class="block text-sm font-semibold text-cyan-300 mb-4 uppercase tracking-wider">Battle Theme</label>
-                            <select id="theme-select" class="w-full px-4 py-3 bg-slate-900/50 border border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 text-white transition-all duration-300 hover:border-cyan-400/50">
-                                <option value="christmas">🎄 Christmas Theme</option>
-                                <option value="hacktoberfest">🎃 Hacktoberfest</option>
-                                <option value="stars">⭐ GitHub Stars</option>
-                                <option value="devops">⚙️ DevOps Chaos</option>
-                            </select>
-                        </div>
-                    </div>
 
                     <!-- Button Section -->
                     <div class="flex flex-col sm:flex-row gap-4">
                         <button id="battle-btn" class="flex-1 relative group px-8 py-4 font-bold text-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 active:scale-95">
                             <div class="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 group-hover:from-purple-500 group-hover:to-pink-500 transition-all duration-300"></div>
                             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-purple-400 to-pink-400 blur-lg transition-all duration-300"></div>
-                            <span class="relative flex items-center justify-center">🎯 GENERATE BATTLE REPORT</span>
+                            <span class="relative flex items-center justify-center">GENERATE BATTLE REPORT</span>
                         </button>
                         <button id="pdf-btn" class="flex-1 relative group px-8 py-4 font-bold text-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 active:scale-95" style="display: none;">
                             <div class="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 group-hover:from-cyan-500 group-hover:to-blue-500 transition-all duration-300"></div>
@@ -143,11 +103,8 @@
                 </div>
             </section>
 
-            <!-- Results Section -->
             <section id="results" class="hidden space-y-8 pb-12">
-                <!-- Player Cards -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Player 1 Card -->
                     <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-purple-500/30 backdrop-blur-sm p-8 hover:border-purple-500/50 transition-all duration-300">
                         <div class="flex flex-col items-center">
                             <div class="w-24 h-24 rounded-full border-2 border-purple-500/50 overflow-hidden mb-4 hover:border-purple-400 transition-all duration-300">
@@ -177,12 +134,10 @@
                         </div>
                     </div>
 
-                    <!-- VS Divider -->
                     <div class="flex flex-col justify-center items-center">
                         <div class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">VS</div>
                     </div>
 
-                    <!-- Player 2 Card -->
                     <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-cyan-500/30 backdrop-blur-sm p-8 hover:border-cyan-500/50 transition-all duration-300">
                         <div class="flex flex-col items-center">
                             <div class="w-24 h-24 rounded-full border-2 border-cyan-500/50 overflow-hidden mb-4 hover:border-cyan-400 transition-all duration-300">
