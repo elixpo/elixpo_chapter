@@ -694,7 +694,7 @@ async def _close_all_agents():
         try:
             await a.close()
         except Exception as e:
-            print(f"[WARN] Error closing image agent: {e}")
+            print(f"[WARN] Error closing at image agent: {e}")
     agent_pool.text_agents.clear()
     agent_pool.image_agents.clear()
     agent_pool.text_agent_tabs.clear()
