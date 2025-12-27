@@ -6,7 +6,7 @@ import logging
 import sys
 import uuid
 from searchPipeline import run_elixposearch_pipeline
-# from deepSearchPipeline import run_deep_research_pipeline
+from deepSearchPipeline import run_deep_research_pipeline
 import asyncio
 import hypercorn.asyncio
 import json
@@ -264,11 +264,11 @@ async def search_sse(forwarded_data=None):
             async with processing_semaphore:
                 # Choose pipeline based on deep_flag
                 if deep_flag:
-                    pipeline = run_elixposearch_pipeline
+                    pipeline_gen = run_deep_research_pipeline(user_query, request_id, event_id)
                 else:
-                    pipeline = run_elixposearch_pipeline
+                    pipeline_gen = run_elixposearch_pipeline(user_query, user_image, event_id)
 
-                async for chunk in pipeline(user_query, user_image, event_id):
+                async for chunk in pipeline_gen:
                     lines = chunk.splitlines()
                     event_type = None
                     data_lines = []
@@ -464,6 +464,172 @@ async def search_json(anything=None):
             }
         ]
     })
+
+
+@app.route('/deep-research', methods=['GET', 'POST'])
+async def deep_research():
+    """Deep research endpoint with incremental results and JSON file persistence"""
+    if request.method == "GET":
+        args = request.args
+        user_query = args.get("query", "").strip()
+        request_id = args.get("request_id") or f"deep-{uuid.uuid4().hex[:8]}"
+    else:
+        data = await request.get_json(force=True, silent=True) or {}
+        user_query = data.get("query", "").strip()
+        request_id = data.get("request_id") or f"deep-{uuid.uuid4().hex[:8]}"
+    
+    if not user_query:
+        return jsonify({"error": "Missing query parameter"}), 400
+    
+    app.logger.info(f"Deep research request {request_id}: {user_query[:50]}")
+    
+    async def event_stream():
+        try:
+            active_requests[request_id] = {
+                "type": "deep_research",
+                "query": user_query[:50],
+                "start_time": time.time()
+            }
+            
+            chat_id = f"chatcmpl-{uuid.uuid4()}"
+            created = int(time.time())
+            model_name = "elixpo-deep-research"
+            first_chunk = True
+            
+            async for chunk in run_deep_research_pipeline(user_query, request_id, event_id=request_id):
+                # Parse SSE format
+                if chunk.startswith("event:"):
+                    lines = chunk.splitlines()
+                    event_type = None
+                    data_text = ""
+                    
+                    for line in lines:
+                        if line.startswith("event:"):
+                            event_type = line.replace("event:", "").strip()
+                        elif line.startswith("data:"):
+                            data_text = line.replace("data:", "").strip()
+                    
+                    if data_text:
+                        try:
+                            # Try to parse as JSON if it's structured data
+                            if event_type == "result":
+                                data_json = json.loads(data_text)
+                                chunk_obj = {
+                                    "id": chat_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [{
+                                        "index": 0,
+                                        "delta": {
+                                            "content": json.dumps(data_json),
+                                            "elixpo_meta": {
+                                                "type": "subquery_result",
+                                                "subquery_id": data_json.get("subquery_id")
+                                            }
+                                        },
+                                        "logprobs": None,
+                                        "finish_reason": None
+                                    }]
+                                }
+                            else:
+                                # Plain text event
+                                if first_chunk:
+                                    chunk_obj = {
+                                        "id": chat_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [{
+                                            "index": 0,
+                                            "delta": {
+                                                "role": "assistant",
+                                                "content": data_text
+                                            },
+                                            "logprobs": None,
+                                            "finish_reason": None
+                                        }]
+                                    }
+                                    first_chunk = False
+                                else:
+                                    chunk_obj = {
+                                        "id": chat_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [{
+                                            "index": 0,
+                                            "delta": {"content": data_text},
+                                            "logprobs": None,
+                                            "finish_reason": None
+                                        }]
+                                    }
+                            
+                            if event_type == "final":
+                                chunk_obj["choices"][0]["finish_reason"] = "stop"
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
+                                yield "data: [DONE]\n\n"
+                                break
+                            else:
+                                yield f"data: {json.dumps(chunk_obj)}\n\n"
+                        
+                        except json.JSONDecodeError:
+                            # Fallback for non-JSON data
+                            chunk_obj = {
+                                "id": chat_id,
+                                "object": "chat.completion.chunk",
+                                "created": created,
+                                "model": model_name,
+                                "choices": [{
+                                    "index": 0,
+                                    "delta": {"content": data_text},
+                                    "logprobs": None,
+                                    "finish_reason": None
+                                }]
+                            }
+                            yield f"data: {json.dumps(chunk_obj)}\n\n"
+            
+        except Exception as e:
+            app.logger.error(f"Deep research SSE error: {e}", exc_info=True)
+            error_chunk = {
+                "id": chat_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": model_name,
+                "choices": [{
+                    "index": 0,
+                    "delta": {"content": f"[ERROR] {str(e)[:100]}"},
+                    "logprobs": None,
+                    "finish_reason": "error"
+                }]
+            }
+            yield f"data: {json.dumps(error_chunk)}\n\n"
+        finally:
+            active_requests.pop(request_id, None)
+    
+    return Response(event_stream(), content_type="text/event-stream")
+
+
+@app.route('/deep-research/planning/<request_id>', methods=['GET'])
+async def get_planning_file(request_id):
+    """Retrieve the planning file for a completed deep research request"""
+    from pathlib import Path
+    
+    planning_dir = Path(__file__).parent / "searchSessions" / request_id
+    planning_file = planning_dir / f"{request_id}_planning.json"
+    
+    if not planning_file.exists():
+        return jsonify({"error": f"Planning file not found for request {request_id}"}), 404
+    
+    try:
+        with open(planning_file, 'r') as f:
+            planning_data = json.load(f)
+        
+        return jsonify(planning_data)
+    except Exception as e:
+        app.logger.error(f"Error reading planning file: {e}")
+        return jsonify({"error": "Failed to read planning file"}), 500
+
 
 @app.route("/status", methods=["GET"])
 async def status():
