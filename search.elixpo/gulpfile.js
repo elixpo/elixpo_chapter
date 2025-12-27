@@ -5,6 +5,7 @@ import browserSync from 'browser-sync';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,23 +63,21 @@ function watchStyles(cb) {
 function serve(cb) {
   bs.init({
     server: {
-      baseDir: '.',
-      middleware: [
-        {
-          route: '/api',
-          handle: require('http-proxy-middleware').createProxyMiddleware({
-            target: 'http://localhost:3002',
-            changeOrigin: true,
-            logLevel: 'debug'
-          })
-        }
-      ]
+      baseDir: '.'
     },
+    middleware: [
+      createProxyMiddleware('/api', {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        logLevel: 'debug'
+      })
+    ],
     files: [
       'styles/**/*.css',
       'index.html',
       'discover/**/*.html',
-      'library/**/*.html'
+      'library/**/*.html',
+      'dist/**/*.js'
     ],
     injectChanges: true,
     reloadOnRestart: true,
