@@ -26,7 +26,7 @@
   "scripts": {
     "serve": "gulp",
     "frontend": "gulp",
-    "backend:dev": "node api/run-backend.js",
+    "backend:dev": "node search.elixpo/api/run-backend.js",
     "dev": "concurrently \"npm run serve\" \"npm run backend:dev\""
   }
 }
