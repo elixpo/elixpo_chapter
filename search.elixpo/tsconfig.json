@@ -2,15 +2,27 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "rootDir": ".",
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
-    "allowJs": true
+    "sourceRoot": "/",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "removeComments": true
   },
-  "include": ["JS/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "api"
+  ]
 }
