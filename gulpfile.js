@@ -110,7 +110,7 @@ function serve(done) {
       baseDir: ".",
       middleware: [serveTS],
     },
-    files: ["**/*.html", "**/*.css"],
+    files: ["**/*.html", "**/*.css", "**/*.js", "**/*.ts"],
     open: false,
     notify: false,
     reloadOnRestart: true,

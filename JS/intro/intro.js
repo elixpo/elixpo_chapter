@@ -7,11 +7,11 @@ class ProfileSlider {
     this.cropType = null;
     this.typingTimeout = null;
     this.nameCheckAbort = null;
-    this.imageFilters = { // Initialize filter state
+    this.imageFilters = { 
       brightness: 100,
       contrast: 100,
       saturation: 100,
-      straighten: 0, // ADDED: Initial rotation/straighten value
+      straighten: 0, 
     };
     
     const el = (selector) => document.querySelector(selector);
@@ -36,17 +36,14 @@ class ProfileSlider {
       cancelCrop: el('#cancelCrop'),
       cropImage: el('#cropImage'),
       nameStatus: el('#nameStatus'),
-      // Image Adjustment Elements
       brightnessSlider: el('#brightness-slider'),
       brightnessValue: el('#brightness-value'),
       contrastSlider: el('#contrast-slider'),
       contrastValue: el('#contrast-value'),
       saturationSlider: el('#saturation-slider'),
       saturationValue: el('#saturation-value'),
-      // ADDED: Straighten elements
       straightenSlider: el('#straighten-slider'),
       straightenValue: el('#straighten-value'),
-      // END ADDED
       rotateLeft: el('#rotateLeft'),
       rotateRight: el('#rotateRight'),
       resetAdjustments: el('#resetAdjustments'),
@@ -850,24 +847,8 @@ class ProfileSlider {
 
 async function checkNameAvailability(name, options = {}) {
   try {
-    // MOCK API RESPONSE: Since we don't have a server running on port 5000
-    // Let's simulate a server response with a delay
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     
-    // Simple username validation logic
-    const isAvailable = name.length >= 6 && !['admin', 'root', 'moderator', 'administrator'].includes(name.toLowerCase());
     
-    // Mock response object
-    const mockResult = {
-      available: isAvailable,
-      message: isAvailable ? 'The Username is Available' : 'Oops! The Username is Unavailable',
-      suggestion: isAvailable ? "" : `${name}${Math.floor(Math.random() * 1000)}`
-    };
-    
-    console.log("Mock username check:", { name, isAvailable });
-    return [mockResult.available, mockResult.message, mockResult.suggestion];
-    
-    /* Original API code - commented out since server is not running
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -875,14 +856,9 @@ async function checkNameAvailability(name, options = {}) {
       signal: options.signal
     });
 
-    if (!response.ok) {
-      console.warn('Name check response not ok', response.status);
-      return [false, "Server error. Try again later.", ""];
-    }
-
     const result = await response.json();
-    return [!!result.available, result.message || (result.available ? 'The Username is Available' : 'Oops! The Username is Unavailable'), result.suggestion || ""];
-    */
+    return [!!result.available, result.message || (result.available ? 'The Username is Available' : result.message), result.suggestion || ""];
+
   } catch (error) {
     if (error.name === 'AbortError') {
       console.log('Name check aborted');
@@ -892,6 +868,9 @@ async function checkNameAvailability(name, options = {}) {
     return [false, "Server error. Try again later.", ""];
   }
 }
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   new ProfileSlider();
 });
