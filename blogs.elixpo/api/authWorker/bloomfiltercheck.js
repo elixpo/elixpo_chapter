@@ -1,6 +1,7 @@
 import { bloomFilter, allBloomFilters } from "../bloomFilter.js";
 import { getRedisClient } from "../redisWorker/redisService.js";
 import {setUserDisplayName} from "../utility.js";
+import {Filter} from 'bad-words';
 const authService = getRedisClient("authService");
 
 async function checkInBloomFilter(key) {
@@ -55,6 +56,14 @@ function checkUserNameFormat(name)
   return "The name must contain only alphabetic characters, numbers, underscores, or dots.";
 }
 
+
+async function nsfw_username(name) {
+  const filter = new Filter();
+  if (filter.isProfane(name)) {
+    return true;
+  }
+}
+   
 async function suggestUserName(name) {
     const normalized = checkUserNameFormat(name);
     if (typeof normalized === 'string' && normalized !== name) {
@@ -108,6 +117,10 @@ async function checkUsernameRequest(name, req, res)
   console.log("Sanitized Name:", sanitized);
   if (sanitized !== name) {
     return res.status(400).json({ available: false, message: sanitized });
+  }
+  if(await nsfw_username(sanitized))
+  { 
+    return res.status(400).json({ available: false, message: "The username contains inappropriate content.", suggestion: await suggestUserName(sanitized) });
   }
   const exists = await checkInBloomFilter(sanitized.toLowerCase());
   if (exists) {
