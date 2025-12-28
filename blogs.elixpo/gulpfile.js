@@ -4,14 +4,20 @@ import ts from "typescript";
 import fs from "fs";
 import path from "path";
 import { LRUCache } from "lru-cache";
+import chokidar from "chokidar";
+import { spawn } from "child_process";
 
 const browserSync = browserSyncLib.create();
 const srcDir = "JS";
+const apiDir = "api";
 
 const cache = new LRUCache({
   max: 100,
   ttl: 1000 * 60 * 5,
 });
+
+let apiProcess = null;
+const apiRestartTimers = new Map();
 
 function compileTSFile(absTsPath) {
   if (!fs.existsSync(absTsPath)) return null;
@@ -74,7 +80,31 @@ function serveTS(req, res, next) {
   next();
 }
 
+function startApiServer() {
+  if (apiProcess) {
+    apiProcess.kill('SIGTERM');
+  }
+  apiProcess = spawn('node', ['api/run-backend.js'], {
+    stdio: 'inherit',
+    cwd: process.cwd()
+  });
+  console.log('🚀 Backend server started');
+}
+
+function restartApi() {
+  if (apiRestartTimers.has('api')) {
+    clearTimeout(apiRestartTimers.get('api'));
+  }
+  apiRestartTimers.set('api', setTimeout(() => {
+    apiRestartTimers.delete('api');
+    console.log('🔄 Restarting backend server...');
+    startApiServer();
+  }, 300));
+}
+
 function serve(done) {
+  startApiServer();
+
   browserSync.init({
     server: {
       baseDir: ".",
@@ -90,6 +120,21 @@ function serve(done) {
     const abs = path.resolve(filePath);
     compileTSFile(abs);
     browserSync.reload();
+  });
+
+  const apiWatcher = chokidar.watch([`${apiDir}/**/*.js`, `${apiDir}/**/*.ts`], {
+    ignoreInitial: true,
+    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 }
+  });
+
+  apiWatcher.on('all', (event, filePath) => {
+    console.log(`[api] ${event} -> ${filePath}`);
+    restartApi();
+  });
+
+  process.on('exit', () => {
+    if (apiProcess) apiProcess.kill();
+    apiWatcher.close();
   });
 
   done();

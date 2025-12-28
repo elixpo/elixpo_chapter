@@ -2,7 +2,6 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
-import chokidar from 'chokidar';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,7 +69,6 @@ function restartService(modulePath) {
 }
 
 console.log('🎯 Starting backend services...');
-// start all services
 backendModules.forEach((m) => {
   const fullPath = join(projectRoot, m);
   if (!fs.existsSync(fullPath)) {
@@ -78,18 +76,6 @@ backendModules.forEach((m) => {
     return;
   }
   spawnService(m);
-
-  // watch the service file's folder (watch .js and .ts inside the service folder)
-  const watchDir = dirname(fullPath);
-  const watcher = chokidar.watch([`${watchDir}/**/*.js`, `${watchDir}/**/*.ts`], {
-    ignoreInitial: true,
-    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 }
-  });
-
-  watcher.on('all', (event, pathChanged) => {
-    console.log(`[watch:${m}] ${event} -> ${pathChanged}`);
-    restartService(m);
-  });
 });
 
 // graceful shutdown kill children

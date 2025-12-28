@@ -3,6 +3,7 @@
   "type": "module",
   "dependencies": {
     "bad-words": "^4.0.0",
+    "chokidar": "^3.6.0",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
