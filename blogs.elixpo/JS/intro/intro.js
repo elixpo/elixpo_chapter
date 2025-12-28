@@ -629,17 +629,24 @@ class ProfileSlider {
 
   async completeProfile(options = {}) {
     const skipImages = !!options.skipImages;
+
     if (!this.isValid[1]) {
       this.showSkipButton(false);
+      return;
     }
-    const formData = new FormData();
-    formData.append('displayName', this.elements.displayName?.value?.trim() ?? '');
-    formData.append('bio', this.elements.bio?.value?.trim() ?? '');
+
+    const payload = {
+      displayName: this.elements.displayName?.value?.trim() ?? '',
+      bio: this.elements.bio?.value?.trim() ?? '',
+    };
+
     const pfpImg = this.elements.profilePicPreview?.querySelector('img')?.src;
-    if (pfpImg && !skipImages) formData.append('profilePicture', pfpImg);
+    if (pfpImg && !skipImages) payload.profilePicture = pfpImg;
+
     const bannerStyle = this.elements.bannerPreview?.style?.backgroundImage || '';
     const bannerImage = bannerStyle ? bannerStyle.slice(4, -1).replace(/"/g, "") : '';
-    if (bannerImage && !skipImages) formData.append('bannerImage', bannerImage);
+    if (bannerImage && !skipImages) payload.bannerImage = bannerImage;
+
     if (this.elements.completeBtn) {
       this.elements.completeBtn.disabled = true;
       this.elements.completeBtn.innerHTML = `
@@ -647,14 +654,26 @@ class ProfileSlider {
         <span>Creating Profile...</span>
       `;
     }
+
     if (this.elements.skipBtn) {
       this.elements.skipBtn.disabled = true;
       this.elements.skipBtn.innerHTML = 'Skipping...';
     }
-    setTimeout(() => {
-      const entries = {};
-      formData.forEach((value, key) => { entries[key] = value; });
-      console.log('Profile completed (simulated):', entries);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/createProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Profile created successfully:', result);
+      
       if (this.elements.completeBtn) {
         this.elements.completeBtn.disabled = false;
         this.elements.completeBtn.innerHTML = 'Complete Profile';
@@ -663,8 +682,20 @@ class ProfileSlider {
         this.elements.skipBtn.disabled = false;
         this.elements.skipBtn.innerHTML = 'Skip';
       }
-      alert(`Profile ${skipImages ? 'skipped images and ' : ''}created (simulated). Check console for details.`);
-    }, 1000);
+
+      alert(`Profile created successfully!`);
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      if (this.elements.completeBtn) {
+        this.elements.completeBtn.disabled = false;
+        this.elements.completeBtn.innerHTML = 'Complete Profile';
+      }
+      if (this.elements.skipBtn) {
+        this.elements.skipBtn.disabled = false;
+        this.elements.skipBtn.innerHTML = 'Skip';
+      }
+      alert(`Error creating profile: ${error.message}`);
+    }
   }
 
   createSkipButton() {
