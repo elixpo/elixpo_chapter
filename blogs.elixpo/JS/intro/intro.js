@@ -1,7 +1,7 @@
 class ProfileSlider {
   constructor() {
-    this.currentStep = 3;
-    this.totalSteps = 3;
+    this.currentStep = 1;
+    this.totalSteps = 1;
     this.isValid = { 1: false, 2: true, 3: true };
     this.cropper = null;
     this.cropType = null;
@@ -53,17 +53,20 @@ class ProfileSlider {
       1: {
         title: "What's your name?",
         description: "This will be your display name on LixBlogs",
-        step: 1
+        step: 1,
+        mandatory: true
       },
       2: {
         title: "Tell us about yourself",
         description: "Write a short bio to help others know you better (optional)",
-        step: 2
+        step: 2,
+        mandatory: false
       },
       3: {
         title: "Add a profile picture",
         description: "Upload a profile picture and a banner image to personalize your profile",
-        step: 3
+        step: 3,
+        mandatory: false
       }
     };
 
