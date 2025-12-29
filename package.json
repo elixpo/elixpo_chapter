@@ -24,6 +24,7 @@
     "concurrently": "^8.2.2",
     "connect-history-api-fallback": "^2.0.0",
     "esbuild": "^0.27.2",
+    "glob": "^13.0.0",
     "gulp": "^5.0.1",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
