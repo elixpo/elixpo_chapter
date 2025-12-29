@@ -1,4 +1,5 @@
-import cropper  from 'cropperjs';
+import Cropper from 'cropperjs';
+
 class ProfileSlider {
   currentStep: number;
   totalSteps: number;
@@ -357,7 +358,7 @@ class ProfileSlider {
       this.cropper = null;
     }
     try {
-      this.cropper = new cropper(this.elements.imageToCrop, {
+      this.cropper = new Cropper(this.elements.imageToCrop, {
         aspectRatio,
         viewMode: 1,
         autoCropArea: 0.9,

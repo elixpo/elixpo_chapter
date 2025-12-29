@@ -23,18 +23,23 @@
     "browser-sync": "^3.0.4",
     "concurrently": "^8.2.2",
     "connect-history-api-fallback": "^2.0.0",
+    "esbuild": "^0.27.2",
     "gulp": "^5.0.1",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "lite-server": "^2.6.1",
     "nodemon": "^3.1.10",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0"
   },
   "scripts": {
-    "serve": "gulp",
-    "frontend": "gulp",
+    "serve": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "frontend": "vite",
     "backend:dev": "node api/run-backend.js",
-    "dev": "concurrently \"npm run serve\" \"npm run backend:dev\""
+    "dev:full": "concurrently \"npm run serve\" \"npm run backend:dev\""
   }
 }
