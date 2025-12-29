@@ -34,12 +34,10 @@
     "vite": "^7.3.0"
   },
   "scripts": {
-    "serve": "vite",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
     "frontend": "vite",
     "backend:dev": "node api/run-backend.js",
-    "dev:full": "concurrently \"npm run serve\" \"npm run backend:dev\""
+    "dev": "concurrently \"npm run frontend\" \"npm run backend:dev\"",
+    "build": "vite build",
+    "preview": "vite preview"
   }
 }
