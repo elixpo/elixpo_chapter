@@ -1,6 +1,6 @@
 import '../styles/auth/login.css';
-import '../utils/auth/login';
-import '../utils/auth/helperFunction';
+import '../../../utils/auth/login';
+import '../../../utils/auth/helperFunction';
 
 export default function LoginPage() {
   return (
