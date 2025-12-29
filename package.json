@@ -2,6 +2,7 @@
   "name": "your-project",
   "type": "module",
   "dependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
     "bad-words": "^4.0.0",
     "chokidar": "^3.6.0",
     "cookie-parser": "^1.4.7",
@@ -16,6 +17,9 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
     "qrcode-terminal": "^0.12.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.11.0",
     "redis": "^5.8.3",
     "sharp": "^0.34.4"
   },
