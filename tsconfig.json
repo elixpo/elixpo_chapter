@@ -1,16 +1,25 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Node",
-    "outDir": "dist",
-    "rootDir": ".",
-    "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "sourceMap": true,
-    "allowJs": true
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["JS/**/*.ts"],
+  "include": ["src/**/*.{ts,tsx,js,jsx}"],
   "exclude": ["node_modules", "dist"]
 }
