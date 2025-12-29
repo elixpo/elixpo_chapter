@@ -1,3 +1,6 @@
+import React from 'react';
+import '../../CSS/about/about.css'
+
 export default function AboutPage() {
   return (
     <div className="page-container about-page">
