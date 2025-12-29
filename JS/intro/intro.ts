@@ -753,16 +753,34 @@ class ProfileSlider {
   }
 }
 
-async function checkNameAvailability(name : string, options = {}) {
+async function checkNameAvailability(name: string, options = {}) {
+  const controller = new AbortController();
+  const userSignal = (options as any).signal;
+  let timeoutId: NodeJS.Timeout | number | null = null;
+
+  // If user provided a signal, abort if either times out or user aborts
+  function onAbort() {
+    controller.abort();
+  }
+  if (userSignal) {
+    if (userSignal.aborted) controller.abort();
+    else userSignal.addEventListener('abort', onAbort);
+  }
+
   try {
+    timeoutId = setTimeout(() => controller.abort(), 5000);
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: name }),
-      signal: (options as any).signal
+      signal: controller.signal
     });
     const result = await response.json();
-    return [!!result.available, result.message || (result.available ? 'The Username is Available' : result.message), result.suggestion || ""];
+    return [
+      !!result.available,
+      result.message || (result.available ? 'The Username is Available' : result.message),
+      result.suggestion || ""
+    ];
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       console.log('Name check aborted');
@@ -770,6 +788,9 @@ async function checkNameAvailability(name : string, options = {}) {
     }
     console.error("Error checking name availability:", error);
     return [false, "Server error. Try again later.", ""];
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId as NodeJS.Timeout);
+    if (userSignal) userSignal.removeEventListener('abort', onAbort);
   }
 }
 
