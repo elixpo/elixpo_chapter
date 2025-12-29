@@ -1,0 +1,81 @@
+.page-container {
+  padding: 2rem;
+  min-height: calc(100vh - 100px);
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.intro-page .innerLayout {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.intro-page .firstSection {
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.intro-page .descText {
+  font-size: 1.5rem;
+  color: #666;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.intro-page .secondSection {
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.intro-page .welcomeText {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+}
+
+.intro-page .backgroundImage {
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+}
+
+.intro-page .thirdSection {
+  padding: 4rem 0;
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.intro-page .readBlogsBtn,
+.intro-page .starGithub {
+  padding: 1rem 2rem;
+  border: 2px solid #000;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.intro-page .readBlogsBtn:hover,
+.intro-page .starGithub:hover {
+  background: #000;
+  color: #fff;
+}
+
+h1 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+p {
+  color: #666;
+  line-height: 1.6;
+}
