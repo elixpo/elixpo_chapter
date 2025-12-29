@@ -5,6 +5,7 @@
     "bad-words": "^4.0.0",
     "chokidar": "^3.6.0",
     "cookie-parser": "^1.4.7",
+    "cropperjs": "^2.1.0",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",

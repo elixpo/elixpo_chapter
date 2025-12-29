@@ -1,4 +1,21 @@
+import cropper  from 'cropperjs';
 class ProfileSlider {
+  currentStep: number;
+  totalSteps: number;
+  isValid: { [key: number]: boolean };
+  cropper: any;
+  cropType: string | null;
+  typingTimeout: any;
+  nameCheckAbort: AbortController | null;
+  imageFilters: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    straighten: number;
+  };
+  elements: any;
+  stepData: any;
+
   constructor() {
     this.currentStep = 1;
     this.totalSteps = 1;
@@ -14,7 +31,7 @@ class ProfileSlider {
       straighten: 0, 
     };
     
-    const el = (selector) => document.querySelector(selector);
+    const el = (selector : any) => document.querySelector(selector);
     this.elements = {
       steps: document.querySelectorAll('.step-content') || [],
       indicators: document.querySelectorAll('.step') || [],
@@ -86,7 +103,7 @@ class ProfileSlider {
     this.elements.nextBtn?.addEventListener('click', () => this.nextStep());
     this.elements.backBtn?.addEventListener('click', () => this.prevStep());
     this.elements.completeBtn?.addEventListener('click', () => this.completeProfile());
-    this.elements.displayName?.addEventListener('input', (e) => {
+    this.elements.displayName?.addEventListener('input', () => {
       this.isValid[1] = false;
       this.updateButtons();
 
@@ -96,8 +113,8 @@ class ProfileSlider {
       }, 1000);
     });
     this.elements.bio?.addEventListener('input', () => this.updateBioCount());
-    this.elements.profilePicture?.addEventListener('change', (e) => this.handleImage(e, 'pfp'));
-    this.elements.bannerImage?.addEventListener('change', (e) => this.handleImage(e, 'banner'));
+    this.elements.profilePicture?.addEventListener('change', (e : Event) => this.handleImage(e, 'pfp'));
+    this.elements.bannerImage?.addEventListener('change', (e : Event) => this.handleImage(e, 'banner'));
     this.elements.cancelCrop?.addEventListener('click', () => this.closeCropper());
     this.elements.cropImage?.addEventListener('click', () => this.crop());
     this.elements.resetAdjustments?.addEventListener('click', () => this.resetImageFilters());
@@ -120,7 +137,7 @@ class ProfileSlider {
     this.elements.rotateLeft?.addEventListener('click', () => this.cropper?.rotate(-90));
     this.elements.rotateRight?.addEventListener('click', () => this.cropper?.rotate(90));
     document.addEventListener('keydown', (e) => {
-      const activeTag = e.target?.tagName;
+      const activeTag = (e.target as HTMLElement)?.tagName;
       if (e.key === 'Enter' && !e.shiftKey && activeTag !== 'TEXTAREA') {
         e.preventDefault();
         if (this.currentStep === this.totalSteps && this.isValid[this.currentStep]) {
@@ -144,10 +161,10 @@ class ProfileSlider {
       inputField.min = slider.min;
       inputField.max = slider.max;
       inputField.step = "0.5";
-      inputField.value = currentValue;
+      inputField.value  = currentValue.toString();
       inputField.className = 'w-12 h-5 bg-slate-700 text-blue-400 text-xs font-mono text-center rounded border border-slate-600 focus:border-blue-500 focus:outline-none';
       inputField.addEventListener('input', (e) => {
-        let newValue = parseFloat(e.target.value);
+        let newValue = parseFloat((e.target as HTMLInputElement).value);
         newValue = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), newValue));
         slider.value = newValue;
         this.imageFilters.straighten = newValue;
@@ -169,8 +186,8 @@ class ProfileSlider {
       resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
         this.imageFilters.straighten = 0;
-        slider.value = 0;
-        inputField.value = 0;
+        slider.value = "0";
+        inputField.value = "0";
         if (this.cropper) {
           this.cropper.rotateTo(0);
         }
@@ -187,12 +204,12 @@ class ProfileSlider {
     }
   }
 
-  updateImageFilter(filterName) {
+  updateImageFilter(filterName: keyof ProfileSlider['imageFilters']) {
     const slider = this.elements[`${filterName}Slider`];
     const valueDisplay = this.elements[`${filterName}Value`];
     const imageEl = this.elements.imageToCrop; 
     if (!slider || !valueDisplay || !imageEl) return;
-    this.imageFilters[filterName] = parseFloat(slider.value);
+    this.imageFilters[filterName] = parseFloat(slider.value) as number;
     if (!valueDisplay.querySelector('input')) {
       const currentValue = this.imageFilters[filterName];
       const inputField = document.createElement('input');
@@ -200,12 +217,12 @@ class ProfileSlider {
       inputField.min = slider.min;
       inputField.max = slider.max;
       inputField.step = "1";
-      inputField.value = currentValue;
+      inputField.value = currentValue.toString();
       inputField.className = 'w-10 h-5 bg-slate-700 text-blue-400 text-xs font-mono text-center rounded border border-slate-600 focus:border-blue-500 focus:outline-none';
       inputField.addEventListener('input', (e) => {
-        let newValue = parseFloat(e.target.value);
+        let newValue = parseFloat((e.target as HTMLInputElement).value);
         newValue = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), newValue));
-        slider.value = newValue;
+        slider.value = newValue.toString();
         this.imageFilters[filterName] = newValue;
         this.applyImageFilters();
       });
@@ -225,8 +242,8 @@ class ProfileSlider {
         const defaultValue = filterName === 'brightness' || filterName === 'contrast' ? 100 : 
                             filterName === 'saturation' ? 100 : 0;
         this.imageFilters[filterName] = defaultValue;
-        slider.value = defaultValue;
-        inputField.value = defaultValue;
+        slider.value = defaultValue.toString();
+        inputField.value = defaultValue.toString();
         this.applyImageFilters();
       });
       valueDisplay.appendChild(resetBtn);
@@ -252,13 +269,13 @@ class ProfileSlider {
     const cropperDragBox = document.querySelector('.cropper-container .cropper-face');
     imageEl.style.setProperty('filter', filterStyle, 'important');
     if (cropperImage) {
-      cropperImage.style.setProperty('filter', filterStyle, 'important');
+      ((cropperImage as HTMLElement).style as CSSStyleDeclaration).setProperty('filter', filterStyle, 'important');
     }
     if (cropperView) {
-      cropperView.style.setProperty('filter', filterStyle, 'important');
+      ((cropperView as HTMLElement).style as CSSStyleDeclaration).setProperty('filter', filterStyle, 'important');
     }
     if (cropperDragBox) {
-      cropperDragBox.style.setProperty('filter', filterStyle, 'important');
+      ((cropperDragBox as HTMLElement).style as CSSStyleDeclaration).setProperty('filter', filterStyle, 'important');
     }
   }
 
@@ -305,8 +322,8 @@ class ProfileSlider {
     }
   }
 
-  handleImage(event, type) {
-    const file = event?.target?.files?.[0];
+  handleImage(event : Event, type : 'pfp' | 'banner') {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       alert('Please upload an image file.');
@@ -315,7 +332,7 @@ class ProfileSlider {
     const reader = new FileReader();
     reader.onload = (e) => {
       if (this.elements.imageToCrop) {
-        this.elements.imageToCrop.src = e.target.result;
+        this.elements.imageToCrop.src = (e.target as FileReader).result as string;
         this.cropType = type;
         this.openCropper();
       } else {
@@ -340,7 +357,7 @@ class ProfileSlider {
       this.cropper = null;
     }
     try {
-      this.cropper = new Cropper(this.elements.imageToCrop, {
+      this.cropper = new cropper(this.elements.imageToCrop, {
         aspectRatio,
         viewMode: 1,
         autoCropArea: 0.9,
@@ -357,12 +374,12 @@ class ProfileSlider {
             this.cropper.zoomTo(0);
           }
           ['brightness', 'contrast', 'saturation'].forEach(filter => {
-            this.updateImageFilter(filter);
+            this.updateImageFilter(filter as keyof ProfileSlider['imageFilters']);
           });
           this.updateStraighten();
           this.applyImageFilters();
         }
-      });
+      } as any);
     } catch (err) {
       console.error('Cropper initialization failed:', err);
       alert('Image cropper failed to load. Please try again.');
@@ -511,7 +528,7 @@ class ProfileSlider {
         }
       }
     } catch (err) {
-      if (err.name === 'AbortError') return;
+      if ((err as any).name === 'AbortError') return;
       console.error('Name availability check failed:', err);
       this.isValid[1] = false;
       if (nameStatusEl) {
@@ -574,7 +591,7 @@ class ProfileSlider {
     const stepInfo = this.stepData[this.currentStep] || {};
     if (this.elements.stepTitle) this.elements.stepTitle.textContent = stepInfo.title || '';
     if (this.elements.stepDescription) this.elements.stepDescription.textContent = stepInfo.description || '';
-    this.elements.steps.forEach((stepEl, index) => {
+    this.elements.steps.forEach((stepEl: HTMLElement, index : number) => {
       const shouldShow = index + 1 === this.currentStep;
       stepEl.classList.toggle('hidden', !shouldShow);
     });
@@ -616,9 +633,9 @@ class ProfileSlider {
     if (!currentStepElement) return;
     const formGroup = currentStepElement.querySelector('.form-group');
     if (formGroup) {
-      formGroup.style.animation = 'none';
+      (formGroup as HTMLElement).style.animation = 'none';
       setTimeout(() => {
-        formGroup.style.animation = 'slideInUp 0.6s ease-out both';
+        (formGroup as HTMLElement).style.animation = 'slideInUp 0.6s ease-out both';
       }, 50);
     }
     setTimeout(() => {
@@ -628,14 +645,19 @@ class ProfileSlider {
   }
 
   async completeProfile(options = {}) {
-    const skipImages = !!options.skipImages;
+    const skipImages = !!(options as any).skipImages;
 
     if (!this.isValid[1]) {
       this.showSkipButton(false);
       return;
     }
 
-    const payload = {
+    const payload: {
+      displayName: string;
+      bio: string;
+      profilePicture?: string;
+      bannerImage?: string;
+    } = {
       displayName: this.elements.displayName?.value?.trim() ?? '',
       bio: this.elements.bio?.value?.trim() ?? '',
     };
@@ -694,7 +716,7 @@ class ProfileSlider {
         this.elements.skipBtn.disabled = false;
         this.elements.skipBtn.innerHTML = 'Skip';
       }
-      alert(`Error creating profile: ${error.message}`);
+      alert(`Error creating profile: ${(error as Error).message}`);
     }
   }
 
@@ -714,7 +736,7 @@ class ProfileSlider {
     }
   }
 
-  showSkipButton(show) {
+  showSkipButton(show: boolean) {
     if (!this.elements.skipBtn) return;
     const currentStepData = this.stepData[this.currentStep];
     const isMandatory = currentStepData?.mandatory ?? false;
@@ -730,18 +752,18 @@ class ProfileSlider {
   }
 }
 
-async function checkNameAvailability(name, options = {}) {
+async function checkNameAvailability(name : string, options = {}) {
   try {
     const response = await fetch("http://localhost:5000/api/checkUsername", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: name }),
-      signal: options.signal
+      signal: (options as any).signal
     });
     const result = await response.json();
     return [!!result.available, result.message || (result.available ? 'The Username is Available' : result.message), result.suggestion || ""];
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if ((error as Error).name === 'AbortError') {
       console.log('Name check aborted');
       throw error;
     }
