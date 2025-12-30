@@ -1,3 +1,6 @@
+import '../styles/stats/stats.css';
+
+
 export default function StatsPage() {
   return (
    <div className="container absolute flex flex-col h-full max-w-[2560px] bg-[#030712] box-border">
