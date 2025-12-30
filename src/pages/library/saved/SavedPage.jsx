@@ -26,7 +26,7 @@ export default function SavedPage() {
     };
   }, []);
 
-  const handleNavigation = (page: string) => {
+  const handleNavigation = (page) => {
     // Handle navigation logic
     console.log('Navigate to:', page);
   };
