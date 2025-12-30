@@ -1,5 +1,5 @@
 import '../styles/intro/introStyle.css';
-import '../utils/intro/intro'
+import '../utils/intro/intro.ts'
 
 export default function IntroPage() {
   return (
