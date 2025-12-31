@@ -1,5 +1,6 @@
 import Cropper from 'cropperjs';
 
+console.log('Intro module loaded');
 class ProfileSlider {
   currentStep: number;
   totalSteps: number;
