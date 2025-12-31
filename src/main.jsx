@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import App from './App';
+import App from '.';
 import './index.css';
 
 // Lazy load pages for better performance
