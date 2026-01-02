@@ -1,13 +1,12 @@
 {
   "name": "elixpo_art_network",
   "version": "1.0.0",
-  "description": "vercel hosting elixpo_art",
+  "description": "hosting elixpo_art",
   "type": "module",
   "scripts": {
-    "frontend": "lite-server",
-    "backend": "node api/elixpo_art.js",
-    "dev": "concurrently  \"npm run backend\" \"npm run frontend\"",
-    "deploy": "vercel --prod"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@google/generative-ai": "^0.14.1",
@@ -28,6 +27,7 @@
     "lite-server": "^2.6.1",
     "marked": "^14.1.1",
     "multer": "^2.0.2",
+    "next": "^16.1.1",
     "node-fetch": "^2.7.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
