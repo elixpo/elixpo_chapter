@@ -133,7 +133,7 @@ triton==3.4.0
 typer==0.15.4
 typing_extensions==4.15.0
 tzdata==2025.2
-urllib3==2.5.0
+urllib3==2.6.3
 vector-quantize-pytorch==1.23.2
 wcwidth==0.2.13
 Werkzeug==3.1.3
