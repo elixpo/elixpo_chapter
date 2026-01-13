@@ -23,7 +23,7 @@ einops==0.8.1
 einx==0.3.0
 executing==2.2.1
 ffmpy==0.6.1
-filelock==3.19.1
+filelock==3.20.3
 fire==0.7.1
 Flask==3.1.2
 flask-cors==6.0.1
