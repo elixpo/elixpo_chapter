@@ -1,20 +1,32 @@
+import time
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import sent_tokenize
 from typing import List, Tuple
 import nltk
-import os 
+import os
+from web_scraper import fetch_full_text
 
-if not os.path.exists('searchenv/nltk_data'):
-    nltk.download("punkt", download_dir='./searchenv/nltk_data')
-    nltk.download("punkt_tab", download_dir='./searchenv/nltk_data')
+NLTK_DIR = "searchenv/nltk_data"
+os.makedirs(NLTK_DIR, exist_ok=True)
+nltk.data.path.append(NLTK_DIR)
 
+if not os.path.exists(os.path.join(NLTK_DIR, "tokenizers/punkt")):
+    nltk.download("punkt", download_dir=NLTK_DIR)
+
+
+t0 = time.perf_counter()
 
 model = SentenceTransformer(
     "sentence-transformers/all-MiniLM-L6-v2",
     device="cpu",
-    cache_folder = "model_cache"
+    cache_folder="model_cache"
 )
+
+_ = model.encode("warmup", show_progress_bar=False)
+
+t1 = time.perf_counter()
+MODEL_LOAD_TIME = t1 - t0
 
 
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
@@ -40,16 +52,17 @@ def chunk_text(text: str, max_sentences: int = 5) -> List[str]:
 def select_top_sentences(
     query: str,
     docs: List[str],
-    top_k_chunks: int = 5,
-    top_k_sentences: int = 8,
-) -> List[Tuple[str, float]]:
+    top_k_chunks: int = 4,
+    top_k_sentences: int = 10,
+) -> Tuple[List[Tuple[str, float]], float]:
     """
-    Returns top relevant sentences with similarity scores
+    Returns top relevant sentences + inference time
     """
+
+    start = time.perf_counter()
 
     chunks = []
     chunk_to_sentences = []
-
     for doc in docs:
         doc_chunks = chunk_text(doc)
         for ch in doc_chunks:
@@ -57,7 +70,7 @@ def select_top_sentences(
             chunk_to_sentences.append(sent_tokenize(ch))
 
     if not chunks:
-        return []
+        return [], 0.0
 
     embeddings = model.encode(
         [query] + chunks,
@@ -71,8 +84,7 @@ def select_top_sentences(
     query_emb = normalize(query_emb)
     chunk_embs = normalize(chunk_embs)
 
-    scores = chunk_embs @ query_emb.T
-    scores = scores.squeeze()
+    scores = (chunk_embs @ query_emb.T).squeeze()
 
     top_chunk_idxs = np.argsort(scores)[-top_k_chunks:][::-1]
 
@@ -80,35 +92,32 @@ def select_top_sentences(
 
     for idx in top_chunk_idxs:
         chunk_score = scores[idx]
-        sentences = chunk_to_sentences[idx]
-
-        for s in sentences:
+        for s in chunk_to_sentences[idx]:
             score = chunk_score
             if query.lower() in s.lower():
-                score += 0.05
+                score += 0.06
             candidate_sentences.append((s, float(score)))
 
     candidate_sentences.sort(key=lambda x: x[1], reverse=True)
 
-    return candidate_sentences[:top_k_sentences]
+    end = time.perf_counter()
+
+    return candidate_sentences[:top_k_sentences], end - start
 
 
-docs = [
-    """
-    Semantic caching stores query embeddings to avoid repeated computation.
-    It is widely used in retrieval-augmented generation systems.
-    This technique significantly reduces latency.
-    """,
-    """
-    Embedding models convert text into dense vectors.
-    MiniLM models are efficient and suitable for edge devices.
-    They are commonly used for semantic search.
-    """
-]
 
-query = "How does semantic caching reduce latency?"
 
-results = select_top_sentences(query, docs)
+query = "What happened to the bengal woman in india?"
+t2 = time.perf_counter()
+docs = fetch_full_text("https://www.hindustantimes.com/india-news/bengal-woman-trying-to-escape-drunk-eve-teasers-dies-in-road-accident-101740391266434.html")
+print(docs)
+t3 = time.perf_counter()
+# print(f"Web scrape time  : {t3 - t2:.3f} seconds")
+# results, inference_time = select_top_sentences(query, docs)
 
-for sent, score in results:
-    print(f"{score:.3f} | {sent}")
+# print(f"\nModel load time   : {MODEL_LOAD_TIME:.3f} seconds")
+# print(f"Inference time    : {inference_time:.3f} seconds\n")
+
+# for sent, score in results:
+#     if score > 0.6:
+#         print(sent)

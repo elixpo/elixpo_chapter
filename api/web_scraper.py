@@ -31,7 +31,7 @@ def fetch_full_text(
         for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'form', 'button', 'noscript', 'iframe', 'svg']):
             element.extract()
 
-        main_content_elements = soup.find_all(['main', 'article', 'div', 'section'], class_=[
+        main_content_elements = soup.find_all(['main', 'article', 'div', 'section', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'p', 'article'], class_=[
             'main', 'content', 'article', 'post', 'body', 'main-content', 'entry-content', 'blog-post'
         ])
         if not main_content_elements:
@@ -44,8 +44,6 @@ def fetch_full_text(
             if word_count >= total_word_count_limit:
                 break
             for tag in main_elem.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote', 'div']):
-                if word_count >= total_word_count_limit:
-                    break
                 text = re.sub(r'\s+', ' ', tag.get_text()).strip()
                 if text:
                     words = text.split()
@@ -58,8 +56,8 @@ def fetch_full_text(
         if word_count >= total_word_count_limit:
             text_content = ' '.join(text_content.split()[:total_word_count_limit]) + '...'
 
-
-        return text_content.strip()[:MAX_TOTAL_SCRAPE_WORD_COUNT]
+        return temp_text
+        # return text_content.strip()[:MAX_TOTAL_SCRAPE_WORD_COUNT]
 
     except requests.exceptions.Timeout:
         print(f"Timeout scraping URL: {url}")
@@ -73,7 +71,7 @@ def fetch_full_text(
 
 
 if __name__ == "__main__":
-    test_url = "https://www.hindustantimes.com/india-news/bengal-woman-trying-to-escape-drunk-eve-teasers-dies-in-road-accident-101740391266434.html"
+    test_url = "https://www.financialexpress.com/india-news/six-others-have-claimed-as-father-ec-summons-bengal-voters-for-sir-hearing-over-logical-discrepancy/4106668/"
     text = fetch_full_text(test_url)
     print("\n--- Extracted Text ---\n")
     print(text)
