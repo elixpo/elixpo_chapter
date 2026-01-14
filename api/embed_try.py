@@ -7,6 +7,7 @@ import os
 
 if not os.path.exists('nltk_data'):
     nltk.download("punkt", download_dir='./nltk_data')
+    nltk.download("punkt_tab", download_dir='./nltk_data')
 
 
 # -----------------------------
@@ -16,7 +17,7 @@ if not os.path.exists('nltk_data'):
 model = SentenceTransformer(
     "sentence-transformers/all-MiniLM-L6-v2",
     device="cpu",
-    cache_dir = "model_cache"
+    cache_folder = "model_cache"
 )
 
 
