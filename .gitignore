@@ -14,5 +14,4 @@ pip_cache/
 searchSessions/
 .*json
 node_modules/
-ntlk_data/
 cached_audio/
