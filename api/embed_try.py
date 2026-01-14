@@ -13,6 +13,7 @@ nltk.data.path.append(NLTK_DIR)
 
 if not os.path.exists(os.path.join(NLTK_DIR, "tokenizers/punkt")):
     nltk.download("punkt", download_dir=NLTK_DIR)
+    nltk.download("punkt_tab", download_dir=NLTK_DIR)
 
 
 t0 = time.perf_counter()
