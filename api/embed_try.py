@@ -5,9 +5,9 @@ from typing import List, Tuple
 import nltk
 import os 
 
-if not os.path.exists('nltk_data'):
-    nltk.download("punkt", download_dir='./nltk_data')
-    nltk.download("punkt_tab", download_dir='./nltk_data')
+if not os.path.exists('searchenv/nltk_data'):
+    nltk.download("punkt", download_dir='./searchenv/nltk_data')
+    nltk.download("punkt_tab", download_dir='./searchenv/nltk_data')
 
 
 # -----------------------------
