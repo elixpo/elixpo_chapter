@@ -1,128 +1,97 @@
-# Elixpo — A Developer-First Open Source Series
-## Enhanced Learning and Intelligence Process Optimization ##
-![Elixpo Banner](https://github.com/user-attachments/assets/dcf4bafc-8a93-4a45-adcb-4b392197da35)
-
-### Welcome to Elixpo-Chapter, an Open Source Repository (OSR) begun in 2023 as a college initiative, this open-source series has grown into a collaborative ecosystem of open source projects and collaborative development. In just two years, we've built over 17 projects, engaged a global community, and participated in numerous hackathons and open-source programs.
-
-### **💖 If you believe in open and accessible projects, please leave a ⭐ on the repository!**
-
-![Built with Pollinations](https://img.shields.io/badge/Built_With-Pollinations-8a2be2?style=for-the-badge&logo=data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%20124%20124%22%3E%3Ccircle%20cx%3D%2262%22%20cy%3D%2262%22%20r%3D%2262%22%20fill%3D%22%23ffffff%22/%3E%3C/svg%3E&logoColor=white&labelColor=6a0dad)
-![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ed?style=for-the-badge&logo=docker&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-326ce5?style=for-the-badge&logo=kubernetes&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![Minecraft Bot](https://img.shields.io/badge/Minecraft-62B46F?style=for-the-badge&logo=minecraft&logoColor=white)
-![Discord Bot](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)
-![Chrome Extension](https://img.shields.io/badge/Chrome-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)
-![Hacktoberfest](https://img.shields.io/badge/Hacktoberfest-OSS-0f172a?style=for-the-badge&logo=hacktoberfest&logoColor=#ff6f61)
-
----
-## 🌟 GitHub Stars Program — Your Support Matters!
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/465db80e-83a8-4607-840d-d7f2239e15cf" alt="GitHub Stars Nomination" width="400"/>
+  <img src="https://github.com/user-attachments/assets/dcf4bafc-8a93-4a45-adcb-4b392197da35" alt="Elixpo Banner" width="100%"/>
 </p>
 
-<h3 align="center">🌟 Nominate Me for the GitHub Stars Program! 🌟</h3>
-
+<h1 align="center">🚀 Elixpo — A Developer-First Open Source Series</h1>
 <p align="center">
-  If Elixpo, my Hacktoberfest work, or Google Developer Groups activities have helped you on your open-source or CS journey, I’d be honored by your nomination.<br>
-  <strong>Your support inspires me and helps grow our community!</strong>
+  <strong>Enhanced Learning and Intelligence Process Optimization</strong><br>
+  <em>Democratizing AI through open, ethical, and collaborative development.</em>
 </p>
 
-
-
-#### **How to Nominate (Takes < 20 seconds):**
-
-1. 👉 Visit [stars.github.com/nominate](https://stars.github.com/nominate/)
-2. 🔑 Sign in with your GitHub account
-3. ✍️ **Enter my GitHub username: <code>Circuit-Overtime</code>**
-4. 💬 Add a short, honest note about how I’ve supported you.
+<p align="center">
+  <img src="https://img.shields.io/badge/Built_With-Pollinations-8a2be2?style=for-the-badge&logo=data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%20124%20124%22%3E%3Ccircle%20cx%3D%2262%22%20cy%3D%2262%22%20r%3D%2262%22%20fill%3D%22%23ffffff%22/%3E%3C/svg%3E&logoColor=white&labelColor=6a0dad" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ed?style=for-the-badge&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kubernetes-326ce5?style=for-the-badge&logo=kubernetes&logoColor=white" />
+  <img src="https://img.shields.io/badge/Hacktoberfest-2025-ff6f61?style=for-the-badge&logo=hacktoberfest&logoColor=white" />
+</p>
 
 ---
+
+### 👋 Welcome to Elixpo-Chapter
+Born in 2023 as a college initiative, **Elixpo** has transformed into a global collaborative ecosystem. In just two years, we've launched **17+ projects**, engaged a worldwide community, and secured recognition from **Microsoft Startup Foundations**.
+
+> [!TIP]
+> **💖 Love our mission?** Help us reach more developers by leaving a ⭐ on this repository!
+
+---
+
+## 🌟 GitHub Stars — Support the Journey!
 
 <p align="center">
   <a href="https://stars.github.com/nominate/">
-    <img src="https://img.shields.io/badge/Nominate%20Me-GitHub%20Stars-24292f?style=for-the-badge&logo=github&logoColor=white" alt="Nominate for GitHub Stars" />
+    <img src="https://github.com/user-attachments/assets/465db80e-83a8-4607-840d-d7f2239e15cf" alt="GitHub Stars Nomination" width="450"/>
   </a>
 </p>
 
+If Elixpo or our work with **Google Developer Groups** has helped your CS journey, please consider nominating **`Circuit-Overtime`** for the GitHub Stars Program. It takes less than 20 seconds!
+
+1.  👉 **Visit:** [stars.github.com/nominate](https://stars.github.com/nominate/)
+2.  🔑 **Sign In:** Use your GitHub account.
+3.  ✍️ **Nominee:** Enter `Circuit-Overtime`
+4.  💬 **Share:** Briefly mention how Elixpo has supported your growth.
+
 <p align="center">
-  <em>Thank you for helping amplify open source and supporting our mission! Every nomination makes a difference. 💖</em>
+  <a href="https://stars.github.com/nominate/">
+    <img src="https://img.shields.io/badge/Nominate%20Me-GitHub%20Stars-24292f?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
 </p>
 
+---
 
+## 🎯 Our Mission & Vision
+We are building a future where AI is **open, ethical, and accessible**. No paywalls, no proprietary locks—just pure innovation.
 
-
-## 🚀 Our Mission & Vision
-
-At Elixpo, we are dedicated to building a future where AI is **open, ethical, and accessible to everyone**. Our mission is to create a community-driven ecosystem where developers, creators, and enthusiasts can collaborate, learn, and innovate without barriers like paywalls or proprietary restrictions. We believe in transparency, responsible development, and the power of interconnected tools to build a better future.
-
-### Key Features
-
-- 🔓 **100% Open Source:** Licensed under GNU GPL-3.0 to ensure all derivatives remain open.
-- 💸 **Completely Free:** All our tools and platforms are free to use, forever.
-- 🤖 **AI-Powered:** From art generation to search, AI is at the core of what we do.
-- 🤝 **Community-Driven:** We thrive on collaboration and welcome contributions from all.
-- 🌐 **Web-Based & Embeddable:** Easily accessible through web interfaces and simple to integrate.
+* 🔓 **100% Open Source:** Licensed under GNU GPL-3.0.
+* 🤖 **AI-Centric:** Art generation, intelligent search, and NLP at the core.
+* 🤝 **Community First:** Built by developers, for developers.
+* 🌐 **Deploy-Ready:** Fully compatible with Vercel, Docker, and Kubernetes.
 
 ---
 
-## 🎉 Join Us for Hacktoberfest 2025!
+## 🎉 Hacktoberfest 2025 is LIVE!
+We enthusiastically welcome contributors! Whether you are a pro or a first-timer, there is a place for you.
 
-**Hacktoberfest is live!** We enthusiastically welcome contributions from developers around the world.
-
-- **Find Issues:** We have curated issues perfect for new contributors.Look for them which is tagged with `hacktoberfest accepted` , `hacktoberfest2025` in our [issue tracker](https://github.com/Circuit-Overtime/elixpo_chapter/issues).
-- **Read the Guidelines:** Before submitting a PR, please review our [**Code of Conduct**](./CODE_OF_CONDUCT.md) and [**Contributing Guidelines**](./CONTRIBUTING.md).
-
-Let's build something amazing together!
+* 🔍 **Find Issues:** Look for `hacktoberfest-accepted` or `hacktoberfest2025` tags in our [Issue Tracker](https://github.com/Circuit-Overtime/elixpo_chapter/issues).
+* 📜 **Guidelines:** Please read our [Contributing Guidelines](./CONTRIBUTING.md) before your first PR.
 
 ---
 
-## 🛠️ Projects in the Elixpo Ecosystem
+## 🛠️ The Elixpo Ecosystem
 
-This monorepo hosts a diverse collection of projects, each with its own development track.
+| Project | Description | Status/Links |
+| :--- | :--- | :--- |
+| **🎨 Elixpo Art** | AI art generation & enhancement platform. | [Visit Site](https://elixpo.com) |
+| **🔍 Elixpo Search** | Intelligent, AI-powered search engine. | `search.elixpo` |
+| **💬 Elixpo Chat** | Create and interact with custom AI chatbots. | `chat.elixpo` |
+| **🤖 Jackey** | Personalized Discord bot for image generation. | [Jackey Home](https://jackey.elixpo.com) |
+| **🩺 LlamaMedicine** | Fine-tuned Llama model for medical tasks. | [Ollama](https://ollama.com/Elixpo/LlamaMedicine) |
+| **⌨️ Text-Emoji** | Context-aware T5-Small emoji translator. | [Hugging Face](https://huggingface.co/Elixpo/Emoji-Contextual-Translator) |
+| **⚡ Fing & UI** | Vibe-coding platform and React library. | `igyahiko.fing` |
 
-| Project              | Description                                                                                     | Link(s)                                                                                                                                                   |
-| :------------------- | :---------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Elixpo Art**       | AI art generation and enhancement platform.                                                     | [elixpo.com](https://elixpo.com), [Chrome Extension](https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh) |
-| **Elix Blogs**       | A modern blogging platform for tech articles and tutorials.                                     | [elixpo.com/blogs/elixpo_art](https://elixpo.com/blogs/elixpo_art)                                                                                        |
-| **Elixpo Search**    | An intelligent, AI-powered search engine.                                                       | `search.elixpo`                                                                                                                                           |
-| **Elixpo Chat**      | A platform for creating and interacting with AI chatbots.                                       | `chat.elixpo`                                                                                                                                             |
-| **Jackey**           | A personalized Discord bot for image generation and more.                                       | [jackey.elixpo.com](https://jackey.elixpo.com)                                                                                                            |
-| **Elixpo Sketch**    | A real-time, WYSIWYG collaborative canvas and editor.                                           | `sketch.elixpo`                                                                                                                                           |
-| **Elixpo Verse**     | A stylish wallpaper with a live, animated clock.                                                | `verse.elixpo`                                                                                                                                            |
-| **Text-Emoji**       | Text-to-emoji converter using a fine-tuned T5-Small model.                                      | [Hugging Face](https://huggingface.co/Elixpo/Emoji-Contextual-Translator)                                                                                 |
-| **LlamaMedicine**    | A Llama model fine-tuned for medicine-related tasks.                                            | [Ollama](https://ollama.com/Elixpo/LlamaMedicine)                                                                                                         |
-| **Pollinations UI**  | An improved user interface for the Pollinations project website.                                | `polli.elixpo`                                                                                                                                            |
-| **Elixpo Portfolio** | The personal portfolio of the project founder.                                                  | `elixpo`                                                                                                                                                  |
-| **Inkflow**          | A minimalist canvas developed by [**Ez-Vivek**](https://github.com/ez-vivek).                   | `inkflow`                                                                                                                                                 |
-| **Fing & Fing-UI**   | A vibe-coding platform and React UI library by [**Subhro Koley**](https://github.com/IgYaHiko). | `igyahiko.fing`, `igyahiko.fing-ui`                                                                                                                                         |
-| **CortexOne**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `itachi.cortexOne`                                                                                                                                        |
-| **Vision**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `igyahiko.vision`                                                                                                                                        |
-| **Memory-Arc**        | An application to use LSTM to track conversations with an NLP model.                   | `itachi.memory-arc`                                                                                                                                        |
+---
 
 ## 👑 Key Achievements
-
-- **`22+` Open Source Projects** successfully built and deployed.
-- **`20+` Global Contributors** have shaped the Elixpo ecosystem.
-- **`20+` Hackathons** participated in, fostering innovation and rapid development.
-- **Featured in Major Programs** like **GSSOC**, **Pollinations.AI**, and **OSCI**.
-- **Recognized by MS Startup Foundations** with funding in 2024.
-- **Active Participant** in **Hacktoberfest 2024 & 2025**.
-
-<a href="https://star-history.com/#Circuit-Overtime/elixpo_chapter&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Circuit-Overtime/elixpo_chapter&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Circuit-Overtime/elixpo_chapter&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Circuit-Overtime/elixpo_chapter&type=Date" />
-  </picture>
-</a>
+* ✅ **22+** Deployed Open Source Projects.
+* 🌍 **20+** Global Contributors.
+* 🏆 **Featured in** GSSOC, Pollinations.AI, and OSCI.
+* 💰 **Funded by** MS Startup Foundations (2024).
 
 ---
 
 ## 🏛️ Overall Architecture
 
-The Elixpo ecosystem is designed as a series of interconnected platforms that leverage a central API binding layer. This layer communicates with external AI/ML models and infrastructure providers to deliver powerful features across our applications.
+
 
 ```mermaid
 graph TD
@@ -131,8 +100,6 @@ graph TD
         B[Elix Blogs]:::service
         C[Elixpo Search]:::service
         F[Elixpo Chat]:::service
-        D[Elixpo Sketch]:::service
-        G[Elixpo Verse]:::service
     end
 
     subgraph API & Core Logic
@@ -140,94 +107,15 @@ graph TD
     end
 
     subgraph Backend & Infrastructure
-        X[AI/ML Models - Scaleway, RPi, GCP]:::ai
-        Y[Cloud Infra - AWS, Azure, GPU VMs]:::infra
+        X[AI/ML Models]:::ai
+        Y[Cloud Infra - AWS/GCP]:::infra
     end
 
-    %% Connections
-    A & B & C & F & D & G --> P
+    A & B & C & F --> P
     P --> X
     P --> Y
 
-    %% Styling
     classDef service fill:#e6f3ff,stroke:#333,stroke-width:2px;
     classDef api fill:#e6ffe6,stroke:#333,stroke-width:2px;
     classDef ai fill:#fff0e6,stroke:#333,stroke-width:2px;
     classDef infra fill:#f9e6ff,stroke:#333,stroke-width:2px;
-```
-
-## Development Note
-
-Elixpo is a parallel development initiative with multiple sub-projects evolving simultaneously within this monorepo. We actively welcome external open-source projects—if you’d like your project featured here, submit a proposal! Accepted projects will be listed as contributors and included under the GNU GPL license.
-
-> Each project follows its own dedicated development track and process, covering diverse fields across computer science. This structure encourages collaboration, innovation, and cross-disciplinary growth within the Elixpo ecosystem.
-
-## Collaborators
-
-We are excited to collaborate with various developers and artists in the open-source community. If you are interested in contributing, please reach out! Together, we aim to enhance the capabilities of this art generator.
-
-## Funding
-
-This project is funded through a mix of personal investment, community contributions, and generous infrastructure support. Our cloud compute and VPS resources are provided by [Pollinations AI](https://pollinations.ai) — special thanks to Thomas Haferlach and the Pollinations team for enabling our large-scale AI workloads.
-
-We are actively seeking sponsors to help us grow and sustain the project. If you or your organization would like to support Elixpo, please visit our [GitHub Sponsors page](https://github.com/sponsors/Circuit-Overtime) or reach out to discuss partnership opportunities.
-
-Your support helps us cover infrastructure costs, accelerate development, and expand our open-source initiatives. Thank you for helping us build a more accessible and collaborative AI ecosystem!
-
-# Recent Releases
-
-Here are some of our latest releases and live demos:
-
-- **Elixpo Art Chrome Extension**  
-  [Available on Chrome Web Store](https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh?authuser=0&hl=en-GB&pli=1)  
-  Easily generate AI art from selected text in your browser.
-
-- **Elixpo Art Platform**  
-  [elixpo.com](https://elixpo.com)  
-  The main platform for AI-powered art generation and sharing.
-
-- **Jackey Discord Bot**  
-  [jackey.elixpo.com](https://jackey.elixpo.com)  
-  A personalized Discord bot for image generation and more.
-
-- **Fine-Tuned Llama Medicine Model**  
-  [ollama.com/Elixpo/LlamaMedicine](https://ollama.com/Elixpo/LlamaMedicine)  
-  Specialized Llama model fine-tuned for medicine-related tasks.
-
-- **Emoji Translator**  
-  [huggingface.co/Elixpo/Emoji-Contextual-Translator](https://huggingface.co/Elixpo/Emoji-Contextual-Translator)  
-  Translate text to context-aware emojis using our custom model.
-
-  - **Elixpo Art Blog**  
-    [elixpo.com/blogs/elixpo_art](https://elixpo.com/blogs/elixpo_art)  
-    In-depth articles and updates about the Elixpo Art platform.
-
----
-
-# Our Future
-
-At Elixpo_Chapter, we are dedicated to shaping a future where projects are:
-
-- **Open & Accessible**: AI should empower everyone—free from paywalls, proprietary barriers, or exclusivity.
-- **Transparent & Ethical**: We prioritize transparency in our models and workflows, ensuring ethical development and responsible use.
-- **Community-Driven**: Our platform thrives on collaboration, inviting developers, creators, and enthusiasts to contribute and innovate together.
-- **Interconnected**: We’re building an ecosystem where AI tools and services integrate seamlessly, enabling composable and synergistic solutions.
-- **Continuously Evolving**: We embrace rapid advancements in AI, adapting and improving while upholding our core values of openness and accessibility.
-- **A Platform for Learning**: We are more than just tools; we are a learning ecosystem. We are committed to being a welcoming space for new developers, empowering contributors of all skill levels to learn, grow, and teach others.
-- **Prioritizing the Developer Experience**: We put the developer experience at the forefront of our work. Our tools are built to be flexible, well-documented, and a joy to use, empowering developers to build, test, and deploy with confidence.
-
-Our mission is to advance AI for the benefit of all—respecting ethical standards, fostering responsible innovation, and building a collaborative community. Join us in making AI open, ethical, and impactful for everyone.
-
-# Stargazers
-
-<p align="left">
-  <a href="https://reporoster.com/stars/dark/Circuit-Overtime/elixpo_chapter">
-    <img src="https://reporoster.com/stars/dark/Circuit-Overtime/elixpo_chapter" alt="Stargazers" />
-  </a>
-</p>
-
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=99:ffc,100:302b63&height=100&section=footer"/>
-</p>
-
-> ## `Made with ❤️ by Ayushman Bhattacharya & Collabs!`
