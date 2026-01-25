@@ -92,19 +92,14 @@ This monorepo hosts a diverse collection of projects, each with its own developm
 | **Elixpo Sketch**    | A real-time, WYSIWYG collaborative canvas and editor.                                           | `sketch.elixpo`                                                                                                                                           |
 | **Elixpo Verse**     | A stylish wallpaper with a live, animated clock.                                                | `verse.elixpo`                                                                                                                                            |
 | **Text-Emoji**       | Text-to-emoji converter using a fine-tuned T5-Small model.                                      | [Hugging Face](https://huggingface.co/Elixpo/Emoji-Contextual-Translator)                                                                                 |
-| **LlamaMedicine**    | A Llama model fine-tuned for medicine-related tasks.                                            | [Ollama](https://ollama.com/Elixpo/LlamaMedicine)                                                                                                         |
-| **Pollinations UI**  | An improved user interface for the Pollinations project website.                                | `polli.elixpo`                                                                                                                                            |
-| **Elixpo Portfolio** | The personal portfolio of the project founder.                                                  | `elixpo`                                                                                                                                                  |
-| **Inkflow**          | A minimalist canvas developed by [**Ez-Vivek**](https://github.com/ez-vivek).                   | `inkflow`                                                                                                                                                 |
-| **Fing & Fing-UI**   | A vibe-coding platform and React UI library by [**Subhro Koley**](https://github.com/IgYaHiko). | `igyahiko.fing`, `igyahiko.fing-ui`                                                                                                                                         |
-| **CortexOne**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `itachi.cortexOne`                                                                                                                                        |
-| **Vision**        | An AI-powered desktop application built with Electron, React, and TypeScript.                   | `igyahiko.vision`                                                                                                                                        |
-| **Memory-Arc**        | An application to use LSTM to track conversations with an NLP model.                   | `itachi.memory-arc`                                                                                                                                        |
+| **LlamaMedicine**    | A Llama model fine-tuned for medicine-related tasks.                                            | [Ollama](https://ollama.com/Elixpo/LlamaMedicine)                                                                                                         |                                             
+|**Elixpo Portfolio** | The personal portfolio of the project founder.                                                  | `elixpo`                                                                                                                                                  |
+| **Inkflow**          | A minimalist canvas developed by [**Ez-Vivek**](https://github.com/ez-vivek).                   | `inkflow`                                                                                                                        
 
 ## 👑 Key Achievements
 
-- **`22+` Open Source Projects** successfully built and deployed.
-- **`20+` Global Contributors** have shaped the Elixpo ecosystem.
+- **`10+` Open Source Projects** successfully built and deployed.
+- **`35+` Global Contributors** have shaped the Elixpo ecosystem.
 - **`20+` Hackathons** participated in, fostering innovation and rapid development.
 - **Featured in Major Programs** like **GSSOC**, **Pollinations.AI**, and **OSCI**.
 - **Recognized by MS Startup Foundations** with funding in 2024.
