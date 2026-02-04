@@ -1,6 +1,0 @@
-1. recreate all the audio to just 2s and all the b64 [checked]
-2. fix the system instruction generation for all the cases 
-the script will be provided to the tts and the script will be exactly what the response should be [checked]
-3. strict system instructions will be used [checked]
-4. app.py as the entr will be used for the rest api endpoints
-5. refine system instruction to use direct function call for each of the 4 processes 

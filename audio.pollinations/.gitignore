@@ -1,8 +1,0 @@
-*.env
-__pycache__/
-pretrained_models/
-genAudio/
-audioExtractor/audioext
-audioExtractor/boson_multimodal
-k8s/secret.yaml
-higgs_aud/

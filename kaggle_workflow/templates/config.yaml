@@ -1,6 +1,0 @@
-# File: kaggle_workflow/templates/config.yaml
-
-dataset_path: "data/sample.csv"
-output_path: "output/processed.csv"
-verbose: true
-num_head_rows: 5
