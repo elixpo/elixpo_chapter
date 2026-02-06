@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "@types/node": "^24.10.1",
-    "fs": "^0.0.1-security",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
-  }
-}
