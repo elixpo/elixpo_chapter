@@ -1,5 +1,0 @@
-1. from a P TAG, we have to ensure that we should be able to form a H* section and form inline text elements [checked]
-2. inside of a H* we should be able to form inline text elements
-3. if an inline element is at the starting of a new empty p then we have to add the ZWNBSP at the left, otherwise add a 
-span to the right of every inline element where user will be able to type
-# we should be able to from H* block element and subsequently form a new section whenever a H* element is formed
