@@ -1,0 +1,282 @@
+// document.querySelector(".welcomeSection").scroll(0, 1126.4000244140625 )
+const seekBars = document.querySelectorAll('.newsplayBackSeek');
+async function getNews() {
+    try {
+        const response = await fetch("/api/newsDetails");
+        const data = await response.json();
+        console.log('News Data:', data);
+        animateNewsContainer();
+        let date = data.latestNewsDate.split("T")[0];
+        const monthNames = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"
+        ];
+        const [year, month, day] = date.split("-");
+        date = `${monthNames[parseInt(month, 10) - 1]} ${day}`;
+
+        // Get elements
+        const dateElem = document.getElementById("date");
+        const yearElem = document.getElementById("year");
+        const descElem = document.getElementById("desc");
+        const centralLogo = document.getElementById("centralLogo");
+        const newsText = document.getElementById("newsText");
+        const backgroundBlur = document.getElementById("backgroundBlur");
+
+        // Hide elements before loading
+        if (dateElem) dateElem.style.opacity = 0;
+        if (yearElem) yearElem.style.opacity = 0;
+        if (descElem) descElem.style.opacity = 0;
+        if (centralLogo) {
+            centralLogo.style.opacity = 0;
+            centralLogo.style.filter = "blur(16px)";
+        }
+        if (backgroundBlur) backgroundBlur.style.opacity = 0;
+
+        // Preload image
+        const img = new window.Image();
+        img.src = data.latestNewsThumbnail;
+        img.onload = function() {
+            // Set content and styles
+            if (dateElem) dateElem.textContent = date;
+            if (yearElem) yearElem.textContent = year;
+            if (descElem) descElem.textContent = data.latestNewsSummary;
+            if (centralLogo) {
+                centralLogo.style.backgroundImage = `url(${data.latestNewsThumbnail})`;
+                centralLogo.style.backgroundSize = "cover";
+                centralLogo.style.backgroundPosition = "center";
+            }
+            if (backgroundBlur) {
+                backgroundBlur.style.backgroundImage = `url(${data.latestNewsThumbnail})`;
+                backgroundBlur.style.backgroundSize = "cover";
+                backgroundBlur.style.backgroundPosition = "center";
+            }
+
+            // Animate central logo blur out and fade in
+            anime({
+                targets: centralLogo,
+                opacity: [0, 1],
+                filter: ['blur(25px)', 'blur(0px)'],
+                filter: "invert(1)",
+                transform: ['scale(0.95) translateX(-50%) translateY(-50%)', 'scale(1) translateX(-50%) translateY(-50%)'],
+                duration: 900,
+                easing: 'easeOutCubic'
+            });
+
+            // Animate background blur
+            anime({
+                targets: backgroundBlur,
+                opacity: [0, 1],
+                scale: [0.95, 1],
+                duration: 800,
+                easing: 'easeOutCubic'
+            });
+
+            // Animate text elements in with upward motion
+            anime({
+                targets: [dateElem, yearElem, descElem, newsText],
+                opacity: [0, 1],
+                translateY: [40, 0],
+                delay: anime.stagger(120),
+                duration: 700,
+                easing: 'easeOutCubic'
+            });
+        };
+    }
+    catch (error) {
+        console.error('Error fetching news details:', error);
+    }
+}
+
+
+async function getPodCast() {
+    try {
+        const response = await fetch("/api/podcastDetails");
+        const data = await response.json();
+        var podcastName = data.latestPodcastName ;
+        var podcast_thumbnail = data.latestPodcastThumbnail ;
+        await displayPodcast(podcastName, podcast_thumbnail);
+        animatePodcastContainer();
+    } catch (error) {
+        console.error('Error fetching podcast details:', error);
+    }
+}
+
+function hidePodcastElements() {
+    const podcastTitle = document.querySelector('.podCastPunchline');
+    const podcastImage = document.getElementById("podcastThumbnail");
+    if (podcastTitle) podcastTitle.style.opacity = 0;
+    if (podcastImage) podcastImage.style.opacity = 0;
+}
+
+async function displayPodcast(podcastName, podcast_thumbnail) {
+    const podcastTitle = document.querySelector('.podCastPunchline');
+    const podcastImage = document.getElementById("podcastThumbnail");
+
+    if (!podcastTitle || !podcastImage) return;
+
+    // Hide elements before animation
+    podcastTitle.style.opacity = 0;
+    podcastImage.style.opacity = 0;
+
+    podcastTitle.textContent = podcastName;
+    podcastImage.style.backgroundImage = `url(${podcast_thumbnail})`;
+    podcastImage.style.backgroundSize = "cover";
+    podcastImage.style.backgroundPosition = "center";
+
+    // Wait for image to load before animating
+    const img = new window.Image();
+    img.src = podcast_thumbnail;
+    img.onload = function() {
+        // Animate image
+        anime({
+            targets: podcastImage,
+            opacity: [0, 1],
+            scale: [0.9, 1],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+        // Animate text after image
+        anime({
+            targets: podcastTitle,
+            opacity: [0, 1],
+            translateY: [20, 0],
+            delay: 300,
+            duration: 600,
+            easing: 'easeOutCubic'
+        });
+    };
+}
+
+async function getWeather() {
+    try {
+        // Get user's IP-based location using ipapi.co
+        const ipRes = await fetch('https://ipapi.co/json/');
+        const ipData = await ipRes.json();
+        const locationQuery = [ipData.city, ipData.latitude, ipData.longitude].filter(Boolean).join(', ');
+        // console.log(locationQuery);
+        const response = await fetch(`/api/weather?location=${encodeURIComponent(locationQuery)}`);
+        const data = await response.json();
+        if (data.error) return;
+        animateWeatherContainer();
+        const { structuredWeather, aiSummary, bannerLink } = data;
+        const {
+            location,
+            current: { condition, temperature, wind_speed, datetime },
+            forecast
+        } = structuredWeather;
+
+        const locationElem = document.querySelector('.weatherContainer .location');
+        const tempElem = document.querySelector('.weatherContainer .temperature');
+        const descElem = document.querySelector('.weatherContainer .typeOfWeather');
+        const windElem = document.querySelector('.weatherContainer .wind-speed-detail');
+        const bannerElem = document.querySelector('.weatherContainer .weatherBackground');
+
+        // Format temperature as °C
+        if (tempElem) tempElem.innerHTML = `${temperature}<span class="temp-unit">°C</span>`;
+        if (locationElem) locationElem.textContent = location;
+        if (descElem) descElem.textContent = condition;
+
+
+        // Wind speed
+        let windDetailElem = windElem;
+        console.log(wind_speed)
+        windDetailElem.textContent = `Wind: ${wind_speed} km/h`;
+
+        // Weather background
+        if (bannerElem && bannerLink) {
+            bannerElem.style.backgroundImage = `url('${bannerLink}')`;
+            bannerElem.style.backgroundSize = "cover";
+            bannerElem.style.backgroundPosition = "center";
+            bannerElem.style.backgroundRepeat = "no-repeat";
+            bannerElem.style.opacity = "0.7";
+            anime({
+                targets: bannerElem,
+                opacity: [0, 0.8],
+                filter: ['blur(10px)', 'blur(5px)'],
+                filter: "brightness(0.4)",
+                duration: 800,
+                easing: 'easeInOutQuad'
+            });
+        }
+
+        anime({
+            targets: [
+                '.weatherContainer .location',
+                '.weatherContainer .temperature',
+                '.weatherContainer .typeOfWeather',
+                '.weatherContainer .highAndLow',
+                '.weatherContainer .wind-speed-detail'
+            ],
+            opacity: [0, 1],
+            translateY: [20, 0],
+            delay: anime.stagger(100),
+            duration: 700,
+            easing: 'easeOutCubic'
+        });
+    } catch (err) {
+        console.error('Weather fetch error:', err);
+    }
+}
+
+
+function animateNewsContainer() {
+    const container = document.querySelector('.newsContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
+// Animate Podcast Container
+function animatePodcastContainer() {
+    const container = document.querySelector('.podCastContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
+// Animate Weather Container
+function animateWeatherContainer() {
+    const container = document.querySelector('.weatherContainer');
+    if (container) {
+        anime({
+            targets: container,
+            opacity: [0, 1],
+            translateY: [30, 0],
+            duration: 800,
+            easing: 'easeOutCubic'
+        });
+    }
+}
+
+
+document.getElementById("newsContainer").addEventListener("click", function() {
+    window.location.href = "/daily";
+});
+document.getElementById("playButton").addEventListener("click", function() {
+    window.location.href = "/daily";
+});
+document.getElementById("podCastContainer").addEventListener("click", function() {
+    window.location.href = "/podcast";
+});
+document.getElementById("weatherContainer").addEventListener("click", function() {
+    window.location.href = "/weather";
+});
+
+
+
+hidePodcastElements();
+getPodCast();
+getNews();
+getWeather();

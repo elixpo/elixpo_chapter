@@ -1,0 +1,194 @@
+
+.weatherSection 
+{
+    z-index: 10;
+    overflow: hidden;
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    align-items: center;
+    font-family: sans-serif;
+    color: white;
+}
+
+.weatherSection > .closeBtn
+{
+    position: absolute;
+    top: 3%;
+    right: 3%;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 20;
+    font-size: 2em;
+    background-color: #ffffff97;
+    backdrop-filter: blur(10px);
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    transition: 0.25s;
+}
+.weatherSection > .closeBtn:hover 
+{
+    background-color: #ffffffb3;
+    box-shadow: 0 2px 12px 0 #00000055;
+    transition: 0.25s;
+}
+.weatherSection > .closeBtn:active 
+{
+    background-color: #ffffffd9;
+    box-shadow: 0 2px 12px 0 #00000088;
+    transition: 0.25s;
+}
+.weather-card {
+    background: linear-gradient(to bottom, #3b3b54, #5b5b7d);
+    border-radius: 50px;
+    height: 350px;
+    padding: 20px;
+    width: 700px;
+
+    top: 0px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.weatherBackground {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300"><path d="M100,200 Q150,100 200,200 T300,200 T400,200 T500,200 M250,150 Q300,50 350,150 T450,150 M50,250 Q100,150 150,250" fill="#5b5b7d" opacity="0.5"/></svg>');
+    background-size: cover;
+    filter: blur(3px) brightness(0.4);
+}
+
+.weather-content {
+    position: relative;
+    z-index: 1;
+}
+
+.location-info {
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    margin-left: 10px;
+    margin-top: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 700;
+    color: #ffc;
+}
+.weather-type 
+{
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    margin-left: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #ffcc00;
+}
+.current-weather {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    margin-left: 10px;
+    color: #ffc;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.temp-unit {
+    font-size: 0.5em;
+    vertical-align: top;
+}
+
+.temp-wind-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    margin-left: 10px;
+    gap: 25px;
+}
+
+.temp-range {
+    font-size: 1.2em;
+    opacity: 0.8;
+    font-weight: 700;
+    font-family: 'Courier New', Courier, monospace;
+    color: #ccc;
+    margin: 0;
+}
+
+.wind-speed-detail {
+    font-size: 1em;
+    font-family: 'Courier New', Courier, monospace;
+    color: #ccc;
+    margin: 0;
+}
+
+.forecast {
+    display: flex;
+    justify-content: flex-start;
+    gap: 45px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px 25px;
+    overflow-x: auto;
+    border-bottom-right-radius: 30px;
+    border-bottom-left-radius: 30px;
+}
+
+.forecast::-webkit-scrollbar
+{
+    display: none;
+}
+.day {
+    text-align: center;
+    flex-shrink: 0;
+    margin-right: 15px;
+}
+.day > i 
+{
+    font-size: 1.5em;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.day:last-child {
+    margin-right: 0;
+}
+
+.day-name {
+    font-size: 1em;
+    opacity: 0.8;
+    margin-bottom: 5px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #ffc;
+}
+
+.weather-icon {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 5px;
+}
+
+.day-temp {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #ffc;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.rain-icon {
+    fill: #add8e6; /* Light blue for rain */
+}
+
+.cloud-icon {
+    fill: #ffffff; /* White for clouds */
+}
+
+
+
+

@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css?family=Nunito+Sans');
+:root {
+    --blue: #0e0620; /* fallback, not used */
+    --white: #ffd;   /* from .dailyNewsName color */
+    --green: #0f6d78; /* from gradient rgb(15, 109, 120) */
+    --gold: #ffc;    /* from .dailyNewsSection background */
+    --accent: #ddb581; /* from .newsplayBackSeekProgress */
+    --dark: #222;    /* from .closeBtn color */
+}
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Nunito Sans", 'Parkinsans', sans-serif;
+    color: var(--dark);
+    font-size: 1em;
+    background: var(--gold);
+    min-height: 100vh;
+}
+.container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+.col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    box-sizing: border-box;
+    padding: 20px;
+}
+.align-self-center {
+    align-self: center;
+}
+svg {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    visibility: visible;
+}
+h1 {
+    font-size: 7.5em;
+    margin: 15px 0px;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--green);
+    text-shadow: 2px 2px 0 var(--accent);
+}
+h2 {
+    font-weight: bold;
+    margin: 10px 0 20px 0;
+    color: var(--dark);
+}
+p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    color: var(--dark);
+}
+button,
+.btn {
+    z-index: 1;
+    overflow: hidden;
+    background: transparent;
+    position: relative;
+    padding: 8px 50px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1em;
+    letter-spacing: 2px;
+    transition: 0.2s ease;
+    font-weight: bold;
+    margin: 5px 0px;
+    border: 4px solid var(--accent);
+    color: var(--green);
+}
+button.btn.green,
+.btn.green {
+    border: 4px solid var(--accent);
+    color: var(--green);
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+}
+button.btn.green:hover,
+.btn.green:hover {
+    color: var(--gold);
+    background: var(--green);
+    transition: 0.2s ease;
+    border-color: var(--gold);
+}
+ul {
+    list-style-type: none;
+    padding-inline-start: 35px;
+}
+@media screen and (max-width: 900px) {
+    .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        text-align: center;
+    }
+    .row {
+        flex-direction: column;
+    }
+    svg {
+        margin-bottom: 30px;
+    }
+}
+@media screen and (max-width: 768px) {
+    body {
+        display: block;
+    }
+    .container {
+        margin-top: 70px;
+        margin-bottom: 70px;
+    }
+    h1 {
+        font-size: 4em;
+    }
+}
