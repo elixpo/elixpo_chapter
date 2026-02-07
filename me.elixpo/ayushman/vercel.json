@@ -1,7 +1,0 @@
-{
-    "routes": [
-      { "src": "/api/github", "dest": "/api/github.js" },
-      { "src": "/api/mail", "dest": "/api/mail.js" }
-    ]
-  }
-  
