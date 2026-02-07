@@ -78,24 +78,6 @@ Let's build something amazing together!
 
 ---
 
-## 🛠️ Projects in the Elixpo Ecosystem
-
-This monorepo hosts a diverse collection of projects, each with its own development track.
-
-| Project              | Description                                                                                     | Link(s)                                                                                                                                                   |
-| :------------------- | :---------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Elixpo Art**       | AI art generation and enhancement platform.                                                     | [elixpo.com](https://elixpo.com), [Chrome Extension](https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh) |
-| **Elix Blogs**       | A modern blogging platform for tech articles and tutorials.                                     | [elixpo.com/blogs/elixpo_art](https://elixpo.com/blogs/elixpo_art)                                                                                        |
-| **Elixpo Search**    | An intelligent, AI-powered search engine.                                                       | `search.elixpo`                                                                                                                                           |
-| **Elixpo Chat**      | A platform for creating and interacting with AI chatbots.                                       | `chat.elixpo`                                                                                                                                             |
-| **Jackey**           | A personalized Discord bot for image generation and more.                                       | [jackey.elixpo.com](https://jackey.elixpo.com)                                                                                                            |
-| **Elixpo Sketch**    | A real-time, WYSIWYG collaborative canvas and editor.                                           | `sketch.elixpo`                                                                                                                                           |
-| **Elixpo Verse**     | A stylish wallpaper with a live, animated clock.                                                | `verse.elixpo`                                                                                                                                            |
-| **Text-Emoji**       | Text-to-emoji converter using a fine-tuned T5-Small model.                                      | [Hugging Face](https://huggingface.co/Elixpo/Emoji-Contextual-Translator)                                                                                 |
-| **LlamaMedicine**    | A Llama model fine-tuned for medicine-related tasks.                                            | [Ollama](https://ollama.com/Elixpo/LlamaMedicine)                                                                                                         |                                             
-|**Elixpo Portfolio** | The personal portfolio of the project founder.                                                  | `elixpo`                                                                                                                                                  |
-| **Inkflow**          | A minimalist canvas developed by [**Ez-Vivek**](https://github.com/ez-vivek).                   | `inkflow`                                                                                                                        
-
 ## 👑 Key Achievements
 
 - **`10+` Open Source Projects** successfully built and deployed.
