@@ -5,6 +5,9 @@ on:
     - cron: "0 0,4,8,12,16 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -14,36 +17,41 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Configure git
         run: |
-          git config user.name "Circuit-Overtime"
-          git config user.email "ayushbhatt633@gmail.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Add remotes (idempotent)
         run: |
-          git remote add art.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoart.git || true
-          git remote add jackey.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpojackey.git || true
-          git remote add chat.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpochat.git || true
-          git remote add blogs.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoblogs.git || true
-          git remote add verse.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoverse.git || true
-          git remote add sketch.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixposketch.git || true
-          git remote add me.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpome.git || true
+          git remote add art.elixpo https://github.com/elixpo/elixpoart.git || true
+          git remote add jackey.elixpo https://github.com/elixpo/elixpojackey.git || true
+          git remote add chat.elixpo https://github.com/elixpo/elixpochat.git || true
+          git remote add blogs.elixpo https://github.com/elixpo/elixpoblogs.git || true
+          git remote add verse.elixpo https://github.com/elixpo/elixpoverse.git || true
+          git remote add sketch.elixpo https://github.com/elixpo/elixposketch.git || true
+          git remote add me.elixpo https://github.com/elixpo/elixpome.git || true
+
+      - name: Fetch all subtree remotes
+        run: |
+          git fetch art.elixpo
+          git fetch jackey.elixpo
+          git fetch chat.elixpo
+          git fetch blogs.elixpo
+          git fetch verse.elixpo
+          git fetch sketch.elixpo
+          git fetch me.elixpo
 
       - name: Pull subtrees
         run: |
-          git subtree pull --prefix=art.elixpo art.elixpo main -m "Synced art.elixpo"
-          git subtree pull --prefix=jackey.elixpo jackey.elixpo main -m "Synced jackey.elixpo"
-          git subtree pull --prefix=chat.elixpo chat.elixpo main -m "Synced chat.elixpo"
-          git subtree pull --prefix=blogs.elixpo blogs.elixpo main -m "Synced blogs.elixpo"
-          git subtree pull --prefix=verse.elixpo verse.elixpo main -m "Synced verse.elixpo"
-          git subtree pull --prefix=sketch.elixpo sketch.elixpo main -m "Synced sketch.elixpo"
-          git subtree pull --prefix=me.elixpo me.elixpo main -m "Synced me.elixpo"
-
-      - name: Authenticate origin with PAT
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpo_chapter.git
+          git subtree pull --prefix=art.elixpo art.elixpo main -m "Sync art.elixpo" || true
+          git subtree pull --prefix=jackey.elixpo jackey.elixpo main -m "Sync jackey.elixpo" || true
+          git subtree pull --prefix=chat.elixpo chat.elixpo main -m "Sync chat.elixpo" || true
+          git subtree pull --prefix=blogs.elixpo blogs.elixpo main -m "Sync blogs.elixpo" || true
+          git subtree pull --prefix=verse.elixpo verse.elixpo main -m "Sync verse.elixpo" || true
+          git subtree pull --prefix=sketch.elixpo sketch.elixpo main -m "Sync sketch.elixpo" || true
+          git subtree pull --prefix=me.elixpo me.elixpo main -m "Sync me.elixpo" || true
 
       - name: Push updates
         run: |
