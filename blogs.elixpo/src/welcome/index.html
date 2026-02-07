@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LixBlogs - Complete Your Profile</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="icon" type="image/x-icon" href="../CSS/IMAGES/logo.png" />
+    <link rel="stylesheet" href="style.css" />
+    <link href="../CSS/Icons/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="intro-content">
+        <div class="welcome-section">
+          <h1>Welcome to LixBlogs!</h1>
+          <p>Let's complete your profile to get started with your blogging journey.</p>
+        </div>
+
+        <form class="profile-form" id="profileForm">
+          <div class="form-group">
+            <label for="displayName">Display Name *</label>
+            <input type="text" id="displayName" name="displayName" placeholder="Enter your display name" required />
+            <div class="name-status" id="nameStatus"></div>
+            <div class="name-suggestions" id="nameSuggestions"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea id="bio" name="bio" placeholder="Tell us about yourself..." rows="4" maxlength="150"></textarea>
+            <div class="char-count"><span id="bioCharCount">0</span>/150 characters</div>
+          </div>
+
+          <div class="form-group">
+            <label for="profilePicture">Profile Picture</label>
+            <div class="profile-pic-container">
+              <div class="profile-pic-preview" id="profilePicPreview">
+                <ion-icon name="person-outline"></ion-icon>
+                <span>Upload Image</span>
+              </div>
+              <input type="file" id="profilePicture" name="profilePicture" accept="image/*" hidden />
+              <button type="button" class="upload-btn" onclick="document.getElementById('profilePicture').click()">
+                <ion-icon name="camera-outline"></ion-icon>
+                Choose Photo
+              </button>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="skip-btn" onclick="skipProfile()">Skip for now</button>
+            <button type="submit" class="complete-btn" id="completeBtn" disabled>
+              <span>Complete Profile</span>
+              <ion-icon name="arrow-forward"></ion-icon>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="bloomFilter.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

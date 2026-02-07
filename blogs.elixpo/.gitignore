@@ -1,0 +1,3 @@
+node_modules/
+database.json
+bloomFilters/*.bin
