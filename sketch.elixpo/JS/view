@@ -1,0 +1,5 @@
+INITIAL NESTED
+<ul><li>&ZeroWidthSpace;<ul><li>grgrg</li></ul></li></ul>
+INTERMEDIATE
+<ul><li>&ZeroWidthSpace;<div><br></div></li></ul>
+

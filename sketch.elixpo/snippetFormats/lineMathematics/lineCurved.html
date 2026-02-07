@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Bendable Line</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    svg { width: 100vw; height: 100vh; background: #f5f5f5; }
+    circle { fill: #007bff; cursor: pointer; }
+    path { stroke: black; stroke-width: 2; fill: none; }
+  </style>
+</head>
+<body>
+
+<svg id="canvas">
+  <path id="curve" />
+  <circle id="anchorA" r="8" />
+  <circle id="anchorB" r="8" />
+  <circle id="anchorControl" r="8" />
+</svg>
+
+<script>
+const svg = document.getElementById('canvas');
+const curve = document.getElementById('curve');
+const anchorA = document.getElementById('anchorA');
+const anchorB = document.getElementById('anchorB');
+const anchorControl = document.getElementById('anchorControl');
+
+let points = {
+  a: { x: 100, y: 200 },
+  b: { x: 400, y: 200 },
+  control: { x: 250, y: 200 }
+};
+
+let dragging = null;
+let isBent = false;
+let bendOffset = { x: 0, y: 0 };
+
+function update() {
+  curve.setAttribute('d', `M ${points.a.x} ${points.a.y} Q ${points.control.x} ${points.control.y} ${points.b.x} ${points.b.y}`);
+  anchorA.setAttribute('cx', points.a.x);
+  anchorA.setAttribute('cy', points.a.y);
+  anchorB.setAttribute('cx', points.b.x);
+  anchorB.setAttribute('cy', points.b.y);
+  anchorControl.setAttribute('cx', points.control.x);
+  anchorControl.setAttribute('cy', points.control.y);
+}
+
+function midpoint(p1, p2) {
+  return {
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2
+  };
+}
+
+function onMouseDown(e) {
+  if (e.target.tagName === 'circle') {
+    dragging = e.target.id;
+    
+    if (dragging === 'anchorA' || dragging === 'anchorB') {
+      const mid = midpoint(points.a, points.b);
+      bendOffset.x = points.control.x - mid.x;
+      bendOffset.y = points.control.y - mid.y;
+    }
+  }
+}
+
+function onMouseMove(e) {
+  if (!dragging) return;
+
+  const rect = svg.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (dragging === 'anchorA') {
+    points.a.x = x;
+    points.a.y = y;
+    const mid = midpoint(points.a, points.b);
+    points.control.x = mid.x + bendOffset.x;
+    points.control.y = mid.y + bendOffset.y;
+  } 
+  else if (dragging === 'anchorB') {
+    points.b.x = x;
+    points.b.y = y;
+    const mid = midpoint(points.a, points.b);
+    points.control.x = mid.x + bendOffset.x;
+    points.control.y = mid.y + bendOffset.y;
+  } 
+  else if (dragging === 'anchorControl') {
+    const mid = midpoint(points.a, points.b);
+    points.control.x = x;
+    points.control.y = y;
+    bendOffset.x = points.control.x - mid.x;
+    bendOffset.y = points.control.y - mid.y;
+    isBent = !(bendOffset.x === 0 && bendOffset.y === 0); // detect if user bends
+  }
+
+  update();
+}
+
+function onMouseUp() {
+  dragging = null;
+}
+
+svg.addEventListener('mousedown', onMouseDown);
+svg.addEventListener('mousemove', onMouseMove);
+svg.addEventListener('mouseup', onMouseUp);
+svg.addEventListener('mouseleave', onMouseUp);
+
+update();
+</script>
+
+</body>
+</html>

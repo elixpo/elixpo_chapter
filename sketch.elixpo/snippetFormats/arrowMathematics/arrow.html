@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Draggable Arrow</title>
+  <style>
+    body { background: #f0f0f0; }
+    svg { border: 1px solid #ccc; background: white; }
+    circle { cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<svg width="800" height="600" id="mysvg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+            refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+    </marker>
+  </defs>
+
+  <!-- Main Arrow Line -->
+  <line id="arrow-line"
+        x1="200" y1="400" 
+        x2="600" y2="200" 
+        stroke="black" 
+        stroke-width="4"
+        marker-end="url(#arrowhead)" />
+
+  <!-- Dragging Anchors -->
+  <circle id="start-anchor" cx="200" cy="400" r="8" fill="red" />
+  <circle id="end-anchor" cx="600" cy="200" r="8" fill="blue" />
+</svg>
+
+<script>
+const svg = document.getElementById('mysvg');
+const line = document.getElementById('arrow-line');
+const startAnchor = document.getElementById('start-anchor');
+const endAnchor = document.getElementById('end-anchor');
+
+let dragTarget = null;
+
+// Handle mousedown on anchors
+[startAnchor, endAnchor].forEach(anchor => {
+  anchor.addEventListener('mousedown', (e) => {
+    dragTarget = anchor;
+  });
+});
+
+// Handle mousemove to drag
+svg.addEventListener('mousemove', (e) => {
+  if (dragTarget) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+    dragTarget.setAttribute('cx', svgP.x);
+    dragTarget.setAttribute('cy', svgP.y);
+
+    if (dragTarget === startAnchor) {
+      line.setAttribute('x1', svgP.x);
+      line.setAttribute('y1', svgP.y);
+    } else if (dragTarget === endAnchor) {
+      line.setAttribute('x2', svgP.x);
+      line.setAttribute('y2', svgP.y);
+    }
+  }
+});
+
+// Handle mouseup to stop dragging
+svg.addEventListener('mouseup', () => {
+  dragTarget = null;
+});
+svg.addEventListener('mouseleave', () => {
+  dragTarget = null;
+});
+</script>
+
+</body>
+</html>

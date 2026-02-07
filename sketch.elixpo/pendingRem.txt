@@ -1,0 +1,3 @@
+1. fix the square texture fill [checked]
+2. understand the full working mechanism of the square [must]
+3. properties pannel must be there when i select the sqaure and it should be able to tweak the square [CHECKED]

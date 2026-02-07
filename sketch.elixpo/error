@@ -1,0 +1,24 @@
+[1] <--- Last few GCs --->
+[1]
+[1] [19176:0000020704D90A40]  4761018 ms: Scavenge 2046.1 (2083.9) -> 2045.6 (2086.4) MB, 3.9 / 0.0 ms  (average mu = 0.402, current mu = 0.437) allocation failure;
+[1] [19176:0000020704D90A40]  4761656 ms: Mark-sweep (reduce) 2047.4 (2086.4) -> 2046.3 (2084.1) MB, 288.8 / 0.0 ms  (+ 138.2 ms in 28 steps since start of marking, biggest step 6.5 ms, walltime since start of marking 452 ms) (average mu = 0.375, current mu =
+[1]
+[1] <--- JS stacktrace --->
+[1]
+[1] FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+[1]  1: 00007FF6DCF85F6F node_api_throw_syntax_error+174175
+[1]  2: 00007FF6DCF09356 v8::internal::wasm::WasmCode::safepoint_table_offset+59926
+[1]  3: 00007FF6DCF0AFF0 v8::internal::wasm::WasmCode::safepoint_table_offset+67248
+[1]  4: 00007FF6DD9B6754 v8::Isolate::ReportExternalAllocationLimitReached+116
+[1]  5: 00007FF6DD9A1AE2 v8::Isolate::Exit+674
+[1]  6: 00007FF6DD8237AC v8::internal::EmbedderStackStateScope::ExplicitScopeForTesting+124
+[1]  7: 00007FF6DD8209CB v8::internal::Heap::CollectGarbage+3963
+[1]  8: 00007FF6DD836C03 v8::internal::HeapAllocator::AllocateRawWithLightRetrySlowPath+2099
+[1]  9: 00007FF6DD8374AD v8::internal::HeapAllocator::AllocateRawWithRetryOrFailSlowPath+93
+[1] 10: 00007FF6DD846C70 v8::internal::Factory::NewFillerObject+816
+[1] 11: 00007FF6DD537615 v8::internal::DateCache::Weekday+1349
+[1] 12: 00007FF6DDA54651 v8::internal::SetupIsolateDelegate::SetupHeap+558257
+[1] 13: 00007FF65DD8BB37
+[1] npm run frontend exited with code 134
+Terminate batch job (Y/N)? [0] ^CTerminate batch job (Y/N)? 
+[0] npm run backend:dev exited with code 1

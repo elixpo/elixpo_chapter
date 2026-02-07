@@ -1,0 +1,250 @@
+.arrowSideBar {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 250px;
+    border-top-right-radius: 25px;
+    border-bottom-right-radius: 25px;
+    height: 65%;
+    background-color: #232329;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-top: 20px;
+    transition: 0.25s;
+    border-left: 1px solid #000;
+    z-index: 10; /* Added z-index to ensure sidebar is above other elements */
+}
+
+.arrowSideBar.hidden {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-100%); /* Modified transform for a smoother hiding effect */
+    pointer-events: none;
+    transition: all 0.25s ease-in-out; /* More comprehensive transition */
+    z-index: -1;
+}
+
+.arrowSideBar::-webkit-scrollbar {
+    display: none;
+}
+
+/*  Combined Labels  */
+.arrowColorLabel,
+.arrowThicknessLabel,
+.arrowStyleLabel,
+.arrowTypeLabel,
+.arrowHeadLabel {
+    color: #fff;
+    font-size: 20px;
+    margin-left: 20px;
+    font-family: "Kanit", serif;
+    font-weight: 300;
+    margin-top: 0px;
+}
+
+
+/* Combined containers for colors, backgrounds, thickness, and fill */
+.arrowColorsarrow,
+.arrowThickness,
+.arrowStyle,
+.arrowType,
+.arrowHead {
+    position: relative;
+    top: 10px;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    height: 40px;
+    margin-bottom: 20px;
+    gap: 5px;
+    left: 3%;
+    align-items: center; /* Vertically center items */
+    padding: 0 10px; /* Add some padding for better spacing */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.arrowColorsarrow, .arrowBackground, .arrowFill {
+    justify-content: flex-start; /* Align items to the start for color options */
+}
+
+.arrowThickness, .arrowStyle {
+     justify-content: left; 
+     gap: 10px;
+}
+
+
+/* Combined styles for color, background and fill spans */
+.arrowColorsarrow span
+ {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    margin: 0 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: 0.25s;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Combined selected styles for color background and fill spans */
+.arrowColorsarrow span.selected
+ {
+    border: 2px solid #3c09d6;
+    transform: scale(1.3); /* Using transform instead of scale */
+    transition: 0.25s;
+}
+
+/* Color-specific styles */
+.arrowColorsarrow span:nth-child(1) { background-color: #fff; }
+.arrowColorsarrow span:nth-child(2) { background: #FF8383; }
+.arrowColorsarrow span:nth-child(3) { background-color: #3A994C; }
+.arrowColorsarrow span:nth-child(4) { background-color: #56A2E8; }
+.arrowColorsarrow span:nth-child(5) { background: #FFD700; }
+
+/* Background-specific styles */
+.arrowBackground span:nth-child(1) { background-color: #fff; }
+.arrowBackground span:nth-child(2) { background-color: #5B2D2D; }
+.arrowBackground span:nth-child(3) { background-color: #043B0C; }
+.arrowBackground span:nth-child(4) { background-color: #154163; }
+.arrowBackground span:nth-child(5) { background-color: #362600; }
+
+
+/* Thickness styles */
+.arrowThickness span {
+    width: 40px;
+    height: 40px;
+    position: relative;
+    left: 0;
+    border-radius: 10px;
+    margin: 0 5px;
+    cursor: pointer;
+    color: #fff;
+    background: #31303B;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    font-size: 30px;
+    transition: 0.25s;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.arrowThickness span.selected {
+    background: #444480;
+    transition: 0.25s;
+}
+
+.arrowThickness span:nth-child(1) { font-weight: 100; }
+.arrowThickness span:nth-child(2) { font-weight: 500; }
+.arrowThickness span:nth-child(3) { font-weight: 700; }
+
+/* Fill styles */
+
+
+.arrowStyle
+{
+    gap: 20px;
+}
+/* Style styles */
+.arrowStyle span {
+    width: 35px;
+    height: 35px;
+    left: 10%;
+    border-radius: 10px;
+    margin: 0; /* Remove left-right margins */
+    cursor: pointer;
+    color: #fff;
+    background: #31303B;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    transition: 0.25s;
+    border: 2px solid transparent;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.arrowStyle span.selected {
+    background: #444480;
+    border: 2px solid #3c09d6;
+    transition: 0.25s;
+    transform: scale(1.1); /* Using transform instead of scale */
+}
+
+.arrowStyle span svg {
+    width: 30px;
+    height: 30px;
+    stroke: #fff;
+    transition: 0.25s;
+}
+
+.arrowStyle span.selected svg {
+    stroke: #FFD700;
+}
+
+.arrowType 
+{
+    gap: 20px;
+}
+.arrowType span 
+{
+    width: 35px;
+    height: 35px;
+    left: 10%;
+    border-radius: 10px;
+    margin: 0; /* Remove left-right margins */
+    cursor: pointer;
+    color: #fff;
+    background: #31303B;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    transition: 0.25s;
+    border: 2px solid transparent;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.arrowType span.selected 
+{
+    background: #444480;
+    border: 2px solid #3c09d6;
+    transition: 0.25s;
+    transform: scale(1.1); 
+}
+.arrowType span svg {
+    width: 30px;
+    height: 30px;
+    stroke: #fff;
+    transition: 0.25s;
+}
+
+.arrowHead 
+{
+    gap: 10px;
+}
+
+.arrowHead span.selected 
+{
+    background: #444480;
+    border: 2px solid #3c09d6;
+    transition: 0.25s;
+    transform: scale(1.1);
+}
+
+.arrowHead span
+{
+    width: 35px;
+    height: 35px;
+    left: 10%;
+    border-radius: 10px;
+    margin: 0; /* Remove left-right margins */
+    cursor: pointer;
+    color: #fff;
+    background: #31303B;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    transition: 0.25s;
+    border: 2px solid transparent;
+    flex-shrink: 0; /* Prevent shrinking */
+}

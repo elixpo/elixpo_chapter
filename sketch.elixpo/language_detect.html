@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Auto Detect & Highlight Code</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+  <style>
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: monospace;
+      padding: 20px;
+    }
+
+    .editor-wrapper {
+      position: absolute;
+      max-width: 90%;
+      max-height: 90%;
+      min-height: 120px;
+      height: 120px;
+      width: 550px;
+      min-width: 550px;
+      margin: 2px solid red;
+    }
+
+    textarea, pre {
+      font-family: monospace;
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 1rem;
+      border: none;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    textarea {
+      background: transparent;
+      color: transparent;
+      caret-color: white;
+      position: absolute;
+      resize: none;
+      z-index: 2;
+    }
+
+    pre {
+      background: transparent;
+      overflow-x: auto;
+      min-height: 300px;
+      z-index: 1;
+    }
+
+    code {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-wrapper">
+    <textarea id="editor" placeholder="Type code here..."></textarea>
+    <pre><code id="highlighted" class="hljs"></code></pre>
+  </div>
+
+  <!-- Core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+
+  <!-- Explicit language support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/htmlbars.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
+
+  <script>
+    const editor = document.getElementById("editor");
+    const highlighted = document.getElementById("highlighted");
+
+    editor.addEventListener("input", () => {
+      const code = editor.value;
+
+      const result = hljs.highlightAuto(code);
+      highlighted.innerHTML = result.value;
+      highlighted.className = `language-${result.language || ''}`;
+
+      console.log("Detected:", result.language);
+    });
+
+    editor.addEventListener("scroll", () => {
+      highlighted.scrollTop = editor.scrollTop;
+      highlighted.scrollLeft = editor.scrollLeft;
+    });
+  </script>
+</body>
+</html>

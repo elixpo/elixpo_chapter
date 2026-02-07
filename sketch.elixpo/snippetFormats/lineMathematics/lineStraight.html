@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resizable Line with Fixed Anchor</title>
+  <style>
+    .line {
+      stroke: black;
+      stroke-width: 2;
+    }
+    .anchor {
+      fill: red;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <svg width="500" height="500">
+    <line id="line" class="line" x1="100" y1="100" x2="400" y2="100" />
+    <circle id="anchorA" class="anchor" cx="100" cy="100" r="8" />
+    <circle id="anchorB" class="anchor" cx="400" cy="100" r="8" />
+  </svg>
+
+  <script>
+    const anchorA = document.getElementById("anchorA");
+const anchorB = document.getElementById("anchorB");
+const line = document.getElementById("line");
+
+let isDragging = false;
+let fixedAnchor = null;
+
+function updateLine() {
+  const x1 = parseFloat(anchorA.getAttribute("cx"));
+  const y1 = parseFloat(anchorA.getAttribute("cy"));
+  const x2 = parseFloat(anchorB.getAttribute("cx"));
+  const y2 = parseFloat(anchorB.getAttribute("cy"));
+
+  line.setAttribute("x1", x1);
+  line.setAttribute("y1", y1);
+  line.setAttribute("x2", x2);
+  line.setAttribute("y2", y2);
+}
+
+function onMouseDown(event, anchor) {
+  isDragging = true;
+  fixedAnchor = anchor === anchorA ? anchorB : anchorA; // Set fixed anchor
+}
+
+function onMouseMove(event) {
+  if (isDragging) {
+    const fixedX = parseFloat(fixedAnchor.getAttribute("cx"));
+    const fixedY = parseFloat(fixedAnchor.getAttribute("cy"));
+
+    // Calculate the new position for the movable anchor
+    const dx = event.clientX - fixedX;
+    const dy = event.clientY - fixedY;
+
+    if (fixedAnchor === anchorA) {
+      anchorB.setAttribute("cx", fixedX + dx);
+      anchorB.setAttribute("cy", fixedY + dy);
+    } else {
+      anchorA.setAttribute("cx", fixedX + dx);
+      anchorA.setAttribute("cy", fixedY + dy);
+    }
+
+    // Update the line position
+    updateLine();
+  }
+}
+
+function onMouseUp() {
+  isDragging = false;
+}
+
+anchorA.addEventListener("mousedown", (event) => onMouseDown(event, anchorA));
+anchorB.addEventListener("mousedown", (event) => onMouseDown(event, anchorB));
+
+document.addEventListener("mousemove", onMouseMove);
+document.addEventListener("mouseup", onMouseUp);
+
+
+  </script>
+</body>
+</html>
