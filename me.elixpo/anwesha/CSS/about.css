@@ -1,0 +1,65 @@
+.jobSpotlight 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+}
+
+.workExperience::-webkit-scrollbar
+{
+    display: none;
+}
+.publicationText 
+{
+    font-family: "Canopee", system-ui;
+}
+.visitCircle 
+{
+    font-family: "Bitcount Grid Double", system-ui;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+.aboutSectionText 
+{
+    font-family: "Canopee", system-ui;
+}
+.aboutFancyDescription 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+}
+
+
+.hoverScale {
+    background-size: 400px !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-size 0.25s ease;
+  }
+  
+  .hoverScale:hover {
+    background-size: 450px !important;
+  }
+  .featuredDescription
+  {
+    font-family: "Pathway Gothic One", sans-serif;
+  }
+  
+.featureName
+{
+   font-family: "Amarante";
+    font-optical-sizing: auto;
+}
+.newTag 
+{
+  font-family: monospace;
+  font-weight: 700;
+}
+.spotlight 
+{
+  min-width:0;
+  width: 100%;
+  padding: 40px;
+}
+.spotlight::-webkit-scrollbar
+{
+  display: none;
+}

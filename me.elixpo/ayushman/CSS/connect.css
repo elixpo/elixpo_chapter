@@ -1,0 +1,61 @@
+.headingText 
+{
+    font-family: "Canopee", system-ui;
+}
+.descriptionText 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+    
+}
+.emailText 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+}
+#name:focus {
+    background-size: cover;
+    background-repeat: repeat;
+    animation: shine-brown 1.2s linear infinite;
+}
+#name::placeholder
+{
+    color: #888;
+}
+.emailProvoke 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+}
+.submitButton 
+{
+    font-family: "Pathway Gothic One", sans-serif;
+}
+@keyframes shine-brown {
+    0% {
+        background-position-x: 0;
+    }
+    100% {
+        background-position-x: 200px;
+    }
+}
+
+textarea::-webkit-scrollbar {
+    width: 10px;
+    background: #f8f1de;
+    border-radius: 8px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #e2d9c8 60%, #ffc300 100%);
+    border-radius: 8px;
+    border: 2px solid #e6ddc6;
+    box-shadow: 0 2px 6px #c8c1ae33;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #ffc300 60%, #e2d9c8 100%);
+}
+
+textarea::-webkit-scrollbar-track {
+    background: #f8f1de;
+    border-radius: 8px;
+    box-shadow: inset 0 0 4px #e6ddc6;
+}
