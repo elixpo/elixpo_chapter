@@ -18,17 +18,18 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "subtree-bot"
-          git config user.email "subtree-bot@elixpo.com"
+          git config user.name "Circuit-Overtime"
+          git config user.email "ayushbhatt633@gmail.com"
 
       - name: Add remotes (idempotent)
         run: |
           git remote add art.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoart.git || true
-          git remote add jackey.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/jackey.elixpo.git || true
-          git remote add chat.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/chat.elixpo.git || true
-          git remote add blogs.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/blogs.elixpo.git || true
-          git remote add verse.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/verse.elixpo.git || true
-          # add all remaining repos here
+          git remote add jackey.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpojackey.git || true
+          git remote add chat.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpochat.git || true
+          git remote add blogs.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoblogs.git || true
+          git remote add verse.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoverse.git || true
+          git remote add sketch.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixposketch.git || true
+          git remote add me.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpome.git || true
 
       - name: Pull subtrees
         run: |
@@ -37,7 +38,8 @@ jobs:
           git subtree pull --prefix=chat.elixpo chat.elixpo main -m "Synced chat.elixpo"
           git subtree pull --prefix=blogs.elixpo blogs.elixpo main -m "Synced blogs.elixpo"
           git subtree pull --prefix=verse.elixpo verse.elixpo main -m "Synced verse.elixpo"
-          # repeat for all subtrees
+          git subtree pull --prefix=sketch.elixpo sketch.elixpo main -m "Synced sketch.elixpo"
+          git subtree pull --prefix=me.elixpo me.elixpo main -m "Synced me.elixpo"
 
       - name: Push updates
         run: |
