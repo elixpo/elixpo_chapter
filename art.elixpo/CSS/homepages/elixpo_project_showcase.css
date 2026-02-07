@@ -1,0 +1,329 @@
+.projectShowcase {
+    position: relative;
+    width: 100%;
+    min-height: 85vh;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    perspective: 1200px;
+    margin: 3rem auto 4rem;
+    padding: 2rem 2rem;
+    z-index: 1;
+    overflow: visible;
+}
+
+/* Hacktoberfest Enhanced Blob Effects */
+.blob_showcaseTier_red {
+    position: absolute;
+    top: 15%;
+    left: -5%;
+    width: 40%;
+    height: 40%;
+    z-index: -1;
+    background: linear-gradient(135deg, #ff6b6b 0%, #f60062 50%, #d63384 100%);
+    border-radius: 50%;
+    transform: rotate(25deg);
+    filter: blur(80px);
+    animation: floatBlob1 8s ease-in-out infinite;
+}
+
+.blob_showcaseTier_yellow {
+    position: absolute;
+    top: 60%;
+    right: -10%;
+    width: 45%;
+    height: 45%;
+    z-index: -1;
+    background: linear-gradient(135deg, #ffd700 0%, #f6c100 50%, #ff8c00 100%);
+    border-radius: 50%;
+    transform: rotate(-15deg);
+    filter: blur(90px);
+    animation: floatBlob2 10s ease-in-out infinite reverse;
+}
+
+/* Hacktoberfest Orange Accent Blob */
+.blob_showcaseTier_red::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -15%;
+    width: 60%;
+    height: 60%;
+    background: linear-gradient(135deg, #ff7518 0%, #f97316 100%);
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.7;
+    animation: pulse 4s ease-in-out infinite;
+}
+
+
+/* Professional Demo Picture Container - Hacktoberfest Style */
+.demoPicture {
+    position: relative;
+    width: 75%;
+    max-width: 900px;
+    height: auto;
+    aspect-ratio: 16/9.5;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%);
+    backdrop-filter: blur(16px);
+    padding: 1.2rem;
+    border: 2px solid rgba(255, 117, 24, 0.4);
+    box-sizing: border-box;
+    z-index: 10;
+    border-radius: 1.5rem;
+    box-shadow: 
+        0 20px 40px -12px rgba(0, 0, 0, 0.25),
+        0 0 30px rgba(255, 117, 24, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: showcasePulse 3s ease-in-out infinite;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    transform: perspective(1200px) rotateY(0deg) rotateX(0deg);
+}
+
+.demoPicture:hover {
+    transform: perspective(1200px) rotateY(2deg) rotateX(-2deg) translateY(-8px);
+    box-shadow: 
+        0 30px 60px -12px rgba(0, 0, 0, 0.3),
+        0 0 40px rgba(255, 117, 24, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 117, 24, 0.6);
+}
+
+/* Professional Badge for Hacktoberfest */
+.demoPicture::before {
+    content: '🎃 Hacktoberfest 2025 Edition';
+    position: absolute;
+    top: -1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff7518 0%, #f97316 100%);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.02em;
+    box-shadow: 
+        0 4px 12px rgba(255, 117, 24, 0.4),
+        0 0 20px rgba(255, 117, 24, 0.3);
+    z-index: 15;
+    animation: badgeBounce 2s ease-in-out infinite;
+    white-space: nowrap;
+}
+
+.demoPicture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: url(../IMAGES/projectShowcase.png);
+    background-size: cover;
+    background-position: center;
+    outline: none;
+    border: none;
+    display: block;
+    padding: 0;
+    background-repeat: no-repeat;
+    border-radius: 1.5rem;
+    filter: 
+        drop-shadow(0 0 12px rgba(255, 117, 24, 0.25))
+        saturate(1.05)
+        contrast(1.03);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.demoPicture img:hover {
+    filter: 
+        drop-shadow(0 0 18px rgba(255, 117, 24, 0.35))
+        saturate(1.08)
+        contrast(1.05);
+    transform: scale(1.01);
+}
+
+/* Professional Animations for Hacktoberfest */
+@keyframes floatBlob1 {
+    0%, 100% { 
+        transform: rotate(25deg) translateY(0px) scale(1); 
+    }
+    50% { 
+        transform: rotate(35deg) translateY(-20px) scale(1.1); 
+    }
+}
+
+@keyframes floatBlob2 {
+    0%, 100% { 
+        transform: rotate(-15deg) translateY(0px) scale(1); 
+    }
+    50% { 
+        transform: rotate(-25deg) translateY(-15px) scale(1.05); 
+    }
+}
+
+@keyframes showcasePulse {
+    0%, 100% { 
+        box-shadow: 
+            0 20px 40px -12px rgba(0, 0, 0, 0.25),
+            0 0 30px rgba(255, 117, 24, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    50% { 
+        box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.28),
+            0 0 35px rgba(255, 117, 24, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+}
+
+@keyframes badgeBounce {
+    0%, 100% { 
+        transform: translateY(0px); 
+    }
+    50% { 
+        transform: translateY(-5px); 
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 0.7; 
+        transform: scale(1); 
+    }
+    50% { 
+        opacity: 0.9; 
+        transform: scale(1.05); 
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .projectShowcase {
+        min-height: 70vh;
+        margin: 4rem auto 3rem;
+        padding: 2rem 1.5rem;
+    }
+    
+    .demoPicture {
+        width: 85%;
+        padding: 1rem;
+    }
+    
+    .demoPicture::before {
+        font-size: 0.8rem;
+        padding: 0.5rem 1.2rem;
+        top: -1rem;
+    }
+    
+    .blob_showcaseTier_red {
+        width: 45%;
+        height: 45%;
+    }
+    
+    .blob_showcaseTier_yellow {
+        width: 50%;
+        height: 50%;
+    }
+}
+
+@media screen and (max-width: 798px) {
+    .projectShowcase {
+        min-height: 60vh;
+        margin: 3rem auto 2rem;
+        padding: 2rem 1rem;
+    }
+    
+    .demoPicture {
+        width: 92%;
+        padding: 0.8rem;
+        border-radius: 1.2rem;
+        transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+    }
+
+    .demoPicture img {
+        border-radius: 0.8rem;
+    }
+    
+    .demoPicture::before {
+        content: '🎃 Hacktoberfest';
+        font-size: 0.75rem;
+        padding: 0.4rem 1rem;
+        top: -0.8rem;
+    }
+    
+    .demoPicture:hover {
+        transform: perspective(1000px) rotateY(0deg) rotateX(0deg) translateY(-4px);
+    }
+    
+    .blob_showcaseTier_red {
+        width: 55%;
+        height: 55%;
+        left: -15%;
+        top: 10%;
+    }
+    
+    .blob_showcaseTier_yellow {
+        width: 60%;
+        height: 60%;
+        right: -20%;
+        top: 50%;
+    }
+}
+
+
+@media screen and (max-width: 600px) {
+    .projectShowcase {
+        min-height: 50vh;
+        margin: 2rem auto 1.5rem;
+        padding: 1.5rem 0.75rem;
+    }
+    
+    .blob_showcaseTier_red {
+        width: 70%;
+        height: 70%;
+        left: -25%;
+        top: 5%;
+        filter: blur(70px);
+    }
+    
+    .blob_showcaseTier_yellow {
+        width: 75%;
+        height: 75%;
+        right: -30%;
+        top: 40%;
+        filter: blur(80px);
+    }
+    
+    .demoPicture {
+        width: 95%;
+        padding: 0.6rem;
+        border-radius: 1rem;
+        box-shadow: 
+            0 15px 30px -8px rgba(0, 0, 0, 0.3),
+            0 0 40px rgba(255, 117, 24, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .demoPicture img {
+        border-radius: 0.6rem;
+        filter: 
+            drop-shadow(0 0 15px rgba(255, 117, 24, 0.35))
+            saturate(1.1)
+            contrast(1.05);
+    }
+    
+    .demoPicture::before {
+        content: '🎃';
+        font-size: 1.2rem;
+        padding: 0.3rem 0.6rem;
+        top: -0.6rem;
+        border-radius: 50%;
+    }
+    
+    .demoPicture:hover {
+        transform: perspective(1000px) translateY(-3px);
+    }
+}

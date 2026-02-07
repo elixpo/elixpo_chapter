@@ -1,0 +1,575 @@
+:root {
+    --transition: 0.25s;
+    --spark: 1.8s;
+    --cut: 0.1em;
+    --active: 0;
+}
+
+
+.samplePrompt {
+    position: absolute;
+    width: 70%;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 75%; /* Base position */
+    height: 150px;
+    padding-top: 15px;
+    padding-left: 60px;
+    resize: none;
+    max-height: 180px; /* Adjust max height */
+    overflow-y: auto;
+    border: 1px solid rgba(114, 119, 116, 0.533);
+    font-size: 16px;
+    box-sizing: border-box;
+    overflow: hidden;
+    outline: none;
+    background: #131212;
+    border-radius: 25px;
+    font-size: 24px;
+    transition: 0.25s;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.samplePrompt.image 
+{
+    height: 180px;
+    padding-top: 15px;
+    padding-left: 60px;
+    resize: none;
+    top: 73%;
+    max-height: 180px; /* Adjust max height */
+    overflow-y: auto;
+    border: 1px solid rgba(114, 119, 116, 0.533);
+    font-size: 16px;
+    box-sizing: border-box;
+    overflow: hidden;
+    outline: none;
+    background: #131212;
+    border-radius: 25px;
+    font-size: 24px;
+    transition: 0.25s;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+
+.samplePrompt.image .promptTextInput
+{
+    width: 80%;
+    left: 10%;
+}
+
+.samplePrompt.image .imageHolder
+{
+    opacity: 1;
+    pointer-events: all;
+    transition: 0.5s;
+}
+.imageHolder
+{
+    position: absolute;
+    height: 70px;
+    width: 70px;
+    border-radius: 15px;
+    top: 5%;
+    left: 1%;
+    background-size: cover;
+    background-position: center center;
+    opacity: 0;
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.imageHolder > #cancelImageMode
+{
+    position: absolute;
+    top: -5%;
+    left: 75%;
+    color: #fff;
+    cursor: pointer;
+}
+.samplePrompt.image .controls #inputImage
+{
+    display: none;
+}
+
+.samplePrompt .promptTextInput {
+    position: absolute;
+    min-height: 45px;
+    max-height: 110px; /* Adjust max */
+    width: 93%;
+    top: 3%;
+    left: 3%;
+    font-size: 1em;
+    border: none;
+    outline: none;
+    color: #0beb7f;
+    background: transparent;
+    box-sizing: border-box;
+    resize: none;
+    padding-top: 10px;
+    overflow-y: auto;
+    line-height: 1.2em;
+}
+
+
+
+.samplePrompt .promptTextInput::-webkit-scrollbar {
+    display: none;
+}
+
+.samplePrompt.generating {
+    top: 74%;
+    pointer-events: none;
+    height: 60px;
+    border: 1px solid rgba(238, 204, 11, 0.533);
+}
+
+.samplePrompt.generated {
+    top: 74%;
+    pointer-events: none;
+    color: #f6a6fe;
+    height: 140px;
+    border: 1px solid rgba(145, 69, 252, 0.533);
+}
+.stopGeneration.hidden
+{
+    display: none;
+}
+.samplePrompt.generated ~ .enhancingMessage
+{
+    display: none;
+}
+
+
+.samplePrompt.generating > .controls
+{
+    display: none;
+}
+.samplePrompt.generating > .searchButtonText
+{
+    display: none;
+}
+
+.samplePrompt.generated 
+{
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.5s;
+}
+
+
+@keyframes swapAnimationTwo {
+  0%, 100% {
+    transform: translateY(-50%) scale(0.8);
+  }
+  25% 
+  {
+    transform: translateY(-50%) scale(0.9);
+  }
+  50% {
+    left: 4.6%;
+    transform: translateY(-50%) scale(0.8);
+  }
+}
+
+@keyframes swapAnimationOne {
+  0%, 100% {
+    transform: translateY(-50%) scale(0.8);
+  }
+  25% 
+  {
+    transform: translateY(-50%) scale(0.9);
+  }
+  50% {
+    left: 1.3%;
+    transform: translateY(-50%) scale(0.8);
+  }
+}
+
+
+
+
+
+/* .samplePrompt.generating > #OneImage,
+.samplePrompt.generating > #OneImageOpacityFirst,
+.samplePrompt.generating > #OneImageOpacitySecond
+{
+    display: none;
+} */
+.samplePrompt.generating > .stopGeneration {
+    display: block;
+    opacity: 1;
+    position: absolute;
+    top: 50%;
+    left: 97%;
+    transform: translateX(-50%) translateY(-50%);
+    color: #fff;
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
+
+
+.samplePrompt.generating .stopGeneration {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.samplePrompt .controls {
+    position: absolute;
+    bottom: -10%;
+    left: 3%;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+#OneImage {
+    position: relative;
+    font-size: 1.5em;
+    color: #bbbbbb; /* lighter gray for dark backgrounds */
+    cursor: pointer;
+    display: block;
+    filter: drop-shadow(0 0 10px #66ccff); /* blue glow for dark theme */
+    top: 2%;
+    left: 0%;
+    margin-right: 20px;
+    z-index: 16; /* Above controls */
+    animation: pulseTwice 15s infinite;
+    animation-duration: 8s;
+  }
+  
+  /* Smooth pulse animation with two pulses per cycle */
+  @keyframes pulseTwice {
+    /* Rest state */
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    /* Preparing for first pulse */
+    10% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    20% {
+      transform: scale(1.1);
+      opacity: 0.95;
+    }
+    30% {
+      transform: scale(1.2);
+      opacity: 0.9;
+    }
+    /* First pulse peak */
+    37.5% {
+      transform: scale(1.3);
+      opacity: 0.8;
+    }
+    /* Recovering from first pulse */
+    45% {
+      transform: scale(1.15);
+      opacity: 0.9;
+    }
+    55% {
+      transform: scale(1.05);
+      opacity: 0.85;
+    }
+    /* Second pulse peak */
+    62.5% {
+      transform: scale(1.2);
+      opacity: 0.8;
+    }
+    /* Recovering from second pulse */
+    70% {
+      transform: scale(1.1);
+      opacity: 0.9;
+    }
+    80% {
+      transform: scale(1.05);
+      opacity: 0.95;
+    }
+    /* Back to rest */
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+
+@keyframes clickEffect {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.6); }
+    100% { transform: scale(1); }
+  }
+  .click-effect {
+    animation: clickEffect 0.2s;
+  }
+  
+
+/* First opacity dice icon */
+#OneImageOpacityFirst {
+    left: 8%; /* Adjusted left so it doesn’t overlap */
+    transform: translateY(50%) scale(0.8) rotate(25deg);
+    z-index: 15;
+    opacity: 0.3;
+    filter: brightness(0.6);
+    animation: swapAnimationOne 1.5s ease-in-out infinite;
+}
+
+/* Second opacity dice icon */
+#OneImageOpacitySecond {
+    left: 0%; /* Adjusted left */
+    transform: translateY(50%) scale(0.8) rotate(-25deg);
+    z-index: 15;
+    opacity: 0.3;
+    filter: brightness(0.6);
+    animation: swapAnimationTwo 1.5s ease-in-out infinite;
+}
+
+/* Buttons styling */
+#privateBtn,
+#pimpPrompt,
+#promptIdea,
+#journalMode,
+#inputImage {
+    position: relative;
+    margin: 0;
+    max-height: 60px;
+    max-width: 120px;
+    color: #bec9c3;
+    cursor: pointer;
+    font-size: 0.8em;
+    z-index: 17;
+    background: transparent;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 2px solid #525252;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: fit-content;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+
+#privateBtn.selected,
+#pimpPrompt.selected,
+#promptIdea.selected,
+#journalMode.selected,
+#inputImage.selected
+
+{
+    background: #3e3c3c;
+    color: #028a5a;
+    border: 2px solid #028a5a;
+}
+#journalMode 
+{
+    background: linear-gradient(145deg, #06544d, #9B487D, #7fff00, #355604);
+    background-size: 400% 400%;
+    animation: aurora 15s ease infinite;
+}
+@keyframes aurora {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+
+
+#journalMode:hover
+{
+    background: transparent;
+    color: #bee4d7;
+}
+#journalMode:hover span
+{
+    color: #bee4d7;
+}
+#privateBtn span,
+#pimpPrompt span,
+#promptIdea span,
+#journalMode span,
+#inputImage span {
+    margin-left: 10px;
+    text-transform: capitalize;
+    font-weight: 200;
+    font-family: 'Calibri', sans-serif;
+    color: #bee4d7;
+}
+#journalMode,
+#journalMode span {
+    color: #1f1d1d;
+    font-weight: 700;
+}
+
+.samplePrompt.generating #imageHolder
+{
+    display: none;
+}
+
+.samplePrompt.image .searchButtonText
+{
+    left: 60%;
+}
+
+.searchButtonText {
+    position: relative;
+    left: 45%;
+    top: 0%;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.searchButtonText.disabled 
+{
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.searchBtn {
+    --bg: radial-gradient(
+            40% 50% at center 100%,
+            hsl(270 calc(var(--active) * 97%) 72% / var(--active)),
+            transparent
+        ),
+        radial-gradient(
+            80% 100% at center 120%,
+            hsl(260 calc(var(--active) * 97%) 70% / var(--active)),
+            transparent
+        ),
+        hsl(260 calc(var(--active) * 97%) calc((var(--active) * 44%) + 12%));
+    background: var(--bg);
+    font-size: 2rem;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+    padding: 0.9em 2em;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    border-radius: 25px;
+    transition: box-shadow var(--transition), scale var(--transition), background var(--transition);
+	position: relative;
+	transform: scale(0.5);
+}
+
+.searchBtn ion-icon
+{
+    color: #fff;
+    font-size: 1.5em;
+}
+.searchBtn:active {
+    scale: 1;
+}
+
+.searchBtn:is(:hover, :focus-visible) path {
+    animation-name: bounce;
+}
+
+
+
+.spark {
+    position: absolute;
+    inset: 0;
+    border-radius: 100px;
+    rotate: 0deg;
+    overflow: hidden;
+    mask: linear-gradient(white, transparent 50%);
+    animation: flip calc(var(--spark) * 2) infinite steps(2, end);
+}
+
+@keyframes flip {
+    to {
+        rotate: 360deg;
+    }
+}
+
+.searchBtn:before {
+    content: "";
+    position: absolute;
+    inset: -0.25em;
+    z-index: -1;
+    border: 0.25em solid hsl(260 97% 50% / 0.5);
+    border-radius: 100px;
+    opacity: var(--active, 0);
+    transition: opacity var(--transition);
+}
+
+.spark:before {
+    content: "";
+    position: absolute;
+    width: 200%;
+    aspect-ratio: 1;
+    top: 0%;
+    left: 50%;
+    z-index: -1;
+    translate: -50% -15%;
+    rotate: 0;
+    transform: rotate(-90deg);
+    opacity: calc((var(--active)) + 0.4);
+    background: conic-gradient(
+        from 0deg,
+        transparent 0 340deg,
+        white 360deg
+    );
+    transition: opacity var(--transition);
+    animation: rotate var(--spark) linear infinite both;
+}
+
+.spark:after {
+    content: "";
+    position: absolute;
+    inset: var(--cut);
+    border-radius: 100px;
+}
+
+.backdrop {
+    position: absolute;
+    inset: var(--cut);
+    background: var(--bg);
+    border-radius: 100px;
+    transition: background var(--transition);
+}
+
+@keyframes rotate {
+    to {
+        transform: rotate(90deg);
+    }
+}
+
+@supports(selector(:has(:is(+ *)))) {
+    body:has(button:is(:hover, :focus-visible)) {
+        --active: 1;
+        --play-state: running;
+    }
+
+    .bodydrop {
+        display: none;
+    }
+}
+
+.searchBtn:is(:hover, :focus-visible) ~ :is(.bodydrop, .particle-pen) {
+    --active: 1;
+    --play-state: running;
+}
+
+button:is(:hover, :focus-visible) {
+    --active: 1;
+    --play-state: running;
+}
