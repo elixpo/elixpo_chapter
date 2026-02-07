@@ -1,0 +1,112 @@
+* {
+  user-select: none;
+}
+.timezoneSelector {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.timezoneLabel {
+  color: #fff;
+  font-family: "Montserrat", sans-serif;
+  font-size: 12px;
+  margin-bottom: 5px;
+  text-shadow: 0 0 5px #fff;
+}
+
+#timezoneSelect {
+  background-color: rgba(26, 26, 26, 0.9);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  min-width: 200px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 35px;
+}
+
+#timezoneSelect:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+#timezoneSelect:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#timezoneSelect option {
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .timezoneSelector {
+    top: 10px;
+    right: 10px;
+  }
+
+  .timezoneLabel {
+    font-size: 10px;
+  }
+
+  #timezoneSelect {
+    font-size: 12px;
+    padding: 3px 5px;
+  }
+}
+
+@keyframes timezoneSwitch {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.timezoneSwitch {
+  animation: timezoneSwitch 0.5s ease-in-out;
+}
+
+body {
+  background-color: #1a1a1a; /* Dark background matching the image */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden; /* Prevent glow overflow creating scrollbars */
+  font-family: sans-serif; /* Optional: for any potential text */
+}

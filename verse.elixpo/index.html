@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Lix-Verse</title>
+    <link rel="stylesheet" href="CSS/generalStyle.css" />
+    <link rel="stylesheet" href="CSS/twirlAnimation.css" />
+    <link rel="stylesheet" href="CSS/timelapseSection.css" />
+    <link rel="stylesheet" href="CSS/clockStyleContainer.css" />
+    <link rel="stylesheet" href="CSS/clockStyleFlip.css" />
+    <link rel="stylesheet" href="CSS/timelapseResponsive.css" />
+    <link rel="icon" href="./CSS/IMAGES/timelapseIcon.jpg" type="image/x-icon" />
+  </head>
+  <body>
+    <section class="timelapseSection" id="timelapseSection">
+      <div class="headerSection">
+        <div class="timezoneSelector">
+          <div class="timezoneLabel">Timezone (1-9/0 for quick switch)</div>
+          <select id="timezoneSelect">
+            <!-- Timezones will be populated by JS -->
+          </select>
+        </div>
+      </div>
+      <div class="majorContainerBackdrop"></div>
+      <div class="majorContainerContents">
+        <div class="shadow"></div>
+        <div class="secondsCircleContainer">
+          <div class="secondsOuterCircle"></div>
+          <div class="secondsInnerCircle"></div>
+        </div>
+        <div class="minutesCircleContainer">
+          <div class="minutesOuterCircle"></div>
+          <div class="minutesInnerCircle"></div>
+        </div>
+        <div class="hoursCircleContainer">
+          <div class="hoursOuterCircle"></div>
+          <div class="hoursInnerCircle"></div>
+        </div>
+
+        <div class="daysCircleContainer">
+          <div class="daysOuterCircle"></div>
+          <div class="daysInnerCircle"></div>
+        </div>
+
+        <div class="monthsCircleContainer">
+          <div class="monthsOuterCircle"></div>
+          <div class="monthsInnerCircle"></div>
+        </div>
+        <div class="yearHolder" id="yearHolder">2025</div>
+
+        <div class="odometerClock">
+          <div class="digitGroup" data-label="Hours"></div>
+          <div class="colon">:</div>
+          <div class="digitGroup" data-label="Minutes"></div>
+          <div class="colon">:</div>
+          <div class="digitGroup" data-label="Seconds"></div>
+          <div class="am_or_pm" id="am_or_pm">PM</div>
+        </div>
+      </div>
+
+      <div class="twirlContainer">
+        <div class="tray">
+          <div class="cube-container">
+            <div class="cube">
+              <div class="face front">TIME</div>
+              <div class="face back">DOESN'T</div>
+              <div class="face right">WAIT</div>
+              <div class="face left"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+    <script src="JS/twirlAnimation.js"></script>
+    <script src="JS/timezoneSelector.js"></script>
+    <script src="JS/clockLogic.js"></script>
+    <script src="JS/flipClock.js"></script>
+  </body>
+</html>
