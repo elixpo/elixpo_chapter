@@ -1,0 +1,44 @@
+name: Subtree Sync
+
+on:
+  schedule:
+    - cron: "0 0,4,8,12,16 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "subtree-bot"
+          git config user.email "subtree-bot@elixpo.com"
+
+      - name: Add remotes (idempotent)
+        run: |
+          git remote add art.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpoart.git || true
+          git remote add jackey.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/jackey.elixpo.git || true
+          git remote add chat.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/chat.elixpo.git || true
+          git remote add blogs.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/blogs.elixpo.git || true
+          git remote add verse.elixpo https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/verse.elixpo.git || true
+          # add all remaining repos here
+
+      - name: Pull subtrees
+        run: |
+          git subtree pull --prefix=art.elixpo art.elixpo main -m "Synced art.elixpo"
+          git subtree pull --prefix=jackey.elixpo jackey.elixpo main -m "Synced jackey.elixpo"
+          git subtree pull --prefix=chat.elixpo chat.elixpo main -m "Synced chat.elixpo"
+          git subtree pull --prefix=blogs.elixpo blogs.elixpo main -m "Synced blogs.elixpo"
+          git subtree pull --prefix=verse.elixpo verse.elixpo main -m "Synced verse.elixpo"
+          # repeat for all subtrees
+
+      - name: Push updates
+        run: |
+          git push origin main
