@@ -41,6 +41,10 @@ jobs:
           git subtree pull --prefix=sketch.elixpo sketch.elixpo main -m "Synced sketch.elixpo"
           git subtree pull --prefix=me.elixpo me.elixpo main -m "Synced me.elixpo"
 
+      - name: Authenticate origin with PAT
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/elixpo/elixpo_chapter.git
+
       - name: Push updates
         run: |
           git push origin main
