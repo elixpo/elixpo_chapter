@@ -32,6 +32,7 @@ jobs:
           git remote add verse.elixpo https://github.com/elixpo/elixpoverse.git || true
           git remote add sketch.elixpo https://github.com/elixpo/elixposketch.git || true
           git remote add me.elixpo https://github.com/elixpo/elixpome.git || true
+          git remote add accounts.elixpo https://github.com/elixpo/elixpoaccounts.git || true
 
       - name: Fetch all subtree remotes
         run: |
@@ -42,6 +43,7 @@ jobs:
           git fetch verse.elixpo
           git fetch sketch.elixpo
           git fetch me.elixpo
+          git fetch accounts.elixpo
 
       - name: Pull subtrees
         run: |
@@ -52,6 +54,7 @@ jobs:
           git subtree pull --prefix=verse.elixpo verse.elixpo main -m "Sync verse.elixpo" || true
           git subtree pull --prefix=sketch.elixpo sketch.elixpo main -m "Sync sketch.elixpo" || true
           git subtree pull --prefix=me.elixpo me.elixpo main -m "Sync me.elixpo" || true
+          git subtree pull --prefix=accounts.elixpo accounts.elixpo main -m "Sync accounts.elixpo" || true
 
       - name: Push updates
         run: |
