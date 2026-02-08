@@ -7,21 +7,25 @@ import { useState } from 'react';
 const textFieldSx = {
   '& .MuiOutlinedInput-root': {
     color: '#f5f5f4',
+    background: 'transparent',
     '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
     '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
     '&.Mui-focused fieldset': { borderColor: '#a3e635' },
     '& input:-webkit-autofill': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
-      WebkitTextFillColor: '#f5f5f4',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
+      WebkitTransition: 'background-color 5000s ease-in-out 0s',
     },
     '& input:-webkit-autofill:hover': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
     },
     '& input:-webkit-autofill:focus': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
     },
   },
-  '& .MuiInputBase-input::placeholder': { color: 'rgba(255, 255, 255, 0.4)', opacity: 1 },
+  '& .MuiInputBase-input::placeholder': { color: 'transparent', opacity: 0 },
   '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#a3e635' },
 };

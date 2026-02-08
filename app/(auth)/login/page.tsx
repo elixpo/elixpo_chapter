@@ -7,22 +7,25 @@ import { useState } from 'react';
 const textFieldSx = {
   '& .MuiOutlinedInput-root': {
     color: '#f5f5f4',
-    background: "transparent",
+    background: 'transparent',
     '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
     '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
     '&.Mui-focused fieldset': { borderColor: '#a3e635' },
     '& input:-webkit-autofill': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
-      WebkitTextFillColor: '#f5f5f4',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
+      WebkitTransition: 'background-color 5000s ease-in-out 0s',
     },
     '& input:-webkit-autofill:hover': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
     },
     '& input:-webkit-autofill:focus': {
-      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      WebkitTextFillColor: '#f5f5f4 !important',
     },
   },
-  '& .MuiInputBase-input::placeholder': { color: 'rgba(255, 255, 255, 0.4)', opacity: 1 },
+  '& .MuiInputBase-input::placeholder': { color: 'transparent', opacity: 0 },
   '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#a3e635' },
 };
@@ -65,6 +68,7 @@ const LoginPage = () => {
             <TextField fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} margin="dense" sx={textFieldSx} required />
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 2 }}>
+              
               <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} sx={{ color: 'rgba(255, 255, 255, 0.5)', '&.Mui-checked': { color: '#a3e635' } }} />} label={<Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>Remember me</Typography>} />
               <Link href="/forgot-password" style={{ color: '#a3e635', textDecoration: 'none', fontSize: '0.9rem' }}>Forgot?</Link>
             </Box>
