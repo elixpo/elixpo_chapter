@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SSO Authentication Service",
+  title: "Accounts - Elixpo",
   description: "Secure authentication service with Google and GitHub OAuth integration",
   icons: {
     icon: '/LOGO/logo.png',
