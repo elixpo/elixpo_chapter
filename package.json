@@ -9,11 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@cloudflare/workers-types": "^4.20240905.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@jose/webauthn": "^0.0.2",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
+    "jose": "^5.9.6",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
