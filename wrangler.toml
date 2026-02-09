@@ -1,7 +1,7 @@
 name = "elixpo-accounts-workers"
 main = "src/workers/index.ts"
 type = "service"
-compatibility_date = "2024-12-16"
+compatibility_date = "2025-12-16"
 
 # Cloudflare D1 Database
 [[d1_databases]]
