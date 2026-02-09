@@ -144,7 +144,7 @@ export async function GET(
       provider.toLowerCase() as 'google' | 'github'
     );
 
-    const refreshToken = await createRefreshToken(
+    const refreshToken = await createRefreshTokenJWT(
       userId,
       provider.toLowerCase() as 'google' | 'github'
     );

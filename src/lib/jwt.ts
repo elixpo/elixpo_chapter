@@ -1,4 +1,5 @@
 import * as jose from 'jose';
+import { createSecretKey } from 'crypto';
 
 export interface JWTPayload {
   sub: string;
@@ -23,7 +24,8 @@ export async function getSigningKey(): Promise<jose.KeyLike> {
     if (!secret || secret.length < 32) {
       throw new Error('JWT_SECRET must be at least 32 characters for production');
     }
-    return new TextEncoder().encode(secret);
+    // Use Node's Crypto KeyObject for HMAC secrets to satisfy jose.KeyLike
+    return createSecretKey(Buffer.from(secret));
   }
 
   // Production: Use Ed25519 private key
@@ -44,7 +46,8 @@ export async function getVerifyingKey(): Promise<jose.KeyLike> {
     if (!secret) {
       throw new Error('JWT_SECRET not found in environment');
     }
-    return new TextEncoder().encode(secret);
+    // Use Node's Crypto KeyObject for HMAC secrets to satisfy jose.KeyLike
+    return createSecretKey(Buffer.from(secret));
   }
 
   // Production: Use Ed25519 public key
@@ -123,7 +126,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       algorithms: [isDev ? 'HS256' : 'EdDSA'],
     });
 
-    return verified.payload as JWTPayload;
+    return verified.payload as unknown as JWTPayload;
   } catch (error) {
     console.error('[JWT] Verification failed:', error);
     return null;
