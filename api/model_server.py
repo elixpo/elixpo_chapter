@@ -20,7 +20,6 @@ import time
 import numpy as np
 from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
 import schedule
-from embed_utils import mmr, split_sentences
 import uuid
 
 USER_AGENTS = [

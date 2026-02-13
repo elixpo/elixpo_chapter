@@ -1,609 +1,381 @@
-from quart import Quart, request, jsonify, Response
+"""
+Production-Ready FastAPI Application
+- Uses model_server for hot-loading models
+- Session-based architecture with knowledge graphs
+- RAG-enhanced responses
+- Production logging and monitoring
+"""
+
+from quart import Quart, request, jsonify, Response, websocket
 from quart_cors import cors
-import time
-import random
+import asyncio
 import logging
 import sys
 import uuid
-from searchPipeline import run_elixposearch_pipeline
-from deepSearchPipeline import run_deep_research_pipeline
-import asyncio
-import hypercorn.asyncio
-import json
-import uuid
-import multiprocessing as mp
-from hypercorn.config import Config
-from collections import deque
 from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
+import json
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', stream=sys.stdout)
-request_queue = asyncio.Queue(maxsize=100) 
-processing_semaphore = asyncio.Semaphore(15)  
-active_requests = {}
-global_stats = {
-    "total_requests": 0,
-    "successful_requests": 0,
-    "failed_requests": 0,
-    "start_time": time.time(),
-    "last_request_time": None,
-    "avg_processing_time": 0.0
-}
+# Production imports
+from production_pipeline import initialize_production_pipeline, get_production_pipeline
+from session_manager import get_session_manager
+from rag_engine import get_rag_engine
+from requestID import RequestIDMiddleware
 
-transcript_rate_limit = {
-    "window": 60, 
-    "limit": 20,
-    "requests": deque()
-}
+# Initialize logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger("elixpo-api")
 
-
-class RequestTask:
-    def __init__(self, request_id: str, user_query: str, request_type: str, event_id: str = None):
-        self.request_id = request_id
-        self.user_query = user_query
-        self.request_type = request_type
-        self.event_id = event_id
-        self.result_future = asyncio.Future()
-        self.timestamp = time.time()
-        self.start_processing_time = None
-
-
-async def process_request_worker():
-    while True:
-        try:
-            task = await asyncio.wait_for(request_queue.get(), timeout=1.0)
-            
-            if task.request_type == 'sse':
-                task.result_future.set_exception(Exception("SSE requests should not be queued"))
-                continue
-            
-            async with processing_semaphore:
-                task.start_processing_time = time.time()
-                app.logger.info(f"Processing request {task.request_id} - {task.request_type}")
-                active_requests[task.request_id] = task
-                
-                try:
-                    final_result_content = []
-                    sources = []
-                    uq, ui = task.user_query if isinstance(task.user_query, tuple) else (task.user_query, None)
-
-                    async for chunk in run_elixposearch_pipeline(uq, ui, event_id=None, request_id=task.request_id):
-                        lines = chunk.splitlines()
-                        event_type = None
-                        data_lines = []
-
-                        for line in lines:
-                            if line.startswith("event:"):
-                                event_type = line.replace("event:", "").strip()
-                            elif line.startswith("data:"):
-                                data_lines.append(line.replace("data:", "").strip())
-
-                        data_text = "\n".join(data_lines)
-                        
-                        # Extract sources from data
-                        if "[SOURCES]" in data_text and "[/SOURCES]" in data_text:
-                            try:
-                                import re
-                                source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
-                                if source_match:
-                                    sources = json.loads(source_match.group(1))
-                            except:
-                                pass
-                        
-                        if data_text and event_type in ["final", "final-part"]:
-                            final_result_content.append(data_text)
-                    
-                    final_response = "\n".join(final_result_content).strip()
-                    if not final_response:
-                        final_response = "No results found"
-                    
-                    # Include sources in response
-                    if sources:
-                        final_response = f"[SOURCES]{json.dumps(sources)}[/SOURCES]\n\n{final_response}"
-                    
-                    task.result_future.set_result(final_response)
-                    
-                    # Update success stats
-                    processing_time = time.time() - task.start_processing_time
-                    global_stats["successful_requests"] += 1
-                    global_stats["avg_processing_time"] = (
-                        (global_stats["avg_processing_time"] * (global_stats["successful_requests"] - 1) + processing_time) / 
-                        global_stats["successful_requests"]
-                    )
-                        
-                except Exception as e:
-                    app.logger.error(f"Error processing request {task.request_id}: {e}", exc_info=True)
-                    task.result_future.set_exception(e)
-                    global_stats["failed_requests"] += 1
-                finally:
-                    active_requests.pop(task.request_id, None)
-                    
-            request_queue.task_done()
-            
-        except asyncio.TimeoutError:
-            continue
-        except Exception as e:
-            app.logger.error(f"Worker error: {e}", exc_info=True)
-            await asyncio.sleep(0.1)
-
-def update_request_stats():
-    global_stats["total_requests"] += 1
-    global_stats["last_request_time"] = time.time()
-
-
-def extract_query_and_image(data: dict) -> tuple[str, str | None, bool]:
-    user_query = ""
-    user_image = None
-    is_openai_chat = False
-    image_count = 0
-
-    messages = data.get("messages", [])
-    if messages and isinstance(messages, list):
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                if isinstance(content, list):  
-                    for part in content:
-                        if part.get("type") == "text":
-                            user_query += part.get("text", "").strip() + " "
-                        elif part.get("type") == "image_url" and not user_image:
-                            user_image = part.get("image_url", {}).get("url", None)
-                    user_query = user_query.strip()
-                else: 
-                    user_query = content.strip()
-                is_openai_chat = True
-                break
-
-    if not user_query:
-        user_query = data.get("query") or ""
-        if user_image:
-            image_count += 1
-
-    if not user_image:
-        user_image = data.get("image") or None
-    
-    if image_count > 1:
-        return user_query.strip(), "__MULTIPLE_IMAGES__", is_openai_chat
-
-    return user_query.strip(), user_image, is_openai_chat
-
-
+# Initialize Quart app
 app = Quart(__name__)
-app = cors(app, allow_origin="*")
-app.logger.setLevel(logging.INFO)
+cors(app)
+
+# Global state
+pipeline_initialized = False
+initialization_lock = asyncio.Lock()
 
 
 @app.before_serving
 async def startup():
-    try:
-        app.logger.info("Search agents pre-warmed and ready for cold start")
-    except Exception as e:
-        app.logger.error(f"Failed to initialize search agents: {e}")
-        
-    for i in range(8):
-        asyncio.create_task(process_request_worker())
-    app.logger.info("Started 8 request processing workers")
-
-
-@app.route("/metadata", methods=["GET"])
-def get_metadata():
-    if request.method == "GET":
-        url = request.args.get("url")
-    resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-    html = resp.text
-
-    soup = BeautifulSoup(html, "html.parser")
-
-    metadata = {
-        "title": soup.title.string if soup.title else None,
-        "description": soup.find("meta", attrs={"name": "description"})["content"]
-            if soup.find("meta", attrs={"name": "description"}) else None,
-        "og_title": soup.find("meta", property="og:title")["content"]
-            if soup.find("meta", property="og:title") else None,
-        "og_description": soup.find("meta", property="og:description")["content"]
-            if soup.find("meta", property="og:description") else None,
-        "og_image": soup.find("meta", property="og:image")["content"]
-            if soup.find("meta", property="og:image") else None,
-    }
-
-    response = {
-        "url": url,
-        "metadata": metadata["description"]
-    }
-
-    return jsonify(response)
-
-
-
-@app.route("/search/sse", methods=["POST", "GET"])
-async def search_sse(forwarded_data=None):
-    import time
-
-    if forwarded_data is not None:
-        data = forwarded_data
-    elif request.method == "GET":
-        args = request.args
-        stream_flag = args.get("stream", "true").lower() == "true"
-        user_query = args.get("query", "").strip()
-        user_image = args.get("image") or args.get("image_url") or None
-        deep_flag = args.get("deep", "false").lower() == "true"
-        data = {"query": user_query, "image": user_image, "deep": deep_flag}
-    else:
-        data = await request.get_json(force=True, silent=True) or {}
-
-    user_query, user_image, _ = extract_query_and_image(data)
-    deep_flag = data.get("deep", False)
-
-    # OpenAI-style chunking fields
-    chat_id = f"chatcmpl-{uuid.uuid4()}"
-    created = int(time.time())
-    model_name = "elixposearch"
-
-    request_id = f"sse-{uuid.uuid4().hex[:8]}"
-    event_id = f"elixpo-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-
-    update_request_stats()
-    app.logger.info(f"SSE request {request_id}: {user_query[:50]}... (deep={deep_flag})")
-
-    if len(active_requests) >= 15:
-        return Response('data: {"error": "Server overloaded, try again later"}\n\n',
-                        content_type="text/event-stream")
-
-    async def event_stream():
-        try:
-            active_requests[request_id] = {
-                "type": "sse",
-                "query": user_query[:50],
-                "start_time": time.time()
-            }
-
-            first_chunk = True
-            sources_sent = False
-            
-            async with processing_semaphore:
-                # Choose pipeline based on deep_flag
-                if deep_flag:
-                    pipeline_gen = run_deep_research_pipeline(user_query, request_id, event_id)
-                else:
-                    pipeline_gen = run_elixposearch_pipeline(user_query, user_image, event_id)
-
-                async for chunk in pipeline_gen:
-                    lines = chunk.splitlines()
-                    event_type = None
-                    data_lines = []
-                    stage = None
-                    progress = None
-                    finished = None
-                    task_num = None
-
-                    for line in lines:
-                        if line.startswith("event:"):
-                            event_type = line.replace("event:", "").strip()
-                        elif line.startswith("stage:"):
-                            stage = line.replace("stage:", "").strip()
-                        elif line.startswith("progress:"):
-                            try:
-                                progress = int(line.replace("progress:", "").strip())
-                            except Exception:
-                                progress = None
-                        elif line.startswith("finished:"):
-                            finished = line.replace("finished:", "").strip()
-                        elif line.startswith("task:"):
-                            try:
-                                task_num = int(line.replace("task:", "").strip())
-                            except Exception:
-                                task_num = None
-                        elif line.startswith("data:"):
-                            data_lines.append(line.replace("data:", "").strip())
-
-                    data_text = "\n".join(data_lines)
-                    
-                    # Extract and send sources first
-                    if "[SOURCES]" in data_text and "[/SOURCES]" in data_text and not sources_sent:
-                        try:
-                            import re
-                            source_match = re.search(r'\[SOURCES\](.*?)\[\/SOURCES\]', data_text, re.DOTALL)
-                            if source_match:
-                                sources_chunk = {
-                                    "id": chat_id,
-                                    "object": "chat.completion.chunk",
-                                    "created": created,
-                                    "model": model_name,
-                                    "choices": [{
-                                        "index": 0,
-                                        "delta": {
-                                            "content": f"[SOURCES]{source_match.group(1)}[/SOURCES]"
-                                        },
-                                        "logprobs": None,
-                                        "finish_reason": None
-                                    }]
-                                }
-                                yield f"data: {json.dumps(sources_chunk)}\n\n"
-                                sources_sent = True
-                                # Remove sources from data_text
-                                data_text = re.sub(r'\[SOURCES\].*?\[\/SOURCES\]', '', data_text, flags=re.DOTALL).strip()
-                        except Exception as e:
-                            app.logger.error(f"Error processing sources: {e}")
-                    
-                    # Always include progress and stage metadata
-                    if data_text or stage or progress is not None:
-                        chunk_obj = {
-                            "id": chat_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": model_name,
-                            "choices": [{
-                                "index": 0,
-                                "delta": {},
-                                "logprobs": None,
-                                "finish_reason": None
-                            }]
-                        }
-                        
-                        # Add metadata
-                        meta = {}
-                        if progress is not None:
-                            meta["progress"] = progress
-                        if stage is not None:
-                            meta["stage"] = stage
-                        if task_num is not None:
-                            meta["task"] = task_num
-                        if finished is not None:
-                            meta["finished"] = finished
-                        
-                        if meta:
-                            chunk_obj["choices"][0]["delta"]["elixpo_meta"] = meta
-
-                        if first_chunk:
-                            chunk_obj["choices"][0]["delta"]["role"] = "assistant"
-                            first_chunk = False
-                            if data_text:
-                                chunk_obj["choices"][0]["delta"]["content"] = data_text
-                            yield f"data: {json.dumps(chunk_obj)}\n\n"
-                        else:
-                            if data_text:
-                                chunk_obj["choices"][0]["delta"]["content"] = data_text
-                                yield f"data: {json.dumps(chunk_obj)}\n\n"
-                            elif meta:  # Send metadata even without content
-                                yield f"data: {json.dumps(chunk_obj)}\n\n"
-
-                    # Use event_type and/or finished to determine when to stop
-                    if event_type in ["final", "FINAL_ANSWER"] or (finished and finished.lower() == "yes"):
-                        finish_obj = {
-                            "id": chat_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": model_name,
-                            "choices": [{
-                                "index": 0,
-                                "delta": {"content": ""},
-                                "logprobs": None,
-                                "finish_reason": "stop",
-                            }]
-                        }
-                        yield f"data: {json.dumps(finish_obj)}\n\n"
-                        break
-
-                    await asyncio.sleep(0.01)
-
-            yield "data: [DONE]\n\n"
-
-        except Exception as e:
-            app.logger.error(f"SSE error for {request_id}: {e}", exc_info=True)
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-        finally:
-            active_requests.pop(request_id, None)
-            global_stats["successful_requests"] += 1
-
-    return Response(event_stream(), content_type="text/event-stream")
-
-
-@app.route('/search', methods=['GET', 'POST'])
-@app.route('/search/<path:anything>', methods=['GET', 'POST'])
-async def search_json(anything=None):
-    request_id = f"json-{uuid.uuid4().hex[:8]}"
-    update_request_stats()
-
-    if request.method == "GET":
-        args = request.args
-        stream_flag = args.get("stream", "false").lower() == "true"
-        user_query = args.get("query", "").strip()
-        user_image = args.get("image") or args.get("image_url") or None
-        deep_flag = args.get("deep", "false").lower() == "true"
-        data = {"query": user_query, "image": user_image, "deep": deep_flag}
-    else:
-        data = await request.get_json(force=True, silent=True) or {}
-        stream_flag = data.get("stream", False)
-        deep_flag = data.get("deep", False)
-
-    user_query, user_image, _ = extract_query_and_image(data)
-
-    if stream_flag or deep_flag:
-        # Forward to SSE, always stream for deep search
-        sse_data = {
-            "messages": [{"role": "user", "content": user_query}] if user_query else [],
-            "image": user_image,
-            "stream": True,
-            "deep": deep_flag
-        }
-        return await search_sse(forwarded_data=sse_data)
-
-    if user_image == "__MULTIPLE_IMAGES__":
-        return jsonify({"error": "Only one image can be processed per request. Please submit a single image."}), 400
-
-    if not user_query and not user_image:
-        return jsonify({"error": "Missing query or image"}), 400
-
-    app.logger.info(f"JSON request {request_id}: {user_query[:50]}... (deep={deep_flag})")
-    task = RequestTask(request_id, (user_query, user_image), 'json')
-
-    try:
-        await asyncio.wait_for(request_queue.put(task), timeout=5.0)
-    except asyncio.TimeoutError:
-        return jsonify({"error": "Server overloaded, try again later"}), 503
-
-    try:
-        # Wait for the worker to process the task
-        final_response = await asyncio.wait_for(task.result_future, timeout=180)
-    except asyncio.TimeoutError:
-        final_response = "Request timed out"
-        app.logger.error(f"Request {request_id} timed out")
-    except Exception as e:
-        final_response = f"Error: {e}"
-        app.logger.error(f"Request {request_id} failed: {e}")
-
-    # Always return OpenAI-style response
-    return jsonify({
-        "choices": [
-            {
-                "message": {
-                    "role": "assistant",
-                    "content": final_response
-                }
-            }
-        ]
-    })
-
-
-@app.route("/status", methods=["GET"])
-async def status():
-    current_time = time.time()
-    uptime = current_time - global_stats["start_time"]
+    """Initialize all components on server startup"""
+    global pipeline_initialized
     
+    async with initialization_lock:
+        if pipeline_initialized:
+            return
+        
+        logger.info("[APP] Starting ElixpoSearch server...")
+        logger.info("[APP] Initializing model server...")
+        
+        try:
+            # Initialize production pipeline (includes model loading)
+            pipeline = await initialize_production_pipeline()
+            pipeline_initialized = True
+            logger.info("[APP] ElixpoSearch server ready")
+        except Exception as e:
+            logger.error(f"[APP] Failed to initialize: {e}", exc_info=True)
+            raise
+
+
+@app.after_serving
+async def shutdown():
+    """Cleanup on server shutdown"""
+    logger.info("[APP] Shutting down ElixpoSearch server...")
+
+
+# ============================================
+# Public API Endpoints
+# ============================================
+
+
+@app.route('/api/health', methods=['GET'])
+async def health_check():
+    """Health check endpoint"""
     return jsonify({
         "status": "healthy",
-        "timestamp": current_time,
-        "uptime_seconds": round(uptime, 2),
-        "queue": {
-            "pending": request_queue.qsize(),
-            "processing": len(active_requests),
-            "capacity": 100,
-            "available_slots": max(0, 15 - len(active_requests))
-        },
-        "stats": {
-            "total_requests": global_stats["total_requests"],
-            "successful": global_stats["successful_requests"],
-            "failed": global_stats["failed_requests"],
-            "avg_processing_time": round(global_stats["avg_processing_time"], 2),
-            "requests_per_second": round(global_stats["total_requests"] / uptime if uptime > 0 else 0, 2)
-        },
-        "workers": 8,
-        "max_concurrent": 15
+        "timestamp": datetime.utcnow().isoformat(),
+        "initialized": pipeline_initialized
     })
 
 
-@app.route("/test", methods=["GET"])
-async def testResponse():
-    return jsonify({
-        "choices" : [
-            {
-                "message" : {
-                    "role" : "assistant",
-                    "content" : "as of Tuesday, September 9, 2025, here's the latest news from Nepal:\n\n**Major Political Unrest and Protests:**\n\n*   **Prime Minister Resigns Amidst Widespread Protests:** Prime Minister K. P. Sharma Oli resigned from his position on Tuesday, September 9, 2025. This resignation followed a period of intense mass protests and significant unrest across the country.\n*   **Violence and Arson:** The protests escalated to a point where protesters entered the parliament building and set it on fire. There are also reports of government ministers being attacked and their homes being targeted.\n*   **Gen Z-Led Movement:** A significant driving force behind the recent protests appears to be Nepal's Generation Z, who are expressing deep anger and dissatisfaction, demanding not only the Prime Minister's resignation but also broader systemic changes. Their sentiment is captured in slogans like \"Topple this government.\"\n*   **Airport Closure:** As a consequence of the unrest, the airport in Nepal was shut down, indicating the severity of the situation and its impact on daily life and national operations.\n*   **Social Media Restrictions:** In response to the ongoing protests and to manage information flow, there were reports of a social media ban being implemented.\n\n**Contextual Information:**\n\nThe news indicates a period of significant political instability in Nepal. The mass protests, seemingly fueled by a younger generation's demand for change, have led to a change in leadership and widespread disruption. The actions taken, such as setting fire to parliament and closing the airport, highlight the intensity of the public's dissatisfaction. The government's response, including a potential social media ban, suggests efforts to control the narrative and maintain order amidst the chaos.\n\nIt's important to note that this is a developing situation, and further updates would be necessary to understand the long-term implications of these events on Nepal's political landscape.\n\n---\n**Sources:**\n1. [https://english.nepalnews.com/](https://english.nepalnews.com/)\n2. [https://www.aljazeera.com/features/2025/9/9/we-want-mass-resignations-nepals-gen-z-anger-explodes-after-19-killed](https://www.aljazeera.com/features/2025/9/9/we-want-mass-resignations-nepals-gen-z-anger-explodes-after-19-killed)\n3. [https://www.aljazeera.com/news/liveblog/2025/9/9/nepal-protests-live-nepali-congress-office-top-leaders-homes-set-on-fire](https://www.aljazeera.com/news/liveblog/2025/9/9/nepal-protests-live-nepali-congress-office-top-leaders-homes-set-on-fire)\n4. [https://www.cnn.com/2025/09/09/asia/nepal-protests-social-media-ban-explainer-intl-hnk](https://www.cnn.com/2025/09/09/asia/nepal-protests-social-media-ban-explainer-intl-hnk)\n5. [https://www.firstpost.com/explainers/photos-videos-nepal-protests-gen-z-13932219.html](https://www.firstpost.com/explainers/photos-videos-nepal-protests-gen-z-13932219.html)"
-                }
+@app.route('/api/search', methods=['POST'])
+async def search():
+    """
+    Main search endpoint with session support
+    
+    Request body:
+    {
+        "query": "search query",
+        "image_url": "optional image url",
+        "session_id": "optional existing session id"
+    }
+    
+    Response: Streaming SSE events
+    """
+    if not pipeline_initialized:
+        return jsonify({"error": "Server not initialized"}), 503
+    
+    try:
+        data = await request.get_json()
+        query = data.get("query", "").strip()
+        image_url = data.get("image_url")
+        session_id = data.get("session_id")
+        
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+        
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        
+        logger.info(f"[{request_id}] Search request: {query[:50]}... session: {session_id or 'new'}")
+        
+        pipeline = get_production_pipeline()
+        
+        async def event_generator():
+            """Generate SSE events"""
+            async for chunk in pipeline.process_request(
+                query=query,
+                image_url=image_url,
+                session_id=session_id,
+                request_id=request_id
+            ):
+                yield chunk.encode('utf-8')
+        
+        return Response(
+            event_generator(),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Content-Type': 'text/event-stream',
+                'Access-Control-Allow-Origin': '*'
             }
-        ]
-    })
+        )
+    
+    except Exception as e:
+        logger.error(f"[{request_id}] Search error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/session/create', methods=['POST'])
+async def create_session():
+    """Create a new session"""
+    if not pipeline_initialized:
+        return jsonify({"error": "Server not initialized"}), 503
+    
+    try:
+        data = await request.get_json()
+        query = data.get("query", "").strip()
+        
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+        
+        session_manager = get_session_manager()
+        session_id = session_manager.create_session(query)
+        
+        logger.info(f"[API] Created session: {session_id}")
+        
+        return jsonify({
+            "session_id": session_id,
+            "query": query,
+            "created_at": datetime.utcnow().isoformat()
+        }), 201
+    
+    except Exception as e:
+        logger.error(f"[API] Session creation error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/kg/request/<request_id>", methods=["GET"])
-async def get_request_kg(request_id: str):
-    """Get aggregated knowledge graph for a specific request"""
-    from kg_manager import kg_manager
-
-    kg_data = kg_manager.get_request_kg(request_id)
-    if not kg_data:
-        return jsonify({"error": f"No knowledge graph found for request {request_id}"}), 404
-
-    metadata = kg_manager.get_request_metadata(request_id)
-    return jsonify({
-        "request_id": request_id,
-        "metadata": metadata,
-        "knowledge_graph": kg_data
-    })
-
-
-@app.route("/kg/request/<request_id>/entities", methods=["GET"])
-async def get_request_entities(request_id: str):
-    """Get top entities for a specific request"""
-    from kg_manager import kg_manager
-
-    top_k = request.args.get("top_k", default=15, type=int)
-    entities = kg_manager.get_top_entities(request_id, top_k=top_k)
-
-    if not entities:
-        return jsonify({"error": f"No entities found for request {request_id}"}), 404
-
-    return jsonify({
-        "request_id": request_id,
-        "top_entities": entities
-    })
+@app.route('/api/session/<session_id>', methods=['GET'])
+async def get_session_info(session_id: str):
+    """Get session information and knowledge graph summary"""
+    try:
+        session_manager = get_session_manager()
+        session_data = session_manager.get_session(session_id)
+        
+        if not session_data:
+            return jsonify({"error": "Session not found"}), 404
+        
+        rag_engine = get_rag_engine()
+        rag_stats = rag_engine.get_summary_stats(session_id)
+        
+        return jsonify({
+            "session_id": session_id,
+            "query": session_data.query,
+            "summary": session_manager.get_session_summary(session_id),
+            "rag_stats": rag_stats
+        })
+    
+    except Exception as e:
+        logger.error(f"[API] Session info error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/kg/request/<request_id>/context", methods=["GET"])
-async def get_request_context(request_id: str):
-    """Get query context built from knowledge graphs for a request"""
-    from kg_manager import kg_manager
-
-    context = kg_manager.build_query_context(request_id)
-    if not context:
-        return jsonify({"error": f"No context available for request {request_id}"}), 404
-
-    return jsonify({
-        "request_id": request_id,
-        "context": context
-    })
-
-
-@app.route("/kg/request/<request_id>/export", methods=["GET"])
-async def export_request_kg(request_id: str):
-    """Export complete knowledge graph data for a request"""
-    from kg_manager import kg_manager
-
-    kg_export = kg_manager.export_request_kg(request_id)
-    if not kg_export:
-        return jsonify({"error": f"No knowledge graph found for request {request_id}"}), 404
-
-    return jsonify(kg_export)
+@app.route('/api/session/<session_id>/kg', methods=['GET'])
+async def get_session_kg(session_id: str):
+    """Get knowledge graph for a session"""
+    try:
+        rag_engine = get_rag_engine()
+        context = rag_engine.build_rag_context(session_id)
+        
+        if "error" in context:
+            return jsonify(context), 404
+        
+        return jsonify(context)
+    
+    except Exception as e:
+        logger.error(f"[API] KG fetch error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/kg/manager/stats", methods=["GET"])
-async def get_kg_manager_stats():
-    """Get knowledge graph manager statistics"""
-    from kg_manager import kg_manager
+@app.route('/api/session/<session_id>/query', methods=['POST'])
+async def query_session_kg(session_id: str):
+    """Query the knowledge graph of a session"""
+    try:
+        data = await request.get_json()
+        query = data.get("query", "").strip()
+        top_k = data.get("top_k", 5)
+        
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+        
+        rag_engine = get_rag_engine()
+        results = rag_engine.query_knowledge_graph(session_id, query, top_k=top_k)
+        
+        return jsonify({
+            "query": query,
+            "session_id": session_id,
+            "results": results
+        })
+    
+    except Exception as e:
+        logger.error(f"[API] KG query error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
-    stats = kg_manager.get_stats()
-    return jsonify(stats)
+
+@app.route('/api/session/<session_id>/entity/<entity>', methods=['GET'])
+async def get_entity_evidence(session_id: str, entity: str):
+    """Get evidence for a specific entity from a session"""
+    try:
+        rag_engine = get_rag_engine()
+        evidence = rag_engine.extract_entity_evidence(session_id, entity)
+        
+        if "error" in evidence:
+            return jsonify(evidence), 404
+        
+        return jsonify(evidence)
+    
+    except Exception as e:
+        logger.error(f"[API] Entity evidence error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/kg/request/<request_id>", methods=["DELETE"])
-async def delete_request_kg(request_id: str):
-    """Clear knowledge graph data for a specific request"""
-    from kg_manager import kg_manager
+@app.route('/api/session/<session_id>/summary', methods=['GET'])
+async def get_session_summary(session_id: str):
+    """Get a document summary for a session"""
+    try:
+        rag_engine = get_rag_engine()
+        summary = rag_engine.build_document_summary(session_id)
+        
+        if not summary:
+            return jsonify({"error": "Session not found"}), 404
+        
+        return jsonify({
+            "session_id": session_id,
+            "summary": summary
+        })
+    
+    except Exception as e:
+        logger.error(f"[API] Summary error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
-    kg_manager.clear_request(request_id)
-    return jsonify({"message": f"Cleared knowledge graph for request {request_id}"})
+
+@app.route('/api/session/<session_id>', methods=['DELETE'])
+async def delete_session(session_id: str):
+    """Delete a session"""
+    try:
+        session_manager = get_session_manager()
+        session_manager.cleanup_session(session_id)
+        
+        logger.info(f"[API] Deleted session: {session_id}")
+        
+        return jsonify({"message": "Session deleted"}), 200
+    
+    except Exception as e:
+        logger.error(f"[API] Session deletion error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/health", methods=["GET"])
-async def health():
-    return jsonify({"status": "ok"})
+@app.route('/api/stats', methods=['GET'])
+async def get_stats():
+    """Get system statistics"""
+    try:
+        session_manager = get_session_manager()
+        stats = session_manager.get_stats()
+        
+        return jsonify({
+            "timestamp": datetime.utcnow().isoformat(),
+            "sessions": stats
+        })
+    
+    except Exception as e:
+        logger.error(f"[API] Stats error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================
+# Error Handlers
+# ============================================
+
+
+@app.errorhandler(404)
+async def not_found(error):
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(500)
+async def internal_error(error):
+    logger.error(f"Internal server error: {error}", exc_info=True)
+    return jsonify({"error": "Internal server error"}), 500
+
+
+# ============================================
+# WebSocket Support (Optional - for real-time)
+# ============================================
+
+
+@app.websocket('/ws/search')
+async def websocket_search():
+    """WebSocket for real-time search streaming"""
+    try:
+        while True:
+            data = await websocket.receive_json()
+            query = data.get("query", "").strip()
+            
+            if not query:
+                await websocket.send_json({"error": "Query required"})
+                continue
+            
+            pipeline = get_production_pipeline()
+            
+            async for chunk in pipeline.process_request(
+                query=query,
+                image_url=data.get("image_url")
+            ):
+                # Send each chunk as JSON
+                lines = chunk.split('\n')
+                for line in lines:
+                    if line.startswith('event:'):
+                        event_type = line.replace('event:', '').strip()
+                    elif line.startswith('data:'):
+                        data_content = line.replace('data:', '').strip()
+                        await websocket.send_json({
+                            "event": event_type,
+                            "data": data_content
+                        })
+    
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}", exc_info=True)
+        await websocket.send_json({"error": str(e)})
+
+
+# ============================================
+# CLI Support
+# ============================================
 
 
 if __name__ == "__main__":
-    import os
+    import hypercorn.asyncio
+    from hypercorn.config import Config
     
-    # Get port from environment variable, default to 5000
-    port = int(os.getenv("PORT", 5000))
-    
+    # Configuration
     config = Config()
-    config.bind = [f"0.0.0.0:{port}"]
-    config.use_reloader = False
+    config.bind = ["0.0.0.0:8000"]
     config.workers = 1
-    config.backlog = 1000
     
-    print(f"Starting Elixpo Search API on port {port}")
+    logger.info("[APP] Starting ElixpoSearch API server...")
+    logger.info("[APP] Listening on http://0.0.0.0:8000")
+    
     asyncio.run(hypercorn.asyncio.serve(app, config))
