@@ -37,8 +37,7 @@ def download_nltk_resource(resource_name: str, retries: int = 3) -> bool:
             nltk.download(
                 resource_name,
                 download_dir=NLTK_DATA_DIR,
-                quiet=True,
-                raise_errors=False
+                quiet=True
             )
             
             # Verify download was successful
