@@ -1,15 +1,3 @@
-"""
-Production Pipeline - Main orchestration for the ElixpoSearch system.
-
-Architecture:
-1. Initialize model server (hot-load all models at startup)
-2. Per request: Create session with sessionID
-3. Execute tools to gather information
-4. Build local KG for session
-5. Use RAG to enhance LLM prompts
-6. Return comprehensive response
-"""
-
 import asyncio
 import json
 import logging
@@ -17,6 +5,9 @@ from typing import AsyncGenerator, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
 import random
 import time
+import numpy as np
+from multiprocessing.managers import BaseManager
+from nltk.tokenize import sent_tokenize
 
 from dotenv import load_dotenv
 import os
@@ -24,11 +15,9 @@ import requests
 
 from session_manager import SessionManager, get_session_manager
 from rag_engine import RAGEngine, get_rag_engine
-from model_server_manager import initialize_model_server, get_model_server
 from knowledge_graph import build_knowledge_graph
 from tools import tools
 
-# Tool imports
 from utility import cleanQuery, webSearch, fetch_url_content_parallel
 from getImagePrompt import generate_prompt_from_image, replyFromImage
 from getYoutubeDetails import transcribe_audio, youtubeMetadata
@@ -44,47 +33,106 @@ POLLINATIONS_ENDPOINT = os.getenv("POLLINATIONS_ENDPOINT", "https://enter.pollin
 POLLINATIONS_TOKEN = os.getenv("TOKEN")
 MODEL = os.getenv("MODEL", "claude-3.5-sonnet")
 
+class IpcModelManager(BaseManager):
+    pass
+
+IpcModelManager.register("ipcService")
+IpcModelManager.register("accessSearchAgents")
+
+_ipc_manager = None
+_ipc_service = None
+_search_service = None
+
+def _connect_ipc():
+    global _ipc_manager, _ipc_service, _search_service
+    if _ipc_manager is None:
+        try:
+            _ipc_manager = IpcModelManager(address=("localhost", 5010), authkey=b"ipcService")
+            _ipc_manager.connect()
+            _ipc_service = _ipc_manager.ipcService()
+            _search_service = _ipc_manager.accessSearchAgents()
+            logger.info("[IPC] Connected to model server")
+        except Exception as e:
+            logger.warning(f"[IPC] Connection failed: {e}")
+            raise
+
+def get_ipc_service():
+    global _ipc_service
+    if _ipc_service is None:
+        _connect_ipc()
+    return _ipc_service
+
 
 class ProductionPipeline:
-    """Main search and response pipeline with model pre-loading, sessions, and RAG"""
     
-    def __init__(self, model_server=None):
-        """
-        Initialize production pipeline
-        
-        Args:
-            model_server: Optional pre-initialized model server
-        """
-        self.model_server = model_server
+    def __init__(self):
         self.session_manager: Optional[SessionManager] = None
         self.rag_engine: Optional[RAGEngine] = None
         self.initialized = False
-        logger.info("[ProductionPipeline] Initialized")
+        logger.info("[Pipeline] Initialized")
     
     async def initialize(self):
-        """Initialize all components (called at server startup)"""
         if self.initialized:
             return
         
-        logger.info("[ProductionPipeline] Starting initialization...")
+        logger.info("[Pipeline] Starting initialization...")
         
-        # Initialize model server (hot-load all models)
-        logger.info("[ProductionPipeline] Initializing model server...")
         try:
-            self.model_server = await initialize_model_server(pool_size=1, max_tabs=20)
-            logger.info("[ProductionPipeline] Model server initialized")
+            _connect_ipc()
+            logger.info("[Pipeline] IPC connected")
         except Exception as e:
-            logger.error(f"[ProductionPipeline] Model server initialization failed: {e}")
-            raise
+            logger.warning(f"[Pipeline] IPC connection warning: {e}")
         
-        # Initialize session manager
         self.session_manager = SessionManager(max_sessions=1000, ttl_minutes=30)
-        
-        # Initialize RAG engine
         self.rag_engine = RAGEngine(self.session_manager, top_k_entities=15)
         
         self.initialized = True
-        logger.info("[ProductionPipeline] Initialization complete. Ready to process requests.")
+        logger.info("[Pipeline] Ready")
+    
+    async def _rank_results(self, query: str, results: List[str], ipc_service) -> List[Tuple[str, float]]:
+        if not results:
+            return []
+        
+        try:
+            query_emb = ipc_service.embed_model.encode(
+                query,
+                convert_to_numpy=True,
+                normalize_embeddings=True
+            )
+            
+            results_emb = ipc_service.embed_model.encode(
+                results,
+                convert_to_numpy=True,
+                normalize_embeddings=True,
+                batch_size=32
+            )
+            
+            if len(results_emb.shape) == 1:
+                results_emb = results_emb.reshape(1, -1)
+            
+            scores = np.dot(results_emb, query_emb)
+            
+            ranked = sorted(zip(results, scores), key=lambda x: x[1], reverse=True)
+            return ranked
+        except Exception as e:
+            logger.warning(f"[Pipeline] Ranking failed: {e}")
+            return [(r, 1.0) for r in results]
+    
+    async def _extract_and_rank_sentences(self, url: str, content: str, query: str, ipc_service) -> List[str]:
+        try:
+            sentences = sent_tokenize(content)
+            if not sentences:
+                return []
+            
+            sentences = [s for s in sentences if len(s.split()) > 3][:100]
+            
+            ranked = await self._rank_results(query, sentences, ipc_service)
+            
+            top_sentences = [s for s, score in ranked[:10] if score > 0.3]
+            return top_sentences
+        except Exception as e:
+            logger.warning(f"[Pipeline] Sentence extraction failed for {url}: {e}")
+            return []
     
     async def process_request(
         self,
@@ -93,116 +141,105 @@ class ProductionPipeline:
         session_id: Optional[str] = None,
         request_id: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
-        """
-        Main request processing pipeline
         
-        Args:
-            query: User search query
-            image_url: Optional image URL
-            session_id: Session ID (created if not provided)
-            request_id: Request tracking ID
-            
-        Yields:
-            SSE formatted event strings
-        """
-        # Ensure initialization
         if not self.initialized:
             await self.initialize()
         
-        # Create or validate session
         if not session_id:
             session_id = self.session_manager.create_session(query)
         
-        logger.info(f"[Pipeline {session_id}] Processing query: {query[:50]}... with image: {bool(image_url)}")
+        logger.info(f"[{session_id}] Processing: {query[:50]}...")
         
         session = self.session_manager.get_session(session_id)
         if not session:
-            yield self._format_sse("error", "Failed to create session")
+            yield self._format_sse("error", "Session failed")
             return
         
         try:
-            # Step 1: Clean and analyze query
+            ipc_service = get_ipc_service()
+            
             yield self._format_sse("info", "<TASK>Analyzing query...</TASK>")
             websites, youtube_urls, cleaned_query = cleanQuery(query)
             session.web_search_urls.extend(websites)
             session.youtube_urls.extend(youtube_urls)
             
-            # Step 2: Initial image processing if provided
             image_prompt = None
             if image_url:
                 yield self._format_sse("info", "<TASK>Processing image...</TASK>")
-                self.session_manager.log_tool_execution(session_id, "generate_prompt_from_image")
+                self.session_manager.log_tool_execution(session_id, "image")
                 try:
                     image_prompt = await generate_prompt_from_image(image_url)
                     combined_query = f"{cleaned_query} {image_prompt}" if cleaned_query else image_prompt
                 except Exception as e:
-                    logger.warning(f"[Pipeline {session_id}] Image processing failed: {e}")
+                    logger.warning(f"[{session_id}] Image error: {e}")
                     combined_query = cleaned_query
             else:
                 combined_query = cleaned_query
             
-            # Step 3: Web search and content fetching
-            yield self._format_sse("info", "<TASK>Searching the web...</TASK>")
+            yield self._format_sse("info", "<TASK>Searching...</TASK>")
             self.session_manager.log_tool_execution(session_id, "web_search")
             
             search_results = webSearch(combined_query)
             if isinstance(search_results, list):
                 session.web_search_urls.extend(search_results)
-                fetch_urls = search_results[:8]  # Limit to top 8
+                ranked_urls = await self._rank_results(combined_query, search_results[:15], ipc_service)
+                fetch_urls = [url for url, _ in ranked_urls[:8]]
             else:
                 fetch_urls = [search_results] if search_results else []
             
-            # Step 4: Fetch and process content
             if fetch_urls:
-                yield self._format_sse("info", "<TASK>Fetching content from sources...</TASK>")
-                self.session_manager.log_tool_execution(session_id, "fetch_full_text")
+                yield self._format_sse("info", "<TASK>Fetching content...</TASK>")
+                self.session_manager.log_tool_execution(session_id, "fetch")
                 
                 try:
-                    # Fetch in parallel
+                    from search import fetch_full_text
                     for url in fetch_urls:
                         try:
-                            from search import fetch_full_text
                             content = await asyncio.to_thread(fetch_full_text, url)
                             if content:
-                                self.session_manager.add_content_to_session(session_id, url, content)
+                                top_sents = await self._extract_and_rank_sentences(
+                                    url, content, combined_query, ipc_service
+                                )
+                                filtered_content = " ".join(top_sents) if top_sents else content[:2000]
+                                self.session_manager.add_content_to_session(session_id, url, filtered_content)
                                 yield self._format_sse("info", f"<TASK>Processed {len(session.fetched_urls)} sources</TASK>")
                         except Exception as e:
-                            logger.warning(f"[Pipeline {session_id}] Failed to fetch {url}: {e}")
-                            session.add_error(f"Failed to fetch {url}: {str(e)[:100]}")
+                            logger.warning(f"[{session_id}] Fetch error for {url}: {e}")
+                            session.add_error(f"Fetch failed: {str(e)[:100]}")
                 except Exception as e:
-                    logger.warning(f"[Pipeline {session_id}] Content fetching failed: {e}")
+                    logger.warning(f"[{session_id}] Content fetching error: {e}")
             
-            # Step 5: Process YouTube URLs
             if session.youtube_urls:
-                yield self._format_sse("info", "<TASK>Processing video content...</TASK>")
-                for yt_url in session.youtube_urls[:2]:  # Limit to 2 videos
+                yield self._format_sse("info", "<TASK>Processing videos...</TASK>")
+                for yt_url in session.youtube_urls[:2]:
                     try:
-                        self.session_manager.log_tool_execution(session_id, "transcribe_audio")
+                        self.session_manager.log_tool_execution(session_id, "youtube")
                         transcript = await transcribe_audio(yt_url, full_transcript=False, query=combined_query)
                         if transcript:
-                            self.session_manager.add_content_to_session(session_id, yt_url, transcript)
+                            top_sents = await self._extract_and_rank_sentences(
+                                yt_url, transcript, combined_query, ipc_service
+                            )
+                            filtered_transcript = " ".join(top_sents) if top_sents else transcript[:2000]
+                            self.session_manager.add_content_to_session(session_id, yt_url, filtered_transcript)
                     except Exception as e:
-                        logger.warning(f"[Pipeline {session_id}] YouTube processing failed for {yt_url}: {e}")
-                        session.add_error(f"YouTube transcription failed: {str(e)[:100]}")
+                        logger.warning(f"[{session_id}] YouTube error for {yt_url}: {e}")
+                        session.add_error(f"YouTube failed: {str(e)[:100]}")
             
-            # Step 6: Image search if applicable
             if not image_url and (image_prompt or combined_query):
-                yield self._format_sse("info", "<TASK>Finding relevant images...</TASK>")
+                yield self._format_sse("info", "<TASK>Finding images...</TASK>")
                 try:
                     self.session_manager.log_tool_execution(session_id, "image_search")
                     image_results = await imageSearch(combined_query, max_images=5)
                     if image_results:
                         session.images.extend(image_results if isinstance(image_results, list) else [image_results])
                 except Exception as e:
-                    logger.warning(f"[Pipeline {session_id}] Image search failed: {e}")
+                    logger.warning(f"[{session_id}] Image search error: {e}")
             
-            # Step 7: Build RAG context
-            yield self._format_sse("info", "<TASK>Building knowledge context...</TASK>")
+            yield self._format_sse("info", "<TASK>Building KG...</TASK>")
             rag_context = self.rag_engine.build_rag_prompt_enhancement(session_id)
             rag_stats = self.rag_engine.get_summary_stats(session_id)
-            logger.info(f"[Pipeline {session_id}] RAG Context Built: {rag_stats}")
+            logger.info(f"[{session_id}] KG built: {rag_stats}")
             
-            # Step 8: Generate response using LLM with RAG context
             yield self._format_sse("info", "<TASK>Generating response...</TASK>")
             
             response_content = await self._generate_llm_response(
@@ -212,10 +249,8 @@ class ProductionPipeline:
                 image_url=image_url
             )
             
-            # Step 9: Format and return final response
             yield self._format_sse("info", "<TASK>SUCCESS</TASK>")
             
-            # Return final response with sources
             final_response = self._build_final_response(
                 response_content,
                 session,
@@ -224,12 +259,12 @@ class ProductionPipeline:
             
             yield self._format_sse("final", final_response)
             
-            logger.info(f"[Pipeline {session_id}] Request completed successfully")
+            logger.info(f"[{session_id}] Complete")
             
         except Exception as e:
-            logger.error(f"[Pipeline {session_id}] Pipeline error: {e}", exc_info=True)
+            logger.error(f"[{session_id}] Error: {e}", exc_info=True)
             session.add_error(f"Pipeline error: {str(e)}")
-            yield self._format_sse("error", "An error occurred processing your request. Please try again.")
+            yield self._format_sse("error", "Request failed. Retry.")
     
     async def _generate_llm_response(
         self,
@@ -238,34 +273,31 @@ class ProductionPipeline:
         session_id: str,
         image_url: Optional[str] = None
     ) -> str:
-        """Generate LLM response with RAG enhancement"""
         
         current_utc_time = datetime.now(timezone.utc)
         
-        system_prompt = f"""You are ElixpoSearch, an expert research assistant. Your task is to provide comprehensive, detailed, and well-researched answers.
+        system_prompt = f"""You are ElixpoSearch, an expert research assistant. Provide comprehensive, detailed answers.
 
-RESPONSE REQUIREMENTS:
-- Write detailed, substantive responses (minimum 500 words for substantial topics)
-- Synthesize information from all gathered sources
-- Include specific facts, data, statistics, and examples
-- Structure responses with clear sections and headings
-- Use proper markdown formatting
-- Cite sources when referencing specific information
-- Main content should be 80% of response, sources 20%
+REQUIREMENTS:
+- Detailed responses (500+ words for substantial topics)
+- Synthesize all gathered information
+- Include specific facts, data, statistics, examples
+- Clear sections with proper markdown
+- Cite sources
+- 80% content, 20% sources
 
-TIME CONTEXT: {current_utc_time.isoformat()}
+TIME: {current_utc_time.isoformat()}
 
 {rag_context}
 
-IMPORTANT: Ground your response in the knowledge graph context above. Reference the key entities and relationships discovered during research.
-"""
+Ground responses in the knowledge graph context above."""
         
-        user_message = f"""Based on your research gathered for the query, provide a comprehensive response:
+        user_message = f"""Based on research for this query, provide a comprehensive response:
 
 Query: {query}
-{"Image provided: Yes" if image_url else "Image provided: No"}
+{"Image: Yes" if image_url else ""}
 
-Please provide a detailed, well-structured markdown response that thoroughly answers the query using the researched information and knowledge graph context."""
+Provide detailed, well-structured markdown response using the researched information and KG context."""
         
         messages = [
             {"role": "system", "content": system_prompt},
@@ -300,8 +332,8 @@ Please provide a detailed, well-structured markdown response that thoroughly ans
             return content
         
         except Exception as e:
-            logger.error(f"[Pipeline {session_id}] LLM generation failed: {e}")
-            return f"# Error Generating Response\n\nFailed to generate response: {str(e)[:200]}"
+            logger.error(f"[{session_id}] LLM error: {e}")
+            return f"# Error\n\nFailed to generate: {str(e)[:200]}"
     
     def _build_final_response(
         self,
@@ -309,51 +341,43 @@ Please provide a detailed, well-structured markdown response that thoroughly ans
         session,
         rag_stats: Dict
     ) -> str:
-        """Build final formatted response"""
         parts = [response_content]
         
-        # Add images if found
         if session.images:
-            parts.append("\n\n---\n## Related Images\n")
+            parts.append("\n\n---\n## Images\n")
             for img_url in session.images[:5]:
                 parts.append(f"![](external-image)")
         
-        # Add sources
         if session.fetched_urls:
             parts.append("\n\n---\n## Sources\n")
             for i, url in enumerate(session.fetched_urls, 1):
                 parts.append(f"{i}. [{url}]({url})")
         
-        # Add metadata
-        parts.append("\n\n---\n## Research Summary\n")
-        parts.append(f"- Documents analyzed: {rag_stats.get('documents_fetched', 0)}")
-        parts.append(f"- Entities extracted: {rag_stats.get('entities_extracted', 0)}")
-        parts.append(f"- Relationships found: {rag_stats.get('relationships_discovered', 0)}")
+        parts.append("\n\n---\n## Summary\n")
+        parts.append(f"- Documents: {rag_stats.get('documents_fetched', 0)}")
+        parts.append(f"- Entities: {rag_stats.get('entities_extracted', 0)}")
+        parts.append(f"- Relationships: {rag_stats.get('relationships_discovered', 0)}")
         
         return "\n".join(parts)
     
     @staticmethod
     def _format_sse(event: str, data: str) -> str:
-        """Format as Server-Sent Event"""
         lines = data.splitlines()
         data_str = ''.join(f"data: {line}\n" for line in lines)
         return f"event: {event}\n{data_str}\n\n"
 
 
-# Global pipeline instance
 _production_pipeline: Optional[ProductionPipeline] = None
 
 
-async def initialize_production_pipeline(model_server=None) -> ProductionPipeline:
-    """Initialize the global production pipeline"""
+async def initialize_production_pipeline() -> ProductionPipeline:
     global _production_pipeline
-    _production_pipeline = ProductionPipeline(model_server)
+    _production_pipeline = ProductionPipeline()
     await _production_pipeline.initialize()
-    logger.info("[ProductionPipeline] Global production pipeline initialized")
+    logger.info("[Pipeline] Global production pipeline initialized")
     return _production_pipeline
 
 
 def get_production_pipeline() -> Optional[ProductionPipeline]:
-    """Get the global production pipeline"""
     global _production_pipeline
     return _production_pipeline

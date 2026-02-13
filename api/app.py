@@ -15,7 +15,6 @@ import uuid
 from datetime import datetime
 import json
 
-# Production imports
 from production_pipeline import initialize_production_pipeline, get_production_pipeline
 from session_manager import get_session_manager
 from rag_engine import get_rag_engine
@@ -40,30 +39,26 @@ initialization_lock = asyncio.Lock()
 
 @app.before_serving
 async def startup():
-    """Initialize all components on server startup"""
     global pipeline_initialized
     
     async with initialization_lock:
         if pipeline_initialized:
             return
         
-        logger.info("[APP] Starting ElixpoSearch server...")
-        logger.info("[APP] Initializing model server...")
+        logger.info("[APP] Starting ElixpoSearch...")
         
         try:
-            # Initialize production pipeline (includes model loading)
             pipeline = await initialize_production_pipeline()
             pipeline_initialized = True
-            logger.info("[APP] ElixpoSearch server ready")
+            logger.info("[APP] ElixpoSearch ready")
         except Exception as e:
-            logger.error(f"[APP] Failed to initialize: {e}", exc_info=True)
+            logger.error(f"[APP] Initialization failed: {e}", exc_info=True)
             raise
 
 
 @app.after_serving
 async def shutdown():
-    """Cleanup on server shutdown"""
-    logger.info("[APP] Shutting down ElixpoSearch server...")
+    logger.info("[APP] Shutting down...")
 
 
 # ============================================
@@ -73,7 +68,6 @@ async def shutdown():
 
 @app.route('/api/health', methods=['GET'])
 async def health_check():
-    """Health check endpoint"""
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -83,18 +77,6 @@ async def health_check():
 
 @app.route('/api/search', methods=['POST'])
 async def search():
-    """
-    Main search endpoint with session support
-    
-    Request body:
-    {
-        "query": "search query",
-        "image_url": "optional image url",
-        "session_id": "optional existing session id"
-    }
-    
-    Response: Streaming SSE events
-    """
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
     
@@ -109,12 +91,11 @@ async def search():
         
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
         
-        logger.info(f"[{request_id}] Search request: {query[:50]}... session: {session_id or 'new'}")
+        logger.info(f"[{request_id}] Search: {query[:50]}... session: {session_id or 'new'}")
         
         pipeline = get_production_pipeline()
         
         async def event_generator():
-            """Generate SSE events"""
             async for chunk in pipeline.process_request(
                 query=query,
                 image_url=image_url,
@@ -141,7 +122,6 @@ async def search():
 
 @app.route('/api/session/create', methods=['POST'])
 async def create_session():
-    """Create a new session"""
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
     
@@ -155,7 +135,7 @@ async def create_session():
         session_manager = get_session_manager()
         session_id = session_manager.create_session(query)
         
-        logger.info(f"[API] Created session: {session_id}")
+        logger.info(f"[API] Session: {session_id}")
         
         return jsonify({
             "session_id": session_id,
@@ -170,7 +150,6 @@ async def create_session():
 
 @app.route('/api/session/<session_id>', methods=['GET'])
 async def get_session_info(session_id: str):
-    """Get session information and knowledge graph summary"""
     try:
         session_manager = get_session_manager()
         session_data = session_manager.get_session(session_id)
@@ -195,7 +174,6 @@ async def get_session_info(session_id: str):
 
 @app.route('/api/session/<session_id>/kg', methods=['GET'])
 async def get_session_kg(session_id: str):
-    """Get knowledge graph for a session"""
     try:
         rag_engine = get_rag_engine()
         context = rag_engine.build_rag_context(session_id)
@@ -212,7 +190,6 @@ async def get_session_kg(session_id: str):
 
 @app.route('/api/session/<session_id>/query', methods=['POST'])
 async def query_session_kg(session_id: str):
-    """Query the knowledge graph of a session"""
     try:
         data = await request.get_json()
         query = data.get("query", "").strip()
@@ -237,7 +214,6 @@ async def query_session_kg(session_id: str):
 
 @app.route('/api/session/<session_id>/entity/<entity>', methods=['GET'])
 async def get_entity_evidence(session_id: str, entity: str):
-    """Get evidence for a specific entity from a session"""
     try:
         rag_engine = get_rag_engine()
         evidence = rag_engine.extract_entity_evidence(session_id, entity)
@@ -254,7 +230,6 @@ async def get_entity_evidence(session_id: str, entity: str):
 
 @app.route('/api/session/<session_id>/summary', methods=['GET'])
 async def get_session_summary(session_id: str):
-    """Get a document summary for a session"""
     try:
         rag_engine = get_rag_engine()
         summary = rag_engine.build_document_summary(session_id)
@@ -274,7 +249,6 @@ async def get_session_summary(session_id: str):
 
 @app.route('/api/session/<session_id>', methods=['DELETE'])
 async def delete_session(session_id: str):
-    """Delete a session"""
     try:
         session_manager = get_session_manager()
         session_manager.cleanup_session(session_id)
@@ -290,7 +264,6 @@ async def delete_session(session_id: str):
 
 @app.route('/api/stats', methods=['GET'])
 async def get_stats():
-    """Get system statistics"""
     try:
         session_manager = get_session_manager()
         stats = session_manager.get_stats()
@@ -305,10 +278,6 @@ async def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
-# ============================================
-# Error Handlers
-# ============================================
-
 
 @app.errorhandler(404)
 async def not_found(error):
@@ -317,18 +286,12 @@ async def not_found(error):
 
 @app.errorhandler(500)
 async def internal_error(error):
-    logger.error(f"Internal server error: {error}", exc_info=True)
+    logger.error(f"Internal error: {error}", exc_info=True)
     return jsonify({"error": "Internal server error"}), 500
-
-
-# ============================================
-# WebSocket Support (Optional - for real-time)
-# ============================================
 
 
 @app.websocket('/ws/search')
 async def websocket_search():
-    """WebSocket for real-time search streaming"""
     try:
         while True:
             data = await websocket.receive_json()
@@ -344,7 +307,6 @@ async def websocket_search():
                 query=query,
                 image_url=data.get("image_url")
             ):
-                # Send each chunk as JSON
                 lines = chunk.split('\n')
                 for line in lines:
                     if line.startswith('event:'):
@@ -357,25 +319,19 @@ async def websocket_search():
                         })
     
     except Exception as e:
-        logger.error(f"WebSocket error: {e}", exc_info=True)
+        logger.error(f"WS error: {e}", exc_info=True)
         await websocket.send_json({"error": str(e)})
-
-
-# ============================================
-# CLI Support
-# ============================================
 
 
 if __name__ == "__main__":
     import hypercorn.asyncio
     from hypercorn.config import Config
     
-    # Configuration
     config = Config()
     config.bind = ["0.0.0.0:8000"]
     config.workers = 1
     
-    logger.info("[APP] Starting ElixpoSearch API server...")
+    logger.info("[APP] Starting ElixpoSearch...")
     logger.info("[APP] Listening on http://0.0.0.0:8000")
     
     asyncio.run(hypercorn.asyncio.serve(app, config))
