@@ -23,13 +23,13 @@ from getImagePrompt import generate_prompt_from_image, replyFromImage
 from getYoutubeDetails import transcribe_audio, youtubeMetadata
 from getTimeZone import get_local_time
 from utility import imageSearch
+from config import POLLINATIONS_ENDPOINT
 
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("production-pipeline")
 
-POLLINATIONS_ENDPOINT = os.getenv("POLLINATIONS_ENDPOINT", "https://enter.pollinations.ai/api/generate/v1/chat/completions")
 POLLINATIONS_TOKEN = os.getenv("TOKEN")
 MODEL = os.getenv("MODEL", "claude-3.5-sonnet")
 
