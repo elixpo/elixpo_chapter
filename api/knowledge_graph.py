@@ -1,60 +1,24 @@
-import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk import pos_tag
-from nltk.chunk import ne_chunk
-from nltk.tree import Tree
-from nltk.corpus import stopwords
-import os
 from typing import Dict, List, Tuple, Set
 import re
 from collections import defaultdict
 from loguru import logger
 
-# Import NLTK setup utility to ensure all required data is available
 try:
-    import nltk_setup
-except ImportError:
-    logger.warning("[KG] NLTK setup module not found, proceeding with existing data")
-
-NLTK_DIR = "searchenv/nltk_data"
-os.makedirs(NLTK_DIR, exist_ok=True)
-nltk.data.path.insert(0, NLTK_DIR)
-
-try:
-    stop_words = set(stopwords.words('english'))
-except LookupError:
-    logger.warning("[KG] Stopwords not available, using empty set")
-    stop_words = set()
-
-
-def _has_ne_chunker_data() -> bool:
-    candidate_paths = [
-        "chunkers/maxent_ne_chunker_tab/english_ace_multiclass/",
-        "chunkers/maxent_ne_chunker/",
-    ]
-    for path in candidate_paths:
-        try:
-            nltk.data.find(path)
-            return True
-        except LookupError:
-            continue
-    return False
-
-
-HAS_NE_CHUNKER_DATA = _has_ne_chunker_data()
-if not HAS_NE_CHUNKER_DATA:
-    logger.warning("[KG] maxent_ne_chunker data unavailable; named-entity chunking disabled")
-NE_CHUNKER_ENABLED = HAS_NE_CHUNKER_DATA
+    from nltk.tokenize import sent_tokenize, word_tokenize
+    from nltk import pos_tag
+    NLTK_AVAILABLE = True
+except:
+    NLTK_AVAILABLE = False
+    logger.warning("[KG] NLTK not available, using regex-based tokenization")
 
 
 class KnowledgeGraph:
-    
     def __init__(self):
         self.entities: Dict[str, Dict] = {}
         self.relationships: List[Tuple[str, str, str]] = []
         self.entity_graph: Dict[str, Set[str]] = defaultdict(set)
         self.importance_scores: Dict[str, float] = {}
-        
+    
     def add_entity(self, entity: str, entity_type: str, context: str = ""):
         entity_key = entity.lower().strip()
         if entity_key not in self.entities:
@@ -83,24 +47,15 @@ class KnowledgeGraph:
     
     def calculate_importance(self):
         max_count = max([e["count"] for e in self.entities.values()], default=1)
-        
         for entity_key, entity_data in self.entities.items():
             frequency_score = entity_data["count"] / max_count if max_count > 0 else 0
             connectivity_score = len(self.entity_graph[entity_key]) / max(len(self.entities), 1)
-            
             self.importance_scores[entity_key] = (0.6 * frequency_score) + (0.4 * connectivity_score)
     
     def get_top_entities(self, top_k: int = 10) -> List[Tuple[str, float]]:
         self.calculate_importance()
         sorted_entities = sorted(self.importance_scores.items(), key=lambda x: x[1], reverse=True)
         return sorted_entities[:top_k]
-    
-    def get_entity_context(self, entity: str, top_k: int = 3) -> str:
-        entity_key = entity.lower().strip()
-        if entity_key in self.entities:
-            contexts = self.entities[entity_key]["contexts"][:top_k]
-            return " ".join(contexts)
-        return ""
     
     def to_dict(self) -> Dict:
         return {
@@ -112,76 +67,40 @@ class KnowledgeGraph:
 
 
 def extract_entities_nltk(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
-    global NE_CHUNKER_ENABLED
-    try:
-        sentences = sent_tokenize(text)
-        all_entities = []
-        all_pos_tags = []
-        
-        for sentence in sentences:
-            try:
-                tokens = word_tokenize(sentence)
-                pos_tags = pos_tag(tokens)
-                all_pos_tags.extend(pos_tags)
-                
-                if NE_CHUNKER_ENABLED:
-                    try:
-                        ne_tree = ne_chunk(pos_tags, binary=False)
-                        
-                        for subtree in ne_tree:
-                            if isinstance(subtree, Tree):
-                                entity_str = " ".join([word for word, tag in subtree.leaves()])
-                                entity_type = subtree.label()
-                                all_entities.append((entity_str, entity_type))
-                    except (LookupError, AttributeError) as ne_lookup_error:
-                        # Disable NER permanently if resource issues occur
-                        NE_CHUNKER_ENABLED = False
-                        logger.warning(f"[KG] Disabling NER chunking due to NLTK resource issue: {type(ne_lookup_error).__name__}")
-                        # Don't try NE chunking for remaining sentences in this extraction
-                        break
-                    except Exception as ne_error:
-                        # Skip this sentence but continue processing others
-                        logger.debug(f"[KG] NER chunking failed for sentence: {type(ne_error).__name__}: {str(ne_error)[:50]}")
-                        pass
-            except Exception as sentence_error:
-                # Skip problematic sentences but continue with rest of text
-                logger.debug(f"[KG] Error processing sentence: {type(sentence_error).__name__}")
-                continue
-        
-        return all_entities, all_pos_tags
-    except Exception as e:
-        logger.warning(f"[KG] NER extraction failed: {e}")
-        return [], []
+    return [], []
 
 
 def extract_noun_phrases(text: str) -> List[str]:
-    try:
-        sentences = sent_tokenize(text)
-        phrases = []
+    words = text.split()
+    phrases = []
+    
+    i = 0
+    while i < len(words):
+        phrase_words = []
+        while i < len(words):
+            word = words[i].lower()
+            word_clean = re.sub(r'[^a-z0-9]', '', word)
+            
+            if len(word_clean) > 2 and not word_clean.isdigit():
+                phrase_words.append(words[i])
+                i += 1
+            else:
+                break
         
-        for sentence in sentences:
-            try:
-                tokens = word_tokenize(sentence)
-                pos_tags = pos_tag(tokens)
-                
-                current_phrase = []
-                for word, tag in pos_tags:
-                    if tag in ['NN', 'NNS', 'NNP', 'NNPS', 'JJ', 'JJR', 'JJS']:
-                        current_phrase.append(word)
-                    else:
-                        if current_phrase:
-                            phrases.append(" ".join(current_phrase))
-                            current_phrase = []
-                if current_phrase:
-                    phrases.append(" ".join(current_phrase))
-            except Exception as sent_error:
-                logger.debug(f"[KG] Error processing sentence for noun phrases: {sent_error}")
-                continue
-        
-        return [p for p in phrases if len(p.split()) <= 4 and p.lower() not in stop_words]
-    except Exception as e:
-        logger.warning(f"[KG] Noun phrase extraction failed: {e}")
-        return []
+        if phrase_words:
+            phrase = " ".join(phrase_words)
+            if 2 <= len(phrase_words) <= 3:
+                phrases.append(phrase)
+    
+    seen = set()
+    unique_phrases = []
+    for p in phrases:
+        p_lower = p.lower()
+        if p_lower not in seen and len(p_lower) > 3:
+            seen.add(p_lower)
+            unique_phrases.append(p)
+    
+    return unique_phrases[:15]
 
 
 def clean_text_nltk(text: str, aggressive: bool = False) -> str:
@@ -200,73 +119,40 @@ def clean_text_nltk(text: str, aggressive: bool = False) -> str:
 def build_knowledge_graph(text: str, top_entities: int = 15) -> KnowledgeGraph:
     kg = KnowledgeGraph()
     
-    if not text or len(text.strip()) < 10:
+    if not text or len(text.strip()) < 20:
         return kg
     
+    text = text[:3000]
     cleaned_text = clean_text_nltk(text)
     
-    # Try to extract NER entities, but don't fail if it doesn't work
-    entities = []
-    try:
-        entities, pos_tags = extract_entities_nltk(cleaned_text)
-        logger.debug(f"[KG] Extracted {len(entities)} NER entities")
-    except Exception as e:
-        logger.debug(f"[KG] NER extraction had issues, continuing with noun phrases: {e}")
-        entities = []
-    
-    # Add NER entities to KG
-    for entity, entity_type in entities:
-        if len(entity.split()) <= 4:
-            kg.add_entity(entity, entity_type)
-    
-    # Always extract noun phrases as fallback/supplement
     noun_phrases = extract_noun_phrases(cleaned_text)
-    logger.debug(f"[KG] Extracted {len(noun_phrases)} noun phrases")
     
-    for phrase in noun_phrases[:top_entities]:
-        if phrase not in [e[0] for e in entities]:  # Don't duplicate
-            kg.add_entity(phrase, "CONCEPT")
+    for phrase in noun_phrases:
+        kg.add_entity(phrase, "CONCEPT")
     
-    # Build relationships from co-occurrence in sentences
-    sentences = sent_tokenize(cleaned_text)
+    sentences = cleaned_text.split('. ')[:12]
+    
     for sentence in sentences:
+        sentence_lower = sentence.lower()
         sentence_entities = []
         
-        # Check both NER entities and noun phrases
-        for entity, entity_type in entities:
-            if entity.lower() in sentence.lower():
-                sentence_entities.append((entity.lower(), entity_type))
-        
         for phrase in noun_phrases:
-            if phrase.lower() in sentence.lower() and phrase.lower() not in [e[0] for e in sentence_entities]:
+            if phrase.lower() in sentence_lower:
                 sentence_entities.append((phrase.lower(), "CONCEPT"))
         
-        # Create relationships between co-occurring entities
         for i, (entity1, type1) in enumerate(sentence_entities):
             for entity2, type2 in sentence_entities[i+1:]:
-                relation = "related_to"
-                if type1 == "PERSON" and type2 in ["ORGANIZATION", "LOCATION"]:
-                    relation = "associated_with"
-                elif type1 == "ORGANIZATION" and type2 == "LOCATION":
-                    relation = "based_in"
-                
-                kg.add_relationship(entity1, relation, entity2)
+                kg.add_relationship(entity1, "related_to", entity2)
     
     kg.calculate_importance()
-    
-    logger.debug(f"[KG] Built KG: {len(kg.entities)} entities, {len(kg.relationships)} relationships")
     return kg
 
 
 def chunk_and_graph(text: str, chunk_size: int = 500, overlap: int = 50) -> List[Dict]:
-    """
-    Split text into overlapping chunks and build knowledge graph for each chunk.
-    Gracefully handles errors and continues processing.
-    """
     if not text or len(text.strip()) < 50:
         return []
     
-    words = text.split()
+    words = text.split()[:1000]
     chunks = []
     
     for i in range(0, len(words), chunk_size - overlap):
@@ -279,14 +165,12 @@ def chunk_and_graph(text: str, chunk_size: int = 500, overlap: int = 50) -> List
                 chunks.append({
                     "text": chunk_text,
                     "knowledge_graph": kg.to_dict(),
-                    "top_entities": kg.get_top_entities(top_k=10)
+                    "top_entities": kg.get_top_entities(top_k=5)
                 })
-            except Exception as e:
-                logger.warning(f"[KG] Failed to build KG for chunk: {e}")
-                # Continue processing remaining chunks even if one fails
+            except:
                 continue
     
-    return chunks
+    return chunks[:2]
 
 
 if __name__ == "__main__":

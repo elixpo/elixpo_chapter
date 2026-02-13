@@ -39,11 +39,16 @@ class RAGEngine:
                 contexts = entity_ctxs[:3]
             entity_contexts[entity] = contexts
         
+        source_summary = ""
+        if session.processed_content:
+            source_summary = f"\n\nContent Summary from {len(session.processed_content)} documents."
+        
         rag_context = {
             "session_id": session_id,
             "query": session.query,
             "source_count": len(session.fetched_urls),
             "sources": session.fetched_urls,
+            "source_summary": source_summary,
             
             "top_entities": [
                 {

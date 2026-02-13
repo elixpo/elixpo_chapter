@@ -1,11 +1,13 @@
 import uuid
 import threading
+import asyncio
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import json
 from loguru import logger
 from knowledge_graph import KnowledgeGraph, build_knowledge_graph
 from collections import defaultdict
+import concurrent.futures
 
 
 class SessionData:
@@ -33,8 +35,12 @@ class SessionData:
         self.fetched_urls.append(url)
         self.processed_content[url] = content
         self.last_activity = datetime.now()
+        self.rag_context_cache = None
+    
+    async def build_kg_async(self, url: str, content: str):
         try:
-            kg = build_knowledge_graph(content, top_entities=15)
+            loop = asyncio.get_event_loop()
+            kg = await loop.run_in_executor(None, build_knowledge_graph, content, 15)
             for entity_key, entity_data in kg.entities.items():
                 self.local_kg.add_entity(
                     entity_data["original"],
@@ -44,8 +50,9 @@ class SessionData:
             for subject, relation, obj in kg.relationships:
                 self.local_kg.add_relationship(subject, relation, obj)
             self.rag_context_cache = None
+            logger.debug(f"[SESSION {self.session_id}] KG built async for {url}: {len(kg.entities)} entities")
         except Exception as e:
-            logger.warning(f"[SESSION {self.session_id}] Failed to build KG from {url}: {e}")
+            logger.debug(f"[SESSION {self.session_id}] Async KG build failed for {url}: {e}")
     
     def get_local_kg(self) -> KnowledgeGraph:
         return self.local_kg
