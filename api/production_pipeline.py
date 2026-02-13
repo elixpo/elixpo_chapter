@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("production-pipeline")
 
 POLLINATIONS_TOKEN = os.getenv("TOKEN")
-MODEL = os.getenv("MODEL", "claude-3.5-sonnet")
+MODEL = "gemini=fast"
 
 class IpcModelManager(BaseManager):
     pass

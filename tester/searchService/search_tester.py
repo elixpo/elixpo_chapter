@@ -1,8 +1,3 @@
-"""
-SearchEndpointTester - Core class for testing the /api/search endpoint
-Handles SSE streaming response parsing and HTTP requests
-"""
-
 import requests
 import time
 from typing import Generator, Optional
@@ -19,10 +14,6 @@ class SearchEndpointTester:
         })
     
     def parse_sse_stream(self, response: requests.Response) -> Generator[dict, None, None]:
-        """
-        Parse Server-Sent Events stream from response
-        Yields dict with {event, data}
-        """
         if response.status_code != 200:
             yield {
                 "event": "error",
@@ -35,7 +26,6 @@ class SearchEndpointTester:
         
         for line in response.iter_lines(decode_unicode=True):
             if not line:
-                # Empty line signals end of event
                 if current_event and current_data:
                     yield {
                         "event": current_event,
@@ -51,7 +41,6 @@ class SearchEndpointTester:
                 data_content = line.replace("data:", "").strip()
                 current_data.append(data_content)
         
-        # Handle last event if stream ended without empty line
         if current_event and current_data:
             yield {
                 "event": current_event,
@@ -66,19 +55,6 @@ class SearchEndpointTester:
         request_id: Optional[str] = None,
         verbose: bool = True
     ) -> dict:
-        """
-        Send search request to /api/search endpoint
-        
-        Args:
-            query: Search query string (required)
-            image_url: Optional image URL for image-based search
-            session_id: Optional session ID to continue existing session
-            request_id: Optional request ID for tracking
-            verbose: Print detailed output during request
-        
-        Returns:
-            dict with final response data
-        """
         if verbose:
             print(f"\n{'='*80}")
             print(f"🔍 Search Query: {query}")
@@ -88,7 +64,6 @@ class SearchEndpointTester:
                 print(f"📌 Session ID: {session_id}")
             print(f"{'='*80}\n")
         
-        # Build request payload
         payload = {
             "query": query
         }
@@ -102,7 +77,6 @@ class SearchEndpointTester:
         }
         
         try:
-            # Send streaming request
             start_time = time.time()
             response = self.session.post(
                 self.api_endpoint,
@@ -112,7 +86,6 @@ class SearchEndpointTester:
                 timeout=120
             )
             
-            # Process SSE stream
             final_response = None
             event_count = 0
             
@@ -127,7 +100,6 @@ class SearchEndpointTester:
                     elif event_type == "final":
                         print(f"\n✅ Final Response:")
                         print(f"{'─'*80}")
-                        # Print first 500 chars of final response
                         preview = event_data[:500] if len(event_data) > 500 else event_data
                         print(preview)
                         if len(event_data) > 500:
@@ -186,17 +158,6 @@ class SearchEndpointTester:
         use_sessions: bool = False,
         verbose: bool = True
     ) -> list:
-        """
-        Send multiple search requests
-        
-        Args:
-            queries: List of query strings or dicts with {query, image_url?, session_id?}
-            use_sessions: If True, reuse session_id across queries
-            verbose: Print detailed output
-        
-        Returns:
-            List of results for each query
-        """
         results = []
         session_id = None
         
@@ -205,7 +166,6 @@ class SearchEndpointTester:
         print(f"{'#'*80}\n")
         
         for idx, query_item in enumerate(queries, 1):
-            # Parse query item (string or dict)
             if isinstance(query_item, str):
                 query = query_item
                 image_url = None
@@ -215,7 +175,6 @@ class SearchEndpointTester:
                 image_url = query_item.get("image_url")
                 request_session_id = query_item.get("session_id")
             
-            # Use session from previous request if enabled
             if use_sessions and session_id:
                 request_session_id = session_id
             
@@ -230,15 +189,12 @@ class SearchEndpointTester:
             
             results.append(result)
             
-            # Store session ID from first result
             if use_sessions and idx == 1 and result.get("session_id"):
                 session_id = result["session_id"]
             
-            # Small delay between queries to avoid overwhelming the server
             if idx < len(queries):
                 time.sleep(1)
         
-        # Print summary
         print(f"\n{'#'*80}")
         print(f"Batch search completed")
         print(f"Total queries: {len(results)}")
@@ -251,3 +207,19 @@ class SearchEndpointTester:
         print(f"{'#'*80}\n")
         
         return results
+
+def test_single_query():
+    """Test a single search query"""
+    print("\n🧪 Testing single query...\n")
+    
+    tester = SearchEndpointTester()
+    result = tester.search(
+        query="What is artificial intelligence?",
+        verbose=True
+    )
+    
+    return result
+
+
+if __name__ == "__main__":
+    test_single_query()
