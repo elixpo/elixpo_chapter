@@ -68,38 +68,44 @@ class ipcModules:
     
     def extract_relevant(self, text, query, batch_size=64, diversity=0.4):
         logger.info(f"[INSTANCE {ipcModules._instance_id}] extract_relevant called")
-        def embed_texts(texts):
-            if isinstance(texts, str):
-                texts = [texts]
-            emb = self.embed_model.encode(
-                texts,
+        
+        try:
+            from nltk.tokenize import sent_tokenize
+            sentences = [s.strip() for s in sent_tokenize(text) if len(s.strip().split()) > 3]
+        except:
+            sentences = text.split('.')
+            sentences = [s.strip() for s in sentences if len(s.strip().split()) > 3]
+        
+        if not sentences:
+            return []
+        
+        try:
+            query_emb = self.embed_model.encode(
+                query,
+                convert_to_numpy=True,
+                normalize_embeddings=True
+            )
+            
+            sent_emb = self.embed_model.encode(
+                sentences,
                 convert_to_numpy=True,
                 normalize_embeddings=True,
                 batch_size=batch_size,
                 show_progress_bar=False
             )
-            emb = np.asarray(emb)
-            if emb.ndim == 1:
-                emb = emb.reshape(1, -1)
-            return emb
-
-        sentences = split_sentences(text)
-        top_k = len(sentences) // 2 + 1
-        print(f"[info] {len(sentences)} sentences extracted")
-
-        if not sentences:
+            
+            if len(sent_emb.shape) == 1:
+                sent_emb = sent_emb.reshape(1, -1)
+            
+            scores = np.dot(sent_emb, query_emb)
+            
+            ranked = sorted(zip(sentences, scores), key=lambda x: x[1], reverse=True)
+            top_k = min(len(ranked) // 2 + 1, len(ranked))
+            
+            return ranked[:top_k]
+        except Exception as e:
+            logger.error(f"[INSTANCE {ipcModules._instance_id}] extract_relevant error: {e}")
             return []
-
-        sent_emb = embed_texts(sentences)
-        query_emb = embed_texts(query)[0]
-
-        return mmr(
-            doc_embedding=query_emb,
-            candidate_embeddings=sent_emb,
-            sentences=sentences,
-            diversity=diversity,
-            top_k=top_k
-        )
 
 
 
