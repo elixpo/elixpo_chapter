@@ -1,8 +1,3 @@
-"""
-NLTK Data Setup Utility
-Handles downloading and caching NLTK required resources
-"""
-
 import nltk
 import os
 import sys
@@ -13,15 +8,13 @@ from loguru import logger
 NLTK_DATA_DIR = "searchenv/nltk_data"
 Path(NLTK_DATA_DIR).mkdir(parents=True, exist_ok=True)
 nltk.data.path.insert(0, NLTK_DATA_DIR)
-
-# Also add to global nltk paths
 if NLTK_DATA_DIR not in nltk.data.path:
     nltk.data.path.append(NLTK_DATA_DIR)
 
 REQUIRED_NLTK_RESOURCES = [
     "punkt",
     "averaged_perceptron_tagger",
-    "averaged_perceptron_tagger_eng",  # English tagger
+    "averaged_perceptron_tagger_eng",  
     "maxent_ne_chunker",
     "stopwords",
     "wordnet",
@@ -30,15 +23,6 @@ REQUIRED_NLTK_RESOURCES = [
 
 
 def check_nltk_resource(resource_name: str) -> bool:
-    """
-    Check if a specific NLTK resource is available.
-    
-    Args:
-        resource_name: Name of the NLTK resource to check
-        
-    Returns:
-        True if resource exists, False otherwise
-    """
     try:
         nltk.data.find(resource_name)
         return True
@@ -47,16 +31,6 @@ def check_nltk_resource(resource_name: str) -> bool:
 
 
 def download_nltk_resource(resource_name: str, retries: int = 3) -> bool:
-    """
-    Download an NLTK resource with retry logic.
-    
-    Args:
-        resource_name: Name of the resource to download
-        retries: Number of retry attempts
-        
-    Returns:
-        True if successful, False otherwise
-    """
     for attempt in range(retries):
         try:
             logger.info(f"[NLTK] Downloading {resource_name} (attempt {attempt + 1}/{retries})...")
@@ -81,10 +55,6 @@ def download_nltk_resource(resource_name: str, retries: int = 3) -> bool:
 
 
 def initialize_nltk_data():
-    """
-    Initialize all required NLTK data on startup.
-    This should be called once at application startup.
-    """
     logger.info("[NLTK] Initializing NLTK data setup...")
     
     missing_resources = []
