@@ -1,242 +1,321 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from loguru import logger
-from session_manager import SessionManager, SessionData
-import json
+from embedding_service import EmbeddingService
+from vector_store import VectorStore
+from semantic_cache import SemanticCache
+from session_memory import SessionMemory
+import numpy as np
+from typing import Dict, List, Tuple
+import requests
+from bs4 import BeautifulSoup
+from loguru import logger
+from text_utils import chunk_text, clean_text
+from embedding_service import EmbeddingService
+from vector_store import VectorStore
+from datetime import datetime
+from typing import Dict, List, Optional
+from loguru import logger
+from embedding_service import EmbeddingService
+from vector_store import VectorStore
+from semantic_cache import SemanticCache
+from session_memory import SessionMemory
+from rag_engine_optimized import OptimizedRAGEngine
+from config import (
+    EMBEDDING_MODEL, EMBEDDINGS_DIR, SEMANTIC_CACHE_TTL_SECONDS,
+    SEMANTIC_CACHE_SIMILARITY_THRESHOLD, SESSION_SUMMARY_THRESHOLD
+)
+import threading
+
 
 
 class RAGEngine:
+    def __init__(
+        self,
+        embedding_service: EmbeddingService,
+        vector_store: VectorStore,
+        semantic_cache: SemanticCache,
+        session_memory: SessionMemory
+    ):
+        self.embedding_service = embedding_service
+        self.vector_store = vector_store
+        self.semantic_cache = semantic_cache
+        self.session_memory = session_memory
+        self.retrieval_pipeline = RetrievalPipeline(
+            embedding_service,
+            vector_store
+        )
+        logger.info("[RAG] Optimized RAG engine initialized")
     
-    def __init__(self, session_manager: SessionManager, top_k_entities: int = 15, top_k_relationships: int = 10):
-        self.session_manager = session_manager
-        self.top_k_entities = top_k_entities
-        self.top_k_relationships = top_k_relationships
-        logger.info("[RAGEngine] Initialized with top_k entities={}, relationships={}".format(
-            top_k_entities, top_k_relationships
-        ))
-    
-    def build_rag_context(self, session_id: str) -> Dict:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            logger.warning(f"[RAGEngine] Session {session_id} not found")
-            return {"error": "Session not found"}
-        
-        kg = session.get_local_kg()
-        
-        kg.calculate_importance()
-        top_entities = kg.get_top_entities(self.top_k_entities)
-        
-        top_entity_names = {entity for entity, _ in top_entities}
-        relevant_relationships = [
-            (s, r, o) for s, r, o in kg.relationships
-            if s in top_entity_names or o in top_entity_names
-        ][:self.top_k_relationships]
-        
-        entity_contexts = {}
-        for entity, score in top_entities:
-            contexts = []
-            if entity in kg.entities:
-                entity_ctxs = kg.entities[entity].get("contexts", [])
-                contexts = entity_ctxs[:3]
-            entity_contexts[entity] = contexts
-        
-        source_summary = ""
-        if session.processed_content:
-            source_summary = f"\n\nContent Summary from {len(session.processed_content)} documents."
-        
-        rag_context = {
-            "session_id": session_id,
-            "query": session.query,
-            "source_count": len(session.fetched_urls),
-            "sources": session.fetched_urls,
-            "source_summary": source_summary,
+    def retrieve_context(
+        self,
+        query: str,
+        url: Optional[str] = None,
+        top_k: int = 5
+    ) -> Dict:
+        try:
+            query_embedding = self.embedding_service.embed_single(query)
             
-            "top_entities": [
-                {
-                    "entity": entity,
-                    "relevance_score": float(score),
-                    "entity_type": kg.entities.get(entity, {}).get("type", "UNKNOWN"),
-                    "mention_count": kg.entities.get(entity, {}).get("count", 0),
-                    "contexts": entity_contexts.get(entity, [])
-                }
-                for entity, score in top_entities
-            ],
+            if url:
+                cached_response = self.semantic_cache.get(url, query_embedding)
+                if cached_response:
+                    logger.info(f"[RAG] Semantic cache HIT for {url}")
+                    return {
+                        "source": "semantic_cache",
+                        "url": url,
+                        "response": cached_response,
+                        "latency_ms": 1.0
+                    }
             
-            "relationships": [
-                {"subject": s, "relation": r, "object": o}
-                for s, r, o in relevant_relationships
-            ],
+            results = self.vector_store.search(query_embedding, top_k=top_k)
             
-            "statistics": {
-                "total_entities": len(kg.entities),
-                "total_relationships": len(kg.relationships),
-                "documents_processed": len(session.processed_content),
+            context_texts = [r["metadata"]["text"] for r in results]
+            sources = list(set([r["metadata"]["url"] for r in results]))
+            
+            context = "\n\n".join(context_texts)
+            
+            session_context = self.session_memory.get_minimal_context()
+            
+            full_context = ""
+            if session_context:
+                full_context += f"Context from previous exchanges:\n{session_context}\n\n"
+            
+            full_context += f"Retrieved Information:\n{context}"
+            
+            retrieval_result = {
+                "source": "vector_store",
+                "query": query,
+                "context": full_context,
+                "sources": sources,
+                "chunk_count": len(results),
+                "scores": [r["score"] for r in results],
+                "query_embedding": query_embedding.tolist() if isinstance(query_embedding, np.ndarray) else query_embedding
             }
-        }
-        
-        return rag_context
-    
-    def build_rag_prompt_enhancement(self, session_id: str) -> str:
-        context = self.build_rag_context(session_id)
-        
-        if "error" in context:
-            # Fallback: provide at least the query and source count
-            session = self.session_manager.get_session(session_id)
-            if session:
-                return f"\n---\nKNOWLEDGE GRAPH CONTEXT (from retrieved documents):\n\nQuery: {session.query}\nDocuments processed: {len(session.fetched_urls)}\n\nNote: Knowledge graph extraction is processing. Using direct content from sources.\n---\n"
-            return ""
-        
-        parts = [
-            "\n---\nKNOWLEDGE GRAPH CONTEXT (from retrieved documents):\n",
-            f"Based on analysis of {context['source_count']} sources:\n"
-        ]
-        
-        if context['top_entities']:
-            parts.append("\nKey Entities:")
-            for ent in context['top_entities'][:10]:
-                parts.append(f"  • {ent['entity']} (type: {ent['entity_type']}, mentioned {ent['mention_count']}x)")
-        else:
-            # Fallback message if no entities extracted
-            parts.append("\nKey Entities: Information extracted from retrieved sources")
-        
-        if context['relationships']:
-            parts.append("\nKey Relationships:")
-            for rel in context['relationships'][:8]:
-                parts.append(f"  • {rel['subject']} → {rel['relation']} → {rel['object']}")
-        
-        parts.append(f"\nContext Statistics:")
-        parts.append(f"  • Unique entities: {context['statistics']['total_entities']}")
-        parts.append(f"  • Relationships: {context['statistics']['total_relationships']}")
-        
-        parts.append("\nUse this knowledge graph context to ground your response in the retrieved information.")
-        parts.append("---\n")
-        
-        return "\n".join(parts)
-    
-    def extract_entity_evidence(self, session_id: str, entity: str) -> Dict:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            return {"error": "Session not found"}
-        
-        kg = session.get_local_kg()
-        entity_lower = entity.lower().strip()
-        
-        if entity_lower not in kg.entities:
-            return {"error": f"Entity '{entity}' not found in knowledge graph"}
-        
-        entity_data = kg.entities[entity_lower]
-        relationships = [
-            (s, r, o) for s, r, o in kg.relationships
-            if s == entity_lower or o == entity_lower
-        ]
-        
-        return {
-            "entity": entity_data.get("original", entity),
-            "type": entity_data.get("type", "UNKNOWN"),
-            "mention_count": entity_data.get("count", 0),
-            "context_statements": entity_data.get("contexts", []),
-            "relationships": [
-                {"subject": s, "relation": r, "object": o}
-                for s, r, o in relationships
-            ],
-            "sources": [
-                src for src in session.fetched_urls
-                if src in session.processed_content
-            ]
-        }
-    
-    def query_knowledge_graph(self, session_id: str, query: str, top_k: int = 5) -> List[Dict]:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            return []
-        
-        kg = session.get_local_kg()
-        kg.calculate_importance()
-        
-        query_terms = set(query.lower().split())
-        results = []
-        
-        for entity_key, entity_data in kg.entities.items():
-            entity_words = set(entity_key.split())
-            overlap = query_terms & entity_words
             
-            if overlap:
-                score = len(overlap) / len(query_terms)
-                results.append({
-                    "entity": entity_data.get("original", entity_key),
-                    "type": entity_data.get("type", "UNKNOWN"),
-                    "relevance_score": score * kg.importance_scores.get(entity_key, 0.5),
-                    "mentions": entity_data.get("count", 0),
-                    "sample_context": entity_data.get("contexts", [""])[0]
-                })
+            if url:
+                self.semantic_cache.set(url, query_embedding, retrieval_result)
+            
+            return retrieval_result
         
-        results.sort(key=lambda x: x['relevance_score'], reverse=True)
-        return results[:top_k]
+        except Exception as e:
+            logger.error(f"[RAG] Retrieval failed: {e}")
+            return {
+                "source": "error",
+                "error": str(e),
+                "context": "",
+                "sources": []
+            }
     
-    def build_document_summary(self, session_id: str) -> str:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            return ""
-        
-        parts = [
-            f"## Document Summary for Query: {session.query}\n",
-            f"**Documents Processed:** {len(session.processed_content)}\n",
-            f"**Unique Entities Identified:** {len(session.local_kg.entities)}\n",
-            f"**Relationships Found:** {len(session.local_kg.relationships)}\n",
-        ]
-        
-        if session.fetched_urls:
-            parts.append("\n**Sources:**")
-            for i, url in enumerate(session.fetched_urls[:10], 1):
-                parts.append(f"{i}. {url}")
-        
-        kg = session.get_local_kg()
-        kg.calculate_importance()
-        top_entities = kg.get_top_entities(10)
-        
-        if top_entities:
-            parts.append("\n**Key Entities:**")
-            for entity, score in top_entities:
-                entity_type = kg.entities.get(entity, {}).get("type", "UNKNOWN")
-                parts.append(f"  - {entity} ({entity_type}) - Importance: {score:.2f}")
-        
-        return "\n".join(parts)
+    def ingest_and_cache(self, url: str) -> Dict:
+        try:
+            chunk_count = self.retrieval_pipeline.ingest_url(url, max_words=3000)
+            logger.info(f"[RAG] Ingested {chunk_count} chunks from {url}")
+            return {
+                "success": True,
+                "url": url,
+                "chunks": chunk_count
+            }
+        except Exception as e:
+            logger.error(f"[RAG] Ingestion failed for {url}: {e}")
+            return {
+                "success": False,
+                "url": url,
+                "error": str(e)
+            }
     
-    def validate_context_freshness(self, session_id: str) -> bool:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            return False
-        
-        return session.rag_context_cache is not None
-    
-    def get_summary_stats(self, session_id: str) -> Dict:
-        session = self.session_manager.get_session(session_id)
-        if not session:
-            return {}
-        
-        kg = session.get_local_kg()
+    def get_full_context(self, query: str, top_k: int = 5) -> Dict:
+        retrieval_result = self.retrieve_context(query, top_k=top_k)
         
         return {
-            "session_id": session_id,
-            "documents_fetched": len(session.fetched_urls),
-            "entities_extracted": len(kg.entities),
-            "relationships_discovered": len(kg.relationships),
-            "web_searches_performed": len(session.web_search_urls),
-            "youtube_videos_found": len(session.youtube_urls),
-            "tools_used": len(session.tool_calls_made),
-            "errors_encountered": len(session.errors),
+            "query": query,
+            "context": retrieval_result.get("context", ""),
+            "sources": retrieval_result.get("sources", []),
+            "cache_hit": retrieval_result.get("source") == "semantic_cache",
+            "scores": retrieval_result.get("scores", [])
+        }
+    
+    def get_stats(self) -> Dict:
+        return {
+            "vector_store": self.vector_store.get_stats(),
+            "semantic_cache": self.semantic_cache.get_stats(),
+            "session_memory": self.session_memory.get_context()
+        }
+
+class RetrievalPipeline:
+    def __init__(self, embedding_service: EmbeddingService, vector_store: VectorStore):
+        self.embedding_service = embedding_service
+        self.vector_store = vector_store
+    
+    def ingest_url(self, url: str, max_words: int = 3000) -> int:
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(url, timeout=20, headers=headers)
+            response.raise_for_status()
+            
+            content_type = response.headers.get('Content-Type', '').lower()
+            if 'text/html' not in content_type:
+                logger.warning(f"[Retrieval] Skipping non-HTML: {url}")
+                return 0
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+                element.extract()
+            
+            text = soup.get_text()
+            text = clean_text(text)
+            
+            words = text.split()
+            if len(words) > max_words:
+                text = " ".join(words[:max_words])
+            
+            chunks = chunk_text(text, chunk_size=600, overlap=60)
+            
+            embeddings = self.embedding_service.embed(chunks, batch_size=32)
+            
+            chunk_dicts = [
+                {
+                    "url": url,
+                    "chunk_id": i,
+                    "text": chunk,
+                    "embedding": embeddings[i],
+                    "timestamp": datetime.now().isoformat()
+                }
+                for i, chunk in enumerate(chunks)
+            ]
+            
+            self.vector_store.add_chunks(chunk_dicts)
+            logger.info(f"[Retrieval] Ingested {len(chunks)} chunks from {url}")
+            
+            return len(chunks)
+        
+        except Exception as e:
+            logger.error(f"[Retrieval] Failed to ingest {url}: {e}")
+            return 0
+    
+    def retrieve(self, query: str, top_k: int = 5) -> List[Dict]:
+        try:
+            query_embedding = self.embedding_service.embed_single(query)
+            
+            results = self.vector_store.search(query_embedding, top_k=top_k)
+            
+            return results
+        
+        except Exception as e:
+            logger.error(f"[Retrieval] Retrieval failed: {e}")
+            return []
+    
+    def build_context(self, query: str, top_k: int = 5, session_memory: str = "") -> Dict:
+        results = self.retrieve(query, top_k=top_k)
+        
+        context_texts = [r["metadata"]["text"] for r in results]
+        context = "\n\n".join(context_texts)
+        
+        sources = list(set([r["metadata"]["url"] for r in results]))
+        
+        prompt_context = ""
+        if session_memory:
+            prompt_context += f"Previous Context:\n{session_memory}\n\n"
+        
+        prompt_context += f"Retrieved Information:\n{context}"
+        
+        return {
+            "context": prompt_context,
+            "sources": sources,
+            "chunk_count": len(results),
+            "scores": [r["score"] for r in results]
         }
 
 
-_rag_engine: Optional['RAGEngine'] = None
+class RetrievalSystem:
+    _instance = None
+    _lock = threading.Lock()
+    
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = RetrievalSystem()
+        return cls._instance
+    
+    def __init__(self):
+        logger.info("[RetrievalSystem] Initializing...")
+        
+        self.embedding_service = EmbeddingService(model_name=EMBEDDING_MODEL)
+        self.vector_store = VectorStore(embeddings_dir=EMBEDDINGS_DIR)
+        self.semantic_cache = SemanticCache(
+            ttl_seconds=SEMANTIC_CACHE_TTL_SECONDS,
+            similarity_threshold=SEMANTIC_CACHE_SIMILARITY_THRESHOLD
+        )
+        
+        self.sessions: Dict[str, SessionMemory] = {}
+        self.sessions_lock = threading.RLock()
+        
+        logger.info("[RetrievalSystem] Ready")
+    
+    def create_session(self, session_id: str) -> SessionMemory:
+        with self.sessions_lock:
+            if session_id not in self.sessions:
+                self.sessions[session_id] = SessionMemory(
+                    session_id,
+                    summary_threshold=SESSION_SUMMARY_THRESHOLD
+                )
+            return self.sessions[session_id]
+    
+    def get_session(self, session_id: str) -> Optional[SessionMemory]:
+        with self.sessions_lock:
+            return self.sessions.get(session_id)
+    
+    def get_rag_engine(self, session_id: str) -> OptimizedRAGEngine:
+        session_memory = self.create_session(session_id)
+        return OptimizedRAGEngine(
+            self.embedding_service,
+            self.vector_store,
+            self.semantic_cache,
+            session_memory
+        )
+    
+    def add_conversation_turn(
+        self,
+        session_id: str,
+        user_query: str,
+        assistant_response: str,
+        entities: List[str] = None
+    ) -> None:
+        session = self.get_session(session_id)
+        if session:
+            session.add_turn(user_query, assistant_response, entities)
+    
+    def delete_session(self, session_id: str) -> None:
+        with self.sessions_lock:
+            if session_id in self.sessions:
+                self.sessions[session_id].clear()
+                del self.sessions[session_id]
+    
+    def get_stats(self) -> Dict:
+        with self.sessions_lock:
+            return {
+                "vector_store": self.vector_store.get_stats(),
+                "semantic_cache": self.semantic_cache.get_stats(),
+                "active_sessions": len(self.sessions)
+            }
+    
+    def persist_vector_store(self) -> None:
+        self.vector_store.persist_to_disk()
 
 
-def initialize_rag_engine(session_manager: SessionManager) -> RAGEngine:
-    global _rag_engine
-    _rag_engine = RAGEngine(session_manager)
-    logger.info("[RAGEngine] Global RAG engine initialized")
-    return _rag_engine
+_retrieval_system = None
 
 
-def get_rag_engine() -> Optional[RAGEngine]:
-    global _rag_engine
-    return _rag_engine
+def initialize_retrieval_system() -> RetrievalSystem:
+    global _retrieval_system
+    _retrieval_system = RetrievalSystem.get_instance()
+    return _retrieval_system
+
+
+def get_retrieval_system() -> RetrievalSystem:
+    if _retrieval_system is None:
+        return initialize_retrieval_system()
+    return _retrieval_system

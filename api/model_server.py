@@ -1,27 +1,34 @@
 from multiprocessing.managers import BaseManager
-from sentence_transformers import SentenceTransformer, util
-import torch, threading
-from concurrent.futures import ThreadPoolExecutor
+import torch
+import threading
 from loguru import logger
-from playwright.async_api import async_playwright
-import random
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, List, Optional
+import uuid
+import atexit
+import time
 import asyncio
-import os
+import json
+import whisper
 import random
+import os
 import shutil
 import stat
-import threading
+from playwright.async_api import async_playwright
 from urllib.parse import quote
-from config import MAX_LINKS_TO_TAKE, isHeadless
-import json
-import atexit
-import whisper
-import time
-import numpy as np
-from config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
-import schedule
-import uuid
-from nltk.tokenize import sent_tokenize
+from config import (
+    AUDIO_TRANSCRIBE_SIZE, EMBEDDINGS_DIR, EMBEDDING_MODEL,
+    EMBEDDING_BATCH_SIZE, CHUNK_SIZE, CHUNK_OVERLAP,
+    SEMANTIC_CACHE_TTL_SECONDS, SEMANTIC_CACHE_SIMILARITY_THRESHOLD,
+    RETRIEVAL_TOP_K, SESSION_SUMMARY_THRESHOLD,
+    PERSIST_VECTOR_STORE_INTERVAL, MAX_LINKS_TO_TAKE, isHeadless
+)
+from embedding_service import EmbeddingService
+from vector_store import VectorStore
+from semantic_cache import SemanticCache
+from session_memory import SessionMemory
+from retrieval_pipeline import RetrievalPipeline
+
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -29,8 +36,10 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
 ]
 
+
 def get_random_user_agent():
     return random.choice(USER_AGENTS)
+
 
 async def handle_accept_popup(page):
     try:
@@ -42,164 +51,11 @@ async def handle_accept_popup(page):
 
         if accept_button:
             await accept_button.click()
-            print("[INFO] Accepted cookie/privacy popup.")
+            logger.info("[POPUP] Accepted cookie/privacy popup.")
             await asyncio.sleep(1)
     except Exception as e:
-        print(f"[WARN] No accept popup found: {e}")
+        logger.warning(f"[POPUP] No accept popup found: {e}")
 
-class ipcModules:
-    _instance_id = None
-    def __init__(self):
-        ipcModules._instance_id = str(uuid.uuid4())[:8]
-        logger.info(f"[INSTANCE {ipcModules._instance_id}] Loading embedding model...")
-        self.embed_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
-        self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.embed_model = self.embed_model.to(self.device)
-        logger.info(f"[INSTANCE {ipcModules._instance_id}] embedding model loaded on device: {self.device}")
-        self.executor = ThreadPoolExecutor(max_workers=2)
-        self._gpu_lock = threading.Lock()
-        self._operation_semaphore = threading.Semaphore(2)
-
-    def transcribeAudio(self, audio_path: str):
-        with self._gpu_lock:
-            result = self.transcribe_model.transcribe(audio_path, language="en")
-            final_text = result["text"]
-        return final_text
-    
-    def extract_relevant(self, text, query, batch_size=64, diversity=0.4):
-        logger.info(f"[INSTANCE {ipcModules._instance_id}] extract_relevant called")
-        
-        try:
-            from nltk.tokenize import sent_tokenize
-            sentences = [s.strip() for s in sent_tokenize(text) if len(s.strip().split()) > 3]
-        except:
-            sentences = text.split('.')
-            sentences = [s.strip() for s in sentences if len(s.strip().split()) > 3]
-        
-        if not sentences:
-            logger.warning(f"[INSTANCE {ipcModules._instance_id}] No sentences to extract from")
-            return []
-        
-        try:
-            if isinstance(query, list):
-                query_text = " ".join(query) if query else ""
-            else:
-                query_text = str(query) if query else ""
-            
-            if not query_text.strip():
-                logger.warning(f"[INSTANCE {ipcModules._instance_id}] Empty query provided")
-                return sentences[:min(5, len(sentences))]
-            
-            query_emb = self.embed_model.encode(
-                query_text,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
-            
-            if len(query_emb.shape) > 1:
-                query_emb = query_emb.squeeze()
-            
-            sent_emb = self.embed_model.encode(
-                sentences,
-                convert_to_numpy=True,
-                normalize_embeddings=True,
-                batch_size=batch_size,
-                show_progress_bar=False
-            )
-            
-            if len(sent_emb.shape) == 1:
-                sent_emb = sent_emb.reshape(1, -1)
-            
-            if sent_emb.shape[1] != query_emb.shape[0]:
-                logger.warning(
-                    f"[INSTANCE {ipcModules._instance_id}] Embedding dimension mismatch: "
-                    f"sent_emb shape={sent_emb.shape}, query_emb shape={query_emb.shape}. "
-                    f"Returning top sentences by length"
-                )
-                ranked = sorted(
-                    zip(sentences, [len(s.split()) for s in sentences]),
-                    key=lambda x: x[1],
-                    reverse=True
-                )
-                return [s for s, _ in ranked[:min(10, len(ranked))]]
-            
-            scores = np.dot(sent_emb, query_emb)
-            
-            ranked = sorted(zip(sentences, scores), key=lambda x: x[1], reverse=True)
-            top_k = min(len(ranked) // 2 + 1, len(ranked))
-            
-            result = ranked[:top_k]
-            logger.info(f"[INSTANCE {ipcModules._instance_id}] Extracted {len(result)} relevant sentences")
-            return result
-        except Exception as e:
-            logger.error(f"[INSTANCE {ipcModules._instance_id}] extract_relevant error: {e}", exc_info=True)
-            return sentences[:min(5, len(sentences))]
-
-    def rank_results(self, query: str, results: list) -> list:
-        if not results:
-            return []
-        
-        try:
-            query_emb = self.embed_model.encode(
-                query,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
-            
-            results_emb = self.embed_model.encode(
-                results,
-                convert_to_numpy=True,
-                normalize_embeddings=True,
-                batch_size=32,
-                show_progress_bar=False
-            )
-            
-            if len(results_emb.shape) == 1:
-                results_emb = results_emb.reshape(1, -1)
-            
-            scores = np.dot(results_emb, query_emb)
-            
-            ranked = sorted(zip(results, scores.tolist()), key=lambda x: x[1], reverse=True)
-            return ranked
-        except Exception as e:
-            logger.warning(f"[INSTANCE {ipcModules._instance_id}] Ranking failed: {e}")
-            return [(r, 1.0) for r in results]
-
-    def extract_and_rank_sentences(self, content: str, query: str) -> list:
-        try:
-            sentences = sent_tokenize(content)
-            if not sentences:
-                return []
-            
-            sentences = [s for s in sentences if len(s.split()) > 3][:100]
-            
-            query_emb = self.embed_model.encode(
-                query,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
-            
-            sentences_emb = self.embed_model.encode(
-                sentences,
-                convert_to_numpy=True,
-                normalize_embeddings=True,
-                batch_size=32,
-                show_progress_bar=False
-            )
-            
-            if len(sentences_emb.shape) == 1:
-                sentences_emb = sentences_emb.reshape(1, -1)
-            
-            scores = np.dot(sentences_emb, query_emb)
-            
-            ranked = sorted(zip(sentences, scores.tolist()), key=lambda x: x[1], reverse=True)
-            
-            top_sentences = [s for s, score in ranked[:10] if score > 0.3]
-            return top_sentences
-        except Exception as e:
-            logger.warning(f"[INSTANCE {ipcModules._instance_id}] Sentence extraction failed: {e}")
-            return []
 
 class searchPortManager:
     def __init__(self, start_port=10000, end_port=19999):
@@ -207,31 +63,32 @@ class searchPortManager:
         self.end_port = end_port
         self.used_ports = set()
         self.lock = threading.Lock()
+    
     def get_port(self):
         with self.lock:
-            for _ in range(100):  
+            for _ in range(100):
                 port = random.randint(self.start_port, self.end_port)
                 if port not in self.used_ports:
                     self.used_ports.add(port)
-                    print(f"[PORT] Allocated port {port}. Active ports: {len(self.used_ports)}")
+                    logger.info(f"[PORT] Allocated port {port}. Active ports: {len(self.used_ports)}")
                     return port
             
             for port in range(self.start_port, self.end_port + 1):
                 if port not in self.used_ports:
                     self.used_ports.add(port)
-                    print(f"[PORT] Allocated port {port} (sequential). Active ports: {len(self.used_ports)}")
+                    logger.info(f"[PORT] Allocated port {port} (sequential). Active ports: {len(self.used_ports)}")
                     return port
             
             raise Exception(f"No available ports in range {self.start_port}-{self.end_port}")
-        
+    
     def release_port(self, port):
         with self.lock:
             if port in self.used_ports:
                 self.used_ports.remove(port)
-                print(f"[PORT] Released port {port}. Active ports: {len(self.used_ports)}")
+                logger.info(f"[PORT] Released port {port}. Active ports: {len(self.used_ports)}")
             else:
-                print(f"[PORT] Warning: Attempted to release port {port} that wasn't tracked")
-
+                logger.warning(f"[PORT] Attempted to release port {port} that wasn't tracked")
+    
     def get_status(self):
         with self.lock:
             return {
@@ -239,13 +96,175 @@ class searchPortManager:
                 "used_ports": list(self.used_ports),
                 "available_range": f"{self.start_port}-{self.end_port}"
             }
+
+
+class CoreEmbeddingService:
+    _instance_id = None
+    
+    def __init__(self):
+        CoreEmbeddingService._instance_id = str(uuid.uuid4())[:8]
+        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Initializing core services...")
+        
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Using device: {self.device}")
+        
+        self.embedding_service = EmbeddingService(model_name=EMBEDDING_MODEL)
+        self.vector_store = VectorStore(embeddings_dir=EMBEDDINGS_DIR)
+        self.semantic_cache = SemanticCache(
+            ttl_seconds=SEMANTIC_CACHE_TTL_SECONDS,
+            similarity_threshold=SEMANTIC_CACHE_SIMILARITY_THRESHOLD
+        )
+        self.retrieval_pipeline = RetrievalPipeline(
+            self.embedding_service,
+            self.vector_store
+        )
+        
+        self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
+        self._gpu_lock = threading.Lock()
+        
+        self.executor = ThreadPoolExecutor(max_workers=2)
+        
+        self._persist_thread = threading.Thread(
+            target=self._persist_worker,
+            daemon=True
+        )
+        self._persist_thread.start()
+        
+        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Core services initialized")
+    
+    def transcribe_audio(self, audio_path: str) -> str:
+        with self._gpu_lock:
+            result = self.transcribe_model.transcribe(audio_path, language="en")
+            return result["text"]
+    
+    def ingest_url(self, url: str) -> Dict:
+        try:
+            chunk_count = self.retrieval_pipeline.ingest_url(url, max_words=3000)
+            return {
+                "success": True,
+                "url": url,
+                "chunks_ingested": chunk_count
+            }
+        except Exception as e:
+            logger.error(f"[CORE] Failed to ingest URL {url}: {e}")
+            return {
+                "success": False,
+                "url": url,
+                "error": str(e)
+            }
+    
+    def retrieve(self, query: str, top_k: int = RETRIEVAL_TOP_K) -> Dict:
+        try:
+            results = self.retrieval_pipeline.retrieve(query, top_k=top_k)
+            return {
+                "query": query,
+                "results": results,
+                "count": len(results)
+            }
+        except Exception as e:
+            logger.error(f"[CORE] Retrieval failed: {e}")
+            return {
+                "query": query,
+                "results": [],
+                "count": 0,
+                "error": str(e)
+            }
+    
+    def build_retrieval_context(self, query: str, session_memory: str = "", top_k: int = RETRIEVAL_TOP_K) -> Dict:
+        try:
+            context = self.retrieval_pipeline.build_context(
+                query,
+                top_k=top_k,
+                session_memory=session_memory
+            )
+            return {
+                "success": True,
+                **context
+            }
+        except Exception as e:
+            logger.error(f"[CORE] Context building failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def get_semantic_cache(self, url: str, query_embedding: List[float]) -> Optional[Dict]:
+        import numpy as np
+        query_emb = np.array(query_embedding, dtype=np.float32)
+        return self.semantic_cache.get(url, query_emb)
+    
+    def set_semantic_cache(self, url: str, query_embedding: List[float], response: Dict) -> None:
+        import numpy as np
+        query_emb = np.array(query_embedding, dtype=np.float32)
+        self.semantic_cache.set(url, query_emb, response)
+    
+    def get_vector_store_stats(self) -> Dict:
+        return self.vector_store.get_stats()
+    
+    def get_semantic_cache_stats(self) -> Dict:
+        return self.semantic_cache.get_stats()
+    
+    def _persist_worker(self) -> None:
+        while True:
+            try:
+                time.sleep(PERSIST_VECTOR_STORE_INTERVAL)
+                self.vector_store.persist_to_disk()
+            except Exception as e:
+                logger.error(f"[CORE] Persist worker error: {e}")
+
+
+class SessionManager:
+    def __init__(self):
+        self.sessions: Dict[str, SessionMemory] = {}
+        self.lock = threading.RLock()
+    
+    def create_session(self, session_id: str) -> SessionMemory:
+        with self.lock:
+            if session_id not in self.sessions:
+                self.sessions[session_id] = SessionMemory(
+                    session_id,
+                    summary_threshold=SESSION_SUMMARY_THRESHOLD
+                )
+            return self.sessions[session_id]
+    
+    def get_session(self, session_id: str) -> Optional[SessionMemory]:
+        with self.lock:
+            return self.sessions.get(session_id)
+    
+    def add_turn(self, session_id: str, user_query: str, assistant_response: str, entities: List[str] = None) -> None:
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session:
+                session.add_turn(user_query, assistant_response, entities)
+    
+    def get_session_context(self, session_id: str) -> Dict:
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session:
+                return session.get_context()
+            return {}
+    
+    def get_minimal_context(self, session_id: str) -> str:
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session:
+                return session.get_minimal_context()
+            return ""
+    
+    def delete_session(self, session_id: str) -> None:
+        with self.lock:
+            if session_id in self.sessions:
+                self.sessions[session_id].clear()
+                del self.sessions[session_id]
+
+
 class SearchAgentPool:
-    def __init__(self, pool_size=1, max_tabs_per_agent=20):  
+    def __init__(self, pool_size=1, max_tabs_per_agent=20):
         self.pool_size = pool_size
         self.max_tabs_per_agent = max_tabs_per_agent
         self.text_agents = []
         self.image_agents = []
-        self.text_agent_tabs = []  
+        self.text_agent_tabs = []
         self.image_agent_tabs = []
         self.lock = asyncio.Lock()
         self.initialized = False
@@ -253,25 +272,25 @@ class SearchAgentPool:
     async def initialize_pool(self):
         if self.initialized:
             return
-            
-        print(f"[POOL] Cold-starting {self.pool_size} text and image agents...")
+        
+        logger.info(f"[POOL] Cold-starting {self.pool_size} text and image agents...")
 
         for i in range(self.pool_size):
             agent = YahooSearchAgentText()
             await agent.start()
             self.text_agents.append(agent)
-            self.text_agent_tabs.append(0)  
-            print(f"[POOL] Text agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
-            
+            self.text_agent_tabs.append(0)
+            logger.info(f"[POOL] Text agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
+        
         for i in range(self.pool_size):
             agent = YahooSearchAgentImage()
             await agent.start()
             self.image_agents.append(agent)
             self.image_agent_tabs.append(0)
-            print(f"[POOL] Image agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
-            
+            logger.info(f"[POOL] Image agent {i} ready for cold start (max {self.max_tabs_per_agent} tabs)")
+        
         self.initialized = True
-        print(f"[POOL] Cold start complete - agents ready for immediate use")
+        logger.info(f"[POOL] Cold start complete - agents ready for immediate use")
     
     async def get_text_agent(self):
         async with self.lock:
@@ -279,19 +298,19 @@ class SearchAgentPool:
             agent_idx = self.text_agent_tabs.index(min_tabs)
             
             if self.text_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
-                print(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
+                logger.info(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
                 try:
                     await self.text_agents[agent_idx].close()
                 except Exception as e:
-                    print(f"[POOL] Error closing old text agent: {e}")
+                    logger.error(f"[POOL] Error closing old text agent: {e}")
                 
                 new_agent = YahooSearchAgentText()
                 await new_agent.start()
                 self.text_agents[agent_idx] = new_agent
                 self.text_agent_tabs[agent_idx] = 0
-                print(f"[POOL] Text agent {agent_idx} restarted and ready")
+                logger.info(f"[POOL] Text agent {agent_idx} restarted and ready")
 
-            print(f"[POOL] Using text agent {agent_idx} (will open tab #{self.text_agent_tabs[agent_idx] + 1})")
+            logger.info(f"[POOL] Using text agent {agent_idx} (will open tab #{self.text_agent_tabs[agent_idx] + 1})")
             return self.text_agents[agent_idx], agent_idx
     
     async def get_image_agent(self):
@@ -300,31 +319,30 @@ class SearchAgentPool:
             agent_idx = self.image_agent_tabs.index(min_tabs)
             
             if self.image_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
-                print(f"[POOL] Restarting image agent {agent_idx} after {self.image_agent_tabs[agent_idx]} tabs")
+                logger.info(f"[POOL] Restarting image agent {agent_idx} after {self.image_agent_tabs[agent_idx]} tabs")
                 try:
                     await self.image_agents[agent_idx].close()
                 except Exception as e:
-                    print(f"[POOL] Error closing old image agent: {e}")
+                    logger.error(f"[POOL] Error closing old image agent: {e}")
                 
                 new_agent = YahooSearchAgentImage()
                 await new_agent.start()
                 self.image_agents[agent_idx] = new_agent
                 self.image_agent_tabs[agent_idx] = 0
-                print(f"[POOL] Image agent {agent_idx} restarted and ready")
+                logger.info(f"[POOL] Image agent {agent_idx} restarted and ready")
             
-            print(f"[POOL] Using image agent {agent_idx} (will open tab #{self.image_agent_tabs[agent_idx] + 1})")
+            logger.info(f"[POOL] Using image agent {agent_idx} (will open tab #{self.image_agent_tabs[agent_idx] + 1})")
             return self.image_agents[agent_idx], agent_idx
     
     def increment_tab_count(self, agent_type: str, agent_idx: int):
         if agent_type == "text":
             self.text_agent_tabs[agent_idx] += 1
-            print(f"[POOL] Text agent {agent_idx} now has {self.text_agent_tabs[agent_idx]} tabs")
+            logger.info(f"[POOL] Text agent {agent_idx} now has {self.text_agent_tabs[agent_idx]} tabs")
         elif agent_type == "image":
             self.image_agent_tabs[agent_idx] += 1
-            print(f"[POOL] Image agent {agent_idx} now has {self.image_agent_tabs[agent_idx]} tabs")
+            logger.info(f"[POOL] Image agent {agent_idx} now has {self.image_agent_tabs[agent_idx]} tabs")
     
     async def get_status(self):
-        
         async with self.lock:
             return {
                 "initialized": self.initialized,
@@ -335,15 +353,17 @@ class SearchAgentPool:
                     "tabs": self.text_agent_tabs.copy()
                 },
                 "image_agents": {
-                    "count": len(self.image_agents), 
+                    "count": len(self.image_agents),
                     "tabs": self.image_agent_tabs.copy()
                 }
             }
+
+
 class YahooSearchAgentText:
     def __init__(self, custom_port=None):
         self.playwright = None
         self.context = None
-        self.tab_count = 0  
+        self.tab_count = 0
         
         if custom_port:
             self.custom_port = custom_port
@@ -351,8 +371,8 @@ class YahooSearchAgentText:
         else:
             self.custom_port = port_manager.get_port()
             self.owns_port = True
-            
-        print(f"[INFO] YahooSearchAgentText ready on port {self.custom_port}.")
+        
+        logger.info(f"[TEXT-AGENT] YahooSearchAgentText ready on port {self.custom_port}.")
 
     async def start(self):
         try:
@@ -380,9 +400,9 @@ class YahooSearchAgentText:
                 Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
                 window.chrome = {runtime: {}};
             """)
-            print(f"[INFO] YahooSearchAgentText started successfully on port {self.custom_port}")
+            logger.info(f"[TEXT-AGENT] YahooSearchAgentText started successfully on port {self.custom_port}")
         except Exception as e:
-            print(f"[ERROR] Failed to start YahooSearchAgentText on port {self.custom_port}: {e}")
+            logger.error(f"[TEXT-AGENT] Failed to start YahooSearchAgentText on port {self.custom_port}: {e}")
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
             raise
@@ -398,7 +418,7 @@ class YahooSearchAgentText:
         page = None
         try:
             self.tab_count += 1
-            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            logger.info(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
             
             page = await self.context.new_page()
             search_url = f"https://search.yahoo.com/search?p={quote(query)}&fr=yfp-t&fr2=p%3Afp%2Cm%3Asb&fp=1"
@@ -419,28 +439,28 @@ class YahooSearchAgentText:
                 if href and href.startswith("http") and not any(b in href for b in blacklist):
                     results.append(href)
 
-            print(f"[SEARCH] Tab #{self.tab_count} returned {len(results)} results for '{query[:50]}...' on port {self.custom_port}")
+            logger.info(f"[SEARCH] Tab #{self.tab_count} returned {len(results)} results for '{query[:50]}...' on port {self.custom_port}")
             
             if agent_idx is not None:
                 agent_pool.increment_tab_count("text", agent_idx)
-                
+        
         except Exception as e:
-            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+            logger.error(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
         finally:
             if page:
                 try:
                     await page.close()
-                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                    logger.info(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
                 except Exception as e:
-                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
-        print(results)
+                    logger.warning(f"[SEARCH] Failed to close tab #{self.tab_count}: {e}")
+        
         return results
 
     async def youtube_transcript_url(self, url, agent_idx=None):
         page = None
         try:
             self.tab_count += 1
-            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            logger.info(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
             
             transcript_url = None
             page = await self.context.new_page()
@@ -469,20 +489,20 @@ class YahooSearchAgentText:
             await page.wait_for_selector("button.ytp-subtitles-button.ytp-button", timeout=55000)
             await page.click('button.ytp-subtitles-button.ytp-button')
             await page.wait_for_timeout(6000)
-            print(f"[SEARCH] Tab #{self.tab_count} has found transcript fetch url of  the video url {url}  on port {self.custom_port}")
+            logger.info(f"[SEARCH] Tab #{self.tab_count} has found transcript fetch url of  the video url {url}  on port {self.custom_port}")
             
             if agent_idx is not None:
                 agent_pool.increment_tab_count("text", agent_idx)
-                
+        
         except Exception as e:
-            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+            logger.error(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
         finally:
             if page:
                 try:
                     await page.close()
-                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                    logger.info(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
                 except Exception as e:
-                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+                    logger.warning(f"[SEARCH] Failed to close tab #{self.tab_count}: {e}")
         
         return transcript_url
 
@@ -497,7 +517,7 @@ class YahooSearchAgentText:
         page = None
         try:
             self.tab_count += 1
-            print(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
+            logger.info(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for url: '{url}'")
             
             page = await self.context.new_page()
             search_url = f"{url}"
@@ -517,23 +537,22 @@ class YahooSearchAgentText:
             else:
                 meta_title = ""
 
-            print(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
+            logger.info(f"[SEARCH] Tab #{self.tab_count} has found video with the url {url}  on port {self.custom_port}")
             
             if agent_idx is not None:
                 agent_pool.increment_tab_count("text", agent_idx)
-                
+        
         except Exception as e:
-            print(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+            logger.error(f"❌ Yahoo search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
         finally:
             if page:
                 try:
                     await page.close()
-                    print(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                    logger.info(f"[SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
                 except Exception as e:
-                    print(f"[WARN] Failed to close tab #{self.tab_count}: {e}")
+                    logger.warning(f"[SEARCH] Failed to close tab #{self.tab_count}: {e}")
         
         return meta_title
-    
 
     async def close(self):
         try:
@@ -545,14 +564,15 @@ class YahooSearchAgentText:
             try:
                 shutil.rmtree(f"/tmp/chrome-user-data-{self.custom_port}", ignore_errors=True)
             except Exception as e:
-                print(f"[WARN] Failed to clean up user data for port {self.custom_port}: {e}")
+                logger.warning(f"[TEXT-AGENT] Failed to clean up user data for port {self.custom_port}: {e}")
             
-            print(f"[INFO] YahooSearchAgentText on port {self.custom_port} closed after {self.tab_count} tabs.")
+            logger.info(f"[TEXT-AGENT] YahooSearchAgentText on port {self.custom_port} closed after {self.tab_count} tabs.")
         except Exception as e:
-            print(f"[ERROR] Error closing YahooSearchAgentText on port {self.custom_port}: {e}")
+            logger.error(f"[TEXT-AGENT] Error closing YahooSearchAgentText on port {self.custom_port}: {e}")
         finally:
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
+
 
 class YahooSearchAgentImage:
     def __init__(self, custom_port=None):
@@ -567,8 +587,8 @@ class YahooSearchAgentImage:
         else:
             self.custom_port = port_manager.get_port()
             self.owns_port = True
-            
-        print(f"[INFO] YahooSearchAgentImage ready on port {self.custom_port}.")
+        
+        logger.info(f"[IMAGE-AGENT] YahooSearchAgentImage ready on port {self.custom_port}.")
 
     async def start(self):
         try:
@@ -596,9 +616,9 @@ class YahooSearchAgentImage:
                 Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
                 window.chrome = {runtime: {}};
             """)
-            print(f"[INFO] YahooSearchAgentImage started successfully on port {self.custom_port}")
+            logger.info(f"[IMAGE-AGENT] YahooSearchAgentImage started successfully on port {self.custom_port}")
         except Exception as e:
-            print(f"[ERROR] Failed to start YahooSearchAgentImage on port {self.custom_port}: {e}")
+            logger.error(f"[IMAGE-AGENT] Failed to start YahooSearchAgentImage on port {self.custom_port}: {e}")
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
             raise
@@ -609,7 +629,7 @@ class YahooSearchAgentImage:
         page = None
         try:
             self.tab_count += 1
-            print(f"[IMAGE SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            logger.info(f"[IMAGE-SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
             
             page = await self.context.new_page()
             search_url = f"https://images.search.yahoo.com/search/images?p={quote(query)}"
@@ -628,20 +648,20 @@ class YahooSearchAgentImage:
                 if src and src.startswith("http"):
                     results.append(src)
 
-            print(f"[IMAGE SEARCH] Tab #{self.tab_count} returned {len(results)} image results for '{query[:50]}...' on port {self.custom_port}")
+            logger.info(f"[IMAGE-SEARCH] Tab #{self.tab_count} returned {len(results)} image results for '{query[:50]}...' on port {self.custom_port}")
             
             if agent_idx is not None:
                 agent_pool.increment_tab_count("image", agent_idx)
-                
+        
         except Exception as e:
-            print(f"[ERROR] Yahoo image search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+            logger.error(f"[IMAGE-SEARCH] Yahoo image search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
         finally:
             if page:
                 try:
                     await page.close()
-                    print(f"[IMAGE SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                    logger.info(f"[IMAGE-SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
                 except Exception as e:
-                    print(f"[WARN] Failed to close image search tab #{self.tab_count}: {e}")
+                    logger.warning(f"[IMAGE-SEARCH] Failed to close image search tab #{self.tab_count}: {e}")
         
         return results
 
@@ -655,11 +675,11 @@ class YahooSearchAgentImage:
             try:
                 shutil.rmtree(f"/tmp/chrome-user-data-{self.custom_port}", ignore_errors=True)
             except Exception as e:
-                print(f"[WARN] Failed to clean up user data for port {self.custom_port}: {e}")
+                logger.warning(f"[IMAGE-AGENT] Failed to clean up user data for port {self.custom_port}: {e}")
             
-            print(f"[INFO] YahooSearchAgentImage on port {self.custom_port} closed after {self.tab_count} tabs.")
+            logger.info(f"[IMAGE-AGENT] YahooSearchAgentImage on port {self.custom_port} closed after {self.tab_count} tabs.")
         except Exception as e:
-            print(f"[ERROR] Error closing YahooSearchAgentImage on port {self.custom_port}: {e}")
+            logger.error(f"[IMAGE-AGENT] Error closing YahooSearchAgentImage on port {self.custom_port}: {e}")
         finally:
             if self.owns_port:
                 port_manager.release_port(self.custom_port)
@@ -722,37 +742,46 @@ class accessSearchAgents:
     def get_agent_pool_status(self):
         return run_async_on_bg_loop(self._async_get_agent_pool_status())
 
-    
+
 def get_port_status():
     return port_manager.get_status()
 
 
-port_manager = searchPortManager(start_port=10000, end_port=19999)
-agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
 _event_loop = None
 _event_loop_thread = None
 _event_loop_lock = threading.Lock()
+
 
 def _ensure_background_loop():
     global _event_loop, _event_loop_thread
     with _event_loop_lock:
         if _event_loop is None:
             _event_loop = asyncio.new_event_loop()
+            
             def _run_loop(loop):
                 asyncio.set_event_loop(loop)
                 loop.run_forever()
-            _event_loop_thread = threading.Thread(target=_run_loop, args=(_event_loop,), daemon=True)
+            
+            _event_loop_thread = threading.Thread(
+                target=_run_loop,
+                args=(_event_loop,),
+                daemon=True
+            )
             _event_loop_thread.start()
+            
             timeout = 0.5
             t0 = time.time()
             while not _event_loop.is_running() and time.time() - t0 < timeout:
                 time.sleep(0.01)
+    
     return _event_loop
+
 
 def run_async_on_bg_loop(coro):
     loop = _ensure_background_loop()
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
+
 
 async def _close_all_agents():
     text_agents = list(agent_pool.text_agents)
@@ -761,28 +790,32 @@ async def _close_all_agents():
         try:
             await a.close()
         except Exception as e:
-            print(f"[WARN] Error closing text agent: {e}")
+            logger.warning(f"[SHUTDOWN] Error closing text agent: {e}")
     for a in image_agents:
         try:
             await a.close()
         except Exception as e:
-            print(f"[WARN] Error closing at image agent: {e}")
+            logger.warning(f"[SHUTDOWN] Error closing image agent: {e}")
     agent_pool.text_agents.clear()
     agent_pool.image_agents.clear()
     agent_pool.text_agent_tabs.clear()
     agent_pool.image_agent_tabs.clear()
     agent_pool.initialized = False
 
+
 def shutdown_graceful(timeout=5):
     global _event_loop, _event_loop_thread
-    try:  
+    try:
         if _event_loop is None:
             return
+        
         try:
             run_async_on_bg_loop(_close_all_agents())
         except Exception as e:
-            print(f"[WARN] Error during agent close: {e}")
+            logger.warning(f"[SHUTDOWN] Error during agent close: {e}")
+        
         loop = _event_loop
+        
         def _stop_loop():
             for task in asyncio.all_tasks(loop):
                 try:
@@ -790,95 +823,57 @@ def shutdown_graceful(timeout=5):
                 except Exception:
                     pass
             loop.stop()
+        
         loop.call_soon_threadsafe(_stop_loop)
+        
         if _event_loop_thread is not None:
             _event_loop_thread.join(timeout)
+    
     except Exception as e:
-        print(f"[ERROR] shutdown_graceful failed: {e}")
+        logger.error(f"[SHUTDOWN] Graceful shutdown error: {e}")
+    
     finally:
         _event_loop = None
         _event_loop_thread = None
-        
+
+
 atexit.register(shutdown_graceful)
 
-class CacheCleanupJob:
-    def __init__(self, cache_dir=BASE_CACHE_DIR, max_age_minutes=10, check_interval_minutes=5):
-        self.cache_dir = cache_dir
-        self.max_age_seconds = max_age_minutes * 60
-        self.check_interval_minutes = check_interval_minutes
-        self.scheduler_thread = None
-        self.running = False
-    
-    def cleanup_old_cache(self):
-        if not os.path.exists(self.cache_dir):
-            return
-        
-        current_time = time.time()
-        try:
-            for folder in os.listdir(self.cache_dir):
-                folder_path = os.path.join(self.cache_dir, folder)
-                if os.path.isdir(folder_path):
-                    folder_age = current_time - os.path.getmtime(folder_path)
-                    if folder_age > self.max_age_seconds:
-                        try:
-                            for root, dirs, files in os.walk(folder_path, topdown=False):
-                                for file in files:
-                                    file_path = os.path.join(root, file)
-                                    os.chmod(file_path, stat.S_IWUSR | stat.S_IRUSR)
-                                    os.remove(file_path)
-                                for dir in dirs:
-                                    dir_path = os.path.join(root, dir)
-                                    os.chmod(dir_path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IXUSR)
-                                    os.rmdir(dir_path)
-                            os.rmdir(folder_path)
-                            print(f"[CACHE] Deleted old cache folder: {folder_path}")
-                        except Exception as e:
-                            print(f"[CACHE] Error deleting {folder_path}: {e}")
-        except Exception as e:
-            print(f"[CACHE] Error during cleanup: {e}")
-    
-    def _run_scheduler(self):
-        schedule.every(self.check_interval_minutes).minutes.do(self.cleanup_old_cache)
-        while self.running:
-            schedule.run_pending()
-            time.sleep(1)
-    
-    def start(self):
-        if not self.running:
-            self.running = True
-            self.scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
-            self.scheduler_thread.start()
-            print(f"[CACHE] Cleanup job started - checking every {self.check_interval_minutes} minutes for folders older than {self.max_age_seconds // 60} minutes")
-    
-    def stop(self):
-        self.running = False
-        self.cleanup_old_cache()
-        print("[CACHE] Cleanup job stopped and final cache cleared")
+
+port_manager = searchPortManager(start_port=10000, end_port=19999)
+agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
 
 
 if __name__ == "__main__":
-    class modelManager(BaseManager): pass
-    modelManager.register("ipcService", ipcModules)
-    modelManager.register("accessSearchAgents", accessSearchAgents)
-    agent_pool = SearchAgentPool(pool_size=1, max_tabs_per_agent=20)
-    manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
+    class ModelManager(BaseManager):
+        pass
+    
+    ModelManager.register("CoreEmbeddingService", CoreEmbeddingService)
+    ModelManager.register("SessionManager", SessionManager)
+    ModelManager.register("accessSearchAgents", accessSearchAgents)
+    
+    core_service = CoreEmbeddingService()
+    session_manager = SessionManager()
+    search_agents = accessSearchAgents()
+    
+    manager = ModelManager(address=("localhost", 5010), authkey=b"ipcService")
     server = manager.get_server()
-    logger.info("Ipc started on port 5010...")
-
+    
+    logger.info("[MAIN] Core service started on port 5010...")
+    logger.info(f"[MAIN] Vector store stats: {core_service.get_vector_store_stats()}")
+    
     try:
         _ensure_background_loop()
         run_async_on_bg_loop(agent_pool.initialize_pool())
     except Exception as e:
-        print(f"[ERROR] Failed to initialize agent pool: {e}")
+        logger.error(f"[MAIN] Failed to initialize agent pool: {e}")
+    
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("[INFO] KeyboardInterrupt received - shutting down gracefully...")
+        logger.info("[MAIN] Shutdown signal received...")
     except Exception as e:
-        print(f"[ERROR] Server error: {e}")
+        logger.error(f"[MAIN] Server error: {e}")
     finally:
         shutdown_graceful()
-        print("[INFO] Shutdown completed.")
-
-
-
+        logger.info("[MAIN] Shutdown complete")

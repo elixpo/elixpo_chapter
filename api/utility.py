@@ -9,6 +9,9 @@ from urllib.parse import urlparse, parse_qs
 from typing import Dict, List, Tuple, Optional
 import numpy as np
 from knowledge_graph import build_knowledge_graph
+from typing import List, Dict
+import re
+from loguru import logger
 
 
 
@@ -81,19 +84,6 @@ def preprocess_text(text):
 
 
 def fetch_url_content_parallel(queries, urls, max_workers=10, use_kg: bool = True, request_id: str = None) -> Tuple[str, List[Dict]]:
-    """
-    Fetch URL content in parallel with optional knowledge graph extraction and request tracking
-
-    Args:
-        queries: List of search queries for context
-        urls: List of URLs to fetch
-        max_workers: Number of parallel workers
-        use_kg: Whether to build knowledge graphs
-        request_id: Optional request ID for tracking KGs
-
-    Returns:
-        Tuple of (aggregated_results_text, kg_data_list)
-    """
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(fetch_full_text, url, request_id=request_id): url for url in urls}
         results = ""
@@ -103,8 +93,6 @@ def fetch_url_content_parallel(queries, urls, max_workers=10, use_kg: bool = Tru
             url = futures[future]
             try:
                 result = future.result()
-
-                # Handle both old format (string) and new format (tuple)
                 if isinstance(result, tuple):
                     text_content, kg_dict = result
                     kg_data_list.append(kg_dict)
@@ -132,17 +120,7 @@ def fetch_url_content_parallel(queries, urls, max_workers=10, use_kg: bool = Tru
 
 
 async def rank_results(query: str, results: List[str], ipc_service) -> List[Tuple[str, float]]:
-    """
-    Rank search results by relevance to query using embeddings.
-    
-    Args:
-        query: The search query
-        results: List of result strings to rank
-        ipc_service: IPC service with embedding model
-        
-    Returns:
-        List of (result, score) tuples sorted by relevance
-    """
+
     if not results:
         return []
     
@@ -161,18 +139,7 @@ async def extract_and_rank_sentences(
     query: str,
     ipc_service
 ) -> List[str]:
-    """
-    Extract and rank sentences from content by relevance to query.
-    
-    Args:
-        url: Source URL (for logging)
-        content: Text content to extract from
-        query: Query to rank relevance against
-        ipc_service: IPC service with embedding model
-        
-    Returns:
-        List of top-ranked sentences
-    """
+
     try:
         # Use the ipc_service's method to handle sentence extraction server-side
         top_sentences = ipc_service.extract_and_rank_sentences(content, query)
@@ -187,17 +154,7 @@ def build_final_response(
     session,
     rag_stats: Dict
 ) -> str:
-    """
-    Build final response with content, images, sources, and summary.
-    
-    Args:
-        response_content: Main response content
-        session: Session object with metadata
-        rag_stats: RAG statistics dictionary
-        
-    Returns:
-        Formatted final response string
-    """
+   
     parts = [response_content]
     
     if session.images:
@@ -246,7 +203,31 @@ def testSearching():
     for idx, content in enumerate(contents):
         print(f"Content snippet {idx+1}:", content[:200])
     
+def chunk_text(text: str, chunk_size: int = 600, overlap: int = 60) -> List[str]:
+    words = text.split()
+    chunks = []
+    stride = chunk_size - overlap
     
+    for i in range(0, len(words), stride):
+        chunk_words = words[i:i + chunk_size]
+        if len(chunk_words) > 10:
+            chunks.append(" ".join(chunk_words))
+    
+    return chunks
+
+
+def clean_text(text: str) -> str:
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = text.strip()
+    return text
+
+
+def normalize_url(url: str) -> str:
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    return f"{parsed.netloc}{parsed.path}"
+
 
 
 if __name__ == "__main__":

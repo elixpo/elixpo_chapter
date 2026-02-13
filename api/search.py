@@ -9,12 +9,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
 import logging
-from config import MAX_TOTAL_SCRAPE_WORD_COUNT
+from config import MAX_TOTAL_SCRAPE_WORD_COUNT, RETRIEVAL_TOP_K
 from knowledge_graph import build_knowledge_graph, clean_text_nltk, chunk_and_graph
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['fetch_full_text', 'playwright_web_search', 'warmup_playwright']
+__all__ = ['fetch_full_text', 'playwright_web_search', 'warmup_playwright', 'ingest_url_to_vector_store', 'retrieve_from_vector_store']
 
 
 USER_AGENTS = [
@@ -343,3 +343,68 @@ if __name__ == "__main__":
             print(f" - {url}")
     
     asyncio.run(main())
+
+
+_global_embedding_service = None
+_global_vector_store = None
+_global_retrieval_pipeline = None
+
+
+def _ensure_retrieval_services():
+    global _global_embedding_service, _global_vector_store, _global_retrieval_pipeline
+    
+    if _global_embedding_service is None:
+        try:
+            from embedding_service import EmbeddingService
+            from vector_store import VectorStore
+            from retrieval_pipeline import RetrievalPipeline
+            from config import EMBEDDING_MODEL, EMBEDDINGS_DIR
+            
+            logger.info("[SEARCH] Initializing retrieval services...")
+            _global_embedding_service = EmbeddingService(model_name=EMBEDDING_MODEL)
+            _global_vector_store = VectorStore(embeddings_dir=EMBEDDINGS_DIR)
+            _global_retrieval_pipeline = RetrievalPipeline(
+                _global_embedding_service,
+                _global_vector_store
+            )
+            logger.info("[SEARCH] Retrieval services initialized")
+        except Exception as e:
+            logger.error(f"[SEARCH] Failed to initialize retrieval services: {e}")
+            raise
+
+
+def ingest_url_to_vector_store(url: str) -> Dict:
+    _ensure_retrieval_services()
+    try:
+        chunk_count = _global_retrieval_pipeline.ingest_url(url, max_words=3000)
+        return {
+            "success": True,
+            "url": url,
+            "chunks_ingested": chunk_count
+        }
+    except Exception as e:
+        logger.error(f"[SEARCH] Failed to ingest URL {url}: {e}")
+        return {
+            "success": False,
+            "url": url,
+            "error": str(e)
+        }
+
+
+def retrieve_from_vector_store(query: str, top_k: int = RETRIEVAL_TOP_K) -> List[Dict]:
+    _ensure_retrieval_services()
+    try:
+        return _global_retrieval_pipeline.retrieve(query, top_k=top_k)
+    except Exception as e:
+        logger.error(f"[SEARCH] Retrieval failed: {e}")
+        return []
+
+
+def get_vector_store_stats() -> Dict:
+    _ensure_retrieval_services()
+    return _global_vector_store.get_stats()
+
+
+def persist_vector_store() -> None:
+    _ensure_retrieval_services()
+    _global_vector_store.persist_to_disk()
