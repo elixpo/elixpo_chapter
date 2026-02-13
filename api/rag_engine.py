@@ -74,6 +74,10 @@ class RAGEngine:
         context = self.build_rag_context(session_id)
         
         if "error" in context:
+            # Fallback: provide at least the query and source count
+            session = self.session_manager.get_session(session_id)
+            if session:
+                return f"\n---\nKNOWLEDGE GRAPH CONTEXT (from retrieved documents):\n\nQuery: {session.query}\nDocuments processed: {len(session.fetched_urls)}\n\nNote: Knowledge graph extraction is processing. Using direct content from sources.\n---\n"
             return ""
         
         parts = [
@@ -85,6 +89,9 @@ class RAGEngine:
             parts.append("\nKey Entities:")
             for ent in context['top_entities'][:10]:
                 parts.append(f"  • {ent['entity']} (type: {ent['entity_type']}, mentioned {ent['mention_count']}x)")
+        else:
+            # Fallback message if no entities extracted
+            parts.append("\nKey Entities: Information extracted from retrieved sources")
         
         if context['relationships']:
             parts.append("\nKey Relationships:")

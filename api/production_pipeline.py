@@ -183,20 +183,35 @@ class ProductionPipeline:
                         request_id=request_id
                     )
                     
+                    # Add aggregated content to session
                     if aggregated_results:
-                        self.session_manager.add_content_to_session(session_id, "[Parallel Fetch Results]", aggregated_results[:3000])
+                        aggregated_content = aggregated_results[:3000]
+                        self.session_manager.add_content_to_session(session_id, "[Parallel Fetch Results]", aggregated_content)
+                        logger.debug(f"{log_prefix} Added aggregated content: {len(aggregated_content)} chars")
                     
                     # Track KG data from parallel fetch
                     if kg_data_list:
                         logger.info(f"{log_prefix} Extracted KG data from {len(kg_data_list)} sources")
+                        # Add each source's KG data separately for better session tracking
+                        for idx, kg_data in enumerate(kg_data_list[:5]):  # Top 5 sources
+                            if kg_data and "entities" in kg_data:
+                                try:
+                                    # Reconstruct a simple JSON representation for session
+                                    source_label = f"[KG Source {idx+1}]"
+                                    entity_text = json.dumps(kg_data.get("entities", {}))[:500]
+                                    self.session_manager.add_content_to_session(session_id, source_label, entity_text)
+                                except Exception as kg_e:
+                                    logger.debug(f"{log_prefix} Could not add KG data: {kg_e}")
                     
                     for url in fetch_urls:
                         session.fetched_urls.append(url)
                     
                     yield self._format_sse("info", f"<TASK>Processed {len(fetch_urls)} sources</TASK>")
+                    logger.info(f"{log_prefix} Parallel fetch completed for {len(fetch_urls)} URLs")
                     
                 except Exception as e:
                     logger.warning(f"{log_prefix} Parallel fetch error: {e}")
+                    logger.debug(f"{log_prefix} Falling back to sequential fetching...")
                     # Fallback to sequential fetching
                     from search import fetch_full_text
                     for url in fetch_urls:
@@ -255,11 +270,16 @@ class ProductionPipeline:
                     logger.warning(f"{log_prefix} Image search error: {e}")
             
             yield self._format_sse("info", "<TASK>Building KG...</TASK>")
+            logger.info(f"{log_prefix} Building RAG context from {len(session.fetched_urls)} fetched URLs")
+            logger.debug(f"{log_prefix} Session has {len(session.processed_content)} processed documents")
+            
             rag_context = self.rag_engine.build_rag_prompt_enhancement(session_id)
             rag_stats = self.rag_engine.get_summary_stats(session_id)
-            logger.info(f"{log_prefix} KG built: {rag_stats}")
+            logger.info(f"{log_prefix} KG built - Stats: {rag_stats}")
+            logger.debug(f"{log_prefix} RAG context length: {len(rag_context)} characters")
             
             yield self._format_sse("info", "<TASK>Generating response...</TASK>")
+            logger.info(f"{log_prefix} Starting LLM response generation...")
             
             response_content = await self._generate_llm_response(
                 query=combined_query,
@@ -269,6 +289,7 @@ class ProductionPipeline:
                 request_id=request_id
             )
             
+            logger.info(f"{log_prefix} Response generated: {len(response_content)} characters")
             yield self._format_sse("info", "<TASK>SUCCESS</TASK>")
             
             final_response = build_final_response(
@@ -398,6 +419,26 @@ WRITING STYLE:
 Query: {query}
 {"Image provided" if image_url else ""}
 
+RETRIEVED SOURCES CONTENT:
+"""
+        
+        # Add actual fetched content to the user message
+        session = self.session_manager.get_session(session_id)
+        if session and session.processed_content:
+            source_content = []
+            for url, content in list(session.processed_content.items())[:5]:  # Top 5 sources
+                if content and len(content.strip()) > 20:
+                    source_content.append(f"\n--- From {url} ---\n{content[:1000]}")
+            
+            if source_content:
+                user_message += "\n".join(source_content)
+            else:
+                user_message += "(Processing content from sources...)"
+        else:
+            user_message += "(Processing content from sources...)"
+        
+        user_message += f"""
+
 Requirements:
 - Use the KG context provided above as primary source
 - Integrate all researched information seamlessly
@@ -424,7 +465,11 @@ Requirements:
             "stream": False,
         }
         
+        log_prefix = f"[{request_id or session_id}]" if request_id else f"[{session_id}]"
+        
         try:
+            logger.info(f"{log_prefix} Calling LLM with timeout=60s, payload size: {len(str(payload))} bytes")
+            
             response = await asyncio.to_thread(
                 requests.post,
                 POLLINATIONS_ENDPOINT,
@@ -433,18 +478,37 @@ Requirements:
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {POLLINATIONS_TOKEN}"
                 },
-                timeout=30
+                timeout=60
             )
+            
+            logger.info(f"{log_prefix} LLM response status: {response.status_code}")
             response.raise_for_status()
             data = response.json()
             
-            content = data["choices"][0]["message"]["content"]
+            if "choices" not in data or len(data["choices"]) == 0:
+                logger.warning(f"{log_prefix} Unexpected LLM response format: {data}")
+                return f"# Response\n\nThe system generated a response but in an unexpected format."
+            
+            content = data["choices"][0]["message"].get("content", "")
+            if not content:
+                logger.warning(f"{log_prefix} Empty content from LLM")
+                return f"# Response\n\nUnable to generate detailed response. Please try again."
+            
+            logger.info(f"{log_prefix} LLM response received: {len(content)} characters")
             return content
         
+        except asyncio.TimeoutError:
+            logger.error(f"{log_prefix} LLM call timeout after 60s")
+            return f"# Timeout\n\nThe response generation took too long. Please try a simpler query."
+        except requests.exceptions.Timeout:
+            logger.error(f"{log_prefix} LLM request timeout")
+            return f"# Timeout\n\nThe response generation took too long. Please try a simpler query."
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"{log_prefix} LLM connection error: {e}")
+            return f"# Connection Error\n\nCould not connect to the LLM service. Please try again."
         except Exception as e:
-            log_prefix = f"[{request_id or session_id}]" if request_id else f"[{session_id}]"
-            logger.error(f"{log_prefix} LLM error: {e}")
-            return f"# Error\n\nFailed to generate: {str(e)[:200]}"
+            logger.error(f"{log_prefix} LLM error: {type(e).__name__}: {e}")
+            return f"# Error\n\nFailed to generate response: {str(e)[:200]}"
     
     @staticmethod
     def _format_sse(event: str, data: str) -> str:
