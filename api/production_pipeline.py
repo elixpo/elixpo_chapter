@@ -467,3 +467,46 @@ async def initialize_production_pipeline() -> ProductionPipeline:
 def get_production_pipeline() -> Optional[ProductionPipeline]:
     global _production_pipeline
     return _production_pipeline
+
+
+if __name__ == "__main__":
+   
+    async def test_query():
+        pipeline = await initialize_production_pipeline()
+        
+        # Simple weather query
+        query = "What is the weather today in Kolkata"
+        request_id = "test-weather-001"
+        chunk_count = 0
+        try:
+            async for chunk in pipeline.process_request(
+                query=query,
+                image_url=None,
+                session_id=None,
+                request_id=request_id
+            ):
+                chunk_count += 1
+                if chunk:
+                    print(f"[Chunk {chunk_count}] {chunk[:100]}..." if len(chunk) > 100 else f"[Chunk {chunk_count}] {chunk}")
+            
+            print(f"\n{'='*60}")
+            print(f"Pipeline Test Complete!")
+            print(f"Total chunks received: {chunk_count}")
+            print(f"{'='*60}\n")
+            
+        except Exception as e:
+            print(f"Error during pipeline test: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Run the async test
+    try:
+        asyncio.run(test_query())
+    except KeyboardInterrupt:
+        print("\n\nTest interrupted by user")
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        import traceback
+        traceback.print_exc()
+
+
