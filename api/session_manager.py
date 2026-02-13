@@ -5,28 +5,26 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import json
 from loguru import logger
-from knowledge_graph import KnowledgeGraph, build_knowledge_graph
 from collections import defaultdict
 import concurrent.futures
-import threading
-from typing import Dict, List
-from datetime import datetime
-from loguru import logger
+import numpy as np
+import faiss
 
 
 class SessionData:
-    def __init__(self, session_id: str, query: str):
+    def __init__(self, session_id: str, query: str, embedding_dim: int = 384):
         self.session_id = session_id
         self.query = query
+        self.embedding_dim = embedding_dim
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
-        self.local_kg = KnowledgeGraph()
         self.fetched_urls: List[str] = []
         self.web_search_urls: List[str] = []
         self.youtube_urls: List[str] = []
         self.processed_content: Dict[str, str] = {}
+        self.content_embeddings: Dict[str, np.ndarray] = {}
         self.rag_context_cache: Optional[str] = None
-        self.top_entities_cache: List[Tuple[str, float]] = []
+        self.top_content_cache: List[Tuple[str, float]] = []
         self.images: List[str] = []
         self.videos: List[Dict] = []
         self.metadata: Dict = {}
@@ -34,57 +32,107 @@ class SessionData:
         self.errors: List[str] = []
         self.conversation_history: List[Dict] = []
         self.search_context: str = ""
+        
+        # FAISS index for vector similarity search
+        self.faiss_index = faiss.IndexFlatL2(embedding_dim)
+        self.content_order: List[str] = []  # Track order of embeddings in FAISS index
+        self.lock = threading.RLock()
     
-    def add_fetched_url(self, url: str, content: str):
-        self.fetched_urls.append(url)
-        self.processed_content[url] = content
-        self.last_activity = datetime.now()
-        self.rag_context_cache = None
-    
-    async def build_kg_async(self, url: str, content: str):
-        try:
-            loop = asyncio.get_event_loop()
-            kg = await loop.run_in_executor(None, build_knowledge_graph, content, 15)
-            for entity_key, entity_data in kg.entities.items():
-                self.local_kg.add_entity(
-                    entity_data["original"],
-                    entity_data["type"],
-                    entity_data["contexts"][0] if entity_data["contexts"] else ""
-                )
-            for subject, relation, obj in kg.relationships:
-                self.local_kg.add_relationship(subject, relation, obj)
+    def add_fetched_url(self, url: str, content: str, embedding: Optional[np.ndarray] = None):
+        """Add fetched URL with optional embedding vector."""
+        with self.lock:
+            self.fetched_urls.append(url)
+            self.processed_content[url] = content
+            
+            if embedding is not None:
+                # Normalize embedding if needed
+                if isinstance(embedding, np.ndarray):
+                    if len(embedding.shape) == 1:
+                        embedding = embedding.reshape(1, -1)
+                    embedding = embedding.astype(np.float32)
+                    self.content_embeddings[url] = embedding
+                    self.faiss_index.add(embedding)
+                    self.content_order.append(url)
+            
+            self.last_activity = datetime.now()
             self.rag_context_cache = None
-            logger.debug(f"[SESSION {self.session_id}] KG built async for {url}: {len(kg.entities)} entities")
-        except Exception as e:
-            logger.debug(f"[SESSION {self.session_id}] Async KG build failed for {url}: {e}")
-    
-    def get_local_kg(self) -> KnowledgeGraph:
-        return self.local_kg
-    
-    def get_rag_context(self, refresh: bool = False) -> str:
-        if self.rag_context_cache and not refresh:
+
+    def get_rag_context(self, refresh: bool = False, query_embedding: Optional[np.ndarray] = None) -> str:
+        """Build RAG context using FAISS vector similarity search."""
+        with self.lock:
+            if self.rag_context_cache and not refresh:
+                return self.rag_context_cache
+
+            context_parts = [
+                f"Query: {self.query}",
+                f"Sources fetched: {len(self.fetched_urls)}",
+            ]
+            
+            # If we have embeddings and a query embedding, use FAISS for ranking
+            if query_embedding is not None and self.faiss_index.ntotal > 0:
+                try:
+                    if isinstance(query_embedding, np.ndarray):
+                        if len(query_embedding.shape) == 1:
+                            query_embedding = query_embedding.reshape(1, -1)
+                        query_embedding = query_embedding.astype(np.float32)
+                    
+                    # Search for most similar content
+                    k = min(10, self.faiss_index.ntotal)
+                    distances, indices = self.faiss_index.search(query_embedding, k)
+                    
+                    context_parts.append("\nMost Relevant Content:")
+                    for idx, distance in zip(indices[0], distances[0]):
+                        if idx < len(self.content_order):
+                            url = self.content_order[idx]
+                            relevance_score = 1.0 / (1.0 + distance)  # Convert L2 distance to similarity
+                            content_preview = self.processed_content[url][:100]
+                            context_parts.append(f"  - {url} (relevance: {relevance_score:.3f})")
+                            context_parts.append(f"    Preview: {content_preview}...")
+                except Exception as e:
+                    logger.warning(f"[SessionData] FAISS search failed: {e}")
+                    # Fallback to simple content listing
+                    context_parts.append("\nFetched Content:")
+                    for url in self.fetched_urls[-5:]:
+                        context_parts.append(f"  - {url}")
+            else:
+                # No embeddings available, just list URLs
+                context_parts.append("\nFetched Content:")
+                for url in self.fetched_urls[-5:]:
+                    context_parts.append(f"  - {url}")
+            
+            self.rag_context_cache = "\n".join(context_parts)
             return self.rag_context_cache
-        self.local_kg.calculate_importance()
-        top_entities = self.local_kg.get_top_entities(top_k=15)
-        self.top_entities_cache = top_entities
-        context_parts = [
-            f"Query: {self.query}",
-            f"Sources fetched: {len(self.fetched_urls)}",
-            "\nKey Entities (ranked by importance):"
-        ]
-        for entity, score in top_entities:
-            context_parts.append(f"  - {entity} (relevance: {score:.3f})")
-            related = self.local_kg.entity_graph.get(entity, set())
-            if related:
-                context_parts.append(f"    Related: {', '.join(list(related)[:3])}")
-        self.rag_context_cache = "\n".join(context_parts)
-        return self.rag_context_cache
     
-    def get_top_entities(self, k: int = 10) -> List[Tuple[str, float]]:
-        if not self.top_entities_cache:
-            self.local_kg.calculate_importance()
-            return self.local_kg.get_top_entities(k)
-        return self.top_entities_cache[:k]
+    def get_top_content(self, k: int = 10, query_embedding: Optional[np.ndarray] = None) -> List[Tuple[str, float]]:
+        """Get top k most relevant content using FAISS similarity search."""
+        with self.lock:
+            if self.faiss_index.ntotal == 0:
+                return []
+            
+            if query_embedding is None:
+                # Return all content with default scores
+                return [(url, 1.0 / (i + 1)) for i, url in enumerate(self.content_order[:k])]
+            
+            try:
+                if isinstance(query_embedding, np.ndarray):
+                    if len(query_embedding.shape) == 1:
+                        query_embedding = query_embedding.reshape(1, -1)
+                    query_embedding = query_embedding.astype(np.float32)
+                
+                k = min(k, self.faiss_index.ntotal)
+                distances, indices = self.faiss_index.search(query_embedding, k)
+                
+                results = []
+                for idx, distance in zip(indices[0], distances[0]):
+                    if idx < len(self.content_order):
+                        url = self.content_order[idx]
+                        relevance_score = 1.0 / (1.0 + distance)
+                        results.append((url, relevance_score))
+                
+                return results
+            except Exception as e:
+                logger.warning(f"[SessionData] FAISS top content search failed: {e}")
+                return [(url, 1.0 / (i + 1)) for i, url in enumerate(self.content_order[:k])]
     
     def log_tool_call(self, tool_name: str):
         self.tool_calls_made.append(f"{tool_name}@{datetime.now().isoformat()}")
@@ -94,20 +142,21 @@ class SessionData:
         self.errors.append(f"{error}@{datetime.now().isoformat()}")
     
     def to_dict(self) -> Dict:
-        return {
-            "session_id": self.session_id,
-            "query": self.query,
-            "created_at": self.created_at.isoformat(),
-            "fetched_urls": self.fetched_urls,
-            "web_search_urls": self.web_search_urls,
-            "youtube_urls": self.youtube_urls,
-            "tool_calls": self.tool_calls_made,
-            "errors": self.errors,
-            "top_entities": self.top_entities_cache,
-            "num_relationships": len(self.local_kg.relationships),
-            "document_count": len(self.processed_content),
-            "conversation_turns": len(self.conversation_history),
-        }
+        with self.lock:
+            return {
+                "session_id": self.session_id,
+                "query": self.query,
+                "created_at": self.created_at.isoformat(),
+                "fetched_urls": self.fetched_urls,
+                "web_search_urls": self.web_search_urls,
+                "youtube_urls": self.youtube_urls,
+                "tool_calls": self.tool_calls_made,
+                "errors": self.errors,
+                "top_content": self.top_content_cache,
+                "faiss_index_size": self.faiss_index.ntotal,
+                "document_count": len(self.processed_content),
+                "conversation_turns": len(self.conversation_history),
+            }
     
     def add_message_to_history(self, role: str, content: str, metadata: Dict = None):
         msg = {
@@ -128,19 +177,20 @@ class SessionData:
         self.last_activity = datetime.now()
 
 class SessionManager:
-    def __init__(self, max_sessions: int = 1000, ttl_minutes: int = 30):
+    def __init__(self, max_sessions: int = 1000, ttl_minutes: int = 30, embedding_dim: int = 384):
         self.sessions: Dict[str, SessionData] = {}
         self.max_sessions = max_sessions
         self.ttl = timedelta(minutes=ttl_minutes)
+        self.embedding_dim = embedding_dim
         self.lock = threading.RLock()
-        logger.info(f"[SessionManager] Initialized with max {max_sessions} sessions, TTL: {ttl_minutes}m")
+        logger.info(f"[SessionManager] Initialized with max {max_sessions} sessions, TTL: {ttl_minutes}m, embedding_dim: {embedding_dim}")
     
     def create_session(self, query: str) -> str:
         with self.lock:
             if len(self.sessions) >= self.max_sessions:
                 self._cleanup_expired()
             session_id = str(uuid.uuid4())[:12]
-            self.sessions[session_id] = SessionData(session_id, query)
+            self.sessions[session_id] = SessionData(session_id, query, embedding_dim=self.embedding_dim)
             logger.info(f"[SessionManager] Created session {session_id} for query: {query[:50]}")
             return session_id
     
@@ -151,11 +201,12 @@ class SessionManager:
                 session.last_activity = datetime.now()
             return session
     
-    def add_content_to_session(self, session_id: str, url: str, content: str):
+    def add_content_to_session(self, session_id: str, url: str, content: str, embedding: Optional[np.ndarray] = None):
+        """Add content to session with optional embedding vector."""
         with self.lock:
             session = self.sessions.get(session_id)
             if session:
-                session.add_fetched_url(url, content)
+                session.add_fetched_url(url, content, embedding)
                 logger.info(f"[Session {session_id}] Added content from {url}")
             else:
                 logger.warning(f"[SessionManager] Session {session_id} not found")
@@ -175,12 +226,21 @@ class SessionManager:
             if session:
                 session.log_tool_call(tool_name)
     
-    def get_rag_context(self, session_id: str, refresh: bool = False) -> str:
+    def get_rag_context(self, session_id: str, refresh: bool = False, query_embedding: Optional[np.ndarray] = None) -> str:
+        """Get RAG context using FAISS vector similarity search."""
         with self.lock:
             session = self.sessions.get(session_id)
             if session:
-                return session.get_rag_context(refresh=refresh)
+                return session.get_rag_context(refresh=refresh, query_embedding=query_embedding)
             return ""
+    
+    def get_top_content(self, session_id: str, k: int = 10, query_embedding: Optional[np.ndarray] = None) -> List[Tuple[str, float]]:
+        """Get top k most relevant content for a session."""
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session:
+                return session.get_top_content(k=k, query_embedding=query_embedding)
+            return []
     
     def get_session_summary(self, session_id: str) -> Dict:
         with self.lock:
@@ -215,7 +275,7 @@ class SessionManager:
                         "query": s.query[:50],
                         "urls_fetched": len(s.fetched_urls),
                         "tools_used": len(s.tool_calls_made),
-                        "entities": len(s.local_kg.entities),
+                        "faiss_index_size": s.faiss_index.ntotal,
                     }
                     for sid, s in self.sessions.items()
                 }
