@@ -5,23 +5,13 @@ import logging
 import sys
 import uuid
 from datetime import datetime
-import json
 
-from production_pipeline import initialize_production_pipeline, get_production_pipeline
+from searchPipeline import run_elixposearch_pipeline
 from session_manager import get_session_manager
-from rag_engine import get_rag_engine
+from rag_engine import get_retrieval_system
 from chat_engine import initialize_chat_engine, get_chat_engine
 from requestID import RequestIDMiddleware
 
-# Initialize NLTK data on import
-try:
-    import nltk_setup
-except ImportError:
-    print("[WARN] NLTK setup module not found")
-except Exception as e:
-    print(f"[WARN] Error initializing NLTK data: {e}")
-
-# Initialize logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -29,14 +19,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("elixpo-api")
 
-# Initialize Quart app
 app = Quart(__name__)
 cors(app)
 
-# Add Request ID Middleware for request tracking
 app.asgi_middleware_stack.insert(0, (RequestIDMiddleware(), []))
 
-# Global state
 pipeline_initialized = False
 initialization_lock = asyncio.Lock()
 
@@ -44,21 +31,17 @@ initialization_lock = asyncio.Lock()
 @app.before_serving
 async def startup():
     global pipeline_initialized
-    
+
     async with initialization_lock:
         if pipeline_initialized:
             return
-        
+
         logger.info("[APP] Starting ElixpoSearch...")
-        
         try:
-            pipeline = await initialize_production_pipeline()
-            
-            # Initialize chat engine with session manager and RAG engine
             session_manager = get_session_manager()
-            rag_engine = get_rag_engine()
-            initialize_chat_engine(session_manager, rag_engine)
-            
+            retrieval_system = get_retrieval_system()
+            initialize_chat_engine(session_manager, retrieval_system)
+
             pipeline_initialized = True
             logger.info("[APP] ElixpoSearch ready")
         except Exception as e:
@@ -69,11 +52,6 @@ async def startup():
 @app.after_serving
 async def shutdown():
     logger.info("[APP] Shutting down...")
-
-
-# ============================================
-# Public API Endpoints
-# ============================================
 
 
 @app.route('/api/health', methods=['GET'])
@@ -89,31 +67,28 @@ async def health_check():
 async def search():
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
-    
+
     try:
         data = await request.get_json()
         query = data.get("query", "").strip()
         image_url = data.get("image_url")
         session_id = data.get("session_id")
-        
+
         if not query:
             return jsonify({"error": "Query is required"}), 400
-        
+
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-        
+
         logger.info(f"[{request_id}] Search: {query[:50]}... session: {session_id or 'new'}")
-        
-        pipeline = get_production_pipeline()
-        
+
         async def event_generator():
-            async for chunk in pipeline.process_request(
-                query=query,
-                image_url=image_url,
-                session_id=session_id,
-                request_id=request_id
+            async for chunk in run_elixposearch_pipeline(
+                user_query=query,
+                user_image=image_url,
+                event_id=request_id
             ):
                 yield chunk.encode('utf-8')
-        
+
         return Response(
             event_generator(),
             mimetype='text/event-stream',
@@ -124,7 +99,7 @@ async def search():
                 'Access-Control-Allow-Origin': '*'
             }
         )
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Search error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -134,25 +109,25 @@ async def search():
 async def create_session():
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
-    
+
     try:
         data = await request.get_json()
         query = data.get("query", "").strip()
-        
+
         if not query:
             return jsonify({"error": "Query is required"}), 400
-        
+
         session_manager = get_session_manager()
         session_id = session_manager.create_session(query)
-        
+
         logger.info(f"[API] Session: {session_id}")
-        
+
         return jsonify({
             "session_id": session_id,
             "query": query,
             "created_at": datetime.utcnow().isoformat()
         }), 201
-    
+
     except Exception as e:
         logger.error(f"[API] Session creation error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -161,19 +136,20 @@ async def create_session():
 @app.route('/api/session/<session_id>', methods=['GET'])
 async def get_session_info(session_id: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting session info: {session_id}")
         session_manager = get_session_manager()
         session_data = session_manager.get_session(session_id)
-        
+
         if not session_data:
             logger.warning(f"[{request_id}] Session not found: {session_id}")
             return jsonify({"error": "Session not found"}), 404
-        
-        rag_engine = get_rag_engine()
-        rag_stats = rag_engine.get_summary_stats(session_id)
-        
+
+        retrieval_system = get_retrieval_system()
+        rag_engine = retrieval_system.get_rag_engine(session_id)
+        rag_stats = rag_engine.get_stats()
+
         return jsonify({
             "session_id": session_id,
             "query": session_data.query,
@@ -181,7 +157,7 @@ async def get_session_info(session_id: str):
             "rag_stats": rag_stats,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Session info error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -190,21 +166,22 @@ async def get_session_info(session_id: str):
 @app.route('/api/session/<session_id>/kg', methods=['GET'])
 async def get_session_kg(session_id: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting KG for session: {session_id}")
-        rag_engine = get_rag_engine()
-        context = rag_engine.build_rag_context(session_id)
-        
+        retrieval_system = get_retrieval_system()
+        rag_engine = retrieval_system.get_rag_engine(session_id)
+        context = rag_engine.get_full_context(session_id)
+
         if "error" in context:
             logger.warning(f"[{request_id}] KG fetch error for session: {session_id}")
             return jsonify(context), 404
-        
+
         return jsonify({
             **context,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] KG fetch error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -213,26 +190,27 @@ async def get_session_kg(session_id: str):
 @app.route('/api/session/<session_id>/query', methods=['POST'])
 async def query_session_kg(session_id: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Querying KG for session: {session_id}")
         data = await request.get_json()
         query = data.get("query", "").strip()
         top_k = data.get("top_k", 5)
-        
+
         if not query:
             return jsonify({"error": "Query is required"}), 400
-        
-        rag_engine = get_rag_engine()
-        results = rag_engine.query_knowledge_graph(session_id, query, top_k=top_k)
-        
+
+        retrieval_system = get_retrieval_system()
+        rag_engine = retrieval_system.get_rag_engine(session_id)
+        results = rag_engine.retrieve_context(query, top_k=top_k)
+
         return jsonify({
             "query": query,
             "session_id": session_id,
             "results": results,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] KG query error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -241,21 +219,23 @@ async def query_session_kg(session_id: str):
 @app.route('/api/session/<session_id>/entity/<entity>', methods=['GET'])
 async def get_entity_evidence(session_id: str, entity: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting entity evidence: {entity} for session: {session_id}")
-        rag_engine = get_rag_engine()
-        evidence = rag_engine.extract_entity_evidence(session_id, entity)
-        
-        if "error" in evidence:
+        retrieval_system = get_retrieval_system()
+        rag_engine = retrieval_system.get_rag_engine(session_id)
+        results = rag_engine.retrieve_context(entity, url=session_id, top_k=3)
+
+        if "error" in results:
             logger.warning(f"[{request_id}] Entity not found: {entity}")
-            return jsonify(evidence), 404
-        
+            return jsonify(results), 404
+
         return jsonify({
-            **evidence,
+            "entity": entity,
+            "evidence": results,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Entity evidence error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -264,22 +244,23 @@ async def get_entity_evidence(session_id: str, entity: str):
 @app.route('/api/session/<session_id>/summary', methods=['GET'])
 async def get_session_summary(session_id: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting summary for session: {session_id}")
-        rag_engine = get_rag_engine()
-        summary = rag_engine.build_document_summary(session_id)
-        
-        if not summary:
+        retrieval_system = get_retrieval_system()
+        rag_engine = retrieval_system.get_rag_engine(session_id)
+        stats = rag_engine.get_stats()
+
+        if not stats:
             logger.warning(f"[{request_id}] Session not found: {session_id}")
             return jsonify({"error": "Session not found"}), 404
-        
+
         return jsonify({
             "session_id": session_id,
-            "summary": summary,
+            "stats": stats,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Summary error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -288,20 +269,20 @@ async def get_session_summary(session_id: str):
 @app.route('/api/session/<session_id>', methods=['DELETE'])
 async def delete_session(session_id: str):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Deleting session: {session_id}")
         session_manager = get_session_manager()
         session_manager.cleanup_session(session_id)
-        
+
         logger.info(f"[{request_id}] Session deleted: {session_id}")
-        
+
         return jsonify({
             "message": "Session deleted",
             "session_id": session_id,
             "request_id": request_id
         }), 200
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Session deletion error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -310,18 +291,18 @@ async def delete_session(session_id: str):
 @app.route('/api/stats', methods=['GET'])
 async def get_stats():
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting stats")
         session_manager = get_session_manager()
         stats = session_manager.get_stats()
-        
+
         return jsonify({
             "timestamp": datetime.utcnow().isoformat(),
             "sessions": stats,
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Stats error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -329,33 +310,28 @@ async def get_stats():
 
 @app.route('/api/chat', methods=['POST'])
 async def chat():
-    """
-    Contextual chat endpoint
-    POST body: {session_id?, message, search?, image_url?}
-    """
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
-    
+
     try:
         data = await request.get_json()
         user_message = data.get("message", "").strip()
         session_id = data.get("session_id")
         use_search = data.get("search", True)
         image_url = data.get("image_url")
-        
+
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
-        
-        # Create session if not provided
+
         if not session_id:
             session_manager = get_session_manager()
             session_id = session_manager.create_session(user_message)
-        
+
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
         logger.info(f"[{request_id}] Chat: {user_message[:50]}... session: {session_id}")
-        
+
         chat_engine = get_chat_engine()
-        
+
         async def event_generator():
             if use_search:
                 async for chunk in chat_engine.chat_with_search(session_id, user_message):
@@ -363,7 +339,7 @@ async def chat():
             else:
                 async for chunk in chat_engine.generate_contextual_response(session_id, user_message):
                     yield chunk.encode('utf-8')
-        
+
         return Response(
             event_generator(),
             mimetype='text/event-stream',
@@ -374,7 +350,7 @@ async def chat():
                 'Access-Control-Allow-Origin': '*'
             }
         )
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Chat error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -382,33 +358,28 @@ async def chat():
 
 @app.route('/api/session/<session_id>/chat', methods=['POST'])
 async def session_chat(session_id: str):
-    """
-    Session-based contextual chat
-    POST body: {message, search?, image_url?}
-    """
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
-    
+
     try:
         session_manager = get_session_manager()
-        
-        # Verify session exists
+
         if not session_manager.get_session(session_id):
             return jsonify({"error": "Session not found"}), 404
-        
+
         data = await request.get_json()
         user_message = data.get("message", "").strip()
-        use_search = data.get("search", False)  # Default to no search for existing sessions
+        use_search = data.get("search", False)
         image_url = data.get("image_url")
-        
+
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
-        
+
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
         logger.info(f"[{request_id}] Session chat {session_id}: {user_message[:50]}...")
-        
+
         chat_engine = get_chat_engine()
-        
+
         async def event_generator():
             if use_search:
                 async for chunk in chat_engine.chat_with_search(session_id, user_message):
@@ -416,7 +387,7 @@ async def session_chat(session_id: str):
             else:
                 async for chunk in chat_engine.generate_contextual_response(session_id, user_message):
                     yield chunk.encode('utf-8')
-        
+
         return Response(
             event_generator(),
             mimetype='text/event-stream',
@@ -427,7 +398,7 @@ async def session_chat(session_id: str):
                 'Access-Control-Allow-Origin': '*'
             }
         )
-    
+
     except Exception as e:
         logger.error(f"[API] Session chat error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -435,49 +406,43 @@ async def session_chat(session_id: str):
 
 @app.route('/api/session/<session_id>/chat/completions', methods=['POST'])
 async def chat_completions(session_id: str):
-    """
-    OpenAI-compatible chat completions endpoint
-    POST body: {messages: [{role, content}], temperature?, max_tokens?, stream?}
-    """
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
-    
+
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         session_manager = get_session_manager()
-        
-        # Verify session exists
+
         if not session_manager.get_session(session_id):
             logger.warning(f"[{request_id}] Session not found: {session_id}")
             return jsonify({"error": "Session not found"}), 404
-        
+
         data = await request.get_json()
         messages = data.get("messages", [])
         stream = data.get("stream", False)
-        
+
         if not messages or not isinstance(messages, list):
             return jsonify({"error": "Messages array is required"}), 400
-        
-        # Extract the last user message
+
         user_message = None
         for msg in reversed(messages):
             if msg.get("role") == "user":
                 user_message = msg.get("content", "").strip()
                 break
-        
+
         if not user_message:
             return jsonify({"error": "No user message found in messages"}), 400
-        
+
         logger.info(f"[{request_id}] Chat completions {session_id}")
-        
+
         chat_engine = get_chat_engine()
-        
+
         if stream:
             async def event_generator():
                 async for chunk in chat_engine.generate_contextual_response(session_id, user_message):
                     yield chunk.encode('utf-8')
-            
+
             return Response(
                 event_generator(),
                 mimetype='text/event-stream',
@@ -490,16 +455,14 @@ async def chat_completions(session_id: str):
                 }
             )
         else:
-            # Non-streaming response
             response_content = ""
             async for chunk in chat_engine.generate_contextual_response(session_id, user_message):
                 if chunk.startswith("event: final"):
-                    # Extract content from SSE format
                     lines = chunk.split('\n')
                     for line in lines:
                         if line.startswith("data:"):
                             response_content = line.replace("data:", "").strip()
-            
+
             return jsonify({
                 "id": f"chatcmpl-{str(uuid.uuid4())[:12]}",
                 "object": "chat.completion",
@@ -519,7 +482,7 @@ async def chat_completions(session_id: str):
                     "total_tokens": len(user_message.split()) + len(response_content.split())
                 }
             })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] Chat completions error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -527,27 +490,24 @@ async def chat_completions(session_id: str):
 
 @app.route('/api/session/<session_id>/history', methods=['GET'])
 async def get_chat_history(session_id: str):
-    """
-    Get conversation history for a session
-    """
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
-    
+
     try:
         logger.info(f"[{request_id}] Getting chat history for session: {session_id}")
         session_manager = get_session_manager()
         history = session_manager.get_conversation_history(session_id)
-        
+
         if history is None:
             logger.warning(f"[{request_id}] Session not found: {session_id}")
             return jsonify({"error": "Session not found"}), 404
-        
+
         return jsonify({
             "session_id": session_id,
             "conversation_history": history,
             "message_count": len(history),
             "request_id": request_id
         })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] History error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -572,26 +532,25 @@ async def internal_error(error):
 async def websocket_search():
     request_id = str(uuid.uuid4())[:12]
     logger.info(f"[{request_id}] WebSocket connection established")
-    
+
     try:
         while True:
             data = await websocket.receive_json()
             query = data.get("query", "").strip()
-            
+
             if not query:
                 await websocket.send_json({
                     "error": "Query required",
                     "request_id": request_id
                 })
                 continue
-            
+
             logger.info(f"[{request_id}] WS Query: {query[:50]}")
-            pipeline = get_production_pipeline()
-            
-            async for chunk in pipeline.process_request(
-                query=query,
-                image_url=data.get("image_url"),
-                request_id=request_id
+
+            async for chunk in run_elixposearch_pipeline(
+                user_query=query,
+                user_image=data.get("image_url"),
+                event_id=request_id
             ):
                 lines = chunk.split('\n')
                 event_type = None
@@ -606,7 +565,7 @@ async def websocket_search():
                                 "data": data_content,
                                 "request_id": request_id
                             })
-    
+
     except Exception as e:
         logger.error(f"[{request_id}] WS error: {e}", exc_info=True)
         try:
@@ -621,12 +580,12 @@ async def websocket_search():
 if __name__ == "__main__":
     import hypercorn.asyncio
     from hypercorn.config import Config
-    
+
     config = Config()
     config.bind = ["0.0.0.0:8000"]
     config.workers = 1
-    
+
     logger.info("[APP] Starting ElixpoSearch...")
     logger.info("[APP] Listening on http://0.0.0.0:8000")
-    
+
     asyncio.run(hypercorn.asyncio.serve(app, config))
