@@ -77,14 +77,29 @@ class ipcModules:
             sentences = [s.strip() for s in sentences if len(s.strip().split()) > 3]
         
         if not sentences:
+            logger.warning(f"[INSTANCE {ipcModules._instance_id}] No sentences to extract from")
             return []
         
         try:
+            # Handle single query string or list of queries
+            if isinstance(query, list):
+                query_text = " ".join(query) if query else ""
+            else:
+                query_text = str(query) if query else ""
+            
+            if not query_text.strip():
+                logger.warning(f"[INSTANCE {ipcModules._instance_id}] Empty query provided")
+                return sentences[:min(5, len(sentences))]
+            
             query_emb = self.embed_model.encode(
-                query,
+                query_text,
                 convert_to_numpy=True,
                 normalize_embeddings=True
             )
+            
+            # Ensure query embedding is 1D
+            if len(query_emb.shape) > 1:
+                query_emb = query_emb.squeeze()
             
             sent_emb = self.embed_model.encode(
                 sentences,
@@ -94,18 +109,37 @@ class ipcModules:
                 show_progress_bar=False
             )
             
+            # Ensure sent_emb is 2D
             if len(sent_emb.shape) == 1:
                 sent_emb = sent_emb.reshape(1, -1)
+            
+            # Validate shapes before dot product
+            if sent_emb.shape[1] != query_emb.shape[0]:
+                logger.warning(
+                    f"[INSTANCE {ipcModules._instance_id}] Embedding dimension mismatch: "
+                    f"sent_emb shape={sent_emb.shape}, query_emb shape={query_emb.shape}. "
+                    f"Returning top sentences by length"
+                )
+                # Fallback: return sentences by word count
+                ranked = sorted(
+                    zip(sentences, [len(s.split()) for s in sentences]),
+                    key=lambda x: x[1],
+                    reverse=True
+                )
+                return [s for s, _ in ranked[:min(10, len(ranked))]]
             
             scores = np.dot(sent_emb, query_emb)
             
             ranked = sorted(zip(sentences, scores), key=lambda x: x[1], reverse=True)
             top_k = min(len(ranked) // 2 + 1, len(ranked))
             
-            return ranked[:top_k]
+            result = ranked[:top_k]
+            logger.info(f"[INSTANCE {ipcModules._instance_id}] Extracted {len(result)} relevant sentences")
+            return result
         except Exception as e:
-            logger.error(f"[INSTANCE {ipcModules._instance_id}] extract_relevant error: {e}")
-            return []
+            logger.error(f"[INSTANCE {ipcModules._instance_id}] extract_relevant error: {e}", exc_info=True)
+            # Fallback: return first few sentences
+            return sentences[:min(5, len(sentences))]
 
 
 

@@ -21,6 +21,14 @@ from rag_engine import get_rag_engine
 from chat_engine import initialize_chat_engine, get_chat_engine
 from requestID import RequestIDMiddleware
 
+# Initialize NLTK data on import
+try:
+    import nltk_setup
+except ImportError:
+    print("[WARN] NLTK setup module not found")
+except Exception as e:
+    print(f"[WARN] Error initializing NLTK data: {e}")
+
 # Initialize logging
 logging.basicConfig(
     level=logging.INFO,

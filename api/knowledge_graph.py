@@ -8,27 +8,23 @@ import os
 from typing import Dict, List, Tuple, Set
 import re
 from collections import defaultdict
+from loguru import logger
+
+# Import NLTK setup utility to ensure all required data is available
+try:
+    import nltk_setup
+except ImportError:
+    logger.warning("[KG] NLTK setup module not found, proceeding with existing data")
 
 NLTK_DIR = "searchenv/nltk_data"
 os.makedirs(NLTK_DIR, exist_ok=True)
-nltk.data.path.append(NLTK_DIR)
+nltk.data.path.insert(0, NLTK_DIR)
 
-required_downloads = [
-    ("punkt", "tokenizers"),
-    ("averaged_perceptron_tagger", "taggers"),
-    ("maxent_ne_chunker", "chunkers"),
-    ("stopwords", "corpora"),
-]
-
-for resource, category in required_downloads:
-    resource_path = os.path.join(NLTK_DIR, category, resource)
-    if not os.path.exists(resource_path):
-        try:
-            nltk.download(resource, download_dir=NLTK_DIR, quiet=True)
-        except:
-            pass
-
-stop_words = set(stopwords.words('english'))
+try:
+    stop_words = set(stopwords.words('english'))
+except LookupError:
+    logger.warning("[KG] Stopwords not available, using empty set")
+    stop_words = set()
 
 
 class KnowledgeGraph:
@@ -114,12 +110,14 @@ def extract_entities_nltk(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
                         entity_str = " ".join([word for word, tag in subtree.leaves()])
                         entity_type = subtree.label()
                         all_entities.append((entity_str, entity_type))
-            except:
+            except Exception as ne_error:
+                logger.debug(f"[KG] NER chunking failed for sentence: {ne_error}")
+                # Continue with POS tags even if NE chunking fails
                 pass
         
         return all_entities, all_pos_tags
     except Exception as e:
-        print(f"[WARN] NER extraction failed: {e}")
+        logger.warning(f"[KG] NER extraction failed: {e}")
         return [], []
 
 
@@ -129,23 +127,27 @@ def extract_noun_phrases(text: str) -> List[str]:
         phrases = []
         
         for sentence in sentences:
-            tokens = word_tokenize(sentence)
-            pos_tags = pos_tag(tokens)
-            
-            current_phrase = []
-            for word, tag in pos_tags:
-                if tag in ['NN', 'NNS', 'NNP', 'NNPS', 'JJ', 'JJR', 'JJS']:
-                    current_phrase.append(word)
-                else:
-                    if current_phrase:
-                        phrases.append(" ".join(current_phrase))
-                        current_phrase = []
-            if current_phrase:
-                phrases.append(" ".join(current_phrase))
+            try:
+                tokens = word_tokenize(sentence)
+                pos_tags = pos_tag(tokens)
+                
+                current_phrase = []
+                for word, tag in pos_tags:
+                    if tag in ['NN', 'NNS', 'NNP', 'NNPS', 'JJ', 'JJR', 'JJS']:
+                        current_phrase.append(word)
+                    else:
+                        if current_phrase:
+                            phrases.append(" ".join(current_phrase))
+                            current_phrase = []
+                if current_phrase:
+                    phrases.append(" ".join(current_phrase))
+            except Exception as sent_error:
+                logger.debug(f"[KG] Error processing sentence for noun phrases: {sent_error}")
+                continue
         
         return [p for p in phrases if len(p.split()) <= 4 and p.lower() not in stop_words]
     except Exception as e:
-        print(f"[WARN] Noun phrase extraction failed: {e}")
+        logger.warning(f"[KG] Noun phrase extraction failed: {e}")
         return []
 
 
