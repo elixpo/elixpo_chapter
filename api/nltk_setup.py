@@ -5,40 +5,59 @@ from pathlib import Path
 from loguru import logger
 
 # Set NLTK data path
-NLTK_DATA_DIR = "searchenv/nltk_data"
-Path(NLTK_DATA_DIR).mkdir(parents=True, exist_ok=True)
-nltk.data.path.insert(0, NLTK_DATA_DIR)
-if NLTK_DATA_DIR not in nltk.data.path:
-    nltk.data.path.append(NLTK_DATA_DIR)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+NLTK_DATA_DIR = PROJECT_ROOT / "searchenv" / "nltk_data"
+NLTK_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+NLTK_DATA_DIR_STR = str(NLTK_DATA_DIR)
+if NLTK_DATA_DIR_STR not in nltk.data.path:
+    nltk.data.path.insert(0, NLTK_DATA_DIR_STR)
 
 REQUIRED_NLTK_RESOURCES = [
     "punkt",
+    "punkt_tab",
     "averaged_perceptron_tagger",
     "averaged_perceptron_tagger_eng",  
     "maxent_ne_chunker",
+    "maxent_ne_chunker_tab",
     "stopwords",
-    "wordnet",
     "universal_tagset",
 ]
 
+RESOURCE_PATHS = {
+    "punkt": ["tokenizers/punkt", "tokenizers/punkt_tab"],
+    "punkt_tab": ["tokenizers/punkt_tab"],
+    "averaged_perceptron_tagger": ["taggers/averaged_perceptron_tagger"],
+    "averaged_perceptron_tagger_eng": ["taggers/averaged_perceptron_tagger_eng"],
+    "maxent_ne_chunker": ["chunkers/maxent_ne_chunker"],
+    "maxent_ne_chunker_tab": ["chunkers/maxent_ne_chunker_tab"],
+    "stopwords": ["corpora/stopwords"],
+    "universal_tagset": ["taggers/universal_tagset", "help/tagsets"],
+}
+
 
 def check_nltk_resource(resource_name: str) -> bool:
-    try:
-        nltk.data.find(resource_name)
-        return True
-    except LookupError:
-        return False
+    candidate_paths = RESOURCE_PATHS.get(resource_name, [resource_name])
+    for candidate in candidate_paths:
+        try:
+            nltk.data.find(candidate)
+            return True
+        except LookupError:
+            continue
+    return False
 
 
 def download_nltk_resource(resource_name: str, retries: int = 3) -> bool:
     for attempt in range(retries):
         try:
             logger.info(f"[NLTK] Downloading {resource_name} (attempt {attempt + 1}/{retries})...")
-            nltk.download(
+            download_ok = nltk.download(
                 resource_name,
-                download_dir=NLTK_DATA_DIR,
+                download_dir=NLTK_DATA_DIR_STR,
                 quiet=True
             )
+            if not download_ok:
+                logger.warning(f"[NLTK] nltk.download returned False for {resource_name}")
             
             # Verify download was successful
             if check_nltk_resource(resource_name):

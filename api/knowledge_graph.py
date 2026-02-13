@@ -27,6 +27,26 @@ except LookupError:
     stop_words = set()
 
 
+def _has_ne_chunker_data() -> bool:
+    candidate_paths = [
+        "chunkers/maxent_ne_chunker_tab/english_ace_multiclass/",
+        "chunkers/maxent_ne_chunker/",
+    ]
+    for path in candidate_paths:
+        try:
+            nltk.data.find(path)
+            return True
+        except LookupError:
+            continue
+    return False
+
+
+HAS_NE_CHUNKER_DATA = _has_ne_chunker_data()
+if not HAS_NE_CHUNKER_DATA:
+    logger.warning("[KG] maxent_ne_chunker data unavailable; named-entity chunking disabled")
+NE_CHUNKER_ENABLED = HAS_NE_CHUNKER_DATA
+
+
 class KnowledgeGraph:
     
     def __init__(self):
@@ -92,6 +112,7 @@ class KnowledgeGraph:
 
 
 def extract_entities_nltk(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
+    global NE_CHUNKER_ENABLED
     try:
         sentences = sent_tokenize(text)
         all_entities = []
@@ -102,18 +123,22 @@ def extract_entities_nltk(text: str) -> Tuple[List[str], List[Tuple[str, str]]]:
             pos_tags = pos_tag(tokens)
             all_pos_tags.extend(pos_tags)
             
-            try:
-                ne_tree = ne_chunk(pos_tags, binary=False)
-                
-                for subtree in ne_tree:
-                    if isinstance(subtree, Tree):
-                        entity_str = " ".join([word for word, tag in subtree.leaves()])
-                        entity_type = subtree.label()
-                        all_entities.append((entity_str, entity_type))
-            except Exception as ne_error:
-                logger.debug(f"[KG] NER chunking failed for sentence: {ne_error}")
-                # Continue with POS tags even if NE chunking fails
-                pass
+            if NE_CHUNKER_ENABLED:
+                try:
+                    ne_tree = ne_chunk(pos_tags, binary=False)
+                    
+                    for subtree in ne_tree:
+                        if isinstance(subtree, Tree):
+                            entity_str = " ".join([word for word, tag in subtree.leaves()])
+                            entity_type = subtree.label()
+                            all_entities.append((entity_str, entity_type))
+                except LookupError as ne_lookup_error:
+                    NE_CHUNKER_ENABLED = False
+                    logger.warning(f"[KG] Disabling NER chunking due to missing NLTK resource: {ne_lookup_error}")
+                except Exception as ne_error:
+                    logger.debug(f"[KG] NER chunking failed for sentence: {ne_error}")
+                    # Continue with POS tags even if NE chunking fails
+                    pass
         
         return all_entities, all_pos_tags
     except Exception as e:
