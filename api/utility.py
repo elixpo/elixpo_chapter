@@ -1,7 +1,7 @@
 from collections import deque
 from loguru import logger
 from multiprocessing.managers import BaseManager
-from web_scraper import fetch_full_text
+from search import fetch_full_text
 import concurrent 
 import re
 from urllib.parse import urlparse, parse_qs

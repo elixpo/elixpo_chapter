@@ -8,9 +8,13 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
+import logging
 from config import MAX_TOTAL_SCRAPE_WORD_COUNT
 from knowledge_graph import build_knowledge_graph, clean_text_nltk, chunk_and_graph
-from kg_manager import kg_manager
+
+logger = logging.getLogger(__name__)
+
+__all__ = ['fetch_full_text', 'playwright_web_search', 'warmup_playwright']
 
 
 USER_AGENTS = [
@@ -275,13 +279,13 @@ def fetch_full_text(
     try:
         response = requests.get(url, timeout=20, headers=headers)
         if response.status_code != 200:
-            print(f"Error:- {url}")
+            logger.error(f"[FETCH] Error fetching {url}: Status {response.status_code}")
             return "", kg_result
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type', '').lower()
         if 'text/html' not in content_type:
-            print(f"Skipping non-HTML content from {url} (Content-Type: {content_type})")
+            logger.warning(f"[FETCH] Skipping non-HTML content from {url} (Content-Type: {content_type})")
             return "", kg_result
 
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -317,38 +321,60 @@ def fetch_full_text(
 
         cleaned_text = text_content.strip()
 
-        # Build knowledge graph if requested
+        # Build knowledge graph with semantic chunking for better contextualization
         if build_kg and cleaned_text:
             try:
+                # Build main knowledge graph
                 kg = build_knowledge_graph(cleaned_text)
+                
+                # Build chunked knowledge graphs for semantic enrichment
+                chunked_graphs = chunk_and_graph(cleaned_text, chunk_size=500, overlap=50)
+                
+                # Merge chunk-level insights into main KG
+                for chunk_data in chunked_graphs:
+                    chunk_kg_dict = chunk_data.get("knowledge_graph", {})
+                    if chunk_kg_dict and "entities" in chunk_kg_dict:
+                        # Add chunk entities to main KG
+                        for entity_key, entity_info in chunk_kg_dict.get("entities", {}).items():
+                            if entity_key not in kg.entities:
+                                kg.add_entity(
+                                    entity_info.get("original", entity_key),
+                                    entity_info.get("type", "UNKNOWN")
+                                )
+                
+                # Rebuild importance scores after merging
+                kg.calculate_importance()
+                
                 kg_result = {
                     "entities": kg.entities,
+                    "entity_count": len(kg.entities),
                     "top_entities": kg.get_top_entities(top_k=10),
-                    "relationships": kg.relationships[:20],  # Limit relationships
-                    "importance_scores": kg.importance_scores
+                    "relationships": kg.relationships[:20],
+                    "relationship_count": len(kg.relationships),
+                    "importance_scores": kg.importance_scores,
+                    "chunks_analyzed": len(chunked_graphs),
+                    "semantic_enrichment": True
                 }
 
-                # Store in KG manager if request_id is provided
-                if request_id:
-                    kg_manager.add_kg(request_id, url, cleaned_text, kg)
-                    kg_result["stored_in_manager"] = True
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.info(f"[KG] Knowledge graph stored for request {request_id}")
+                logger.info(
+                    f"[KG] Built comprehensive KG from {url}: "
+                    f"{len(kg.entities)} entities, {len(kg.relationships)} relationships, "
+                    f"enhanced with {len(chunked_graphs)} semantic chunks"
+                )
 
             except Exception as e:
-                print(f"[WARN] Knowledge graph building failed for {url}: {e}")
+                logger.warning(f"[KG] Knowledge graph building failed for {url}: {e}", exc_info=True)
 
         return cleaned_text, kg_result
 
     except requests.exceptions.Timeout:
-        print(f"Timeout scraping URL: {url}")
+        logger.error(f"[FETCH] Timeout scraping URL: {url}")
         return "", kg_result
     except requests.exceptions.RequestException as e:
-        print(f"Request error scraping URL: {url}: {type(e).__name__}: {e}")
+        logger.error(f"[FETCH] Request error scraping URL: {url}: {type(e).__name__}: {e}")
         return "", kg_result
     except Exception as e:
-        print(f"Error processing URL: {url}: {type(e).__name__}: {e}")
+        logger.error(f"[FETCH] Error processing URL: {url}: {type(e).__name__}: {e}")
         return "", kg_result
 
 
