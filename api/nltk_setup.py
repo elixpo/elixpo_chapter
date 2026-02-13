@@ -22,6 +22,7 @@ REQUIRED_NLTK_RESOURCES = [
     "maxent_ne_chunker_tab",
     "stopwords",
     "universal_tagset",
+    "words",
 ]
 
 RESOURCE_PATHS = {
@@ -33,6 +34,7 @@ RESOURCE_PATHS = {
     "maxent_ne_chunker_tab": ["chunkers/maxent_ne_chunker_tab"],
     "stopwords": ["corpora/stopwords"],
     "universal_tagset": ["taggers/universal_tagset", "help/tagsets"],
+    "words": ["corpora/words"],
 }
 
 
