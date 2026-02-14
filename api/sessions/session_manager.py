@@ -1,7 +1,14 @@
 from typing import Dict, Optional
 import threading
 from session_manager import SessionMemory
-from config import SESSION_SUMMARY_THRESHOLD
+from .sessionData import SessionData
+from loguru import logger
+import uuid
+from datetime import datetime, timedelta
+import numpy as np
+from typing import List, Tuple
+
+
 
 class SessionManager:
     def __init__(self, max_sessions: int = 1000, ttl_minutes: int = 30, embedding_dim: int = None):
