@@ -1,32 +1,13 @@
-import time
-import random
-import asyncio
-from typing import List, Tuple, Dict, Optional
-from urllib.parse import quote, urlparse
-import requests
-from bs4 import BeautifulSoup
-import re
-import logging
-import ipaddress
-from config import MAX_TOTAL_SCRAPE_WORD_COUNT, RETRIEVAL_TOP_K
+from typing import List
+from config import  RETRIEVAL_TOP_K
 from loguru import logger
 from multiprocessing.managers import BaseManager
+from ragService.embeddingService import EmbeddingService
+from ragService.vectorStore import VectorStore
+from ragService.retrievalPipeline import RetrievalPipeline
+from typing import Dict
 
 __all__ = ['fetch_full_text', 'playwright_web_search', 'warmup_playwright', 'ingest_url_to_vector_store', 'retrieve_from_vector_store']
-
-
-
-if __name__ == "__main__":
-    async def main():
-        query = "an evening in paris"
-        urls, search_time = await playwright_web_search(query, max_links=4, images=True)
-        print(f"Search completed in {search_time:.3f} seconds")
-        print("URLs found:")
-        for url in urls:
-            print(f" - {url}")
-    
-    asyncio.run(main())
-
 
 _global_embedding_service = None
 _global_vector_store = None
@@ -60,9 +41,6 @@ def _ensure_retrieval_services():
     
     if _global_embedding_service is None:
         try:
-            from embedding_service import EmbeddingService
-            from embedding_service import VectorStore
-            from rag_engine import RetrievalPipeline
             from config import EMBEDDING_MODEL, EMBEDDINGS_DIR
             
             logger.info("[SEARCH] Initializing retrieval services...")
