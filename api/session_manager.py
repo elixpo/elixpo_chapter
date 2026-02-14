@@ -37,15 +37,13 @@ class SessionData:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.device == "cuda":
             try:
-                # Use GPU-accelerated FAISS with IndexFlatIP (inner product) for better performance
-                cpu_index = faiss.IndexFlatIP(embedding_dim)
-                self.faiss_index = faiss.index_cpu_to_gpu(
-                    faiss.StandardGpuResources(), 0, cpu_index
-                )
-                logger.info(f"[SessionData] {session_id}: FAISS index on GPU (IndexFlatIP)")
+                # Use GPU-accelerated FAISS with GpuIndexFlatIP (inner product) for better performance
+                res = faiss.StandardGpuResources()
+                self.faiss_index = faiss.GpuIndexFlatIP(res, embedding_dim)
+                logger.info(f"[SessionData] {session_id}: FAISS index on GPU (GpuIndexFlatIP)")
             except Exception as e:
-                logger.warning(f"[SessionData] {session_id}: Failed to move FAISS to GPU, falling back to CPU: {e}")
-                self.faiss_index = faiss.IndexFlatL2(embedding_dim)
+                logger.warning(f"[SessionData] {session_id}: Failed to create GPU index, falling back to CPU: {e}")
+                self.faiss_index = faiss.IndexFlatIP(embedding_dim)
                 self.device = "cpu"
         else:
             self.faiss_index = faiss.IndexFlatL2(embedding_dim)

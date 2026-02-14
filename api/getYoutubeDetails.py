@@ -19,15 +19,24 @@ class modelManager(BaseManager):
 modelManager.register("accessSearchAgents")
 
 search_service = None
+_ipc_ready = False
+_ipc_initialized = False
 
 def _init_ipc_manager(max_retries: int = 3, retry_delay: float = 1.0):
-    global search_service
+    global search_service, _ipc_ready, _ipc_initialized
+    
+    # Avoid re-attempting if already tried
+    if _ipc_initialized:
+        return _ipc_ready
+    
+    _ipc_initialized = True
     
     for attempt in range(max_retries):
         try:
             manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
             manager.connect()
             search_service = manager.accessSearchAgents()
+            _ipc_ready = True
             logger.info("[YoutubeDetails] IPC connection established")
             return True
         except Exception as e:
@@ -35,20 +44,20 @@ def _init_ipc_manager(max_retries: int = 3, retry_delay: float = 1.0):
                 logger.warning(f"[YoutubeDetails] IPC connection failed (attempt {attempt + 1}/{max_retries}): {e}")
                 time.sleep(retry_delay)
             else:
-                logger.error(f"[YoutubeDetails] Failed to connect to IPC server after {max_retries} attempts: {e}")
+                logger.debug(f"[YoutubeDetails] IPC server not available - running in standalone mode")
+                _ipc_ready = False
                 return False
     
+    _ipc_ready = False
     return False
-
-_ipc_ready = _init_ipc_manager()
 
 AUDIO_TRANSCRIBE_SIZE = "small"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 whisper_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE).to(device)
 
 async def youtubeMetadata(url: str):
-    if not _ipc_ready or search_service is None:
-        logger.error("[YoutubeDetails] IPC service not available for YouTube metadata")
+    if not _init_ipc_manager() or search_service is None:
+        logger.warning("[YoutubeDetails] IPC service not available for YouTube metadata")
         return None
     try:
         # CRITICAL FIX #7: Use asyncio.to_thread to avoid blocking event loop
@@ -138,7 +147,7 @@ async def transcribe_audio(
         logger.info(f"[Transcribe] Starting transcription for video {video_id}")
         
         # Try IPC server first (optimized)
-        if _ipc_ready and search_service is not None:
+        if _init_ipc_manager() and search_service is not None:
             try:
                 logger.info(f"[Transcribe] Using IPC server for transcription")
                 metadata = search_service.get_youtube_metadata(url)

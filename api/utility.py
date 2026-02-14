@@ -19,15 +19,25 @@ class modelManager(BaseManager):
 modelManager.register("accessSearchAgents")
 
 search_service = None
+_ipc_ready = False
+_ipc_initialized = False
 
 def _init_ipc_manager(max_retries: int = 3, retry_delay: float = 1.0):
-    global search_service
+    """Lazily initialize IPC connection to the model server."""
+    global search_service, _ipc_ready, _ipc_initialized
+    
+    # Avoid re-attempting if already tried
+    if _ipc_initialized:
+        return _ipc_ready
+    
+    _ipc_initialized = True
     
     for attempt in range(max_retries):
         try:
             manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
             manager.connect()
             search_service = manager.accessSearchAgents()
+            _ipc_ready = True
             logger.info("[Utility] IPC connection established with model_server")
             return True
         except Exception as e:
@@ -35,12 +45,12 @@ def _init_ipc_manager(max_retries: int = 3, retry_delay: float = 1.0):
                 logger.warning(f"[Utility] IPC connection failed (attempt {attempt + 1}/{max_retries}): {e}")
                 time.sleep(retry_delay)
             else:
-                logger.error(f"[Utility] Failed to connect to IPC server after {max_retries} attempts: {e}")
+                logger.debug(f"[Utility] IPC server not available - running in standalone mode")
+                _ipc_ready = False
                 return False
     
+    _ipc_ready = False
     return False
-
-_ipc_ready = _init_ipc_manager()
 
 
 def cleanQuery(query):
@@ -66,8 +76,8 @@ def cleanQuery(query):
 
 def webSearch(query: str):
     """Synchronous web search"""
-    if not _ipc_ready or search_service is None:
-        logger.error("[Utility] IPC service not available for web search")
+    if not _init_ipc_manager() or search_service is None:
+        logger.warning("[Utility] IPC service not available for web search")
         return []
     try:
         urls = search_service.web_search(query)
@@ -88,8 +98,8 @@ async def imageSearch(query: str, max_images: int = 10) -> list:
     Returns:
         List of image URLs
     """
-    if not _ipc_ready or search_service is None:
-        logger.error("[Utility] IPC service not available for image search")
+    if not _init_ipc_manager() or search_service is None:
+        logger.warning("[Utility] IPC service not available for image search")
         return []
     try:
         # Run synchronous IPC call in thread to avoid blocking event loop

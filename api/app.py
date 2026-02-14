@@ -59,56 +59,6 @@ initialization_lock = asyncio.Lock()
 model_server_process = None
 
 
-def start_model_server():
-    """Start the IPC model server in a separate process"""
-    global model_server_process
-    try:
-        # Check if server is already running
-        import socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('localhost', 5010))
-        sock.close()
-        
-        if result == 0:
-            logger.info("[APP] Model server already running on port 5010")
-            return True
-        
-        # Start model_server.py in a new process
-        
-        model_server_path = "model_server.py"
-        # CRITICAL FIX #1: Set cwd to api directory so model_server.py can be found
-        cwd = os.path.dirname(os.path.abspath(__file__))
-        
-        logger.info(f"[APP] Starting model server from {model_server_path}...")
-        model_server_process = subprocess.Popen(
-            [sys.executable, model_server_path],
-            cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1
-        )
-        
-        # Wait for server to start
-        time.sleep(3)
-        
-        # Verify server started
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('localhost', 5010))
-        sock.close()
-        
-        if result == 0:
-            logger.info("[APP] ✅ Model server started successfully on port 5010")
-            return True
-        else:
-            logger.warning("[APP] ⚠️ Model server may not have started properly, but continuing...")
-            return False
-            
-    except Exception as e:
-        logger.warning(f"[APP] Could not start model server: {e}, continuing without it...")
-        return False
-
-
 @app.before_serving
 async def startup():
     global pipeline_initialized
@@ -119,9 +69,6 @@ async def startup():
 
         logger.info("[APP] Starting ElixpoSearch...")
         try:
-            # CRITICAL FIX #8: Start model server for IPC services
-            start_model_server()
-            
             session_manager = get_session_manager()
             retrieval_system = get_retrieval_system()
             initialize_chat_engine(session_manager, retrieval_system)

@@ -60,9 +60,18 @@ class VectorStore:
         
         Path(embeddings_dir).mkdir(parents=True, exist_ok=True)
         
-        self.index = faiss.IndexFlatIP(embedding_dim)
         if self.device == "cuda":
-            self.index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, self.index)
+            try:
+                # Use GPU-accelerated FAISS with GpuIndexFlatIP (inner product) for better performance
+                res = faiss.StandardGpuResources()
+                self.index = faiss.GpuIndexFlatIP(res, embedding_dim)
+                logger.info(f"[VectorStore] FAISS GPU index created (GpuIndexFlatIP)")
+            except Exception as e:
+                logger.warning(f"[VectorStore] Failed to create GPU index: {e}, falling back to CPU")
+                self.index = faiss.IndexFlatIP(embedding_dim)
+                self.device = "cpu"
+        else:
+            self.index = faiss.IndexFlatIP(embedding_dim)
         
         self.metadata = []
         self.chunk_count = 0
@@ -148,7 +157,14 @@ class VectorStore:
                 index = faiss.read_index(self.index_path)
                 
                 if self.device == "cuda":
-                    self.index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, index)
+                    try:
+                        # Move CPU index to GPU using index_cpu_to_all_gpus (supports all GPUs)
+                        self.index = faiss.index_cpu_to_all_gpus(index)
+                        logger.info(f"[VectorStore] Loaded index moved to GPU")
+                    except Exception as e:
+                        logger.warning(f"[VectorStore] Failed to move loaded index to GPU: {e}")
+                        self.index = index
+                        self.device = "cpu"
                 else:
                     self.index = index
                 
