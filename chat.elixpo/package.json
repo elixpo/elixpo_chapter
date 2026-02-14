@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "dotenv": "^17.2.3",
-        "express": "^4.18.2",
+        "express": "^4.22.1",
         "firebase": "^11.9.1",
         "jimp": "^1.6.0",
         "node-fetch": "^3.3.2",
