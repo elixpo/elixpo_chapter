@@ -9,10 +9,10 @@ from datetime import datetime
 import re
 import subprocess
 import time
-from searchPipeline import run_elixposearch_pipeline
-from session_manager import get_session_manager
-from rag_engine import get_retrieval_system
-from chat_engine import initialize_chat_engine, get_chat_engine
+from pipeline.searchPipeline import run_elixposearch_pipeline
+from sessions.session_manager import get_session_manager
+from ragService.ragEngine import get_retrieval_system
+from chatEngine.chat_engine import initialize_chat_engine, get_chat_engine
 from api.commons.requestID import RequestIDMiddleware
 
 
