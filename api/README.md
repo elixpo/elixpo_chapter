@@ -1,244 +1,144 @@
-# ElixpoSearch API
+# ElixpoSearch API Architecture
 
-A production-grade RAG (Retrieval-Augmented Generation) search API powered by LLMs, vector embeddings, and intelligent web search.
 
-## Quick Start
 
-```bash
-# Activate virtual environment
-source searchenv/bin/activate
+## Module Hierarchies
 
-# Start the API
-cd api
-python app.py
 
-# API available at: http://localhost:8000
-# Health check: http://localhost:8000/api/health
+```mermaid
+graph TB
+    subgraph Client["Client Layer"]
+        HTTP[HTTP/REST Client]
+        WS[WebSocket Client]
+    end
+
+    subgraph API["Main API Server - app.py"]
+        APP[Quart App Instance]
+        ROUTES["API Routes<br/>- /api/search<br/>- /api/chat<br/>- /api/session/*<br/>- /ws/search"]
+        MIDDLEWARE["Middleware<br/>- RequestID Middleware<br/>- CORS<br/>- Validation"]
+        STARTUP["Startup Handler<br/>- Initializes Services<br/>- Starts IPC Service"]
+        SHUTDOWN["Shutdown Handler<br/>- Graceful cleanup"]
+    end
+
+    subgraph IPC["IPC Service (subprocess)"]
+        CORE_SVC["CoreEmbeddingService"]
+        SEARCH_AGENT["SearchAgents Manager"]
+        EMBEDDINGS["Vector Store<br/>Chroma DB"]
+        SEMANTIC["Semantic Cache"]
+    end
+
+    subgraph Pipeline["Pipeline Runner"]
+        SEARCH_PIPE["SearchPipeline<br/>run_elixposearch_pipeline"]
+        TOOLS["Tool Definitions<br/>web_search, fetch_full_text,<br/>image_search, etc."]
+        INSTRUCTIONS["System Instructions<br/>Role definitions,<br/>Tool guidance"]
+        CONFIG["Pipeline Config<br/>Model settings,<br/>API endpoints"]
+    end
+
+    subgraph Session["Session Management"]
+        SESSION_MGR["SessionManager<br/>- CRUD operations<br/>- TTL management<br/>- Conversation history"]
+        SESSION_DATA["SessionData<br/>- Query embedding<br/>- Content storage<br/>- Metadata"]
+        SESSION_MEM["SessionMemory<br/>- Memory management"]
+    end
+
+    subgraph RAG["RAG Service"]
+        RETRIEVAL_SYS["RetrievalSystem<br/>- Singleton pattern<br/>- Engine factory"]
+        RAG_ENGINE["RAGEngine<br/>- Context retrieval<br/>- Semantic caching"]
+        EMBED_SVC["EmbeddingService<br/>- Model inference"]
+        VECTOR_STORE["VectorStore<br/>- Chroma wrapper<br/>- CRUD operations"]
+        CACHE["SemanticCache<br/>- Similarity-based<br/>caching"]
+    end
+
+    subgraph Chat["Chat Engine"]
+        CHAT_ENGINE["ChatEngine<br/>- Contextual responses<br/>- Search integration"]
+        CHAT_INIT["Chat Initializer<br/>- Setup handlers"]
+    end
+
+    subgraph Search["Searching Service"]
+        SEARCH_UTILS["Searching Utils<br/>- Web/Image search<br/>- URL validation<br/>- Playwright integration"]
+        FETCH["fetch_full_text<br/>- Web scraping<br/>- Content extraction"]
+    end
+
+    subgraph FunctionCalls["Function Modules"]
+        IMG_PROMPT["getImagePrompt<br/>- Vision-language model<br/>- Image analysis"]
+        IMG_REPLY["replyFromImage<br/>- Image-based responses"]
+        YT["getYoutubeDetails<br/>- Metadata extraction<br/>- Audio transcription"]
+        TZ["getTimeZone<br/>- Location resolution<br/>- Timezone lookup"]
+    end
+
+    subgraph Commons["Commons & Utilities"]
+        SEARCHING_BASED["searching_based<br/>- Web search wrapper<br/>- Image search wrapper"]
+        REQUEST_ID["RequestID Middleware<br/>- Request tracking"]
+        MAIN["Main utilities<br/>- IPC manager"]
+    end
+
+    %% Connections
+    HTTP --> APP
+    WS --> APP
+    
+    APP --> ROUTES
+    APP --> MIDDLEWARE
+    APP --> STARTUP
+    APP --> SHUTDOWN
+    
+    STARTUP -->|starts subprocess| IPC
+    STARTUP -->|Get Sessions| SESSION_MGR
+    STARTUP -->|Initialize| RETRIEVAL_SYS
+    STARTUP -->|Setup| CHAT_ENGINE
+    
+    ROUTES -->|fetch_search_results| SEARCH_PIPE
+    ROUTES -->|fetch_chat| CHAT_ENGINE
+    ROUTES -->|manage_sessions| SESSION_MGR
+    ROUTES -->|fetch_context| RETRIEVAL_SYS
+    
+    SEARCH_PIPE -->|use_tools| TOOLS
+    SEARCH_PIPE -->|apply_instructions| INSTRUCTIONS
+    SEARCH_PIPE -->|config_settings| CONFIG
+    SEARCH_PIPE -->|fetch_content| SEARCH_UTILS
+    SEARCH_PIPE -->|call_functions| FunctionCalls
+    SEARCH_PIPE -->|retrieve_context| RAG_ENGINE
+    
+    CHAT_ENGINE -->|get_sessions| SESSION_MGR
+    CHAT_ENGINE -->|retrieve_context| RETRIEVAL_SYS
+    CHAT_ENGINE -->|use_pipeline| SEARCH_PIPE
+    
+    SESSION_MGR -->|manage| SESSION_DATA
+    SESSION_MGR -->|manage| SESSION_MEM
+    
+    RETRIEVAL_SYS -->|create_engines| RAG_ENGINE
+    RAG_ENGINE -->|embed_queries| EMBED_SVC
+    RAG_ENGINE -->|store_vectors| VECTOR_STORE
+    RAG_ENGINE -->|cache_results| CACHE
+    RAG_ENGINE -->|use_session_data| SESSION_DATA
+    
+    RAG_ENGINE -->|connect_to_core| CORE_SVC
+    RAG_ENGINE -->|search_vectors| EMBEDDINGS
+    RAG_ENGINE -->|cache_results| SEMANTIC
+    
+    SEARCH_UTILS -->|use_IPC| SEARCH_AGENT
+    SEARCHING_BASED -->|wrap_search| SEARCH_UTILS
+    SEARCH_UTILS -->|validate_urls| FETCH
+    FETCH -->|fetch_from_urls| SEARCH_UTILS
+    
+    FunctionCalls -->|analyze| IMG_PROMPT
+    FunctionCalls -->|reply| IMG_REPLY
+    FunctionCalls -->|extract_metadata| YT
+    FunctionCalls -->|lookup| TZ
+    
+    IPC -->|serve_embeddings| CORE_SVC
+    IPC -->|manage_agents| SEARCH_AGENT
+    CORE_SVC -->|persist| EMBEDDINGS
+    CORE_SVC -->|cache| SEMANTIC
+
+    %% Styling
+    classDef client fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef api fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef pipeline fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef util fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class Client client
+    class API api
+    class IPC,Pipeline,Session,RAG,Chat,Search,FunctionCalls service
+    class Commons util
 ```
-
-## Features
-
-- **Intelligent Search**: Web search + RAG-based context retrieval
-- **Session Management**: Persistent conversations with semantic caching
-- **Chat Interface**: Streaming responses with source attribution
-- **Multi-modal Support**: Image analysis and audio transcription
-- **Knowledge Graphs**: Dynamic entity extraction and relationship mapping
-- **Async Processing**: Fast, non-blocking request handling
-
-## Architecture Overview
-
-```
-                        ┌─────────────┐
-                        │   Client    │
-                        │ (REST/WS)   │
-                        └──────┬──────┘
-                               │ HTTP/WS
-                        ┌──────▼──────┐
-                        │  Quart API  │◄─── Handles requests
-                        │  (app.py)   │
-                        └──────┬──────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-        ▼                      ▼                      ▼
-    ┌────────┐         ┌─────────────┐        ┌───────────┐
-    │Pipeline│         │  RAGService │        │  Sessions │
-    │        │         │             │        │ & Chat    │
-    └────┬───┘         └────┬────────┘        └─────┬─────┘
-         │                  │                       │
-         │ (searches)       │ (embeds & retrieves)  │
-         ▼                  ▼                       ▼
-     ┌───────────────────────────┬───────────────────────┐
-     │       IPC Service         │   SessionManager      │
-     │ (subprocess)              │                       │
-     │                           │                       │
-     │ • CoreEmbeddingService    │ • Session CRUD        │
-     │ • SearchAgents            │ • History management  │
-     │ • Chroma DB (vectors)     │ • TTL cleanup         │
-     └───────────────────────────┴───────────────────────┘
-```
-
-## Core Modules
-
-| Module | Purpose |
-|--------|---------|
-| **app.py** | Main entry point, route handlers, server startup |
-| **pipeline/** | Search pipeline orchestration & LLM tools |
-| **ragService/** | Embedding, vector store, retrieval |
-| **ipcService/** | IPC subprocess for heavy operations |
-| **sessions/** | Session & conversation management |
-| **chatEngine/** | Chat response generation |
-| **commons/** | Shared utilities (search, IPC) |
-| **searching/** | Web scraping and content extraction |
-| **functionCalls/** | Image analysis, YouTube, timezone |
-
-## API Endpoints
-
-### Search
-```bash
-POST /api/search
-Content-Type: application/json
-
-{
-  "query": "latest AI trends",
-  "image_url": "https://example.com/image.jpg" (optional),
-  "session_id": "abc123" (optional)
-}
-
-# Response: Server-Sent Events (SSE) stream
-```
-
-### Sessions
-```bash
-# Create session
-POST /api/session/create
-{"query": "my search query"}
-
-# Get session info
-GET /api/session/{session_id}
-
-# Delete session
-DELETE /api/session/{session_id}
-
-# Get chat history
-GET /api/session/{session_id}/history
-```
-
-### Chat
-```bash
-# Chat with search
-POST /api/chat
-{
-  "message": "What does this image show?",
-  "image_url": "https://example.com/img.jpg",
-  "session_id": "abc123"
-}
-
-# Session-specific chat (uses session context)
-POST /api/session/{session_id}/chat
-{"message": "Tell me more"}
-
-# OpenAI-compatible completions
-POST /api/session/{session_id}/chat/completions
-{
-  "messages": [{"role": "user", "content": "..."}],
-  "stream": true
-}
-```
-
-### Context Management
-```bash
-# Get knowledge graph
-GET /api/session/{session_id}/kg
-
-# Query knowledge graph
-POST /api/session/{session_id}/query
-{"query": "entity search", "top_k": 5}
-
-# Get entity evidence
-GET /api/session/{session_id}/entity/{entity_name}
-
-# Get session summary/stats
-GET /api/session/{session_id}/summary
-```
-
-### WebSocket
-```bash
-ws://localhost:8000/ws/search
-
-# Send: {"query": "...", "image_url": "..."}
-# Receive: {event, data, request_id}
-```
-
-## Configuration
-
-Edit `pipeline/config.py`:
-
-```python
-# Model & API
-POLLINATIONS_ENDPOINT = "https://gen.pollinations.ai/v1/chat/completions"
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-EMBEDDINGS_DIR = "./embeddings"
-
-# Session management
-MAX_SESSIONS = 1000
-SESSION_TTL_MINUTES = 30
-
-# Search & retrieval
-SEARCH_MAX_RESULTS = 8
-RETRIEVAL_TOP_K = 5
-RAG_CONTEXT_REFRESH = True
-
-# Caching
-SEMANTIC_CACHE_TTL_SECONDS = 3600
-SEMANTIC_CACHE_SIMILARITY_THRESHOLD = 0.95
-```
-
-## Key Design Decisions
-
-1. **IPC Service**: Heavy operations (embeddings, web search) run in a separate Python subprocess for isolation
-2. **Streaming Responses**: SSE (Server-Sent Events) for real-time result streaming
-3. **Semantic Caching**: Similarity-based caching reduces redundant computations
-4. **Session-Based Context**: Each conversation maintains its own vector store and RAG context
-5. **Tool-Based LLM**: Structured tool calling for reliable function execution
-
-## Performance
-
-- **Startup**: ~5 seconds (IPC service + model initialization)
-- **First Search**: ~10-15 seconds (cold start, model loading)
-- **Subsequent Searches**: ~5-8 seconds (with IPC server warm)
-- **Cache Hits**: ~1-2 seconds (semantic cache matches)
-
-## Troubleshooting
-
-### IPC Service won't start
-```bash
-# Check if port 5010 is in use
-lsof -i :5010
-
-# Manually start for debugging
-cd api/ipcService && python main.py
-```
-
-### Model inference timeout
-```python
-# Increase timeout in pipeline/config.py
-REQUEST_TIMEOUT = 300  # seconds
-```
-
-### Vector store issues
-```bash
-# Rebuild vector store
-rm -rf embeddings/
-# Restart app - it will rebuild on first run
-```
-
-## Development
-
-```bash
-# Install dev dependencies
-pip install -r requirements.txt
-
-# Run type checking
-mypy api/
-
-# Check imports
-python -m compileall api/
-
-# Monitor logs
-tail -f output.log
-```
-
-## Files & Imports Reference
-
-After refactoring, all imports follow this pattern:
-- **From root api modules**: `from pipeline.config import ...`
-- **From subfolders**: `from moduleName.submodule import ...`
-- **No circular imports**: Tools avoid importing from Pipeline/RAG back to themselves
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed module dependencies.
-
-## License
-
-Part of ElixpoSearch - See repo LICENSE file
 
