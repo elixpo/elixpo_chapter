@@ -6,6 +6,9 @@ import sys
 import uuid
 from datetime import datetime
 import re
+import subprocess
+import time
+import os
 
 from searchPipeline import run_elixposearch_pipeline
 from session_manager import get_session_manager
@@ -54,6 +57,55 @@ app.asgi_middleware_stack.insert(0, (RequestIDMiddleware(), []))
 
 pipeline_initialized = False
 initialization_lock = asyncio.Lock()
+model_server_process = None
+
+
+def start_model_server():
+    """Start the IPC model server in a separate process"""
+    global model_server_process
+    try:
+        # Check if server is already running
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex(('localhost', 5010))
+        sock.close()
+        
+        if result == 0:
+            logger.info("[APP] Model server already running on port 5010")
+            return True
+        
+        # Start model_server.py in a new process
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        model_server_path = os.path.join(cwd, "model_server.py")
+        
+        logger.info(f"[APP] Starting model server from {model_server_path}...")
+        model_server_process = subprocess.Popen(
+            [sys.executable, model_server_path],
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+        
+        # Wait for server to start
+        time.sleep(3)
+        
+        # Verify server started
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex(('localhost', 5010))
+        sock.close()
+        
+        if result == 0:
+            logger.info("[APP] ✅ Model server started successfully on port 5010")
+            return True
+        else:
+            logger.warning("[APP] ⚠️ Model server may not have started properly, but continuing...")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[APP] Could not start model server: {e}, continuing without it...")
+        return False
 
 
 @app.before_serving
@@ -66,6 +118,9 @@ async def startup():
 
         logger.info("[APP] Starting ElixpoSearch...")
         try:
+            # CRITICAL FIX #8: Start model server for IPC services
+            start_model_server()
+            
             session_manager = get_session_manager()
             retrieval_system = get_retrieval_system()
             initialize_chat_engine(session_manager, retrieval_system)
@@ -79,7 +134,21 @@ async def startup():
 
 @app.after_serving
 async def shutdown():
+    global model_server_process
     logger.info("[APP] Shutting down...")
+    
+    # CRITICAL FIX #8: Stop model server gracefully
+    if model_server_process:
+        try:
+            logger.info("[APP] Terminating model server...")
+            model_server_process.terminate()
+            model_server_process.wait(timeout=5)
+            logger.info("[APP] Model server terminated")
+        except subprocess.TimeoutExpired:
+            logger.warning("[APP] Model server did not terminate gracefully, killing...")
+            model_server_process.kill()
+        except Exception as e:
+            logger.warning(f"[APP] Error terminating model server: {e}")
 
 
 @app.route('/api/health', methods=['GET'])

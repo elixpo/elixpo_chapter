@@ -2,7 +2,6 @@ from collections import deque
 from loguru import logger
 from multiprocessing.managers import BaseManager
 from search import fetch_full_text
-import concurrent
 import concurrent.futures
 import asyncio
 import re
@@ -108,24 +107,6 @@ async def imageSearch(query: str, max_images: int = 10) -> list:
         logger.error(f"[Utility] Image search failed: {e}")
         return []
 
-def youtubeMetadata(url: str):
-    logger.debug("[Utility] Fetching YouTube metadata")
-    parsed_url = urlparse(url)
-    if "youtube.com" not in parsed_url.netloc and "youtu.be" not in parsed_url.netloc:
-        logger.warning("[Utility] Invalid YouTube URL provided")
-        return None
-    
-    if not _ipc_ready or search_service is None:
-        logger.error("[Utility] IPC service not available for YouTube metadata")
-        return None
-        
-    try:
-        metadata = search_service.get_youtube_metadata(url)
-        return metadata
-    except Exception as e:
-        logger.error(f"[Utility] Error fetching YouTube metadata for {url}: {e}")
-        return None
-
 def preprocess_text(text):
     text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
     text = re.sub(r'[^\w\s.,!?;:]', ' ', text)
@@ -142,110 +123,43 @@ def preprocess_text(text):
 
 
 def fetch_url_content_parallel(queries, urls, max_workers=10, request_id: str = None) -> str:
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(fetch_full_text, url, request_id=request_id): url for url in urls}
-        results = []
-
-        for future in concurrent.futures.as_completed(futures):
-            url = futures[future]
-            try:
-                text_content = future.result()
-                
-                clean_text = str(text_content).encode('unicode_escape').decode('utf-8')
-                clean_text = clean_text.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
-                clean_text = ''.join(c for c in clean_text if c.isprintable())
-                results.append(f"URL: {url}\n{clean_text.strip()}")
-                logger.debug(f"[Utility] Fetched {len(clean_text)} chars from {url}")
-            except Exception as e:
-                logger.error(f"[Utility] Failed fetching {url}: {e}")
-
-        combined_text = "\n".join(results)
-        logger.info(f"[Utility] Fetched all URLs in parallel, total: {len(combined_text)} chars")
-        
-        if embedModelService:
-            try:
-                information = embedModelService.extract_relevant(combined_text, queries)
-                relevant_parts = []
-                for item in information:
-                    if isinstance(item, str):
-                        relevant_parts.append(item)
-                combined_text += "\n\nRelevant extracts: " + " ".join(relevant_parts)
-            except Exception as e:
-                logger.warning(f"[Utility] Could not extract relevant info: {e}")
-        
-        return combined_text
-
-
-async def rank_results(query: str, results: List[str], ipc_service) -> List[Tuple[str, float]]:
-
-    if not results:
-        return []
+    # OPTIMIZATION FIX #12: Removed double-threading
+    # Instead of ThreadPoolExecutor inside an asyncio.to_thread(),
+    # this is now called directly via asyncio.to_thread() in searchPipeline
+    # This reduces context switching overhead
     
-    try:
-        # Use the ipc_service's rank_results method to avoid IPC serialization issues
-        ranked = ipc_service.rank_results(query, results)
-        return ranked
-    except Exception as e:
-        logger.warning(f"Ranking failed: {e}")
-        return [(r, 1.0) for r in results]
+    results = []
+    for url in urls:
+        try:
+            text_content = fetch_full_text(url, request_id=request_id)
+            
+            clean_text = str(text_content).encode('unicode_escape').decode('utf-8')
+            clean_text = clean_text.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
+            clean_text = ''.join(c for c in clean_text if c.isprintable())
+            results.append(f"URL: {url}\n{clean_text.strip()}")
+            logger.debug(f"[Utility] Fetched {len(clean_text)} chars from {url}")
+        except Exception as e:
+            logger.error(f"[Utility] Failed fetching {url}: {e}")
 
-
-async def extract_and_rank_sentences(
-    url: str,
-    content: str,
-    query: str,
-    ipc_service
-) -> List[str]:
-
-    try:
-        # Use the ipc_service's method to handle sentence extraction server-side
-        top_sentences = ipc_service.extract_and_rank_sentences(content, query)
-        return top_sentences
-    except Exception as e:
-        logger.warning(f"Sentence extraction failed for {url}: {e}")
-        return []
-
-
-def build_final_response(
-    response_content: str,
-    session,
-    rag_stats: Dict
-) -> str:
-   
-    parts = [response_content]
+    combined_text = "\n".join(results)
+    logger.info(f"[Utility] Fetched all URLs in parallel, total: {len(combined_text)} chars")
     
-    if session.images:
-        parts.append("\n\n---\n## Images\n")
-        for img_url in session.images[:5]:
-            parts.append(f"![](external-image)")
+    if embedModelService:
+        try:
+            information = embedModelService.extract_relevant(combined_text, queries)
+            relevant_parts = []
+            for item in information:
+                if isinstance(item, str):
+                    relevant_parts.append(item)
+            combined_text += "\n\nRelevant extracts: " + " ".join(relevant_parts)
+        except Exception as e:
+            logger.warning(f"[Utility] Could not extract relevant info: {e}")
     
-    if session.fetched_urls:
-        parts.append("\n\n---\n## Sources\n")
-        for i, url in enumerate(session.fetched_urls, 1):
-            parts.append(f"{i}. [{url}]({url})")
-    
-    parts.append("\n\n---\n## Summary\n")
-    parts.append(f"- Documents: {rag_stats.get('documents_fetched', 0)}")
-    parts.append(f"- Entities: {rag_stats.get('entities_extracted', 0)}")
-    parts.append(f"- Relationships: {rag_stats.get('relationships_discovered', 0)}")
-    
-    return "\n".join(parts)
+    return combined_text
 
 
 
-    _deepsearch_store[sessionID] = query
 
-def getDeepSearchQuery(sessionID: str):
-    return _deepsearch_store.get(sessionID)
-
-def cleanDeepSearchQuery(sessionID: str):
-    if sessionID in _deepsearch_store:
-        del _deepsearch_store[sessionID]
-
-def testYoutubeMetadata():
-    youtube_url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
-    metadata = youtubeMetadata(youtube_url)
-    print("Metadata:", metadata)
 
 
 

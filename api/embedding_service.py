@@ -50,7 +50,7 @@ class EmbeddingService:
             return embedding
 
 class VectorStore:
-    def __init__(self, embedding_dim: int = 768, embeddings_dir: str = "./embeddings"):
+    def __init__(self, embedding_dim: int = 384, embeddings_dir: str = "./embeddings"):
         self.embedding_dim = embedding_dim
         self.embeddings_dir = embeddings_dir
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -256,7 +256,8 @@ class RetrievalSystem:
         self.embedding_service = EmbeddingService(model_name=EMBEDDING_MODEL)
         logger.info(f"[RetrievalSystem] Embedding service device: {self.embedding_service.device}")
         
-        self.vector_store = VectorStore(embeddings_dir=EMBEDDINGS_DIR)
+        # CRITICAL FIX: Use correct embedding dimension from config
+        self.vector_store = VectorStore(embedding_dim=384, embeddings_dir=EMBEDDINGS_DIR)
         logger.info(f"[RetrievalSystem] Vector store device: {self.vector_store.device}")
         
         self.semantic_cache = SemanticCache(

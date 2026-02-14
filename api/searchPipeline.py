@@ -12,7 +12,7 @@ import dotenv
 import os
 import asyncio
 import time
-import concurrent.futures  
+
 from functools import lru_cache
 from config import POLLINATIONS_ENDPOINT, RAG_CONTEXT_REFRESH
 from session_manager import get_session_manager
@@ -38,7 +38,7 @@ def format_sse(event: str, data: str) -> str:
     return f"event: {event}\n{data_str}\n\n"
 
 
-async def optimized_tool_execution(function_name: str, function_args: dict, memoized_results: dict, emit_event_func):
+async def optimized_tool_execution(function_name: str, function_args: dict, memoized_results: dict, emit_event_func, retrieval_system, session_id):
     try:
         if function_name == "cleanQuery":
             websites, youtube, cleaned_query = cleanQuery(function_args.get("query"))
@@ -119,17 +119,30 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             image_urls = []
             url_context = ""
             try:
-                if isinstance(search_results_raw, str):
-                    image_dict = json.loads(search_results_raw)
-                    if isinstance(image_dict, dict):
-                        for src_url, imgs in image_dict.items():
-                            if not imgs:
-                                continue
-                            for img_url in imgs[:8]:
-                                if img_url and img_url.startswith("http"):
-                                    image_urls.append(img_url)
-                                    url_context += f"\t{img_url}\n"
-                yield (f"Found relevant images:\n{url_context}\n", image_urls)
+                # Handle different return types from imageSearch
+                if isinstance(search_results_raw, list):
+                    # Direct list of URLs from IPC service
+                    image_urls = search_results_raw[:max_images]
+                elif isinstance(search_results_raw, str):
+                    # Try to parse as JSON (fallback for older format)
+                    try:
+                        image_dict = json.loads(search_results_raw)
+                        if isinstance(image_dict, dict):
+                            for src_url, imgs in image_dict.items():
+                                if not imgs:
+                                    continue
+                                for img_url in imgs[:8]:
+                                    if img_url and img_url.startswith("http"):
+                                        image_urls.append(img_url)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Could not parse image search results as JSON")
+                
+                # Build context string from URLs
+                for url in image_urls:
+                    if url.startswith("http"):
+                        url_context += f"\t{url}\n"
+                
+                yield (f"Found {len(image_urls)} relevant images:\n{url_context}\n", image_urls)
             except Exception as e:
                 logger.error(f"Failed to process image search results: {e}")
                 yield ("Image search completed but results processing failed", [])
@@ -178,6 +191,15 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                     asyncio.to_thread(fetch_url_content_parallel, queries, [url]),
                     timeout=15.0
                 )
+                
+                # CRITICAL FIX #2: Ingest fetched content into vector store for RAG
+                try:
+                    rag_engine = retrieval_system.get_rag_engine(session_id)
+                    ingest_result = rag_engine.ingest_and_cache(url)
+                    logger.info(f"[Pipeline] Ingested {ingest_result.get('chunks', 0)} chunks from {url} into vector store")
+                except Exception as e:
+                    logger.warning(f"[Pipeline] Failed to ingest content to vector store: {e}")
+                
                 yield parallel_results if parallel_results else "[No content fetched from URL]"
             except asyncio.TimeoutError:
                 logger.warning(f"URL fetch timed out for {url}")
@@ -188,10 +210,9 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
         else:
             logger.warning(f"Unknown tool called: {function_name}")
             yield f"Unknown tool: {function_name}"
-    except concurrent.futures.TimeoutError:
+    except asyncio.TimeoutError:
         logger.warning(f"Tool {function_name} timed out")
         yield f"[TIMEOUT] Tool {function_name} took too long to execute"
-    except Exception as e:
         logger.error(f"Error executing tool {function_name}: {e}")
         yield f"[ERROR] Tool execution failed: {str(e)[:100]}"
 
@@ -233,13 +254,15 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         collected_similar_images = []
         final_message_content = None
         
-        # Build initial RAG context from session data
-        rag_context = session_manager.get_rag_context(
-            session_id,
-            refresh=RAG_CONTEXT_REFRESH,
-            query_embedding=None
-        )
-        logger.info(f"[Pipeline] Initial RAG context built: {len(rag_context)} chars")
+        # CRITICAL FIX #4: Use RAG engine's retrieve_context which checks semantic cache first
+        retrieval_result = rag_engine.retrieve_context(user_query, url=None, top_k=5)
+        rag_context = retrieval_result.get("context", "")
+        cache_hit = retrieval_result.get("source") == "semantic_cache"
+        if cache_hit:
+            logger.info(f"[Pipeline] ✅ Semantic cache HIT for initial query")
+        else:
+            logger.info(f"[Pipeline] Initial RAG context built: {len(rag_context)} chars")
+        
         messages = [
             
             {
@@ -252,6 +275,10 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 "content": user_instruction(user_query, user_image)
             }
         ]
+
+        # OPTIMIZATION FIX #13: Cache RAG context to avoid regeneration in multi-turn
+        rag_context_cache = rag_context
+        last_context_refresh = current_iteration
 
         while current_iteration < max_iterations:
             current_iteration += 1
@@ -331,7 +358,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 logger.info(f"Executing optimized tool: {function_name}")
                 if event_id:
                     yield format_sse("INFO", f"<TASK>Running Task</TASK>")
-                tool_result_gen = optimized_tool_execution(function_name, function_args, memoized_results, emit_event)
+                tool_result_gen = optimized_tool_execution(function_name, function_args, memoized_results, emit_event, retrieval_system, session_id)
                 if hasattr(tool_result_gen, '__aiter__'):
                     tool_result = None
                     image_urls = []
