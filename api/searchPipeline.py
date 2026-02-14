@@ -27,17 +27,15 @@ MODEL = os.getenv("MODEL")
 logger.debug(f"Model configured: {MODEL}")
 
 
-# Connect to model_server via IPC (don't reinitialize services)
+
 class ModelServerClient(BaseManager):
     pass
-
 ModelServerClient.register('CoreEmbeddingService')
 ModelServerClient.register('accessSearchAgents')
 
 _model_server = None
 
 def get_model_server():
-    """Lazy connect to model_server via IPC"""
     global _model_server
     if _model_server is None:
         try:
@@ -62,6 +60,13 @@ def format_sse(event: str, data: str) -> str:
 
 async def optimized_tool_execution(function_name: str, function_args: dict, memoized_results: dict, emit_event_func):
     try:
+        VALID_TOOL_NAMES = {tool["function"]["name"] for tool in tools}
+        if function_name not in VALID_TOOL_NAMES:
+            error_msg = f"Tool '{function_name}' is not available. Valid tools are: {', '.join(sorted(VALID_TOOL_NAMES))}"
+            logger.error(f"Unknown tool called: {function_name}")
+            yield error_msg
+            return
+        
         if function_name == "cleanQuery":
             websites, youtube, cleaned_query = cleanQuery(function_args.get("query"))
             yield f"Cleaned Query: {cleaned_query}\nWebsites: {websites}\nYouTube URLs: {youtube}"
@@ -232,12 +237,10 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             except Exception as e:
                 logger.error(f"URL fetch error for {url}: {e}")
                 yield f"[ERROR] Failed to fetch {url}: {str(e)[:100]}"
-        else:
-            logger.warning(f"Unknown tool called: {function_name}")
-            yield f"Unknown tool: {function_name}"
     except asyncio.TimeoutError:
         logger.warning(f"Tool {function_name} timed out")
         yield f"[TIMEOUT] Tool {function_name} took too long to execute"
+    except Exception as e:
         logger.error(f"Error executing tool {function_name}: {e}")
         yield f"[ERROR] Tool execution failed: {str(e)[:100]}"
 

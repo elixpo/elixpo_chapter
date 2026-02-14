@@ -41,12 +41,14 @@ def system_instruction(rag_context, current_utc_time):
 
     When you use tools, INTEGRATE the results into your main response content, don't just list sources.
 
-    AVAILABLE TOOLS:
+    AVAILABLE TOOLS (STRICT - Use ONLY these exact names):
+    You have EXACTLY 10 tools available. Do NOT invent or call tools with different names:
+    
     1. cleanQuery(query: str)
     - Clean and extract URLs from a search query
     - Returns: cleaned query, websites, youtube URLs
 
-    2. web_search(query: str)
+    2. web_search(query: str) [Use this ONLY - NOT "search" or any variation]
     - Search the web for information
     - Optimized for speed, limit to 3-4 searches
     - Returns: list of relevant URLs and snippets
@@ -66,12 +68,12 @@ def system_instruction(rag_context, current_utc_time):
     - Use for time-zone specific queries
     - Returns: current local time and timezone info
 
-    6. generate_prompt_from_image(imageURL: str)
+    6. generate_prompt_from_image(imageURL: str) [Exact parameter name: imageURL]
     - Generate a search prompt from an image URL
     - Analyzes image and creates a search query
     - Returns: generated search query string
 
-    7. replyFromImage(imageURL: str, query: str)
+    7. replyFromImage(imageURL: str, query: str) [Exact parameter names: imageURL, query]
     - Reply to a query based on an image
     - Analyzes image content in context of query
     - Returns: detailed response based on image analysis
@@ -80,6 +82,12 @@ def system_instruction(rag_context, current_utc_time):
     - Search for images based on a query
     - Default max_images: 10
     - Returns: list of image URLs
+
+    9. youtubeMetadata(url: str)
+    - Fetch metadata (title, description, duration, views) from a YouTube URL
+    - Returns: YouTube video metadata
+
+    IMPORTANT: These 9 tools are the COMPLETE list. Do NOT call any other tools. Do NOT create new tool names.
 
     IMAGE HANDLING:
     1. Text Only → Answer directly or web_search (NO image_search unless requested)
