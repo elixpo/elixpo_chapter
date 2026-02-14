@@ -4,8 +4,14 @@ from sentence_transformers import SentenceTransformer
 import torch
 import threading
 from typing import List, Union
+import warnings
+import os 
+from loguru import logger
+import logging
 
-
+warnings.filterwarnings('ignore', message='Can\'t initialize NVML')
+os.environ['CHROMA_TELEMETRY_DISABLED'] = '1'
+logging.getLogger('chromadb').setLevel(logging.ERROR)
 
 class EmbeddingService:
     def __init__(self, model_name: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"):
