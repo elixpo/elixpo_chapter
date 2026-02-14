@@ -1,0 +1,1 @@
+_session_manager: Optional[SessionManager] = None
