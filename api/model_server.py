@@ -2,20 +2,17 @@ import warnings
 import os
 import logging
 
-# Suppress NVML warnings (expected in non-GPU environments)
 warnings.filterwarnings('ignore', message='Can\'t initialize NVML')
 
-# Disable ChromaDB telemetry to prevent telemetry event errors
 os.environ['CHROMA_TELEMETRY_DISABLED'] = '1'
 
-# Suppress ChromaDB telemetry event warnings at logging level
 logging.getLogger('chromadb').setLevel(logging.ERROR)
 
 from multiprocessing.managers import BaseManager
 import torch
 import threading
 from loguru import logger
-from concurrent.futures import ThreadPoolExecutor
+
 from typing import Dict, List, Optional
 import uuid
 import atexit
@@ -35,11 +32,9 @@ from config import (
     RETRIEVAL_TOP_K, SESSION_SUMMARY_THRESHOLD,
     PERSIST_VECTOR_STORE_INTERVAL, MAX_LINKS_TO_TAKE, isHeadless
 )
-from embedding_service import EmbeddingService
-from embedding_service import VectorStore
-from semantic_cache import SemanticCache
+
 from session_manager import SessionMemory
-from rag_engine import RetrievalPipeline
+from .coreEmbeddingService import CoreEmbeddingService
 
 
 USER_AGENTS = [
@@ -108,136 +103,6 @@ class searchPortManager:
                 "used_ports": list(self.used_ports),
                 "available_range": f"{self.start_port}-{self.end_port}"
             }
-
-
-class CoreEmbeddingService:
-    _instance_id = None
-    
-    def __init__(self):
-        CoreEmbeddingService._instance_id = str(uuid.uuid4())[:8]
-        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Initializing core services...")
-        
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Using device: {self.device}")
-        
-        self.embedding_service = EmbeddingService(model_name=EMBEDDING_MODEL)
-        self.vector_store = VectorStore(embeddings_dir=EMBEDDINGS_DIR)
-        self.semantic_cache = SemanticCache(
-            ttl_seconds=SEMANTIC_CACHE_TTL_SECONDS,
-            similarity_threshold=SEMANTIC_CACHE_SIMILARITY_THRESHOLD
-        )
-        self.retrieval_pipeline = RetrievalPipeline(
-            self.embedding_service,
-            self.vector_store
-        )
-        
-        self.transcribe_model = whisper.load_model(AUDIO_TRANSCRIBE_SIZE)
-        self._gpu_lock = threading.Lock()
-        
-        self.executor = ThreadPoolExecutor(max_workers=2)
-        
-        self._persist_thread = threading.Thread(
-            target=self._persist_worker,
-            daemon=True
-        )
-        self._persist_thread.start()
-        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Warming up embedding model...")
-        self._warmup_embedding_model()
-        
-        logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Core services initialized")
-      
-    def _warmup_embedding_model(self) -> None:
-        try:
-            dummy_texts = [
-                "This is a warmup text for the embedding model.",
-                "Testing the embedding service initialization."
-            ]
-            
-            embeddings = self.embedding_service.embed(dummy_texts, batch_size=2)
-            logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Embedding model warmed up with shape {embeddings.shape}")
-        except Exception as e:
-            logger.warning(f"[CORE {CoreEmbeddingService._instance_id}] Embedding model warm-up failed: {e}")
-    
-    def transcribe_audio(self, audio_path: str) -> str:
-        with self._gpu_lock:
-            result = self.transcribe_model.transcribe(audio_path, language="en")
-            return result["text"]
-    
-    def ingest_url(self, url: str) -> Dict:
-        try:
-            chunk_count = self.retrieval_pipeline.ingest_url(url, max_words=3000)
-            return {
-                "success": True,
-                "url": url,
-                "chunks_ingested": chunk_count
-            }
-        except Exception as e:
-            logger.error(f"[CORE] Failed to ingest URL {url}: {e}")
-            return {
-                "success": False,
-                "url": url,
-                "error": str(e)
-            }
-    
-    def retrieve(self, query: str, top_k: int = RETRIEVAL_TOP_K) -> Dict:
-        try:
-            results = self.retrieval_pipeline.retrieve(query, top_k=top_k)
-            return {
-                "query": query,
-                "results": results,
-                "count": len(results)
-            }
-        except Exception as e:
-            logger.error(f"[CORE] Retrieval failed: {e}")
-            return {
-                "query": query,
-                "results": [],
-                "count": 0,
-                "error": str(e)
-            }
-    
-    def build_retrieval_context(self, query: str, session_memory: str = "", top_k: int = RETRIEVAL_TOP_K) -> Dict:
-        try:
-            context = self.retrieval_pipeline.build_context(
-                query,
-                top_k=top_k,
-                session_memory=session_memory
-            )
-            return {
-                "success": True,
-                **context
-            }
-        except Exception as e:
-            logger.error(f"[CORE] Context building failed: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    def get_semantic_cache(self, url: str, query_embedding: List[float]) -> Optional[Dict]:
-        import numpy as np
-        query_emb = np.array(query_embedding, dtype=np.float32)
-        return self.semantic_cache.get(url, query_emb)
-    
-    def set_semantic_cache(self, url: str, query_embedding: List[float], response: Dict) -> None:
-        import numpy as np
-        query_emb = np.array(query_embedding, dtype=np.float32)
-        self.semantic_cache.set(url, query_emb, response)
-    
-    def get_vector_store_stats(self) -> Dict:
-        return self.vector_store.get_stats()
-    
-    def get_semantic_cache_stats(self) -> Dict:
-        return self.semantic_cache.get_stats()
-    
-    def _persist_worker(self) -> None:
-        while True:
-            try:
-                time.sleep(PERSIST_VECTOR_STORE_INTERVAL)
-                self.vector_store.persist_to_disk()
-            except Exception as e:
-                logger.error(f"[CORE] Persist worker error: {e}")
-
 
 class SessionManager:
     def __init__(self):
