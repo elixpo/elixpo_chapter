@@ -8,7 +8,6 @@ import re
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, List, Tuple, Optional
 import numpy as np
-from knowledge_graph import build_knowledge_graph
 import time
 
 
@@ -123,40 +122,39 @@ def preprocess_text(text):
     return meaningful_sentences
 
 
-def fetch_url_content_parallel(queries, urls, max_workers=10, use_kg: bool = True, request_id: str = None) -> Tuple[str, List[Dict]]:
+def fetch_url_content_parallel(queries, urls, max_workers=10, request_id: str = None) -> str:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(fetch_full_text, url, request_id=request_id): url for url in urls}
-        results = ""
-        kg_data_list = []
+        results = []
 
         for future in concurrent.futures.as_completed(futures):
             url = futures[future]
             try:
-                result = future.result()
-                if isinstance(result, tuple):
-                    text_content, kg_dict = result
-                    kg_data_list.append(kg_dict)
-                else:
-                    text_content = result
-
+                text_content = future.result()
+                
                 clean_text = str(text_content).encode('unicode_escape').decode('utf-8')
                 clean_text = clean_text.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
                 clean_text = ''.join(c for c in clean_text if c.isprintable())
-                results += f"\nURL: {url}\nText Preview: {clean_text.strip()}"
+                results.append(f"URL: {url}\n{clean_text.strip()}")
+                logger.debug(f"[Utility] Fetched {len(clean_text)} chars from {url}")
             except Exception as e:
-                logger.error(f"Failed fetching {url}: {e}")
-                results += f"\nURL: {url}\n Failed to fetch content of this URL"
+                logger.error(f"[Utility] Failed fetching {url}: {e}")
 
-        logger.info(f"Fetched all URL information in parallel.")
-        information = embedModelService.extract_relevant(results, queries)
-
-        for i in information:
-            sentences = []
-            for piece in i:
-                sentences.extend([s.strip() for s in piece.split('.') if s.strip()])
-            results += '. '.join(sentences) + '. '
-
-        return results, kg_data_list
+        combined_text = "\n".join(results)
+        logger.info(f"[Utility] Fetched all URLs in parallel, total: {len(combined_text)} chars")
+        
+        if embedModelService:
+            try:
+                information = embedModelService.extract_relevant(combined_text, queries)
+                relevant_parts = []
+                for item in information:
+                    if isinstance(item, str):
+                        relevant_parts.append(item)
+                combined_text += "\n\nRelevant extracts: " + " ".join(relevant_parts)
+            except Exception as e:
+                logger.warning(f"[Utility] Could not extract relevant info: {e}")
+        
+        return combined_text
 
 
 async def rank_results(query: str, results: List[str], ipc_service) -> List[Tuple[str, float]]:

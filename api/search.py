@@ -268,12 +268,10 @@ def fetch_full_text(
     url,
     total_word_count_limit=MAX_TOTAL_SCRAPE_WORD_COUNT,
     request_id: Optional[str] = None,
-) -> Tuple[str, Dict]:
-    kg_result = {}
-    
+) -> str:
     if not _validate_url_for_fetch(url):
         logger.error(f"[Fetch] URL validation failed: {url}")
-        return "", kg_result
+        return ""
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -283,13 +281,13 @@ def fetch_full_text(
         response = requests.get(url, timeout=20, headers=headers)
         if response.status_code != 200:
             logger.error(f"[FETCH] Error fetching {url}: Status {response.status_code}")
-            return "", kg_result
+            return ""
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type', '').lower()
         if 'text/html' not in content_type:
             logger.warning(f"[FETCH] Skipping non-HTML content from {url} (Content-Type: {content_type})")
-            return "", kg_result
+            return ""
 
         soup = BeautifulSoup(response.content, 'html.parser')
 
@@ -324,14 +322,14 @@ def fetch_full_text(
         return cleaned_text
 
     except requests.exceptions.Timeout:
-        logger.error(f"[FETCH] Timeout scraping URL: {url}")
-        return "", kg_result
+        logger.error(f"[Fetch] Timeout scraping URL: {url}")
+        return ""
     except requests.exceptions.RequestException as e:
-        logger.error(f"[FETCH] Request error scraping URL: {url}: {type(e).__name__}: {e}")
-        return "", kg_result
+        logger.error(f"[Fetch] Request error scraping URL: {url}: {type(e).__name__}: {e}")
+        return ""
     except Exception as e:
-        logger.error(f"[FETCH] Error processing URL: {url}: {type(e).__name__}: {e}")
-        return "", kg_result
+        logger.error(f"[Fetch] Error processing URL: {url}: {type(e).__name__}: {e}")
+        return ""
 
 
 
