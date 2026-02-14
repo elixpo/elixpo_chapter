@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from getYoutubeDetails import transcribe_audio, youtubeMetadata
 from getTimeZone import get_local_time
 from utility import fetch_url_content_parallel, webSearch, imageSearch, cleanQuery
+from semantic_cache import SemanticCache
 import random
 import logging
 import dotenv
@@ -244,8 +245,8 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
         logger.error(f"Error executing tool {function_name}: {e}")
         yield f"[ERROR] Tool execution failed: {str(e)[:100]}"
 
-async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: str = None):
-    logger.info(f"Starting Optimized ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}'")
+async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: str = None, request_id: str = None):
+    logger.info(f"Starting Optimized ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}' [RequestID: {request_id}]")
     def emit_event(event_type, message):
         if event_id:
             return format_sse(event_type, message)
@@ -277,6 +278,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "base64_cache": {},
             "context_sufficient": False  # Early exit marker
         }
+        
+        # Initialize persistent semantic cache with 5-min TTL per request
+        semantic_cache = SemanticCache(ttl_seconds=300, cache_dir="./cache")
+        if request_id:
+            semantic_cache.load_for_request(request_id)
+            logger.info(f"[Pipeline] Loaded persistent cache for request {request_id}")
         
         max_iterations = 2 
         current_iteration = 0
@@ -736,16 +743,22 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if event_id:
             yield format_sse("error", "<TASK>System Error</TASK>")
     finally:
+        # Save persistent cache for this request
+        if request_id:
+            semantic_cache.save_for_request(request_id)
+            logger.info(f"[Pipeline] Saved persistent cache for request {request_id}")
         logger.info("Optimized Search Completed")
 
 if __name__ == "__main__":
     import asyncio
+    from requestID import reqID
     async def main():
         user_query = "hii"
         user_image = None
         event_id = None
+        request_id = reqID()  # Generate request ID for caching
         start_time = asyncio.get_event_loop().time()
-        async_generator = run_elixposearch_pipeline(user_query, user_image, event_id=event_id)
+        async_generator = run_elixposearch_pipeline(user_query, user_image, event_id=event_id, request_id=request_id)
         answer = None
         try:
             async for event_chunk in async_generator:
