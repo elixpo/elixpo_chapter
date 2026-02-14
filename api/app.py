@@ -11,8 +11,8 @@ import subprocess
 import time
 from pipeline.searchPipeline import run_elixposearch_pipeline
 from sessions.main import get_session_manager
-from ragService.ragEngine import get_retrieval_system
-from chatEngine.chat_engine import initialize_chat_engine, get_chat_engine
+from ragService.main import get_retrieval_system
+from chatEngine.main import initialize_chat_engine, get_chat_engine
 from commons.requestID import RequestIDMiddleware
 
 
@@ -51,7 +51,6 @@ logger = logging.getLogger("elixpo-api")
 
 
 def _start_ipc_service():
-    """Start the IPC service subprocess."""
     global model_server_process
     
     if model_server_process is not None:
@@ -96,10 +95,8 @@ async def startup():
 
         logger.info("[APP] Starting ElixpoSearch and IPC Service...")
         try:
-            # Start the IPC service (ipcService) if not already running
             _start_ipc_service()
             
-            # Wait for IPC service to be ready
             await asyncio.sleep(2)
             
             session_manager = get_session_manager()
@@ -118,12 +115,10 @@ async def shutdown():
     global model_server_process
     logger.info("[APP] Shutting down...")
     
-    # Gracefully stop IPC service and model server
     if model_server_process:
         try:
             logger.info(f"[APP] Terminating IPC service (PID {model_server_process.pid})...")
             if sys.platform != 'win32':
-                # On Unix, kill the process group to ensure child processes are terminated
                 import signal
                 os.killpg(os.getpgid(model_server_process.pid), signal.SIGTERM)
             else:
