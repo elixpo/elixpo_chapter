@@ -751,7 +751,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
 if __name__ == "__main__":
     import asyncio
-    from requestID import reqID
+    from api.commons.requestID import reqID
     async def main():
         user_query = "hii"
         user_image = None

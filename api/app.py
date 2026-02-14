@@ -13,7 +13,7 @@ from searchPipeline import run_elixposearch_pipeline
 from session_manager import get_session_manager
 from rag_engine import get_retrieval_system
 from chat_engine import initialize_chat_engine, get_chat_engine
-from requestID import RequestIDMiddleware
+from api.commons.requestID import RequestIDMiddleware
 
 
 def _validate_query(query: str, max_length: int = 5000) -> bool:
