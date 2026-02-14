@@ -107,33 +107,84 @@ async def download_audio(url):
     return wav_path
 
 
-async def transcribe_audio_deprecated(url, full_transcript: Optional[str] = None, query: Optional[str] = None):
-    start_time = time.time()
-    transcription = ""
+async def transcribe_audio(
+    url: str,
+    full_transcript: bool = False,
+    query: Optional[str] = None,
+    timeout: float = 300.0
+) -> str:
+    """
+    Transcribe YouTube audio via IPC. Falls back to local Whisper if IPC unavailable.
+    
+    Args:
+        url: YouTube video URL
+        full_transcript: Return complete transcript (ignores query-based extraction)
+        query: Optional query for relevance extraction
+        timeout: Maximum time to wait for transcription in seconds
+        
+    Returns:
+        Transcribed text with video metadata
+    """
+    start_time = time.perf_counter()
     video_id = get_youtube_video_id(url)
-    print(f"[INFO] Starting transcription for video ID: {video_id}")
-    meta_data = youtubeMetadata(url)
-    print(f"[INFO] Video title: {meta_data}")
-    audio = await download_audio(url)
-    # Use Whisper model directly
-    print(f"[INFO] Transcribing audio with Whisper model on device: {device}")
-    result = whisper_model.transcribe(audio)
-    transcription = result["text"]
-    print(f"[INFO] Completed transcription for video ID: {video_id}")
-    # If full_transcript is provided, use it
-    if full_transcript:
-        print("[INFO] Using provided full transcript.")
-        transcription = full_transcript
-    # Optionally, you can add query-based extraction here if needed, but modelService.extract_relevant is not available
-    transcription += f" Video Titled as {meta_data}"
-    end_time = time.time()
-    print(f"[INFO] Transcription took {end_time - start_time:.2f} seconds.")
-    return transcription
+    
+    if not video_id:
+        logger.error(f"[Transcribe] Invalid YouTube URL: {url}")
+        return "[ERROR] Unable to extract video ID from URL"
+    
+    try:
+        logger.info(f"[Transcribe] Starting transcription for video {video_id}")
+        
+        # Try IPC server first (optimized)
+        if _ipc_ready and search_service is not None:
+            try:
+                logger.info(f"[Transcribe] Using IPC server for transcription")
+                metadata = search_service.get_youtube_metadata(url)
+                audio_path = await download_audio(url)
+                transcription = search_service.transcribe_audio(audio_path)
+                
+                elapsed = time.perf_counter() - start_time
+                logger.info(f"[Transcribe] IPC transcription completed in {elapsed:.2f}s")
+                
+                # Append metadata
+                if metadata:
+                    transcription = f"{transcription}\n\n[Source: {metadata}]"
+                return transcription
+            except Exception as e:
+                logger.warning(f"[Transcribe] IPC transcription failed: {e}. Falling back to local Whisper")
+        
+        # Fallback to local Whisper
+        logger.info(f"[Transcribe] Using local Whisper model on {device}")
+        metadata = await youtubeMetadata(url)
+        audio_path = await download_audio(url)
+        
+        result = whisper_model.transcribe(audio_path)
+        transcription = result["text"]
+        
+        if metadata:
+            transcription = f"{transcription}\n\n[Source: {metadata}]"
+        
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"[Transcribe] Local transcription completed in {elapsed:.2f}s")
+        return transcription
+        
+    except asyncio.TimeoutError:
+        logger.error(f"[Transcribe] Transcription timed out after {timeout}s")
+        return "[TIMEOUT] Video transcription took too long"
+    except Exception as e:
+        logger.error(f"[Transcribe] Transcription failed: {e}")
+        return f"[ERROR] Failed to transcribe: {str(e)[:100]}"
+
+
+async def transcribe_audio_deprecated(url, full_transcript: Optional[str] = None, query: Optional[str] = None):
+    """Deprecated: Use transcribe_audio instead"""
+    return await transcribe_audio(url, full_transcript=bool(full_transcript), query=query)
+
 
 if __name__ == "__main__":
     url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"
     full_transcript = True
     query = None
 
-    transcript = asyncio.run(transcribe_audio_deprecated(url, full_transcript, query))
+    transcript = asyncio.run(transcribe_audio(url, full_transcript, query))
     

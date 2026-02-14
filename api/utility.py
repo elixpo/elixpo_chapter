@@ -4,6 +4,7 @@ from multiprocessing.managers import BaseManager
 from search import fetch_full_text
 import concurrent
 import concurrent.futures
+import asyncio
 import re
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, List, Tuple, Optional
@@ -68,6 +69,7 @@ def cleanQuery(query):
 
 
 def webSearch(query: str):
+    """Synchronous web search"""
     if not _ipc_ready or search_service is None:
         logger.error("[Utility] IPC service not available for web search")
         return []
@@ -78,12 +80,29 @@ def webSearch(query: str):
         logger.error(f"[Utility] Web search failed: {e}")
         return []
 
-def imageSearch(query: str):
+
+async def imageSearch(query: str, max_images: int = 10) -> list:
+    """
+    Asynchronous image search wrapper using asyncio.to_thread for non-blocking execution.
+    
+    Args:
+        query: Search query for images
+        max_images: Maximum number of images to return
+        
+    Returns:
+        List of image URLs
+    """
     if not _ipc_ready or search_service is None:
         logger.error("[Utility] IPC service not available for image search")
         return []
     try:
-        urls = search_service.image_search(query)
+        # Run synchronous IPC call in thread to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        urls = await loop.run_in_executor(
+            None,
+            lambda: search_service.image_search(query, max_images=max_images)
+        )
+        logger.debug(f"[Utility] Image search returned {len(urls)} results for: {query[:50]}")
         return urls
     except Exception as e:
         logger.error(f"[Utility] Image search failed: {e}")

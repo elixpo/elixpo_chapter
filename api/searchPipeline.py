@@ -11,12 +11,12 @@ import logging
 import dotenv
 import os
 import asyncio
-import concurrent.futures
-from functools import lru_cache
 import time
+import concurrent.futures  
+from functools import lru_cache
 from config import POLLINATIONS_ENDPOINT, RAG_CONTEXT_REFRESH
 from session_manager import get_session_manager
-from rag_engine import RAGEngine, get_retrieval_system
+from rag_engine import get_retrieval_system
 from instruction import system_instruction, user_instruction, synthesis_instruction
 
 
@@ -74,27 +74,33 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             yield tool_result
 
         elif function_name == "generate_prompt_from_image":
-            web_event = emit_event_func("INFO", f"<TASK>Analyzing Image</TASK>")
+            web_event = emit_event_func("INFO", "<TASK>Analyzing Image</TASK>")
             if web_event:
                 yield web_event
             image_url = function_args.get("imageURL")
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(asyncio.create_task, generate_prompt_from_image(image_url))
-                get_prompt = await future.result()
-            result = f"Generated Search Query: {get_prompt}"
-            logger.info(f"Generated prompt: {get_prompt}")
-            yield result
+            try:
+                get_prompt = await generate_prompt_from_image(image_url)
+                result = f"Generated Search Query: {get_prompt}"
+                logger.info(f"Generated prompt: {get_prompt}")
+                yield result
+            except Exception as e:
+                logger.error(f"Image analysis error: {e}")
+                yield f"[ERROR] Image analysis failed: {str(e)[:100]}"
 
         elif function_name == "replyFromImage":
-            web_event = emit_event_func("INFO", f"<TASK>Processing Image Query</TASK>")
+            web_event = emit_event_func("INFO", "<TASK>Processing Image Query</TASK>")
             if web_event:
                 yield web_event
             image_url = function_args.get("imageURL")
             query = function_args.get("query")
-            reply = await replyFromImage(image_url, query)
-            result = f"Reply from Image: {reply}"
-            logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
-            yield result
+            try:
+                reply = await replyFromImage(image_url, query)
+                result = f"Reply from Image: {reply}"
+                logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
+                yield result
+            except Exception as e:
+                logger.error(f"Image query error: {e}")
+                yield f"[ERROR] Image query failed: {str(e)[:100]}"
 
         elif function_name == "image_search":
             start_time = time.time()
@@ -139,17 +145,17 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
             yield result
 
         elif function_name == "transcribe_audio":
-            logger.info(f"Getting YouTube transcript")
-            web_event = emit_event_func("INFO", f"<TASK>Processing Video, This will take a minute</TASK>")
+            logger.info("Getting YouTube transcript")
+            web_event = emit_event_func("INFO", "<TASK>Processing Video, This will take a minute</TASK>")
             if web_event:
                 yield web_event
-            urls = [function_args.get("url")]
-            loop = asyncio.get_event_loop()
             try:
-                results = await transcribe_audio(urls[0], full_transcript=False, query=memoized_results.get("search_query", ""))
-                result = f"YouTube Transcript:\n{results if results else '[No transcript available]'}"
-                memoized_results["youtube_transcripts"][urls[0]] = result
-                yield result
+                url = function_args.get("url")
+                search_query = memoized_results.get("search_query", "")
+                result = await transcribe_audio(url, full_transcript=False, query=search_query)
+                transcript_text = f"YouTube Transcript:\n{result if result else '[No transcript available]'}"
+                memoized_results["youtube_transcripts"][url] = transcript_text
+                yield transcript_text
             except asyncio.TimeoutError:
                 logger.warning("Transcribe audio timed out")
                 yield "[TIMEOUT] Video transcription took too long"
@@ -158,18 +164,27 @@ async def optimized_tool_execution(function_name: str, function_args: dict, memo
                 yield f"[ERROR] Failed to transcribe: {str(e)[:100]}"
 
         elif function_name == "fetch_full_text":
-            logger.info(f"Fetching webpage content")
-            web_event = emit_event_func("INFO", f"<TASK>Reading Webpage</TASK>")
+            logger.info("Fetching webpage content")
+            web_event = emit_event_func("INFO", "<TASK>Reading Webpage</TASK>")
             if web_event:
                 yield web_event
-            urls = [function_args.get("url")]
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            url = function_args.get("url")
+            try:
                 queries = memoized_results.get("search_query", "")
                 if isinstance(queries, str):
                     queries = [queries]
-                future = executor.submit(fetch_url_content_parallel, queries, urls)
-                parallel_results = future.result(timeout=10)
-            yield parallel_results if parallel_results else "[No content fetched from URL]"
+                # Use async directly instead of ThreadPoolExecutor
+                parallel_results = await asyncio.wait_for(
+                    asyncio.to_thread(fetch_url_content_parallel, queries, [url]),
+                    timeout=15.0
+                )
+                yield parallel_results if parallel_results else "[No content fetched from URL]"
+            except asyncio.TimeoutError:
+                logger.warning(f"URL fetch timed out for {url}")
+                yield f"[TIMEOUT] Fetching {url} took too long"
+            except Exception as e:
+                logger.error(f"URL fetch error for {url}: {e}")
+                yield f"[ERROR] Failed to fetch {url}: {str(e)[:100]}"
         else:
             logger.warning(f"Unknown tool called: {function_name}")
             yield f"Unknown tool: {function_name}"
@@ -262,21 +277,32 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             try:
                 loop = asyncio.get_event_loop()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(requests.post, POLLINATIONS_ENDPOINT, headers=headers, json=payload, timeout=120)
-                    response = await loop.run_in_executor(None, lambda: future.result())
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        requests.post,
+                        POLLINATIONS_ENDPOINT,
+                        json=payload,
+                        headers=headers,
+                        timeout=120
+                    ),
+                    timeout=125.0
+                )
                 response.raise_for_status()
                 response_data = response.json()
-            except Exception as e:
-                error_detail = ""
-                if hasattr(e, "response") and e.response is not None:
-                    try:
-                        error_detail = f" | Response: {e.response.text}"
-                    except Exception:
-                        error_detail = " | Response: [unavailable]"
-                logger.error(f"Pollinations API call failed at iteration {current_iteration}: {e}{error_detail}")
+            except asyncio.TimeoutError:
+                logger.error(f"API timeout at iteration {current_iteration}")
                 if event_id:
-                    yield format_sse("error", f"<TASK>Connection Error - Retrying</TASK>{error_detail}")
+                    yield format_sse("error", "<TASK>Request Timeout - Retrying</TASK>")
+                break
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Pollinations API request failed at iteration {current_iteration}: {e}")
+                if event_id:
+                    yield format_sse("error", "<TASK>Connection Error</TASK>")
+                break
+            except Exception as e:
+                logger.error(f"Unexpected API error at iteration {current_iteration}: {e}", exc_info=True)
+                if event_id:
+                    yield format_sse("error", "<TASK>System Error</TASK>")
                 break
             assistant_message = response_data["choices"][0]["message"]
             
@@ -359,10 +385,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             }
 
             try:
-                response = requests.post(POLLINATIONS_ENDPOINT, headers=headers, json=payload, timeout=25)
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        requests.post,
+                        POLLINATIONS_ENDPOINT,
+                        json=payload,
+                        headers=headers,
+                        timeout=25
+                    ),
+                    timeout=30.0
+                )
                 response.raise_for_status()
                 response_data = response.json()
                 final_message_content = response_data["choices"][0]["message"].get("content")
+            except asyncio.TimeoutError:
+                logger.error("Synthesis step timed out")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Synthesis API call failed: {e}")
             except Exception as e:
                 logger.error(f"Synthesis step failed: {e}")
 
