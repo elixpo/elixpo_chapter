@@ -1,5 +1,5 @@
 from typing import Optional
-from .retrievalSystem import RetrievalSystem
+from retrievalSystem import RetrievalSystem
 
 _retrieval_system: Optional[RetrievalSystem] = None
 

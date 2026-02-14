@@ -761,7 +761,7 @@ if __name__ == "__main__":
         user_query = "hii"
         user_image = None
         event_id = None
-        request_id = reqID()  # Generate request ID for caching
+        request_id = "test-request-001"
         start_time = asyncio.get_event_loop().time()
         async_generator = run_elixposearch_pipeline(user_query, user_image, event_id=event_id, request_id=request_id)
         answer = None

@@ -1,11 +1,15 @@
 import warnings
 import os
 import logging
+import sys
+
+# Add api folder to path for standalone execution
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from multiprocessing.managers import BaseManager
 from loguru import logger
-from .coreEmbeddingService import CoreEmbeddingService
-from .searchPortManager import accessSearchAgents, _ensure_background_loop, run_async_on_bg_loop, agent_pool, shutdown_graceful
-
+from ipcService.coreEmbeddingService import CoreEmbeddingService
+from ipcService.searchPortManager import accessSearchAgents, _ensure_background_loop, run_async_on_bg_loop, agent_pool, shutdown_graceful
 
 warnings.filterwarnings('ignore', message='Can\'t initialize NVML')
 os.environ['CHROMA_TELEMETRY_DISABLED'] = '1'
