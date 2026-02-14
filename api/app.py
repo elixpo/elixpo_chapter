@@ -78,7 +78,9 @@ def _start_ipc_service():
 app = Quart(__name__)
 cors(app)
 
-app.asgi_middleware_stack.insert(0, (RequestIDMiddleware(), []))
+# Add RequestID middleware to the ASGI app
+middleware = RequestIDMiddleware(app.asgi_app)
+app.asgi_app = middleware
 
 pipeline_initialized = False
 initialization_lock = asyncio.Lock()
