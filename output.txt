@@ -1,0 +1,147 @@
+(searchenv) ubuntu@ip-172-31-1-3:~/lixSearch$ python api/searchPipeline.py 
+/home/ubuntu/lixSearch/searchenv/lib/python3.11/site-packages/torch/cuda/__init__.py:827: UserWarning: Can't initialize NVML
+  warnings.warn("Can't initialize NVML")
+INFO:elixpo:Starting Optimized ElixpoSearch Pipeline for query: 'Give me an insight on github repository called elixpo_chapter' with image: 'None'
+INFO:elixpo:[SearchPipeline] Connected to model_server via IPC
+INFO:elixpo:[Pipeline] Connected to model_server CoreEmbeddingService via IPC
+INFO:elixpo:[Pipeline] Retrieved 3 chunks from vector store
+INFO:elixpo:[Pipeline] RAG context prepared: 6088 chars
+INFO:elixpo:Tool calls suggested by model: 2 tools
+[{'index': 0, 'id': 'functions.web_search:0', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "elixpo_chapter github repository"}'}, 'name': None}, {'index': 1, 'id': 'functions.web_search:1', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "elixpo chapter elixir programming github"}'}, 'name': None}]
+INFO:elixpo:Processing 2 tool call(s):
+
+[TOOL CALL #1]
+  Function: web_search
+  Arguments: {
+  "query": "elixpo_chapter github repository"
+}
+INFO:elixpo:Tool call #1: web_search with args {'query': 'elixpo_chapter github repository'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: elixpo_chapter github repository
+2026-02-14 10:55:29.549 | INFO     | utility:_init_ipc_manager:41 - [Utility] IPC connection established with model_server
+
+[TOOL CALL #2]
+  Function: web_search
+  Arguments: {
+  "query": "elixpo chapter elixir programming github"
+}
+INFO:elixpo:Tool call #2: web_search with args {'query': 'elixpo chapter elixir programming github'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: elixpo chapter elixir programming github
+INFO:elixpo:Completed iteration 1. Messages: 5
+INFO:elixpo:Tool calls suggested by model: 3 tools
+[{'index': 0, 'id': 'functions.fetch_full_text:2', 'type': 'function', 'function': {'name': 'fetch_full_text', 'arguments': '{"url": "https://github.com/elixpo/elixpo_chapter"}'}, 'name': None}, {'index': 1, 'id': 'functions.fetch_full_text:3', 'type': 'function', 'function': {'name': 'fetch_full_text', 'arguments': '{"url": "https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md"}'}, 'name': None}, {'index': 2, 'id': 'functions.fetch_full_text:4', 'type': 'function', 'function': {'name': 'fetch_full_text', 'arguments': '{"url": "https://github.com/elixpo/elixpo_chapter/releases"}'}, 'name': None}]
+INFO:elixpo:Processing 3 tool call(s):
+INFO:elixpo:Executing 3 fetch_full_text calls in PARALLEL
+
+[PARALLEL FETCH #1]
+  URL: https://github.com/elixpo/elixpo_chapter...
+INFO:elixpo:[PARALLEL] Fetching URL #1: https://github.com/elixpo/elixpo_chapter
+INFO:elixpo:Fetching webpage content
+
+[PARALLEL FETCH #2]
+  URL: https://github.com/Circuit-Overtime/elixpo_chapter/blob/main...
+INFO:elixpo:[PARALLEL] Fetching URL #2: https://github.com/Circuit-Overtime/elixpo_chapter/blob/main
+INFO:elixpo:Fetching webpage content
+
+[PARALLEL FETCH #3]
+  URL: https://github.com/elixpo/elixpo_chapter/releases...
+INFO:elixpo:[PARALLEL] Fetching URL #3: https://github.com/elixpo/elixpo_chapter/releases
+INFO:elixpo:Fetching webpage content
+2026-02-14 10:55:34.937 | ERROR    | search:fetch_full_text:284 - [FETCH] Error fetching https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md: Status 429
+2026-02-14 10:55:34.938 | DEBUG    | utility:fetch_url_content_parallel:147 - [Utility] Fetched 0 chars from https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md
+2026-02-14 10:55:34.938 | INFO     | utility:fetch_url_content_parallel:152 - [Utility] Fetched all URLs in parallel, total: 76 chars
+2026-02-14 10:55:35.302 | DEBUG    | utility:fetch_url_content_parallel:147 - [Utility] Fetched 13776 chars from https://github.com/elixpo/elixpo_chapter/releases
+2026-02-14 10:55:35.302 | INFO     | utility:fetch_url_content_parallel:152 - [Utility] Fetched all URLs in parallel, total: 13831 chars
+2026-02-14 10:55:35.408 | DEBUG    | utility:fetch_url_content_parallel:147 - [Utility] Fetched 10562 chars from https://github.com/elixpo/elixpo_chapter
+2026-02-14 10:55:35.408 | INFO     | utility:fetch_url_content_parallel:152 - [Utility] Fetched all URLs in parallel, total: 10608 chars
+INFO:elixpo:[Pipeline] Ingested 1 chunks from https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md into vector store
+INFO:elixpo:[Pipeline] Ingested 1 chunks from https://github.com/elixpo/elixpo_chapter/releases into vector store
+INFO:elixpo:[Pipeline] Ingested 2 chunks from https://github.com/elixpo/elixpo_chapter into vector store
+INFO:elixpo:[PARALLEL INGEST] Ingested 2 chunks from https://github.com/elixpo/elixpo_chapter
+INFO:elixpo:[PARALLEL INGEST] Ingested 1 chunks from https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md
+INFO:elixpo:[PARALLEL INGEST] Ingested 1 chunks from https://github.com/elixpo/elixpo_chapter/releases
+INFO:elixpo:Completed iteration 2. Messages: 9
+INFO:elixpo:Tool calls suggested by model: 3 tools
+[{'index': 0, 'id': 'functions.fetch_full_text:5', 'type': 'function', 'function': {'name': 'fetch_full_text', 'arguments': '{"url": "https://github.com/orgs/elixpo/discussions"}'}, 'name': None}, {'index': 1, 'id': 'functions.web_search:6', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "elixpo art AI image generation github project features"}'}, 'name': None}, {'index': 2, 'id': 'functions.web_search:7', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "Ayushman Bhattacharya elixpo founder developer profile"}'}, 'name': None}]
+INFO:elixpo:Processing 3 tool call(s):
+
+[TOOL CALL #1]
+  Function: web_search
+  Arguments: {
+  "query": "elixpo art AI image generation github project features"
+}
+INFO:elixpo:Tool call #1: web_search with args {'query': 'elixpo art AI image generation github project features'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: elixpo art AI image generation github project features
+
+[TOOL CALL #2]
+  Function: web_search
+  Arguments: {
+  "query": "Ayushman Bhattacharya elixpo founder developer profile"
+}
+INFO:elixpo:Tool call #2: web_search with args {'query': 'Ayushman Bhattacharya elixpo founder developer profile'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: Ayushman Bhattacharya elixpo founder developer profile
+INFO:elixpo:Executing 1 fetch_full_text calls in PARALLEL
+
+[PARALLEL FETCH #1]
+  URL: https://github.com/orgs/elixpo/discussions...
+INFO:elixpo:[PARALLEL] Fetching URL #1: https://github.com/orgs/elixpo/discussions
+INFO:elixpo:Fetching webpage content
+2026-02-14 10:55:59.103 | DEBUG    | utility:fetch_url_content_parallel:147 - [Utility] Fetched 11035 chars from https://github.com/orgs/elixpo/discussions
+2026-02-14 10:55:59.103 | INFO     | utility:fetch_url_content_parallel:152 - [Utility] Fetched all URLs in parallel, total: 11083 chars
+INFO:elixpo:[Pipeline] Ingested 1 chunks from https://github.com/orgs/elixpo/discussions into vector store
+INFO:elixpo:[PARALLEL INGEST] Ingested 1 chunks from https://github.com/orgs/elixpo/discussions
+INFO:elixpo:Completed iteration 3. Messages: 13
+INFO:elixpo:Tool calls suggested by model: 3 tools
+[{'index': 0, 'id': 'functions.web_search:8', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "elixpo chapter projects elixpo art elixpo search elixpo chat github"}'}, 'name': None}, {'index': 1, 'id': 'functions.fetch_full_text:9', 'type': 'function', 'function': {'name': 'fetch_full_text', 'arguments': '{"url": "https://github.com/elixpo/elixpoart"}'}, 'name': None}, {'index': 2, 'id': 'functions.web_search:10', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "elixpo huggingface pollinations AI models"}'}, 'name': None}]
+INFO:elixpo:Processing 3 tool call(s):
+
+[TOOL CALL #1]
+  Function: web_search
+  Arguments: {
+  "query": "elixpo chapter projects elixpo art elixpo search elixpo chat github"
+}
+INFO:elixpo:Tool call #1: web_search with args {'query': 'elixpo chapter projects elixpo art elixpo search elixpo chat github'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: elixpo chapter projects elixpo art elixpo search elixpo chat github
+
+[TOOL CALL #2]
+  Function: web_search
+  Arguments: {
+  "query": "elixpo huggingface pollinations AI models"
+}
+INFO:elixpo:Tool call #2: web_search with args {'query': 'elixpo huggingface pollinations AI models'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: elixpo huggingface pollinations AI models
+INFO:elixpo:Executing 1 fetch_full_text calls in PARALLEL
+
+[PARALLEL FETCH #1]
+  URL: https://github.com/elixpo/elixpoart...
+INFO:elixpo:[PARALLEL] Fetching URL #1: https://github.com/elixpo/elixpoart
+INFO:elixpo:Fetching webpage content
+2026-02-14 10:56:15.434 | DEBUG    | utility:fetch_url_content_parallel:147 - [Utility] Fetched 3316 chars from https://github.com/elixpo/elixpoart
+2026-02-14 10:56:15.434 | INFO     | utility:fetch_url_content_parallel:152 - [Utility] Fetched all URLs in parallel, total: 3357 chars
+INFO:elixpo:[Pipeline] Ingested 2 chunks from https://github.com/elixpo/elixpoart into vector store
+INFO:elixpo:[PARALLEL INGEST] Ingested 2 chunks from https://github.com/elixpo/elixpoart
+INFO:elixpo:Completed iteration 4. Messages: 17
+INFO:elixpo:Tool calls suggested by model: 1 tools
+[{'index': 0, 'id': 'functions.web_search:11', 'type': 'function', 'function': {'name': 'web_search', 'arguments': '{"query": "\\"elixpo_chapter\\" site:github.com stars forks contributors"}'}, 'name': None}]
+INFO:elixpo:Processing 1 tool call(s):
+
+[TOOL CALL #1]
+  Function: web_search
+  Arguments: {
+  "query": "\"elixpo_chapter\" site:github.com stars forks contributors"
+}
+INFO:elixpo:Tool call #1: web_search with args {'query': '"elixpo_chapter" site:github.com stars forks contributors'}
+INFO:elixpo:Executing optimized tool: web_search
+INFO:elixpo:Performing optimized web search for: "elixpo_chapter" site:github.com stars forks contributors
+INFO:elixpo:Completed iteration 5. Messages: 19
+INFO:elixpo:Preparing optimized final response
+INFO:elixpo:Optimized response ready. Length: 7799
+
+--- Final Answer Received in 80.96s ---
+# Elixpo_Chapter: A Comprehensive Analysis of the Open-Source AI Ecosystem**Repository:** `elixpo/elixpo_chapter`  **Founded:** 2023 (College Initiative)  **License:** GNU GPL-3.0  **Current Metrics:** 87 Stars, 54 Forks, 35+ Contributors  ---## Executive OverviewElixpo_Chapter represents a rapidly maturing open-source ecosystem that emerged from a 2023 college initiative into a global collaborative network. Within 24 months, the project has delivered **17+ deployed projects**, engaged **35+ international contributors**, and secured recognition from Microsoft Startup Foundations (2024). The repository serves as the central monorepo coordinating parallel development tracks across artificial intelligence, web technologies, and developer tools.---## Ecosystem Architecture### Core Infrastructure DesignThe Elixpo ecosystem operates through a **centralized API binding layer** architecture:```User-Facing Platforms → Pollinations API Provider → AI/ML Infrastructure```**Frontend Layer:** Six primary platforms serve distinct use cases:- **Elixpo Art** (elixpo.com): Flagship AI image generation platform- **Elixpo Search**: AI-powered search capabilities- **Elixpo Chat**: Conversational AI interface- **Elixpo Sketch**: Drawing and design tools- **Elixpo Verse**: Extended creative environment- **Elix Blogs**: Content publishing platform**Backend Infrastructure:**- **AI/ML Compute:** Scaleway, Raspberry Pi clusters, Google Cloud Platform- **Cloud Infrastructure:** AWS, Azure, dedicated GPU VMs- **API Integration:** Pollinations AI provides core image generation and model serving capabilitiesThis architecture enables **modular development** where each project maintains independent release cycles while leveraging shared infrastructure resources.---## Flagship Projects & Deliverables### 1. Elixpo Art PlatformThe ecosystem's centerpiece delivers **production-grade AI art generation** through a modern web stack:- **Frontend:** HTML5, CSS3, JavaScript (ES6+)- **Backend:** Node.js/Express.js API layer- **AI Backend:** Pollinations API integration with custom model fine-tuning- **Features:** Gallery management, social sharing, browser-based generation**Deployment:** Live at elixpo.com with containerized deployment (Docker + nginx)### 2. Elixpo Chrome Extension (v5.0)**Release Date:** March 6, 2025  **Latest Version:** 5.0 (commit d7599aa, GPG-signed)The extension enables **context-aware image generation** directly from browser text selection:- **v5.0 Enhancements:** LLM integration for prompt enhancement, UI customization expansion, lag elimination, improved download workflows- **Distribution:** Available on Chrome Web Store- **User Workflow:** Select text → Generate AI art → Download/Share### 3. Specialized AI ModelsThe project maintains active model development on Hugging Face and Ollama:| Model | Platform | Purpose ||-------|----------|---------|| **ElixpoFlux** | Hugging Face | Custom image generation model || **LlamaMedicine** | Ollama | Fine-tuned medical domain LLM || **Emoji-Contextual-Translator** | Hugging Face | Text-to-emoji semantic translation |### 4. Jackey Discord BotA deployed Discord integration providing server-based image generation capabilities, accessible at jackey.elixpo.com.---## Development Metrics & Achievements### Quantified Impact- **10+** Production open-source projects deployed- **20+** Hackathon participations (competitive development cycles)- **2** Major open-source program participations: Hacktoberfest 2024 & 2025- **Featured Programs:** GSSOC (GirlScript Summer of Code), Pollinations.AI partnership, OSCI (Open Source Community India)### Community Engagement- **Discussion Activity:** Active GitHub Discussions with recent threads including "Elixpo Discord Bot" (March 28, 2025) and extension announcements- **Contribution Model:** Parallel development tracks accepting external project proposals; approved projects receive contributor attribution under GNU GPL- **Documentation:** Multi-format guides including DEPLOYMENT.md, Docker configurations, and environment setup documentation---## Technical Specifications### Development Environment```bashNode.js: v24-v25npm: v11+Development: concurrently + browsersync for hot-reloadingContainerization: Docker + docker-composeWeb Server: nginx```### Repository StructureThe monorepo organizes parallel projects under unified governance:- `api/` - Backend service layer- `src/` - Core application modules- `blogs/` - Content assets- `integrations/` - Third-party connection guides- `node_and_python/` - ML/data processing scripts- Container configurations (Dockerfile.frontend, docker-compose.yml)---## Strategic Positioning### Mission ParametersElixpo_Chapter operates under four foundational principles:1. **Zero-Cost Accessibility:** All tools remain free, no paywalls2. **Source Availability:** 100% open source under GPL-3.0 ensuring derivative works remain open3. **Ethical AI Development:** Transparent model training and deployment practices4. **Developer Experience Priority:** Well-documented, flexible tooling designed for contributor confidence### Funding & Sustainability- **Microsoft Startup Foundations:** Secured funding (2024)- **Infrastructure Partnership:** Pollinations AI provides compute resources and API infrastructure (acknowledged: Thomas Haferlach and team)- **Revenue Model:** GitHub Sponsors, community contributions, personal investment---## Current Activity & Trajectory### Recent Releases (2025)- **March 6:** Chrome Extension 5.0 (major UI/performance overhaul with LLM integration)- **March 28:** Discord Bot active development discussion initiated- **Ongoing:** Hacktoberfest 2025 contribution cycle with curated issue tracking (`hacktoberfest-accepted`, `hacktoberfest2025` tags)### Leadership**Ayushman Bhattacharya** (GitHub: Circuit-Overtime) serves as founder and primary maintainer. The project actively solicits nominations for the GitHub Stars Program to amplify visibility.---## Sources- **Primary Repository:** https://github.com/elixpo/elixpo_chapter- **Project Website:** https://elixpo.com- **Chrome Extension:** https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh- **Hugging Face Organization:** https://huggingface.co/Elixpo- **Sub-project Repository:** https://github.com/elixpo/elixpoart- **Founder Profile:** https://github.com/Circuit-Overtime/---**Assessment:** Elixpo_Chapter demonstrates exceptional velocity for a community-driven initiative, delivering production infrastructure typically associated with venture-backed startups. The strategic partnership with Pollinations AI for compute resources, combined with Microsoft funding validation, positions the ecosystem for sustainable scaling. The parallel development model and aggressive hackathon participation (20+ events) create rapid iteration cycles that benefit the broader open-source AI community.---**Sources:**1. [https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh](https://chromewebstore.google.com/detail/elixpo-art-select-text-an/hcjdeknbbbllfllddkbacfgehddpnhdh)2. [https://circuit-overtime.github.io/Elixpo_ai_pollinations/](https://circuit-overtime.github.io/Elixpo_ai_pollinations/)3. [https://dev.to/sarthakkarora/top-3-open-source-ai-image-generation-projects-on-github-eif](https://dev.to/sarthakkarora/top-3-open-source-ai-image-generation-projects-on-github-eif)4. [https://github.com/Circuit-Overtime/](https://github.com/Circuit-Overtime/)5. [https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md](https://github.com/Circuit-Overtime/elixpo_chapter/blob/main/README.md)
+INFO:elixpo:Optimized Search Completed

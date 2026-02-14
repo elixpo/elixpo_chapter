@@ -274,15 +274,17 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "fetched_urls": {},
             "youtube_metadata": {},
             "youtube_transcripts": {},
-            "base64_cache": {}
+            "base64_cache": {},
+            "context_sufficient": False  # Early exit marker
         }
         
-        max_iterations = 5
+        max_iterations = 2  # OPTIMIZATION: Reduced from 5 to 2 - most queries resolve in 1-2 iterations
         current_iteration = 0
         collected_sources = []
         collected_images_from_web = []
         collected_similar_images = []
         final_message_content = None
+        tool_call_count = 0  # Track cumulative tools executed
         
         # CRITICAL FIX #4: Simple RAG context - retrieve from vector store if available
         rag_context = ""
@@ -326,16 +328,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         if "tool_calls" in m and not m.get("content"):
                             m["content"] = "Processing your request..."
 
-            iteration_event = emit_event("INFO", f"<TASK>Analysing a sub-task.</TASK>")
+            iteration_event = emit_event("INFO", f"<TASK>Iteration {current_iteration}: Analyzing query</TASK>")
             if iteration_event:
                 yield iteration_event
+            # OPTIMIZATION: Trim old messages to reduce token overhead
+            if len(messages) > 8:
+                # Keep system + user messages at start, last 6 messages
+                trimmed = messages[:2] + messages[-6:]
+                logger.info(f"[OPTIMIZATION] Trimmed messages from {len(messages)} to {len(trimmed)}")
+                messages = trimmed
+            
             payload = {
                 "model": MODEL,
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "auto",
                 "seed": random.randint(1000, 9999),
-                "max_tokens": 3000,
+                "max_tokens": 2000,  # OPTIMIZATION: Reduced from 3000
             }
 
             try:
@@ -414,26 +423,73 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             print(tool_calls)
             logger.info(f"Processing {len(tool_calls)} tool call(s):")
             
-            # Separate fetch_full_text calls for parallel execution
+            # Separate tool calls by type for optimal parallel execution
             fetch_calls = []
+            web_search_calls = []
             other_calls = []
             for tool_call in tool_calls:
-                if tool_call["function"]["name"] == "fetch_full_text":
+                fn_name = tool_call["function"]["name"]
+                if fn_name == "fetch_full_text":
                     fetch_calls.append(tool_call)
+                elif fn_name == "web_search":
+                    web_search_calls.append(tool_call)
                 else:
                     other_calls.append(tool_call)
             
-            # Execute other tools first
+            async def execute_tool_async(idx, tool_call, is_web_search=False):
+                function_name = tool_call["function"]["name"]
+                function_args = json.loads(tool_call["function"]["arguments"])
+                logger.info(f"[Async Tool #{idx+1}] {function_name}")
+                
+                tool_result_gen = optimized_tool_execution(function_name, function_args, memoized_results, emit_event)
+                tool_result = None
+                image_urls = []
+                if hasattr(tool_result_gen, '__aiter__'):
+                    async for result in tool_result_gen:
+                        if isinstance(result, str) and result.startswith("event:"):
+                            pass  # SSE already handled internally
+                        elif isinstance(result, tuple):
+                            tool_result, image_urls = result
+                        else:
+                            tool_result = result
+                else:
+                    tool_result = await tool_result_gen if asyncio.iscoroutine(tool_result_gen) else tool_result_gen
+                
+                return {
+                    "tool_call_id": tool_call["id"],
+                    "name": function_name,
+                    "result": tool_result,
+                    "image_urls": image_urls
+                }
+            
+            # Run web searches in parallel
+            if web_search_calls:
+                emit_sse = emit_event("INFO", f"<TASK>Running {len(web_search_calls)} parallel searches</TASK>")
+                if emit_sse:
+                    yield emit_sse
+                web_search_results = await asyncio.gather(
+                    *[execute_tool_async(idx, tc, True) for idx, tc in enumerate(web_search_calls)],
+                    return_exceptions=True
+                )
+                for result in web_search_results:
+                    if not isinstance(result, Exception):
+                        if result["name"] == "web_search" and "current_search_urls" in memoized_results:
+                            collected_sources.extend(memoized_results["current_search_urls"][:3])
+                        tool_outputs.append({
+                            "role": "tool",
+                            "tool_call_id": result["tool_call_id"],
+                            "name": result["name"],
+                            "content": str(result["result"]) if result["result"] else "No result"
+                        })
+            
+            # Execute other non-fetch tools sequentially (usually timezone/image analysis)
             for idx, tool_call in enumerate(other_calls):
                 function_name = tool_call["function"]["name"]
                 function_args = json.loads(tool_call["function"]["arguments"])
-                print(f"\n[TOOL CALL #{idx+1}]")
-                print(f"  Function: {function_name}")
-                print(f"  Arguments: {json.dumps(function_args, indent=2)}")
-                logger.info(f"Tool call #{idx+1}: {function_name} with args {function_args}")
-                logger.info(f"Executing optimized tool: {function_name}")
+                logger.info(f"[Sequential Tool #{idx+1}] {function_name}")
                 if event_id:
-                    yield format_sse("INFO", f"<TASK>Running Task</TASK>")
+                    yield format_sse("INFO", f"<TASK>{function_name.replace('_', ' ').title()}</TASK>")
+                
                 tool_result_gen = optimized_tool_execution(function_name, function_args, memoized_results, emit_event)
                 if hasattr(tool_result_gen, '__aiter__'):
                     tool_result = None
@@ -454,17 +510,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             collected_images_from_web.extend(image_urls[:10])
                 else:
                     tool_result = await tool_result_gen if asyncio.iscoroutine(tool_result_gen) else tool_result_gen
+                
                 if function_name in ["transcribe_audio"]:
                     collected_sources.append(function_args.get("url"))
-                elif function_name == "web_search":
-                    if "current_search_urls" in memoized_results:
-                        collected_sources.extend(memoized_results["current_search_urls"])
+                
                 tool_outputs.append({
                     "role": "tool",
                     "tool_call_id": tool_call["id"],
                     "name": function_name,
                     "content": str(tool_result) if tool_result else "No result"
                 })
+            
+            tool_call_count += len(tool_calls)
             
             if fetch_calls:
                 logger.info(f"Executing {len(fetch_calls)} fetch_full_text calls in PARALLEL")
@@ -474,9 +531,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 async def execute_fetch(idx, tool_call):
                     function_name = tool_call["function"]["name"]
                     function_args = json.loads(tool_call["function"]["arguments"])
-                    print(f"\n[PARALLEL FETCH #{idx+1}]")
-                    print(f"  URL: {function_args.get('url', 'N/A')[:60]}...")
-                    logger.info(f"[PARALLEL] Fetching URL #{idx+1}: {function_args.get('url', 'N/A')[:60]}")
+                    url = function_args.get('url', 'N/A')
+                    logger.info(f"[PARALLEL FETCH #{idx+1}] {url[:60]}")
                     
                     tool_result_gen = optimized_tool_execution(function_name, function_args, memoized_results, emit_event)
                     tool_result = None
@@ -487,14 +543,17 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     return {
                         "tool_call_id": tool_call["id"],
                         "function_name": function_name,
-                        "url": function_args.get("url"),
+                        "url": url,
                         "result": tool_result
                     }
                 
-
-                fetch_results = await asyncio.gather(
-                    *[execute_fetch(idx, tc) for idx, tc in enumerate(fetch_calls)],
-                    return_exceptions=True
+                # OPTIMIZATION: Run fetches with timeout to prevent stragglers
+                fetch_results = await asyncio.wait_for(
+                    asyncio.gather(
+                        *[execute_fetch(idx, tc) for idx, tc in enumerate(fetch_calls)],
+                        return_exceptions=True
+                    ),
+                    timeout=8.0  # OPTIMIZATION: Hard timeout for parallel fetches
                 )
                 
                 ingest_tasks = []
@@ -506,48 +565,75 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     url = fetch_result["url"]
                     tool_result = fetch_result["result"]
                     
-                    # Add to sources
-                    collected_sources.append(url)
+                    # Add to sources (limit to top 5 URLs)
+                    if len(collected_sources) < 5:
+                        collected_sources.append(url)
                     
-                    # Queue ingestion to vector store
-                    async def ingest_url_async(url_to_ingest):
-                        try:
-                            model_server = get_model_server()
-                            core_service = model_server.CoreEmbeddingService()
-                            ingest_result = await asyncio.to_thread(core_service.ingest_url, url_to_ingest)
-                            chunks = ingest_result.get('chunks_ingested', 0)
-                            logger.info(f"[PARALLEL INGEST] Ingested {chunks} chunks from {url_to_ingest}")
-                        except Exception as e:
-                            logger.warning(f"[PARALLEL INGEST] Failed to ingest {url_to_ingest}: {e}")
-                    
-                    ingest_tasks.append(ingest_url_async(url))
+                    # OPTIMIZATION: Only ingest if core_service available (skip if unavailable)
+                    if core_service:
+                        async def ingest_url_async(url_to_ingest):
+                            try:
+                                core_svc = get_model_server().CoreEmbeddingService()
+                                ingest_result = await asyncio.wait_for(
+                                    asyncio.to_thread(core_svc.ingest_url, url_to_ingest),
+                                    timeout=3.0  # OPTIMIZATION: Timeout per ingest
+                                )
+                                chunks = ingest_result.get('chunks_ingested', 0)
+                                logger.info(f"[INGEST] {chunks} chunks from {url_to_ingest[:40]}")
+                            except asyncio.TimeoutError:
+                                logger.warning(f"[INGEST TIMEOUT] {url_to_ingest[:40]}")
+                            except Exception as e:
+                                logger.warning(f"[INGEST FAILED] {url_to_ingest[:40]}: {e}")
+                        
+                        ingest_tasks.append(ingest_url_async(url))
                     
                     tool_outputs.append({
                         "role": "tool",
                         "tool_call_id": fetch_result["tool_call_id"],
                         "name": "fetch_full_text",
-                        "content": str(tool_result) if tool_result else "No result"
+                        "content": str(tool_result)[:500] if tool_result else "No result"  # OPTIMIZATION: Trim content
                     })
                 
-                # Run all ingestion tasks in parallel
+                # Run all ingestion tasks in parallel with timeout
                 if ingest_tasks:
-                    await asyncio.gather(*ingest_tasks, return_exceptions=True)
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.gather(*ingest_tasks, return_exceptions=True),
+                            timeout=5.0  # OPTIMIZATION: Overall timeout for all ingestions
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning("[INGESTION] Timeout reached, continuing anyway")
             messages.extend(tool_outputs)
-            logger.info(f"Completed iteration {current_iteration}. Messages: {len(messages)}")
+            logger.info(f"Completed iteration {current_iteration}. Messages: {len(messages)}, Total tools: {tool_call_count}")
             if event_id:
-                yield format_sse("INFO", f"<TASK>Synthesizing Information</TASK>")
+                yield format_sse("INFO", f"<TASK>Processing responses ({tool_call_count} tools completed)</TASK>")
+            
+            # OPTIMIZATION: Early exit if we processed many tools (good signal of completeness)
+            if tool_call_count >= 6 and current_iteration >= 1:
+                logger.info(f"[EARLY EXIT] Processed {tool_call_count} tools, stopping early")
+                final_message_content = "Have gathered sufficient information. Let me compile the comprehensive response now."
+                break
 
         if not final_message_content and current_iteration >= max_iterations:
+            if event_id:
+                yield format_sse("INFO", f"<TASK>Generating Final Response</TASK>")
+            
             synthesis_prompt = {
                 "role": "user",
                 "content": synthesis_instruction(user_query)
             }
+            
+            # OPTIMIZATION: Trim messages before final synthesis
+            if len(messages) > 6:
+                messages = messages[:2] + messages[-4:]
+                logger.info(f"[SYNTHESIS] Trimmed messages to {len(messages)}")
+            
             messages.append(synthesis_prompt)
             payload = {
                 "model": MODEL,
                 "messages": messages,
                 "seed": random.randint(1000, 9999),
-                "max_tokens": 3000,
+                "max_tokens": 2500,
                 "stream": False,
             }
 
@@ -558,9 +644,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         POLLINATIONS_ENDPOINT,
                         json=payload,
                         headers=headers,
-                        timeout=25
+                        timeout=20
                     ),
-                    timeout=30.0
+                    timeout=22.0
                 )
                 response.raise_for_status()
                 response_data = response.json()
@@ -611,9 +697,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 for i, src in enumerate(unique_sources):
                     response_parts.append(f"{i+1}. [{src}]({src})\n")
             response_with_sources = "".join(response_parts)
+            # OPTIMIZATION: Cap response length to improve transmission speed
+            if len(response_with_sources) > 8000:
+                response_with_sources = response_with_sources[:8000] + "\n\n...[Response truncated for speed]\n"
             logger.info(f"Optimized response ready. Length: {len(response_with_sources)}")
             if event_id:
-                yield format_sse("INFO", "<TASK>SUCCESS</TASK>")
+                yield format_sse("INFO", "<TASK>SUCCESS - Sending response</TASK>")
                 chunk_size = 8000
                 for i in range(0, len(response_with_sources), chunk_size):
                     chunk = response_with_sources[i:i+chunk_size]
