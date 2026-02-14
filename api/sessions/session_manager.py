@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 import threading
-from .sessionData import SessionData
+from sessions.sessionData import SessionData
 from loguru import logger
 import uuid
 from datetime import datetime, timedelta

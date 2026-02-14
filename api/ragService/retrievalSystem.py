@@ -2,10 +2,10 @@ import threading
 from loguru import logger
 import numpy as np
 from typing import Dict, List
-from .embeddingService import EmbeddingService
-from .vectorStore import VectorStore
-from .ragEngine import RAGEngine
-from .semanticCache import SemanticCache
+from ragService.embeddingService import EmbeddingService
+from ragService.vectorStore import VectorStore
+from ragService.ragEngine import RAGEngine
+from ragService.semanticCache import SemanticCache
 from sessions.main import get_session_manager
 
 _retrieval_system = None

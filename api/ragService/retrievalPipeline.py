@@ -1,5 +1,5 @@
-from .embeddingService import EmbeddingService
-from .vectorStore import VectorStore
+from ragService.embeddingService import EmbeddingService
+from ragService.vectorStore import VectorStore
 import requests
 from loguru import logger
 from bs4 import BeautifulSoup
