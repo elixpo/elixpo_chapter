@@ -412,9 +412,14 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 break
             tool_outputs = []
             print(tool_calls)
-            for tool_call in tool_calls:
+            logger.info(f"Processing {len(tool_calls)} tool call(s):")
+            for idx, tool_call in enumerate(tool_calls):
                 function_name = tool_call["function"]["name"]
                 function_args = json.loads(tool_call["function"]["arguments"])
+                print(f"\n[TOOL CALL #{idx+1}]")
+                print(f"  Function: {function_name}")
+                print(f"  Arguments: {json.dumps(function_args, indent=2)}")
+                logger.info(f"Tool call #{idx+1}: {function_name} with args {function_args}")
                 logger.info(f"Executing optimized tool: {function_name}")
                 if event_id:
                     yield format_sse("INFO", f"<TASK>Running Task</TASK>")
