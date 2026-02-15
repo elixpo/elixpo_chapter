@@ -520,8 +520,17 @@ class accessSearchAgents:
     def __init__(self):
         pass
     
+    def health_check(self):
+        """Check if the service is healthy and ready."""
+        return {
+            "status": "healthy",
+            "agent_pool_initialized": agent_pool.initialized,
+            "background_loop_running": _event_loop is not None and _event_loop.is_running()
+        }
+    
     async def _async_web_search(self, query):
         if not agent_pool.initialized:
+            logger.info("[accessSearchAgents] Agent pool not initialized, initializing now...")
             await agent_pool.initialize_pool()
         
         agent, agent_idx = await agent_pool.get_text_agent()
@@ -530,6 +539,7 @@ class accessSearchAgents:
     
     async def _async_get_youtube_metadata(self, url):
         if not agent_pool.initialized:
+            logger.info("[accessSearchAgents] Agent pool not initialized, initializing for YouTube metadata...")
             await agent_pool.initialize_pool()
         
         agent, agent_idx = await agent_pool.get_text_agent()
@@ -538,6 +548,7 @@ class accessSearchAgents:
     
     async def _async_get_youtube_transcript_url(self, url):
         if not agent_pool.initialized:
+            logger.info("[accessSearchAgents] Agent pool not initialized, initializing for YouTube transcript...")
             await agent_pool.initialize_pool()
         
         agent, agent_idx = await agent_pool.get_text_agent()
@@ -546,6 +557,7 @@ class accessSearchAgents:
     
     async def _async_image_search(self, query, max_images=10):
         if not agent_pool.initialized:
+            logger.info("[accessSearchAgents] Agent pool not initialized, initializing for image search...")
             await agent_pool.initialize_pool()
         
         agent, agent_idx = await agent_pool.get_image_agent()

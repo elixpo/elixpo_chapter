@@ -1,37 +1,65 @@
 import re
 from loguru import logger
-from .main import _init_ipc_manager
+from .main import _init_ipc_manager, search_service as get_search_service
 import asyncio
 from searching.fetch_full_text import fetch_full_text
 
-search_service = None
 
 def webSearch(query: str):
-    if not _init_ipc_manager() or search_service is None:
-        logger.warning("[Utility] IPC service not available for web search")
+    initialized = _init_ipc_manager()
+    
+    if not initialized:
+        logger.warning("[Utility] IPC initialization failed - web search unavailable")
         return []
+    
+    # Import here to get the updated search_service from commons.main
+    from .main import search_service
+    
+    if search_service is None:
+        logger.error("[Utility] Search service is None despite IPC init success - this indicates a registration issue")
+        return []
+    
     try:
+        logger.debug(f"[Utility] Calling web_search on service {type(search_service).__name__}")
         urls = search_service.web_search(query)
-        return urls
+        logger.debug(f"[Utility] Web search returned {len(urls)} results for: {query[:50]}")
+        return urls if urls else []
+    except AttributeError as e:
+        logger.error(f"[Utility] Search service missing web_search method: {e}")
+        return []
     except Exception as e:
-        logger.error(f"[Utility] Web search failed: {e}")
+        logger.error(f"[Utility] Web search failed: {type(e).__name__}: {str(e)[:150]}")
         return []
 
 
 async def imageSearch(query: str, max_images: int = 10) -> list:
-    if not _init_ipc_manager() or search_service is None:
-        logger.warning("[Utility] IPC service not available for image search")
+    initialized = _init_ipc_manager()
+    
+    if not initialized:
+        logger.warning("[Utility] IPC initialization failed - image search unavailable")
         return []
+    
+    # Import here to get the updated search_service from commons.main
+    from .main import search_service
+    
+    if search_service is None:
+        logger.error("[Utility] Search service is None despite IPC init success - this indicates a registration issue")
+        return []
+    
     try:
+        logger.debug(f"[Utility] Calling image_search on service {type(search_service).__name__}")
         loop = asyncio.get_event_loop()
         urls = await loop.run_in_executor(
             None,
             lambda: search_service.image_search(query, max_images=max_images)
         )
-        logger.debug(f"[Utility] Image search returned {len(urls)} results for: {query[:50]}")
-        return urls
+        logger.debug(f"[Utility] Image search returned {len(urls) if urls else 0} results for: {query[:50]}")
+        return urls if urls else []
+    except AttributeError as e:
+        logger.error(f"[Utility] Search service missing image_search method: {e}")
+        return []
     except Exception as e:
-        logger.error(f"[Utility] Image search failed: {e}")
+        logger.error(f"[Utility] Image search failed: {type(e).__name__}: {str(e)[:150]}")
         return []
 
 def preprocess_text(text):
