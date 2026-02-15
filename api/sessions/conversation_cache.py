@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 from collections import deque
 import numpy as np
-from pipeline.config import CACHE_WINDOW_SIZE, CACHE_MAX_ENTRIES, CACHE_TTL_SECONDS, CACHE_COMPRESSION_METHOD, CACHE_EMBEDDING_MODEL, CACHE_SIMILARITY_THRESHOLD, CONVERSATION_CACHE_DIR
+from pipeline.config import CACHE_WINDOW_SIZE, CACHE_MAX_ENTRIES, CACHE_TTL_SECONDS, CACHE_COMPRESSION_METHOD, CACHE_EMBEDDING_MODEL, CACHE_SIMILARITY_THRESHOLD, CONVERSATION_CACHE_DIR, LOG_ENTRY_ID_DISPLAY_SIZE, LOG_MESSAGE_PREVIEW_TRUNCATE, LOG_MESSAGE_CONTEXT_TRUNCATE
 
 logger = logging.getLogger("elixpo")
 
@@ -92,7 +92,7 @@ class ConversationCacheManager:
             if oldest_key in self.embeddings_cache:
                 del self.embeddings_cache[oldest_key]
         
-        logger.debug(f"[ConversationCache] Added to cache: {entry_id[:8]}... (window size: {len(self.cache_window)}, total: {len(self.full_cache)})")
+        logger.debug(f"[ConversationCache] Added to cache: {entry_id[:LOG_ENTRY_ID_DISPLAY_SIZE]}... (window size: {len(self.cache_window)}, total: {len(self.full_cache)})")
     
     def query_cache(self, 
                    query: str, 
@@ -171,8 +171,8 @@ class ConversationCacheManager:
         
         window_text = "## Recent Conversation Context (from cache):\n"
         for i, entry in enumerate(self.cache_window, 1):
-            query = entry.get("query", "")[:100]
-            response_preview = entry.get("response", "")[:200]
+            query = entry.get("query", "")[:LOG_MESSAGE_CONTEXT_TRUNCATE]
+            response_preview = entry.get("response", "")[:LOG_MESSAGE_PREVIEW_TRUNCATE]
             window_text += f"\n{i}. Q: {query}\n   A: {response_preview}...\n"
         
         return window_text

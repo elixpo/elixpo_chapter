@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta
 import numpy as np
 from typing import List, Tuple
-from pipeline.config import EMBEDDING_DIMENSION
+from pipeline.config import EMBEDDING_DIMENSION, X_REQ_ID_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE
 
 
 
@@ -25,9 +25,9 @@ class SessionManager:
         with self.lock:
             if len(self.sessions) >= self.max_sessions:
                 self._cleanup_expired()
-            session_id = str(uuid.uuid4())[:12]
+            session_id = str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE]
             self.sessions[session_id] = SessionData(session_id, query, embedding_dim=self.embedding_dim)
-            logger.info(f"[SessionManager] Created session {session_id} for query: {query[:50]}")
+            logger.info(f"[SessionManager] Created session {session_id} for query: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}")
             return session_id
     
     def get_session(self, session_id: str) -> Optional[SessionData]:
@@ -105,7 +105,7 @@ class SessionManager:
                 "max_sessions": self.max_sessions,
                 "sessions": {
                     sid: {
-                        "query": s.query[:50],
+                        "query": s.query[:LOG_MESSAGE_QUERY_TRUNCATE],
                         "urls_fetched": len(s.fetched_urls),
                         "tools_used": len(s.tool_calls_made),
                         "faiss_index_size": s.faiss_index.ntotal,

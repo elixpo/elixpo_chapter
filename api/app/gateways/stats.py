@@ -4,13 +4,14 @@ import uuid
 from datetime import datetime
 from quart import request, jsonify
 from sessions.main import get_session_manager
+from pipeline.config import X_REQ_ID_SLICE_SIZE
 
 logger = logging.getLogger("lixsearch-api")
 
 
 async def get_stats():
     """Get application statistics."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting stats")

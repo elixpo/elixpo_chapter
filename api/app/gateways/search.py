@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from quart import request, jsonify, Response
 from pipeline.searchPipeline import run_elixposearch_pipeline
 from app.utils import validate_query, validate_url, format_openai_response
+from pipeline.config import X_REQ_ID_SLICE_SIZE, REQUEST_ID_HEX_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE
 import os
 
 logger = logging.getLogger("lixsearch-api")
@@ -13,7 +14,7 @@ logger = logging.getLogger("lixsearch-api")
 def format_sse_event_openai(event_type: str, content: str, request_id: str = None) -> str:
     model = os.getenv("MODEL")
     response = {
-        "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:8]}",
+        "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:REQUEST_ID_HEX_SLICE_SIZE]}",
         "object": "chat.completion.chunk",
         "created": int(datetime.now(timezone.utc).timestamp()),
         "model": model,
@@ -58,9 +59,9 @@ async def search(pipeline_initialized: bool):
         if image_url and not validate_url(image_url):
             return jsonify({"error": "Invalid image_url"}), 400
 
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
-        logger.info(f"[{request_id}] Search: {query[:50]}... [stream={stream_mode}]")
+        logger.info(f"[{request_id}] Search: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}... [stream={stream_mode}]")
 
         # Streaming mode: SSE with OpenAI-format JSON events
         if stream_mode:
@@ -135,6 +136,6 @@ async def search(pipeline_initialized: bool):
             )
 
     except Exception as e:
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
         logger.error(f"[{request_id}] Search error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

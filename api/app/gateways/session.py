@@ -6,6 +6,7 @@ from quart import request, jsonify
 from sessions.main import get_session_manager
 from ragService.main import get_retrieval_system
 from app.utils import validate_query, validate_session_id
+from pipeline.config import X_REQ_ID_SLICE_SIZE
 
 logger = logging.getLogger("lixsearch-api")
 
@@ -36,7 +37,7 @@ async def create_session():
 
 async def get_session_info(session_id: str):
     """Get session information."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting session info: {session_id}")
@@ -66,7 +67,7 @@ async def get_session_info(session_id: str):
 
 async def get_session_kg(session_id: str):
     """Get knowledge graph for session."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting KG for session: {session_id}")
@@ -90,7 +91,7 @@ async def get_session_kg(session_id: str):
 
 async def query_session_kg(session_id: str):
     """Query knowledge graph for session."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Querying KG for session: {session_id}")
@@ -119,7 +120,7 @@ async def query_session_kg(session_id: str):
 
 async def get_entity_evidence(session_id: str, entity: str):
     """Get entity evidence from session KG."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting entity evidence: {entity} for session: {session_id}")
@@ -144,7 +145,7 @@ async def get_entity_evidence(session_id: str, entity: str):
 
 async def get_session_summary(session_id: str):
     """Get session summary."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting summary for session: {session_id}")
@@ -169,7 +170,7 @@ async def get_session_summary(session_id: str):
 
 async def delete_session(session_id: str):
     """Delete a session."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Deleting session: {session_id}")

@@ -6,6 +6,7 @@ from ragService.semanticCache import SemanticCache
 import numpy as np
 from loguru import logger
 from typing import Dict, Optional
+from pipeline.config import LOG_MESSAGE_PREVIEW_TRUNCATE
 
 
 
@@ -170,7 +171,7 @@ class RAGEngine:
                 role = msg.get("role", "unknown")
                 content = msg.get("content", "")
                 if content:
-                    context_parts.append(f"{role.capitalize()}: {content[:200]}")
+                    context_parts.append(f"{role.capitalize()}: {content[:LOG_MESSAGE_PREVIEW_TRUNCATE]}")
             
             return "\n".join(context_parts) if context_parts else ""
         except Exception as e:

@@ -3,7 +3,7 @@ from typing import List, Dict, Optional, AsyncGenerator
 import asyncio
 import requests
 import random
-from pipeline.config import POLLINATIONS_ENDPOINT
+from pipeline.config import POLLINATIONS_ENDPOINT, LOG_MESSAGE_PREVIEW_TRUNCATE
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -82,7 +82,7 @@ class ChatEngine:
         
         except Exception as e:
             logger.error(f"[Chat {session_id}] Error: {e}", exc_info=True)
-            yield self._format_sse("error", f"Error generating response: {str(e)[:200]}")
+            yield self._format_sse("error", f"Error generating response: {str(e)[:LOG_MESSAGE_PREVIEW_TRUNCATE]}")
     
     async def chat_with_search(
         self,

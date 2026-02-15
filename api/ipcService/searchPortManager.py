@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 from urllib.parse import quote
 import atexit
 import time
-from pipeline.config import MAX_LINKS_TO_TAKE, isHeadless, MAX_IMAGES_TO_INCLUDE
+from pipeline.config import MAX_LINKS_TO_TAKE, isHeadless, MAX_IMAGES_TO_INCLUDE, LOG_MESSAGE_QUERY_TRUNCATE
 import shutil
 import os
 import json
@@ -249,7 +249,7 @@ class YahooSearchAgentText:
         page = None
         try:
             self.tab_count += 1
-            logger.info(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            logger.info(f"[SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:LOG_MESSAGE_QUERY_TRUNCATE]}...'")
             
             page = await self.context.new_page()
             search_url = f"https://search.yahoo.com/search?p={quote(query)}&fr=yfp-t&fr2=p%3Afp%2Cm%3Asb&fp=1"
@@ -270,7 +270,7 @@ class YahooSearchAgentText:
                 if href and href.startswith("http") and not any(b in href for b in blacklist):
                     results.append(href)
 
-            logger.info(f"[SEARCH] Tab #{self.tab_count} returned {len(results)} results for '{query[:50]}...' on port {self.custom_port}")
+            logger.info(f"[SEARCH] Tab #{self.tab_count} returned {len(results)} results for '{query[:LOG_MESSAGE_QUERY_TRUNCATE]}...' on port {self.custom_port}")
             
             if agent_idx is not None:
                 agent_pool.increment_tab_count("text", agent_idx)
@@ -460,7 +460,7 @@ class YahooSearchAgentImage:
         page = None
         try:
             self.tab_count += 1
-            logger.info(f"[IMAGE-SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:50]}...'")
+            logger.info(f"[IMAGE-SEARCH] Opening tab #{self.tab_count} on port {self.custom_port} for query: '{query[:LOG_MESSAGE_QUERY_TRUNCATE]}...'")
             
             page = await self.context.new_page()
             search_url = f"https://images.search.yahoo.com/search/images?p={quote(query)}"

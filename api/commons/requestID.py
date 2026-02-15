@@ -1,9 +1,10 @@
 from loguru import logger 
 from starlette.middleware.base import BaseHTTPMiddleware
 import uuid
+from pipeline.config import REQUEST_ID_LEGACY_SLICE_SIZE
 
 def reqID():
-    return str(uuid.uuid4())[:10]
+    return str(uuid.uuid4())[:REQUEST_ID_LEGACY_SLICE_SIZE]
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):

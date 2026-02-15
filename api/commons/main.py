@@ -2,6 +2,7 @@
 from loguru import logger
 import time
 from multiprocessing.managers import BaseManager
+from pipeline.config import ERROR_MESSAGE_TRUNCATE
 
 search_service = None
 _ipc_ready = False
@@ -46,7 +47,7 @@ def _init_ipc_manager(max_retries: int = 3, retry_delay: float = 1.0):
             return True
         except Exception as e:
             if attempt < max_retries - 1:
-                logger.warning(f"[Utility] IPC connection failed (attempt {attempt + 1}/{max_retries}): {type(e).__name__}: {str(e)[:100]}")
+                logger.warning(f"[Utility] IPC connection failed (attempt {attempt + 1}/{max_retries}): {type(e).__name__}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
                 time.sleep(retry_delay)
             else:
                 logger.warning(f"[Utility] IPC connection failed after {max_retries} attempts. Running in standalone mode")

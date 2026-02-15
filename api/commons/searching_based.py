@@ -3,6 +3,7 @@ from loguru import logger
 from .main import _init_ipc_manager, search_service as get_search_service
 import asyncio
 from searching.fetch_full_text import fetch_full_text
+from pipeline.config import LOG_MESSAGE_QUERY_TRUNCATE, ERROR_MESSAGE_TRUNCATE, ERROR_CONTEXT_TRUNCATE
 
 
 def webSearch(query: str):
@@ -22,13 +23,13 @@ def webSearch(query: str):
     try:
         logger.debug(f"[Utility] Calling web_search on service {type(search_service).__name__}")
         urls = search_service.web_search(query)
-        logger.debug(f"[Utility] Web search returned {len(urls)} results for: {query[:50]}")
+        logger.debug(f"[Utility] Web search returned {len(urls)} results for: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}")
         return urls if urls else []
     except AttributeError as e:
         logger.error(f"[Utility] Search service missing web_search method: {e}")
         return []
     except Exception as e:
-        logger.error(f"[Utility] Web search failed: {type(e).__name__}: {str(e)[:150]}")
+        logger.error(f"[Utility] Web search failed: {type(e).__name__}: {str(e)[:ERROR_CONTEXT_TRUNCATE]}")
         return []
 
 
@@ -53,13 +54,13 @@ async def imageSearch(query: str, max_images: int = 10) -> list:
             None,
             lambda: search_service.image_search(query, max_images=max_images)
         )
-        logger.debug(f"[Utility] Image search returned {len(urls) if urls else 0} results for: {query[:50]}")
+        logger.debug(f"[Utility] Image search returned {len(urls) if urls else 0} results for: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}")
         return urls if urls else []
     except AttributeError as e:
         logger.error(f"[Utility] Search service missing image_search method: {e}")
         return []
     except Exception as e:
-        logger.error(f"[Utility] Image search failed: {type(e).__name__}: {str(e)[:150]}")
+        logger.error(f"[Utility] Image search failed: {type(e).__name__}: {str(e)[:ERROR_CONTEXT_TRUNCATE]}")
         return []
 
 def preprocess_text(text):

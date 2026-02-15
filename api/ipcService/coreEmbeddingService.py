@@ -4,7 +4,7 @@ from ragService.vectorStore import VectorStore
 from ragService.semanticCache import SemanticCache
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from pipeline.config import EMBEDDING_MODEL, EMBEDDINGS_DIR, SEMANTIC_CACHE_TTL_SECONDS, SEMANTIC_CACHE_SIMILARITY_THRESHOLD, AUDIO_TRANSCRIBE_SIZE, RETRIEVAL_TOP_K, PERSIST_VECTOR_STORE_INTERVAL
+from pipeline.config import EMBEDDING_MODEL, EMBEDDINGS_DIR, SEMANTIC_CACHE_TTL_SECONDS, SEMANTIC_CACHE_SIMILARITY_THRESHOLD, AUDIO_TRANSCRIBE_SIZE, RETRIEVAL_TOP_K, PERSIST_VECTOR_STORE_INTERVAL, REQUEST_ID_HEX_SLICE_SIZE
 from ragService.retrievalPipeline import RetrievalPipeline
 import torch
 import threading
@@ -15,7 +15,7 @@ class CoreEmbeddingService:
     _instance_id = None
     
     def __init__(self):
-        CoreEmbeddingService._instance_id = str(uuid.uuid4())[:8]
+        CoreEmbeddingService._instance_id = str(uuid.uuid4())[:REQUEST_ID_HEX_SLICE_SIZE]
         logger.info(f"[CORE {CoreEmbeddingService._instance_id}] Initializing core services...")
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

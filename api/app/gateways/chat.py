@@ -4,8 +4,7 @@ from datetime import datetime
 from quart import request, jsonify, Response
 from sessions.main import get_session_manager
 from chatEngine.main import get_chat_engine
-from app.utils import validate_query
-from pipeline.config import X_REQ_ID_SLICE_SIZE
+from pipeline.config import X_REQ_ID_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE
 
 logger = logging.getLogger("lixsearch-api")
 
@@ -29,7 +28,7 @@ async def chat(pipeline_initialized: bool):
             session_id = session_manager.create_session(user_message)
 
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
-        logger.info(f"[{request_id}] Chat: {user_message[:50]}... session: {session_id}")
+        logger.info(f"[{request_id}] Chat: {user_message[:LOG_MESSAGE_QUERY_TRUNCATE]}... session: {session_id}")
 
         chat_engine = get_chat_engine()
 
@@ -77,7 +76,7 @@ async def session_chat(session_id: str, pipeline_initialized: bool):
             return jsonify({"error": "Message is required"}), 400
 
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
-        logger.info(f"[{request_id}] Session chat {session_id}: {user_message[:50]}...")
+        logger.info(f"[{request_id}] Session chat {session_id}: {user_message[:LOG_MESSAGE_QUERY_TRUNCATE]}...")
 
         chat_engine = get_chat_engine()
 

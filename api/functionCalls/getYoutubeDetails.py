@@ -1,5 +1,5 @@
 import os
-from pipeline.config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE
+from pipeline.config import BASE_CACHE_DIR, AUDIO_TRANSCRIBE_SIZE, ERROR_MESSAGE_TRUNCATE
 from pytubefix import AsyncYouTube
 from pydub import AudioSegment
 from multiprocessing.managers import BaseManager
@@ -165,7 +165,7 @@ async def transcribe_audio(
         return "[TIMEOUT] Video transcription took too long"
     except Exception as e:
         logger.error(f"[Transcribe] Transcription failed: {e}")
-        return f"[ERROR] Failed to transcribe: {str(e)[:100]}"
+        return f"[ERROR] Failed to transcribe: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 
 async def transcribe_long(
     url: str,
@@ -215,7 +215,7 @@ async def transcribe_long(
     
     except Exception as e:
         logger.error(f"[TranscribeLong] Transcription failed: {e}")
-        return f"[ERROR] Failed to transcribe: {str(e)[:100]}"
+        return f"[ERROR] Failed to transcribe: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 
 if __name__ == "__main__":
     url = "https://www.youtube.com/watch?v=FLal-KvTNAQ"

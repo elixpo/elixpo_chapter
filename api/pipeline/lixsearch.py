@@ -8,6 +8,7 @@ import re
 from pipeline.tools import tools
 from datetime import datetime, timezone
 from sessions.conversation_cache import ConversationCacheManager
+from pipeline.config import LOG_MESSAGE_QUERY_TRUNCATE, LOG_MESSAGE_CONTEXT_TRUNCATE, LOG_MESSAGE_PREVIEW_TRUNCATE, ERROR_MESSAGE_TRUNCATE
 import os 
 from dotenv import load_dotenv
 from pipeline.config import (POLLINATIONS_ENDPOINT, 
@@ -91,7 +92,7 @@ def _strip_internal_lines(content: str) -> str:
 
 
 async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: str = None, request_id: str = None):
-    logger.info(f"Starting Optimized ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}' [RequestID: {request_id}]")
+    logger.info(f"Starting Optimized ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:LOG_MESSAGE_QUERY_TRUNCATE] + '...' if user_image else 'None'}' [RequestID: {request_id}]")
     def emit_event(event_type, message):
         if event_id:
             return format_sse(event_type, message)
@@ -390,7 +391,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             logger.info(f"Tool calls suggested by model: {len(tool_calls) if tool_calls else 0} tools")
             if not tool_calls:
                 final_message_content = assistant_message.get("content")
-                logger.info(f"[COMPLETION] No tool calls found, setting final message: {final_message_content[:100] if final_message_content else 'EMPTY'}")
+                logger.info(f"[COMPLETION] No tool calls found, setting final message: {final_message_content[:LOG_MESSAGE_PREVIEW_TRUNCATE] if final_message_content else 'EMPTY'}")
                 break
             tool_outputs = []
             print(tool_calls)
@@ -603,7 +604,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if len(query_components) > 1:
                 logger.info(f"[SYNTHESIS] Multi-component query synthesis:")
                 for i, component in enumerate(query_components, 1):
-                    logger.info(f"[SYNTHESIS] Component {i}: {component[:100]}")
+                    logger.info(f"[SYNTHESIS] Component {i}: {component[:LOG_MESSAGE_PREVIEW_TRUNCATE]}")
                 logger.info(f"[SYNTHESIS] Synthesizing {len(collected_sources)} total sources across {len(query_components)} components")
             
             logger.info("[SYNTHESIS] Starting synthesis of gathered information")
@@ -687,23 +688,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 if collected_sources:
                     final_message_content += f"\n\nRelevant sources: {', '.join(collected_sources[:3])}"
             except requests.exceptions.HTTPError as http_err:
-                logger.error(f"[SYNTHESIS HTTP ERROR] Status Code: {http_err.response.status_code} - {str(http_err)[:100]}")
+                logger.error(f"[SYNTHESIS HTTP ERROR] Status Code: {http_err.response.status_code} - {str(http_err)[:ERROR_MESSAGE_TRUNCATE]}")
                 final_message_content = f"I gathered information related to '{user_query}' but encountered an API error while synthesizing the response."
                 if collected_sources:
                     final_message_content += f" Sources: {', '.join(collected_sources[:3])}"
             except requests.exceptions.RequestException as e:
-                logger.error(f"[SYNTHESIS REQUEST ERROR] {type(e).__name__}: {str(e)[:100]}")
+                logger.error(f"[SYNTHESIS REQUEST ERROR] {type(e).__name__}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
                 final_message_content = f"I found relevant information about '{user_query}' but encountered a connection error while formatting the response."
                 if collected_sources:
                     final_message_content += f" Sources: {', '.join(collected_sources[:3])}"
             except Exception as e:
-                logger.error(f"[SYNTHESIS ERROR] {type(e).__name__}: {str(e)[:100]}", exc_info=True)
+                logger.error(f"[SYNTHESIS ERROR] {type(e).__name__}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}", exc_info=True)
                 final_message_content = f"I processed your query about '{user_query}' but encountered an error while generating the final response."
 
         if final_message_content:
             final_message_content = await sanitize_final_response(final_message_content, user_query, collected_sources)
             logger.info(f"Preparing optimized final response")
-            logger.info(f"[FINAL] final_message_content starts with: {final_message_content[:100] if final_message_content else 'None'}")
+            logger.info(f"[FINAL] final_message_content starts with: {final_message_content[:LOG_MESSAGE_PREVIEW_TRUNCATE] if final_message_content else 'None'}")
             
             # If we have collected images but final content is just placeholder, trigger synthesis
             if (collected_images_from_web or collected_similar_images) and final_message_content in ["Processing your request...", "I'll help you with that. Let me gather the information you need."]:

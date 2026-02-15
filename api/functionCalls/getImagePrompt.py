@@ -6,6 +6,7 @@ import os
 import requests
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pipeline.config import IMAGE_SEARCH_QUERY_WORDS_LIMIT
 
 load_dotenv()
 
@@ -88,8 +89,8 @@ NOW GENERATE ONLY THE SEARCH QUERY FOR THIS IMAGE - NO OTHER TEXT:"""
     # Split into sentences and take the first one (could be multiple sentences)
     sentences = content.split('.')[0].strip()
     
-    # Limit to first 15 words for search query
-    words = sentences.split()[:15]
+    # Limit to first N words for search query
+    words = sentences.split()[:IMAGE_SEARCH_QUERY_WORDS_LIMIT]
     final_query = " ".join(words).strip()
     
     # Ensure we got actual content, not just meta-text

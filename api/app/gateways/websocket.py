@@ -3,13 +3,14 @@ import logging
 import uuid
 from quart import websocket
 from pipeline.searchPipeline import run_elixposearch_pipeline
+from pipeline.config import X_REQ_ID_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE
 
 logger = logging.getLogger("lixsearch-api")
 
 
 async def websocket_search():
     """WebSocket search endpoint."""
-    request_id = str(uuid.uuid4())[:12]
+    request_id = str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE]
     logger.info(f"[{request_id}] WebSocket connection established")
 
     try:
@@ -24,7 +25,7 @@ async def websocket_search():
                 })
                 continue
 
-            logger.info(f"[{request_id}] WS Query: {query[:50]}")
+            logger.info(f"[{request_id}] WS Query: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}")
 
             async for chunk in run_elixposearch_pipeline(
                 user_query=query,

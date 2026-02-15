@@ -6,6 +6,7 @@ import uuid
 import os
 from datetime import datetime, timezone
 import tiktoken
+from pipeline.config import REQUEST_ID_HEX_SLICE_SIZE
 
 def setup_logger(name: str) -> logging.Logger:
     logging.basicConfig(
@@ -32,7 +33,7 @@ def format_openai_response(content: str, request_id: str = None) -> str:
     prompt_tokens = 0 
     
     response = {
-        "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:8]}",
+        "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:REQUEST_ID_HEX_SLICE_SIZE]}",
         "object": "chat.completion",
         "created": int(datetime.now(timezone.utc).timestamp()),
         "model": model,

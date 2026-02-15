@@ -10,7 +10,7 @@ from commons.searching_based import fetch_url_content_parallel, webSearch, image
 from commons.minimal import cleanQuery
 from functionCalls.getYoutubeDetails import transcribe_audio, youtubeMetadata
 from pipeline.utils import get_model_server, cached_web_search_key
-from pipeline.config import MAX_IMAGES_TO_INCLUDE
+from pipeline.config import MAX_IMAGES_TO_INCLUDE, LOG_MESSAGE_QUERY_TRUNCATE, LOG_MESSAGE_PREVIEW_TRUNCATE, ERROR_MESSAGE_TRUNCATE, REQUEST_ID_HEX_SLICE_SIZE
 
 async def optimized_tool_execution(function_name: str, function_args: dict, memoized_results: dict, emit_event_func):
     try:
@@ -106,7 +106,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
                 yield result
             except Exception as e:
                 logger.error(f"Image analysis error: {e}")
-                yield f"[ERROR] Image analysis failed: {str(e)[:100]}"
+                yield f"[ERROR] Image analysis failed: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 
         elif function_name == "replyFromImage":
             web_event = emit_event_func("INFO", "<TASK>Processing Image Query</TASK>")
@@ -117,11 +117,11 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
             try:
                 reply = await replyFromImage(image_url, query)
                 result = f"Reply from Image: {reply}"
-                logger.info(f"Reply from image for query '{query}': {reply[:100]}...")
+                logger.info(f"Reply from image for query '{query}': {reply[:LOG_MESSAGE_PREVIEW_TRUNCATE]}...")
                 yield result
             except Exception as e:
                 logger.error(f"Image query error: {e}")
-                yield f"[ERROR] Image query failed: {str(e)[:100]}"
+                yield f"[ERROR] Image query failed: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 
         elif function_name == "image_search":
             start_time = time.time()
@@ -136,7 +136,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
             image_query = function_args.get("image_query")
             max_images = function_args.get("max_images", MAX_IMAGES_TO_INCLUDE)
             search_results_raw = await imageSearch(image_query, max_images=max_images)
-            logger.info(f"Image search for '{image_query[:50]}...' completed.")
+            logger.info(f"Image search for '{image_query[:LOG_MESSAGE_QUERY_TRUNCATE]}...' completed.")
             image_urls = []
             url_context = ""
             try:
@@ -149,7 +149,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
                             for src_url, imgs in image_dict.items():
                                 if not imgs:
                                     continue
-                                for img_url in imgs[:8]:
+                                for img_url in imgs[:REQUEST_ID_HEX_SLICE_SIZE]:
                                     if img_url and img_url.startswith("http"):
                                         image_urls.append(img_url)
                     except json.JSONDecodeError:
@@ -191,7 +191,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
                 yield "[TIMEOUT] Video transcription took too long"
             except Exception as e:
                 logger.error(f"Transcription error: {e}")
-                yield f"[ERROR] Failed to transcribe: {str(e)[:100]}"
+                yield f"[ERROR] Failed to transcribe: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 
         elif function_name == "fetch_full_text":
             logger.info("Fetching webpage content")
@@ -223,11 +223,11 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
                 yield f"[TIMEOUT] Fetching {url} took too long"
             except Exception as e:
                 logger.error(f"URL fetch error for {url}: {e}")
-                yield f"[ERROR] Failed to fetch {url}: {str(e)[:100]}"
+                yield f"[ERROR] Failed to fetch {url}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
     except asyncio.TimeoutError:
         logger.warning(f"Tool {function_name} timed out")
         yield f"[TIMEOUT] Tool {function_name} took too long to execute"
     except Exception as e:
         logger.error(f"Error executing tool {function_name}: {e}")
-        yield f"[ERROR] Tool execution failed: {str(e)[:100]}"
+        yield f"[ERROR] Tool execution failed: {str(e)[:ERROR_MESSAGE_TRUNCATE]}"
 

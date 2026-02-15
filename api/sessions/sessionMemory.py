@@ -3,6 +3,7 @@ import threading
 from typing import Dict, List, Optional
 from datetime import datetime
 from loguru import logger
+from pipeline.config import LOG_MESSAGE_CONTEXT_TRUNCATE
 
 class SessionMemory:
     def __init__(self, session_id: str, summary_threshold: int = 6):
@@ -41,8 +42,8 @@ class SessionMemory:
         summary_parts.append(f"Previous Discussion Summary (turns 1-{self.turn_count - 2}):")
         
         for turn in self.conversation_history[:-2]:
-            summary_parts.append(f"  Q: {turn['user'][:100]}...")
-            summary_parts.append(f"  A: {turn['assistant'][:100]}...")
+            summary_parts.append(f"  Q: {turn['user'][:LOG_MESSAGE_CONTEXT_TRUNCATE]}...")
+            summary_parts.append(f"  A: {turn['assistant'][:LOG_MESSAGE_CONTEXT_TRUNCATE]}...")
         
         self.rolling_summary = "\n".join(summary_parts)
         

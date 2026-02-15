@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import os 
 from loguru import logger
-from pipeline.config import EMBEDDING_DIMENSION
+from pipeline.config import EMBEDDING_DIMENSION, LOG_MESSAGE_CONTEXT_TRUNCATE
 
 
 class SessionData:
@@ -116,7 +116,7 @@ class SessionData:
                         for doc_id, distance, metadata in zip(results["ids"][0], results["distances"][0], results["metadatas"][0]):
                             relevance_score = 1.0 - distance
                             url = metadata.get("url", doc_id)
-                            content_preview = self.processed_content.get(url, "")[:100]
+                            content_preview = self.processed_content.get(url, "")[:LOG_MESSAGE_CONTEXT_TRUNCATE]
                             context_parts.append(f"  - {url} (relevance: {relevance_score:.3f})")
                             context_parts.append(f"    Preview: {content_preview}...")
                 except Exception as e:
