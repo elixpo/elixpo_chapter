@@ -29,164 +29,7 @@ You must convert this from an engineered architecture into a **formally analyzed
 
 # 1. Architectural Gaps (Deep Critique)
 
-## 1.1 Heuristic Thresholding (Major Weakness)
 
-Current:
-- Similarity thresholds fixed (0.85, 0.90)
-- TTL fixed (30min / 1hr)
-- MAX_LINKS_TO_TAKE static (3–6)
-
-Problem:
-These are hand-tuned constants. That reduces scientific credibility.
-
-What reviewers will ask:
-- Why 0.85?
-- Why 0.90?
-- What happens at 0.70?
-- How do you adapt under topic drift?
-
-Improvement:
-Replace fixed thresholds with adaptive policy:
-
-Let:
-- H(q) = entropy of query embedding distribution
-- V_s = variance of session embedding cluster
-- A(q) = estimated ambiguity score
-- T(q) = query temporal sensitivity classifier
-
-Define:
-τ(q) = α·H(q) + β·V_s + γ·A(q)
-
-Then:
-cache_hit if similarity > τ(q)
-
-Now you have dynamic semantic filtering.
-
-This single change elevates novelty significantly.
-
----
-
-## 1.2 No Formal Objective Function
-
-Current:
-Implicit goals:
-- Reduce latency
-- Reduce cost
-- Maintain answer quality
-
-But not formalized.
-
-To upgrade:
-
-Define system as constrained optimization:
-
-Minimize:
-    L_total + λ·C_total
-
-Subject to:
-    Completeness ≥ δ
-    Factuality ≥ ε
-    Freshness ≥ φ
-
-Where:
-- L_total = expected latency
-- C_total = compute + token + API cost
-- Completeness measured via aspect coverage
-- Factuality measured via citation correctness
-
-Now your architecture becomes an optimization framework.
-
----
-
-## 1.3 Query Decomposition Is Rule-Based
-
-Current:
-Decomposition triggered heuristically.
-
-Weakness:
-No formal guarantee decomposition improves coverage.
-
-Upgrade:
-
-Measure:
-- Aspect Coverage Ratio (ACR)
-- Redundancy Index (RI)
-- Token Efficiency Ratio (TER)
-
-Define:
-ACR = (# unique semantic aspects answered) / (estimated aspects in query)
-
-Compare:
-- Single-pass RAG
-- Decomposition + parallel retrieval
-
-Show statistically significant improvement.
-
-Additionally:
-Train a lightweight decomposition classifier instead of rule-based splitting.
-
----
-
-## 1.4 Cache Layer Interaction Not Modeled
-
-You have 5 layers:
-1. Conversation
-2. Semantic (URL)
-3. Session
-4. Global
-5. Web
-
-But:
-
-You do not model:
-- Expected hit probability per layer
-- Interaction effects
-- Latency variance propagation
-
-Upgrade:
-
-Model as Markov retrieval chain:
-
-P(L_i) = probability of hit at layer i
-
-Expected latency:
-
-E[L] = Σ_i P(hit_i)·L_i + P(miss_all)·L_web
-
-Empirically estimate P(hit_i) over time.
-
-Plot convergence curves.
-
-This converts architecture into analyzable system.
-
----
-
-## 1.5 No Cost–Quality Tradeoff Surface
-
-Right now you claim:
-“Fast and cost-saving due to caching.”
-
-That is anecdotal.
-
-Upgrade:
-
-Plot 3D Pareto surfaces:
-
-Axis 1: Latency
-Axis 2: Cost per query
-Axis 3: Factuality score
-
-Then show:
-- Baseline RAG
-- Your system
-- No caching
-- No decomposition
-
-Demonstrate frontier dominance.
-
-Without this, reviewers will dismiss cost claims.
-
----
 
 ## 1.6 Embedding Model Static
 
@@ -210,6 +53,8 @@ Measure:
 Now you demonstrate architectural scalability sensitivity.
 
 ---
+
+
 
 ## 1.7 No Drift Handling
 
@@ -235,28 +80,6 @@ Major improvement.
 
 ---
 
-## 1.8 No Robustness or Adversarial Testing
-
-Questions:
-- What happens under prompt injection?
-- What if fetched URL contains malicious instruction?
-- What if semantic cache poisoned?
-
-Upgrade:
-
-Add:
-- Tool output sanitization formal policy
-- Instruction filtering classifier
-- Embedding anomaly detection for cache poisoning
-
-Evaluate:
-- Injection success rate reduction
-- Retrieval contamination probability
-
-Security dimension increases score.
-
----
-
 ## 1.9 No Theoretical Complexity Analysis
 
 Provide:
@@ -274,26 +97,7 @@ Formal scaling model increases systems credibility.
 
 ---
 
-## 1.10 Graceful Degradation Not Quantified
 
-You describe fallback qualitatively.
-
-Upgrade:
-
-Simulate failures:
-- Disable web
-- Disable global store
-- Disable session store
-
-Measure:
-
-ΔCompleteness
-ΔFactuality
-ΔLatency
-
-Quantify degradation slope.
-
----
 
 # 2. Critical Experiments Required for 9/10
 

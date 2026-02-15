@@ -1,4 +1,3 @@
-"""Chat gateway."""
 import logging
 import uuid
 from datetime import datetime
@@ -6,12 +5,12 @@ from quart import request, jsonify, Response
 from sessions.main import get_session_manager
 from chatEngine.main import get_chat_engine
 from app.utils import validate_query
+from pipeline.config import X_REQ_ID_SLICE_SIZE
 
 logger = logging.getLogger("lixsearch-api")
 
 
 async def chat(pipeline_initialized: bool):
-    """Chat endpoint."""
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
 
@@ -29,7 +28,7 @@ async def chat(pipeline_initialized: bool):
             session_manager = get_session_manager()
             session_id = session_manager.create_session(user_message)
 
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
         logger.info(f"[{request_id}] Chat: {user_message[:50]}... session: {session_id}")
 
         chat_engine = get_chat_engine()
@@ -54,13 +53,12 @@ async def chat(pipeline_initialized: bool):
         )
 
     except Exception as e:
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
         logger.error(f"[{request_id}] Chat error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
 async def session_chat(session_id: str, pipeline_initialized: bool):
-    """Chat within a session."""
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
 
@@ -78,7 +76,7 @@ async def session_chat(session_id: str, pipeline_initialized: bool):
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
 
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
         logger.info(f"[{request_id}] Session chat {session_id}: {user_message[:50]}...")
 
         chat_engine = get_chat_engine()
@@ -108,11 +106,10 @@ async def session_chat(session_id: str, pipeline_initialized: bool):
 
 
 async def chat_completions(session_id: str, pipeline_initialized: bool):
-    """Chat completions endpoint."""
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
 
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         session_manager = get_session_manager()
@@ -167,7 +164,7 @@ async def chat_completions(session_id: str, pipeline_initialized: bool):
                             response_content = line.replace("data:", "").strip()
 
             return jsonify({
-                "id": f"chatcmpl-{str(uuid.uuid4())[:12]}",
+                "id": f"chatcmpl-{str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE]}",
                 "object": "chat.completion",
                 "created": int(datetime.utcnow().timestamp()),
                 "model": "elixpo-rag",
@@ -192,8 +189,7 @@ async def chat_completions(session_id: str, pipeline_initialized: bool):
 
 
 async def get_chat_history(session_id: str):
-    """Get chat history for a session."""
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:12])
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE])
 
     try:
         logger.info(f"[{request_id}] Getting chat history for session: {session_id}")
