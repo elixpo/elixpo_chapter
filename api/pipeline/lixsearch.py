@@ -337,10 +337,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     if function_name == "image_search" and image_urls:
                         if user_image and user_query.strip():
                             collected_images_from_web.extend(image_urls[:5])
-                        elif user_image and not user_query.strip():
-                            collected_similar_images.extend(image_urls[:10])
-                        elif not user_image and user_query.strip():
-                            collected_images_from_web.extend(image_urls[:10])
                 else:
                     tool_result = await tool_result_gen if asyncio.iscoroutine(tool_result_gen) else tool_result_gen
                 
@@ -355,11 +351,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 })
             
             tool_call_count += len(tool_calls)
-            
-            # EARLY SYNTHESIS: If image_search just completed and found images, trigger synthesis
-            if any(tc["function"]["name"] == "image_search" for tc in tool_calls) and collected_images_from_web:
-                logger.info(f"[EARLY SYNTHESIS] Image search completed with {len(collected_images_from_web)} images. Triggering synthesis...")
-                current_iteration = max_iterations  # Force synthesis on next check
             
             if fetch_calls:
                 logger.info(f"Executing {len(fetch_calls)} fetch_full_text calls in PARALLEL")
@@ -591,25 +582,33 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             # Check if synthesis already includes images (markdown format ![...](http...))
             import re
             has_image_markdown = bool(re.search(r'!\[([^\]]*)\]\(https?://[^\)]+\)', final_message_content))
-            logger.info(f"[FINAL] Synthesis content has embedded images: {has_image_markdown}")
+            image_count_in_synthesis = len(re.findall(r'!\[', final_message_content))
+            logger.info(f"[FINAL] Synthesis content has embedded images: {has_image_markdown} ({image_count_in_synthesis} found)")
             
             response_parts = [final_message_content]
+            images_added = 0
             
             # Only append additional images if synthesis didn't already include them
             if not has_image_markdown:
                 if user_image and not user_query.strip() and collected_similar_images:
                     response_parts.append("\n\n**Similar Images:**\n")
-                    for img in collected_similar_images[:8]:
+                    # Ensure at least 4 images, cap at 10
+                    limit = min(10, max(4, len(collected_similar_images)))
+                    for img in collected_similar_images[:limit]:
                         if img and img.startswith("http"):
                             response_parts.append(f"![Similar Image]({img})\n")
+                            images_added += 1
                 elif collected_images_from_web:
                     response_parts.append("\n\n**Related Images:**\n")
-                    limit = 5 if user_image and user_query.strip() else 8
+                    # Ensure at least 4 images, cap at 10
+                    limit = min(10, max(4, len(collected_images_from_web)))
                     for img in collected_images_from_web[:limit]:
                         if img and img.startswith("http"):
                             response_parts.append(f"![Image]({img})\n")
+                            images_added += 1
+                logger.info(f"[FINAL] Added {images_added} images from web search (total images: {images_added})")
             else:
-                logger.info(f"[FINAL] Skipping image append since synthesis already contains {len(re.findall(r'!\[', final_message_content))} image references")
+                logger.info(f"[FINAL] Skipping image append - synthesis already contains {image_count_in_synthesis} image references")
             if collected_sources:
                 response_parts.append("\n\n---\n**Sources:**\n")
                 unique_sources = sorted(list(set(collected_sources)))[:5]

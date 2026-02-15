@@ -464,37 +464,64 @@ class YahooSearchAgentImage:
             
             page = await self.context.new_page()
             search_url = f"https://images.search.yahoo.com/search/images?p={quote(query)}"
-            await page.goto(search_url, timeout=20000)
-
+            print(f"[IMAGE SEARCH] Navigating to: {search_url}")
+            await page.goto(search_url, timeout=50000)
+            
+            # Handle popup
             await handle_accept_popup(page)
-
+            
+            # Simulate human behavior
             await page.mouse.move(random.randint(100, 500), random.randint(100, 500))
             await page.wait_for_timeout(random.randint(1000, 2000))
-
-            await page.wait_for_selector("div.sres-cntr > ul#sres > li.ld > a.redesign-img > img", timeout=5000)
-
-            img_elements = await page.query_selector_all("div.sres-cntr > ul#sres > li.ld > a.redesign-img > img")
-            for img in img_elements[:max_images]:
-                src = await img.get_attribute("data-src") or await img.get_attribute("src")
-                if src and src.startswith("http"):
-                    results.append(src)
-
-            logger.info(f"[IMAGE-SEARCH] Tab #{self.tab_count} returned {len(results)} image results for '{query[:50]}...' on port {self.custom_port}")
+            await page.wait_for_selector("img[src*='s.yimg.com']", timeout=55000)
             
-            if agent_idx is not None:
-                agent_pool.increment_tab_count("image", agent_idx)
-        
-        except Exception as e:
-            logger.error(f"[IMAGE-SEARCH] Yahoo image search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
-        finally:
-            if page:
+            # Get all thumbnail images
+            image_elements = await page.query_selector_all("li[data-bns='API']")
+            print(f"[IMAGE SEARCH] Found {len(image_elements)} thumbnails")
+            
+            for idx, img in enumerate(image_elements):
+                if len(results) >= max_images:
+                    break
                 try:
-                    await page.close()
-                    logger.info(f"[IMAGE-SEARCH] Closed tab #{self.tab_count} on port {self.custom_port}")
+                    captured_image_url = None
+                    print(f"[IMAGE] Processing thumbnail {idx + 1}")
+                    
+                    async def handle_response(response):
+                        nonlocal captured_image_url
+                        try:
+                            content_type = response.headers.get("content-type", "")
+                            if ("image/jpeg" in content_type or "image/jpg" in content_type or response.url.endswith(".jpg") or response.url.endswith(".jpeg")):
+                                url = response.url
+                                if "maxresdefault" not in url and not url.startswith("https://s.yimg.com"):
+                                    captured_image_url = url
+                                    print(f"[IMAGE] Captured JPEG from network: {url}")
+                        except Exception as e:
+                            pass
+
+                    page.on("response", handle_response)
+                    await img.click()
+                    wait_start = time.perf_counter()
+                    while captured_image_url is None and (time.perf_counter() - wait_start) < 3:
+                        await page.wait_for_timeout(100)
+                    page.remove_listener("response", handle_response)
+                    
+                    if captured_image_url:
+                        results.append(captured_image_url)
+                        print(f"[IMAGE] Added: {captured_image_url} (Count: {len(results)}/{max_images})")
+                    else:
+                        print(f"[WARN] No JPEG URL captured for thumbnail {idx + 1}")
+                    await page.go_back()
+                    await page.wait_for_timeout(500)
+                    if len(results) >= max_images:
+                        break
                 except Exception as e:
-                    logger.warning(f"[IMAGE-SEARCH] Failed to close image search tab #{self.tab_count}: {e}")
-        
-        return results
+                    print(f"[WARN] Failed to extract image URL at index {idx}: {e}")
+            
+            print(f"[IMAGE SEARCH] Found {len(results)} images")
+            return results
+        except Exception as e:
+            logger.error(f"❌ Image search failed on tab #{self.tab_count}, port {self.custom_port}: {e}")
+            return results
 
     async def close(self):
         try:
