@@ -588,18 +588,28 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 except Exception as e:
                     logger.warning(f"[FINAL] Synthesis generation failed: {e}, using existing content")
             
+            # Check if synthesis already includes images (markdown format ![...](http...))
+            import re
+            has_image_markdown = bool(re.search(r'!\[([^\]]*)\]\(https?://[^\)]+\)', final_message_content))
+            logger.info(f"[FINAL] Synthesis content has embedded images: {has_image_markdown}")
+            
             response_parts = [final_message_content]
-            if user_image and not user_query.strip() and collected_similar_images:
-                response_parts.append("\n\n**Similar Images:**\n")
-                for img in collected_similar_images[:8]:
-                    if img and img.startswith("http"):
-                        response_parts.append(f"![Similar Image]({img})\n")
-            elif collected_images_from_web:
-                response_parts.append("\n\n**Related Images:**\n")
-                limit = 5 if user_image and user_query.strip() else 8
-                for img in collected_images_from_web[:limit]:
-                    if img and img.startswith("http"):
-                        response_parts.append(f"![Image]({img})\n")
+            
+            # Only append additional images if synthesis didn't already include them
+            if not has_image_markdown:
+                if user_image and not user_query.strip() and collected_similar_images:
+                    response_parts.append("\n\n**Similar Images:**\n")
+                    for img in collected_similar_images[:8]:
+                        if img and img.startswith("http"):
+                            response_parts.append(f"![Similar Image]({img})\n")
+                elif collected_images_from_web:
+                    response_parts.append("\n\n**Related Images:**\n")
+                    limit = 5 if user_image and user_query.strip() else 8
+                    for img in collected_images_from_web[:limit]:
+                        if img and img.startswith("http"):
+                            response_parts.append(f"![Image]({img})\n")
+            else:
+                logger.info(f"[FINAL] Skipping image append since synthesis already contains {len(re.findall(r'!\[', final_message_content))} image references")
             if collected_sources:
                 response_parts.append("\n\n---\n**Sources:**\n")
                 unique_sources = sorted(list(set(collected_sources)))[:5]
