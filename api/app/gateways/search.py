@@ -11,22 +11,8 @@ logger = logging.getLogger("lixsearch-api")
 
 
 def format_sse_event_openai(event_type: str, content: str, request_id: str = None) -> str:
-    """Format SSE event as OpenAI-compatible JSON for consistent parsing.
-    
-    Args:
-        event_type: SSE event name (INFO, final, final-part, error)
-        content: Event content/data
-        request_id: Request ID for tracking
-    
-    Returns:
-        SSE-formatted OpenAI JSON response
-    """
-    model = os.getenv("MODEL", "kimi")
-    
-    # Escape newlines in content for JSON
+    model = os.getenv("MODEL")
     escaped_content = content.replace('\n', '\\n')
-    
-    # Build OpenAI-compatible response
     response = {
         "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:8]}",
         "object": "chat.completion.chunk",
@@ -42,7 +28,7 @@ def format_sse_event_openai(event_type: str, content: str, request_id: str = Non
                 "finish_reason": "stop" if event_type == "final" else None
             }
         ],
-        "event_type": event_type  # Additional metadata for event routing
+        "event_type": event_type 
     }
     
     json_str = json.dumps(response, ensure_ascii=False)
@@ -50,27 +36,18 @@ def format_sse_event_openai(event_type: str, content: str, request_id: str = Non
 
 
 async def search(pipeline_initialized: bool):
-    """Search endpoint with optional streaming.
-    
-    Parameters:
-    - query: Search query (required)
-    - image_url: Optional image URL for image search
-    - stream: Whether to stream SSE events (default: true)
-      - stream=true: Returns Server-Sent Events as OpenAI-format JSON
-      - stream=false: Returns single OpenAI-format JSON response
-    """
     if not pipeline_initialized:
         return jsonify({"error": "Server not initialized"}), 503
 
     try:
         if request.method == 'GET':
             query = request.args.get("query", "").strip()
-            image_url = request.args.get("image_url")
+            image_url = request.args.get("image_url") or request.args.get("image")
             stream_param = request.args.get("stream", "true").lower()
         else:
             data = await request.get_json()
             query = data.get("query", "").strip()
-            image_url = data.get("image_url")
+            image_url = data.get("image_url") or data.get("image")
             stream_param = str(data.get("stream", "true")).lower()
 
         # Parse stream parameter (default True)

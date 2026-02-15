@@ -356,6 +356,11 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             
             tool_call_count += len(tool_calls)
             
+            # EARLY SYNTHESIS: If image_search just completed and found images, trigger synthesis
+            if any(tc["function"]["name"] == "image_search" for tc in tool_calls) and collected_images_from_web:
+                logger.info(f"[EARLY SYNTHESIS] Image search completed with {len(collected_images_from_web)} images. Triggering synthesis...")
+                current_iteration = max_iterations  # Force synthesis on next check
+            
             if fetch_calls:
                 logger.info(f"Executing {len(fetch_calls)} fetch_full_text calls in PARALLEL")
                 if event_id:
@@ -544,6 +549,45 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if final_message_content:
             logger.info(f"Preparing optimized final response")
             logger.info(f"[FINAL] final_message_content starts with: {final_message_content[:100] if final_message_content else 'None'}")
+            
+            # If we have collected images but final content is just placeholder, trigger synthesis
+            if (collected_images_from_web or collected_similar_images) and final_message_content in ["Processing your request...", "I'll help you with that. Let me gather the information you need."]:
+                logger.info(f"[FINAL] Detected placeholder content with collected images. Triggering synthesis...")
+                synthesis_prompt = {
+                    "role": "user",
+                    "content": f"Based on the image analysis and search results, provide a final comprehensive answer to: {user_query}"
+                }
+                messages.append(synthesis_prompt)
+                
+                payload = {
+                    "model": MODEL,
+                    "messages": messages,
+                    "seed": random.randint(1000, 9999),
+                    "max_tokens": 2500,
+                    "stream": False,
+                }
+                
+                try:
+                    loop = asyncio.get_event_loop()
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            requests.post,
+                            POLLINATIONS_ENDPOINT,
+                            json=payload,
+                            headers=headers,
+                            timeout=120
+                        ),
+                        timeout=125.0
+                    )
+                    response.raise_for_status()
+                    response_data = response.json()
+                    synthesis_response = response_data["choices"][0]["message"].get("content", "")
+                    if synthesis_response:
+                        final_message_content = synthesis_response
+                        logger.info(f"[FINAL] Synthesis generated new content, length: {len(final_message_content)}")
+                except Exception as e:
+                    logger.warning(f"[FINAL] Synthesis generation failed: {e}, using existing content")
+            
             response_parts = [final_message_content]
             if user_image and not user_query.strip() and collected_similar_images:
                 response_parts.append("\n\n**Similar Images:**\n")
