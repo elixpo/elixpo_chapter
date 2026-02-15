@@ -17,6 +17,7 @@ from pipeline.config import (POLLINATIONS_ENDPOINT,
 from pipeline.instruction import system_instruction, user_instruction, synthesis_instruction
 from pipeline.optimized_tool_execution import optimized_tool_execution
 from pipeline.utils import format_sse, get_model_server
+from functionCalls.getImagePrompt import generate_prompt_from_image
 import asyncio
 load_dotenv()
 
@@ -82,6 +83,31 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if request_id:
             semantic_cache.load_for_request(request_id)
             logger.info(f"[Pipeline] Loaded persistent cache for request {request_id}")
+        
+        # IMAGE HANDLING: Detect and process image-only queries
+        image_context_provided = False
+        if user_image and not user_query.strip():
+            logger.info(f"[Pipeline] Image-only query detected. Generating search query from image...")
+            try:
+                image_event = emit_event("INFO", "<TASK>Analyzing image to generate search query</TASK>")
+                if image_event:
+                    yield image_event
+                
+                # Generate search query from image
+                generated_query = await generate_prompt_from_image(user_image)
+                user_query = generated_query
+                image_context_provided = True
+                logger.info(f"[Pipeline] Generated query from image: '{user_query}'")
+                
+                query_event = emit_event("INFO", f"<TASK>Generated search query: {user_query}</TASK>")
+                if query_event:
+                    yield query_event
+            except Exception as e:
+                logger.warning(f"[Pipeline] Failed to generate query from image, continuing with empty query: {e}")
+                image_context_provided = False
+        elif user_image and user_query.strip():
+            logger.info(f"[Pipeline] Image + Query mode: Will analyze image in context of query")
+            image_context_provided = True
         
         max_iterations = 3 
         current_iteration = 0
@@ -424,7 +450,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             logger.info("[SYNTHESIS] Starting synthesis of gathered information")
             synthesis_prompt = {
                 "role": "user",
-                "content": synthesis_instruction(user_query)
+                "content": synthesis_instruction(user_query, image_context=image_context_provided)
             }
             
             # OPTIMIZATION: Trim messages before final synthesis

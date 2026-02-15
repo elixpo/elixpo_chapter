@@ -84,9 +84,25 @@ WRITING STYLE:
 
 
 def user_instruction(query, image_url):
+    image_context = ""
+    if image_url:
+        image_context = """
+IMAGE HANDLING STRATEGY:
+When an image is provided, analyze the query intent and choose the appropriate approach:
+1. QUERY ABOUT IMAGE CONTENT (e.g., "what is in this image?", "describe this", "who is this person?")
+   → Use replyFromImage(image_url, query) for direct visual analysis
+2. REVERSE IMAGE SEARCH (e.g., "find similar images", "where is this from?", "identify this")
+   → Use generate_prompt_from_image(image_url) to create search query, then image_search with generated query
+3. COMBINED ANALYSIS (e.g., "analyze this image and find related articles", "what's in it and find similar ones?")
+   → Use replyFromImage first for analysis, then generate_prompt_from_image + image_search for related content
+4. IMAGE-ONLY (no text query provided)
+   → Use generate_prompt_from_image(image_url) to auto-generate search query, then web_search + image_search
+   
+Always integrate image analysis naturally into your response. Use web_search for additional context if needed."""
+    
     user_message = f"""Respond to this query with appropriate length and depth:
-Query: {query}
-{"Image provided: Analyze and integrate into response" if image_url else ""}
+Query: {query if query else "(Image provided - analyze and generate search query)"}
+{"Image URL: " + image_url if image_url else ""}
 
 Guidelines:
 - FIRST PRIORITY: Check conversation cache using query_conversation_cache tool
@@ -103,11 +119,16 @@ Guidelines:
 - Use tools intelligently (web_search for current info only)
 - Integrate research naturally without redundancy
 - Include sources from tools used
-- Be direct, remove filler"""
+- Be direct, remove filler{image_context}"""
     return user_message
 
-def synthesis_instruction(user_query):
+def synthesis_instruction(user_query, image_context=None):
+    image_note = ""
+    if image_context:
+        image_note = "\n- Ensure image insights are integrated into the final response\n- Include visual analysis details where relevant"
+    
     synthesis_message = f"""Synthesize response for: {user_query}
+
 
 Match length to complexity:
 - Simple (1-3 sentences)
@@ -124,6 +145,6 @@ IMPORTANT: Use markdown formatting with proper line breaks:
 Example structure:
 "Main answer here.\\n\\n## Key Points\\n- Point 1\\n- Point 2\\n\\n**Sources:**\\n1. [Source](url)"
 
-Be concise, direct, skip redundancy. Use markdown. Include sources if applicable."""
+Be concise, direct, skip redundancy. Use markdown. Include sources if applicable.{image_note}"""
     return synthesis_message
     
