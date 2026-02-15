@@ -14,7 +14,7 @@
 | `stream` | boolean | `true` | Stream results as Server-Sent Events |
 
 #### Streaming Mode (`stream=true` or default)
-Returns Server-Sent Events with real-time updates:
+Returns Server-Sent Events in OpenAI-compatible JSON format:
 ```bash
 # GET request
 curl "http://localhost:8000/api/search?query=latest%20news&stream=true"
@@ -25,11 +25,20 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8000/api/search
 ```
 
-Response format: `text/event-stream` with events:
-- `INFO` - Status updates (task descriptions)
-- `final-part` - Content chunks (for large responses)
-- `final` - Complete response content
-- `error` - Error messages
+Response format: `text/event-stream` with OpenAI-compatible JSON events
+```
+data: {"id":"chatcmpl-abc1","object":"chat.completion.chunk","created":1708014000,"model":"kimi","choices":[{"index":0,"delta":{"role":"assistant","content":"Searching for latest news..."},"finish_reason":null}],"event_type":"INFO"}
+
+data: {"id":"chatcmpl-abc1","object":"chat.completion.chunk","created":1708014000,"model":"kimi","choices":[{"index":0,"delta":{"role":"content","content":"Found 5 relevant sources..."},"finish_reason":null}],"event_type":"final-part"}
+
+data: {"id":"chatcmpl-abc1","object":"chat.completion.chunk","created":1708014000,"model":"kimi","choices":[{"index":0,"delta":{"role":"content","content":"\\n\\n**Sources:**\\n1. [URL](url)"},"finish_reason":"stop"}],"event_type":"final"}
+```
+
+Each event is a complete OpenAI-format JSON object that can be parsed consistently:
+- **INFO events**: Status/progress updates
+- **final-part events**: Content chunks (for large responses)
+- **final events**: Last content chunk with `finish_reason: "stop"`
+- **error events**: Error messages with `finish_reason: "error"`
 
 #### Non-Streaming Mode (`stream=false`)
 Returns single OpenAI-format JSON response:
@@ -43,7 +52,7 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8000/api/search
 ```
 
-Response format: `application/json`
+Response format: `application/json` (OpenAI chat completion format)
 ```json
 {
   "id": "chatcmpl-abc123",
@@ -54,7 +63,7 @@ Response format: `application/json`
     "index": 0,
     "message": {
       "role": "assistant",
-      "content": "Response with \\n escaped newlines..."
+      "content": "Response with \\n escaped newlines for parsing..."
     },
     "finish_reason": "stop"
   }],
@@ -65,6 +74,14 @@ Response format: `application/json`
   }
 }
 ```
+
+### Response Format Consistency
+Both streaming and non-streaming modes return **OpenAI-compatible JSON** for unified parsing:
+- **Streaming**: Each SSE event is a complete OpenAI JSON object
+- **Non-Streaming**: Final response is a single OpenAI JSON object
+- **Newlines**: All responses escape `\n` for proper JSON parsing
+- **Token Counting**: Both modes include accurate token counts via tiktoken
+- **Models**: Both support the same model selection
 
 ## Module Hierarchies
 

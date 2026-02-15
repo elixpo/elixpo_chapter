@@ -10,6 +10,45 @@ import os
 logger = logging.getLogger("lixsearch-api")
 
 
+def format_sse_event_openai(event_type: str, content: str, request_id: str = None) -> str:
+    """Format SSE event as OpenAI-compatible JSON for consistent parsing.
+    
+    Args:
+        event_type: SSE event name (INFO, final, final-part, error)
+        content: Event content/data
+        request_id: Request ID for tracking
+    
+    Returns:
+        SSE-formatted OpenAI JSON response
+    """
+    model = os.getenv("MODEL", "kimi")
+    
+    # Escape newlines in content for JSON
+    escaped_content = content.replace('\n', '\\n')
+    
+    # Build OpenAI-compatible response
+    response = {
+        "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:8]}",
+        "object": "chat.completion.chunk",
+        "created": int(datetime.now(timezone.utc).timestamp()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {
+                    "role": "assistant" if event_type == "INFO" else "content",
+                    "content": escaped_content
+                },
+                "finish_reason": "stop" if event_type == "final" else None
+            }
+        ],
+        "event_type": event_type  # Additional metadata for event routing
+    }
+    
+    json_str = json.dumps(response, ensure_ascii=False)
+    return f"data: {json_str}\n\n"
+
+
 async def search(pipeline_initialized: bool):
     """Search endpoint with optional streaming.
     
@@ -17,7 +56,7 @@ async def search(pipeline_initialized: bool):
     - query: Search query (required)
     - image_url: Optional image URL for image search
     - stream: Whether to stream SSE events (default: true)
-      - stream=true: Returns Server-Sent Events with real-time updates
+      - stream=true: Returns Server-Sent Events as OpenAI-format JSON
       - stream=false: Returns single OpenAI-format JSON response
     """
     if not pipeline_initialized:
@@ -47,16 +86,39 @@ async def search(pipeline_initialized: bool):
 
         logger.info(f"[{request_id}] Search: {query[:50]}... [stream={stream_mode}]")
 
-        # Streaming mode: SSE with real-time events
+        # Streaming mode: SSE with OpenAI-format JSON events
         if stream_mode:
             async def event_stream_generator():
                 async for chunk in run_elixposearch_pipeline(
                     user_query=query,
                     user_image=image_url,
-                    event_id=request_id,  # Enable SSE format
+                    event_id=request_id,  # Enable SSE format from pipeline
                     request_id=request_id
                 ):
-                    yield chunk.encode('utf-8') if isinstance(chunk, str) else chunk
+                    # Parse SSE event: "event: TYPE\ndata: CONTENT\n\n"
+                    chunk_str = chunk if isinstance(chunk, str) else chunk.decode('utf-8')
+                    
+                    try:
+                        lines = chunk_str.strip().split('\n')
+                        event_type = None
+                        event_data = None
+                        
+                        for line in lines:
+                            if line.startswith('event:'):
+                                event_type = line.replace('event:', '').strip()
+                            elif line.startswith('data:'):
+                                event_data = line.replace('data:', '').strip()
+                        
+                        if event_type and event_data:
+                            # Reformat as OpenAI-compatible SSE JSON
+                            openai_sse = format_sse_event_openai(event_type, event_data, request_id)
+                            yield openai_sse.encode('utf-8')
+                        else:
+                            # Fallback: pass through as-is if parsing fails
+                            yield chunk_str.encode('utf-8') if isinstance(chunk, str) else chunk
+                    except Exception as e:
+                        logger.warning(f"[{request_id}] Failed to parse SSE event: {e}, passing through")
+                        yield chunk_str.encode('utf-8') if isinstance(chunk, str) else chunk
 
             return Response(
                 event_stream_generator(),
