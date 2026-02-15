@@ -3,7 +3,7 @@ MAX_TOTAL_SCRAPE_WORD_COUNT = 3000
 MAX_IMAGES_TO_INCLUDE = 4
 MAX_LINKS_TO_TAKE = 6
 AUDIO_TRANSCRIBE_SIZE = "small"
-BASE_CACHE_DIR = "./cached_audio"
+BASE_CACHE_DIR = "./data/audio_cache"
 
 isHeadless = True
 POLLINATIONS_ENDPOINT = "https://gen.pollinations.ai/v1/chat/completions"
@@ -41,7 +41,7 @@ ENABLE_WEBSOCKET_STREAMING = True
 ENABLE_ENTITY_EXTRACTION = True
 ENABLE_RELATIONSHIP_DETECTION = True
 
-EMBEDDINGS_DIR = "./embeddings"
+EMBEDDINGS_DIR = "./data/embeddings"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 EMBEDDING_DIMENSION = 384
 EMBEDDING_BATCH_SIZE = 32
@@ -49,6 +49,7 @@ EMBEDDING_BATCH_SIZE = 32
 CHUNK_SIZE = 600
 CHUNK_OVERLAP = 60
 
+SEMANTIC_CACHE_DIR = "./data/cache"
 SEMANTIC_CACHE_TTL_SECONDS = 3600
 SEMANTIC_CACHE_SIMILARITY_THRESHOLD = 0.90
 
@@ -57,12 +58,12 @@ SESSION_SUMMARY_THRESHOLD = 6
 
 PERSIST_VECTOR_STORE_INTERVAL = 300
 
-# Conversation Cache Window Configuration
-CACHE_WINDOW_SIZE = 10  # Number of conversation turns to maintain in active cache window
-CACHE_COMPRESSION_ENABLED = True  # Enable semantic compression of cache entries
-CACHE_SIMILARITY_THRESHOLD = 0.85  # Threshold for cache hit on semantic similarity (0-1)
-CACHE_MAX_ENTRIES = 50  # Maximum cached conversation entries per session
-CACHE_TTL_SECONDS = 1800  # Cache entry time-to-live in seconds (30 minutes)
-CACHE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"  # Model for cache embeddings
-CACHE_MIN_QUERY_LENGTH = 10  # Minimum query length to cache lookup
-CACHE_COMPRESSION_METHOD = "zlib"  # Compression method: zlib, gzip, or lz4
+CONVERSATION_CACHE_DIR = "./data/cache/conversation"
+CACHE_WINDOW_SIZE = 10
+CACHE_COMPRESSION_ENABLED = True
+CACHE_SIMILARITY_THRESHOLD = 0.85
+CACHE_MAX_ENTRIES = 50
+CACHE_TTL_SECONDS = 1800
+CACHE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+CACHE_MIN_QUERY_LENGTH = 10
+CACHE_COMPRESSION_METHOD = "zlib"

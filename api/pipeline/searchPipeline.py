@@ -25,7 +25,8 @@ from functools import lru_cache
 from pipeline.config import (POLLINATIONS_ENDPOINT, RAG_CONTEXT_REFRESH, 
                              CACHE_WINDOW_SIZE, CACHE_MAX_ENTRIES, CACHE_TTL_SECONDS, 
                              CACHE_SIMILARITY_THRESHOLD, CACHE_COMPRESSION_METHOD, 
-                             CACHE_EMBEDDING_MODEL, CACHE_MIN_QUERY_LENGTH)
+                             CACHE_EMBEDDING_MODEL, CACHE_MIN_QUERY_LENGTH,
+                             SEMANTIC_CACHE_DIR, CONVERSATION_CACHE_DIR)
 from pipeline.instruction import system_instruction, user_instruction, synthesis_instruction
 
 
@@ -337,13 +338,19 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             ttl_seconds=CACHE_TTL_SECONDS,
             compression_method=CACHE_COMPRESSION_METHOD,
             embedding_model=CACHE_EMBEDDING_MODEL,
-            similarity_threshold=CACHE_SIMILARITY_THRESHOLD
+            similarity_threshold=CACHE_SIMILARITY_THRESHOLD,
+            cache_dir=CONVERSATION_CACHE_DIR
         )
         memoized_results["conversation_cache"] = conversation_cache
         logger.info(f"[Pipeline] Initialized Conversation Cache Manager (window_size={CACHE_WINDOW_SIZE}, max_entries={CACHE_MAX_ENTRIES})")
         
+        # Load conversation cache from disk if session exists
+        if request_id:
+            if conversation_cache.load_from_disk(session_id=request_id):
+                logger.info(f"[Pipeline] Loaded conversation cache from disk (session: {request_id})")
+        
         # Initialize persistent semantic cache with 5-min TTL per request
-        semantic_cache = SemanticCache(ttl_seconds=300, cache_dir="./cache")
+        semantic_cache = SemanticCache(ttl_seconds=300, cache_dir=SEMANTIC_CACHE_DIR)
         if request_id:
             semantic_cache.load_for_request(request_id)
             logger.info(f"[Pipeline] Loaded persistent cache for request {request_id}")
@@ -829,6 +836,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if request_id:
             semantic_cache.save_for_request(request_id)
             logger.info(f"[Pipeline] Saved persistent cache for request {request_id}")
+            
+            # Save conversation cache to disk
+            try:
+                if "conversation_cache" in memoized_results:
+                    conversation_cache.save_to_disk(session_id=request_id)
+                    cache_stats = conversation_cache.get_cache_stats()
+                    logger.info(f"[Pipeline] Saved conversation cache to disk: {cache_stats}")
+            except Exception as e:
+                logger.warning(f"[Pipeline] Failed to save conversation cache: {e}")
+        
         logger.info("Optimized Search Completed")
 
 if __name__ == "__main__":

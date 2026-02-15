@@ -3,6 +3,8 @@ import zlib
 import gzip
 import lz4.frame
 import logging
+import os
+import pickle
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 from collections import deque
@@ -25,13 +27,18 @@ class ConversationCacheManager:
                  ttl_seconds: int = 1800,
                  compression_method: str = "zlib",
                  embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 similarity_threshold: float = 0.85):
+                 similarity_threshold: float = 0.85,
+                 cache_dir: str = "./data/cache/conversation"):
         
         self.window_size = window_size
         self.max_entries = max_entries
         self.ttl_seconds = ttl_seconds
         self.compression_method = compression_method
         self.similarity_threshold = similarity_threshold
+        self.cache_dir = cache_dir
+        
+        # Create cache directory if it doesn't exist
+        os.makedirs(self.cache_dir, exist_ok=True)
         
         self.embedding_model = None
         if EMBEDDING_AVAILABLE:
@@ -186,6 +193,96 @@ class ConversationCacheManager:
             "ttl_seconds": self.ttl_seconds
         }
     
+    def save_to_disk(self, session_id: str = "default") -> bool:
+        """
+        Persist cache to disk for cross-session retrieval.
+        
+        Args:
+            session_id: Session identifier for cache file naming
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            cache_file = os.path.join(self.cache_dir, f"cache_{session_id}.pkl")
+            
+            # Prepare serializable cache (remove numpy embeddings)
+            serializable_cache = {
+                "full_cache": self.full_cache,
+                "cache_entries": list(self.cache_window),
+                "metadata": {
+                    "window_size": self.window_size,
+                    "max_entries": self.max_entries,
+                    "ttl_seconds": self.ttl_seconds,
+                    "saved_at": datetime.now().isoformat()
+                }
+            }
+            
+            with open(cache_file, 'wb') as f:
+                pickle.dump(serializable_cache, f)
+            
+            logger.info(f"[ConversationCache] Saved cache to disk: {cache_file}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[ConversationCache] Failed to save cache to disk: {e}")
+            return False
+    
+    def load_from_disk(self, session_id: str = "default") -> bool:
+        """
+        Load cache from disk for session continuation.
+        
+        Args:
+            session_id: Session identifier for cache file naming
+            
+        Returns:
+            True if successful and cache was loaded, False otherwise
+        """
+        try:
+            cache_file = os.path.join(self.cache_dir, f"cache_{session_id}.pkl")
+            
+            if not os.path.exists(cache_file):
+                logger.info(f"[ConversationCache] No cached data found for session: {session_id}")
+                return False
+            
+            with open(cache_file, 'rb') as f:
+                serializable_cache = pickle.load(f)
+            
+            self.full_cache = serializable_cache.get("full_cache", {})
+            loaded_entries = serializable_cache.get("cache_entries", [])
+            
+            # Reload embeddings for cached entries
+            if self.embedding_model:
+                for entry in loaded_entries:
+                    if not self._is_expired(entry):
+                        try:
+                            query = entry.get("query", "")
+                            embedding = self.embedding_model.encode(query, convert_to_numpy=True)
+                            self.embeddings_cache[entry.get("id")] = embedding
+                            self.cache_window.append(entry)
+                        except Exception as e:
+                            logger.warning(f"[ConversationCache] Failed to reload embedding: {e}")
+            
+            logger.info(f"[ConversationCache] Loaded {len(self.cache_window)} entries from disk (session: {session_id})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[ConversationCache] Failed to load cache from disk: {e}")
+            return False
+    
+    def delete_session_cache(self, session_id: str = "default") -> bool:
+        """Delete persisted cache for a session."""
+        try:
+            cache_file = os.path.join(self.cache_dir, f"cache_{session_id}.pkl")
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
+                logger.info(f"[ConversationCache] Deleted cache file: {cache_file}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"[ConversationCache] Failed to delete cache: {e}")
+            return False
+    
     def _compress(self, data: str) -> bytes:
         data_bytes = data.encode('utf-8')
         
@@ -227,5 +324,6 @@ def create_cache_manager_from_config(config) -> ConversationCacheManager:
         ttl_seconds=getattr(config, 'CACHE_TTL_SECONDS', 1800),
         compression_method=getattr(config, 'CACHE_COMPRESSION_METHOD', 'zlib'),
         embedding_model=getattr(config, 'CACHE_EMBEDDING_MODEL', 'sentence-transformers/all-MiniLM-L6-v2'),
-        similarity_threshold=getattr(config, 'CACHE_SIMILARITY_THRESHOLD', 0.85)
+        similarity_threshold=getattr(config, 'CACHE_SIMILARITY_THRESHOLD', 0.85),
+        cache_dir=getattr(config, 'CONVERSATION_CACHE_DIR', './data/cache/conversation')
     )
