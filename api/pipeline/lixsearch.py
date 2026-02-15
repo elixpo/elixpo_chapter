@@ -14,7 +14,8 @@ from pipeline.config import (POLLINATIONS_ENDPOINT,
                              CACHE_WINDOW_SIZE, CACHE_MAX_ENTRIES, CACHE_TTL_SECONDS, 
                              CACHE_SIMILARITY_THRESHOLD, CACHE_COMPRESSION_METHOD, 
                              CACHE_EMBEDDING_MODEL,
-                             SEMANTIC_CACHE_DIR, CONVERSATION_CACHE_DIR)
+                             SEMANTIC_CACHE_DIR, CONVERSATION_CACHE_DIR,
+                             MIN_LINKS_TO_TAKE, MAX_LINKS_TO_TAKE, SEARCH_MAX_RESULTS)
 from pipeline.instruction import system_instruction, user_instruction, synthesis_instruction
 from pipeline.optimized_tool_execution import optimized_tool_execution
 from pipeline.utils import format_sse, get_model_server
@@ -34,6 +35,33 @@ INTERNAL_LEAK_PATTERNS = [
     r"\bquery_conversation_cache\b",
     r"\btool(?:s)?\b.*\b(use|call|execute)\b",
 ]
+
+
+def _decompose_query(query: str) -> list[str]:
+    """
+    Decompose complex multi-part queries into logical sub-queries.
+    Example: "What is AI and how does it work and what are applications?" 
+    → ["What is AI", "How does AI work", "What are AI applications"]
+    """
+    if not query or len(query) < 50:
+        return [query]
+    
+    # Split by common conjunctions
+    parts = re.split(r'\s+(?:and|or|also|additionally|furthermore)\s+', query, maxsplit=2)
+    if len(parts) > 1:
+        logger.info(f"[DECOMPOSITION] Split query into {len(parts)} parts")
+        return [p.strip() for p in parts if p.strip()]
+    
+    # Try splitting by question marks for multiple questions
+    if '?' in query:
+        parts = query.split('?')
+        if len(parts) > 1:
+            questions = [p.strip() + '?' for p in parts[:-1] if p.strip()]
+            if len(questions) > 1:
+                logger.info(f"[DECOMPOSITION] Found {len(questions)} questions in query")
+                return questions
+    
+    return [query]
 
 
 def _looks_like_internal_reasoning(content: str) -> bool:
@@ -220,6 +248,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         final_message_content = None
         tool_call_count = 0  # Track cumulative tools executed
         
+        # QUERY DECOMPOSITION: Break down complex queries for better coverage
+        query_components = _decompose_query(user_query)
+        if len(query_components) > 1:
+            logger.info(f"[DECOMPOSITION] Query decomposed into {len(query_components)} components for parallel processing")
+            for i, component in enumerate(query_components, 1):
+                logger.info(f"[DECOMPOSITION] Component {i}: {component[:80]}")
+            memoized_results["query_components"] = query_components
+        else:
+            logger.info(f"[DECOMPOSITION] Query is single component, no decomposition needed")
+            memoized_results["query_components"] = [user_query]
         rag_context = ""
         if core_service:
             try:
@@ -370,6 +408,20 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     web_search_calls.append(tool_call)
                 else:
                     other_calls.append(tool_call)
+            
+            # URL LIMITS ENFORCEMENT: Ensure minimum URLs are fetched, cap at maximum
+            if web_search_calls and len(fetch_calls) < MIN_LINKS_TO_TAKE:
+                urls_needed = MIN_LINKS_TO_TAKE - len(fetch_calls)
+                logger.info(f"[URL-LIMITS] Web search detected but only {len(fetch_calls)} URLs to fetch. Need {urls_needed} more to meet minimum of {MIN_LINKS_TO_TAKE}")
+                if event_id:
+                    yield format_sse("INFO", f"<TASK>Fetching minimum {MIN_LINKS_TO_TAKE} URLs for comprehensive coverage</TASK>")
+            
+            # Cap fetch_calls at MAX_LINKS_TO_TAKE to prevent token overflow
+            if len(fetch_calls) > MAX_LINKS_TO_TAKE:
+                logger.info(f"[URL-LIMITS] Capping fetch_calls from {len(fetch_calls)} to {MAX_LINKS_TO_TAKE} (MAX_LINKS_TO_TAKE)")
+                fetch_calls = fetch_calls[:MAX_LINKS_TO_TAKE]
+            
+            logger.info(f"[URL-LIMITS] Final URL fetch plan: {len(fetch_calls)} URLs (min={MIN_LINKS_TO_TAKE}, max={MAX_LINKS_TO_TAKE})")
             
             async def execute_tool_async(idx, tool_call, is_web_search=False):
                 function_name = tool_call["function"]["name"]
@@ -545,6 +597,14 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             logger.info(f"[SYNTHESIS CONDITION MET] final_message_content={bool(final_message_content)}, current_iteration={current_iteration}, max_iterations={max_iterations}")
             if event_id:
                 yield format_sse("INFO", f"<TASK>Generating Final Response</TASK>")
+            
+            # Log decomposed components if applicable
+            query_components = memoized_results.get("query_components", [user_query])
+            if len(query_components) > 1:
+                logger.info(f"[SYNTHESIS] Multi-component query synthesis:")
+                for i, component in enumerate(query_components, 1):
+                    logger.info(f"[SYNTHESIS] Component {i}: {component[:100]}")
+                logger.info(f"[SYNTHESIS] Synthesizing {len(collected_sources)} total sources across {len(query_components)} components")
             
             logger.info("[SYNTHESIS] Starting synthesis of gathered information")
             synthesis_prompt = {

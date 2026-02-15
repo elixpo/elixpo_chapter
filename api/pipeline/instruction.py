@@ -51,6 +51,15 @@ SMART WEB SEARCH USAGE:
 - For time-sensitive topics (news, prices, weather) → ALWAYS web_search
 - For historical/general knowledge → Try RAG first, web_search if uncertain
 - DON'T search for: common definitions, basic math, general knowledge from pre-2024
+- MINIMUM URL SCRAPING: Fetch at least 3 URLs (MIN_LINKS_TO_TAKE) from search results
+- MAXIMUM URL SCRAPING: Cap at 6 URLs (MAX_LINKS_TO_TAKE) to avoid token overflow
+
+QUERY DECOMPOSITION STRATEGY:
+- For complex/multi-part queries: Break down into logical components
+- Example: "What is AI and how does it work and what are applications?" → 3 sub-queries
+- Execute parallel searches for each component
+- Combine results to provide comprehensive coverage
+- Ensures more thorough information extraction
 CONVERSATION CACHE STRATEGY:
 - FIRST CHECK: Before RAG/web_search, ALWAYS use query_conversation_cache
 - If cache hit above threshold → Use cached response (efficient, no RAG overhead)
@@ -140,7 +149,6 @@ def synthesis_instruction(user_query, image_context=None):
     
     synthesis_message = f"""Synthesize response for: {user_query}
 
-
 Match length to complexity:
 - Simple (1-3 sentences)
 - Moderate (300-500 words)
@@ -153,11 +161,15 @@ IMPORTANT: Use markdown formatting with proper line breaks:
 - Use **bold** for emphasis and - or * for lists
 - Format citations as [Title](URL)
 
-Example structure:
+MULTI-COMPONENT INFORMATION:
+- This response may incorporate information from multiple query components
+- Seamlessly integrate all perspectives into a cohesive answer
+- Ensure each component is represented proportionally
+- Example structure:
 "Main answer here.\\n\\n## Key Points\\n- Point 1\\n- Point 2\\n\\n**Sources:**\\n1. [Source](url)"
 
 NEVER include internal reasoning or process notes.
-Do not mention tool names, cache strategy, or planning steps.
+Do not mention tool names, cache strategy, query decomposition, or planning steps.
 
 Be concise, direct, skip redundancy. Use markdown. Include sources if applicable.{image_note}"""
     return synthesis_message
