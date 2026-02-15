@@ -415,12 +415,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if event_id:
                 yield format_sse("INFO", f"<TASK>Processing responses ({tool_call_count} tools completed)</TASK>")
             
-            # OPTIMIZATION: Early exit if we have good information or too many iterations
-            if (tool_call_count >= 3 and len(collected_sources) >= 2 and current_iteration >= 1) or \
-               (current_iteration >= 2 and len(collected_sources) >= 1):
-                logger.info(f"[EARLY EXIT] Processed {tool_call_count} tools with {len(collected_sources)} sources, stopping for synthesis")
-                final_message_content = None  # Force synthesis
-                break
 
         if not final_message_content and current_iteration >= max_iterations:
             logger.info(f"[SYNTHESIS CONDITION MET] final_message_content={bool(final_message_content)}, current_iteration={current_iteration}, max_iterations={max_iterations}")
