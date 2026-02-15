@@ -133,7 +133,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
                 if web_event:
                     yield web_event
             image_query = function_args.get("image_query")
-            max_images = function_args.get("max_images", 10)
+            max_images = function_args.get("max_images", 5)
             search_results_raw = await imageSearch(image_query, max_images=max_images)
             logger.info(f"Image search for '{image_query[:50]}...' completed.")
             image_urls = []

@@ -12,7 +12,6 @@ logger = logging.getLogger("lixsearch-api")
 
 def format_sse_event_openai(event_type: str, content: str, request_id: str = None) -> str:
     model = os.getenv("MODEL")
-    escaped_content = content.replace('\n', '\\n')
     response = {
         "id": request_id or f"chatcmpl-{uuid.uuid4().hex[:8]}",
         "object": "chat.completion.chunk",
@@ -23,7 +22,7 @@ def format_sse_event_openai(event_type: str, content: str, request_id: str = Non
                 "index": 0,
                 "delta": {
                     "role": "assistant" if event_type == "INFO" else "content",
-                    "content": escaped_content
+                    "content": content
                 },
                 "finish_reason": "stop" if event_type == "final" else None
             }
@@ -78,14 +77,15 @@ async def search(pipeline_initialized: bool):
                     try:
                         lines = chunk_str.strip().split('\n')
                         event_type = None
-                        event_data = None
+                        event_data_lines = []
                         
                         for line in lines:
                             if line.startswith('event:'):
                                 event_type = line.replace('event:', '').strip()
                             elif line.startswith('data:'):
-                                event_data = line.replace('data:', '').strip()
+                                event_data_lines.append(line.replace('data:', '', 1).lstrip())
                         
+                        event_data = "\n".join(event_data_lines) if event_data_lines else None
                         if event_type and event_data:
                             # Reformat as OpenAI-compatible SSE JSON
                             openai_sse = format_sse_event_openai(event_type, event_data, request_id)

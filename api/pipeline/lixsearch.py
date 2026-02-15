@@ -4,6 +4,7 @@ from ragService.semanticCache import SemanticCache
 import random
 import requests
 import json
+import re
 from pipeline.tools import tools
 from datetime import datetime, timezone
 from sessions.conversation_cache import ConversationCacheManager
@@ -25,6 +26,41 @@ POLLINATIONS_TOKEN = os.getenv("TOKEN")
 MODEL = os.getenv("MODEL")
 logger.debug(f"Model configured: {MODEL}")
 
+INTERNAL_LEAK_PATTERNS = [
+    r"\bthe user wants to know\b",
+    r"\bi should\b",
+    r"\blet me\b",
+    r"\bfirst priority\b",
+    r"\bquery_conversation_cache\b",
+    r"\btool(?:s)?\b.*\b(use|call|execute)\b",
+]
+
+
+def _looks_like_internal_reasoning(content: str) -> bool:
+    if not content:
+        return False
+    probe = content[:2500].lower()
+    matches = sum(1 for p in INTERNAL_LEAK_PATTERNS if re.search(p, probe))
+    # Require multiple signals to avoid false positives.
+    return matches >= 2
+
+
+def _strip_internal_lines(content: str) -> str:
+    if not content:
+        return ""
+    cleaned = []
+    for line in content.splitlines():
+        low = line.strip().lower()
+        if (
+            low.startswith("the user wants")
+            or low.startswith("i should")
+            or low.startswith("let me")
+            or re.match(r"^\d+\.\s+(first|second|third|then|finally)\b", low)
+        ):
+            continue
+        cleaned.append(line)
+    return "\n".join(cleaned).strip()
+
 
 async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: str = None, request_id: str = None):
     logger.info(f"Starting Optimized ElixpoSearch Pipeline for query: '{user_query}' with image: '{user_image[:50] + '...' if user_image else 'None'}' [RequestID: {request_id}]")
@@ -43,6 +79,70 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         current_utc_time = datetime.now(timezone.utc)
         headers = {"Content-Type": "application/json",
                    "Authorization": f"Bearer {POLLINATIONS_TOKEN}"}
+
+        async def sanitize_final_response(content: str, query: str, sources: list[str]) -> str:
+            if not _looks_like_internal_reasoning(content):
+                return content
+
+            logger.warning("[FINAL] Detected internal reasoning leakage; rewriting final response")
+            rewrite_prompt = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are lixSearch. Rewrite drafts into final user-facing answers only. "
+                        "Never reveal internal reasoning, planning, tool strategy, cache logic, or step-by-step deliberation."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"User query: {query}\n\n"
+                        "Draft response (contains internal notes, remove them):\n"
+                        f"{content}\n\n"
+                        "Return only the final answer in markdown."
+                    ),
+                },
+            ]
+            if sources:
+                rewrite_prompt.append({
+                    "role": "user",
+                    "content": "Optional sources:\n" + "\n".join(sources[:5])
+                })
+
+            payload = {
+                "model": MODEL,
+                "messages": rewrite_prompt,
+                "seed": random.randint(1000, 9999),
+                "max_tokens": 1600,
+                "stream": False,
+            }
+            try:
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        requests.post,
+                        POLLINATIONS_ENDPOINT,
+                        json=payload,
+                        headers=headers,
+                        timeout=20
+                    ),
+                    timeout=22.0
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                rewritten = response_data["choices"][0]["message"].get("content", "").strip()
+                if rewritten and not _looks_like_internal_reasoning(rewritten):
+                    return rewritten
+            except Exception as e:
+                logger.warning(f"[FINAL] Rewrite failed, applying local sanitization fallback: {e}")
+
+            stripped = _strip_internal_lines(content)
+            if stripped and not _looks_like_internal_reasoning(stripped):
+                return stripped
+
+            fallback = f"Here is a concise update on '{query}'."
+            if sources:
+                fallback += "\n\n**Sources:**\n" + "\n".join([f"- {s}" for s in sources[:3]])
+            return fallback
         
         try:
             model_server = get_model_server()
@@ -541,6 +641,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 final_message_content = f"I processed your query about '{user_query}' but encountered an error while generating the final response."
 
         if final_message_content:
+            final_message_content = await sanitize_final_response(final_message_content, user_query, collected_sources)
             logger.info(f"Preparing optimized final response")
             logger.info(f"[FINAL] final_message_content starts with: {final_message_content[:100] if final_message_content else 'None'}")
             
@@ -583,7 +684,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     logger.warning(f"[FINAL] Synthesis generation failed: {e}, using existing content")
             
             # Check if synthesis already includes images (markdown format ![...](http...))
-            import re
             has_image_markdown = bool(re.search(r'!\[([^\]]*)\]\(https?://[^\)]+\)', final_message_content))
             image_count_in_synthesis = len(re.findall(r'!\[', final_message_content))
             logger.info(f"[FINAL] Synthesis content has embedded images: {has_image_markdown} ({image_count_in_synthesis} found)")

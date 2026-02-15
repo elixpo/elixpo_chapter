@@ -454,7 +454,7 @@ class YahooSearchAgentImage:
                 port_manager.release_port(self.custom_port)
             raise
 
-    async def search_images(self, query, max_images=10, agent_idx=None):
+    async def search_images(self, query, max_images=5, agent_idx=None):
         results = []
         os.makedirs(self.save_dir, exist_ok=True)
         page = None
