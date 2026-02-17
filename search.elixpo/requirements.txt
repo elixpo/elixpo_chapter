@@ -126,7 +126,7 @@ preshed==3.0.12
 primp==0.15.0
 priority==2.0.0
 propcache==0.4.1
-protobuf==6.33.4
+protobuf==6.33.5
 psutil==7.1.3
 pycparser==2.23
 pydantic==2.12.4
