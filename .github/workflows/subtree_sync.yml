@@ -25,23 +25,34 @@ jobs:
 
       - name: Add remotes (idempotent)
         run: |
-          git remote add art.elixpo https://github.com/elixpo/elixpoart.git || true
-          git remote add jackey.elixpo https://github.com/elixpo/elixpojackey.git || true
-          git remote add chat.elixpo https://github.com/elixpo/elixpochat.git || true
-          git remote add blogs.elixpo https://github.com/elixpo/elixpoblogs.git || true
-          git remote add verse.elixpo https://github.com/elixpo/elixpoverse.git || true
-          git remote add sketch.elixpo https://github.com/elixpo/elixposketch.git || true
-          git remote add me.elixpo https://github.com/elixpo/elixpome.git || true
-          git remote add accounts.elixpo https://github.com/elixpo/elixpoaccounts.git || true
+          repos=(
+            "art.elixpo https://github.com/elixpo/elixpoart.git"
+            "jackey.elixpo https://github.com/elixpo/elixpojackey.git"
+            "chat.elixpo https://github.com/elixpo/elixpochat.git"
+            "blogs.elixpo https://github.com/elixpo/elixpoblogs.git"
+            "verse.elixpo https://github.com/elixpo/elixpoverse.git"
+            "sketch.elixpo https://github.com/elixpo/elixposketch.git"
+            "me.elixpo https://github.com/elixpo/elixpome.git"
+            "accounts.elixpo https://github.com/elixpo/elixpoaccounts.git"
+          )
 
-          git subtree add art.elixpo https://github.com/elixpo/elixpoart.git || true
-          git subtree add jackey.elixpo https://github.com/elixpo/elixpojackey.git || true
-          git subtree add chat.elixpo https://github.com/elixpo/elixpochat.git || true
-          git subtree add blogs.elixpo https://github.com/elixpo/elixpoblogs.git || true
-          git subtree add verse.elixpo https://github.com/elixpo/elixpoverse.git || true
-          git subtree add sketch.elixpo https://github.com/elixpo/elixposketch.git || true
-          git subtree add me.elixpo https://github.com/elixpo/elixpome.git || true
-          git subtree add accounts.elixpo https://github.com/elixpo/elixpoaccounts.git || true
+          for entry in "${repos[@]}"; do
+            name=${entry%% *}
+            url=${entry#* }
+            if git remote get-url "$name" >/dev/null 2>&1; then
+              echo "remote $name already exists"
+            else
+              echo "adding remote $name -> $url"
+              git remote add "$name" "$url"
+            fi
+            git fetch "$name" >/dev/null 2>&1 || true
+            if [ -d "$name" ] || git ls-tree --name-only HEAD | grep -qx "$name"; then
+              echo "subtree $name already present, skipping add"
+            else
+              echo "adding subtree $name from $name/main"
+              git subtree add --prefix="$name" "$name" main -m "Add $name" || true
+            fi
+          done
 
       - name: Fetch all subtree remotes
         run: |
