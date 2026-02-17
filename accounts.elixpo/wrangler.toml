@@ -1,0 +1,41 @@
+name = "elixpo-accounts-workers"
+main = "src/workers/index.ts"
+type = "service"
+compatibility_date = "2025-12-16"
+
+# Cloudflare D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "elixpo_auth"
+database_id = "your-d1-id-here"
+
+# Cloudflare KV Namespaces
+[[kv_namespaces]]
+binding = "AUTH_STATE_KV"
+id = "your-kv-auth-state-id-here"
+preview_id = "your-kv-auth-state-preview-id-here"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "your-kv-session-id-here"
+preview_id = "your-kv-session-preview-id-here"
+
+# Cloudflare Queues
+[[queues.consumers]]
+queue = "auth-events"
+max_batch_timeout = 30
+max_batch_size = 100
+max_retries = 3
+dead_letter_queue = "auth-events-dlq"
+
+# Environment Variables
+[env.production]
+vars = { ENVIRONMENT = "production", JWT_EXPIRATION_MINUTES = "15", REFRESH_TOKEN_EXPIRATION_DAYS = "30" }
+
+[env.development]
+vars = { ENVIRONMENT = "development", JWT_EXPIRATION_MINUTES = "15", REFRESH_TOKEN_EXPIRATION_DAYS = "30" }
+
+# Routes (if using workers directly)
+routes = [
+  { pattern = "api.elixpo.com/auth/*", zone_name = "elixpo.com" }
+]
