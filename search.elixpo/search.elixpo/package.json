@@ -1,0 +1,36 @@
+{
+  "name": "elixpo-search",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Elixpo Search Frontend",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "lru-cache": "^11.2.2",
+    "multer": "^2.0.2",
+    "redis": "^5.8.3",
+    "sharp": "^0.34.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "browser-sync": "^3.0.4",
+    "concurrently": "^8.2.2",
+    "connect-history-api-fallback": "^2.0.0",
+    "gulp": "^5.0.1",
+    "gulp-sourcemaps": "^3.0.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "http-proxy-middleware": "^2.0.6",
+    "lite-server": "^2.6.1",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "dev": "gulp dev",
+    "build": "gulp build",
+    "serve": "gulp",
+    "clean": "rm -rf dist"
+  }
+}

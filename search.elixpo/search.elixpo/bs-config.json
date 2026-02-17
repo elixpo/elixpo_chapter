@@ -1,0 +1,28 @@
+{
+  "server": {
+    "baseDir": ".",
+    "middleware": [
+      {
+        "route": "/api",
+        "handle": "http-proxy-middleware"
+      }
+    ]
+  },
+  "files": [
+    "styles/**/*.css",
+    "index.html",
+    "discover/**/*.html",
+    "library/**/*.html",
+    "dist/**/*.js"
+  ],
+  "injectChanges": true,
+  "reloadOnRestart": true,
+  "notify": false,
+  "open": false,
+  "watchOptions": {
+    "awaitWriteFinish": {
+      "stabilityThreshold": 500,
+      "pollInterval": 100
+    }
+  }
+}

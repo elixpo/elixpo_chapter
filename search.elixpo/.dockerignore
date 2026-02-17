@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.git/
+.gitignore
+*.zip
+*.tar
+*.gz
+*.ipynb
+node_modules/
