@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateRandomString, generatePKCE, generateNonce, generateUUID } from '@/lib/crypto';
 import { getOAuthConfig } from '@/lib/oauth-config';
 
+// Trusted domains for client authorization
+const TRUSTED_DOMAINS = ['elixpo.com', 'www.elixpo.com'];
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,6 +96,80 @@ export async function GET(request: NextRequest) {
     console.error('OAuth authorize error:', error);
     return NextResponse.json(
       { error: 'Failed to initiate OAuth flow' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { state, clientId, redirectUri, scopes, approved } = body;
+
+    // Validate required fields
+    if (!state || !clientId || !redirectUri || approved === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate redirect URI domain is trusted
+    try {
+      const redirectUrl = new URL(redirectUri);
+      const domain = redirectUrl.hostname;
+
+      if (!TRUSTED_DOMAINS.includes(domain)) {
+        return NextResponse.json(
+          { error: `Unauthorized domain: ${domain}` },
+          { status: 403 }
+        );
+      }
+    } catch (err) {
+      return NextResponse.json(
+        { error: 'Invalid redirect URI' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user denied access
+    if (!approved) {
+      const errorRedirect = new URL(redirectUri);
+      errorRedirect.searchParams.append('error', 'access_denied');
+      errorRedirect.searchParams.append('state', state);
+      
+      return NextResponse.json({
+        redirectUrl: errorRedirect.toString(),
+      });
+    }
+
+    // Generate authorization code (store in auth_requests table)
+    const authCode = `auth_${generateRandomString(32)}`;
+
+    // Build redirect URL with authorization code and state
+    const redirectUrl = new URL(redirectUri);
+    redirectUrl.searchParams.append('code', authCode);
+    redirectUrl.searchParams.append('state', state);
+
+    // TODO: In production, implement:
+    // 1. Get authenticated user ID from session
+    // 2. Store auth code in auth_requests table with:
+    //    - user_id
+    //    - client_id
+    //    - code
+    //    - redirect_uri
+    //    - scopes
+    //    - expires_at
+    // 3. Validate client_id is registered and redirect_uri matches
+    // 4. Validate requested scopes
+
+    return NextResponse.json({
+      redirectUrl: redirectUrl.toString(),
+    });
+  } catch (error) {
+    console.error('Client authorization error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process authorization' },
       { status: 500 }
     );
   }
