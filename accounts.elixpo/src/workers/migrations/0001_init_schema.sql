@@ -1,3 +1,7 @@
+-- D1 Migration: 0001_init_schema
+-- Created: 2025-02-19
+-- Purpose: Initialize database schema for Elixpo Auth system
+
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -64,7 +68,6 @@ CREATE TABLE IF NOT EXISTS auth_requests (
   expires_at DATETIME NOT NULL
 );
 
-
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -77,7 +80,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-
 CREATE TABLE IF NOT EXISTS oauth_clients (
   client_id TEXT PRIMARY KEY,
   client_secret_hash TEXT NOT NULL,
@@ -87,7 +89,6 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   is_active BOOLEAN DEFAULT 1
 );
-
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id TEXT PRIMARY KEY,
@@ -102,7 +103,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-
+-- Create Indexes for Performance
 CREATE INDEX IF NOT EXISTS idx_identities_user_id ON identities(user_id);
 CREATE INDEX IF NOT EXISTS idx_identities_provider_id ON identities(provider, provider_user_id);
 CREATE INDEX IF NOT EXISTS idx_email_verification_user_id ON email_verification_tokens(user_id);
