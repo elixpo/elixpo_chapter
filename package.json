@@ -23,15 +23,18 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
+    "@simplewebauthn/server": "^13.0.0",
+    "dotenv": "^16.4.5",
     "jose": "^5.9.6",
     "next": "16.1.6",
+    "nodemailer": "^6.10.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "@simplewebauthn/server": "^13.0.0"
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.14",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
