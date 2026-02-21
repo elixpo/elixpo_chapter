@@ -102,6 +102,31 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- User Privileges/Roles System
+CREATE TABLE IF NOT EXISTS privileges (
+  id TEXT PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL, -- e.g., 'admin', 'app_developer', 'user'
+  name TEXT NOT NULL,
+  description TEXT,
+  is_system BOOLEAN DEFAULT 0, -- System privileges cannot be deleted
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User to Privilege mapping (many-to-many)
+CREATE TABLE IF NOT EXISTS user_privileges (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  privilege_id TEXT NOT NULL,
+  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  granted_by TEXT, -- user_id of admin who granted this
+  expiry_date DATETIME, -- Optional: Privilege expires after this date
+  reason TEXT, -- Why this privilege was granted
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (privilege_id) REFERENCES privileges(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(user_id, privilege_id)
+);
 
 CREATE INDEX IF NOT EXISTS idx_identities_user_id ON identities(user_id);
 CREATE INDEX IF NOT EXISTS idx_identities_provider_id ON identities(provider, provider_user_id);
@@ -115,3 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_user_privileges_user_id ON user_privileges(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_privileges_privilege_id ON user_privileges(privilege_id);
+CREATE INDEX IF NOT EXISTS idx_user_privileges_expiry ON user_privileges(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_privileges_code ON privileges(code);

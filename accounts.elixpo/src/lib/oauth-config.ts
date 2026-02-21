@@ -3,6 +3,8 @@
  * Get secrets from Cloudflare Secrets Manager in production
  */
 
+import type { D1Database } from '@cloudflare/workers-types';
+
 export interface OAuthProvider {
   name: string;
   clientId: string;
@@ -12,6 +14,15 @@ export interface OAuthProvider {
   tokenEndpoint: string;
   userInfoEndpoint: string;
   scopes: string[];
+}
+
+export interface OAuthClient {
+  clientId: string;
+  name: string;
+  redirectUris: string[];
+  scopes: string[];
+  createdAt: string;
+  isActive: boolean;
 }
 
 export function getOAuthConfig(
@@ -50,5 +61,61 @@ export function getOAuthConfig(
 
     default:
       return null;
+  }
+}
+
+/**
+ * Get OAuth client from database (for dynamically registered applications)
+ * 
+ * This allows third-party applications to register their own OAuth credentials
+ * instead of using environment variables.
+ */
+export async function getOAuthClientFromDB(
+  db: D1Database,
+  clientId: string
+): Promise<OAuthClient | null> {
+  try {
+    const stmt = db.prepare(
+      'SELECT client_id, name, redirect_uris, scopes, created_at, is_active FROM oauth_clients WHERE client_id = ? AND is_active = 1'
+    );
+    const result = await stmt.bind(clientId).first() as any;
+
+    if (!result) {
+      return null;
+    }
+
+    return {
+      clientId: result.client_id,
+      name: result.name,
+      redirectUris: JSON.parse(result.redirect_uris || '[]'),
+      scopes: JSON.parse(result.scopes || '[]'),
+      createdAt: result.created_at,
+      isActive: result.is_active === 1,
+    };
+  } catch (error) {
+    console.error('[OAuth] Error fetching client from DB:', error);
+    return null;
+  }
+}
+
+/**
+ * Validate OAuth client credentials
+ * 
+ * Checks that clientId is registered and clientSecretHash matches
+ */
+export async function validateOAuthClientCredentials(
+  db: D1Database,
+  clientId: string,
+  clientSecretHash: string
+): Promise<boolean> {
+  try {
+    const stmt = db.prepare(
+      'SELECT 1 FROM oauth_clients WHERE client_id = ? AND client_secret_hash = ? AND is_active = 1'
+    );
+    const result = await stmt.bind(clientId, clientSecretHash).first();
+    return !!result;
+  } catch (error) {
+    console.error('[OAuth] Error validating client credentials:', error);
+    return false;
   }
 }

@@ -206,3 +206,203 @@ export async function logAuditEvent(
     errorMessage || null
   ).run();
 }
+
+/**
+ * OAuth Client Management
+ * For registering and managing OAuth applications
+ */
+
+export async function createOAuthClient(
+  db: D1Database,
+  {
+    clientId,
+    clientSecretHash,
+    name,
+    redirectUris,
+    scopes,
+  }: {
+    clientId: string;
+    clientSecretHash: string;
+    name: string;
+    redirectUris: string; // JSON stringified array
+    scopes: string; // JSON stringified array
+  }
+) {
+  const stmt = db.prepare(
+    `INSERT INTO oauth_clients (client_id, client_secret_hash, name, redirect_uris, scopes)
+     VALUES (?, ?, ?, ?, ?)`
+  );
+  return await stmt.bind(clientId, clientSecretHash, name, redirectUris, scopes).run();
+}
+
+export async function getOAuthClientById(db: D1Database, clientId: string) {
+  const stmt = db.prepare(
+    'SELECT client_id, name, redirect_uris, scopes, created_at, is_active FROM oauth_clients WHERE client_id = ?'
+  );
+  return await stmt.bind(clientId).first();
+}
+
+export async function getOAuthClientByIdWithSecret(db: D1Database, clientId: string) {
+  const stmt = db.prepare(
+    'SELECT * FROM oauth_clients WHERE client_id = ?'
+  );
+  return await stmt.bind(clientId).first();
+}
+
+export async function validateOAuthClient(
+  db: D1Database,
+  clientId: string,
+  clientSecretHash: string
+): Promise<boolean> {
+  const stmt = db.prepare(
+    'SELECT 1 FROM oauth_clients WHERE client_id = ? AND client_secret_hash = ? AND is_active = 1'
+  );
+  const result = await stmt.bind(clientId, clientSecretHash).first();
+  return !!result;
+}
+
+export async function updateOAuthClient(
+  db: D1Database,
+  clientId: string,
+  updates: {
+    name?: string;
+    redirectUris?: string;
+    scopes?: string;
+    isActive?: boolean;
+  }
+) {
+  const setClauses: string[] = [];
+  const values: (string | number | null)[] = [];
+
+  if (updates.name !== undefined) {
+    setClauses.push('name = ?');
+    values.push(updates.name);
+  }
+  if (updates.redirectUris !== undefined) {
+    setClauses.push('redirect_uris = ?');
+    values.push(updates.redirectUris);
+  }
+  if (updates.scopes !== undefined) {
+    setClauses.push('scopes = ?');
+    values.push(updates.scopes);
+  }
+  if (updates.isActive !== undefined) {
+    setClauses.push('is_active = ?');
+    values.push(updates.isActive ? 1 : 0);
+  }
+
+  if (setClauses.length === 0) {
+    return null;
+  }
+
+  values.push(clientId);
+
+  const stmt = db.prepare(
+    `UPDATE oauth_clients SET ${setClauses.join(', ')} WHERE client_id = ?`
+  );
+  return await stmt.bind(...(values as (string | number)[])).run();
+}
+
+export async function listOAuthClients(db: D1Database, limit: number = 50, offset: number = 0) {
+  const stmt = db.prepare(
+    'SELECT client_id, name, created_at, is_active FROM oauth_clients ORDER BY created_at DESC LIMIT ? OFFSET ?'
+  );
+  return await stmt.bind(limit, offset).all();
+}
+
+/**
+ * Privilege/Role Management
+ * For fine-grained access control
+ */
+
+export async function createPrivilege(
+  db: D1Database,
+  {
+    id,
+    code,
+    name,
+    description,
+    isSystem,
+  }: {
+    id: string;
+    code: string;
+    name: string;
+    description?: string;
+    isSystem?: boolean;
+  }
+) {
+  const stmt = db.prepare(
+    `INSERT INTO privileges (id, code, name, description, is_system)
+     VALUES (?, ?, ?, ?, ?)`
+  );
+  return await stmt.bind(id, code, name, description || null, isSystem ? 1 : 0).run();
+}
+
+export async function getPrivilegeByCode(db: D1Database, code: string) {
+  const stmt = db.prepare('SELECT * FROM privileges WHERE code = ?');
+  return await stmt.bind(code).first();
+}
+
+export async function grantPrivilegeToUser(
+  db: D1Database,
+  {
+    id,
+    userId,
+    privilegeId,
+    grantedBy,
+    expiryDate,
+    reason,
+  }: {
+    id: string;
+    userId: string;
+    privilegeId: string;
+    grantedBy?: string;
+    expiryDate?: Date;
+    reason?: string;
+  }
+) {
+  const stmt = db.prepare(
+    `INSERT INTO user_privileges (id, user_id, privilege_id, granted_by, expiry_date, reason)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  return await stmt.bind(
+    id,
+    userId,
+    privilegeId,
+    grantedBy || null,
+    expiryDate ? expiryDate.toISOString() : null,
+    reason || null
+  ).run();
+}
+
+export async function revokePrivilegeFromUser(db: D1Database, userId: string, privilegeId: string) {
+  const stmt = db.prepare(
+    'DELETE FROM user_privileges WHERE user_id = ? AND privilege_id = ?'
+  );
+  return await stmt.bind(userId, privilegeId).run();
+}
+
+export async function getUserPrivileges(db: D1Database, userId: string) {
+  const stmt = db.prepare(
+    `SELECT p.id, p.code, p.name, p.description, up.granted_at, up.expiry_date
+     FROM user_privileges up
+     JOIN privileges p ON up.privilege_id = p.id
+     WHERE up.user_id = ? AND (up.expiry_date IS NULL OR up.expiry_date > CURRENT_TIMESTAMP)`
+  );
+  return await stmt.bind(userId).all();
+}
+
+export async function hasPrivilege(db: D1Database, userId: string, privilegeCode: string): Promise<boolean> {
+  const stmt = db.prepare(
+    `SELECT 1 FROM user_privileges up
+     JOIN privileges p ON up.privilege_id = p.id
+     WHERE up.user_id = ? AND p.code = ? AND (up.expiry_date IS NULL OR up.expiry_date > CURRENT_TIMESTAMP)`
+  );
+  const result = await stmt.bind(userId, privilegeCode).first();
+  return !!result;
+}
+
+export async function listPrivileges(db: D1Database) {
+  const stmt = db.prepare('SELECT * FROM privileges ORDER BY name');
+  return await stmt.all();
+}

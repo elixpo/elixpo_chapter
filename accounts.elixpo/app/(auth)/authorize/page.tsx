@@ -13,6 +13,12 @@ interface AuthorizationRequest {
   state: string;
 }
 
+interface AuthConfig {
+  authorizationTimeoutSeconds: number;
+  features: Record<string, boolean>;
+  providers: Record<string, boolean>;
+}
+
 export default function AuthorizePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,53 +26,89 @@ export default function AuthorizePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientFavicon, setClientFavicon] = useState<string | null>(null);
-
-  // Hardcoded trusted domains for now
-  const TRUSTED_DOMAINS = ['elixpo.com', 'www.elixpo.com'];
+  const [timeRemaining, setTimeRemaining] = useState<number>(600); // Default, will be updated from API
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [authorizationTimeoutSeconds, setAuthorizationTimeoutSeconds] = useState<number>(600);
 
   useEffect(() => {
-    const state = searchParams.get('state');
-    const clientId = searchParams.get('client_id');
-    const redirectUri = searchParams.get('redirect_uri');
-    const scopes = searchParams.get('scope')?.split(' ') || [];
+    const loadAuthorizationRequest = async () => {
+      const state = searchParams.get('state');
+      const clientId = searchParams.get('client_id');
+      const redirectUri = searchParams.get('redirect_uri');
+      const scopes = searchParams.get('scope')?.split(' ') || [];
 
-    if (!state || !clientId || !redirectUri) {
-      setError('Invalid authorization request');
-      return;
-    }
-
-    // Validate redirect URI domain is trusted
-    try {
-      const redirectUrl = new URL(redirectUri);
-      const domain = redirectUrl.hostname;
-
-      if (!TRUSTED_DOMAINS.includes(domain)) {
-        setError(`Unauthorized domain: ${domain}`);
+      if (!state || !clientId || !redirectUri) {
+        setError('Invalid authorization request');
         return;
       }
 
-      // Extract client name from domain
-      const clientName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
-      const clientUrl = `https://${domain}`;
+      try {
+        // Fetch authorization configuration (includes timeout settings)
+        const configResponse = await fetch('/api/auth/config');
+        if (!configResponse.ok) {
+          throw new Error('Failed to load configuration');
+        }
+        const config: AuthConfig = await configResponse.json();
+        setAuthorizationTimeoutSeconds(config.authorizationTimeoutSeconds);
+        setTimeRemaining(config.authorizationTimeoutSeconds);
 
-      setAuthRequest({
-        clientId,
-        clientName,
-        clientUrl,
-        redirectUri,
-        scopes,
-        state,
-      });
+        // Fetch client details from registered OAuth clients
+        const clientResponse = await fetch(
+          `/api/auth/oauth-clients/${clientId}?validate_redirect_uri=${encodeURIComponent(redirectUri)}`
+        );
 
-      // Load client favicon
-      setClientFavicon(`https://${domain}/favicon.ico`);
-    } catch (err) {
-      setError('Invalid redirect URI');
-    }
+        if (!clientResponse.ok) {
+          const errorData = await clientResponse.json();
+          setError(errorData.error || 'Application not found or invalid redirect URI');
+          return;
+        }
+
+        const clientData = await clientResponse.json();
+
+        // Extract domain from redirect URI for favicon
+        const redirectUrl = new URL(redirectUri);
+        const domain = redirectUrl.hostname;
+
+        setAuthRequest({
+          clientId,
+          clientName: clientData.name || domain,
+          clientUrl: `https://${domain}`,
+          redirectUri,
+          scopes: scopes.length > 0 ? scopes : clientData.scopes || [],
+          state,
+        });
+
+        // Load client favicon
+        setClientFavicon(`https://${domain}/favicon.ico`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load authorization request');
+      }
+    };
+
+    loadAuthorizationRequest();
   }, [searchParams]);
 
+  // Timer countdown effect - uses timeout from config
+  useEffect(() => {
+    if (!authRequest || hasTimedOut) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setHasTimedOut(true);
+          setError('Authorization request expired. Please start again.');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [authRequest, hasTimedOut]);
+
   const handleAuthorize = async () => {
-    if (!authRequest) return;
+    if (!authRequest || hasTimedOut) return;
 
     setIsLoading(true);
     try {
@@ -99,12 +141,18 @@ export default function AuthorizePage() {
   };
 
   const handleDeny = () => {
-    if (!authRequest) return;
+    if (!authRequest || hasTimedOut) return;
     // Redirect back with error
     const errorRedirect = new URL(authRequest.redirectUri);
     errorRedirect.searchParams.append('error', 'access_denied');
     errorRedirect.searchParams.append('state', authRequest.state);
     window.location.href = errorRedirect.toString();
+  };
+
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (error) {
@@ -268,7 +316,7 @@ export default function AuthorizePage() {
             <div className="flex gap-3">
               <button
                 onClick={handleDeny}
-                disabled={isLoading}
+                disabled={isLoading || hasTimedOut}
                 className="flex-1 font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: 'rgba(163, 230, 53, 0.1)', color: '#a3e635', border: '1px solid rgba(163, 230, 53, 0.3)' }}
               >
@@ -276,7 +324,7 @@ export default function AuthorizePage() {
               </button>
               <button
                 onClick={handleAuthorize}
-                disabled={isLoading}
+                disabled={isLoading || hasTimedOut}
                 className="flex-1 font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ background: 'rgba(163, 230, 53, 0.15)', color: '#a3e635', border: '1px solid rgba(163, 230, 53, 0.3)' }}
               >
@@ -318,6 +366,25 @@ export default function AuthorizePage() {
                   </>
                 )}
               </button>
+            </div>
+
+            {/* Timer Display */}
+            <div className="mt-4 text-center">
+              <div
+                className="inline-block px-3 py-2 rounded-lg text-sm font-semibold"
+                style={{
+                  background: timeRemaining < 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(163, 230, 53, 0.1)',
+                  color: timeRemaining < 60 ? '#ef4444' : '#a3e635',
+                  border: `1px solid ${timeRemaining < 60 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(163, 230, 53, 0.3)'}`,
+                }}
+              >
+                <span>⏱️ Request expires in: {formatTime(timeRemaining)}</span>
+              </div>
+              {timeRemaining < 60 && (
+                <p className="text-xs mt-2" style={{ color: '#ef4444' }}>
+                  ⚠️ Authorization request expiring soon
+                </p>
+              )}
             </div>
 
             {/* Footer */}
