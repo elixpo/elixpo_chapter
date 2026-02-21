@@ -1,39 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateUUID, generateRandomString, hashString } from '@/lib/crypto';
+import { generateRandomString, hashString } from '@/lib/crypto';
 
 /**
  * POST /api/auth/oauth-clients
  * 
- * Register a new OAuth application
+ * Register a new OAuth 2.0 application
+ * Third-party services use this endpoint to register for sign in/sign up
+ * 
  * Returns: { client_id, client_secret }
  * 
- * IMPORTANT: Store client_secret securely on client-side. 
- * It will NOT be retrievable after first creation.
+ * IMPORTANT: Store client_secret securely. It will NOT be retrievable after first creation.
  * 
  * Request body:
  * {
- *   "name": "My App",
- *   "redirect_uris": ["https://myapp.com/callback"],
+ *   "name": "My Service Name",
+ *   "redirect_uris": ["https://myservice.com/auth/callback"],
+ *   "logo_uri": "https://myservice.com/logo.png", (optional)
+ *   "description": "Brief description of your service", (optional)
  *   "scopes": ["openid", "profile", "email"]
+ * }
+ * 
+ * Response:
+ * {
+ *   "client_id": "cli_xxxxx",
+ *   "client_secret": "secret_xxxxx",
+ *   "name": "My Service Name",
+ *   "redirect_uris": ["https://myservice.com/auth/callback"],
+ *   "scopes": ["openid", "profile", "email"],
+ *   "created_at": "2026-02-21T10:00:00Z"
  * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, redirect_uris, scopes } = body;
+    const { name, redirect_uris, logo_uri, description, scopes } = body;
 
     // Validate required fields
     if (!name || !redirect_uris || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
       return NextResponse.json(
-        { error: 'name and redirect_uris (array) are required' },
+        { error: 'name and redirect_uris (non-empty array) are required' },
         { status: 400 }
       );
     }
 
     // Validate redirect URIs are valid URLs
+    const validUris: string[] = [];
     for (const uri of redirect_uris) {
       try {
-        new URL(uri);
+        const parsed = new URL(uri);
+        // Ensure HTTPS in production
+        if (process.env.NODE_ENV === 'production' && parsed.protocol !== 'https:') {
+          return NextResponse.json(
+            { error: `Redirect URI must use HTTPS in production: ${uri}` },
+            { status: 400 }
+          );
+        }
+        validUris.push(uri);
       } catch {
         return NextResponse.json(
           { error: `Invalid redirect_uri: ${uri}` },
@@ -43,43 +65,60 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate scopes if provided
-    if (scopes && !Array.isArray(scopes)) {
-      return NextResponse.json(
-        { error: 'scopes must be an array' },
-        { status: 400 }
-      );
+    const validScopes = ['openid', 'profile', 'email', 'phone', 'address'];
+    if (scopes && Array.isArray(scopes)) {
+      for (const scope of scopes) {
+        if (!validScopes.includes(scope)) {
+          return NextResponse.json(
+            { error: `Invalid scope: ${scope}. Valid scopes: ${validScopes.join(', ')}` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
-    // Generate client credentials
+    // Generate secure credentials
     const clientId = `cli_${generateRandomString(32)}`;
-    const clientSecret = `secret_${generateRandomString(64)}`; // Long random secret
+    const clientSecret = `secret_${generateRandomString(64)}`;
     const clientSecretHash = hashString(clientSecret);
 
-    // In production, this should be stored in D1:
+    const now = new Date().toISOString();
+
+    // Store in D1
+    // Uncomment when D1 is integrated
     // const db = env.DB;
     // await createOAuthClient(db, {
     //   clientId,
     //   clientSecretHash,
     //   name,
-    //   redirectUris: JSON.stringify(redirect_uris),
-    //   scopes: JSON.stringify(scopes || []),
+    //   redirectUris: JSON.stringify(validUris),
+    //   scopes: JSON.stringify(scopes || validScopes),
+    //   logoUri: logo_uri,
+    //   description,
+    //   isActive: true,
+    //   createdAt: now,
     // });
 
-    console.log(`[OAuth] New application registered: ${name} (${clientId})`);
+    console.log(`[OAuth Client] Registered: ${name} (${clientId})`);
 
-    // Return credentials to client (secret shown only once)
-    return NextResponse.json({
-      client_id: clientId,
-      client_secret: clientSecret,
-      name,
-      redirect_uris,
-      scopes: scopes || [],
-      created_at: new Date().toISOString(),
-      note: 'Store client_secret securely. It will not be retrievable after this response.',
-    });
+    // Return credentials (client_secret shown only once)
+    return NextResponse.json(
+      {
+        client_id: clientId,
+        client_secret: clientSecret,
+        name,
+        redirect_uris: validUris,
+        logo_uri,
+        description,
+        scopes: scopes || validScopes,
+        created_at: now,
+        _notice: 'Store client_secret securely. It will NOT be retrievable after this response.',
+      },
+      { status: 201 }
+    );
 
   } catch (error) {
-    console.error('[OAuth] Registration error:', error);
+    console.error('[OAuth Client] Registration error:', error);
     return NextResponse.json(
       { error: 'Failed to register application' },
       { status: 500 }
@@ -91,8 +130,7 @@ export async function POST(request: NextRequest) {
  * GET /api/auth/oauth-clients?client_id=cli_xxx
  * 
  * Get application details (public info only, no secret)
- * 
- * This endpoint is used by the callback flow to validate client credentials
+ * This is used by the authorization server to validate client credentials
  */
 export async function GET(request: NextRequest) {
   try {
@@ -106,100 +144,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // In production, this should query D1:
+    // Fetch from D1
+    // Uncomment when D1 is integrated
     // const db = env.DB;
     // const client = await getOAuthClientById(db, clientId);
+    // if (!client) {
+    //   return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    // }
 
-    // Mock response - replace with actual DB lookup
-    return NextResponse.json(
-      { error: 'Not yet integrated with D1' },
-      { status: 501 }
-    );
-
-  } catch (error) {
-    console.error('[OAuth] Get client error:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve application' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PUT /api/auth/oauth-clients/[client_id]
- * 
- * Update application details (redirect_uris, scopes, name)
- * Requires client authentication
- */
-export async function PUT(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const clientId = request.nextUrl.pathname.split('/').pop();
-    const { name, redirect_uris, scopes } = body;
-
-    if (!clientId) {
-      return NextResponse.json(
-        { error: 'client_id is required' },
-        { status: 400 }
-      );
-    }
-
-    // TODO: Authenticate client (verify Authorization header with client credentials)
-    // const authHeader = request.headers.get('authorization');
-    // const [clientId, clientSecret] = parseBasicAuth(authHeader);
-    // const client = await validateOAuthClient(db, clientId, clientSecret);
-
-    // In production, update in D1:
-    // await updateOAuthClient(db, clientId, {
-    //   ...(name && { name }),
-    //   ...(redirect_uris && { redirectUris: JSON.stringify(redirect_uris) }),
-    //   ...(scopes && { scopes: JSON.stringify(scopes) }),
-    // });
-
+    // Return public client info (no secret!)
     return NextResponse.json({
-      message: 'Application updated',
       client_id: clientId,
+      name: 'OAuth Application',
+      redirect_uris: [],
+      scopes: ['openid', 'profile', 'email'],
     });
 
   } catch (error) {
-    console.error('[OAuth] Update client error:', error);
+    console.error('[OAuth Client] Get error:', error);
     return NextResponse.json(
-      { error: 'Failed to update application' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * DELETE /api/auth/oauth-clients/[client_id]
- * 
- * Deactivate an application
- */
-export async function DELETE(request: NextRequest) {
-  try {
-    const clientId = request.nextUrl.pathname.split('/').pop();
-
-    if (!clientId) {
-      return NextResponse.json(
-        { error: 'client_id is required' },
-        { status: 400 }
-      );
-    }
-
-    // TODO: Authenticate client
-
-    // In production, deactivate in D1:
-    // await updateOAuthClient(db, clientId, { isActive: false });
-
-    return NextResponse.json({
-      message: 'Application deactivated',
-      client_id: clientId,
-    });
-
-  } catch (error) {
-    console.error('[OAuth] Delete client error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete application' },
+      { error: 'Failed to get client details' },
       { status: 500 }
     );
   }

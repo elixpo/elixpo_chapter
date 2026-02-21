@@ -8,6 +8,7 @@
 !.yarn/versions
 /coverage
 /.next/
+*.toml
 /out/
 /build
 .DS_Store
