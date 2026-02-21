@@ -1,39 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/password';
-import { createAccessToken, createRefreshToken } from '@/lib/jwt';
-import { verifyTurnstile } from '@/lib/captcha';
+import { createAccessToken, createRefreshToken, verifyJWT } from '@/lib/jwt';
 import { hashString, generateUUID } from '@/lib/crypto';
 import { createLoginRateLimiter } from '@/lib/rate-limit';
-import { getUserByEmail, getIdentitiesByUserId } from '@/lib/db';
+import { getUserByEmail, getIdentitiesByUserId, createRefreshToken as storeRefreshToken, logAuditEvent } from '@/lib/db';
 
+/**
+ * POST /api/auth/login
+ *
+ * Login user with email/password or OAuth provider
+ *
+ * Request body:
+ * {
+ *   "email": "user@example.com",
+ *   "password": "userpassword", // optional for OAuth
+ *   "provider": "google|github|email",
+ *   "oauth_code": "authorization_code" // for OAuth
+ * }
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, provider, turnstile_token, oauth_code } = body;
+    const { email, password, provider, oauth_code } = body;
 
-    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+    const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+                     request.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
+
+    // Rate limiting: 10 login attempts per IP per minute
+    // Uncomment when D1 is integrated
+    // const db = env.DB;
+    // const rateLimiter = createLoginRateLimiter();
+    // const rateLimit = await rateLimiter.check(db, ipAddress, 'login');
+    // if (!rateLimit.allowed) {
+    //   console.warn(`[Login] Rate limit exceeded for IP: ${ipAddress}. Retry after ${rateLimit.retryAfter}s`);
+    //   return NextResponse.json(
+    //     { 
+    //       error: 'Too many login attempts. Please try again later.',
+    //       retryAfter: rateLimit.retryAfter,
+    //     },
+    //     { 
+    //       status: 429,
+    //       headers: {
+    //         'Retry-After': (rateLimit.retryAfter || 900).toString(),
+    //       },
+    //     }
+    //   );
+    // }
 
     if (!email || !provider) {
       return NextResponse.json(
         { error: 'email and provider are required' },
         { status: 400 }
-      );
-    }
-
-    if (!turnstile_token) {
-      return NextResponse.json(
-        { error: 'Captcha verification required' },
-        { status: 400 }
-      );
-    }
-
-    const captchaValid = await verifyTurnstile(turnstile_token);
-    if (!captchaValid) {
-      console.warn(`[Login] Captcha verification failed for ${email} from ${ipAddress}`);
-      return NextResponse.json(
-        { error: 'Captcha verification failed' },
-        { status: 403 }
       );
     }
 
@@ -112,14 +130,18 @@ export async function POST(request: NextRequest) {
       tokens: {
         access_token: accessToken,
         refresh_token: refreshToken,
+        expires_in: parseInt(process.env.JWT_EXPIRATION_MINUTES || '15') * 60,
+        token_type: 'Bearer',
       },
     });
 
+    // Set secure cookies
+    const maxAge = parseInt(process.env.JWT_EXPIRATION_MINUTES || '15') * 60;
     response.cookies.set('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60,
+      maxAge,
       path: '/',
     });
 
@@ -127,7 +149,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60,
+      maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRATION_DAYS || '30') * 24 * 60 * 60,
       path: '/',
     });
 
@@ -135,7 +157,7 @@ export async function POST(request: NextRequest) {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60,
+      maxAge,
       path: '/',
     });
 
