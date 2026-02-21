@@ -74,6 +74,13 @@ export async function getIdentityByProvider(
   return await stmt.bind(provider, providerUserId).first();
 }
 
+export async function getIdentitiesByUserId(db: D1Database, userId: string) {
+  const stmt = db.prepare(
+    'SELECT * FROM identities WHERE user_id = ? ORDER BY created_at ASC'
+  );
+  return await stmt.bind(userId).all();
+}
+
 export async function createAuthRequest(
   db: D1Database,
   {

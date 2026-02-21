@@ -4,6 +4,7 @@ import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { verifyTurnstile } from '@/lib/captcha';
 import { hashString, generateUUID } from '@/lib/crypto';
 import { createLoginRateLimiter } from '@/lib/rate-limit';
+import { getUserByEmail, getIdentitiesByUserId } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,27 @@ export async function POST(request: NextRequest) {
 
     let user: any;
     let identity: any;
+
+    // NOTE: When D1 database is integrated, uncomment this section to enable provider lock-in
+    // const db = env.DB;
+    // const existingUser = await getUserByEmail(db, email);
+    // if (existingUser) {
+    //   // User exists - check what providers they used to register
+    //   const userIdentities = await getIdentitiesByUserId(db, existingUser.id);
+    //   const registeredProviders = userIdentities.map((id: any) => id.provider);
+    //
+    //   if (!registeredProviders.includes(provider)) {
+    //     // User didn't register with this provider
+    //     const providerList = registeredProviders.join(', ');
+    //     return NextResponse.json(
+    //       { 
+    //         error: `This account was registered with ${providerList}. Please login with ${registeredProviders.length === 1 ? 'that' : 'one of those'} provider.`,
+    //         registeredProviders
+    //       },
+    //       { status: 403 }
+    //     );
+    //   }
+    // }
 
     if (provider === 'email') {
       if (!password) {

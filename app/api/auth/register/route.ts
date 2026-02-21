@@ -4,6 +4,7 @@ import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { hashPassword } from '@/lib/password';
 import { verifyTurnstile } from '@/lib/captcha';
 import { createRegisterRateLimiter } from '@/lib/rate-limit';
+import { getUserByEmail, getIdentitiesByUserId } from '@/lib/db';
 
 /**
  * POST /api/auth/register
@@ -88,10 +89,30 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     // const existingUser = await getUserByEmail(db, email);
     // if (existingUser) {
-    //   return NextResponse.json(
-    //     { error: 'User already exists' },
-    //     { status: 409 }
-    //   );
+    //   // User already registered - prevent duplicate registrations
+    //   const userIdentities = await getIdentitiesByUserId(db, existingUser.id);
+    //   const registeredProviders = userIdentities.map((id: any) => id.provider);
+    //   
+    //   if (registeredProviders.includes(provider)) {
+    //     // Trying to register with same provider
+    //     return NextResponse.json(
+    //       { error: 'Account already exists with this provider' },
+    //       { status: 409 }
+    //     );
+    //   } else {
+    //     // Trying to add another provider to existing account
+    //     // This is allowed - user can link multiple providers
+    //     // But for now, we prevent this for security
+    //     const providerList = registeredProviders.join(', ');
+    //     return NextResponse.json(
+    //       { 
+    //         error: `An account with this email already exists (registered with ${providerList}). Please login instead.`,
+    //         registeredProviders,
+    //         code: 'EMAIL_ALREADY_EXISTS'
+    //       },
+    //       { status: 409 }
+    //     );
+    //   }
     // }
 
     // Create new user
