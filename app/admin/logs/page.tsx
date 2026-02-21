@@ -130,7 +130,7 @@ export default function LogsPage() {
 
       {/* Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               bgcolor: '#1a1a1a',
@@ -154,7 +154,7 @@ export default function LogsPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               bgcolor: '#1a1a1a',
@@ -178,7 +178,7 @@ export default function LogsPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               bgcolor: '#1a1a1a',
@@ -202,7 +202,7 @@ export default function LogsPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               bgcolor: '#1a1a1a',

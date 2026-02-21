@@ -147,7 +147,7 @@ export default function AdminDashboard() {
           color: '#ef4444',
         }}
       >
-        <Error sx={{ fontSize: '3rem', mb: 2 }} />
+        <ErrorIcon sx={{ fontSize: '3rem', mb: 2 }} />
         <Typography variant="h6">Error loading dashboard</Typography>
         <Typography variant="body2" sx={{ color: '#9ca3af', mt: 1 }}>
           {error}
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
       ) : stats ? (
         <>
           <Grid container spacing={2} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={Users}
                 label="Total Users"
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
                 color="#3b82f6"
               />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={Activity}
                 label="Active Users"
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
                 color="#22c55e"
               />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={AppsIcon}
                 label="Applications"
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
                 color="#f59e0b"
               />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={TrendingUp}
                 label="Total Requests"
@@ -265,7 +265,7 @@ export default function AdminDashboard() {
 
           {/* Secondary Stats */}
           <Grid container spacing={2} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={Speed}
                 label="Avg Response Time"
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
                 color="#ec4899"
               />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard
                 icon={ErrorIcon}
                 label="Error Rate"
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
 
           {/* Charts Section */}
           <Grid container spacing={2} sx={{ mb: 4 }}>
-            <Grid item xs={12} lg={8}>
+            <Grid size={{ xs: 12, lg: 8 }}>
               <ChartCard title="Request Trend (Last 7 Days)">
                 <Box
                   sx={{
@@ -336,7 +336,7 @@ export default function AdminDashboard() {
               </ChartCard>
             </Grid>
 
-            <Grid item xs={12} lg={4}>
+            <Grid size={{ xs: 12, lg: 4 }}>
               <ChartCard title="Top Applications">
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {stats.topApps.map((app) => (

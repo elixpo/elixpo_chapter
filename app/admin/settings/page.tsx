@@ -122,7 +122,7 @@ export default function SettingsPage() {
             Rate Limiting
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Max Requests Per Window"
                 type="number"
@@ -151,7 +151,7 @@ export default function SettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Rate Limit Window (ms)"
                 type="number"
@@ -205,7 +205,7 @@ export default function SettingsPage() {
             JWT & Token Configuration
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="JWT Expiration (minutes)"
                 type="number"
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Refresh Token Expiration (days)"
                 type="number"
@@ -288,7 +288,7 @@ export default function SettingsPage() {
             Email Verification
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="OTP Length"
                 type="number"
@@ -317,7 +317,7 @@ export default function SettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="OTP Expiry (minutes)"
                 type="number"
