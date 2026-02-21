@@ -1,0 +1,43 @@
+{
+  "name": "elixpo-accounts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:create": "wrangler d1 create elixpo_auth",
+    "db:list": "wrangler d1 list",
+    "db:info": "wrangler d1 info elixpo_auth",
+    "db:migrate": "wrangler d1 migrations apply elixpo_auth --remote",
+    "db:migrate:local": "wrangler d1 execute elixpo_auth --local < src/workers/schema.sql",
+    "db:query": "wrangler d1 execute elixpo_auth",
+    "db:query:remote": "wrangler d1 execute elixpo_auth --remote",
+    "db:tables": "wrangler d1 execute elixpo_auth \"SELECT name FROM sqlite_master WHERE type='table';\" --remote"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20240905.0",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "jose": "^5.9.6",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "@simplewebauthn/server": "^13.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "wrangler": "^3.81.0"
+  }
+}
