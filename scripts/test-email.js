@@ -22,18 +22,14 @@ dotenv.config();
 const TEST_EMAIL = process.env.TEST_EMAIL || process.env.SMTP_FROM_EMAIL;
 const RECIPIENT_NAME = 'Test User';
 
-interface TestCase {
-  name: string;
-  fn: () => Promise<void>;
-}
 
-async function runTests(): Promise<void> {
+async function runTests() {
   console.log('🧪 Email Testing Suite');
   console.log('='.repeat(60));
   console.log(`📧 Test Email: ${TEST_EMAIL}`);
   console.log('='.repeat(60));
 
-  const testCases: TestCase[] = [
+  const testCases = [
     {
       name: 'OTP Verification Email',
       fn: async () => {
