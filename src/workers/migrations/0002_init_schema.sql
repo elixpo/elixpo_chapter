@@ -19,7 +19,9 @@ CREATE TABLE IF NOT EXISTS users (
     os_version TEXT,
     device_type TEXT,   
     locale TEXT,
-    timezone TEXT
+    timezone TEXT,
+    role TEXT DEFAULT 'user',
+    is_admin BOOLEAN DEFAULT 0
 );
 
 -- Identities (provider-specific user data)
@@ -83,7 +85,43 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   redirect_uris TEXT NOT NULL, 
   scopes TEXT NOT NULL, 
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  is_active BOOLEAN DEFAULT 1
+  is_active BOOLEAN DEFAULT 1,
+  owner_id TEXT NOT NULL,
+  description TEXT,
+  logo_url TEXT,
+  request_count INTEGER DEFAULT 0,
+  last_used DATETIME,
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Application Usage Statistics
+CREATE TABLE IF NOT EXISTS app_stats (
+  id TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  date DATE NOT NULL,
+  requests INTEGER DEFAULT 0,
+  users INTEGER DEFAULT 0,
+  errors INTEGER DEFAULT 0,
+  avg_response_time INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+  UNIQUE(client_id, date)
+);
+
+-- Admin Activity Log
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id TEXT PRIMARY KEY,
+  admin_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT,
+  resource_id TEXT,
+  changes TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  status TEXT DEFAULT 'success',
+  error_message TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -97,6 +135,23 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   error_message TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+
+-- Rate Limiting Table for Login, Register, and Password Reset
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id TEXT PRIMARY KEY,
+  ip_address TEXT NOT NULL,
+  endpoint TEXT NOT NULL, -- 'login', 'register', 'password_reset'
+  attempt_count INTEGER DEFAULT 1,
+  first_attempt_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_attempt_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  window_reset_at DATETIME NOT NULL, -- When the rate limit window resets
+  is_blocked BOOLEAN DEFAULT 0,
+  blocked_until DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(ip_address, endpoint)
 );
 
 
@@ -114,3 +169,11 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_ip_endpoint ON rate_limits(ip_address, endpoint);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_window_reset ON rate_limits(window_reset_at);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_blocked_until ON rate_limits(blocked_until);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_is_blocked ON rate_limits(is_blocked);
+CREATE INDEX IF NOT EXISTS idx_oauth_clients_owner ON oauth_clients(owner_id);
+CREATE INDEX IF NOT EXISTS idx_app_stats_client ON app_stats(client_id, date);
+CREATE INDEX IF NOT EXISTS idx_admin_logs_admin ON admin_logs(admin_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin, created_at);
