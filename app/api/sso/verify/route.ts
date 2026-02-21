@@ -1,117 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/jwt';
 
-/**
- * POST /api/sso/verify
- * 
- * External SSO validation endpoint for other elixpo.com services
- * 
- * This is the core SSO interface that allows other services to:
- * 1. Verify if a user is authenticated
- * 2. Get user claims from access token
- * 3. Validate refresh tokens
- * 
- * Protected by:
- * - Bearer token (access_token or custom JWT)
- * - Client credentials (optional, for service-to-service calls)
- * 
- * Example usage from another service:
- * ```
- * const response = await fetch('https://auth.elixpo.com/api/sso/verify', {
- *   method: 'POST',
- *   headers: {
- *     'Authorization': 'Bearer ' + accessToken,
- *     'X-Client-Id': 'service-name'
- *   }
- * });
- * ```
- */
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    const clientId = request.headers.get('x-client-id') || 'unknown';
+    const searchParams = request.nextUrl.searchParams;
+    const token = searchParams.get('token');
+    const clientId = searchParams.get('client_id');
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'No authorization token provided', code: 'MISSING_TOKEN' },
-        { status: 401 }
+        { valid: false, error: 'invalid_request', error_description: 'token parameter is required' },
+        { status: 400 }
       );
     }
 
-    const token = authHeader.substring(7);
-
-    // Verify JWT
     const payload = await verifyJWT(token);
 
     if (!payload) {
       return NextResponse.json(
-        { error: 'Invalid or expired token', code: 'INVALID_TOKEN' },
+        { valid: false, error: 'invalid_token', error_description: 'Token is invalid or expired' },
         { status: 401 }
       );
     }
 
-    // Log verification attempt (in production, use D1)
-    console.log(`SSO verification for user ${payload.sub} from client ${clientId}`);
+    console.log(`[SSO Verify GET] User ${payload.sub}${clientId ? ` verified by ${clientId}` : ''}`);
 
-    // Return user claims
     return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: payload.sub,
-        email: payload.email,
-        tokenType: payload.type,
-      },
-      expiresAt: new Date(payload.exp * 1000).toISOString(),
-      issuedAt: new Date(payload.iat * 1000).toISOString(),
+      valid: true,
+      user: { sub: payload.sub, email: payload.email, provider: payload.provider }
     });
   } catch (error) {
-    console.error('SSO verification error:', error);
-    return NextResponse.json(
-      { error: 'Verification failed', code: 'VERIFICATION_FAILED' },
-      { status: 500 }
-    );
+    console.error('[SSO Verify GET]', error);
+    return NextResponse.json({ valid: false, error: 'server_error' }, { status: 500 });
   }
 }
 
-/**
- * GET /api/sso/verify
- * 
- * Lightweight verification endpoint
- * Returns 200 if token is valid, 401 if invalid
- * Useful for simple middleware checks
- */
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
+    const clientId = request.headers.get('x-client-id');
+    const body = await request.json().catch(() => ({}));
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { authenticated: false },
-        { status: 401 }
-      );
+    let token: string | null = null;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (body.token) {
+      token = body.token;
     }
 
-    const token = authHeader.substring(7);
+    if (!token) {
+      return NextResponse.json(
+        { valid: false, error: 'invalid_request', error_description: 'No token provided' },
+        { status: 400 }
+      );
+    }
 
     const payload = await verifyJWT(token);
 
     if (!payload) {
       return NextResponse.json(
-        { authenticated: false },
+        { valid: false, error: 'invalid_token', error_description: 'Token invalid or expired' },
         { status: 401 }
       );
     }
 
+    console.log(`[SSO Verify POST] User ${payload.sub}${clientId ? ` verified by ${clientId}` : ''}`);
+
     return NextResponse.json({
-      authenticated: true,
-      userId: payload.sub,
-      email: payload.email,
+      valid: true,
+      user: { sub: payload.sub, email: payload.email, provider: payload.provider },
+      authenticated_at: new Date(payload.iat * 1000).toISOString()
     });
   } catch (error) {
-    return NextResponse.json(
-      { authenticated: false },
-      { status: 401 }
-    );
+    console.error('[SSO Verify POST]', error);
+    return NextResponse.json({ valid: false, error: 'server_error' }, { status: 500 });
   }
 }
