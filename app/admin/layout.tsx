@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { AdminProvider, useAdminSession } from '@/src/lib/admin-context';
+import { AdminProvider, useAdminSession } from '../../src/lib/admin-context';
 
 const DRAWER_WIDTH = 280;
 

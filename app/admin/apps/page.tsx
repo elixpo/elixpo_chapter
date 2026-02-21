@@ -29,10 +29,9 @@ import {
   Search,
   Edit,
   Delete,
-  Pause,
-  Play,
+  Pause
 } from '@mui/icons-material';
-import { useApps } from '@/src/lib/hooks/useAdminData';
+import { useApps } from '../../../src/lib/hooks/useAdminData';
 
 export default function AppsPage() {
   const [page, setPage] = useState(1);

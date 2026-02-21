@@ -14,13 +14,13 @@ import {
 } from '@mui/material';
 import {
   TrendingUp,
-  Users,
-  Apps,
-  Error,
+  VerifiedUserSharp as Users,
+  Apps as AppsIcon,
+  Error as ErrorIcon,
   Speed,
-  Activity,
+  LocalActivity as Activity,
 } from '@mui/icons-material';
-import { useDashboardStats } from '@/src/lib/hooks/useAdminData';
+import { useDashboardStats } from '../../src/lib/hooks/useAdminData';
 
 const StatCard = ({
   icon: Icon,
@@ -29,7 +29,7 @@ const StatCard = ({
   change,
   color = '#22c55e',
 }: {
-  icon: React.ComponentType<{ fontSize?: string }>;
+  icon: any;
   label: string;
   value: string | number;
   change?: string;
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
             </Grid>
             <Grid item xs={12} sm={6} lg={3}>
               <StatCard
-                icon={Apps}
+                icon={AppsIcon}
                 label="Applications"
                 value={stats.totalApps.toLocaleString()}
                 change="+4%"
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
             </Grid>
             <Grid item xs={12} sm={6} lg={3}>
               <StatCard
-                icon={Error}
+                icon={ErrorIcon}
                 label="Error Rate"
                 value={`${(stats.errorRate * 100).toFixed(2)}%`}
                 change="+0.5%"

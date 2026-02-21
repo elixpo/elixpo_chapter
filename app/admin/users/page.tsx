@@ -22,17 +22,15 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  InputAdornment,
-  Switch,
+  InputAdornment
 } from '@mui/material';
 import {
   MoreVert,
   Search,
   Shield,
-  Lock,
-  Unlock,
+  Lock
 } from '@mui/icons-material';
-import { useUsers } from '@/src/lib/hooks/useAdminData';
+import { useUsers } from '../../../src/lib/hooks/useAdminData';
 
 export default function UsersPage() {
   const [page, setPage] = useState(1);
@@ -347,7 +345,7 @@ export default function UsersPage() {
           Suspend
         </MenuItem>
         <MenuItem onClick={() => handleActionClick('activate')}>
-          <Unlock fontSize="small" sx={{ mr: 1 }} />
+          <Lock fontSize="small" sx={{ mr: 1 }} />
           Activate
         </MenuItem>
       </Menu>

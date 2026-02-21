@@ -12,7 +12,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Lock, AlertCircle } from '@mui/icons-material';
+import { Lock } from '@mui/icons-material';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -162,7 +162,6 @@ export default function AdminLogin() {
           {error && (
             <Alert
               severity="error"
-              icon={<AlertCircle />}
               sx={{
                 mb: 2,
                 bgcolor: 'rgba(239, 68, 68, 0.1)',
