@@ -9,7 +9,7 @@
 
 import type { D1Database } from '@cloudflare/workers-types';
 
-let cachedDb: D1Database | null = null;
+let cachedDb: D1Database | null = null as any;
 
 /**
  * Initialize and get D1 Database connection
@@ -27,6 +27,9 @@ export async function getDatabase(): Promise<D1Database> {
     const env = (globalThis as any).env;
     if (env && env.DB) {
       cachedDb = env.DB;
+      if (!cachedDb) {
+        throw new Error('D1 Database binding (env.DB) is not available');
+      }
       return cachedDb;
     }
   }
