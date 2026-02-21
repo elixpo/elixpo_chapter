@@ -3,6 +3,7 @@ import { generateUUID, hashString } from '@/lib/crypto';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { hashPassword } from '@/lib/password';
 import { verifyTurnstile } from '@/lib/captcha';
+import { registerRateLimiter } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/register
@@ -23,6 +24,28 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, provider, turnstile_token, provider_id, provider_email } = body;
+
+    // Get request metadata for audit log
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+
+    // Rate limiting: 5 registration attempts per IP per minute
+    if (!registerRateLimiter.isAllowed(ipAddress)) {
+      const resetTime = registerRateLimiter.getResetTime(ipAddress);
+      console.warn(`[Register] Rate limit exceeded for IP: ${ipAddress}`);
+      
+      return NextResponse.json(
+        { 
+          error: 'Too many registration attempts. Please try again later.',
+          retryAfter: Math.ceil(resetTime / 1000),
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil(resetTime / 1000).toString(),
+          },
+        }
+      );
+    }
 
     // Validate required fields
     if (!email || !provider) {

@@ -1,7 +1,3 @@
--- D1 Migration: 0001_init_schema
--- Created: 2025-02-19
--- Purpose: Initialize database schema for Elixpo Auth system
-
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
