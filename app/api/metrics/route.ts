@@ -7,14 +7,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetricsText } from '@/src/lib/prometheus-metrics';
+import { getMetricsText } from '../../../src/lib/prometheus-metrics';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const metrics = getMetricsText();
-    
+    const metrics = await getMetricsText();
+
     return new NextResponse(metrics, {
       status: 200,
       headers: {

@@ -190,7 +190,7 @@ export const webhookFailures = new Counter({
 /**
  * Get Prometheus metrics as text
  */
-export function getMetricsText(): string {
+export async function getMetricsText(): Promise<string> {
   return register.metrics();
 }
 

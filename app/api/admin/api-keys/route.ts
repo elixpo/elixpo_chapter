@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT } from '@/src/lib/jwt';
+import { verifyJWT } from '../../../../src/lib/jwt';
 import {
   generateApiKey,
   getUserApiKeys,
@@ -13,7 +13,7 @@ import {
   deleteApiKey,
   updateApiKey,
   ApiKeyScopes,
-} from '@/src/lib/api-key-service';
+} from '../../../../src/lib/api-key-service';
 
 export async function GET(request: NextRequest) {
   try {

@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiKey, logApiKeyUsage, hasScope, ApiKeyScopes } from './api-key-service';
-import { getRateLimitKey } from './rate-limit';
 
 export interface ApiAuthContext {
   apiKeyId: string;
@@ -85,22 +84,21 @@ export async function validateApiKeyMiddleware(
 
 /**
  * Check rate limiting for API key
+ * 
+ * For production, implement actual rate limiting using:
+ * - Database: Store request counts per API key
+ * - Redis/Memcached: In-memory rate limiting for better performance
  */
 export async function checkApiKeyRateLimit(
   context: ApiAuthContext
 ): Promise<{ allowed: boolean; retryAfter?: number }> {
-  try {
-    // Using simple in-memory rate limiting
-    // For production, consider using Redis or Memcached
-    const key = getRateLimitKey(`api-key:${context.apiKeyId}`);
-    
-    // This would be replaced with actual rate limiting implementation
-    // For now, return true (rate limiting will be implemented separately)
-    return { allowed: true };
-  } catch (error) {
-    console.error('Rate limit check error:', error);
-    return { allowed: true }; // Default to allowing on error
-  }
+  // TODO: Implement actual rate limiting based on:
+  // - context.rateLimitRequests (max requests allowed)
+  // - context.rateLimitWindow (time window in seconds)
+  // - context.apiKeyId (to track per-key usage)
+  
+  // For now, all requests are allowed
+  return { allowed: true };
 }
 
 /**
