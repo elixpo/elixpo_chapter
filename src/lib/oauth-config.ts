@@ -1,8 +1,3 @@
-/**
- * OAuth Provider Configuration
- * Get secrets from Cloudflare Secrets Manager in production
- */
-
 import type { D1Database } from '@cloudflare/workers-types';
 
 export interface OAuthProvider {
@@ -64,12 +59,6 @@ export function getOAuthConfig(
   }
 }
 
-/**
- * Get OAuth client from database (for dynamically registered applications)
- * 
- * This allows third-party applications to register their own OAuth credentials
- * instead of using environment variables.
- */
 export async function getOAuthClientFromDB(
   db: D1Database,
   clientId: string
@@ -98,11 +87,7 @@ export async function getOAuthClientFromDB(
   }
 }
 
-/**
- * Validate OAuth client credentials
- * 
- * Checks that clientId is registered and clientSecretHash matches
- */
+
 export async function validateOAuthClientCredentials(
   db: D1Database,
   clientId: string,
