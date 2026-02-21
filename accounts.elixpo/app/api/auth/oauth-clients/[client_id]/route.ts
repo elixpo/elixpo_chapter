@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getOAuthClientById, updateOAuthClient } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
 /**
  * PUT /api/auth/oauth-clients/[client_id]
@@ -29,12 +31,21 @@ export async function PUT(
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     // }
 
-    // In production, update in D1:
-    // await updateOAuthClient(db, client_id, {
-    //   ...(name && { name }),
-    //   ...(redirect_uris && { redirectUris: JSON.stringify(redirect_uris) }),
-    //   ...(scopes && { scopes: JSON.stringify(scopes) }),
-    // });
+    // Update in D1
+    try {
+      const db = await getDatabase();
+      await updateOAuthClient(db, client_id, {
+        ...(name && { name }),
+        ...(redirect_uris && { redirectUris: JSON.stringify(redirect_uris) }),
+        ...(scopes && { scopes: JSON.stringify(scopes) }),
+      });
+    } catch (error) {
+      console.error('[OAuth Client] Database update error:', error);
+      return NextResponse.json(
+        { error: 'Failed to update application' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       message: 'Application updated successfully',
@@ -80,8 +91,17 @@ export async function DELETE(
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     // }
 
-    // In production, deactivate in D1:
-    // await updateOAuthClient(db, client_id, { isActive: false });
+    // Deactivate in D1
+    try {
+      const db = await getDatabase();
+      await updateOAuthClient(db, client_id, { isActive: false });
+    } catch (error) {
+      console.error('[OAuth Client] Database delete error:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete application' },
+        { status: 500 }
+      );
+    }
 
     console.log(`[OAuth Client] Deactivated: ${client_id}`);
 
@@ -120,34 +140,43 @@ export async function GET(
       );
     }
 
-    // TODO: In production, get from D1:
-    // const app = await getOAuthClientById(db, client_id);
-    // if (!app) {
-    //   return NextResponse.json({ error: 'Application not found' }, { status: 404 });
-    // }
-    // if (!app.is_active) {
-    //   return NextResponse.json({ error: 'Application is inactive' }, { status: 403 });
-    // }
+    // Get from D1
+    let app: any = null;
+    try {
+      const db = await getDatabase();
+      app = await getOAuthClientById(db, client_id);
+      if (!app) {
+        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      }
+      if (!(app as any).is_active) {
+        return NextResponse.json({ error: 'Application is inactive' }, { status: 403 });
+      }
+    } catch (error) {
+      console.error('[OAuth Client] Database get error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch application' },
+        { status: 500 }
+      );
+    }
 
-    // MOCK DATA - Replace with D1 query in production
-    const mockApp = {
+    const appData = {
       client_id,
-      name: 'Test Application',
-      redirect_uris: ['https://example.com/callback', 'https://localhost:3000/callback'],
-      scopes: ['openid', 'profile', 'email'],
-      is_active: true,
-      created_at: new Date().toISOString(),
+      name: (app as any).name,
+      redirect_uris: JSON.parse((app as any).redirect_uris || '[]'),
+      scopes: JSON.parse((app as any).scopes || '[]'),
+      is_active: (app as any).is_active,
+      created_at: (app as any).created_at,
     };
 
     // Validate redirect URI if provided
     if (validateRedirectUri) {
-      const isValidRedirectUri = mockApp.redirect_uris.includes(validateRedirectUri);
+      const isValidRedirectUri = appData.redirect_uris.includes(validateRedirectUri);
       if (!isValidRedirectUri) {
         return NextResponse.json(
           {
             error: 'Invalid redirect URI',
             message: `The provided redirect_uri is not registered for this application`,
-            registeredUris: mockApp.redirect_uris,
+            registeredUris: appData.redirect_uris,
           },
           { status: 400 }
         );
@@ -156,12 +185,12 @@ export async function GET(
 
     // Return public client info (without secret)
     return NextResponse.json({
-      client_id: mockApp.client_id,
-      name: mockApp.name,
-      redirect_uris: mockApp.redirect_uris,
-      scopes: mockApp.scopes,
-      is_active: mockApp.is_active,
-      created_at: mockApp.created_at,
+      client_id: appData.client_id,
+      name: appData.name,
+      redirect_uris: appData.redirect_uris,
+      scopes: appData.scopes,
+      is_active: appData.is_active,
+      created_at: appData.created_at,
     });
   } catch (error) {
     console.error('[OAuth Client] Get error:', error);

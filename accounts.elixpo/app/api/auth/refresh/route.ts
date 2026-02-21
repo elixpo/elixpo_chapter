@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT, createAccessToken } from '@/lib/jwt';
+import { verifyJWT, createAccessToken, createRefreshToken } from '@/lib/jwt';
 import { hashString, generateUUID } from '@/lib/crypto';
+import { getRefreshTokenByHash, revokeRefreshToken, createRefreshToken as storeRefreshToken } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
 /**
  * POST /api/auth/refresh
@@ -28,16 +30,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production with D1:
     // Check if refresh token is in database and not revoked
-    // const tokenHash = hashString(refreshToken);
-    // const storedToken = await getRefreshTokenByHash(env.DB, tokenHash);
-    // if (!storedToken) {
-    //   return NextResponse.json(
-    //     { error: 'Refresh token revoked or expired' },
-    //     { status: 401 }
-    //   );
-    // }
+    try {
+      const db = await getDatabase();
+      const tokenHash = hashString(refreshToken);
+      const storedToken = await getRefreshTokenByHash(db, tokenHash);
+      if (!storedToken) {
+        return NextResponse.json(
+          { error: 'Refresh token revoked or expired' },
+          { status: 401 }
+        );
+      }
+    } catch (error) {
+      console.error('[Refresh] Database check error:', error);
+      // Fail open if DB is unavailable, but still verify JWT
+    }
 
     // Issue new access token
     const newAccessToken = await createAccessToken(
@@ -46,16 +53,48 @@ export async function POST(request: NextRequest) {
       payload.provider
     );
 
+    // Rotate refresh token
+    const newRefreshToken = await createRefreshToken(payload.sub, payload.provider);
+
+    // Store new refresh token and revoke old one
+    try {
+      const db = await getDatabase();
+      const oldTokenHash = hashString(refreshToken);
+      const newTokenHash = hashString(newRefreshToken);
+
+      await revokeRefreshToken(db, oldTokenHash);
+      await storeRefreshToken(db, {
+        id: generateUUID(),
+        userId: payload.sub,
+        tokenHash: newTokenHash,
+        expiresAt: new Date(Date.now() + parseInt(process.env.REFRESH_TOKEN_EXPIRATION_DAYS || '30') * 24 * 60 * 60 * 1000),
+      });
+    } catch (error) {
+      console.error('[Refresh] Token rotation error:', error);
+      // Continue anyway - tokens are still valid
+    }
+
     const response = NextResponse.json({
-      accessToken: newAccessToken,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      token_type: 'Bearer',
+      expires_in: parseInt(process.env.JWT_EXPIRATION_MINUTES || '15') * 60,
     });
 
-    // Update access token cookie
+    // Update both access and refresh token cookies
     response.cookies.set('access_token', newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: parseInt(process.env.JWT_EXPIRATION_MINUTES || '15') * 60,
+      path: '/',
+    });
+
+    response.cookies.set('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRATION_DAYS || '30') * 24 * 60 * 60,
       path: '/',
     });
 

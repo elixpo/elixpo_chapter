@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hashString } from '@/lib/crypto';
 import { revokeRefreshToken } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
 /**
  * POST /api/auth/logout
@@ -26,10 +27,9 @@ export async function POST(request: NextRequest) {
     // Revoke refresh token in database if available
     if (refreshToken) {
       try {
-        // Uncomment when D1 is integrated
-        // const db = env.DB;
-        // const tokenHash = hashString(refreshToken);
-        // await revokeRefreshToken(db, tokenHash);
+        const db = await getDatabase();
+        const tokenHash = hashString(refreshToken);
+        await revokeRefreshToken(db, tokenHash);
         console.log('[Logout] Refresh token revoked');
       } catch (error) {
         console.error('[Logout] Error revoking token:', error);

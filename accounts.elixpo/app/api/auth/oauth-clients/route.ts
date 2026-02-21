@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateRandomString, hashString } from '@/lib/crypto';
+import { createOAuthClient, getOAuthClientById } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
 /**
  * POST /api/auth/oauth-clients
@@ -85,21 +87,23 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     // Store in D1
-    // Uncomment when D1 is integrated
-    // const db = env.DB;
-    // await createOAuthClient(db, {
-    //   clientId,
-    //   clientSecretHash,
-    //   name,
-    //   redirectUris: JSON.stringify(validUris),
-    //   scopes: JSON.stringify(scopes || validScopes),
-    //   logoUri: logo_uri,
-    //   description,
-    //   isActive: true,
-    //   createdAt: now,
-    // });
-
-    console.log(`[OAuth Client] Registered: ${name} (${clientId})`);
+    try {
+      const db = await getDatabase();
+      await createOAuthClient(db, {
+        clientId,
+        clientSecretHash,
+        name,
+        redirectUris: JSON.stringify(validUris),
+        scopes: JSON.stringify(scopes || validScopes),
+      });
+      console.log(`[OAuth Client] Registered: ${name} (${clientId})`);
+    } catch (dbError) {
+      console.error('[OAuth Client] Database storage error:', dbError);
+      return NextResponse.json(
+        { error: 'Failed to register application' },
+        { status: 500 }
+      );
+    }
 
     // Return credentials (client_secret shown only once)
     return NextResponse.json(
@@ -145,19 +149,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch from D1
-    // Uncomment when D1 is integrated
-    // const db = env.DB;
-    // const client = await getOAuthClientById(db, clientId);
-    // if (!client) {
-    //   return NextResponse.json({ error: 'Client not found' }, { status: 404 });
-    // }
+    const db = await getDatabase();
+    const client = await getOAuthClientById(db, clientId);
+    if (!client) {
+      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    }
 
     // Return public client info (no secret!)
     return NextResponse.json({
       client_id: clientId,
-      name: 'OAuth Application',
-      redirect_uris: [],
-      scopes: ['openid', 'profile', 'email'],
+      name: (client as any).name,
+      redirect_uris: JSON.parse((client as any).redirect_uris || '[]'),
+      scopes: JSON.parse((client as any).scopes || '[]'),
+      created_at: (client as any).created_at,
+      is_active: (client as any).is_active,
     });
 
   } catch (error) {

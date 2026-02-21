@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateRandomString, generatePKCE, generateNonce, generateUUID } from '@/lib/crypto';
-import { getOAuthConfig } from '@/lib/oauth-config';
+import { generateRandomString, generateUUID } from '@/lib/crypto';
+import { getOAuthClientById, createAuthRequest } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
-// Trusted domains for client authorization
-const TRUSTED_DOMAINS = ['elixpo.com', 'www.elixpo.com'];
+// Built-in/trusted domains auto-whitelisted
+const BUILTIN_DOMAINS = ['elixpo.com', 'www.elixpo.com'];
 
 /**
  * GET /api/auth/authorize
  * 
- * OAuth 2.0 Authorization Endpoint
+ * SSO Authorization Endpoint
+ * Third-party services redirect users here to authenticate
  * 
  * Query Parameters:
  * - response_type: 'code' (required)
- * - client_id: OAuth client ID (required)
- * - redirect_uri: Where to send the authorization code (required)
+ * - client_id: SSO client ID (required)
+ * - redirect_uri: Where to redirect after auth (required)
  * - scope: Space-separated scopes (optional, defaults to 'openid profile email')
  * - state: CSRF token passed back in redirect (required)
  * - nonce: For OpenID Connect (optional)
- * - code_challenge: PKCE code challenge (optional)
- * - code_challenge_method: 'S256' or 'plain' (optional)
+ * 
+ * Flow:
+ * 1. Validate client_id and redirect_uri
+ * 2. Check if user is already authenticated
+ * 3. If not, show login page
+ * 4. After auth, generate authorization_code
+ * 5. Redirect to redirect_uri with code
  */
 export async function GET(request: NextRequest) {
   try {
@@ -29,15 +36,13 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get('scope') || 'openid profile email';
     const state = searchParams.get('state');
     const nonce = searchParams.get('nonce');
-    const codeChallenge = searchParams.get('code_challenge');
-    const codeChallengeMethod = searchParams.get('code_challenge_method');
 
-    // OAuth2 required parameters validation
+    // Validate required parameters
     if (!responseType || !clientId || !redirectUri || !state) {
       return NextResponse.json(
         { 
           error: 'invalid_request',
-          error_description: 'Missing required parameters: response_type, client_id, redirect_uri, state'
+          error_description: 'Missing required: response_type, client_id, redirect_uri, state'
         },
         { status: 400 }
       );
@@ -65,43 +70,114 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'invalid_request',
-          error_description: 'Invalid redirect_uri format'
+          error_description: 'Invalid redirect_uri: must be valid URL with HTTPS'
         },
         { status: 400 }
       );
     }
 
-    // TODO: When D1 is integrated:
-    // 1. Fetch OAuth client from database using clientId
-    // 2. Verify clientId is registered
-    // 3. Verify redirect_uri matches one of client's registered URIs
-    // 4. Verify requested scopes are allowed
-    // 5. Get current user from session/JWT
-    // 6. Generate authorization code
-    // 7. Store auth_request in D1 with expiry (10 minutes)
-    // 8. Redirect user to consent screen if needed
+    // Check if client_id is built-in Elixpo domain or needs D1 lookup
+    const isBuiltinClient = BUILTIN_DOMAINS.includes(redirectUrl.hostname);
+    
+    const db = await getDatabase();
 
-    // For now, generate state for PKCE flow
-    const authState = {
+    if (!isBuiltinClient) {
+      // For external clients: validate against D1
+      try {
+        const client = await getOAuthClientById(db, clientId);
+        if (!client) {
+          return NextResponse.json(
+            { 
+              error: 'invalid_client',
+              error_description: 'Client not found or not active'
+            },
+            { status: 401 }
+          );
+        }
+
+        const redirectUris = JSON.parse((client as any).redirect_uris || '[]');
+        if (!redirectUris.includes(redirectUri)) {
+          return NextResponse.json(
+            { 
+              error: 'invalid_request',
+              error_description: 'redirect_uri not whitelisted for this client'
+            },
+            { status: 400 }
+          );
+        }
+
+        if (!(client as any).is_active) {
+          return NextResponse.json(
+            { 
+              error: 'invalid_client',
+              error_description: 'Client is not active'
+            },
+            { status: 401 }
+          );
+        }
+
+        console.log(`[SSO Authorize] External client validated: ${clientId}`);
+      } catch (error) {
+        console.error('[SSO Authorize] Client validation error:', error);
+        return NextResponse.json(
+          { 
+            error: 'server_error',
+            error_description: 'Failed to validate client'
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      console.log(`[SSO Authorize] Built-in client: ${clientId} (${redirectUrl.hostname})`);
+    }
+
+    // Generate authorization code (valid for 10 minutes, single-use)
+    const authCode = `code_${generateRandomString(64)}`;
+    const now = Date.now();
+    const expiresAt = now + 10 * 60 * 1000; // 10 minutes
+    const pkceVerifier = generateRandomString(128);
+
+    // Store auth request in D1
+    try {
+      await createAuthRequest(db, {
+        id: generateUUID(),
+        state: state,
+        nonce: nonce || '',
+        pkceVerifier,
+        provider: 'sso',
+        clientId,
+        redirectUri,
+        scopes: scope,
+        expiresAt: new Date(expiresAt),
+      });
+      console.log(`[SSO Authorize] Auth request stored for client: ${clientId}`);
+    } catch (error) {
+      console.error('[SSO Authorize] Failed to store auth request:', error);
+      return NextResponse.json(
+        { 
+          error: 'server_error',
+          error_description: 'Failed to process authorization request'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Store in secure cookie temporarily for frontend to use
+    const response = NextResponse.json({
+      message: 'Authorization request received',
+      clientId,
+      redirectUri,
+      scopes: scope.split(' '),
+      state,
+    });
+
+    response.cookies.set('oauth_sso_state', JSON.stringify({
       clientId,
       redirectUri,
       scope,
       state,
       nonce,
-      codeChallenge,
-      codeChallengeMethod,
-      createdAt: Date.now(),
-    };
-
-    // Store state in secure cookie
-    const response = NextResponse.json({
-      message: 'Authorization request received',
-      clientId,
-      scopes: scope.split(' '),
-      state,
-    });
-
-    response.cookies.set('oauth_auth_state', JSON.stringify(authState), {
+    }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

@@ -1,8 +1,3 @@
-/**
- * Email Service Utilities
- * Handles sending emails via Zoho SMTP with various templates
- */
-
 import nodemailer from 'nodemailer';
 
 interface EmailOptions {

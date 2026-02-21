@@ -4,6 +4,7 @@ import { createAccessToken, createRefreshToken, verifyJWT } from '@/lib/jwt';
 import { hashString, generateUUID } from '@/lib/crypto';
 import { createLoginRateLimiter } from '@/lib/rate-limit';
 import { getUserByEmail, getIdentitiesByUserId, createRefreshToken as storeRefreshToken, logAuditEvent } from '@/lib/db';
+import { getDatabase } from '@/lib/d1-client';
 
 /**
  * POST /api/auth/login
@@ -27,26 +28,40 @@ export async function POST(request: NextRequest) {
                      request.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
+    // Get D1 database connection
+    const db = await getDatabase();
+
     // Rate limiting: 10 login attempts per IP per minute
-    // Uncomment when D1 is integrated
-    // const db = env.DB;
-    // const rateLimiter = createLoginRateLimiter();
-    // const rateLimit = await rateLimiter.check(db, ipAddress, 'login');
-    // if (!rateLimit.allowed) {
-    //   console.warn(`[Login] Rate limit exceeded for IP: ${ipAddress}. Retry after ${rateLimit.retryAfter}s`);
-    //   return NextResponse.json(
-    //     { 
-    //       error: 'Too many login attempts. Please try again later.',
-    //       retryAfter: rateLimit.retryAfter,
-    //     },
-    //     { 
-    //       status: 429,
-    //       headers: {
-    //         'Retry-After': (rateLimit.retryAfter || 900).toString(),
-    //       },
-    //     }
-    //   );
-    // }
+    try {
+      const rateLimiter = createLoginRateLimiter();
+      const rateLimit = await rateLimiter.check(db, ipAddress, 'login');
+      if (!rateLimit.allowed) {
+        console.warn(`[Login] Rate limit exceeded for IP: ${ipAddress}. Retry after ${rateLimit.retryAfter}s`);
+        await logAuditEvent(db, {
+          id: generateUUID(),
+          eventType: 'login_attempt',
+          ipAddress,
+          userAgent,
+          status: 'failure',
+          errorMessage: 'Rate limited',
+        });
+        return NextResponse.json(
+          { 
+            error: 'Too many login attempts. Please try again later.',
+            retryAfter: rateLimit.retryAfter,
+          },
+          { 
+            status: 429,
+            headers: {
+              'Retry-After': (rateLimit.retryAfter || 900).toString(),
+            },
+          }
+        );
+      }
+    } catch (rateLimitError) {
+      console.error('[Login] Rate limit check error:', rateLimitError);
+      // Fail open - allow request if DB is unavailable
+    }
 
     if (!email || !provider) {
       return NextResponse.json(
@@ -58,26 +73,49 @@ export async function POST(request: NextRequest) {
     let user: any;
     let identity: any;
 
-    // NOTE: When D1 database is integrated, uncomment this section to enable provider lock-in
-    // const db = env.DB;
-    // const existingUser = await getUserByEmail(db, email);
-    // if (existingUser) {
-    //   // User exists - check what providers they used to register
-    //   const userIdentities = await getIdentitiesByUserId(db, existingUser.id);
-    //   const registeredProviders = userIdentities.map((id: any) => id.provider);
-    //
-    //   if (!registeredProviders.includes(provider)) {
-    //     // User didn't register with this provider
-    //     const providerList = registeredProviders.join(', ');
-    //     return NextResponse.json(
-    //       { 
-    //         error: `This account was registered with ${providerList}. Please login with ${registeredProviders.length === 1 ? 'that' : 'one of those'} provider.`,
-    //         registeredProviders
-    //       },
-    //       { status: 403 }
-    //     );
-    //   }
-    // }
+    // Check for provider lock-in: user can only login with their registered providers
+    try {
+      const existingUser = await getUserByEmail(db, email);
+      if (existingUser) {
+        // User exists - check what providers they used to register
+        const identitiesResult = await getIdentitiesByUserId(db, (existingUser as any).id);
+        const identities: any[] = (identitiesResult as any)?.results || [];
+        const registeredProviders = identities.map((id: any) => id.provider);
+
+        if (registeredProviders.length > 0 && !registeredProviders.includes(provider)) {
+          // User didn't register with this provider
+          const providerList = registeredProviders.join(', ');
+          await logAuditEvent(db, {
+            id: generateUUID(),
+            userId: (existingUser as any).id,
+            eventType: 'login_attempt',
+            provider,
+            ipAddress,
+            userAgent,
+            status: 'failure',
+            errorMessage: `Provider mismatch - registered: ${providerList}`,
+          });
+          return NextResponse.json(
+            { 
+              error: `This account was registered with ${providerList}. Please login with ${registeredProviders.length === 1 ? 'that' : 'one of those'} provider.`,
+              registeredProviders
+            },
+            { status: 403 }
+          );
+        }
+        user = existingUser;
+      }
+    } catch (error) {
+      console.error('[Login] Provider lock-in check error:', error);
+      // Continue with login attempt if DB check fails
+    }
+
+    if (!user) {
+      user = {
+        id: generateUUID(),
+        email,
+      };
+    }
 
     if (provider === 'email') {
       if (!password) {
@@ -86,11 +124,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-
-      user = {
-        id: generateUUID(),
-        email,
-      };
 
       identity = {
         provider: 'email',
@@ -103,11 +136,6 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      user = {
-        id: generateUUID(),
-        email,
-      };
-
       identity = {
         provider,
       };
@@ -118,8 +146,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create tokens
     const accessToken = await createAccessToken(user.id, email, provider as any);
-    const refreshToken = await createRefreshToken(user.id, provider as any);
+    const refreshTokenJWT = await createRefreshToken(user.id, provider as any);
+
+    // Store refresh token in database
+    try {
+      const refreshTokenHash = hashString(refreshTokenJWT);
+      await storeRefreshToken(db, {
+        id: generateUUID(),
+        userId: user.id,
+        tokenHash: refreshTokenHash,
+        expiresAt: new Date(Date.now() + parseInt(process.env.REFRESH_TOKEN_EXPIRATION_DAYS || '30') * 24 * 60 * 60 * 1000),
+      });
+
+      await logAuditEvent(db, {
+        id: generateUUID(),
+        userId: user.id,
+        eventType: 'login_success',
+        provider,
+        ipAddress,
+        userAgent,
+        status: 'success',
+      });
+    } catch (dbError) {
+      console.error('[Login] Database storage error:', dbError);
+      // Continue anyway - tokens are still valid even if not stored
+    }
 
     const response = NextResponse.json({
       user: {
@@ -129,7 +182,7 @@ export async function POST(request: NextRequest) {
       },
       tokens: {
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshTokenJWT,
         expires_in: parseInt(process.env.JWT_EXPIRATION_MINUTES || '15') * 60,
         token_type: 'Bearer',
       },
@@ -145,7 +198,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    response.cookies.set('refresh_token', refreshToken, {
+    response.cookies.set('refresh_token', refreshTokenJWT, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
