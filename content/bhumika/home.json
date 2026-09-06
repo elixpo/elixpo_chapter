@@ -8,7 +8,7 @@
     "name": "BHUMIKA",
     "headline": "Open Source Contributor & Full-Stack Developer",
     "subhead": "Core Contributor @ Elixpo \u00b7 GSSoC 2026 Contributor \u00b7 CSE Undergrad",
-    "intro": "Hi, I am Bhumika Sudarshani. Turning ideas into code, and code into impact. Comfortable presenting technical work to non-technical audiences and collaborating in fast-paced, cross-functional team settings. Open Source Contributor, Full-Stack Development, and everything in between.",
+    "intro": "Hi, I'm Bhumika Sudarshani \u2014\n\nI turn ideas into code, and code into impact. Equally at ease explaining a technical build to a non-technical room .Open source at heart, full-stack by craft, and endlessly curious about everything in between.",
     "credentials": [
       {
         "label": "Core Contributor",
@@ -49,8 +49,8 @@
   },
   "websiteSection": {
     "designedBy": "Huge shoutout to the Elixpo core team and community \u2014 being part of building multiple Elixpo products alongside them has shaped how I think about shipping real, collaborative open-source work.",
-    "futurePlans": "I want to go deeper into applied AI for accessibility and go further with data-driven products \u2014 building dashboards, trackers, and tools that turn messy real-world data into something people can actually use and trust.",
-    "codeStory": "My journey started with wanting to make technology more accessible. That led to VAANI, a real-time sign-language-to-speech tool combining computer vision with natural-language generation. Alongside that, contributing as a core member at Elixpo \u2014 working across products like accounts.elixpo, blogs.elixpo, sketch.elixpo, opensource.elixpo, and payouts.elixpo \u2014 and as a GSSoC 2026 contributor on NexaSphere, pushed me to build full-stack data products (Financial-Log) and dashboards (CampusPulse), taking ideas from requirements through to deployment-ready products.",
+    "futurePlans": "Five-year plan?umm... What I do know is I'd like to keep collecting weird skills, questionable opinions about fonts, and the occasional existential crisis over semicolons, preferably while getting slightly better at all of it every day.",
+    "codeStory": "I run on chai, curiosity, and an unreasonable number of browser tabs. Ask me a question and I'll either give you a straight answer or accidentally start a TED talk! there's no in-between. Somewhere between debugging at 2 AM and pretending I understand memes before everyone else, I've decided that overthinking is just a personality trait now and I'm leaning into it.",
     "images": {
       "owl": "/assets/bhumika/websiteSection/hz-owl1.webp",
       "humanThink": "/assets/bhumika/websiteSection/human-think1.webp",
@@ -125,24 +125,24 @@
     ],
     "explore": [
       {
-        "label": "Projects",
-        "caption": "Things I've built",
-        "href": "projects"
+        "label": "Talks",
+        "caption": "Speaking & Sessions",
+        "href": "talks"
       },
       {
-        "label": "About",
-        "caption": "My story",
-        "href": "about"
+        "label": "Writing",
+        "caption": "Notes & Blog Posts",
+        "href": "blogs"
       },
       {
-        "label": "Connect",
-        "caption": "Get in touch",
-        "href": "connect"
+        "label": "Papers",
+        "caption": "Research & Publications",
+        "href": "publications"
       }
     ],
     "images": {
       "wand": "/assets/bhumika/techTracks/wand-1.webp",
-      "landscape": "/assets/bhumika/techTracks/bhumika-sepia.png",
+      "landscape": "/assets/bhumika/techTracks/lylia.jpg",
       "banner": "/assets/bhumika/hrz-image1.webp"
     }
   }
