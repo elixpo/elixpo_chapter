@@ -20,7 +20,7 @@ from pipeline.instruction import (
 )
 from pipeline.tools import tools
 from pipeline.optimized_tool_execution import optimized_tool_execution
-from pipeline.response_builder import auto_generate_pdf
+from pipeline.response_builder import artifact_ledger_fields, auto_generate_pdf
 from pipeline.helpers import (
     _scrub_tool_names,
     _decompose_query_with_llm,
@@ -570,6 +570,7 @@ async def _run_deep_search_pipeline(
     emit_event,
     ledger_request_id: str = None,
     request_intent: str = None,
+    request_context=None,
 ):
     logger.info(f"[DeepSearch] Starting deep search for: '{user_query[:80]}'")
     ledger_request_id = ledger_request_id or event_id or uuid.uuid4().hex
@@ -588,11 +589,12 @@ async def _run_deep_search_pipeline(
     if session_id:
         try:
             session_context = LedgerSessionContext(session_id=session_id)
-            session_context.add_message(
-                role="user",
-                content=user_query,
-                metadata={"request_id": f"{ledger_request_id}:user"},
-            )
+            if request_context is None:
+                session_context.add_message(
+                    role="user",
+                    content=user_query,
+                    metadata={"request_id": f"{ledger_request_id}:user"},
+                )
         except Exception as e:
             logger.warning(f"[DeepSearch] session ledger init failed: {e}")
 
@@ -608,6 +610,8 @@ async def _run_deep_search_pipeline(
         "cached_response": None,
         "session_id": session_id or "",
         "generated_images": [],
+        "request_context": request_context,
+        "ledger_request_id": ledger_request_id,
     }
 
     conversation_cache = None
@@ -771,6 +775,7 @@ async def _run_deep_search_pipeline(
 
     # ── Clean sources: filter out ad tracking / redirect URLs ──
     unique_sources = sorted(set(s for s in all_collected_sources if _is_clean_url(s)))[:8]
+    memoized_results["collected_sources"] = unique_sources
 
     # Append sources to the stream and retain the same verified appendix for
     # the canonical document/cache payload.
@@ -867,6 +872,7 @@ async def _run_deep_search_pipeline(
                 "deep_search": True,
                 "sub_queries": len(all_sub_results),
             }
+            cache_metadata.update(artifact_ledger_fields(memoized_results))
             _cache_embedding = None
             if core_service:
                 try:

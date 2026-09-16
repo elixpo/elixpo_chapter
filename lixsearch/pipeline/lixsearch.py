@@ -21,6 +21,7 @@ from sessions.clarification import (
     task_with_status,
 )
 from sessions.ledger import LedgerSessionContext
+from sessions.request_context import DeliverableKind, build_request_context
 
 import os
 from commons.environment import load_local_environment
@@ -58,6 +59,7 @@ from pipeline.response_builder import (
     requested_coverage_gap,
     requested_day_count,
     missing_local_date_anchor,
+    artifact_ledger_fields,
 )
 from pipeline.deep_search import _run_deep_search_pipeline
 from functionCalls.getImagePrompt import describe_image, replyFromImage
@@ -528,11 +530,32 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 return
 
         context_messages = chat_history if chat_history is not None else previous_messages
-        context_excerpt = "\n".join(
-            f"{message.get('role', 'user')}: {message.get('content', '')[:300]}"
-            for message in (context_messages or [])[-4:]
-            if message.get("content")
+        request_context = build_request_context(
+            request_id=ledger_request_id,
+            current_request=original_user_query,
+            source_turn_id=source_turn,
+            messages=context_messages or (),
+            active_task=(
+                memoized_results.get("active_task")
+                if "active_task" in memoized_results
+                else (snapshot.active_task if snapshot else None)
+            ),
+            pending_clarification=(
+                memoized_results.get("pending_clarification")
+                if "pending_clarification" in memoized_results
+                else (snapshot.pending_clarification if snapshot else None)
+            ),
         )
+        memoized_results["request_context"] = request_context
+        context_excerpt = request_context.routing_excerpt()
+        if (
+            request_context.requested_deliverable
+            and request_context.requested_deliverable.kind == DeliverableKind.PDF
+            and request_context.referent_source
+        ):
+            memoized_results["continuation_pdf_content"] = (
+                request_context.referent_source.content
+            )
         decision_task = None
         if resolved_pending_task:
             stored_routing = (memoized_results.get("active_task") or {}).get("routing") or {}
@@ -791,22 +814,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             _last_msg_ts = float(_ts)
             except Exception as e:
                 logger.warning(f"[Pipeline] Failed to inject conversation history: {e}")
-
-        # A referential PDF follow-up must export the prior grounded answer,
-        # not ask the model to recreate it from general knowledge.
-        _pdf_terms = ("pdf", "export", "download", "document", "save as")
-        if context_mode == "continuation" and any(term in user_query.lower() for term in _pdf_terms):
-            _history_source = chat_history if chat_history is not None else previous_messages
-            for _candidate in reversed(_history_source or []):
-                _candidate_content = _candidate.get("content", "")
-                if (
-                    _candidate.get("role") == "assistant"
-                    and len(_candidate_content.strip()) >= 200
-                    and "[ERROR]" not in _candidate_content
-                    and "<TASK>" not in _candidate_content
-                ):
-                    memoized_results["continuation_pdf_content"] = _candidate_content.strip()
-                    break
 
         # Inject timing context for returning users
         if _injected_history > 0 and _last_msg_ts:
@@ -1152,6 +1159,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     event_id=event_id, session_id=session_id, emit_event=emit_event,
                     ledger_request_id=ledger_request_id,
                     request_intent=original_user_query,
+                    request_context=request_context,
                 ):
                     yield event
                 return
@@ -1368,6 +1376,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                                     "request_id": f"{ledger_request_id}:assistant",
                                     "evidence_refs": collected_sources[:5],
                                     "artifact_refs": memoized_results.get("generated_pdfs", [])[:10],
+                                    **artifact_ledger_fields(memoized_results),
                                 },
                             )
                             memoized_results["_assistant_response_saved"] = True
@@ -1462,6 +1471,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if not _already_streamed:
                 final_message_content = await sanitize_final_response(final_message_content, user_query, collected_sources, headers)
             final_message_content = _scrub_tool_names(final_message_content)
+            memoized_results["collected_sources"] = collected_sources[:active_max_sources]
 
             # Research/document requests are exported only after synthesis. This
             # single runtime-owned call prevents partial exports and tool loops.
@@ -1489,7 +1499,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     final_message_content += f"\n\n---\n\n[Download PDF]({_pdf_url})"
 
             # Assemble images and sources
-            memoized_results["collected_sources"] = collected_sources[:active_max_sources]
             response_parts = assemble_images(final_message_content, collected_images_from_web,
                                               collected_similar_images, image_only_mode, memoized_results)
             response_with_sources = append_sources(response_parts, collected_sources)
@@ -1581,6 +1590,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                                 "request_id": f"{ledger_request_id}:assistant",
                                 "evidence_refs": memoized_results.get("collected_sources", [])[:5],
                                 "artifact_refs": memoized_results.get("generated_pdfs", [])[:10],
+                                **artifact_ledger_fields(memoized_results),
                             },
                         )
                 except Exception:

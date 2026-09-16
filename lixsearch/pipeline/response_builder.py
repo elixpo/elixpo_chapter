@@ -8,6 +8,7 @@ from loguru import logger
 from pipeline.config import POLLINATIONS_ENDPOINT, LLM_MODEL, LOG_MESSAGE_PREVIEW_TRUNCATE
 from pipeline.helpers import _scrub_tool_names, sanitize_final_response
 from sessions.clarification import artifacts_blocked
+from sessions.artifacts import ArtifactRejected, create_artifact_snapshot
 from pipeline.utils import format_sse
 
 MODEL = LLM_MODEL
@@ -208,19 +209,74 @@ async def auto_generate_pdf(final_content, query_lower, memoized_results, event_
         return None
 
     logger.info(f"[FINAL] Auto-generating PDF ({len(final_content)} chars)")
-    from functionCalls.generatePDF import create_pdf_from_content
     _title = derive_pdf_title(query_lower, final_content)
     memoized_results["pdf_export_attempted"] = True
+    return await commit_pdf_artifact(
+        final_content,
+        _title,
+        memoized_results,
+        event_id=event_id,
+    )
+
+
+async def commit_pdf_artifact(
+    content: str,
+    title: str,
+    memoized_results: dict,
+    *,
+    event_id: str | None = None,
+) -> str | None:
+    """Commit one validated PDF snapshot and return its stable URL."""
+    from functionCalls.generatePDF import create_pdf_from_content
+
     try:
-        pdf_url = await create_pdf_from_content(final_content, _title)
+        snapshot = create_artifact_snapshot(
+            kind="pdf",
+            title=title,
+            content=content,
+            request_context=memoized_results.get("request_context"),
+            source_turn_ids=tuple(memoized_results.get("source_turn_ids") or ()),
+            evidence_ids=tuple(
+                memoized_results.get("collected_sources")
+                or memoized_results.get("evidence_ids")
+                or ()
+            ),
+            request_id=str(memoized_results.get("ledger_request_id") or event_id or ""),
+        )
+    except ArtifactRejected as exc:
+        memoized_results["pdf_export_blocked"] = str(exc)
+        logger.warning(f"[FINAL] PDF export blocked: {exc}")
+        return None
+    try:
+        pdf_url = await create_pdf_from_content(
+            content,
+            title,
+            content_id=f"{snapshot.slug}-{snapshot.artifact_id}",
+            artifact_metadata=snapshot.to_dict(),
+        )
     except Exception as exc:
         memoized_results["pdf_export_error"] = str(exc)
         raise
     if "generated_pdfs" not in memoized_results:
         memoized_results["generated_pdfs"] = []
     memoized_results["generated_pdfs"].append(pdf_url)
+    memoized_results.setdefault("artifact_snapshots", []).append(snapshot.to_dict())
     logger.info(f"[FINAL] PDF generated: {pdf_url}")
     return pdf_url
+
+
+def artifact_ledger_fields(memoized_results: dict) -> dict:
+    """Return bounded immutable artifact identity and provenance for a turn."""
+    snapshots = memoized_results.get("artifact_snapshots") or []
+    if not snapshots:
+        return {}
+    bounded = snapshots[:10]
+    return {
+        "artifact_ids": [
+            item.get("artifact_id") for item in bounded if item.get("artifact_id")
+        ],
+        "artifact_provenance": bounded,
+    }
 
 
 def assemble_images(final_content, collected_images_from_web, collected_similar_images,
@@ -346,6 +402,7 @@ async def save_to_caches(user_query, final_content, collected_sources, tool_call
                 "tool_calls": tool_call_count,
                 "iteration": current_iteration,
             }
+            metadata.update(artifact_ledger_fields(memoized_results))
             if request_id:
                 metadata["request_id"] = f"{request_id}:assistant"
             session_context.add_message(role="assistant", content=final_content, metadata=metadata)

@@ -4,7 +4,6 @@ from pipeline.tools import tools
 from functionCalls.getTimeZone import get_local_time
 from functionCalls.getImagePrompt import generate_prompt_from_image, replyFromImage
 from functionCalls.generateImage import create_image_from_prompt
-from functionCalls.generatePDF import create_pdf_from_content
 import asyncio
 import time
 import json
@@ -19,6 +18,7 @@ from pipeline.formalOptimization import ConstrainedOptimizer
 from commons.robustnessFramework import ToolOutputSanitizer, SanitizationPolicy
 from urllib.parse import urlparse
 from sessions.clarification import artifacts_blocked
+from pipeline.response_builder import commit_pdf_artifact, derive_pdf_title
 
 
 def _display_url(url: str, max_len: int = 40) -> str:
@@ -273,20 +273,29 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
             memoized_results["pdf_export_attempted"] = True
             continuation_content = memoized_results.get("continuation_pdf_content")
             content = continuation_content or function_args.get("content", "")
-            # Derive the title from the trusted prior answer when exporting a
-            # continuation; the model-provided title may describe a rewrite.
-            title = None if continuation_content else function_args.get("title")
             if not content or not content.strip():
                 yield "[ERROR] No content provided for PDF export. Provide the markdown content to export."
                 return
+            request_context = memoized_results.get("request_context")
+            request_text = (
+                request_context.current_request
+                if request_context
+                else function_args.get("title") or "OreoLook report"
+            )
+            title = derive_pdf_title(request_text, content)
             web_event = emit_event_func("INFO", "<TASK>Generating PDF document</TASK>")
             if web_event:
                 yield web_event
             try:
-                pdf_url = await create_pdf_from_content(content, title)
-                if "generated_pdfs" not in memoized_results:
-                    memoized_results["generated_pdfs"] = []
-                memoized_results["generated_pdfs"].append(pdf_url)
+                pdf_url = await commit_pdf_artifact(
+                    content,
+                    title,
+                    memoized_results,
+                    event_id=memoized_results.get("ledger_request_id"),
+                )
+                if not pdf_url:
+                    yield "[BLOCKED] The document has not passed the artifact commit boundary."
+                    return
                 result = f"PDF exported successfully.\nDownload: {pdf_url}"
                 logger.info(f"[Pipeline] Generated PDF: {pdf_url}")
                 done_event = emit_event_func("INFO", "<TASK>PDF ready for download</TASK>")

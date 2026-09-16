@@ -328,7 +328,13 @@ def _markdown_to_pdf(markdown_text: str, title: str = "lixSearch Response") -> b
     return pdf.output()
 
 
-async def create_pdf_from_content(content: str, title: str = None) -> str:
+async def create_pdf_from_content(
+    content: str,
+    title: str = None,
+    *,
+    content_id: str | None = None,
+    artifact_metadata: dict | None = None,
+) -> str:
     from app.gateways.content import store_content
 
     if not content:
@@ -341,8 +347,13 @@ async def create_pdf_from_content(content: str, title: str = None) -> str:
 
     # Derive the filename slug from the visible subject title.
     slug = _generate_title_slug(title, max_words=12)
-    content_id = f"{slug}-{uuid.uuid4().hex[:8]}"
-    capability = store_content(content_id, pdf_bytes, ".pdf")
+    content_id = content_id or f"{slug}-{uuid.uuid4().hex[:8]}"
+    capability = store_content(
+        content_id,
+        pdf_bytes,
+        ".pdf",
+        artifact_metadata=artifact_metadata,
+    )
     access = f"?access={quote(capability, safe='')}" if capability else ""
 
     return f"{_BASE_URL}/api/content/{content_id}.pdf{access}"

@@ -111,7 +111,7 @@ def test_followup_pdf_exports_trusted_prior_answer_instead_of_model_rewrite():
 
     async def collect():
         with mock.patch(
-            "pipeline.optimized_tool_execution.create_pdf_from_content",
+            "pipeline.optimized_tool_execution.commit_pdf_artifact",
             new=mock.AsyncMock(return_value="https://search.elixpo.com/generated/space.pdf"),
         ) as create:
             output = []
@@ -121,7 +121,9 @@ def test_followup_pdf_exports_trusted_prior_answer_instead_of_model_rewrite():
                 memo, lambda *_: None,
             ):
                 output.append(item)
-            create.assert_awaited_once_with(prior, None)
+            assert create.await_args.args[0] == prior
+            assert create.await_args.args[1] == "Grounded space discovery"
+            assert create.await_args.args[2] is memo
         return output
 
     output = asyncio.run(collect())
@@ -132,7 +134,7 @@ def test_export_tool_reuses_existing_pdf_without_rendering_again():
 
     async def collect():
         output = []
-        with mock.patch("pipeline.optimized_tool_execution.create_pdf_from_content") as create:
+        with mock.patch("pipeline.optimized_tool_execution.commit_pdf_artifact") as create:
             async for item in optimized_tool_execution(
                 "export_to_pdf", {"content": "draft"}, memo, lambda *_: None
             ):
