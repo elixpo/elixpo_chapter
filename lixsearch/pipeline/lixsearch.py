@@ -24,6 +24,7 @@ from sessions.ledger import LedgerSessionContext
 
 import os
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 from pipeline.config import *
 from pipeline.instruction import direct_system_instruction, system_instruction, user_instruction, synthesis_instruction
 from pipeline.optimized_tool_execution import optimized_tool_execution
@@ -65,7 +66,6 @@ import uuid
 
 load_local_environment()
 
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 MODEL = LLM_MODEL
 MODEL_FALLBACK = LLM_MODEL_FALLBACK
 
@@ -412,8 +412,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
     try:
         current_utc_time = datetime.now(timezone.utc)
-        headers = {"Content-Type": "application/json",
-                   "Authorization": f"Bearer {POLLINATIONS_API_KEY}"}
+        headers = pollinations_auth_headers()
         try:
             from ipcService.coreServiceManager import get_core_embedding_service
             core_service = get_core_embedding_service()

@@ -14,6 +14,7 @@ from agentRuntime.routing import route_request
 from commons.environment import load_local_environment
 from agentRuntime.specs import AGENT_SPECS
 from skillRegistry import SkillRegistry, get_skill_registry
+from commons.auth_context import downstream_pollinations_key
 
 AGENT_RUNTIME_ROOT = Path(__file__).resolve().parent
 DEFAULT_MODELS_CONFIG = AGENT_RUNTIME_ROOT / "models.yaml"
@@ -144,9 +145,7 @@ class AgentRunner:
     async def _stream_call(self, prepared: PreparedRun, *, effort: str = "low"):
         Router, Message, ToolDef = _oreoflow_types()
         load_local_environment()
-        api_key = os.getenv("POLLINATIONS_API_KEY")
-        if not api_key:
-            raise AgentRuntimeError("Set POLLINATIONS_API_KEY in .env.local before a live agent run")
+        api_key = downstream_pollinations_key()
         router = Router(task_id=f"lixsearch-{prepared.agent}", models=self.models, api_key=api_key)
         content_parts = []
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -205,9 +204,7 @@ class AgentRunner:
     async def _call(self, prepared: PreparedRun, *, effort: str = "low") -> dict[str, Any]:
         Router, Message, ToolDef = _oreoflow_types()
         load_local_environment()
-        api_key = os.getenv("POLLINATIONS_API_KEY")
-        if not api_key:
-            raise AgentRuntimeError("Set POLLINATIONS_API_KEY in .env.local before a live agent run")
+        api_key = downstream_pollinations_key()
         router = Router(task_id=f"lixsearch-{prepared.agent}", models=self.models, api_key=api_key)
         try:
             response = await router.call(

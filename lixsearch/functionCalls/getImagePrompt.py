@@ -2,6 +2,7 @@ import requests
 import base64
 import asyncio
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 import os
 import re
 import sys
@@ -31,10 +32,7 @@ def image_url_to_base64(image_url):
 def _call_vision_model(messages, max_tokens=300):
 
     api_url = POLLINATIONS_ENDPOINT
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('POLLINATIONS_API_KEY')}"
-    }
+    headers = pollinations_auth_headers()
     data = {
         "model": VISION_MODEL,
         "messages": messages,

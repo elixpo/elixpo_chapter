@@ -4,7 +4,6 @@ import json
 import random
 import asyncio
 import requests
-import os
 from loguru import logger
 from commons.environment import load_local_environment
 
@@ -23,9 +22,6 @@ from pipeline.sse_messages import get_status_message
 load_local_environment()
 
 MODEL = LLM_MODEL
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
-
-
 def _scrub_tool_names(text: str) -> str:
     if not text:
         return text

@@ -10,6 +10,7 @@ from quart import Response, jsonify, request
 
 from agentRuntime import AGENT_SPECS, AgentRunner
 from agentRuntime.runner import response_content
+from commons.auth_context import scoped_resource_id
 from pipeline.streaming import TaskAwareChunkBuffer
 from pipeline.config import AGENT_STREAM_CHUNK_CHARS, AGENT_STREAM_DEFAULT
 from agentRuntime.state import (
@@ -178,7 +179,9 @@ async def _recall_durable(conversation_id: str, query: str) -> list[dict[str, st
     try:
         from ipcService.coreServiceManager import CoreServiceManager
         manager = CoreServiceManager.get_instance()
-        results = await asyncio.to_thread(manager.call, "core", "recall_turns", conversation_id, query, 4)
+        results = await asyncio.to_thread(
+            manager.call, "core", "recall_turns", scoped_resource_id(conversation_id), query, 4
+        )
         memories = [item.get("metadata", {}).get("text", "") for item in results]
         text = "\n\n".join(memory for memory in memories if memory)
         return [{"role": "assistant", "content": f"Relevant prior conversation memory:\n{text}"}] if text else []
@@ -190,7 +193,15 @@ async def _remember_turn(conversation_id: str, response_id: str, prompt: str, co
     try:
         from ipcService.coreServiceManager import CoreServiceManager
         manager = CoreServiceManager.get_instance()
-        await asyncio.to_thread(manager.call, "core", "remember_turn", conversation_id, response_id, prompt, content)
+        await asyncio.to_thread(
+            manager.call,
+            "core",
+            "remember_turn",
+            scoped_resource_id(conversation_id),
+            response_id,
+            prompt,
+            content,
+        )
     except Exception:
         # Redis remains the source of truth for hot response chains. Durable memory
         # failure must not fail an otherwise successful model response.
@@ -287,10 +298,10 @@ async def _stream_response(data: dict[str, Any], state: ResponseStateStore):
                 "output_index": 0, "content_index": 0, "text": content,
             })
             yield emit("response.completed", {"type": "response.completed", "response": result})
-        except Exception as exc:
+        except Exception:
             yield emit("response.failed", {
                 "type": "response.failed", "response": {**created, "status": "failed",
-                "error": {"code": "server_error", "message": str(exc)}},
+                "error": {"code": "server_error", "message": "Internal server error"}},
             })
         yield "data: [DONE]\n\n"
 

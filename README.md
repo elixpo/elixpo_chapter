@@ -217,6 +217,9 @@ Returns a standard `chat.completion` object with `usage` (prompt/completion toke
 | `/docs` | GET | Interactive API documentation (Scalar UI) |
 
 MCP setup, authentication, tools, and limits are documented in [docs/MCP.md](docs/MCP.md).
+Pollinations `endpoint_agent` registration, delegated `ag_` authentication,
+and the local/static-key split are documented in
+[docs/AGENT_RUN_TOKENS.md](docs/AGENT_RUN_TOKENS.md).
 
 ---
 
@@ -319,4 +322,3 @@ Questions? Feedback? Suggestions?
 
 > *lixSearch - Search smarter, not harder.* 
 **Made with ❤️ by Elixpo**
-

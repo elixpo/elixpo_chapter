@@ -189,6 +189,8 @@ services:
       - IPC_PORT=9510
       - IPC_AUTHKEY=${IPC_AUTHKEY:-changeme_ipc_secret}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-https://search.elixpo.com}
+      - POLLINATIONS_TOKEN_VALIDATION_URL=${POLLINATIONS_TOKEN_VALIDATION_URL:-https://enter.pollinations.ai/api/account/key}
+      - POLLINATIONS_TOKEN_VALIDATION_TIMEOUT_SECONDS=${POLLINATIONS_TOKEN_VALIDATION_TIMEOUT_SECONDS:-3}
       - IMAGE_STORE_DIR=/app/data/cache/images
       - CONTENT_STORE_DIR=/app/data/cache/content
     volumes:

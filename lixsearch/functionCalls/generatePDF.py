@@ -3,6 +3,7 @@ import os
 import re
 import uuid
 from datetime import datetime
+from urllib.parse import quote
 
 _BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://search.elixpo.com").rstrip("/")
 
@@ -341,6 +342,7 @@ async def create_pdf_from_content(content: str, title: str = None) -> str:
     # Derive the filename slug from the visible subject title.
     slug = _generate_title_slug(title, max_words=12)
     content_id = f"{slug}-{uuid.uuid4().hex[:8]}"
-    store_content(content_id, pdf_bytes, ".pdf")
+    capability = store_content(content_id, pdf_bytes, ".pdf")
+    access = f"?access={quote(capability, safe='')}" if capability else ""
 
-    return f"{_BASE_URL}/api/content/{content_id}.pdf"
+    return f"{_BASE_URL}/api/content/{content_id}.pdf{access}"

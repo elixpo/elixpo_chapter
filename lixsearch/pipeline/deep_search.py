@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from loguru import logger
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 
 from pipeline.config import *
 from pipeline.instruction import (
@@ -32,7 +33,6 @@ from sessions.ledger import LedgerSessionContext
 load_local_environment()
 
 MODEL = LLM_MODEL
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 
 import re as _re
 
@@ -575,10 +575,7 @@ async def _run_deep_search_pipeline(
     ledger_request_id = ledger_request_id or event_id or uuid.uuid4().hex
 
     current_utc_time = datetime.now(timezone.utc)
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {POLLINATIONS_API_KEY}",
-    }
+    headers = pollinations_auth_headers()
 
     core_service = None
     try:
