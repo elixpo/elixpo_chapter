@@ -111,6 +111,13 @@ def _may_stream_uncommitted_output(
     return bool(event_id) and not has_tools and not artifact_requested
 
 
+def _enforce_capability_route(request_mode: str, *, artifact_requested: bool) -> str:
+    """Keep explicit artifact work on the tool-capable orchestration path."""
+    if artifact_requested and request_mode == "direct":
+        return "tools"
+    return request_mode
+
+
 async def _decide_request_mode(
     user_query: str,
     image_count: int,
@@ -138,6 +145,7 @@ async def _decide_request_mode(
                 "messages": messages,
                 "max_tokens": 260,
                 "temperature": 0,
+                "response_format": {"type": "json_object"},
             },
             headers=headers,
             timeout=max(LLM_DECISION_TIMEOUT_SECONDS, 5.0),
@@ -222,6 +230,7 @@ async def _resolve_pending_clarification(
                 "messages": base_messages,
                 "max_tokens": 220,
                 "temperature": 0,
+                "response_format": {"type": "json_object"},
             },
             headers=headers,
             timeout=max(LLM_DECISION_TIMEOUT_SECONDS, 5.0),
@@ -567,6 +576,20 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         if decision_task is not None:
             request_mode, context_mode, clarification = await decision_task
 
+        _pdf_requested = any(
+            keyword in original_user_query.lower()
+            for keyword in ("pdf", "export", "save as", "document", "download")
+        )
+        enforced_mode = _enforce_capability_route(
+            request_mode,
+            artifact_requested=_pdf_requested,
+        )
+        if enforced_mode != request_mode:
+            logger.warning(
+                "[pipeline] overriding contradictory direct route for explicit artifact request"
+            )
+            request_mode = enforced_mode
+
         if clarification.required:
             memoized_results["suppress_pdf_export"] = True
             memoized_results["clarification_blocked"] = True
@@ -858,7 +881,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 payload = {"model": MODEL, "messages": _direct_messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
             else:
                 payload = {"model": MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
-                payload["tools"] = tools
+                # Document export is a final commit owned by the runtime after
+                # synthesis and validation. It is never available during
+                # planning/tool selection.
+                payload["tools"] = [
+                    tool for tool in tools
+                    if not (
+                        _pdf_requested
+                        and tool.get("function", {}).get("name") == "export_to_pdf"
+                    )
+                ]
                 payload["tool_choice"] = "auto"
 
             _stale_event = status_tracker.refresh_if_stale()
@@ -868,7 +900,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             # Provider-routed tool selection is currently non-streaming: both configured
             # models reject stream=true with this tool catalog (HTTP 400). Final
             # synthesis has no tools and remains progressively streamed.
-            _pdf_requested = any(kw in original_user_query.lower() for kw in ("pdf", "export", "save as", "document", "download"))
             # Buffer PDF synthesis until document structure and coverage validate.
             # Artifact drafts are buffered until synthesis, validation, and export
             # complete; uncommitted model text must never leak to the client.
@@ -1034,24 +1065,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     assistant_message["content"] = f"Calling {leaked_fn}..."
                     assistant_message["tool_calls"] = tool_calls
 
-                # Recovery: detect PDF content dumped as plain text
-                # If the user asked for a PDF and the LLM output markdown instead of calling the tool
-                if not force_synthesis and not tool_calls and not memoized_results.get("generated_pdfs"):
-                    _pdf_keywords = ("pdf", "export", "save as", "download", "document")
-                    _query_wants_pdf = any(kw in original_user_query.lower() for kw in _pdf_keywords)
-                    _content_long_enough = len(raw_content) > 200
-                    if _query_wants_pdf and _content_long_enough and not raw_content.strip().startswith("I "):
-                        import uuid as _uuid
-                        logger.info(f"[RECOVERY] LLM dumped PDF content as text ({len(raw_content)} chars), converting to export_to_pdf call")
-                        _pdf_args = {"content": raw_content}
-                        _title_match = re.search(r'^#+\s+(.+)', raw_content, re.MULTILINE)
-                        if _title_match:
-                            _pdf_args["title"] = _title_match.group(1).strip()
-                        tool_calls = [{"id": f"recovered-pdf-{_uuid.uuid4().hex[:8]}", "type": "function",
-                                       "function": {"name": "export_to_pdf", "arguments": json.dumps(_pdf_args)}}]
-                        assistant_message["content"] = "Generating PDF..."
-                        assistant_message["tool_calls"] = tool_calls
-
                 if not tool_calls:
                     # A model-authored artifact draft is never committed directly.
                     # Give it one bounded synthesis pass under the final-document
@@ -1131,11 +1144,10 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             # Deep research handoff
             if _deep_research_call:
-                try:
-                    _dr_args = json.loads(_deep_research_call["function"]["arguments"])
-                    _dr_query = _dr_args.get("query", original_user_query)
-                except Exception:
-                    _dr_query = original_user_query
+                # The tool argument is a model-generated research hint and may
+                # narrow or rewrite the request. Decomposition must start from
+                # the complete user/clarification intent retained by runtime.
+                _dr_query = original_user_query
                 async for event in _run_deep_search_pipeline(
                     user_query=_dr_query, user_image=user_image,
                     event_id=event_id, session_id=session_id, emit_event=emit_event,

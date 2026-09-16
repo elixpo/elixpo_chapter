@@ -85,6 +85,26 @@ def test_runtime_does_not_export_error_text_after_failed_tool_export():
 
     asyncio.run(run())
 
+
+def test_runtime_does_not_export_uncommitted_clarification_draft():
+    memo = {"generated_pdfs": []}
+    draft = (
+        "Got it! I am preparing the report.\n\n"
+        "One quick clarification: which scope should the report use?"
+    )
+
+    async def run():
+        with mock.patch(
+            "functionCalls.generatePDF.create_pdf_from_content",
+            new=mock.AsyncMock(),
+        ) as create:
+            result = await auto_generate_pdf(draft, "create a PDF", memo, "event")
+            assert result is None
+            assert memo["pdf_export_blocked"] == "uncommitted_document"
+            create.assert_not_awaited()
+
+    asyncio.run(run())
+
 def test_followup_pdf_exports_trusted_prior_answer_instead_of_model_rewrite():
     prior = "# Grounded space discovery\n\n" + ("Evidence with citation. " * 12)
     memo = {"generated_pdfs": [], "continuation_pdf_content": prior}
@@ -144,6 +164,17 @@ def test_pdf_title_comes_from_subject_not_conversational_preamble():
     query = "give me a pdf of the latest weather forecast for Kolkata for next 7 days"
     content = "Got it! I will whip up a PDF of that."
     assert derive_pdf_title(query, content) == "Latest Weather Forecast For Kolkata For Next 7 Days"
+
+
+def test_pdf_title_never_exposes_internal_clarification_envelope():
+    query = (
+        "Compare several options and create a PDF\n\n"
+        "Clarified requirements: request_details: Compare PostgreSQL, MySQL, and MongoDB "
+        "for a high-traffic application"
+    )
+    assert derive_pdf_title(query, "No document heading") == (
+        "Compare PostgreSQL, MySQL, And MongoDB For A High-Traffic Application"
+    )
 
 
 def test_local_date_anchor_must_be_present_in_range():
@@ -250,3 +281,103 @@ def test_deep_research_rejects_source_free_output_before_stream_or_export():
     assert "Confident but unsupported answer" not in output
     assert "enough verifiable sources" in output
     assert output.endswith("<TASK>DONE</TASK>")
+
+
+def test_deep_research_exports_canonical_synthesis_with_source_appendix():
+    import pipeline.deep_search as deep_search
+
+    canonical = (
+        "# Database Comparison for High-Traffic Applications\n\n"
+        "## Executive Summary\n\nA complete, polished comparison."
+    )
+
+    async def run():
+        with (
+            mock.patch.object(
+                deep_search,
+                "_decompose_query_with_llm",
+                new=mock.AsyncMock(return_value=["performance", "operations"]),
+            ),
+            mock.patch.object(
+                deep_search,
+                "_execute_deep_search_sub_query",
+                new=mock.AsyncMock(side_effect=[
+                    ("Raw performance notes", ["https://example.test/performance"], []),
+                    ("Raw operations notes", ["https://example.test/operations"], []),
+                ]),
+            ),
+            mock.patch.object(
+                deep_search,
+                "_deep_search_final_synthesis",
+                new=mock.AsyncMock(return_value=canonical),
+            ),
+            mock.patch.object(
+                deep_search,
+                "auto_generate_pdf",
+                new=mock.AsyncMock(return_value="https://example.test/report.pdf"),
+            ) as generate,
+        ):
+            return [
+                chunk
+                async for chunk in deep_search._run_deep_search_pipeline(
+                    user_query="Compare the databases",
+                    user_image=None,
+                    event_id="canonical-report",
+                    session_id=None,
+                    emit_event=lambda _kind, content: content,
+                    request_intent="Compare the databases and create a PDF",
+                )
+            ], generate
+
+    _chunks, generate = asyncio.run(run())
+    exported = generate.await_args.args[0]
+    assert exported.startswith(canonical)
+    assert "**Sources:**" in exported
+    assert "https://example.test/performance" in exported
+    assert "Raw performance notes" not in exported
+
+
+def test_forced_subquery_synthesis_flattens_tool_protocol_into_evidence():
+    import pipeline.deep_search as deep_search
+
+    transcript = [
+        {"role": "system", "content": "research"},
+        {"role": "user", "content": "investigate"},
+        {
+            "role": "assistant",
+            "content": "Gathering information...",
+            "tool_calls": [{"id": "call-1", "type": "function"}],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call-1",
+            "name": "web_search",
+            "content": "Verified database evidence with https://example.test/source",
+        },
+    ]
+
+    messages = deep_search._build_evidence_synthesis_messages(
+        transcript,
+        "Compare the database options",
+    )
+
+    assert [message["role"] for message in messages] == ["system", "user"]
+    assert all("tool_calls" not in message for message in messages)
+    assert all("tool_call_id" not in message for message in messages)
+    assert "Verified database evidence" in messages[1]["content"]
+    assert "Compare the database options" in messages[1]["content"]
+
+
+def test_parallel_search_sources_are_read_from_each_result_not_shared_state():
+    import pipeline.deep_search as deep_search
+
+    first = '{"results":[{"url":"https://one.example/report"}]}'
+    second = '{"results":[{"url":"https://two.example/report"}]}'
+
+    assert deep_search._search_urls_from_tool_result(first) == [
+        "https://one.example/report"
+    ]
+    assert deep_search._search_urls_from_tool_result(second) == [
+        "https://two.example/report"
+    ]
+    assert deep_search._search_urls_from_tool_result("not-json") == []

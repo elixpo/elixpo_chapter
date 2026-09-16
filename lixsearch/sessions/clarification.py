@@ -87,9 +87,12 @@ _ALL_FIELD_KINDS = _BLOCKING_FIELD_KINDS | _DEFAULTABLE_FIELD_KINDS
 def _typed_clarification_fields(raw: Dict[str, Any]):
     """Normalize the flat wire contract; retain nested support for stored tests."""
     if "fields" not in raw:
-        blocking_raw = raw.get("blocking_fields")
-        defaultable_raw = raw.get("defaultable_fields")
-        questions = raw.get("questions")
+        # Compact JSON-mode responses commonly omit unused empty collections.
+        # Treat absence as empty while retaining strict validation whenever a
+        # blocking field is declared.
+        blocking_raw = raw.get("blocking_fields", [])
+        defaultable_raw = raw.get("defaultable_fields", [])
+        questions = raw.get("questions", {})
         if not isinstance(blocking_raw, list) or not isinstance(defaultable_raw, list):
             return None
         if not isinstance(questions, dict):

@@ -1006,10 +1006,16 @@ case "${1:-help}" in
         done
         # Also update ipc-service if running
         ipc_cid=$(compose ps -q ipc-service 2>/dev/null)
+        ipc_updated=false
         if [ -n "$ipc_cid" ]; then
             docker cp lixsearch/. "$ipc_cid":/app/lixsearch/
             docker cp skills/. "$ipc_cid":/app/skills/
             info "  Updated ipc-service"
+            ipc_updated=true
+        fi
+        if [ "$ipc_updated" = "true" ]; then
+            info "Restarting IPC service to load updated search workers..."
+            compose restart ipc-service
         fi
         info "Restarting $count app container(s)..."
         compose restart lixsearch-app

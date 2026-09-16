@@ -60,6 +60,15 @@ def test_incomplete_or_malformed_router_output_fails_open_without_fake_state():
     ).required is False
 
 
+def test_compact_complete_router_contract_is_valid_without_unused_arrays():
+    contract = (
+        '{"mode":"TOOLS","context":"STANDALONE",'
+        '"clarification":{"required":false}}'
+    )
+    assert has_decision_contract(contract) is True
+    assert parse_clarification_need(contract).required is False
+
+
 def test_pending_task_preserves_original_routing_for_post_resolution_execution():
     active, pending = create_pending_task(
         "Original task",
@@ -329,6 +338,38 @@ def test_generic_admission_fallback_resolves_next_turn_without_router(monkeypatc
     }
 
 
+def test_clarification_resolver_requests_json_mode(monkeypatch):
+    pipeline = importlib.import_module("pipeline.lixsearch")
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{"message": {"content": (
+                    '{"action":"resolve","values":{"required_subject":"databases"},'
+                    '"defaulted_fields":[],"question":"","replacement_request":""}'
+                )}}]
+            }
+
+    def resolve(_url, json, **_kwargs):
+        assert json["response_format"] == {"type": "json_object"}
+        return Response()
+
+    monkeypatch.setattr(pipeline.requests, "post", resolve)
+    resolution = asyncio.run(
+        pipeline._resolve_pending_clarification(
+            {"original_request": "Compare a subject"},
+            {"missing_fields": ["required_subject"]},
+            "databases",
+            {},
+        )
+    )
+    assert resolution.action == ResolutionAction.RESOLVE
+    assert resolution.values == {"required_subject": "databases"}
+
+
 def test_router_uses_first_valid_redundant_contract(monkeypatch):
     pipeline = importlib.import_module("pipeline.lixsearch")
 
@@ -351,6 +392,7 @@ def test_router_uses_first_valid_redundant_contract(monkeypatch):
             }
 
     def route(_url, json, **_kwargs):
+        assert json["response_format"] == {"type": "json_object"}
         if json["model"] == "router-a":
             raise TimeoutError("primary unavailable")
         return Response()
