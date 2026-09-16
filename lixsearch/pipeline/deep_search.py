@@ -29,6 +29,7 @@ from pipeline.utils import format_sse
 from sessions.conversation_cache import ConversationCacheManager
 from ragService.semanticCacheRedis import SemanticCacheRedis as SemanticCache
 from sessions.ledger import LedgerSessionContext
+from sessions.episodic_memory import request_memory_scope
 
 load_local_environment()
 
@@ -897,6 +898,24 @@ async def _run_deep_search_pipeline(
                     },
                 )
                 memoized_results["_assistant_response_saved"] = True
+            if core_service and session_id:
+                snapshots = memoized_results.get("artifact_snapshots") or []
+                try:
+                    await asyncio.wait_for(
+                        asyncio.to_thread(
+                            core_service.remember_episodes,
+                            request_memory_scope(session_id, namespace="search").filters(),
+                            ledger_request_id,
+                            request_intent or user_query,
+                            document_content,
+                            list(request_context.source_turn_ids if request_context else ()),
+                            list(unique_sources),
+                            [item.get("artifact_id") for item in snapshots if item.get("artifact_id")],
+                        ),
+                        timeout=max(2.0, EPISODIC_MEMORY_TIMEOUT_SECONDS * 4),
+                    )
+                except Exception as exc:
+                    logger.debug(f"[EpisodicMemory] Deep-search write skipped: {exc}")
     except Exception as e:
         logger.warning(f"[DeepSearch] Cache save failed: {e}")
 

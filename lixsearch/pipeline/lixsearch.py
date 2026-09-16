@@ -22,6 +22,7 @@ from sessions.clarification import (
 )
 from sessions.ledger import LedgerSessionContext
 from sessions.request_context import DeliverableKind, build_request_context
+from sessions.episodic_memory import continuation_episodic_context, request_memory_scope
 
 import os
 from commons.environment import load_local_environment
@@ -70,6 +71,47 @@ load_local_environment()
 
 MODEL = LLM_MODEL
 MODEL_FALLBACK = LLM_MODEL_FALLBACK
+
+
+async def _recall_session_episodes(core_service, scope, query: str) -> list[dict]:
+    if core_service is None or scope is None:
+        return []
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(
+                core_service.recall_episodes,
+                scope.filters(),
+                query,
+                EPISODIC_MEMORY_TOP_K,
+                EPISODIC_MEMORY_MAX_CHARS,
+            ),
+            timeout=EPISODIC_MEMORY_TIMEOUT_SECONDS,
+        )
+    except Exception as exc:
+        logger.debug(f"[EpisodicMemory] Recall skipped: {exc}")
+        return []
+
+
+async def _remember_session_episode(core_service, scope, episode_id, user_text, assistant_text,
+                                    source_turn_ids, evidence_ids, artifact_ids) -> None:
+    if core_service is None or scope is None or not assistant_text:
+        return
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                core_service.remember_episodes,
+                scope.filters(),
+                episode_id,
+                user_text,
+                assistant_text,
+                list(source_turn_ids),
+                list(evidence_ids),
+                list(artifact_ids),
+            ),
+            timeout=max(2.0, EPISODIC_MEMORY_TIMEOUT_SECONDS * 4),
+        )
+    except Exception as exc:
+        logger.debug(f"[EpisodicMemory] Write skipped: {exc}")
 
 
 _DECISION_INSTRUCTION = """Classify tool need, conversation dependence, and absent inputs. Never answer the request.
@@ -411,6 +453,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     session_lock_token = None
     ledger_request_id = event_id or uuid.uuid4().hex
     task_failed = False
+    episodic_recall_task = None
+    episodic_scope = None
 
     try:
         current_utc_time = datetime.now(timezone.utc)
@@ -427,6 +471,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "context_sufficient": False, "cache_hit": False, "cached_response": None,
             "session_id": session_id or "", "generated_images": [],
         }
+
+        if session_id and not is_ephemeral and core_service is not None:
+            episodic_scope = request_memory_scope(session_id, namespace="search")
+            episodic_recall_task = asyncio.create_task(
+                _recall_session_episodes(core_service, episodic_scope, original_user_query)
+            )
 
         # --- Session context (skip for ephemeral — no history to load or persist) ---
         previous_messages = []
@@ -597,6 +647,14 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
         if decision_task is not None:
             request_mode, context_mode, clarification = await decision_task
+
+        episodic_memories = []
+        if episodic_recall_task is not None:
+            if context_mode == "continuation":
+                episodic_memories = await episodic_recall_task
+            else:
+                episodic_recall_task.cancel()
+            episodic_recall_task = None
 
         _pdf_requested = any(
             keyword in original_user_query.lower()
@@ -769,6 +827,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             {"role": "system", "name": "elixposearch-agent-system",
              "content": system_instruction(rag_context, current_utc_time, is_detailed=is_detailed_mode, session_id=session_id, interaction_signals=interaction_signals, global_revelations=global_revelations)},
         ]
+        episodic_context = continuation_episodic_context(context_mode, episodic_memories)
+        if episodic_context:
+            messages.append({"role": "system", "content": episodic_context})
         direct_prompt = direct_system_instruction(
             current_utc_time, session_id=session_id, interaction_signals=interaction_signals,
             global_revelations=global_revelations, rag_context="",
@@ -1562,6 +1623,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         else:
             yield _error_msg
     finally:
+        if episodic_recall_task is not None:
+            episodic_recall_task.cancel()
         # Skip all persistence for ephemeral sessions — nothing to save
         if not is_ephemeral:
             if session_context and memoized_results.get("active_task") and not memoized_results.get("clarification_blocked") and not memoized_results.get("task_terminal"):
@@ -1595,6 +1658,24 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         )
                 except Exception:
                     pass
+
+            if (
+                memoized_results.get("final_response")
+                and not memoized_results.get("clarification_blocked")
+                and not task_failed
+            ):
+                request_context = memoized_results.get("request_context")
+                snapshots = memoized_results.get("artifact_snapshots") or []
+                await _remember_session_episode(
+                    core_service,
+                    episodic_scope,
+                    ledger_request_id,
+                    original_user_query,
+                    memoized_results["final_response"],
+                    request_context.source_turn_ids if request_context else (),
+                    memoized_results.get("collected_sources") or (),
+                    [item.get("artifact_id") for item in snapshots if item.get("artifact_id")],
+                )
 
             if session_id and semantic_cache is not None:
                 semantic_cache.save_for_request(session_id)

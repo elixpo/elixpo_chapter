@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import uuid
 from datetime import datetime
 from quart import request, jsonify
@@ -6,6 +7,7 @@ from sessions.main import get_session_manager
 from sessions.hybrid_conversation_cache import HybridConversationCache
 from pipeline.config import X_REQ_ID_SLICE_SIZE
 from app.utils import validate_session_id
+from sessions.episodic_memory import request_memory_scope
 
 logger = logging.getLogger("lixsearch-api")
 
@@ -114,6 +116,15 @@ async def delete_session(session_id: str):
         logger.info(f"[{request_id}] Deleting session: {session_id}")
         session_manager = get_session_manager()
         session_manager.cleanup_session(session_id)
+        try:
+            from ipcService.coreServiceManager import CoreServiceManager
+            manager = CoreServiceManager.get_instance()
+            scope = request_memory_scope(session_id, namespace="search")
+            await asyncio.to_thread(
+                manager.call, "core", "delete_episodes", scope.filters()
+            )
+        except Exception as exc:
+            logger.warning(f"[{request_id}] Episodic deletion skipped: {exc}")
 
         logger.info(f"[{request_id}] Session deleted: {session_id}")
 

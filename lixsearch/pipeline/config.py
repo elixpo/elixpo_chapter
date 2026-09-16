@@ -167,6 +167,17 @@ QDRANT_ON_DISK = os.getenv("QDRANT_ON_DISK", "true").lower() in {"1", "true", "y
 QDRANT_QUANTILE = float(os.getenv("QDRANT_QUANTILE", "0.99"))
 QDRANT_ALWAYS_RAM = os.getenv("QDRANT_ALWAYS_RAM", "true").lower() in {"1", "true", "yes"}
 QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", "30"))
+EPISODIC_MEMORY_TOP_K = max(1, min(int(os.getenv("EPISODIC_MEMORY_TOP_K", "4")), 12))
+EPISODIC_MEMORY_MAX_CHARS = max(256, min(int(os.getenv("EPISODIC_MEMORY_MAX_CHARS", "2000")), 8000))
+EPISODIC_MEMORY_TIMEOUT_SECONDS = max(
+    0.05, min(float(os.getenv("EPISODIC_MEMORY_TIMEOUT_SECONDS", "0.75")), 5.0)
+)
+EPISODIC_MEMORY_TTL_SECONDS = max(
+    3600, int(os.getenv("EPISODIC_MEMORY_TTL_SECONDS", str(30 * 86400)))
+)
+EPISODIC_MEMORY_MIN_SCORE = max(
+    0.0, min(float(os.getenv("EPISODIC_MEMORY_MIN_SCORE", "0.30")), 1.0)
+)
 
 VECTOR_DB_POOL_SIZE = 20
 VECTOR_DB_QUERY_TIMEOUT = 30
