@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 import time
 import threading
@@ -36,13 +37,22 @@ def _content_type_from_ext(ext: str) -> str:
     }.get(ext, "image/png")
 
 
-def store_image(image_id: str, data: bytes, content_type: str = "image/png") -> str | None:
+def store_image(
+    image_id: str, data: bytes, content_type: str = "image/png",
+    *, artifact_metadata: dict | None = None,
+) -> str | None:
 
-    capability = prepare_artifact_access(IMAGE_DIR, image_id)
+    capability = prepare_artifact_access(IMAGE_DIR, image_id, artifact_metadata)
     ext = _ext_from_content_type(content_type)
     path = os.path.join(IMAGE_DIR, f"{image_id}{ext}")
     with open(path, "wb") as f:
         f.write(data)
+    if artifact_metadata:
+        manifest = os.path.join(IMAGE_DIR, f"{image_id}.artifact.json")
+        temporary = f"{manifest}.{os.getpid()}.tmp"
+        with open(temporary, "w", encoding="utf-8") as handle:
+            json.dump(artifact_metadata, handle, sort_keys=True, separators=(",", ":"))
+        os.replace(temporary, manifest)
     logger.debug(f"[Image] Stored {image_id} ({len(data)} bytes, {content_type})")
     return capability
 

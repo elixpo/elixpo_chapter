@@ -251,7 +251,9 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
             if web_event:
                 yield web_event
             try:
-                image_url = await create_image_from_prompt(prompt)
+                image_url = await create_image_from_prompt(
+                    prompt, memory_scope=memoized_results.get("memory_scope"),
+                )
                 if "generated_images" not in memoized_results:
                     memoized_results["generated_images"] = []
                 memoized_results["generated_images"].append(image_url)

@@ -79,6 +79,10 @@ class FakePipeline:
 
     def zrem(self, *args): self.calls.append(("zrem", args)); return self
     def lpush(self, *args): self.calls.append(("lpush", args)); return self
+    def setex(self, *args): self.calls.append(("setex", args)); return self
+    def hset(self, *args): self.calls.append(("hset", args)); return self
+    def hdel(self, *args): self.calls.append(("hdel", args)); return self
+    def delete(self, *args): self.calls.append(("delete", args)); return self
     def execute(self):
         return [getattr(self.redis, name)(*args) for name, args in self.calls]
 
@@ -88,12 +92,16 @@ class FakeRedis:
         self.values = {}
         self.lists = {}
         self.zsets = {}
+        self.hashes = {}
         self.get_calls = 0
 
     def get(self, key): self.get_calls += 1; return self.values.get(key)
     def mget(self, keys): self.get_calls += 1; return [self.values.get(key) for key in keys]
     def setex(self, key, ttl, value): self.values[key] = value; return True
-    def delete(self, key): return int(self.values.pop(key, None) is not None)
+    def delete(self, *keys): return sum(int(self.values.pop(key, None) is not None) for key in keys)
+    def hset(self, key, field, value): self.hashes.setdefault(key, {})[field] = value; return 1
+    def hdel(self, key, *fields): return sum(int(self.hashes.setdefault(key, {}).pop(field, None) is not None) for field in fields)
+    def hgetall(self, key): return dict(self.hashes.get(key, {}))
     def lpush(self, key, value): self.lists.setdefault(key, []).insert(0, value); return 1
     def brpop(self, key, timeout):
         values = self.lists.setdefault(key, [])
@@ -150,7 +158,8 @@ class CapturingBackend:
     async def query(self, scope, *, at_time=None, limit=24): return []
 
 
-def test_failed_write_enters_retry_queue_without_raising():
+def test_failed_write_enters_retry_queue_without_raising(monkeypatch):
+    monkeypatch.setattr(graph_worker_module, "DOCTOR_APPROVAL_SECRET", "")
     redis = FakeRedis()
     client = GraphMemoryClient(redis, enabled=True)
     client.enqueue_approved(_fact(_scope(), "PostgreSQL", "2026-01-01T00:00:00Z"))

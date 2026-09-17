@@ -58,6 +58,7 @@ class ApprovedGraphFact:
     candidate_fingerprint: str | None = None
     approved_at: int | None = None
     approval_action: str | None = None
+    expires_at: int | None = None
 
     @classmethod
     def create(
@@ -79,6 +80,7 @@ class ApprovedGraphFact:
         candidate_fingerprint: str | None = None,
         approved_at: int | None = None,
         approval_action: str | None = None,
+        expires_at: int | None = None,
     ) -> "ApprovedGraphFact":
         subject_value = _clean(subject, field="subject", maximum=300)
         predicate_value = _clean(predicate, field="predicate", maximum=160).lower()
@@ -107,6 +109,7 @@ class ApprovedGraphFact:
             approved_at=int(approved_at) if approved_at is not None else None,
             approval_action=(str(approval_action).strip()[:32] or None)
                 if approval_action is not None else None,
+            expires_at=int(expires_at) if expires_at is not None else None,
         )
 
     @classmethod
@@ -156,6 +159,7 @@ class TemporalGraphFact:
     candidate_fingerprint: str | None = None
     approved_at: int | None = None
     approval_action: str | None = None
+    expires_at: int | None = None
     invalid_at: str | None = None
     superseded_by: str | None = None
     revoked: bool = False

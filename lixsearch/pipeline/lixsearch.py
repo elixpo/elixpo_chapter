@@ -485,14 +485,15 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "session_id": session_id or "", "generated_images": [],
         }
 
-        if session_id and not is_ephemeral and core_service is not None:
+        if session_id and not is_ephemeral:
             episodic_scope = request_memory_scope(session_id, namespace="search")
+            memoized_results["memory_scope"] = episodic_scope
+
+        if session_id and not is_ephemeral and core_service is not None:
             episodic_recall_task = asyncio.create_task(
                 _recall_session_episodes(core_service, episodic_scope, original_user_query)
             )
         if session_id and not is_ephemeral and GRAPH_MEMORY_ENABLED:
-            if episodic_scope is None:
-                episodic_scope = request_memory_scope(session_id, namespace="search")
             graph_recall_task = asyncio.create_task(_recall_cached_graph(episodic_scope))
 
         # --- Session context (skip for ephemeral — no history to load or persist) ---

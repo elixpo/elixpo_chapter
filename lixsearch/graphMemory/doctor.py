@@ -18,6 +18,7 @@ from pipeline.config import (
     DOCTOR_AUDIT_TTL_SECONDS,
     DOCTOR_CANDIDATE_TTL_SECONDS,
     GRAPH_MEMORY_RETRY_LIMIT,
+    GRAPH_MEMORY_FACT_TTL_SECONDS,
 )
 from sessions.episodic_memory import MemoryScope
 from .client import GraphMemoryClient
@@ -255,7 +256,10 @@ class DoctorPolicy:
         if status is DecisionStatus.APPROVED:
             payload = approval_payload(
                 candidate.fingerprint, candidate.memory_class, action, timestamp, fact_id,
-                candidate_claim(candidate, self.promotion_scope(candidate)),
+                candidate_claim(
+                    candidate, self.promotion_scope(candidate),
+                    expires_at=timestamp + GRAPH_MEMORY_FACT_TTL_SECONDS,
+                ),
             )
             signature = hmac.new(self.secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
         return DoctorDecision(
@@ -283,10 +287,13 @@ class DoctorPolicy:
             evidence_ids=candidate.evidence_ids, project_id=candidate.project_id,
             candidate_fingerprint=candidate.fingerprint, approved_at=decision.decided_at,
             approval_action=decision.action,
+            expires_at=decision.decided_at + GRAPH_MEMORY_FACT_TTL_SECONDS,
         )
 
 
-def candidate_claim(candidate: MemoryCandidate, scope: MemoryScope) -> dict[str, Any]:
+def candidate_claim(
+    candidate: MemoryCandidate, scope: MemoryScope, *, expires_at: int | None = None,
+) -> dict[str, Any]:
     return {
         "tenant_id": scope.tenant_id, "user_id": scope.user_id, "session_id": scope.session_id,
         "subject": candidate.subject, "predicate": candidate.predicate, "object": candidate.object,
@@ -294,6 +301,7 @@ def candidate_claim(candidate: MemoryCandidate, scope: MemoryScope) -> dict[str,
         "confidence": float(candidate.confidence), "memory_class": candidate.memory_class,
         "source": candidate.source, "evidence_ids": list(candidate.evidence_ids),
         "project_id": candidate.project_id,
+        "expires_at": expires_at,
     }
 
 
@@ -305,6 +313,7 @@ def fact_claim(fact: ApprovedGraphFact) -> dict[str, Any]:
         "confidence": float(fact.confidence), "memory_class": fact.memory_class,
         "source": fact.source, "evidence_ids": list(fact.evidence_ids),
         "project_id": fact.project_id,
+        "expires_at": fact.expires_at,
     }
 
 

@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from sessions.clarification import TaskStatus
 from sessions.request_context import RequestContext
+from sessions.episodic_memory import MemoryScope
 
 
 class ArtifactRejected(ValueError):
@@ -26,6 +27,9 @@ class ArtifactSnapshot:
     source_turn_ids: tuple[int, ...]
     evidence_ids: tuple[str, ...]
     request_id: str
+    tenant_id: str | None = None
+    user_id: str | None = None
+    session_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -76,6 +80,7 @@ def create_artifact_snapshot(
     source_turn_ids: tuple[int, ...] = (),
     evidence_ids: tuple[str, ...] = (),
     request_id: str = "",
+    memory_scope: MemoryScope | None = None,
 ) -> ArtifactSnapshot:
     context = request_context
     value = validate_artifact_boundary(
@@ -100,6 +105,9 @@ def create_artifact_snapshot(
             "content_hash": content_hash,
             "source_turn_ids": turns,
             "evidence_ids": evidence,
+            "tenant_id": memory_scope.tenant_id if memory_scope else None,
+            "user_id": memory_scope.user_id if memory_scope else None,
+            "session_id": memory_scope.session_id if memory_scope else None,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -116,4 +124,7 @@ def create_artifact_snapshot(
         source_turn_ids=turns,
         evidence_ids=evidence,
         request_id=origin_request,
+        tenant_id=memory_scope.tenant_id if memory_scope else None,
+        user_id=memory_scope.user_id if memory_scope else None,
+        session_id=memory_scope.session_id if memory_scope else None,
     )

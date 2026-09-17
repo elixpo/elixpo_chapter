@@ -37,6 +37,7 @@ FALKORDB_PASSWORD=replace_with_a_long_random_secret
 FALKORDB_DATABASE=oreolook_memory
 DOCTOR_APPROVAL_SECRET=replace_with_at_least_32_random_characters
 DOCTOR_ALLOW_GLOBAL=false
+GRAPH_MEMORY_FACT_TTL_SECONDS=31536000
 ```
 
 No extra LLM key is needed: approved
@@ -44,6 +45,9 @@ facts are written exactly as supplied, rather than being re-extracted by a model
 The existing Redis password remains in use for queues and neighborhood caches.
 `DOCTOR_APPROVAL_SECRET` HMAC-signs the complete promoted fact; keep it stable
 across replicas and do not expose it to request workers or clients.
+
+Retention, revocation, cascade deletion, and physical graph cleanup are handled
+by the internal Janitor. See [JANITOR_MEMORY.md](JANITOR_MEMORY.md).
 
 ## Deployment
 

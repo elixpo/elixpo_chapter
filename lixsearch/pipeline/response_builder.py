@@ -242,6 +242,7 @@ async def commit_pdf_artifact(
                 or ()
             ),
             request_id=str(memoized_results.get("ledger_request_id") or event_id or ""),
+            memory_scope=memoized_results.get("memory_scope"),
         )
     except ArtifactRejected as exc:
         memoized_results["pdf_export_blocked"] = str(exc)

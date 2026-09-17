@@ -40,7 +40,7 @@ async def _try_generate(prompt: str, model: str, seed: int, headers: dict, timeo
     return response.content, content_type
 
 
-async def create_image_from_prompt(prompt: str) -> str:
+async def create_image_from_prompt(prompt: str, memory_scope=None) -> str:
     seed = random.randint(0, 10000)
     image_id = str(uuid.uuid4())
     headers = pollinations_auth_headers(json_content=False)
@@ -52,7 +52,14 @@ async def create_image_from_prompt(prompt: str) -> str:
         try:
             image_bytes, content_type = await _try_generate(prompt, model, seed, headers)
             from app.gateways.image import store_image
-            capability = store_image(image_id, image_bytes, content_type)
+            metadata = {
+                "artifact_id": image_id,
+                "kind": "image",
+                **(memory_scope.filters() if memory_scope is not None else {}),
+            }
+            capability = store_image(
+                image_id, image_bytes, content_type, artifact_metadata=metadata,
+            )
             access = f"?access={quote(capability, safe='')}" if capability else ""
             url = f"{_BASE_URL}/api/image/{image_id}.png{access}"
             elapsed = time.perf_counter() - t0

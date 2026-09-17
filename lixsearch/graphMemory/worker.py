@@ -56,6 +56,23 @@ class GraphMemoryWorker:
                 scope = MemoryScope(**envelope["revoke"])
                 await self.backend.revoke_scope(scope, event_time=envelope.get("event_time"))
                 self.cache.clear_cached(scope)
+            elif "revoke_owner" in envelope:
+                owner = envelope["revoke_owner"]
+                tenant_id = str(owner["tenant_id"])
+                user_id = str(owner["user_id"])
+                session_id = owner.get("session_id")
+                await self.backend.revoke_owner(
+                    tenant_id, user_id, session_id=session_id,
+                    event_time=envelope.get("event_time"),
+                )
+                self.cache.clear_owner_cached(tenant_id, user_id, session_id=session_id)
+            elif "cleanup" in envelope:
+                cleanup = envelope["cleanup"]
+                removed = await self.backend.cleanup(
+                    now=int(cleanup["now"]),
+                    revoked_before=str(cleanup["revoked_before"]),
+                )
+                logger.info("Janitor purged %s graph facts", removed)
             else:
                 raise ValueError("unknown graph work item")
             return True

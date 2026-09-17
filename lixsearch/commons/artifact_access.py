@@ -16,7 +16,9 @@ def metadata_path(directory: str, artifact_id: str) -> str:
     return os.path.join(directory, f"{artifact_id}{_METADATA_SUFFIX}")
 
 
-def prepare_artifact_access(directory: str, artifact_id: str) -> str | None:
+def prepare_artifact_access(
+    directory: str, artifact_id: str, ownership: dict | None = None,
+) -> str | None:
     """Create a hashed download capability for delegated artifacts.
 
     Local/static-key artifacts retain the existing public-link behavior. The
@@ -30,6 +32,8 @@ def prepare_artifact_access(directory: str, artifact_id: str) -> str | None:
     metadata = {
         "owner": context.principal_id,
         "access_sha256": hashlib.sha256(capability.encode("utf-8")).hexdigest(),
+        **{key: value for key, value in (ownership or {}).items()
+           if key in {"tenant_id", "user_id", "session_id"} and value},
     }
     path = metadata_path(directory, artifact_id)
     temporary = f"{path}.{secrets.token_hex(4)}.tmp"

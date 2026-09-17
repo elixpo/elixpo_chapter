@@ -225,8 +225,15 @@ class EpisodicMemoryManager:
     def delete(self, scope: MemoryScope) -> None:
         self.vector_store.delete_episodes(filters=scope.filters())
 
-    def expire(self, now: int | None = None) -> None:
-        self.vector_store.delete_expired_episodes(int(now or time.time()))
+    def delete_owner(
+        self, tenant_id: str, user_id: str, *, session_id: str | None = None,
+    ) -> int:
+        return self.vector_store.delete_owned_episodes(
+            tenant_id=tenant_id, user_id=user_id, session_id=session_id,
+        )
+
+    def expire(self, now: int | None = None) -> int:
+        return self.vector_store.delete_expired_episodes(int(now or time.time()))
 
 
 def format_episodic_context(memories: Iterable[Mapping[str, Any]]) -> str:

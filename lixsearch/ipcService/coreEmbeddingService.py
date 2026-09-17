@@ -211,8 +211,15 @@ class CoreEmbeddingService:
     def delete_episodes(self, scope: Dict) -> None:
         self.episodic_memory.delete(self._memory_scope(scope))
 
-    def expire_episodes(self) -> None:
-        self.episodic_memory.expire()
+    def delete_owned_episodes(
+        self, tenant_id: str, user_id: str, session_id: str | None = None,
+    ) -> int:
+        return self.episodic_memory.delete_owner(
+            tenant_id, user_id, session_id=session_id,
+        )
+
+    def expire_episodes(self, now: int | None = None) -> int:
+        return self.episodic_memory.expire(now)
     
     def get_semantic_cache_stats(self) -> Dict:
         return self.semantic_cache.get_stats()
