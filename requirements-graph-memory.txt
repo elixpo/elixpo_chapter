@@ -1,0 +1,9 @@
+# Kept outside the application requirements so Graphiti does not enlarge every
+# API/IPC image. Only the dedicated graph worker installs this set.
+graphiti-core[falkordb]==0.30.2
+# Graphiti 0.30.2 imports the httpx 0.x module and is not yet compatible with
+# the OpenAI 3.x/httpx2 dependency split.
+openai>=1.91,<2
+httpx>=0.27,<1
+python-dotenv
+redis

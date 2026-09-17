@@ -59,6 +59,71 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ── Optional temporal graph memory ───────────────────────────────────
+  # Start with: docker compose --profile graph-memory up -d
+  falkordb:
+    profiles: ["graph-memory"]
+    image: falkordb/falkordb-server:v4.20.4-alpine
+    container_name: oreolook-falkordb
+    init: true
+    mem_limit: 1g
+    environment:
+      - REDIS_ARGS=--appendonly yes --dir /var/lib/falkordb/data --requirepass ${FALKORDB_PASSWORD:-changeme_graph_secret}
+      - FALKORDB_ARGS=THREAD_COUNT 2 CACHE_SIZE 50 TIMEOUT_MAX 60000
+    volumes:
+      - ./data/falkordb:/var/lib/falkordb/data
+    networks:
+      - elixpo-network
+    expose:
+      - "6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${FALKORDB_PASSWORD:-changeme_graph_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  graph-memory-worker:
+    profiles: ["graph-memory"]
+    build:
+      context: .
+      dockerfile: Dockerfile.graph-memory
+    container_name: oreolook-graph-memory
+    init: true
+    mem_limit: 512m
+    env_file:
+      - .env.local
+    environment:
+      - GRAPH_MEMORY_ENABLED=true
+      - GRAPH_MEMORY_BACKEND=graphiti
+      - GRAPH_MEMORY_REDIS_DB=${GRAPH_MEMORY_REDIS_DB:-5}
+      - REDIS_HOST=redis
+      - REDIS_PORT=9530
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme_redis_secret}
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-changeme_graph_secret}
+      - FALKORDB_DATABASE=${FALKORDB_DATABASE:-oreolook_memory}
+    networks:
+      - elixpo-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      falkordb:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # ── IPC Service — embeddings + Playwright search agents ──────────────
   ipc-service:
     build:

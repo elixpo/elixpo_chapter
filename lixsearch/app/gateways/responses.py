@@ -19,6 +19,8 @@ from pipeline.config import (
     EPISODIC_MEMORY_TOP_K,
 )
 from sessions.episodic_memory import format_episodic_context, request_memory_scope
+from graphMemory.client import GraphMemoryClient, format_graph_context
+from pipeline.config import GRAPH_MEMORY_ENABLED
 from agentRuntime.state import (
     ResponseStateStore,
     canonical_conversation_id,
@@ -204,6 +206,18 @@ async def _recall_durable(conversation_id: str, query: str) -> list[dict[str, st
         return []
 
 
+async def _recall_graph(conversation_id: str) -> list[dict[str, str]]:
+    if not GRAPH_MEMORY_ENABLED:
+        return []
+    try:
+        scope = request_memory_scope(conversation_id, namespace="responses")
+        facts = await asyncio.to_thread(GraphMemoryClient().get_cached, scope)
+        text = format_graph_context(facts)
+        return [{"role": "system", "content": text}] if text else []
+    except Exception:
+        return []
+
+
 async def _remember_turn(conversation_id: str, response_id: str, prompt: str, content: str) -> None:
     try:
         from ipcService.coreServiceManager import CoreServiceManager
@@ -234,10 +248,12 @@ async def _resolve_history(
 ) -> tuple[str, list[dict[str, str]]]:
     """Resolve authoritative Redis history while Qdrant recall runs in parallel."""
     recall_task = None
+    graph_task = None
     hinted_conversation = None
     if requested_conversation and not previous_response_id:
         hinted_conversation = canonical_conversation_id(requested_conversation)
         recall_task = asyncio.create_task(_recall_durable(hinted_conversation, query))
+        graph_task = asyncio.create_task(_recall_graph(hinted_conversation))
     try:
         conversation_id, stored_history = await asyncio.to_thread(
             state.resolve_context,
@@ -247,18 +263,25 @@ async def _resolve_history(
     except Exception:
         if recall_task:
             recall_task.cancel()
+        if graph_task:
+            graph_task.cancel()
         raise
     if stored_history:
         if recall_task:
             recall_task.cancel()
-        return conversation_id, list(stored_history) + request_history
+        graph = await graph_task if graph_task else await _recall_graph(conversation_id)
+        return conversation_id, graph + list(stored_history) + request_history
     if not requested_conversation:
         return conversation_id, request_history
     if recall_task and hinted_conversation == conversation_id:
         durable = await recall_task
     else:
         durable = await _recall_durable(conversation_id, query)
-    return conversation_id, durable + request_history
+    if graph_task and hinted_conversation == conversation_id:
+        graph = await graph_task
+    else:
+        graph = await _recall_graph(conversation_id)
+    return conversation_id, graph + durable + request_history
 
 
 def _sse(event: str, payload: dict[str, Any]) -> str:

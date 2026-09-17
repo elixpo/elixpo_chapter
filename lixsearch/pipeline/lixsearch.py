@@ -23,6 +23,7 @@ from sessions.clarification import (
 from sessions.ledger import LedgerSessionContext
 from sessions.request_context import DeliverableKind, build_request_context
 from sessions.episodic_memory import continuation_episodic_context, request_memory_scope
+from graphMemory.client import GraphMemoryClient, format_graph_context
 
 import os
 from commons.environment import load_local_environment
@@ -112,6 +113,17 @@ async def _remember_session_episode(core_service, scope, episode_id, user_text, 
         )
     except Exception as exc:
         logger.debug(f"[EpisodicMemory] Write skipped: {exc}")
+
+
+async def _recall_cached_graph(scope) -> list[dict]:
+    """One Redis GET only; graph traversal and writes stay off the request path."""
+    if scope is None or not GRAPH_MEMORY_ENABLED:
+        return []
+    try:
+        return await asyncio.to_thread(GraphMemoryClient().get_cached, scope)
+    except Exception as exc:
+        logger.debug(f"[GraphMemory] Cached neighborhood skipped: {exc}")
+        return []
 
 
 _DECISION_INSTRUCTION = """Classify tool need, conversation dependence, and absent inputs. Never answer the request.
@@ -454,6 +466,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     ledger_request_id = event_id or uuid.uuid4().hex
     task_failed = False
     episodic_recall_task = None
+    graph_recall_task = None
     episodic_scope = None
 
     try:
@@ -477,6 +490,10 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             episodic_recall_task = asyncio.create_task(
                 _recall_session_episodes(core_service, episodic_scope, original_user_query)
             )
+        if session_id and not is_ephemeral and GRAPH_MEMORY_ENABLED:
+            if episodic_scope is None:
+                episodic_scope = request_memory_scope(session_id, namespace="search")
+            graph_recall_task = asyncio.create_task(_recall_cached_graph(episodic_scope))
 
         # --- Session context (skip for ephemeral — no history to load or persist) ---
         previous_messages = []
@@ -649,12 +666,19 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             request_mode, context_mode, clarification = await decision_task
 
         episodic_memories = []
+        graph_memories = []
         if episodic_recall_task is not None:
             if context_mode == "continuation":
                 episodic_memories = await episodic_recall_task
             else:
                 episodic_recall_task.cancel()
             episodic_recall_task = None
+        if graph_recall_task is not None:
+            if context_mode == "continuation":
+                graph_memories = await graph_recall_task
+            else:
+                graph_recall_task.cancel()
+            graph_recall_task = None
 
         _pdf_requested = any(
             keyword in original_user_query.lower()
@@ -830,6 +854,9 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         episodic_context = continuation_episodic_context(context_mode, episodic_memories)
         if episodic_context:
             messages.append({"role": "system", "content": episodic_context})
+        graph_context = format_graph_context(graph_memories)
+        if graph_context:
+            messages.append({"role": "system", "content": graph_context})
         direct_prompt = direct_system_instruction(
             current_utc_time, session_id=session_id, interaction_signals=interaction_signals,
             global_revelations=global_revelations, rag_context="",
@@ -1625,6 +1652,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     finally:
         if episodic_recall_task is not None:
             episodic_recall_task.cancel()
+        if graph_recall_task is not None:
+            graph_recall_task.cancel()
         # Skip all persistence for ephemeral sessions — nothing to save
         if not is_ephemeral:
             if session_context and memoized_results.get("active_task") and not memoized_results.get("clarification_blocked") and not memoized_results.get("task_terminal"):
