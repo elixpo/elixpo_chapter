@@ -92,6 +92,24 @@ def test_self_contained_document_request_does_not_capture_unrelated_prior_answer
     assert context.source_turn_ids == (9,)
 
 
+def test_discourse_followup_reuses_the_latest_substantive_answer_generically():
+    context = build_request_context(
+        request_id="req-followup",
+        current_request="Ah, so should I do that?",
+        messages=[
+            {
+                "sequence": 4,
+                "role": "assistant",
+                "content": _answer(),
+            }
+        ],
+    )
+
+    assert context.referent_source is not None
+    assert context.referent_source.turn_id == 4
+    assert "Resolved referent source turn 4" in context.routing_excerpt()
+
+
 def test_exact_task_fields_become_typed_entities_constraints_and_missing_fields():
     context = build_request_context(
         request_id="req-fields",

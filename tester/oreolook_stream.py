@@ -26,7 +26,9 @@ TASK_RE = re.compile(r"<TASKS?>(.*?)</TASKS?>", re.IGNORECASE | re.DOTALL)
 def iter_sse_data(response: requests.Response) -> Iterator[str]:
     """Yield complete data payloads from an SSE response."""
     data_lines: list[str] = []
-    for raw_line in response.iter_lines(decode_unicode=True):
+    # Keep the manual harness honest: requests otherwise buffers up to 512
+    # bytes and can make a healthy SSE stream look like one delayed response.
+    for raw_line in response.iter_lines(chunk_size=1, decode_unicode=True):
         line = raw_line or ""
         if not line:
             if data_lines:

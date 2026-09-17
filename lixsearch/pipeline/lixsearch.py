@@ -41,6 +41,7 @@ from pipeline.helpers import (
     _evaluate_fetch_quality,
     sanitize_final_response,
     extract_leaked_tool_call,
+    looks_like_tool_intent,
     StreamingTagFilter,
 )
 from pipeline.synthesis import (
@@ -1004,6 +1005,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 artifact_requested=_pdf_requested,
             )
             _streamed_content = ""
+            _model_protocol_content = ""
 
             if _use_streaming:
                 assistant_message = None
@@ -1040,6 +1042,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                                         yield format_sse("RESPONSE", _buffered)
                                 assistant_message = _sdata
                                 assistant_message["content"] = _visible_streamed_content
+                        _model_protocol_content = _streamed_content
                         if assistant_message and (assistant_message.get("content") or assistant_message.get("tool_calls")):
                             break  # direct answer or structured tool call
                         logger.warning(f"Streaming model={_stream_model} returned empty, trying fallback")
@@ -1055,7 +1058,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 if assistant_message.get("tool_calls"):
                     _streamed_content = ""
                 else:
-                    _streamed_content = assistant_message.get("content", "")
+                    _streamed_content = _model_protocol_content or assistant_message.get("content", "")
             else:
                 # --- Non-streaming path: blocking call with keepalive + fallback ---
                 response_data = None
@@ -1097,6 +1100,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 assistant_message = choice.get("message") or choice.get("delta")
                 if not assistant_message:
                     break
+                _model_protocol_content = assistant_message.get("content", "")
 
             assistant_message.pop("reasoning_content", None)
             if not assistant_message.get("content"):
@@ -1107,6 +1111,30 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             if not tool_calls:
                 raw_content = assistant_message.get("content", "")
+
+                # A provider may serialize a desired function call as plain
+                # content even when this turn was admitted to the direct path.
+                # The streaming filter has withheld that protocol text; retry
+                # once through the structured tool path instead of displaying
+                # or guessing arguments from it.
+                if (
+                    not force_synthesis
+                    and looks_like_tool_intent(_model_protocol_content)
+                    and current_iteration < max_iterations
+                ):
+                    logger.warning(
+                        "[runtime] bare tool intent on direct path; rerouting through structured tools"
+                    )
+                    request_mode = "tools"
+                    assistant_message["content"] = "Processing..."
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            "Use the structured function-calling interface for the required action. "
+                            "Return only a function call, not a tool name or arguments as text."
+                        ),
+                    })
+                    continue
 
                 if force_synthesis and _pdf_requested:
                     raw_content = normalize_pdf_document(raw_content)

@@ -65,6 +65,11 @@ _REFERENTIAL_RE = re.compile(
     r"\b(?:it|that|this|those|these|above|previous|prior|same|result|answer|report)\b",
     re.IGNORECASE,
 )
+_CONTINUATION_CUE_RE = re.compile(
+    r"^\s*(?:(?:ah+|oh+|okay|ok|well|hmm+|yep|yes|no)[\s,!?.:-]*)*"
+    r"(?:so|then|also|and|but|what\s+about|how\s+about)\b",
+    re.IGNORECASE,
+)
 _INTERNAL_RE = re.compile(
     r"<(?:thinking|analysis|reasoning|TASK|function_calls|invoke|tool_call)\b|"
     r"\[ERROR\]|(?:^|\n)\s*(?:export_to_pdf|web_search|fetch_full_text)\s*\(",
@@ -144,7 +149,10 @@ def build_request_context(
         (_source_turn(message) for message in reversed(tuple(messages)) if _is_substantive_assistant_turn(message)),
         None,
     )
-    referential = bool(_REFERENTIAL_RE.search(current_request or ""))
+    referential = bool(
+        _REFERENTIAL_RE.search(current_request or "")
+        or _CONTINUATION_CUE_RE.search(current_request or "")
+    )
     # Bare transformation requests (for example, "export as PDF") are also
     # continuations even when they omit a pronoun entirely.
     word_count = len(re.findall(r"\b\w+\b", current_request or ""))
