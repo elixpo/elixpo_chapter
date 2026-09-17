@@ -7,7 +7,7 @@ import logging
 import os
 import time
 
-from pipeline.config import GRAPH_MEMORY_RETRY_LIMIT, create_redis_client
+from pipeline.config import DOCTOR_APPROVAL_SECRET, GRAPH_MEMORY_RETRY_LIMIT, create_redis_client
 from sessions.episodic_memory import MemoryScope
 from .backends import GraphitiFalkorBackend, SQLiteTemporalGraphBackend
 from .client import GraphMemoryClient
@@ -45,6 +45,10 @@ class GraphMemoryWorker:
         try:
             if "fact" in envelope:
                 fact = ApprovedGraphFact.from_dict(envelope["fact"])
+                if DOCTOR_APPROVAL_SECRET:
+                    from .doctor import verify_approved_fact
+                    if not verify_approved_fact(fact, DOCTOR_APPROVAL_SECRET):
+                        raise PermissionError("Doctor approval fingerprint mismatch")
                 await self.backend.upsert(fact)
                 facts = await self.backend.query(fact.scope, limit=24)
                 self.cache.set_cached(fact.scope, (item.to_dict() for item in facts))
@@ -55,6 +59,11 @@ class GraphMemoryWorker:
             else:
                 raise ValueError("unknown graph work item")
             return True
+        except (ValueError, PermissionError):
+            envelope["attempt"] = GRAPH_MEMORY_RETRY_LIMIT
+            self.redis.lpush(DEAD, json.dumps(envelope, separators=(",", ":")))
+            logger.warning("Rejected invalid graph work item")
+            return False
         except Exception:
             attempt = int(envelope.get("attempt", 0)) + 1
             envelope["attempt"] = attempt
@@ -94,8 +103,13 @@ async def main() -> None:
     backend = build_backend()
     redis_client = create_redis_client(db=int(os.getenv("GRAPH_MEMORY_REDIS_DB", "5")))
     worker = GraphMemoryWorker(backend, redis_client)
+    from .doctor import DoctorPolicy, DoctorWorker
+    doctor = DoctorWorker(
+        redis_client,
+        DoctorPolicy(graph_client=GraphMemoryClient(redis_client, enabled=True)),
+    )
     try:
-        await worker.run_forever()
+        await asyncio.gather(worker.run_forever(), doctor.run_forever())
     finally:
         await backend.close()
 

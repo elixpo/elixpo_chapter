@@ -120,7 +120,7 @@ async def _recall_cached_graph(scope) -> list[dict]:
     if scope is None or not GRAPH_MEMORY_ENABLED:
         return []
     try:
-        return await asyncio.to_thread(GraphMemoryClient().get_cached, scope)
+        return await asyncio.to_thread(GraphMemoryClient().get_cached_for_request, scope)
     except Exception as exc:
         logger.debug(f"[GraphMemory] Cached neighborhood skipped: {exc}")
         return []

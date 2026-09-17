@@ -9,6 +9,9 @@ from graphMemory.backends import GraphitiFalkorBackend, SQLiteTemporalGraphBacke
 from graphMemory.client import GraphMemoryClient, format_graph_context
 from graphMemory.models import ApprovedGraphFact
 from graphMemory.worker import GraphMemoryWorker, RETRIES
+from graphMemory.worker import DEAD as GRAPH_DEAD
+import graphMemory.worker as graph_worker_module
+from graphMemory.doctor import DoctorPolicy, MemoryCandidate, MemoryClass
 from sessions.episodic_memory import MemoryScope
 
 
@@ -88,6 +91,7 @@ class FakeRedis:
         self.get_calls = 0
 
     def get(self, key): self.get_calls += 1; return self.values.get(key)
+    def mget(self, keys): self.get_calls += 1; return [self.values.get(key) for key in keys]
     def setex(self, key, ttl, value): self.values[key] = value; return True
     def delete(self, key): return int(self.values.pop(key, None) is not None)
     def lpush(self, key, value): self.lists.setdefault(key, []).insert(0, value); return 1
@@ -120,8 +124,29 @@ def test_disabled_mode_is_a_clean_noop_and_cache_is_one_fast_lookup():
     assert "PostgreSQL" in format_graph_context(facts)
 
 
+def test_request_cache_combines_scopes_in_one_round_trip():
+    redis = FakeRedis()
+    client = GraphMemoryClient(redis, enabled=True)
+    session = _scope()
+    user = MemoryScope(session.tenant_id, session.user_id, "user:*")
+    global_scope = MemoryScope(session.tenant_id, "global", "global:*")
+    client.set_cached(session, [{"fact_id": "s", "subject": "s", "predicate": "is", "object": "session"}])
+    client.set_cached(user, [{"fact_id": "u", "subject": "u", "predicate": "is", "object": "user"}])
+    client.set_cached(global_scope, [{"fact_id": "g", "subject": "g", "predicate": "is", "object": "global"}])
+    redis.get_calls = 0
+    facts = client.get_cached_for_request(session)
+    assert [fact["fact_id"] for fact in facts] == ["s", "u", "g"]
+    assert redis.get_calls == 1
+
+
 class FailingBackend:
     async def upsert(self, fact): raise RuntimeError("offline")
+    async def query(self, scope, *, at_time=None, limit=24): return []
+
+
+class CapturingBackend:
+    def __init__(self): self.facts = []
+    async def upsert(self, fact): self.facts.append(fact)
     async def query(self, scope, *, at_time=None, limit=24): return []
 
 
@@ -134,6 +159,34 @@ def test_failed_write_enters_retry_queue_without_raising():
     assert len(redis.zsets[RETRIES]) == 1
     envelope = json.loads(next(iter(redis.zsets[RETRIES])))
     assert envelope["attempt"] == 1
+
+
+def test_graph_worker_verifies_doctor_signature_before_persistence(monkeypatch):
+    secret = "graph-worker-test-secret-with-32-plus-characters"
+    redis = FakeRedis()
+    client = GraphMemoryClient(redis, enabled=True)
+    policy = DoctorPolicy(secret=secret, graph_client=client)
+    candidate = MemoryCandidate.create(
+        scope=_scope(), subject="database", predicate="preferred", object="PostgreSQL",
+        memory_class=MemoryClass.SESSION, source="turn:1", source_turn="1",
+        evidence_ids=("evidence-1",), confidence=.9,
+        event_time="2026-01-01T00:00:00Z",
+    )
+    decision = policy.evaluate(candidate)
+    fact = policy.approved_fact(candidate, decision)
+    monkeypatch.setattr(graph_worker_module, "DOCTOR_APPROVAL_SECRET", secret)
+
+    client.enqueue_approved(fact)
+    backend = CapturingBackend()
+    assert asyncio.run(GraphMemoryWorker(backend, redis).run_once(timeout=0)) is True
+    assert [item.fact_id for item in backend.facts] == [fact.fact_id]
+
+    tampered = fact.to_dict()
+    tampered["object"] = "tampered"
+    redis.lpush("oreolook:graph:v1:writes", json.dumps({"attempt": 0, "fact": tampered}))
+    assert asyncio.run(GraphMemoryWorker(backend, redis).run_once(timeout=0)) is False
+    assert len(backend.facts) == 1
+    assert len(redis.lists[GRAPH_DEAD]) == 1
 
 
 class FakeGraphitiDriver:

@@ -51,6 +51,13 @@ class ApprovedGraphFact:
     approval_fingerprint: str
     approved: bool = True
     schema: str = "oreolook-approved-graph-fact-v1"
+    memory_class: str = "session"
+    source: str = "internal"
+    evidence_ids: tuple[str, ...] = ()
+    project_id: str | None = None
+    candidate_fingerprint: str | None = None
+    approved_at: int | None = None
+    approval_action: str | None = None
 
     @classmethod
     def create(
@@ -65,6 +72,13 @@ class ApprovedGraphFact:
         approval_fingerprint: str,
         event_time: datetime | str | None = None,
         fact_id: str | None = None,
+        memory_class: str = "session",
+        source: str = "internal",
+        evidence_ids: tuple[str, ...] = (),
+        project_id: str | None = None,
+        candidate_fingerprint: str | None = None,
+        approved_at: int | None = None,
+        approval_action: str | None = None,
     ) -> "ApprovedGraphFact":
         subject_value = _clean(subject, field="subject", maximum=300)
         predicate_value = _clean(predicate, field="predicate", maximum=160).lower()
@@ -83,13 +97,26 @@ class ApprovedGraphFact:
             subject=subject_value, predicate=predicate_value, object=object_value,
             event_time=event, ingestion_time=_utc_iso(None), source_turn=source_value,
             confidence=score, approval_fingerprint=fingerprint,
+            memory_class=_clean(memory_class, field="memory_class", maximum=32).lower(),
+            source=_clean(source, field="source", maximum=240),
+            evidence_ids=tuple(dict.fromkeys(_clean(item, field="evidence_id", maximum=240)
+                                             for item in evidence_ids)),
+            project_id=(str(project_id).strip()[:160] or None) if project_id is not None else None,
+            candidate_fingerprint=(str(candidate_fingerprint).strip() or None)
+                if candidate_fingerprint is not None else None,
+            approved_at=int(approved_at) if approved_at is not None else None,
+            approval_action=(str(approval_action).strip()[:32] or None)
+                if approval_action is not None else None,
         )
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "ApprovedGraphFact":
         if value.get("approved") is not True:
             raise ValueError("graph facts require explicit Doctor approval")
-        result = cls(**{key: value[key] for key in cls.__dataclass_fields__ if key in value})
+        fields = {key: value[key] for key in cls.__dataclass_fields__ if key in value}
+        if "evidence_ids" in fields:
+            fields["evidence_ids"] = tuple(fields["evidence_ids"] or ())
+        result = cls(**fields)
         if not result.approval_fingerprint:
             raise ValueError("approval_fingerprint is required")
         if not 0.0 <= float(result.confidence) <= 1.0:
@@ -122,6 +149,13 @@ class TemporalGraphFact:
     source_turn: str
     confidence: float
     approval_fingerprint: str
+    memory_class: str = "session"
+    source: str = "internal"
+    evidence_ids: tuple[str, ...] = ()
+    project_id: str | None = None
+    candidate_fingerprint: str | None = None
+    approved_at: int | None = None
+    approval_action: str | None = None
     invalid_at: str | None = None
     superseded_by: str | None = None
     revoked: bool = False

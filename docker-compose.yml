@@ -103,6 +103,8 @@ services:
       - GRAPH_MEMORY_ENABLED=true
       - GRAPH_MEMORY_BACKEND=graphiti
       - GRAPH_MEMORY_REDIS_DB=${GRAPH_MEMORY_REDIS_DB:-5}
+      - DOCTOR_APPROVAL_SECRET=${DOCTOR_APPROVAL_SECRET}
+      - DOCTOR_ALLOW_GLOBAL=${DOCTOR_ALLOW_GLOBAL:-false}
       - REDIS_HOST=redis
       - REDIS_PORT=9530
       - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme_redis_secret}
@@ -139,6 +141,7 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - APP_MODE=ipc
+      - DOCTOR_APPROVAL_SECRET=
       - MODEL_CACHE_DIR=/app/data/models
       - HF_HOME=/app/data/models
       - SENTENCE_TRANSFORMERS_HOME=/app/data/models
@@ -239,6 +242,7 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - APP_MODE=worker
+      - DOCTOR_APPROVAL_SECRET=
       - CORE_SERVICE_BACKEND=ipc
       - LOG_LEVEL=INFO
       - REDIS_HOST=redis
@@ -320,6 +324,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - APP_MODE=monitor
+      - DOCTOR_APPROVAL_SECRET=
       - MONITOR_PORT=9520
       - IPC_HOST=ipc-service
       - IPC_PORT=9510

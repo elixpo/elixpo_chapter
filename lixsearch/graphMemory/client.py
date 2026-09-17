@@ -42,6 +42,37 @@ class GraphMemoryClient:
             return []
         return [item for item in values if isinstance(item, dict)][:GRAPH_MEMORY_MAX_ITEMS]
 
+    def get_cached_for_request(self, scope: MemoryScope) -> list[dict]:
+        """Read session, user, and global neighborhoods in one Redis round trip."""
+        if not self.enabled:
+            return []
+        scopes = (
+            scope,
+            MemoryScope(scope.tenant_id, scope.user_id, "user:*"),
+            MemoryScope(scope.tenant_id, "global", "global:*"),
+        )
+        raw_values = self._redis().mget([self.cache_key(item) for item in scopes])
+        accepted: list[dict] = []
+        seen: set[str] = set()
+        for raw in raw_values:
+            if not raw:
+                continue
+            try:
+                values = json.loads(raw.decode() if isinstance(raw, bytes) else raw)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            for item in values if isinstance(values, list) else ():
+                if not isinstance(item, dict):
+                    continue
+                identity = str(item.get("fact_id") or json.dumps(item, sort_keys=True))
+                if identity in seen:
+                    continue
+                accepted.append(item)
+                seen.add(identity)
+                if len(accepted) >= GRAPH_MEMORY_MAX_ITEMS:
+                    return accepted
+        return accepted
+
     def set_cached(self, scope: MemoryScope, facts: Iterable[Mapping]) -> None:
         values = [dict(item) for item in facts][:24]
         self._redis().setex(

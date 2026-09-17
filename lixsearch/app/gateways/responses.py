@@ -211,7 +211,7 @@ async def _recall_graph(conversation_id: str) -> list[dict[str, str]]:
         return []
     try:
         scope = request_memory_scope(conversation_id, namespace="responses")
-        facts = await asyncio.to_thread(GraphMemoryClient().get_cached, scope)
+        facts = await asyncio.to_thread(GraphMemoryClient().get_cached_for_request, scope)
         text = format_graph_context(facts)
         return [{"role": "system", "content": text}] if text else []
     except Exception:

@@ -6,6 +6,7 @@ already approved, so an extraction LLM would be both lossy and wasteful.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import json
 import sqlite3
 from typing import Any
 
@@ -46,10 +47,25 @@ class SQLiteTemporalGraphBackend(TemporalGraphBackend):
               event_time TEXT NOT NULL, ingestion_time TEXT NOT NULL,
               source_turn TEXT NOT NULL, confidence REAL NOT NULL,
               approval_fingerprint TEXT NOT NULL, invalid_at TEXT,
-              superseded_by TEXT, revoked INTEGER NOT NULL DEFAULT 0
+              superseded_by TEXT, revoked INTEGER NOT NULL DEFAULT 0,
+              memory_class TEXT NOT NULL DEFAULT 'session', source TEXT NOT NULL DEFAULT 'internal',
+              evidence_json TEXT NOT NULL DEFAULT '[]', project_id TEXT,
+              candidate_fingerprint TEXT, approved_at INTEGER, approval_action TEXT
             )
             """
         )
+        for column, definition in (
+            ("memory_class", "TEXT NOT NULL DEFAULT 'session'"),
+            ("source", "TEXT NOT NULL DEFAULT 'internal'"),
+            ("evidence_json", "TEXT NOT NULL DEFAULT '[]'"),
+            ("project_id", "TEXT"),
+            ("candidate_fingerprint", "TEXT"),
+            ("approved_at", "INTEGER"),
+            ("approval_action", "TEXT"),
+        ):
+            existing = {row[1] for row in self.connection.execute("PRAGMA table_info(temporal_facts)")}
+            if column not in existing:
+                self.connection.execute(f"ALTER TABLE temporal_facts ADD COLUMN {column} {definition}")
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS temporal_scope_idx ON temporal_facts(scope_id, event_time, invalid_at)"
         )
@@ -70,13 +86,16 @@ class SQLiteTemporalGraphBackend(TemporalGraphBackend):
                 INSERT OR IGNORE INTO temporal_facts (
                   fact_id, scope_id, tenant_id, user_id, session_id, subject, predicate,
                   object_value, event_time, ingestion_time, source_turn, confidence,
-                  approval_fingerprint, revoked
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                  approval_fingerprint, revoked, memory_class, source, evidence_json, project_id,
+                  candidate_fingerprint, approved_at, approval_action
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (fact.fact_id, fact.scope_id, fact.tenant_id, fact.user_id, fact.session_id,
                  fact.subject, fact.predicate, fact.object, fact.event_time,
                  fact.ingestion_time, fact.source_turn, fact.confidence,
-                 fact.approval_fingerprint),
+                 fact.approval_fingerprint, fact.memory_class, fact.source,
+                 json.dumps(fact.evidence_ids), fact.project_id,
+                 fact.candidate_fingerprint, fact.approved_at, fact.approval_action),
             )
 
     async def query(
@@ -144,6 +163,10 @@ class GraphitiFalkorBackend(TemporalGraphBackend):
                 fact.event_time = $event_time, fact.ingestion_time = $ingestion_time,
                 fact.source_turn = $source_turn, fact.confidence = $confidence,
                 fact.approval_fingerprint = $approval_fingerprint,
+                fact.memory_class = $memory_class, fact.source = $source,
+                fact.evidence_json = $evidence_json, fact.project_id = $project_id,
+                fact.candidate_fingerprint = $candidate_fingerprint,
+                fact.approved_at = $approved_at, fact.approval_action = $approval_action,
                 fact.revoked = false
             """,
             scope_id=fact.scope_id, fact_id=fact.fact_id, tenant_id=fact.tenant_id,
@@ -151,6 +174,10 @@ class GraphitiFalkorBackend(TemporalGraphBackend):
             predicate=fact.predicate, object=fact.object, event_time=fact.event_time,
             ingestion_time=fact.ingestion_time, source_turn=fact.source_turn,
             confidence=float(fact.confidence), approval_fingerprint=fact.approval_fingerprint,
+            memory_class=fact.memory_class, source=fact.source,
+            evidence_json=json.dumps(fact.evidence_ids), project_id=fact.project_id,
+            candidate_fingerprint=fact.candidate_fingerprint, approved_at=fact.approved_at,
+            approval_action=fact.approval_action,
         )
 
     async def query(
@@ -168,6 +195,10 @@ class GraphitiFalkorBackend(TemporalGraphBackend):
               fact.ingestion_time AS ingestion_time, fact.source_turn AS source_turn,
               fact.confidence AS confidence,
               fact.approval_fingerprint AS approval_fingerprint,
+              fact.memory_class AS memory_class, fact.source AS source,
+              fact.evidence_json AS evidence_json, fact.project_id AS project_id,
+              fact.candidate_fingerprint AS candidate_fingerprint,
+              fact.approved_at AS approved_at, fact.approval_action AS approval_action,
               fact.invalid_at AS invalid_at, fact.superseded_by AS superseded_by,
               fact.revoked AS revoked
             ORDER BY fact.confidence DESC, fact.event_time DESC LIMIT $limit
@@ -201,6 +232,14 @@ def _row_to_fact(row: dict[str, Any]) -> TemporalGraphFact:
         event_time=str(row["event_time"]), ingestion_time=str(row["ingestion_time"]),
         source_turn=str(row["source_turn"]), confidence=float(row["confidence"]),
         approval_fingerprint=str(row["approval_fingerprint"]),
+        memory_class=str(row.get("memory_class") or "session"),
+        source=str(row.get("source") or "internal"),
+        evidence_ids=tuple(json.loads(row.get("evidence_json") or "[]")),
+        project_id=str(row["project_id"]) if row.get("project_id") else None,
+        candidate_fingerprint=(str(row["candidate_fingerprint"])
+                               if row.get("candidate_fingerprint") else None),
+        approved_at=int(row["approved_at"]) if row.get("approved_at") is not None else None,
+        approval_action=str(row["approval_action"]) if row.get("approval_action") else None,
         invalid_at=str(row["invalid_at"]) if row.get("invalid_at") else None,
         superseded_by=str(row["superseded_by"]) if row.get("superseded_by") else None,
         revoked=bool(row.get("revoked", False)),
