@@ -3,9 +3,15 @@
 <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #6391F8;"> <img src="./public/images/icon.png" height="48px" width="48px" alt="OreoLook icon"> OreoLook </h1>
 
 **A curious, open-source AI search scout with real-time web research, RAG, and an OpenAI-compatible API.**
+
+[![Try OreoLook on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Try%20OreoLook-Live%20Space-FFD21E?style=for-the-badge)](https://huggingface.co/spaces/Elixpo/OreoLook)
+[![Research Evaluations](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Research%20Evals-FF9D00?style=for-the-badge)](https://huggingface.co/datasets/p-research/oreolook-research-evals)
+[![arXiv Paper](https://img.shields.io/badge/arXiv-2609.05463-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2609.05463)
+[![Hugging Face Collection](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-OreoLook-3B82F6?style=for-the-badge)](https://huggingface.co/collections/p-research/oreolook-ai-search-with-receipts-6aac116611ba981a1b8f31fe)
+
 <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
 
-[![Pollinations Attribute](https://img.shields.io/badge/Built%20with-Pollinations-8a2be2?style=for-the-badge)](https://img.shields.io/badge/Built%20with-Pollinations-8a2be2?style=for-the-badge)
+[![Built with Pollinations](https://img.shields.io/badge/Built%20with-Pollinations-8A2BE2?style=for-the-badge)](https://pollinations.ai)
 </div>
 
 <hr>
@@ -19,10 +25,10 @@
 [![Playwright](https://img.shields.io/badge/Playwright-Search%20Agents-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Cloudflare Pages](https://img.shields.io/badge/Frontend-Cloudflare%20Pages-F38020.svg?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com/)
 
-[![GitHub stars](https://img.shields.io/github/stars/pollinations/lixSearch?style=social)](https://github.com/pollinations/lixSearch/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/pollinations/lixSearch?style=social)](https://github.com/pollinations/lixSearch/network)
-[![GitHub issues](https://img.shields.io/github/issues/pollinations/lixSearch)](https://github.com/pollinations/lixSearch/issues)
-[![GitHub last commit](https://img.shields.io/github/last-commit/pollinations/lixSearch)](https://github.com/pollinations/lixSearch/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/pollinations/search.elixpo?style=social)](https://github.com/pollinations/search.elixpo/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/pollinations/search.elixpo?style=social)](https://github.com/pollinations/search.elixpo/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/pollinations/search.elixpo)](https://github.com/pollinations/search.elixpo/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/pollinations/search.elixpo)](https://github.com/pollinations/search.elixpo/commits/main)
 
 <br/>
 
