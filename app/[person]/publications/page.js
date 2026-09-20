@@ -62,10 +62,31 @@ export default async function PublicationsPage({ params }) {
               key={index}
               className="relative min-h-[50px] sm:min-h-[60px] w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-t-2 border-b-2 border-[#111] px-3 sm:px-6 py-2 sm:py-3 gap-2 sm:gap-0"
             >
-              <div className="flex-1 flex items-center overflow-hidden">
-                <p className="paperTitle font-extrabold text-sm sm:text-lg md:text-xl lg:text-2xl text-left tracking-[1px] sm:tracking-[2px] sm:truncate">
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <p className="paperTitle font-extrabold text-sm sm:text-lg md:text-xl lg:text-2xl text-left tracking-[1px] sm:tracking-[2px]">
                   {pub.title}
                 </p>
+                {pub.authors && (
+                  <p className="mt-1 text-xs sm:text-sm text-[#555]">{pub.authors}</p>
+                )}
+                {pub.status && (
+                  <p className="mt-1 text-xs sm:text-sm text-[#777]">{pub.status}</p>
+                )}
+                {pub.links?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    {pub.links.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs sm:text-sm font-bold text-[#B63B12] underline underline-offset-4"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex flex-row gap-2 sm:gap-3 items-center flex-shrink-0">
                 <p className="paperDate text-[#222] text-sm sm:text-lg md:text-xl font-bold whitespace-nowrap">

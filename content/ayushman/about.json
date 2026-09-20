@@ -2,21 +2,21 @@
   "intro": {
     "heading": "AYUSHMAN",
     "subheading": "ABOUT!",
-    "description": "Elixpo is a platform dedicated to exploring the intersection of technology and creativity, offering insights into innovative projects and research. Alongside I am an Ex-Web Dev Associate @GDG JISU | DevOps Engineer @pollinations | Excellence SOF NCO 19' | 3rd, 2nd SOF NCO 14' 18' | LSA exe.BIT Runners 20' | Techverse2.0 & 3.0 Winner | Mod Dev @modrinth. More about me, as you scroll down this page! Thanks for visiting my portfolio!",
+    "description": "I am an open-source maintainer and platform engineer from Kolkata. At Pollinations.ai, I work on contributor systems, automation, release workflows, application onboarding, and developer tooling. I also build the Elixpo project ecosystem, co-author systems research, organise developer communities, and turn what I learn into talks and practical documentation.",
     "portraitImage": "/assets/ayushman/about/ptr-11.webp"
   },
   "fancySection": {
-    "banner": "YES! WE DID IT!",
-    "subtitle": "Collabs & Meets!",
-    "content": "Elixpo had kicked off as a collaborative initiative to build projects and make a micro-system with my peers during my college years! So far we have done 4 Major Projects under the series which are all deployed and available for public use being open sourced! I have",
+    "banner": "BUILD. DOCUMENT. SHARE.",
+    "subtitle": "Systems & Communities",
+    "content": "My work moves between engineering and community practice. I have maintained infrastructure for a large open-source AI platform, built the caching architecture behind OreoLook, led a 21-event GDG campus season, helped establish OWASP JIS University, and spoken about maintainership and contributor systems. The common thread is making technical work easier for other people to understand, use, and continue.",
     "highlights": [
-      "Won 5 Hackathons",
-      "Google Developers Group, IN",
-      "DevOps Engineer"
+      "Maintainer at Pollinations.ai",
+      "Co-authored an arXiv systems preprint",
+      "GitHub and community speaker"
     ],
-    "contactNote": "I am always looking for new opportunities to collaborate and learn from others, so feel free to reach out to me",
-    "shoutouts": ["Vivek Yadav", "Anwesha Chakraborty"],
-    "shoutoutText": "for being with me throughout the journey of the development in Elixpo Series! Thanking you all for visiting my portfolio and I hope you find it interesting and informative!"
+    "contactNote": "I am open to conversations about platform engineering, open-source maintainership, developer relations, research, and technical speaking.",
+    "shoutouts": ["Vivek Yadav", "Anwesha Chakraborty", "Nihal Gazi"],
+    "shoutoutText": "for building, reviewing, researching, and learning alongside me across Elixpo and OreoLook."
   },
   "images": {
     "gallery": [
