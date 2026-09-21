@@ -45,9 +45,22 @@ function normalizeWebUrl(value: string): string | null {
   }
 }
 
+function qrFilename(value: string): string {
+  const url = new URL(value);
+  const source = `${url.hostname.replace(/^www\./i, '')}${url.pathname === '/' ? '' : `-${url.pathname}`}`;
+  const slug = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 72)
+    .replace(/-$/g, '');
+  return `lixrl-qr-${slug || 'link'}`;
+}
+
 export default function QrGenerator() {
   const [destination, setDestination] = useState('');
   const [qrData, setQrData] = useState<string | null>(null);
+  const [generatedFor, setGeneratedFor] = useState<string | null>(null);
   const [presetId, setPresetId] = useState(DEFAULT_PRESET_ID);
   const [logoUrl, setLogoUrl] = useState('');
   const [trackScans, setTrackScans] = useState(false);
@@ -135,6 +148,7 @@ export default function QrGenerator() {
     }
 
     if (!trackScans) {
+      setGeneratedFor(normalized);
       setQrData(normalized);
       return;
     }
@@ -160,6 +174,7 @@ export default function QrGenerator() {
       }
       const result = data as TrackedResult;
       setTrackedResult(result);
+      setGeneratedFor(normalized);
       setQrData(result.short_url);
     } catch {
       setError('Network error while creating the tracked QR code.');
@@ -335,7 +350,7 @@ export default function QrGenerator() {
                 ref={qrRef}
                 options={options}
                 display={260}
-                filename="lixrl-qr-code"
+                filename={qrFilename(generatedFor || qrData)}
                 onError={setError}
               />
             </div>
