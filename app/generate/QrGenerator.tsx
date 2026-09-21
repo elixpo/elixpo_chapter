@@ -30,7 +30,14 @@ const QR_SIZE = 1024;
 
 function normalizeWebUrl(value: string): string | null {
   try {
-    const parsed = new URL(value.trim());
+    const input = value.trim();
+    if (!input) return null;
+    const hasWebScheme = /^https?:\/\//i.test(input);
+    const hasOtherScheme = /^[a-z][a-z\d+.-]*:/i.test(input)
+      && !/^[a-z\d.-]+:\d+(?:[/?#]|$)/i.test(input);
+    if (!hasWebScheme && hasOtherScheme) return null;
+    const withScheme = hasWebScheme ? input : `https://${input}`;
+    const parsed = new URL(withScheme);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
     return parsed.toString();
   } catch {
@@ -38,9 +45,22 @@ function normalizeWebUrl(value: string): string | null {
   }
 }
 
+function qrFilename(value: string): string {
+  const url = new URL(value);
+  const source = `${url.hostname.replace(/^www\./i, '')}${url.pathname === '/' ? '' : `-${url.pathname}`}`;
+  const slug = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 72)
+    .replace(/-$/g, '');
+  return `lixrl-qr-${slug || 'link'}`;
+}
+
 export default function QrGenerator() {
   const [destination, setDestination] = useState('');
   const [qrData, setQrData] = useState<string | null>(null);
+  const [generatedFor, setGeneratedFor] = useState<string | null>(null);
   const [presetId, setPresetId] = useState(DEFAULT_PRESET_ID);
   const [logoUrl, setLogoUrl] = useState('');
   const [trackScans, setTrackScans] = useState(false);
@@ -113,17 +133,22 @@ export default function QrGenerator() {
     setImageCopied(false);
     setTrackedResult(null);
 
-    const normalized = normalizeWebUrl(destination);
+    // Read the submitted field: browser autofill may update the DOM without
+    // firing the React change event that keeps destination state in sync.
+    const submitted = new FormData(event.currentTarget).get('destination');
+    const normalized = normalizeWebUrl(typeof submitted === 'string' ? submitted : destination);
     if (!normalized) {
-      setError('Enter a complete link beginning with http:// or https://.');
+      setError('Paste a valid website URL, such as example.com or https://example.com/page.');
       return;
     }
+    setDestination(normalized);
     if (logoUrl && !normalizeWebUrl(logoUrl)) {
       setError('The logo must be a public http(s) image URL.');
       return;
     }
 
     if (!trackScans) {
+      setGeneratedFor(normalized);
       setQrData(normalized);
       return;
     }
@@ -149,6 +174,7 @@ export default function QrGenerator() {
       }
       const result = data as TrackedResult;
       setTrackedResult(result);
+      setGeneratedFor(normalized);
       setQrData(result.short_url);
     } catch {
       setError('Network error while creating the tracked QR code.');
@@ -190,8 +216,12 @@ export default function QrGenerator() {
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <input
             id="qr-destination"
-            type="url"
+            name="destination"
+            type="text"
             inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             required
             value={destination}
             onChange={(event) => setDestination(event.target.value)}
@@ -320,7 +350,7 @@ export default function QrGenerator() {
                 ref={qrRef}
                 options={options}
                 display={260}
-                filename="lixrl-qr-code"
+                filename={qrFilename(generatedFor || qrData)}
                 onError={setError}
               />
             </div>
