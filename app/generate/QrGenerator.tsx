@@ -126,7 +126,7 @@ export default function QrGenerator() {
     [logoUrl, paid, presetId, qrData],
   );
 
-  const generate = async (event: React.FormEvent) => {
+  const generate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
     setCopied(false);
