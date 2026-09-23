@@ -190,6 +190,18 @@ export default function useCollaboration(roomId) {
           await applyScenePayload(msg.payload)
           break
 
+        case 'agent-op':
+          if (msg.serverSeq && msg.serverSeq <= lastServerSeqRef.current) break
+          lastServerSeqRef.current = msg.serverSeq || lastServerSeqRef.current
+          await applyScenePayload(msg.payload)
+          if (Number.isInteger(msg.revision)) {
+            window.__cloudSceneRevisionSession = roomId
+            window.__cloudSceneRevision = msg.revision
+          }
+          showAgentEditToast(msg.displayName || 'MCP agent')
+          window.dispatchEvent(new CustomEvent('lix-agent-scene-applied', { detail: { agent: msg.displayName, revision: msg.revision } }))
+          break
+
         case 'sync-needed': {
           // Another user needs our scene state
           const serializer = window.__sceneSerializer
@@ -444,6 +456,15 @@ export default function useCollaboration(roomId) {
       delete window.__disconnectCollaboration
     }
   }, [roomId])
+}
+
+function showAgentEditToast(agent) {
+  const toast = document.getElementById('save-toast')
+  if (!toast) return
+  toast.textContent = `${agent} updated the canvas`
+  toast.classList.remove('hidden')
+  clearTimeout(toast._hideTimer)
+  toast._hideTimer = setTimeout(() => toast.classList.add('hidden'), 3500)
 }
 
 function humanizeServerError(code) {

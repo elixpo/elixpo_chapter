@@ -14,6 +14,7 @@ export interface Env {
   CLOUDINARY_KEY: string;
   CLOUDINARY_SECRET: string;
   SESSION_SECRET: string;
+  MCP_RELAY_SECRET: string;
 }
 
 const CORS_HEADERS = {
@@ -60,6 +61,20 @@ export default {
       const durableId = env.ROOM.idFromName(roomId);
       const stub = env.ROOM.get(durableId);
       return stub.fetch(request);
+    }
+
+    if (url.pathname.startsWith('/internal/rooms/') && url.pathname.endsWith('/agent-op') && request.method === 'POST') {
+      if (!env.MCP_RELAY_SECRET || request.headers.get('Authorization') !== `Bearer ${env.MCP_RELAY_SECRET}`) {
+        return json({ error: 'Not authorized' }, 401);
+      }
+      const roomId = url.pathname.slice('/internal/rooms/'.length, -'/agent-op'.length);
+      if (!roomId) return json({ error: 'Missing room ID' }, 400);
+      const durableId = env.ROOM.idFromName(decodeURIComponent(roomId));
+      return env.ROOM.get(durableId).fetch(new Request(`https://room.internal/room/${roomId}/agent-op`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-LixSketch-Relay': env.MCP_RELAY_SECRET },
+        body: await request.text(),
+      }));
     }
 
     // --- Auth routes ---
@@ -411,6 +426,7 @@ async function handleSceneSave(request: Request, env: Env): Promise<Response> {
       permission?: string;
       workspaceName?: string;
       createdBy?: string;
+      expectedRevision?: number;
     };
 
     if (!body.sessionId || !body.encryptedData) {
@@ -430,16 +446,25 @@ async function handleSceneSave(request: Request, env: Env): Promise<Response> {
 
     if (existing) {
       const sizeBytes = new Blob([body.encryptedData]).size;
-      await env.DB.prepare(
+      const expectedRevision = Number(body.expectedRevision);
+      const conditional = Number.isInteger(expectedRevision) && expectedRevision >= 0;
+      const update = await env.DB.prepare(
         `UPDATE scenes SET encrypted_data = ?, workspace_name = ?, updated_at = datetime('now'),
-         last_accessed_at = datetime('now'), size_bytes = ?, owner_type = ? WHERE id = ?`
-      ).bind(body.encryptedData, workspaceName, sizeBytes, ownerType, existing.id).run();
+         last_accessed_at = datetime('now'), size_bytes = ?, owner_type = ?,
+         agent_revision = agent_revision + 1 WHERE id = ?${conditional ? ' AND agent_revision = ?' : ''}`
+      ).bind(body.encryptedData, workspaceName, sizeBytes, ownerType, existing.id, ...(conditional ? [expectedRevision] : [])).run();
+      if (conditional && !update.meta?.changes) {
+        const current = await env.DB.prepare(`SELECT agent_revision FROM scenes WHERE id = ?`).bind(existing.id).first<{ agent_revision: number }>();
+        return json({ error: 'REVISION_CONFLICT', expectedRevision, currentRevision: Number(current?.agent_revision || 0) }, 409);
+      }
 
       const perm = await env.DB.prepare(
         `SELECT token FROM scene_permissions WHERE scene_id = ?`
       ).bind(existing.id).first<{ token: string }>();
 
-      return json({ sceneId: existing.id, token: perm?.token || null });
+      const revision = await env.DB.prepare(`SELECT agent_revision FROM scenes WHERE id = ?`)
+        .bind(existing.id).first<{ agent_revision: number }>();
+      return json({ sceneId: existing.id, token: perm?.token || null, revision: Number(revision?.agent_revision || 0) });
     }
 
     // New workspace — enforce limit
@@ -474,7 +499,7 @@ async function handleSceneSave(request: Request, env: Env): Promise<Response> {
       ).bind(permissionId, sceneId, token, body.permission || 'view'),
     ]);
 
-    return json({ sceneId, token }, 201);
+    return json({ sceneId, token, revision: 0 }, 201);
   } catch (err) {
     return json({ error: 'Failed to save scene' }, 500);
   }
@@ -486,6 +511,7 @@ async function handleSceneLoad(request: Request, env: Env): Promise<Response> {
     const token = url.searchParams.get('token');
     const sessionId = url.searchParams.get('sessionId');
     const shouldTouch = url.searchParams.get('touch') !== '0';
+    const metadataOnly = url.searchParams.get('meta') === '1';
     const lookupValue = token || sessionId;
 
     if (!lookupValue) {
@@ -493,11 +519,11 @@ async function handleSceneLoad(request: Request, env: Env): Promise<Response> {
     }
 
     const query = token
-      ? `SELECT sp.permission, s.encrypted_data, s.workspace_name, s.session_id, s.updated_at
+      ? `SELECT sp.permission, s.encrypted_data, s.workspace_name, s.session_id, s.updated_at, s.agent_revision
          FROM scene_permissions sp
          JOIN scenes s ON sp.scene_id = s.id
          WHERE sp.token = ?`
-      : `SELECT permission, encrypted_data, workspace_name, session_id, updated_at
+      : `SELECT permission, encrypted_data, workspace_name, session_id, updated_at, agent_revision
          FROM scenes
          WHERE session_id = ?`;
     const perm = await env.DB.prepare(query).bind(lookupValue).first<{
@@ -506,6 +532,7 @@ async function handleSceneLoad(request: Request, env: Env): Promise<Response> {
       workspace_name: string;
       session_id: string;
       updated_at: string;
+      agent_revision: number;
     }>();
 
     if (!perm) {
@@ -528,10 +555,11 @@ async function handleSceneLoad(request: Request, env: Env): Promise<Response> {
     const lastAccessedAt = new Date().toISOString();
 
     return json({
-      encryptedData: perm.encrypted_data,
+      encryptedData: metadataOnly ? undefined : perm.encrypted_data,
       permission: perm.permission,
       workspaceName: perm.workspace_name,
       updatedAt: perm.updated_at,
+      revision: Number(perm.agent_revision || 0),
       lastAccessedAt: shouldTouch ? lastAccessedAt : undefined,
     });
   } catch (err) {
@@ -629,6 +657,9 @@ async function handleSceneList(request: Request, env: Env): Promise<Response> {
     const scenes = await env.DB.prepare(
       `SELECT s.id, s.session_id, s.workspace_name, s.created_at, s.updated_at,
               s.last_accessed_at, s.size_bytes, s.view_count,
+              (SELECT COUNT(*) FROM mcp_workspace_grants mg
+               WHERE mg.scene_id = s.id AND mg.revoked_at IS NULL
+                 AND mg.expires_at > datetime('now')) AS active_mcp_grants,
               sp.token
        FROM scenes s
        LEFT JOIN scene_permissions sp ON sp.scene_id = s.id

@@ -5,9 +5,12 @@ import { WORKER_URL } from '@/lib/env'
 
 const STORAGE_KEY = 'lixsketch-auth'
 const COOKIE_NAME = 'lixsketch-session'
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 // 7 days
 const ELIXPO_AUTH_URL = 'https://accounts.elixpo.com'
 const AUTH_RETURN_TO_KEY = 'lixsketch-auth-return-to'
+const SESSION_SYNC_INTERVAL = 60_000
+let sessionSyncPromise = null
+let lastSessionSync = 0
+let authGeneration = 0
 
 function normalizeAuthReturnTo(value) {
   if (typeof window === 'undefined' || typeof value !== 'string' || !value) return null
@@ -48,14 +51,25 @@ function saveAuth(data) {
   if (typeof window === 'undefined') return
   try {
     if (data) {
-      const json = JSON.stringify(data)
-      localStorage.setItem(STORAGE_KEY, json)
-      document.cookie = `${COOKIE_NAME}=${encodeURIComponent(json)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } else {
       localStorage.removeItem(STORAGE_KEY)
+      // Clears legacy script-readable sessions. Current sessions are HttpOnly
+      // and are cleared by DELETE /api/auth/session below.
       document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
     }
   } catch {}
+}
+
+async function fetchServerSession(sessionToken) {
+  const response = await fetch('/api/auth/session', {
+    headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+  if (response.status === 401) return null
+  if (!response.ok) throw new Error(`Session verification failed (${response.status})`)
+  return response.json()
 }
 
 const useAuthStore = create((set, get) => ({
@@ -64,7 +78,7 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: false,
   activeRooms: 0,
   maxRooms: 1,
-  loading: false,
+  loading: true,
 
   init: () => {
     const saved = loadAuth()
@@ -79,6 +93,35 @@ const useAuthStore = create((set, get) => ({
         isAuthenticated: true,
       })
     }
+    if (sessionSyncPromise) return sessionSyncPromise
+    if (Date.now() - lastSessionSync < SESSION_SYNC_INTERVAL) {
+      set({ loading: false })
+      return Promise.resolve()
+    }
+    set({ loading: true })
+    const generation = authGeneration
+    sessionSyncPromise = fetchServerSession(saved?.sessionToken)
+      .then((session) => {
+        if (generation !== authGeneration) return
+        lastSessionSync = Date.now()
+        if (!session?.sessionToken || !session?.user) {
+          saveAuth(null)
+          set({ user: null, sessionToken: null, isAuthenticated: false })
+          return
+        }
+        saveAuth(session)
+        set({ user: session.user, sessionToken: session.sessionToken, isAuthenticated: true })
+      })
+      .catch((error) => {
+        // A network/deployment failure must not erase a locally restored
+        // session. The next init call can retry server synchronization.
+        console.warn('[Auth] Session synchronization failed:', error?.message || error)
+      })
+      .finally(() => {
+        set({ loading: false })
+        sessionSyncPromise = null
+      })
+    return sessionSyncPromise
   },
 
   login: (returnTo) => {
@@ -118,11 +161,14 @@ const useAuthStore = create((set, get) => ({
 
   handleCallback: async (sessionToken, user) => {
     console.log('[Auth] Saving session for:', user.displayName || user.email)
+    authGeneration += 1
+    lastSessionSync = Date.now()
     saveAuth({ sessionToken, user })
     set({
       user,
       sessionToken,
       isAuthenticated: true,
+      loading: false,
     })
   },
 
@@ -137,30 +183,15 @@ const useAuthStore = create((set, get) => ({
   // Validate session by hitting Elixpo /api/auth/me with the access token
   fetchMe: async () => {
     const token = get().sessionToken
-    if (!token) return
-
     try {
-      const res = await fetch(`${ELIXPO_AUTH_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (!res.ok) {
+      const session = await fetchServerSession(token)
+      if (!session?.sessionToken || !session?.user) {
         console.warn('[Auth] Session expired or invalid, logging out')
         get().logout()
         return
       }
-
-      const profile = await res.json()
-      const user = {
-        id: profile.id || profile.userId,
-        email: profile.email,
-        displayName: profile.displayName,
-        avatar: profile.avatar || null,
-        isAdmin: profile.isAdmin || false,
-        tier: profile.tier || get().user?.tier || 'free',
-      }
-      set({ user, isAuthenticated: true })
-      saveAuth({ sessionToken: token, user })
+      saveAuth(session)
+      set({ user: session.user, sessionToken: session.sessionToken, isAuthenticated: true })
     } catch {
       // Network error — keep existing state
     }
@@ -168,12 +199,16 @@ const useAuthStore = create((set, get) => ({
 
   logout: () => {
     console.log('[Auth] Signing out')
+    authGeneration += 1
+    lastSessionSync = 0
+    void fetch('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' }).catch(() => {})
     saveAuth(null)
     set({
       user: null,
       sessionToken: null,
       isAuthenticated: false,
       activeRooms: 0,
+      loading: false,
     })
   },
 }))

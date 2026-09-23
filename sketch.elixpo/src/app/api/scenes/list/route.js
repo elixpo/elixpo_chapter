@@ -21,6 +21,9 @@ export async function GET(request) {
     const scenes = await DB.prepare(
       `SELECT s.id, s.session_id, s.workspace_name, s.created_at, s.updated_at,
               s.last_accessed_at, s.size_bytes, s.view_count,
+              (SELECT COUNT(*) FROM mcp_workspace_grants mg
+               WHERE mg.scene_id = s.id AND mg.revoked_at IS NULL
+                 AND mg.expires_at > datetime('now')) AS active_mcp_grants,
               sp.token, wi.mode AS template_mode,
               CASE WHEN wi.mode = 'fork' AND wt.status = 'published' THEN wt.slug ELSE NULL END AS template_slug,
               CASE WHEN wi.mode = 'fork' THEN wt.title ELSE NULL END AS template_title

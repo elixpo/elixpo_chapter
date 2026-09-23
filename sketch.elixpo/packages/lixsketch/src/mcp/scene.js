@@ -168,11 +168,23 @@ export function applyScenePatch(sceneInput, operations, { expectedRevision, dryR
       scene.name = String(operation.name || '').trim().slice(0, 72) || scene.name;
     } else throw new Error(`Unsupported operation "${operation.op}"`);
   }
+  reconcileFrameContainment(scene);
   scene.mcpRevision = revision + 1;
   scene.updatedAt = new Date().toISOString();
   const result = validateScene(scene);
   if (!result.valid) throw new Error(`Patch produced an invalid scene: ${result.errors.join('; ')}`);
   return { scene, revision: scene.mcpRevision, dryRun: Boolean(dryRun), changedShapeIDs: [...changedIds] };
+}
+
+function reconcileFrameContainment(scene) {
+  const frames = new Map(scene.shapes.filter((shape) => shape.type === 'frame').map((shape) => [shape.shapeID, shape]));
+  for (const frame of frames.values()) frame.containedShapeIDs = [];
+  for (const shape of scene.shapes) {
+    if (!shape.parentFrame) continue;
+    const frame = frames.get(shape.parentFrame);
+    if (!frame) throw new Error(`Shape "${shape.shapeID}" references missing frame "${shape.parentFrame}"`);
+    frame.containedShapeIDs.push(shape.shapeID);
+  }
 }
 
 function applyShapeChanges(shape, changes) {

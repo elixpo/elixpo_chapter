@@ -137,3 +137,4 @@
 - [x] Backlink the public template marketplace from canvas, view, and zen modes.
 - [x] Ship a structured MCP server, stdio CLI, atomic scene patches, previews, and marketplace imports in `@elixpo/lixsketch`.
 - [x] Publish the MCP setup, tools, safety workflow, templates, package API, and limits under `/docs/mcp`.
+- [x] Add scoped remote MCP workspace grants, encrypted live edits, revision conflicts, and LixScript batch application.

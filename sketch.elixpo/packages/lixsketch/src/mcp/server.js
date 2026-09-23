@@ -1,9 +1,10 @@
 import { applyScenePatch, createEmptyScene, getSceneSummary, mergeTemplateScene, validateScene, MCP_LIMITS } from './scene.js';
 import { MarketplaceTemplateProvider } from './templates.js';
 import { renderSceneSvg } from './preview.js';
+import { compileLixScript } from './lixscript.js';
 
 const SERVER_NAME = 'lixsketch';
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '1.1.0';
 const PROTOCOL_VERSION = '2025-11-25';
 const SUPPORTED_PROTOCOL_VERSIONS = new Set([PROTOCOL_VERSION, '2025-06-18', '2024-11-05']);
 
@@ -52,6 +53,13 @@ export const LIXSKETCH_MCP_TOOLS = Object.freeze([
     description: 'Replace the current scene with a blank canvas. Requires explicit confirmation.',
     inputSchema: { type: 'object', required: ['confirm'], properties: { name: { type: 'string', maxLength: 72 }, confirm: { const: true } }, additionalProperties: false },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  {
+    name: 'lixscript_apply',
+    title: 'Apply LixScript diagram',
+    description: 'Compile LixScript into the same validated atomic scene patch used by structured canvas edits. Supports revisions and dry runs.',
+    inputSchema: { type: 'object', required: ['source'], properties: { source: { type: 'string', maxLength: 100000 }, x: { type: 'number' }, y: { type: 'number' }, expectedRevision: { type: 'integer', minimum: 0 }, dryRun: { type: 'boolean', default: false } }, additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
   {
     name: 'templates_search',
@@ -130,9 +138,19 @@ export class LixSketchMcpServer {
         case 'canvas_new':
           if (args.confirm !== true) throw new Error('canvas_new requires confirm=true');
           return await this.enqueueMutation(async () => {
+            const current = await this.store.read();
             const scene = createEmptyScene(args.name);
+            scene.mcpRevision = Number(current.mcpRevision || 0) + 1;
             await this.store.write(scene);
             return toolResult({ summary: getSceneSummary(scene) }, 'Blank canvas created.');
+          });
+        case 'lixscript_apply':
+          return await this.enqueueMutation(async () => {
+            const scene = await this.store.read();
+            const compiled = compileLixScript(args.source, args);
+            const result = applyScenePatch(scene, compiled.operations, args);
+            if (!args.dryRun) await this.store.write(result.scene);
+            return toolResult({ revision: result.revision, dryRun: result.dryRun, sourceShapeCount: compiled.sourceShapeCount, createdShapeIDs: result.changedShapeIDs, summary: getSceneSummary(result.scene) }, args.dryRun ? 'LixScript is valid. No changes were saved.' : `LixScript added ${result.changedShapeIDs.length} canvas elements.`);
           });
         case 'template_insert':
           return await this.enqueueMutation(async () => {
@@ -162,7 +180,7 @@ export class LixSketchMcpServer {
     if (method === 'initialize') {
       const requested = request.params?.protocolVersion;
       const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.has(requested) ? requested : PROTOCOL_VERSION;
-      return { protocolVersion, capabilities: { tools: { listChanged: false }, resources: { subscribe: false, listChanged: false } }, serverInfo: this.serverInfo, instructions: 'Read canvas_get before mutations. Use expectedRevision and dryRun for safe edits. Prefer template_insert for reusable component packs.' };
+      return { protocolVersion, capabilities: { tools: { listChanged: false }, resources: { subscribe: false, listChanged: false } }, serverInfo: this.serverInfo, instructions: 'Before any mutation, call canvas_get and retain its revision. Preserve unrelated shapes. Send expectedRevision and dryRun: true first, inspect canvas_preview for layout changes, then commit the same validated operation with dryRun: false. Never clear or replace a canvas unless the user explicitly requests it. Prefer lixscript_apply for diagrams and template_insert for reusable component packs.' };
     }
     if (method === 'ping') return {};
     if (method === 'tools/list') return { tools: this.listTools() };
