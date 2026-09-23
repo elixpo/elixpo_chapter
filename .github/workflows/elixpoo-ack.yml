@@ -24,6 +24,7 @@ jobs:
     if: |
       github.actor != 'elixpoo' &&
       github.event.comment.user.login != 'elixpoo' &&
+      github.repository_owner == 'elixpo' &&
       contains(github.event.comment.body, '@elixpoo')
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -33,13 +34,25 @@ jobs:
     steps:
       - name: Append round-robin ack blockquote
         env:
-          GH_TOKEN: ${{ secrets.CI_AGENT_TOKEN }}
+          GH_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
           REPO: ${{ github.repository }}
           COMMENT_ID: ${{ github.event.comment.id }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           EVENT_NAME: ${{ github.event_name }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+          TRUSTED_USERS: ${{ vars.ELIXPO_MENTION_TRUSTED_USERS || 'Circuit-Overtime,anwe-ch,elixpoo,ez-vivek' }}
         run: |
           set -e
+
+          trusted=0
+          IFS=',' read -ra USERS <<< "$TRUSTED_USERS"
+          for user in "${USERS[@]}"; do
+            if [[ "${user// /}" == "$COMMENTER" ]]; then trusted=1; break; fi
+          done
+          if [[ "$trusted" != "1" ]]; then
+            echo "Mention requires approval; instant acknowledgement suppressed."
+            exit 0
+          fi
 
           # Word-boundary check: contains() at the job level matches substrings
           # like '@elixpoooo', so re-verify with a proper regex here.

@@ -92,6 +92,7 @@ def github_rest(
     path: str,
     body: dict | list | None = None,
     *,
+    token: str | None = None,
     accept: str = "application/vnd.github+json",
     raise_on_status: bool = True,
 ) -> dict | list:
@@ -105,7 +106,7 @@ def github_rest(
 
     def _do():
         req = urllib.request.Request(url, data=data, method=method)
-        req.add_header("Authorization", f"Bearer {_agent_token()}")
+        req.add_header("Authorization", f"Bearer {token or _agent_token()}")
         req.add_header("Accept", accept)
         req.add_header("X-GitHub-Api-Version", "2022-11-28")
         req.add_header("User-Agent", USER_AGENT)

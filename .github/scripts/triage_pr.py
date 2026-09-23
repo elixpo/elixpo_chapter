@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-PR Triage Bot — accounts.elixpo
+PR Triage Bot — blogs.elixpo
 
 Categorizes new pull requests and files them into the matching per-category
 GitHub Project V2 board with an UPPERCASE category label.
 
-Rules:
-  - PRs opened by org members default to "Dev" (no LLM call).
-  - PRs from external contributors: LLM picks the best-fit category based on
-    the PR title, body, and list of changed files.
+Every PR is classified from its content. The author never overrides the
+category because an org member can open feature, bug, support, or dev work.
 
 Env vars: AGENT_TOKEN, POLLINATIONS_KEY, PR_NUMBER, PR_AUTHOR, REPO
 """
@@ -39,6 +37,8 @@ REPO = os.environ["REPO"]
 
 # ── Defaults ───────────────────────────────────────────────────────────────
 DEFAULT_CATEGORY = "Dev"
+DEFAULT_PRIORITY = "Medium"
+DEFAULT_TASK_TYPE = "Maintenance"
 
 # Label colors (same as issues — keep the palette consistent)
 LABEL_COLORS = {
@@ -46,6 +46,14 @@ LABEL_COLORS = {
     "BUGS": "d73a4a",
     "SUPPORT": "cfd3d7",
     "DEV": "7057ff",
+    "URGENT": "b60205",
+    "HIGH": "d93f0b",
+    "MEDIUM": "fbca04",
+    "LOW": "0e8a16",
+    "TYPE: FEATURE": "a2eeef",
+    "TYPE: BUG": "d73a4a",
+    "TYPE: DOCUMENTATION": "0075ca",
+    "TYPE: MAINTENANCE": "7057ff",
 }
 
 
@@ -59,7 +67,13 @@ def triage_llm(title: str, body: str, files: list[str]) -> dict:
         "- Bugs: fixes a bug, regression, crash, or broken behavior\n"
         "- Support: answers a question, adds docs or examples for users\n"
         "- Dev: internal dev work — refactor, infra, CI, dependencies, chores\n\n"
-        'Respond in JSON only: {"category": "Feature|Bugs|Support|Dev", "summary": "one sentence"}'
+        "Priority: Urgent only for security, data loss, or production outage; High for major "
+        "functional breakage; Medium for normal work; Low for cosmetic or optional work.\n"
+        "Task type: Feature, Bug, Documentation, or Maintenance.\n\n"
+        'Respond in JSON only: {"category":"Feature|Bugs|Support|Dev",'
+        '"priority":"Urgent|High|Medium|Low",'
+        '"task_type":"Feature|Bug|Documentation|Maintenance",'
+        '"summary":"one sentence"}'
     )
 
     files_preview = "\n".join(f"- {f}" for f in files[:50]) or "(no files)"
@@ -171,6 +185,27 @@ def set_status_todo(project_id: str, item_id: str) -> bool:
     return True
 
 
+def set_single_select_field(
+    project_id: str, item_id: str, field_id: str, option_id: str
+) -> None:
+    mutation = """
+    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+      updateProjectV2ItemFieldValue(input: {
+        projectId: $projectId,
+        itemId: $itemId,
+        fieldId: $fieldId,
+        value: { singleSelectOptionId: $optionId }
+      }) { projectV2Item { id } }
+    }
+    """
+    github_graphql(mutation, {
+        "projectId": project_id,
+        "itemId": item_id,
+        "fieldId": field_id,
+        "optionId": option_id,
+    })
+
+
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> None:
     print(f"=== PR Triage: #{PR_NUMBER} ===")
@@ -182,28 +217,29 @@ def main() -> None:
     print(f"Title:  {pr_title}")
     print(f"Author: @{PR_AUTHOR}")
 
-    is_org_member = PR_AUTHOR in ORG_MEMBERS
     category = DEFAULT_CATEGORY
+    priority = DEFAULT_PRIORITY
+    task_type = DEFAULT_TASK_TYPE
+    print("Classifying PR content")
+    try:
+        files = fetch_pr_files(PR_NUMBER)
+        print(f"Changed files: {len(files)}")
+        llm_result = triage_llm(pr_title, pr_body, files)
+        print(f"LLM response: {json.dumps(llm_result)}")
+        raw_category = llm_result.get("category", DEFAULT_CATEGORY)
+        raw_priority = llm_result.get("priority", DEFAULT_PRIORITY)
+        raw_task_type = llm_result.get("task_type", DEFAULT_TASK_TYPE)
+        if raw_category in CATEGORIES:
+            category = raw_category
+        if raw_priority in PRIORITIES:
+            priority = raw_priority
+        if raw_task_type in {"Feature", "Bug", "Documentation", "Maintenance"}:
+            task_type = raw_task_type
+    except Exception as exc:
+        print(f"[error] LLM call failed: {exc}")
+        print("Falling back to Dev / Medium / Maintenance")
 
-    if is_org_member:
-        print(f"@{PR_AUTHOR} is an org member — defaulting category to Dev")
-    else:
-        print("External contributor — asking LLM for category")
-        try:
-            files = fetch_pr_files(PR_NUMBER)
-            print(f"Changed files: {len(files)}")
-            llm_result = triage_llm(pr_title, pr_body, files)
-            print(f"LLM response: {json.dumps(llm_result)}")
-            raw_category = llm_result.get("category", DEFAULT_CATEGORY)
-            if raw_category in CATEGORIES:
-                category = raw_category
-            else:
-                print(f"[warn] Unknown category '{raw_category}', defaulting to {DEFAULT_CATEGORY}")
-        except Exception as exc:
-            print(f"[error] LLM call failed: {exc}")
-            print(f"Falling back to default category '{DEFAULT_CATEGORY}'")
-
-    print(f"Category: {category}")
+    print(f"Category: {category} | Priority: {priority} | Type: {task_type}")
 
     # Resolve project
     project = PROJECTS.get(category) or PROJECTS[DEFAULT_CATEGORY]
@@ -219,18 +255,31 @@ def main() -> None:
         print(f"[error] Failed to add to project: {exc}")
 
     if item_id:
+        priority_option = project["priority_options"].get(priority)
+        if priority_option:
+            try:
+                set_single_select_field(
+                    project["id"], item_id, project["priority_field_id"], priority_option
+                )
+                print(f"Priority set to '{priority}'")
+            except Exception as exc:
+                print(f"[warn] Failed to set priority: {exc}")
         try:
             if set_status_todo(project["id"], item_id):
                 print("Status set to 'Todo'")
         except Exception as exc:
             print(f"[warn] Failed to set Status=Todo: {exc}")
 
-    # Apply category label (UPPERCASE)
+    # Labels expose classification outside the project board as well.
     cat_label = category.upper()
-    print(f"Applying label: [{cat_label}]")
+    pri_label = priority.upper()
+    type_label = f"TYPE: {task_type.upper()}"
+    print(f"Applying labels: [{cat_label}, {pri_label}, {type_label}]")
     try:
         ensure_label(REPO, cat_label, LABEL_COLORS.get(cat_label, "ededed"), f"Category: {category}")
-        add_labels(REPO, PR_NUMBER, [cat_label])
+        ensure_label(REPO, pri_label, LABEL_COLORS.get(pri_label, "ededed"), f"Priority: {priority}")
+        ensure_label(REPO, type_label, LABEL_COLORS.get(type_label, "ededed"), f"Task type: {task_type}")
+        add_labels(REPO, PR_NUMBER, [cat_label, pri_label, type_label])
     except Exception as exc:
         print(f"[warn] Label application failed: {exc}")
 
