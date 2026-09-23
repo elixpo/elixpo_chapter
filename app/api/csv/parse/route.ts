@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         }
 
         const text = await file.text();
-        const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
         if (lines.length === 0) {
             return NextResponse.json({ ok: false, error: "File is empty." }, { status: 400 });
         }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
                 } else {
                     if (char === '"') {
                         inQuotes = true;
-                    } else if (char === ',') {
+                    } else if (char === ",") {
                         result.push(cur);
                         cur = "";
                     } else {
@@ -54,30 +54,33 @@ export async function POST(request: NextRequest) {
             return result;
         };
 
-        const headers = parseLine(lines[0]).map(h => h.trim().toLowerCase());
+        const headers = parseLine(lines[0]).map((h) => h.trim().toLowerCase());
         const emailIndex = headers.indexOf("email");
 
         if (emailIndex === -1) {
-            return NextResponse.json({ ok: false, error: "CSV must contain an 'email' column." }, { status: 400 });
+            return NextResponse.json(
+                { ok: false, error: "CSV must contain an 'email' column." },
+                { status: 400 },
+            );
         }
 
         const validEmails: string[] = [];
-        const malformedRows: { row: number, error: string }[] = [];
+        const malformedRows: { row: number; error: string }[] = [];
 
         for (let i = 1; i < lines.length; i++) {
             const values = parseLine(lines[i]);
             const email = values[emailIndex]?.trim().toLowerCase();
-            
+
             if (!email) {
                 malformedRows.push({ row: i + 1, error: "Missing email address" });
                 continue;
             }
-            
+
             if (!EMAIL_RE.test(email)) {
                 malformedRows.push({ row: i + 1, error: `Invalid email format: ${email}` });
                 continue;
             }
-            
+
             validEmails.push(email);
         }
 
@@ -85,12 +88,12 @@ export async function POST(request: NextRequest) {
             ok: true,
             validEmails: Array.from(new Set(validEmails)), // Deduplicate
             malformedRows,
-            totalRows: lines.length - 1
+            totalRows: lines.length - 1,
         });
     } catch (e: any) {
         return NextResponse.json(
             { ok: false, error: `Parse error: ${e.message || e}` },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

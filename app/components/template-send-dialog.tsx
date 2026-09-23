@@ -2,9 +2,9 @@
 
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
-import FileUploadIcon from "@mui/icons-material/FileUpload";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
     Box,
@@ -15,6 +15,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    IconButton,
     InputBase,
     MenuItem,
     Link as MuiLink,
@@ -24,7 +25,6 @@ import {
     TextField,
     Tooltip,
     Typography,
-    IconButton,
 } from "@mui/material";
 import NextLink from "next/link";
 import type React from "react";
@@ -461,7 +461,7 @@ export default function TemplateSendDialog({
 
         setIsUploadingCsv(true);
         setCsvErrors([]);
-        
+
         try {
             const formData = new FormData();
             formData.append("file", file);
@@ -478,12 +478,18 @@ export default function TemplateSendDialog({
             if (validEmails.length > 0) {
                 setChips((c) => Array.from(new Set([...c, ...validEmails])));
             }
-            
+
             if (d.malformedRows && d.malformedRows.length > 0) {
                 setCsvErrors(d.malformedRows);
-                setToast({ text: `CSV parsed: ${validEmails.length} valid, ${d.malformedRows.length} errors.`, ok: false });
+                setToast({
+                    text: `CSV parsed: ${validEmails.length} valid, ${d.malformedRows.length} errors.`,
+                    ok: false,
+                });
             } else {
-                setToast({ text: `CSV parsed: added ${validEmails.length} valid emails.`, ok: true });
+                setToast({
+                    text: `CSV parsed: added ${validEmails.length} valid emails.`,
+                    ok: true,
+                });
             }
         } catch (error) {
             const msg = error instanceof Error ? error.message : "Upload failed.";
@@ -538,11 +544,23 @@ export default function TemplateSendDialog({
                     {/* ── Left column: recipients, sender, send-as, variables ── */}
                     <Stack spacing={2.2}>
                         <Box>
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
                                 <FieldLabel>Recipients (required)</FieldLabel>
                                 <Button
                                     size="small"
-                                    startIcon={isUploadingCsv ? <CircularProgress size={12} color="inherit" /> : <FileUploadIcon sx={{ fontSize: 16 }} />}
+                                    startIcon={
+                                        isUploadingCsv ? (
+                                            <CircularProgress size={12} color="inherit" />
+                                        ) : (
+                                            <FileUploadIcon sx={{ fontSize: 16 }} />
+                                        )
+                                    }
                                     disabled={isUploadingCsv}
                                     onClick={() => fileInputRef.current?.click()}
                                     sx={{
@@ -666,12 +684,32 @@ export default function TemplateSendDialog({
                                       }`}
                             </Typography>
                             {csvErrors.length > 0 && (
-                                <Box sx={{ mt: 1, p: 1, borderRadius: "6px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", maxHeight: 120, overflowY: "auto" }}>
-                                    <Typography sx={{ fontSize: "0.72rem", color: RED, fontWeight: 700, mb: 0.5 }}>
+                                <Box
+                                    sx={{
+                                        mt: 1,
+                                        p: 1,
+                                        borderRadius: "6px",
+                                        background: "rgba(239,68,68,0.1)",
+                                        border: "1px solid rgba(239,68,68,0.3)",
+                                        maxHeight: 120,
+                                        overflowY: "auto",
+                                    }}
+                                >
+                                    <Typography
+                                        sx={{
+                                            fontSize: "0.72rem",
+                                            color: RED,
+                                            fontWeight: 700,
+                                            mb: 0.5,
+                                        }}
+                                    >
                                         CSV Errors ({csvErrors.length})
                                     </Typography>
                                     {csvErrors.map((err, idx) => (
-                                        <Typography key={idx} sx={{ fontSize: "0.7rem", color: RED, lineHeight: 1.4 }}>
+                                        <Typography
+                                            key={idx}
+                                            sx={{ fontSize: "0.7rem", color: RED, lineHeight: 1.4 }}
+                                        >
                                             Row {err.row}: {err.error}
                                         </Typography>
                                     ))}
