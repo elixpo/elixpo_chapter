@@ -62,7 +62,7 @@
         "@blocknote/core": "^0.51.4",
         "@blocknote/mantine": "^0.51.4",
         "@blocknote/react": "^0.51.4",
-        "@elixpo/lixeditor": "^2.7.3",
+        "@elixpo/lixeditor": "^2.8.12",
         "@emotion/cache": "^11.14.0",
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
