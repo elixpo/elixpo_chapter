@@ -156,10 +156,7 @@ export function OAuthScopePicker({
                                         scope.name,
                                     )}
                                     onChange={(event) =>
-                                        toggle(
-                                            scope.name,
-                                            event.target.checked,
-                                        )
+                                        toggle(scope.name, event.target.checked)
                                     }
                                     inputProps={{
                                         "aria-label": `${scope.label} (${scope.name})`,
@@ -214,12 +211,15 @@ export function OAuthScopePicker({
                         );
 
                         if (group === "product") {
-                            const groupedByPrefix = options.reduce((acc, scope) => {
-                                const prefix = scope.name.split(':')[0];
-                                if (!acc[prefix]) acc[prefix] = [];
-                                acc[prefix].push(scope);
-                                return acc;
-                            }, {} as Record<string, OAuthScopeOption[]>);
+                            const groupedByPrefix = options.reduce(
+                                (acc, scope) => {
+                                    const prefix = scope.name.split(":")[0];
+                                    if (!acc[prefix]) acc[prefix] = [];
+                                    acc[prefix].push(scope);
+                                    return acc;
+                                },
+                                {} as Record<string, OAuthScopeOption[]>,
+                            );
 
                             return (
                                 <Box
@@ -238,35 +238,56 @@ export function OAuthScopePicker({
                                     >
                                         {GROUP_LABELS[group]}
                                     </Typography>
-                                    {Object.entries(groupedByPrefix).map(([prefix, scopes]) => (
-                                        <Accordion
-                                            key={prefix}
-                                            disableGutters
-                                            elevation={0}
-                                            sx={{
-                                                border: "1px solid var(--border)",
-                                                mb: 1,
-                                                "&:last-child": { mb: 0 },
-                                                "&:before": { display: "none" },
-                                                bgcolor: "transparent",
-                                            }}
-                                        >
-                                            <AccordionSummary
-                                                expandIcon={<ExpandMoreIcon sx={{ color: "var(--fg-faint)" }} />}
+                                    {Object.entries(groupedByPrefix).map(
+                                        ([prefix, scopes]) => (
+                                            <Accordion
+                                                key={prefix}
+                                                disableGutters
+                                                elevation={0}
                                                 sx={{
-                                                    minHeight: 36,
-                                                    "& .MuiAccordionSummary-content": { my: 1 },
+                                                    border: "1px solid var(--border)",
+                                                    mb: 1,
+                                                    "&:last-child": { mb: 0 },
+                                                    "&:before": {
+                                                        display: "none",
+                                                    },
+                                                    bgcolor: "transparent",
                                                 }}
                                             >
-                                                <Typography sx={{ color: "var(--fg)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                                    {prefix}
-                                                </Typography>
-                                            </AccordionSummary>
-                                            <AccordionDetails sx={{ p: 1, pt: 0 }}>
-                                                {(scopes as OAuthScopeOption[]).map(renderScope)}
-                                            </AccordionDetails>
-                                        </Accordion>
-                                    ))}
+                                                <AccordionSummary
+                                                    expandIcon={
+                                                        <ExpandMoreIcon
+                                                            sx={{
+                                                                color: "var(--fg-faint)",
+                                                            }}
+                                                        />
+                                                    }
+                                                    sx={{
+                                                        minHeight: 36,
+                                                        "& .MuiAccordionSummary-content":
+                                                            { my: 1 },
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            color: "var(--fg)",
+                                                            fontSize: "0.8rem",
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        {prefix}
+                                                    </Typography>
+                                                </AccordionSummary>
+                                                <AccordionDetails
+                                                    sx={{ p: 1, pt: 0 }}
+                                                >
+                                                    {(
+                                                        scopes as OAuthScopeOption[]
+                                                    ).map(renderScope)}
+                                                </AccordionDetails>
+                                            </Accordion>
+                                        ),
+                                    )}
                                 </Box>
                             );
                         }

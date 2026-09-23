@@ -34,9 +34,9 @@ describe("LixBlogs scope registry", () => {
         expect(isHighImpactScope("lixblogs:blog:read")).toBe(false);
         expect(isHighImpactScope("lixblogs:blog:write")).toBe(false);
         expect(isHighImpactScope("lixblogs:profile:write")).toBe(false);
-        expect(
-            isHighImpactScope("lixblogs:integrations:cloudinary:read"),
-        ).toBe(false);
+        expect(isHighImpactScope("lixblogs:integrations:cloudinary:read")).toBe(
+            false,
+        );
     });
 
     it("filters a scope list down to only the high-impact members", () => {

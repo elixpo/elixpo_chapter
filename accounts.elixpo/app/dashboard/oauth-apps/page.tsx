@@ -113,7 +113,7 @@ function faviconSources(homepageUrl?: string, logoUrl?: string): string[] {
 function AppIcon({ app, size = 28 }: { app: OAuthApp; size?: number }) {
     const [stage, setStage] = useState(0);
     const sources = faviconSources(app.homepage_url, app.logo_url);
-    useEffect(() => setStage(0), [app.homepage_url, app.logo_url]);
+    useEffect(() => setStage(0), []);
     const src =
         stage < sources.length
             ? sources[stage]
@@ -150,9 +150,7 @@ const OAuthAppsPage = () => {
     const [secretCopied, setSecretCopied] = useState(false);
     const [idCopied, setIdCopied] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [appFilter, setAppFilter] = useState<"all" | "web" | "device">(
-        "all",
-    );
+    const [appFilter, setAppFilter] = useState<"all" | "web" | "device">("all");
     const filteredApps = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         return apps.filter((app) => {
@@ -169,9 +167,7 @@ const OAuthAppsPage = () => {
                 app.client_id,
                 app.homepage_url,
                 app.description,
-            ].some(
-                (value) => value?.toLowerCase().includes(query),
-            );
+            ].some((value) => value?.toLowerCase().includes(query));
         });
     }, [appFilter, apps, searchQuery]);
 
@@ -657,22 +653,51 @@ const OAuthAppsPage = () => {
                                                         >
                                                             {app.name}
                                                         </Typography>
+                                                        <Chip
+                                                            size="small"
+                                                            label={
+                                                                app.client_type ===
+                                                                "public"
+                                                                    ? "Device Flow"
+                                                                    : "Web Application"
+                                                            }
+                                                            sx={{
+                                                                mt: 0.5,
+                                                                height: 20,
+                                                                bgcolor:
+                                                                    app.client_type ===
+                                                                    "public"
+                                                                        ? "rgba(255, 119, 89, 0.12)"
+                                                                        : "var(--overlay)",
+                                                                color:
+                                                                    app.client_type ===
+                                                                    "public"
+                                                                        ? "#ff7759"
+                                                                        : "var(--fg-muted)",
+                                                                border: "1px solid var(--border)",
+                                                                fontSize:
+                                                                    "0.65rem",
+                                                            }}
+                                                        />
                                                         {app.client_type ===
-                                                            "public" && (
-                                                            <Typography
-                                                                variant="caption"
-                                                                sx={{
-                                                                    display:
-                                                                        "block",
-                                                                    color: "#ff7759",
-                                                                    fontSize:
-                                                                        "0.68rem",
-                                                                }}
-                                                            >
-                                                                Device flow ·{" "}
-                                                                {app.audience}
-                                                            </Typography>
-                                                        )}
+                                                            "public" &&
+                                                            app.audience && (
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        display:
+                                                                            "block",
+                                                                        color: "var(--fg-faint)",
+                                                                        fontSize:
+                                                                            "0.68rem",
+                                                                    }}
+                                                                >
+                                                                    Audience ·{" "}
+                                                                    {
+                                                                        app.audience
+                                                                    }
+                                                                </Typography>
+                                                            )}
                                                         {app.homepage_url && (
                                                             <Typography
                                                                 component="a"

@@ -586,10 +586,85 @@ export default function OAuthAppSettingsPage() {
 
     const iconSources = appIconSources(form.homepage_url, form.logo_url);
     const faviconUrl = iconSources[iconStage] || null;
-    useEffect(
-        () => setIconStage(0),
-        [form.homepage_url, form.logo_url],
+    useEffect(() => setIconStage(0), []);
+
+    const missingApplicationDetail = !form.name.trim()
+        ? "Name required"
+        : !form.homepage_url.trim()
+          ? "Homepage required"
+          : app?.client_type === "public" && !form.audience.trim()
+            ? "Audience required"
+            : !form.description.trim()
+              ? "Add description"
+              : null;
+    const redirectCount = form.redirect_uris.filter((uri) => uri.trim()).length;
+    const brandingConfigured = Boolean(
+        form.logo_url.trim() ||
+        form.branding_display_name.trim() ||
+        form.branding_primary_color.trim() ||
+        form.branding_accent_color.trim(),
     );
+    const sectionNavigation = [
+        {
+            id: "overview",
+            label: "Application",
+            status: missingApplicationDetail || "Complete",
+            needsAttention: Boolean(
+                missingApplicationDetail?.endsWith("required"),
+            ),
+        },
+        {
+            id: "credentials",
+            label: "Client secret",
+            status:
+                app?.client_type === "public" ? "Not required" : "Configured",
+            needsAttention: false,
+        },
+        {
+            id: "webhooks",
+            label: "Webhook endpoints",
+            status: endpointsLoading
+                ? "Loading…"
+                : endpoints.length > 0
+                  ? `${endpoints.length} configured`
+                  : "Optional",
+            needsAttention: false,
+        },
+        {
+            id: "routes",
+            label: "Redirects & info",
+            status:
+                redirectCount > 0
+                    ? `${redirectCount} configured`
+                    : app?.client_type === "public"
+                      ? "Optional"
+                      : "Missing redirect",
+            needsAttention:
+                app?.client_type !== "public" && redirectCount === 0,
+        },
+        {
+            id: "branding",
+            label: "Branding & identity",
+            status: app?.is_branding_verified
+                ? "Verified"
+                : brandingConfigured
+                  ? "Needs verification"
+                  : "Optional",
+            needsAttention: false,
+        },
+        {
+            id: "activity",
+            label: "Activity",
+            status: stats ? `${stats.unique_users} users` : "No activity yet",
+            needsAttention: false,
+        },
+        {
+            id: "danger",
+            label: "Danger zone",
+            status: "Delete app",
+            needsAttention: false,
+        },
+    ];
 
     if (loading) {
         return (
@@ -612,7 +687,7 @@ export default function OAuthAppSettingsPage() {
                 display: "grid",
                 gridTemplateColumns: {
                     xs: "minmax(0, 1fr)",
-                    lg: "190px minmax(0, 1fr) minmax(0, 1fr)",
+                    lg: "240px minmax(0, 1fr) minmax(0, 1fr)",
                 },
                 gap: 2.5,
                 alignItems: "start",
@@ -737,9 +812,7 @@ export default function OAuthAppSettingsPage() {
                         </Typography>
                         <Tooltip
                             title={
-                                copiedField === "client_id"
-                                    ? "Copied!"
-                                    : "Copy"
+                                copiedField === "client_id" ? "Copied!" : "Copy"
                             }
                         >
                             <IconButton
@@ -752,27 +825,31 @@ export default function OAuthAppSettingsPage() {
                                 }
                                 sx={{ color: "#ff7759", p: 0.25 }}
                             >
-                                <ContentCopyIcon
-                                    sx={{ fontSize: "0.85rem" }}
-                                />
+                                <ContentCopyIcon sx={{ fontSize: "0.85rem" }} />
                             </IconButton>
                         </Tooltip>
-                        <Typography
-                            component="a"
-                            href="/docs/lixaccounts"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            sx={{
-                                color: "#ff7759",
-                                fontSize: "0.7rem",
-                                textDecoration: "none",
-                                "&:hover": { textDecoration: "underline" },
-                            }}
-                        >
-                            SDK docs
-                        </Typography>
                     </Box>
                 </Box>
+                <Chip
+                    label={
+                        app?.client_type === "public"
+                            ? "Device Flow"
+                            : "Web Application"
+                    }
+                    size="small"
+                    sx={{
+                        ml: { xs: 0, sm: "auto" },
+                        bgcolor:
+                            app?.client_type === "public"
+                                ? "rgba(255, 119, 89, 0.12)"
+                                : "var(--overlay)",
+                        color:
+                            app?.client_type === "public"
+                                ? "#ff7759"
+                                : "var(--fg-muted)",
+                        border: "1px solid var(--border)",
+                    }}
+                />
                 {app?.is_active === false && (
                     <Chip
                         label="Inactive"
@@ -784,12 +861,30 @@ export default function OAuthAppSettingsPage() {
                     />
                 )}
                 <Button
+                    component="a"
+                    href="/docs/lixaccounts"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outlined"
+                    sx={{
+                        width: { xs: "100%", sm: "auto" },
+                        borderColor: "rgba(255, 119, 89,0.3)",
+                        color: "#ff7759",
+                        textTransform: "none",
+                        "&:hover": {
+                            borderColor: "#ff7759",
+                            bgcolor: "rgba(255, 119, 89,0.08)",
+                        },
+                    }}
+                >
+                    SDK Docs
+                </Button>
+                <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
                     onClick={handleSave}
                     disabled={saving}
                     sx={{
-                        ml: { xs: 0, sm: "auto" },
                         width: { xs: "100%", sm: "auto" },
                         background: "rgba(255, 119, 89,0.15)",
                         color: "#ff7759",
@@ -846,21 +941,15 @@ export default function OAuthAppSettingsPage() {
                     bgcolor: "var(--surface)",
                 }}
             >
-                {[
-                    ["overview", "Application"],
-                    ["credentials", "Client secret"],
-                    ["webhooks", "Webhook endpoints"],
-                    ["routes", "Redirects & info"],
-                    ["branding", "Branding & identity"],
-                    ["activity", "Activity"],
-                    ["danger", "Danger zone"],
-                ].map(([id, label]) => (
+                {sectionNavigation.map((section) => (
                     <Button
-                        key={id}
+                        key={section.id}
                         component="a"
-                        href={`#${id}`}
+                        href={`#${section.id}`}
                         sx={{
-                            justifyContent: "flex-start",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 1,
                             color: "var(--fg-muted)",
                             textTransform: "none",
                             fontSize: "0.82rem",
@@ -870,7 +959,19 @@ export default function OAuthAppSettingsPage() {
                             },
                         }}
                     >
-                        {label}
+                        <span>{section.label}</span>
+                        <Typography
+                            component="span"
+                            sx={{
+                                color: section.needsAttention
+                                    ? "#b45309"
+                                    : "var(--fg-faint)",
+                                fontSize: "0.62rem",
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {section.status}
+                        </Typography>
                     </Button>
                 ))}
             </Box>
@@ -905,9 +1006,9 @@ export default function OAuthAppSettingsPage() {
                     </Typography>
                     {app?.client_type === "public" ? (
                         <Alert severity="info">
-                            Public device-flow clients authenticate with method
-                            <strong> none</strong>. No secret exists or can be
-                            regenerated.
+                            Device Flow apps do not need a client secret. They
+                            securely exchange the device code for tokens after
+                            the user approves access.
                         </Alert>
                     ) : regeneratedSecret ? (
                         <>
