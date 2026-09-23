@@ -99,7 +99,7 @@ export default function JoinOrgPage({ inviteId }) {
               <p className="text-[12px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent)' }}>You're invited to join</p>
               <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{org.name}</h1>
               {ownerName && <p className="text-[13px] mb-1" style={{ color: 'var(--text-muted)' }}>by {ownerName}</p>}
-              {org.description && <p className="text-[13px] mt-2 mb-1" style={{ color: 'var(--text-muted)' }}>{org.description}</p>}
+              {(org.tagline || org.description) && <p className="text-[13px] mt-2 mb-1" style={{ color: 'var(--text-muted)' }}>{org.tagline || org.description}</p>}
               <p className="text-[12px] mt-3 mb-5" style={{ color: 'var(--text-faint)' }}>
                 Role: <span style={{ color: 'var(--text-secondary)' }}>{ROLE_LABELS[data.invite.role] || data.invite.role}</span>
               </p>

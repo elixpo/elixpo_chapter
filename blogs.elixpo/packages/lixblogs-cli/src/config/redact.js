@@ -21,7 +21,7 @@ const SENSITIVE_KEY_PATTERN = /token|refresh|secret|password|authorization/i;
 // Matches our mock token shapes (mock-access-*, mock-refresh-*) as well as
 // generic bearer-token-like strings, so redaction isn't solely dependent on
 // key names.
-const TOKEN_LIKE_VALUE_PATTERN = /^(mock-(access|refresh)-|Bearer\s+)\S+/i;
+const TOKEN_LIKE_VALUE_PATTERN = /^(mock-(access|refresh)-|lix_pat_|Bearer\s+)\S+/i;
 
 export function redactValue(value) {
   if (typeof value === "string" && TOKEN_LIKE_VALUE_PATTERN.test(value)) {
@@ -68,7 +68,7 @@ export function safeJsonStringify(input, space) {
 export function redactErrorMessage(message) {
   if (typeof message !== "string") return message;
   return message.replace(
-    /(mock-(access|refresh)-\S+|Bearer\s+\S+)/gi,
+    /(mock-(access|refresh)-\S+|lix_pat_[A-Za-z0-9_-]+|Bearer\s+\S+)/gi,
     REDACTED
   );
 }

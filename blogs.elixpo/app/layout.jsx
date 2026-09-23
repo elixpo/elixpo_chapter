@@ -12,8 +12,8 @@ const SITE_NAME = 'LixBlogs';
 // carry the pitch on its own and the rest is bonus. Every claim here has to be true:
 // the old copy advertised "AI writing tools", which are not currently enabled.
 const SITE_DESC =
-  'LixBlogs is a modern publishing platform for writers, developers and teams. Write with a powerful block editor, work together in real time, publish under your own organization, and reach readers with beautiful, fast pages.';
-const SITE_TAGLINE = 'Write, collaborate and publish beautifully';
+  'LixBlogs is an open-source blogging platform for writers, developers and teams to create stories, collaborate live, and publish from the web, CLI or API.';
+const SITE_TAGLINE = 'Open-source blogging and publishing platform';
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -102,8 +102,10 @@ const SITE_JSONLD = {
       '@id': `${SITE_URL}/#website`,
       url: SITE_URL,
       name: SITE_NAME,
+      alternateName: ['LixBlogs by Elixpo', 'Elixpo Blogs', 'Lix Blogs', 'blogs.elixpo.com'],
       description: SITE_DESC,
       publisher: { '@id': `${SITE_URL}/#organization` },
+      brand: { '@id': `${SITE_URL}/#brand` },
       inLanguage: 'en',
       potentialAction: {
         '@type': 'SearchAction',
@@ -112,13 +114,41 @@ const SITE_JSONLD = {
       },
     },
     {
+      '@type': 'Blog',
+      '@id': `${SITE_URL}/#blog`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      alternateName: 'LixBlogs by Elixpo',
+      description: SITE_DESC,
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      brand: { '@id': `${SITE_URL}/#brand` },
+      isPartOf: { '@id': `${SITE_URL}/#website` },
+      inLanguage: 'en',
+    },
+    {
       '@type': 'Organization',
       '@id': `${SITE_URL}/#organization`,
+      name: 'Elixpo',
+      alternateName: 'Elixpo Chapter',
+      url: 'https://elixpo.com',
+      email: 'hello@elixpo.com',
+      sameAs: [
+        'https://github.com/elixpo',
+        'https://www.linkedin.com/in/elixpo',
+        'https://www.youtube.com/@elixpo',
+        'https://www.instagram.com/elixpo_',
+      ],
+    },
+    {
+      '@type': 'Brand',
+      '@id': `${SITE_URL}/#brand`,
       name: SITE_NAME,
+      alternateName: ['LixBlogs by Elixpo', 'Elixpo Blogs'],
       url: SITE_URL,
+      slogan: SITE_TAGLINE,
       description: SITE_DESC,
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
-      sameAs: ['https://github.com/elixpo'],
+      sameAs: ['https://github.com/elixpo/blogs.elixpo'],
     },
   ],
 };

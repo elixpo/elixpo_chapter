@@ -8,6 +8,7 @@ import ImageCropModal from '../components/ImageCropModal';
 import FollowListModal from '../components/FollowListModal';
 import Link from 'next/link';
 import BadgeManager from '../components/BadgeManager';
+import { generatePixelAvatar, generateProfileBanner } from '../utils/pixelAvatar';
 
 function UsageBar({ label, used, limit, unit, color = '#9b7bf7' }) {
   const percent = limit > 0 ? Math.min(Math.round((used / limit) * 100), 100) : 0;
@@ -161,13 +162,15 @@ export default function ProfilePage() {
 
   // Banners overwrite a stable Cloudinary public id. Version the proxy URL so a
   // replacement cannot be served from the browser/CDN cache after a reload.
-  const bannerSrc = localBanner || (user.banner_r2_key
+  const uploadedBannerSrc = user.banner_r2_key
     ? `/api/media/${user.banner_r2_key}?v=${encodeURIComponent(user.updated_at || '')}`
-    : null);
+    : null;
+  const defaultSeed = user.username || user.id || 'lixblogs-user';
+  const bannerSrc = localBanner || uploadedBannerSrc || generateProfileBanner(defaultSeed, user.avatar_url);
 
   async function handleBannerSave(blob) {
     if (!blob) {
-      // Remove → clear server-side so it stays blank after reload.
+      // Remove → clear server-side and return to the generated default.
       setShowBannerModal(false);
       setBannerError(null);
       try {
@@ -208,11 +211,11 @@ export default function ProfilePage() {
     }
   }
 
-  const avatarSrc = localAvatar || user.avatar_url || null;
+  const avatarSrc = localAvatar || user.avatar_url || generatePixelAvatar(defaultSeed);
 
   async function handleAvatarSave(blob) {
     if (!blob) {
-      // Remove → revert to the default initials avatar.
+      // Remove → revert to the generated geometric avatar.
       setShowAvatarModal(false);
       setAvatarError(null);
       try {
@@ -258,9 +261,7 @@ export default function ProfilePage() {
         {/* Banner + Avatar */}
         <div className="relative mb-16">
           <div className="group w-full h-48 rounded-xl bg-[var(--bg-elevated)] overflow-hidden relative">
-            {bannerSrc && (
-              <img src={bannerSrc} alt="" className="w-full h-full object-cover" />
-            )}
+	            <img src={bannerSrc} alt="" className="w-full h-full object-cover" />
             <button
               onClick={() => setShowBannerModal(true)}
               className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors cursor-pointer"
@@ -270,7 +271,7 @@ export default function ProfilePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {bannerSrc ? 'Change Banner' : 'Add Banner'}
+	                {localBanner || uploadedBannerSrc ? 'Change Banner' : 'Add Banner'}
               </span>
             </button>
           </div>
@@ -283,15 +284,9 @@ export default function ProfilePage() {
             <button
               onClick={() => setShowAvatarModal(true)}
               className="group/av relative h-24 w-24 rounded-full border-4 border-[var(--bg-app)] overflow-hidden block"
-              title={avatarSrc ? 'Change photo' : 'Add photo'}
-            >
-              {avatarSrc ? (
-                <img src={avatarSrc} alt="" className="h-full w-full rounded-full object-cover" />
-              ) : (
-                <div className="h-full w-full rounded-full bg-[var(--bg-elevated)] flex items-center justify-center text-3xl text-[var(--text-muted)] font-bold">
-                  {(user.display_name || user.username || '?')[0].toUpperCase()}
-                </div>
-              )}
+	              title={localAvatar || user.avatar_url ? 'Change photo' : 'Add photo'}
+	            >
+	              <img src={avatarSrc} alt="" className="h-full w-full rounded-full object-cover" />
               <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/av:bg-black/45 transition-colors">
                 <ion-icon name="camera-outline" style={{ fontSize: '22px', color: '#fff' }} className="opacity-0 group-hover/av:opacity-100 transition-opacity" />
               </span>
@@ -311,6 +306,13 @@ export default function ProfilePage() {
             <p className="text-[var(--text-muted)] text-sm mt-0.5">@{user.username}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href={`/${encodeURIComponent(user.username)}`}
+              className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+            >
+              <ion-icon name="eye-outline" style={{ fontSize: '16px' }} />
+              View Public Profile
+            </Link>
             <Link
               href="/settings"
               className="px-4 py-2 text-[13px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"

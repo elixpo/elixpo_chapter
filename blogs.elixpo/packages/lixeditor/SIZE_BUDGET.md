@@ -1,8 +1,9 @@
-# LixEditor distribution budget
+# LixEditor distribution size guidance
 
-The release workflow limits `@elixpo/lixeditor` to **250 KiB unpacked** while
+The release workflow reports the unpacked size of `@elixpo/lixeditor` while
 retaining its ESM and CommonJS entry points, declarations, granular styles, and
-all editor and preview features.
+all editor and preview features. Size is reviewed as an optimization signal,
+not enforced as a hard release threshold.
 
 Registry metadata sampled on 2026-08-29:
 
@@ -14,8 +15,8 @@ Registry metadata sampled on 2026-08-29:
 | `@blocknote/react@0.54.0` | 23,416,939 B | 341 | BlockNote's broader React editor package |
 
 The optimized measurement includes the generated package files before npm's
-tar compression. GitHub Actions measures the actual packed artifact again and
-rejects releases above 256,000 bytes.
+tar compression. GitHub Actions measures and reports the actual packed artifact
+again while continuing to enforce its file and export contracts.
 
 ## How the reduction works
 

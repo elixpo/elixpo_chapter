@@ -1,7 +1,31 @@
 // Blog version-history helpers (#11 E). Snapshots store the same compressed
 // content format as blogs.content.
 
+import { decompressBlogContent } from './compress';
+import { excerptFromBlocks } from './excerpt';
+import { countBlockWords } from './api/v1/blogInput';
+
 const MAX_VERSIONS_PER_BLOG = 30;
+
+export function presentBlogVersion(row, { includeContent = false } = {}) {
+  let content = [];
+  try {
+    const parsed = decompressBlogContent(row?.content);
+    if (Array.isArray(parsed)) content = parsed;
+  } catch {}
+
+  return {
+    id: row.id,
+    label: row.label || 'autosave',
+    created_at: row.created_at,
+    created_by: row.created_by || null,
+    username: row.username || null,
+    display_name: row.display_name || null,
+    excerpt: excerptFromBlocks(content),
+    word_count: countBlockWords(content),
+    ...(includeContent ? { content } : {}),
+  };
+}
 
 /**
  * Record a version snapshot. Best-effort — never throws to the caller.

@@ -34,9 +34,15 @@ export async function POST(request) {
 
     if (action === 'dismiss') {
       await db.batch([
-        db.prepare("UPDATE blogs SET status = 'published' WHERE id = ? AND status = 'under_review'").bind(blogId),
+        db.prepare("UPDATE blogs SET status = 'published', updated_at = unixepoch() WHERE id = ? AND status = 'under_review'").bind(blogId),
         db.prepare("UPDATE reports SET status = 'dismissed' WHERE blog_id = ?").bind(blogId),
       ]);
+      if (blog.status === 'under_review') {
+        try {
+          const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
+          await invalidateBlogLifecycleCaches(blogId);
+        } catch {}
+      }
       return NextResponse.json({ ok: true, action: 'dismiss', restored: blog.status === 'under_review' });
     }
 
@@ -72,6 +78,10 @@ export async function POST(request) {
     try {
       const { kvInvalidate, mediaInventoryCacheKey } = await import('../../../../lib/cache');
       await kvInvalidate(...[...new Set(mediaOwners)].map(mediaInventoryCacheKey));
+    } catch {}
+    try {
+      const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
+      await invalidateBlogLifecycleCaches(blogId);
     } catch {}
 
     // Notify the author by email (best-effort).

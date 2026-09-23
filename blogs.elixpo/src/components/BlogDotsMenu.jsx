@@ -60,7 +60,23 @@ export default function BlogDotsMenu({ blogId, authorId, author = {}, org = null
   const post_ = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
   const flash = (m) => { setDone(m); setTimeout(() => { setDone(''); setOpen(false); }, 900); };
 
-  const showLess = () => { if (needAuth()) return; post_('/api/signals', { blogId, tags, type: 'show_less', weight: -2 }); flash('We’ll show you less like this'); };
+  const showLess = () => {
+    if (needAuth()) return;
+    post_('/api/signals', { blogId, tags, type: 'show_less', weight: -2 });
+    if (tags.length) {
+      fetch('/api/users/me/interests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ remove: tags }),
+      }).then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (Array.isArray(data?.interests)) {
+            window.dispatchEvent(new CustomEvent('lixblogs:interests-changed', { detail: { interests: data.interests } }));
+          }
+        }).catch(() => {});
+    }
+    flash('We’ll show you less like this');
+  };
   const toggleHi = () => { onToggleHighlights?.(); setOpen(false); };
   const followAuthor = () => { if (needAuth() || fAuthor) return; setFAuthor(true); post_(`/api/users/${author.username}/follow`); flash('Following'); };
   const followOrg = () => { if (needAuth() || fOrg) return; setFOrg(true); post_(`/api/orgs/${org.slug}/follow`); flash('Following'); };

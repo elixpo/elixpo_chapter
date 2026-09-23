@@ -252,7 +252,7 @@ export default function SearchBar({ defaultQuery = '', autoFocus = false, compac
                   <ion-icon name="people-outline" style={{ fontSize: '16px', color: 'var(--text-faint)' }} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{o.name}</p>
-                    <p className="text-[11px] truncate" style={{ color: 'var(--text-faint)' }}>@{o.slug}</p>
+                    <p className="text-[11px] truncate" style={{ color: 'var(--text-faint)' }}>@{o.slug}{o.tagline ? ` · ${o.tagline}` : ''}</p>
                   </div>
                 </button>
               ))}

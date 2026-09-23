@@ -178,6 +178,9 @@ export async function enforcePersonalAccessTokenRoute(db, auth, request) {
   const path = url.pathname;
 
   if (auth.resourceType === 'organization') {
+    if (path.startsWith('/api/v1/collections') || path.startsWith('/api/v1/contests')) {
+      throw new ApiAuthError('credential_scope_forbidden', 'Curated collections and contests currently require a personal token.', 403);
+    }
     if (path === '/api/v1/me' || path.startsWith('/api/v1/integrations/') || path.startsWith('/api/v1/collaboration/invitations')) {
       throw new ApiAuthError('credential_scope_forbidden', 'This organization token cannot access personal account resources.', 403);
     }

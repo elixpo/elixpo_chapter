@@ -51,6 +51,12 @@ test('blog input is bounded and normalized for API writes', () => {
   assert.throws(() => normalizeBlogInput({ content: [], coverUrl: 'http://example.com/image.png' }), /HTTPS/);
 });
 
+test('accepts secret mode as a boolean draft setting', () => {
+  assert.equal(normalizeBlogInput({ secret: true }, { partial: true }).secret, true);
+  assert.equal(normalizeBlogInput({ secret: false }, { partial: true }).secret, false);
+  assert.throws(() => normalizeBlogInput({ secret: 'true' }, { partial: true }), /must be boolean/);
+});
+
 test('write preconditions require and compare strong entity tags', async () => {
   const blog = { id: 'blog-1', title: 'Title', content: 'one', updated_at: 1 };
   const etag = await blogEntityTag(blog);

@@ -19,8 +19,12 @@ export async function generateMetadata({ params }) {
     const ownerName = d.owner?.display_name || d.owner?.username || '';
     const title = d.org.name || 'an organization';
     const url = `${origin}/org/join/${id}`;
-    const description = `You're invited to join ${title}${ownerName ? ` (by ${ownerName})` : ''} on LixBlogs.`;
+    const description = [
+      d.org.tagline,
+      `You're invited to join ${title}${ownerName ? ` (by ${ownerName})` : ''} on LixBlogs.`,
+    ].filter(Boolean).join(' ');
     const og = `${origin}/api/og?${new URLSearchParams({
+      v: d.org.updated_at || '1',
       type: 'profile',
       kind: 'Invitation to join',
       title,

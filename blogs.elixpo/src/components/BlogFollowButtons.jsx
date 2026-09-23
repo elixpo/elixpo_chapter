@@ -56,11 +56,18 @@ export function FollowToggle({ kind, handle, compact = false }) {
 }
 
 // End-of-blog follow card — author (+ org when applicable). `author` =
-// { username, display_name, avatar_url }; `org` = { slug, name, logo_url }.
+// { username, display_name, designation, avatar_url }; `org` = { slug, name, logo_url }.
 export default function BlogFollowCard({ author, org }) {
   const rows = [];
   if (org?.slug) rows.push({ kind: 'org', handle: org.slug, name: org.name, avatar: org.logo_url, href: `/${org.slug}`, square: true });
-  if (author?.username) rows.push({ kind: 'user', handle: author.username, name: author.display_name || author.username, sub: `@${author.username}`, avatar: author.avatar_url, href: `/${author.username}` });
+  if (author?.username) rows.push({
+    kind: 'user',
+    handle: author.username,
+    name: author.display_name || author.username,
+    sub: author.designation ? `${author.designation} · @${author.username}` : `@${author.username}`,
+    avatar: author.avatar_url,
+    href: `/${author.username}`,
+  });
   if (rows.length === 0) return null;
 
   return (

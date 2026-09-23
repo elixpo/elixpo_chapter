@@ -14,8 +14,9 @@ export async function GET(request, { params }) {
     const { getDB } = await import('../../../../../lib/cloudflare');
     const db = getDB();
 
-    const blog = await db.prepare('SELECT id, author_id FROM blogs WHERE id = ?').bind(slugid).first();
-    const authorId = blog?.author_id || null;
+    const blog = await db.prepare('SELECT id, author_id, secret FROM blogs WHERE id = ?').bind(slugid).first();
+    // Same-author recommendations would identify the writer of a secret post.
+    const authorId = blog?.secret ? null : blog?.author_id || null;
 
     const picked = [];
     const seen = new Set([slugid]);
@@ -29,7 +30,7 @@ export async function GET(request, { params }) {
     // 1) Shares a tag with this blog.
     const tagRows = await db.prepare(`
       SELECT ${FIELDS} FROM blogs b
-      WHERE b.status = 'published' AND b.id != ? AND ${EXCLUDE_TEST}
+      WHERE b.status = 'published' AND b.secret = 0 AND b.id != ? AND ${EXCLUDE_TEST}
         AND b.id IN (
           SELECT blog_id FROM blog_tags WHERE tag IN (SELECT tag FROM blog_tags WHERE blog_id = ?)
         )
@@ -41,7 +42,7 @@ export async function GET(request, { params }) {
     if (picked.length < limit && authorId) {
       const moreRows = await db.prepare(`
         SELECT ${FIELDS} FROM blogs b
-        WHERE b.status = 'published' AND b.author_id = ? AND b.id != ?
+        WHERE b.status = 'published' AND b.secret = 0 AND b.author_id = ? AND b.id != ?
         ORDER BY b.published_at DESC LIMIT ?
       `).bind(authorId, slugid, limit).all();
       add(moreRows?.results || []);
@@ -51,7 +52,7 @@ export async function GET(request, { params }) {
     if (picked.length < limit) {
       const trend = await db.prepare(`
         SELECT ${FIELDS} FROM blogs b
-        WHERE b.status = 'published' AND b.id != ? AND ${EXCLUDE_TEST}
+        WHERE b.status = 'published' AND b.secret = 0 AND b.id != ? AND ${EXCLUDE_TEST}
         ORDER BY b.like_count DESC, b.view_count DESC, b.published_at DESC LIMIT ?
       `).bind(slugid, limit).all();
       add(trend?.results || []);

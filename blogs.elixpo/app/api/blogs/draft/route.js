@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getSession } from '../../../../lib/auth';
 import { requestTooLarge, byteLength, MAX_BLOG_CONTENT_BYTES } from '../../../../lib/limits';
+import { contentDiscoveryMetadata } from '../../../../lib/recommendations';
 
 // Never let any editor-data response be cached — a signed-out 401 (or one
 // user's data) must not be replayed to another state/user from cache.
@@ -24,7 +25,7 @@ export async function GET(request) {
     const { decompressBlogContent } = await import('../../../../lib/compress');
     const db = getDB();
 
-    const COLS = 'id, slug, title, subtitle, content, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, author_id, published_as, status, page_emoji, collection_id, secret, member_only';
+    const COLS = 'id, slug, title, subtitle, content, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, author_id, published_as, status, page_emoji, collection_id, secret, member_only, language, region';
 
     // The param may be the canonical id (new blogs) or the human slug (edit links).
     // Resolve by id first; otherwise by slug scoped to a blog THIS user can edit
@@ -135,7 +136,7 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { slugid, title, subtitle, tags, publishAs, editorContent, pageEmoji, coverPreview, coverPos, coverZoom, secret, member_only } = body;
+  const { slugid, title, subtitle, tags, publishAs, editorContent, pageEmoji, coverPreview, coverPos, coverZoom, secret, member_only, language, region } = body;
   const storedCover = validCoverUrl(coverPreview);
   const posX = Number.isFinite(coverPos?.x) ? coverPos.x : 50;
   const posY = Number.isFinite(coverPos?.y) ? coverPos.y : 50;
@@ -160,7 +161,14 @@ export async function POST(request) {
     const excerpt = editorContent ? excerptFromBlocks(editorContent) : '';
 
     // Check if blog exists
-    const existing = await db.prepare('SELECT id, author_id, status, secret, member_only FROM blogs WHERE id = ?').bind(slugid).first();
+    const existing = await db.prepare('SELECT id, author_id, status, secret, member_only, language, region FROM blogs WHERE id = ?').bind(slugid).first();
+    const profile = await db.prepare('SELECT locale FROM users WHERE id = ?').bind(existing?.author_id || session.userId).first();
+    const discovery = contentDiscoveryMetadata({
+      language: language ?? existing?.language,
+      region: region ?? existing?.region,
+      locale: profile?.locale,
+      headers: request.headers,
+    });
 
     // Same lock as /publish: secret is free to toggle while the post is a draft and
     // frozen once it has been public. Autosave must never be able to flip it either.
@@ -188,11 +196,11 @@ export async function POST(request) {
       if (!perm.ok) return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
       await db.prepare(`
         UPDATE blogs SET title = ?, subtitle = ?, content = ?, excerpt = ?, published_as = ?,
-          page_emoji = ?, cover_image_r2_key = ?, cover_pos_x = ?, cover_pos_y = ?, cover_zoom = ?, secret = ?, member_only = ?, updated_at = ?
+          page_emoji = ?, cover_image_r2_key = ?, cover_pos_x = ?, cover_pos_y = ?, cover_zoom = ?, secret = ?, member_only = ?, language = ?, region = ?, updated_at = ?
         WHERE id = ?
       `).bind(
         title || '', subtitle || '', compressedContent, excerpt, publishAs || 'personal',
-        pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, now, slugid
+        pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, slugid
       ).run();
       // Throttled version snapshot (≤ 1 / 5 min) so history accrues as people edit (#11 E).
       if (compressedContent) {
@@ -206,11 +214,11 @@ export async function POST(request) {
         publishAs: publishAs || 'personal',
       });
       await db.prepare(`
-        INSERT INTO blogs (id, slug, title, subtitle, content, excerpt, author_id, published_as, status, page_emoji, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, secret, member_only, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO blogs (id, slug, title, subtitle, content, excerpt, author_id, published_as, status, page_emoji, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, secret, member_only, language, region, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         slugid, slug, title || '', subtitle || '', compressedContent, excerpt,
-        session.userId, publishAs || 'personal', pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, now, now
+        session.userId, publishAs || 'personal', pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, now
       ).run();
     }
 
@@ -224,6 +232,16 @@ export async function POST(request) {
       const { kvInvalidate, mediaInventoryCacheKey } = await import('../../../../lib/cache');
       await kvInvalidate(mediaInventoryCacheKey(session.userId));
     } catch {}
+
+    // Autosave can edit an already-published post. Its title, tags, slug-adjacent
+    // metadata, and updated timestamp must reach the sitemap without waiting for
+    // the cache TTL. New drafts do not belong in public discovery.
+    if (existing && existing.status === 'published') {
+      try {
+        const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
+        await invalidateBlogLifecycleCaches(slugid);
+      } catch {}
+    }
 
     // Sync tags
     if (Array.isArray(tags)) {

@@ -110,7 +110,7 @@ export async function GET(request) {
       const now = Math.floor(Date.now() / 1000);
       const expired = !!(invite.expires_at && invite.expires_at < now);
       const maxed = !!(invite.max_uses && invite.uses >= invite.max_uses);
-      const org = await db.prepare('SELECT slug, name, description, logo_url, logo_r2_key, owner_id FROM orgs WHERE id = ?')
+      const org = await db.prepare('SELECT slug, name, tagline, description, logo_url, logo_r2_key, owner_id FROM orgs WHERE id = ?')
         .bind(invite.org_id).first();
       const owner = org ? await db.prepare('SELECT display_name, username FROM users WHERE id = ?').bind(org.owner_id).first() : null;
       let alreadyMember = false;
@@ -121,7 +121,7 @@ export async function GET(request) {
       }
       return NextResponse.json({
         invite: { role: invite.role, expired, maxed, valid: !expired && !maxed },
-        org: org ? { slug: org.slug, name: org.name, description: org.description, logo_url: org.logo_url || null } : null,
+        org: org ? { slug: org.slug, name: org.name, tagline: org.tagline || '', description: org.description, logo_url: org.logo_url || null } : null,
         owner: owner ? { display_name: owner.display_name, username: owner.username } : null,
         alreadyMember,
         authed: !!session?.userId,

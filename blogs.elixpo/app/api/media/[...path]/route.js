@@ -17,10 +17,20 @@ export async function GET(request, { params }) {
 
   // Already a full URL stored by mistake? Pass it straight through.
   if (/^https?:\/\//i.test(publicId)) {
-    return NextResponse.redirect(publicId, 302);
+    return NextResponse.redirect(publicId, {
+      status: 302,
+      headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' },
+    });
   }
 
   const version = new URL(request.url).searchParams.get('v');
   const url = getCloudinaryUrl(publicId) + (version ? `?v=${encodeURIComponent(version)}` : '');
-  return NextResponse.redirect(url, 302);
+  return NextResponse.redirect(url, {
+    status: 302,
+    headers: {
+      'Cache-Control': version
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=3600, s-maxage=86400',
+    },
+  });
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { skillInspect, skillInstall, skillList } from '../src/commands/skill/index.js';
+import { skillInspect, skillInstall, skillInstallAll, skillList } from '../src/commands/skill/index.js';
 
 test('bundled skills are individually discoverable', async () => {
   const skills = await skillList();
@@ -13,8 +13,9 @@ test('bundled skills are individually discoverable', async () => {
     'lixblogs-publish',
   ]);
   assert.equal(skills.find((skill) => skill.name === 'lixblogs-analytics').minimumCliVersion, '1.3.0');
+  assert.equal(skills.find((skill) => skill.name === 'lixblogs-author').minimumCliVersion, '1.5.8');
   assert.equal(skills.find((skill) => skill.name === 'lixblogs-media').minimumCliVersion, '1.5.0');
-  assert.ok(skills.filter((skill) => !['lixblogs-analytics', 'lixblogs-media'].includes(skill.name)).every((skill) => skill.minimumCliVersion === '1.2.0'));
+  assert.ok(skills.filter((skill) => !['lixblogs-analytics', 'lixblogs-author', 'lixblogs-media'].includes(skill.name)).every((skill) => skill.minimumCliVersion === '1.2.0'));
 });
 
 test('skill inspection returns the exact agent instruction', async () => {
@@ -30,4 +31,13 @@ test('skill installation supports a non-writing dry run', async () => {
   });
   assert.equal(result.dryRun, true);
   assert.match(result.target, /\.test-agent-skills\/lixblogs-publish$/);
+});
+
+test('all bundled skills can be planned for a fresh agent workspace', async () => {
+  const result = await skillInstallAll({
+    options: { target: '.test-agent-skills', 'dry-run': true },
+  });
+  assert.equal(result.all, true);
+  assert.equal(result.skills.length, 6);
+  assert.ok(result.skills.every(({ target }) => target.includes('.test-agent-skills/lixblogs-')));
 });

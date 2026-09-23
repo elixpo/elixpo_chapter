@@ -50,6 +50,10 @@ export async function DELETE(request, { params }) {
       const { kvInvalidate, mediaInventoryCacheKey } = await import('../../../../lib/cache');
       await kvInvalidate(...[...new Set(mediaOwners)].map(mediaInventoryCacheKey));
     } catch {}
+    try {
+      const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
+      await invalidateBlogLifecycleCaches(slugid);
+    } catch {}
 
     return NextResponse.json({ ok: true, deleted: true });
   } catch (e) {

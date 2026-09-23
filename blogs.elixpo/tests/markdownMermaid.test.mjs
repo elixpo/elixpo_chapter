@@ -31,6 +31,36 @@ test('Mermaid extraction preserves meaningful indentation on boundary lines', ()
   assert.equal(result.diagrams[0], '    flowchart TD\n      A --> B');
 });
 
+test('Mermaid extraction handles long and tilde fences without touching ordinary code', () => {
+  const markdown = [
+    '````js',
+    '```mermaid',
+    'flowchart TD',
+    '```',
+    '````',
+    '~~~ mermaid',
+    'sequenceDiagram',
+    '  A->>B: Hello',
+    '~~~',
+    '````mermaid',
+    'flowchart LR',
+    '  A --> B',
+    '`````',
+  ].join('\n');
+  const result = extractMermaidFences(markdown);
+
+  assert.deepEqual(result.diagrams, [
+    'sequenceDiagram\n  A->>B: Hello',
+    'flowchart LR\n  A --> B',
+  ]);
+  assert.match(result.content, /````js\n```mermaid\nflowchart TD\n```\n````/);
+});
+
+test('Mermaid extraction leaves an unfinished fence unchanged', () => {
+  const markdown = '```mermaid\nflowchart TD\n  A --> B';
+  assert.deepEqual(extractMermaidFences(markdown), { content: markdown, diagrams: [] });
+});
+
 test('rich Mermaid code-block clipboard data becomes a Mermaid placeholder', () => {
   const result = extractMermaidPaste(
     'flowchart TD\n    A --> B',
@@ -39,6 +69,13 @@ test('rich Mermaid code-block clipboard data becomes a Mermaid placeholder', () 
 
   assert.equal(result.content, 'MERMAIDPLACEHOLDER0END');
   assert.deepEqual(result.diagrams, ['flowchart TD\n    A --> B']);
+});
+
+test('rich code blocks with a plain Mermaid class or data-lang are recognized', () => {
+  for (const html of ['<pre class="mermaid">graph TD</pre>', '<code data-lang="mermaid">graph TD</code>']) {
+    const result = extractMermaidPaste('graph TD\n  A --> B', html);
+    assert.deepEqual(result.diagrams, ['graph TD\n  A --> B']);
+  }
 });
 
 test('Mermaid source normalization accepts fences and common diagram aliases', () => {

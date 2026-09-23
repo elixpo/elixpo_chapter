@@ -23,6 +23,23 @@ lixblogs logout
 
 Credentials are stored in the operating-system keychain. On a headless system, the CLI fails closed unless you explicitly select its non-persistent fallback.
 
+### Authenticate automation with a personal access token
+
+Create a scoped token in **Settings → API** for CI jobs, containers, or scheduled processes. Pass it through the process environment:
+
+```bash
+LIXBLOGS_TOKEN="$LIXBLOGS_PAT" lixblogs blog list --json --no-input
+```
+
+Or mount it as a secret file:
+
+```bash
+lixblogs --token-file /run/secrets/lixblogs blog list --json --no-input
+LIXBLOGS_TOKEN_FILE=/run/secrets/lixblogs lixblogs whoami --json --no-input
+```
+
+Credential resolution is deterministic: `--token-file`, then `LIXBLOGS_TOKEN`, then `LIXBLOGS_TOKEN_FILE`, then the active device-login profile. Direct tokens are not persisted locally. The API remains authoritative for their scopes and personal or organization boundary.
+
 ## Profiles and scopes
 
 ```bash
@@ -61,10 +78,13 @@ lixblogs blog unpublish BLOG_ID --yes
 lixblogs blog delete BLOG_ID --yes
 lixblogs blog restore BLOG_ID --yes
 lixblogs blog history BLOG_ID
+lixblogs blog history BLOG_ID --version VERSION_ID
 lixblogs blog restore-version BLOG_ID --version VERSION_ID --yes
 ```
 
 Publishing and state transitions require `--yes`. Deletion moves a post to trash by default. Permanent deletion additionally needs `--permanent`, the permanent-delete scope, and explicit confirmation.
+
+History lists the timestamp, author, word count, and excerpt for each retained content snapshot. Inspect an exact version before restoring it; restoration first saves the current document as an undo point.
 
 ## Comments and media
 
@@ -81,6 +101,38 @@ lixblogs media delete MEDIA_ID --yes
 ```
 
 Image generation uses the Pollinations account connected in **Settings → Integrations**. The provider key stays on the server. Each generate command is one explicit billable attempt and is never automatically retried; keep the local output so a failed Cloudinary upload can be retried without regenerating.
+
+## Curated collections
+
+```bash
+lixblogs collection list
+lixblogs collection create --title "Systems reading" --visibility private
+lixblogs collection add COLLECTION_ID --blog BLOG_ID --note "Recommended introduction"
+lixblogs collection entries COLLECTION_ID
+lixblogs collection edit COLLECTION_ID --visibility public
+lixblogs collection remove COLLECTION_ID --blog BLOG_ID --yes
+```
+
+Collections reference the canonical public story and retain its original author and license. Reads use `lixblogs:blog:read`; changes use `lixblogs:blog:write`. See [Curated collections](/docs/collections) for visibility and author-control rules.
+
+## Writing contests
+
+```bash
+lixblogs contest list --status live
+lixblogs contest create --title "Open web" \
+  --starts-at 2026-10-01T00:00:00Z \
+  --submissions-close-at 2026-10-15T23:59:59Z \
+  --judging-closes-at 2026-10-20T23:59:59Z \
+  --problem "Write about the open web" \
+  --rules "Original work only" \
+  --minimum-account-age-months 1 --require-bio
+lixblogs contest publish CONTEST_ID --yes
+lixblogs contest submit CONTEST_ID --blog BLOG_ID
+lixblogs contest submissions CONTEST_ID --snapshot --json
+lixblogs contest results CONTEST_ID --award winner:SUBMISSION_ID --finalize --yes
+```
+
+The CLI covers contest drafts, metadata and eligibility edits, lifecycle filtering, publication and cancellation, moderator and judge roles, entries and withdrawals, frozen judging snapshots, placements, and final results. `contest delete` is restricted to organizer-owned private drafts and requires `lixblogs:blog:delete`. See [Writing contests](/docs/contests) for the full lifecycle and authorization model.
 
 ## Automation contract
 
@@ -131,3 +183,18 @@ lixblogs skill install lixblogs-author --target .agents/skills --yes
 ```
 
 Install only the workflow needed for the current task. Skill installation never overwrites an existing folder unless `--force --yes` is explicit. Each skill uses the same JSON, scope, confirmation, and recovery contracts documented above.
+
+### Bootstrap a separate agent workspace
+
+Skills are bundled in the npm package, so a machine does not need a checkout of the LixBlogs repository. From the target workspace:
+
+```bash
+npm install --global @elixpo/lixblogs-cli
+lixblogs skill install --all --target .agents/skills --dry-run --json --no-input
+lixblogs skill install --all --target .agents/skills --yes --json --no-input
+lixblogs login
+```
+
+An agent should read only the skill relevant to its task from `.agents/skills/`. Use a different `--target` when the agent runtime discovers workspace skills elsewhere. Installing skills does not authenticate the CLI and does not grant scopes; device login remains a separate user-approved action.
+
+For headless automation, [PAT credential support is tracked separately](https://github.com/elixpo/blogs.elixpo/issues/301). Until it reaches the published package, unattended jobs should not copy keychain credentials or browser sessions into a runner.

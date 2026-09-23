@@ -9,6 +9,11 @@
  * Degrades gracefully when KV is unavailable (local dev).
  */
 
+// Shared by the sitemap producer and every mutation that can add, remove, or
+// rename a public URL. Keeping this key in one place prevents publication paths
+// from silently leaving crawler discovery data stale.
+export const PUBLIC_SITEMAP_CACHE_KEY = 'v2:public-sitemap-rows';
+
 /**
  * Read-through cache. Returns cached value if exists, otherwise calls fetcher,
  * caches the result, and returns it.

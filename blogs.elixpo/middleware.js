@@ -9,7 +9,7 @@ const pathMatches = (pathname, prefix) => pathname === prefix || pathname.starts
 
 // All known app route prefixes — anything NOT in this set gets treated as a profile/blog handle
 const APP_ROUTES = new Set([
-  'about', 'api', 'callback', 'edit', 'feed', 'handle', 'intro', 'library',
+  'about', 'api', 'callback', 'edit', 'explore', 'feed', 'handle', 'intro', 'library',
   'login', 'new-blog', 'notifications', 'profile', 'pricing', 'register', 'settings',
   'sign-in', 'sign-up', 'stats', 'stories', 'org',
   'help', 'docs', 'privacy', 'terms',

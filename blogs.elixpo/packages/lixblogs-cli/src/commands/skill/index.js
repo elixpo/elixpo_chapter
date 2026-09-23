@@ -87,3 +87,28 @@ export async function skillInstall({ name, options }) {
   await cp(source, target, { recursive: true, force: Boolean(options.force) });
   return { installed: true, name: skillName, target };
 }
+
+export async function skillInstallAll({ options }) {
+  const directory = await root();
+  const skills = await skillList();
+  const targetRoot = path.resolve(options.target || '.agents/skills');
+  const targets = await Promise.all(skills.map(async ({ name }) => {
+    const target = path.join(targetRoot, name);
+    return { name, target, replace: await exists(target) };
+  }));
+
+  if (options['dry-run']) return { dryRun: true, all: true, targetRoot, skills: targets };
+  const existing = targets.filter(({ replace }) => replace);
+  if (existing.length && !options.force) {
+    const error = new Error(`Skills already exist: ${existing.map(({ name }) => name).join(', ')}.`);
+    error.code = 'skill_exists';
+    error.hint = 'Inspect the existing skills or re-run with --all --force --yes to replace the complete set.';
+    throw error;
+  }
+
+  requireConfirmation(options, `${existing.length ? 'Replacing' : 'Installing'} all LixBlogs skills in ${targetRoot}`);
+  await Promise.all(targets.map(({ name, target }) =>
+    cp(path.join(directory, name), target, { recursive: true, force: Boolean(options.force) })
+  ));
+  return { installed: true, all: true, targetRoot, skills: targets.map(({ name, target }) => ({ name, target })) };
+}

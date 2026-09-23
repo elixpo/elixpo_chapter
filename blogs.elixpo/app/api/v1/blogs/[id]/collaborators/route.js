@@ -90,7 +90,7 @@ export async function POST(request, { params }) {
       ON CONFLICT(blog_id, user_id) DO UPDATE SET role = excluded.role
     `).bind(state.id, invitee.id, role).run();
     try {
-      const { notifyPendingBlogCollaborators } = await import('../../../../../../../lib/blogInviteNotifications');
+      const { notifyPendingBlogCollaborators } = await import('../../../../../../lib/blogInviteNotifications');
       await notifyPendingBlogCollaborators(state.db, state.id, state.auth.userId);
     } catch {}
     await audit(state, 'collaborators.invite', invitee.id);

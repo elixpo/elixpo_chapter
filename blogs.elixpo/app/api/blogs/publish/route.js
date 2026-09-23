@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { getSession } from '../../../../lib/auth';
 import { requestTooLarge, byteLength, MAX_BLOG_CONTENT_BYTES, MAX_TITLE_LEN, MAX_SUBTITLE_LEN } from '../../../../lib/limits';
 import { readTimeFromWords } from '../../../../lib/readTime';
+import { BLOG_LICENSES } from '../../../../lib/curatedCollections';
+import { contentDiscoveryMetadata } from '../../../../lib/recommendations';
 
 export async function POST(request) {
   const session = await getSession();
@@ -15,7 +17,10 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { slugid, title, subtitle, tags, publishAs, editorContent, pageEmoji, coverUrl, coverPos, coverZoom, status, lastKnownUpdatedAt, slug: requestedSlug, collectionId, secret, member_only } = body;
+  const { slugid, title, subtitle, tags, publishAs, editorContent, pageEmoji, coverUrl, coverPos, coverZoom, status, lastKnownUpdatedAt, slug: requestedSlug, collectionId, secret, member_only, license: requestedLicense, language, region } = body;
+  if (requestedLicense !== undefined && !BLOG_LICENSES.has(requestedLicense)) {
+    return NextResponse.json({ error: 'Unsupported content license' }, { status: 400 });
+  }
   const storedCover = validCoverUrl(coverUrl);
   const posX = Number.isFinite(coverPos?.x) ? coverPos.x : 50;
   const posY = Number.isFinite(coverPos?.y) ? coverPos.y : 50;
@@ -63,7 +68,20 @@ export async function POST(request) {
     const excerpt = editorContent ? excerptFromBlocks(editorContent) : '';
     const normalizedTags = Array.isArray(tags) ? normalizeTags(tags) : null;
 
-    const existing = await db.prepare('SELECT id, author_id, status, published_as, slug, secret, member_only FROM blogs WHERE id = ?').bind(slugid).first();
+    const existing = await db.prepare('SELECT id, author_id, status, published_as, slug, secret, member_only, license, language, region FROM blogs WHERE id = ?').bind(slugid).first();
+    const profile = await db.prepare('SELECT locale FROM users WHERE id = ?').bind(existing?.author_id || session.userId).first();
+    const discovery = contentDiscoveryMetadata({
+      language: language ?? existing?.language,
+      region: region ?? existing?.region,
+      locale: profile?.locale,
+      headers: request.headers,
+    });
+    let finalLicense = requestedLicense || existing?.license;
+    if (!finalLicense) {
+      const preference = await db.prepare('SELECT default_license FROM curation_preferences WHERE user_id = ?')
+        .bind(existing?.author_id || session.userId).first();
+      finalLicense = preference?.default_license || 'all-rights-reserved';
+    }
 
     // Secret mode locks on first publish. While the post is still a draft the author
     // may toggle it freely; once it has been public even once the flag is frozen.
@@ -163,10 +181,10 @@ export async function POST(request) {
       let query = `
         UPDATE blogs SET title = ?, subtitle = ?, slug = ?, content = ?, excerpt = ?, published_as = ?,
           collection_id = ?, status = ?, page_emoji = ?, cover_image_r2_key = ?, cover_pos_x = ?, cover_pos_y = ?, cover_zoom = ?,
-          read_time_minutes = ?, secret = ?, member_only = ?, updated_at = ?
+          read_time_minutes = ?, secret = ?, member_only = ?, license = ?, language = ?, region = ?, updated_at = ?
       `;
       const params = [title, subtitle || '', slug, compressedContent, excerpt, publishAs || 'personal',
-        finalCollectionId, targetStatus, pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, now];
+        finalCollectionId, targetStatus, pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, finalLicense, discovery.language, discovery.region, now];
 
       if (publishedAt) {
         query += ', published_at = ?';
@@ -191,12 +209,12 @@ export async function POST(request) {
       // Create and publish in one step
       const statements = [db.prepare(`
         INSERT INTO blogs (id, slug, title, subtitle, content, excerpt, author_id, published_as, collection_id, status,
-          page_emoji, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, read_time_minutes, secret, member_only, created_at, updated_at, published_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          page_emoji, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, read_time_minutes, secret, member_only, license, language, region, created_at, updated_at, published_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         slugid, slug, title, subtitle || '', compressedContent, excerpt,
         session.userId, publishAs || 'personal', finalCollectionId, targetStatus,
-        pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, now, now,
+        pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, finalLicense, discovery.language, discovery.region, now, now,
         (targetStatus === 'published' || targetStatus === 'unlisted') ? now : null
       )];
       if (normalizedTags) {
@@ -222,16 +240,15 @@ export async function POST(request) {
       try { const { snapshotVersion } = await import('../../../../lib/blogVersions'); await snapshotVersion(db, slugid, compressedContent, { label: 'published', userId: session.userId }); } catch {}
     }
 
-    // Invalidate caches
+    // Refresh both reader-facing discovery caches and the sitemap. This runs for
+    // publish, update, unlist, and draft transitions handled by this endpoint.
     try {
+      const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
       const { kvInvalidate, mediaInventoryCacheKey } = await import('../../../../lib/cache');
-      await kvInvalidate(
-        `v1:tags:popular:30`, `v1:tags:popular:12`,
-        `v1:trending:3`, `v1:trending:5`, `v1:trending:10`,
-        `v1:feed:anon:trending:p1`,
-        `v1:interactions:${slugid}`,
-        mediaInventoryCacheKey(session.userId),
-      );
+      await Promise.all([
+        invalidateBlogLifecycleCaches(slugid),
+        kvInvalidate(mediaInventoryCacheKey(session.userId)),
+      ]);
     } catch {}
 
     // Canonical, scope-aware reader URL (personal / org / collection) keyed off

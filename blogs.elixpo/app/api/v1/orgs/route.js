@@ -16,6 +16,7 @@ function serializeOrg(row, role, isOwner) {
         id: row.id,
         slug: row.slug,
         name: row.name,
+        tagline: row.tagline || "",
         description: row.description || "",
         role,
         isOwner: Boolean(isOwner),

@@ -2,10 +2,11 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '../../../lib/auth';
 import { STAFF_ORG_ID } from '../../../lib/staff';
+import { loadRecommendationContext, rankBlogs, stripInternalRecommendationFields } from '../../../lib/recommendations';
 
 const BLOG_FIELDS = `b.id, b.slug, b.secret, b.title, b.subtitle, b.excerpt, b.cover_image_r2_key, b.page_emoji,
   b.author_id, b.published_as, b.published_at, b.read_time_minutes,
-  b.like_count, b.clap_total, b.comment_count, b.view_count`;
+  b.like_count, b.clap_total, b.comment_count, b.view_count, b.language, b.region`;
 
 // Secret blogs must never appear in an author-derived feed bucket. "Posts by people
 // you follow" would tell a reader the author is someone they follow — with a small
@@ -39,11 +40,13 @@ export async function GET(request) {
     // Cache anonymous feeds (shared across all anonymous users)
     if (!userId) {
       const { kvCache } = await import('../../../lib/cache');
+      const anonymousLanguage = String(request.headers.get('accept-language') || 'und').split(',')[0].split('-')[0].toLowerCase();
+      const anonymousRegion = String(request.headers.get('cf-ipcountry') || 'global').toUpperCase();
       const cacheKey = filterTag
         ? `v1:feed:anon:tag:${filterTag}:p${page}`
         : filterType === 'featured'
         ? `v1:feed:anon:featured:p${page}`
-        : `v1:feed:anon:trending:p${page}`;
+        : `v2:feed:anon:recommended:${anonymousLanguage}:${anonymousRegion}:p${page}`;
 
       const cached = await kvCache(cacheKey, 180, async () => {
         const { getDB } = await import('../../../lib/cloudflare');
@@ -53,7 +56,7 @@ export async function GET(request) {
           ? await queryByTag(db, filterTag, now, limit, offset)
           : filterType === 'featured'
           ? backfill(await queryFeatured(db, now, limit, offset), await queryTrending(db, now, limit, offset), limit)
-          : await queryTrending(db, now, limit, offset);
+          : await queryRecommendedAnonymous(db, request.headers, now, limit, offset);
         // Recency fallback so the public feed isn't empty when posts are older than the trending window.
         if (!filterTag && posts.length < limit) {
           const recent = await queryRecent(db, limit, offset);
@@ -83,7 +86,7 @@ export async function GET(request) {
     } else if (filterTag) {
       posts = await queryByTag(db, filterTag, now, limit, offset);
     } else {
-      posts = await queryBlended(db, userId, now, limit);
+      posts = await queryBlended(db, userId, request.headers, now, limit, offset);
     }
 
     posts = await enrichPosts(db, posts, userId);
@@ -150,10 +153,10 @@ async function queryInterests(db, userId, now, limit) {
     FROM blogs b
     WHERE b.status = 'published'${EXCLUDE_TEST} AND b.published_at > ?
       AND b.id IN (
-        SELECT blog_id FROM blog_tags WHERE tag IN (
-          SELECT tag FROM user_interests WHERE user_id = ?
+        SELECT blog_id FROM blog_tags WHERE LOWER(tag) IN (
+          SELECT LOWER(tag) FROM user_interests WHERE user_id = ?
           UNION
-          SELECT DISTINCT tag FROM user_signals WHERE user_id = ? AND tag IS NOT NULL AND weight > 0 AND created_at > ?
+          SELECT DISTINCT LOWER(tag) FROM user_signals WHERE user_id = ? AND tag IS NOT NULL AND weight > 0 AND created_at > ?
         )
       )
       AND b.author_id != ?
@@ -226,50 +229,62 @@ async function queryRecent(db, limit, offset = 0) {
 }
 
 // ─── Blended feed (3 buckets merged in JS) ───────────────────────────
-async function queryBlended(db, userId, now, limit) {
-  const [reposts, following, interests, trending] = await Promise.all([
-    queryFollowedReposts(db, userId, now, 15),
-    queryFollowing(db, userId, now, 15, 0),
-    queryInterests(db, userId, now, 15),
-    queryTrending(db, now, 20, 0),
+async function queryBlended(db, userId, headers, now, limit, offset = 0) {
+  const candidateLimit = Math.min(100, Math.max(40, limit * 3 + offset));
+  const [reposts, following, interests, trending, recent] = await Promise.all([
+    queryFollowedReposts(db, userId, now, candidateLimit),
+    queryFollowing(db, userId, now, candidateLimit, 0),
+    queryInterests(db, userId, now, candidateLimit),
+    queryTrending(db, now, candidateLimit, 0),
+    queryRecent(db, candidateLimit, 0),
   ]);
 
   // Deduplicate by ID. Reposts go FIRST so a post reshared by someone you follow
   // claims the slot (carrying reshared_by_id) and gets top priority.
   const seen = new Set();
   const all = [];
-  for (const post of [...reposts, ...following, ...interests, ...trending]) {
+  for (const post of [...reposts, ...following, ...interests, ...trending, ...recent]) {
     if (!seen.has(post.id)) {
       seen.add(post.id);
 
-      // Score
-      const isReshared = !!post.reshared_by_id;
-      const isFollowed = following.some(p => p.id === post.id);
-      const isInterest = interests.some(p => p.id === post.id);
-      const hoursSince = Math.max(0, (now - (post.reshared_at || post.published_at)) / 3600);
-      const recency = Math.max(0, 20 - hoursSince / 12);
-      const engagement = Math.min(20, (post.like_count || 0) * 0.5 + (post.comment_count || 0) * 1.5 + (post.recent_views || 0) * 0.1);
-
-      post._score = (isReshared ? 70 : 0) + (isFollowed ? 50 : 0) + (isInterest ? 30 : 0) + engagement + recency;
-      all.push(post);
+      all.push({
+        ...post,
+        _reshared: !!post.reshared_by_id,
+        _followed: following.some(candidate => candidate.id === post.id),
+      });
     }
   }
 
-  // Sort by score descending
-  all.sort((a, b) => b._score - a._score);
-  const ranked = all.slice(0, limit).map(({ _score, ...rest }) => rest);
+  await attachCandidateTags(db, all);
+  const context = await loadRecommendationContext(db, userId, headers);
+  const eligible = await filterMuted(db, userId, all);
+  const ranked = rankBlogs(eligible, context, { now })
+    .slice(offset, offset + limit)
+    .map(stripInternalRecommendationFields);
 
-  // Recency fallback — personalization stays on top, but never show an empty/
-  // short feed when published content exists (older posts, no follows/interests).
-  if (ranked.length < limit) {
-    const recent = await queryRecent(db, limit, 0);
-    const have = new Set(ranked.map(p => p.id));
-    for (const post of recent) {
-      if (ranked.length >= limit) break;
-      if (!have.has(post.id)) { have.add(post.id); ranked.push(post); }
-    }
-  }
   return ranked;
+}
+
+async function queryRecommendedAnonymous(db, headers, now, limit, offset) {
+  const candidateLimit = Math.min(120, Math.max(60, limit * 4 + offset));
+  const recent = await queryRecent(db, candidateLimit, 0);
+  await attachCandidateTags(db, recent);
+  const context = await loadRecommendationContext(db, null, headers);
+  return rankBlogs(recent, context, { now })
+    .slice(offset, offset + limit)
+    .map(stripInternalRecommendationFields);
+}
+
+async function attachCandidateTags(db, posts) {
+  if (!posts.length) return posts;
+  const tags = await batchQuery(db, 'SELECT blog_id, tag FROM blog_tags WHERE blog_id IN', posts.map(post => post.id));
+  const tagMap = new Map();
+  for (const row of tags) {
+    if (!tagMap.has(row.blog_id)) tagMap.set(row.blog_id, []);
+    tagMap.get(row.blog_id).push(row.tag);
+  }
+  for (const post of posts) post.tags = tagMap.get(post.id) || [];
+  return posts;
 }
 
 // ─── Enrich posts with author, tags, permissions ────────────────────

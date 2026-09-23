@@ -625,9 +625,9 @@ run_target_standard() {
     if ! $NO_BUMP; then
       run_in_dir "$SCRIPT_DIR/packages/vscode-lixeditor" npm version "$BUMP" --no-git-tag-version
     fi
-    $action_build && vscode_build
-    $action_deploy && vscode_deploy
-    return
+    if $action_build; then vscode_build; fi
+    if $action_deploy; then vscode_deploy; fi
+    return 0
   fi
 
   if [ "$target" = "package" ] || [ "$target" = "github" ]; then
@@ -649,14 +649,16 @@ run_target_standard() {
 
   case "$target" in
     worker)
-      $action_build && worker_build
-      $action_deploy && worker_deploy
+      if $action_build; then worker_build; fi
+      if $action_deploy; then worker_deploy; fi
       ;;
     pages)
-      $action_build && pages_build
-      $action_deploy && pages_deploy
+      if $action_build; then pages_build; fi
+      if $action_deploy; then pages_deploy; fi
       ;;
   esac
+
+  return 0
 }
 
 # ── Release Commands ─────────────────────────────────────────

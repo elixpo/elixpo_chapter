@@ -39,6 +39,33 @@ export function blogExcerpt(blog, maxLength = 240) {
   return normalize(blog?.subtitle) || normalize(blog?.excerpt) || extractBlogText(blog?.content, maxLength);
 }
 
+// Search snippets need a page-specific synopsis, not a string of author, tag, and
+// reading-time facts. Combine the writer's strongest summary fields while avoiding
+// the common case where the stored excerpt simply repeats the subtitle.
+export function blogSearchDescription(blog, maxLength = 160) {
+  const prose = normalize(blog?.excerpt) || extractBlogText(blog?.content, maxLength * 2);
+  const candidates = [
+    normalize(blog?.subtitle),
+    prose,
+  ].filter(Boolean);
+  const parts = [];
+  for (const candidate of candidates) {
+    const lower = candidate.toLowerCase();
+    const exact = parts.findIndex((part) => part.toLowerCase() === lower);
+    if (exact !== -1) continue;
+    const expanded = parts.findIndex((part) => lower.startsWith(part.toLowerCase()));
+    if (expanded !== -1) {
+      parts[expanded] = candidate;
+      continue;
+    }
+    if (parts.some((part) => part.toLowerCase().startsWith(lower))) continue;
+    parts.push(candidate);
+  }
+  const summary = normalize(parts.join(' — '));
+  if (summary.length <= maxLength) return summary;
+  return `${summary.slice(0, maxLength - 1).replace(/\s+\S*$/, '')}…`;
+}
+
 export function articleImageVariants(url) {
   if (!/^https?:\/\//.test(url || '')) return [];
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return [url];

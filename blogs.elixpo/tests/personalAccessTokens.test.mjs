@@ -72,6 +72,25 @@ test('authenticates PATs and enforces their operation scopes', async () => {
   );
 });
 
+test('rejects a revoked PAT on the next request without an authorization cache', async () => {
+  const db = tokenDatabase();
+  const created = await createPersonalAccessToken(db, 'user-1', {
+    name: 'Deploy workflow',
+    scopes: ['lixblogs:blog:read'],
+  });
+  const request = new Request('https://blogs.elixpo.com/api/v1/blogs', {
+    headers: { authorization: `Bearer ${created.token}` },
+  });
+
+  await requireBearerAuth(request, ['lixblogs:blog:read'], { db });
+  db.stored.revoked_at = Math.floor(Date.now() / 1000);
+
+  await assert.rejects(
+    requireBearerAuth(request, ['lixblogs:blog:read'], { db }),
+    (error) => error.code === 'invalid_token' && /revoked/.test(error.message),
+  );
+});
+
 test('keeps personal and organization publication grants isolated', () => {
   const personal = { credentialType: 'pat', resourceType: 'personal', userId: 'user-1' };
   const organization = { credentialType: 'pat', resourceType: 'organization', organizationId: 'org-1' };

@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
+import { CURATED_ENTRY_SELECT, serializeCuratedEntry } from '../../../../lib/curatedCollections';
 
 // GET /api/library/public?username=&slug= — a public reading list + its blogs.
 export async function GET(request) {
@@ -14,31 +15,43 @@ export async function GET(request) {
     const owner = await db.prepare('SELECT id, username, display_name, avatar_url FROM users WHERE LOWER(username) = LOWER(?)').bind(username).first();
     if (!owner) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const list = await db.prepare(
-      'SELECT id, name, description FROM bookmark_collections WHERE user_id = ? AND slug = ? AND is_public = 1'
-    ).bind(owner.id, slug).first();
+    const list = await db.prepare(`
+      SELECT id, name, description, introduction, cover_url, visibility, updated_at
+      FROM bookmark_collections
+      WHERE user_id = ? AND LOWER(slug) = LOWER(?) AND visibility IN ('public', 'unlisted')
+    `).bind(owner.id, slug).first();
     if (!list) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const rows = await db.prepare(`
-      SELECT b.id, b.slug, b.title, b.subtitle, b.excerpt, b.cover_image_r2_key, b.published_as,
-        b.read_time_minutes, b.published_at, b.author_id,
-        u.username AS author_username, u.display_name AS author_name, u.avatar_url AS author_avatar,
-        o.slug AS org_slug, c.slug AS collection_slug,
-        bk.created_at AS saved_at
-      FROM bookmarks bk
-      JOIN blogs b ON b.id = bk.blog_id AND b.status = 'published'
-      JOIN users u ON u.id = b.author_id
-      LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
-      LEFT JOIN collections c ON c.id = b.collection_id
-      WHERE bk.user_id = ? AND bk.collection_id = ?
-        AND b.secret = 0
-      ORDER BY bk.created_at DESC
-    `).bind(owner.id, list.id).all();
+    const rows = await db.prepare(`${CURATED_ENTRY_SELECT}
+      WHERE ce.collection_id = ? AND b.status = 'published' AND b.secret = 0
+        AND b.deleted_at IS NULL
+      ORDER BY ce.position ASC, ce.added_at ASC
+    `).bind(list.id).all();
 
     return NextResponse.json({
       owner: { username: owner.username, display_name: owner.display_name, avatar_url: owner.avatar_url },
-      list: { name: list.name, description: list.description },
-      blogs: rows?.results || [],
+      list: {
+        id: list.id,
+        name: list.name,
+        description: list.description || '',
+        introduction: list.introduction || '',
+        cover_url: list.cover_url || null,
+        visibility: list.visibility,
+        updated_at: list.updated_at,
+      },
+      blogs: (rows?.results || []).map((row) => ({
+        ...serializeCuratedEntry(row),
+        id: row.blog_id,
+        cover_image_r2_key: row.cover_image_r2_key,
+        read_time_minutes: row.read_time_minutes,
+        published_at: row.published_at,
+        author_id: row.author_id,
+        author_username: row.author_username,
+        author_name: row.author_name,
+        author_avatar: row.author_avatar,
+        org_slug: row.org_slug,
+        collection_slug: row.publication_collection_slug,
+      })),
     });
   } catch {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import MentionTextarea, { renderMentions } from './MentionTextarea';
+import { generatePixelAvatar } from '../utils/pixelAvatar';
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -20,13 +21,7 @@ function timeAgo(ts) {
 // hint that there's a profile behind it.
 function CommentAvatar({ c, small = false }) {
   const box = small ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-[12px]';
-  const inner = c.avatar_url ? (
-    <img src={c.avatar_url} alt="" className={`${box} rounded-full object-cover`} />
-  ) : (
-    <div className={`${box} rounded-full flex items-center justify-center font-bold`} style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-      {(c.display_name || c.username || '?')[0].toUpperCase()}
-    </div>
-  );
+  const inner = <img src={c.avatar_url || generatePixelAvatar(c.username || c.display_name || 'anonymous')} alt="" className={`${box} rounded-full object-cover`} />;
   if (!c.username) return <div className="flex-shrink-0">{inner}</div>;
   return <Link href={`/${c.username}`} className="flex-shrink-0">{inner}</Link>;
 }

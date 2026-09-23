@@ -5,7 +5,7 @@ import { useAuth } from './context/AuthContext';
 import AppShell from './components/AppShell';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { generateBlogThumbnail } from './utils/pixelAvatar';
+import { generateBlogThumbnail, generatePixelAvatar } from './utils/pixelAvatar';
 import SearchBar from './components/SearchBar';
 import { ONBOARDING_TIP_DAYS, tipForDay } from './utils/siteTips';
 
@@ -18,6 +18,32 @@ const ONBOARDING_ACTIONS = [
   { label: 'Explore badges', description: 'See what you can earn', href: '/badges', icon: 'ribbon-outline', color: '#ec4899' },
   { label: 'Publishing basics', description: 'Know what works here', href: '/docs', icon: 'shield-checkmark-outline', color: '#10b981' },
 ];
+
+function BrandIntro() {
+  return (
+    <section className="mx-6 mt-5 overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--card-bg)]" aria-labelledby="lixblogs-intro-title">
+      <div className="bg-[radial-gradient(circle_at_90%_10%,color-mix(in_srgb,var(--accent)_20%,transparent),transparent_36%),linear-gradient(135deg,var(--card-bg),var(--bg-surface))] px-6 py-8 sm:px-8 sm:py-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Open-source publishing</p>
+        <h1 id="lixblogs-intro-title" className="mt-3 max-w-xl font-serif text-3xl font-extrabold leading-tight text-[var(--text-primary)] sm:text-4xl">
+          Write once. Publish from anywhere.
+        </h1>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)] sm:text-[15px]">
+          LixBlogs is an open-source blogging platform for writers, developers and teams. Create rich stories, collaborate live, and publish from the web, CLI or API.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/explore" className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-bold text-white">Explore stories</Link>
+          <Link href="/new-blog" className="rounded-full border border-[var(--border-default)] bg-[var(--bg-app)] px-5 py-2.5 text-sm font-bold text-[var(--text-secondary)]">Start writing</Link>
+        </div>
+        <nav aria-label="Learn about LixBlogs" className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--divider)] pt-5 text-xs font-semibold text-[var(--text-muted)]">
+          <Link href="/about" className="hover:text-[var(--accent)]">About the platform</Link>
+          <Link href="/docs/cli" className="hover:text-[var(--accent)]">Publish with the CLI</Link>
+          <Link href="/docs/api" className="hover:text-[var(--accent)]">Automate with the API</Link>
+          <Link href="/contests" className="hover:text-[var(--accent)]">Writing contests</Link>
+        </nav>
+      </div>
+    </section>
+  );
+}
 
 function NewUserActions({ user, authLoading }) {
   const [visible, setVisible] = useState(false);
@@ -59,8 +85,8 @@ function NewUserActions({ user, authLoading }) {
               <ion-icon name={action.icon} style={{ fontSize: '16px' }} />
             </span>
             <span className="min-w-0">
-              <span className="block whitespace-nowrap text-[12px] font-semibold text-[var(--text-primary)]">{action.label}</span>
-              <span className="block whitespace-nowrap text-[10px] text-[var(--text-faint)]">{action.description}</span>
+              <span className="block truncate text-[12px] font-semibold text-[var(--text-primary)]" title={action.label}>{action.label}</span>
+              <span className="block truncate text-[10px] text-[var(--text-faint)]" title={action.description}>{action.description}</span>
             </span>
           </Link>
         ))}
@@ -136,6 +162,33 @@ function DailyTipCard({ user, authLoading }) {
   );
 }
 
+function LiveContestFeedCard({ contest, additional = 0 }) {
+  if (!contest) return null;
+  const closes = contest.submissionsCloseAt
+    ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(contest.submissionsCloseAt * 1000))
+    : 'soon';
+  const secondsLeft = Number(contest.submissionsCloseAt || 0) - Math.floor(Date.now() / 1000);
+  const timeLeft = secondsLeft > 86400
+    ? `${Math.ceil(secondsLeft / 86400)} days left`
+    : `${Math.max(1, Math.ceil(secondsLeft / 3600))}h left`;
+  return (
+    <section className="mb-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--card-bg)] shadow-sm" aria-label="Live writing contest">
+      <Link href={`/contests/${contest.slug}#enter-contest`} className="group grid grid-cols-[108px_minmax(0,1fr)] sm:grid-cols-[180px_minmax(0,1fr)]">
+        <div className="relative min-h-40 overflow-hidden bg-[radial-gradient(circle_at_30%_30%,rgba(139,92,246,0.34),transparent_40%),linear-gradient(135deg,var(--bg-surface),var(--card-bg))]">
+          {contest.coverUrl ? <img src={contest.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="grid h-full place-items-center text-3xl text-[var(--accent)]"><ion-icon name="trophy-outline" /></span>}
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-emerald-700 shadow-sm"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />Live</span>
+        </div>
+        <div className="flex min-w-0 flex-col p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Writing contest</p>{additional > 0 && <span className="text-[10px] font-semibold text-[var(--text-faint)]">+{additional} more live</span>}</div>
+          <h2 className="mt-1.5 line-clamp-2 font-serif text-lg font-bold leading-6 text-[var(--text-primary)] transition group-hover:text-[var(--accent)]">{contest.title}</h2>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[var(--text-muted)] sm:text-xs">{contest.description || contest.problemStatement}</p>
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3"><span className="flex min-w-0 items-center gap-2 text-[11px] text-[var(--text-faint)]">{contest.organizer?.avatarUrl && <img src={contest.organizer.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />}<span className="truncate">@{contest.organizer?.username || 'host'} · ends {closes} · {timeLeft}</span></span><span className="rounded-full bg-[var(--accent)] px-3 py-1.5 text-[10px] font-bold text-white">Enter now</span></div>
+        </div>
+      </Link>
+    </section>
+  );
+}
+
 function timeAgo(ts) {
   if (!ts) return '';
   const diff = Math.floor(Date.now() / 1000) - ts;
@@ -150,11 +203,7 @@ function AuthorStack({ authors }) {
   return (
     <div className="flex -space-x-1.5">
       {shown.map((a, i) => (
-        a.avatar_url ? (
-          <img key={i} src={a.avatar_url} alt="" title={a.display_name || a.username} className="h-5 w-5 rounded-full object-cover" style={{ boxShadow: '0 0 0 2px var(--bg-app)' }} />
-        ) : (
-          <div key={i} title={a.display_name || a.username} className="h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-faint)', boxShadow: '0 0 0 2px var(--bg-app)' }}>{(a.display_name || a.username || '?')[0].toUpperCase()}</div>
-        )
+        <img key={i} src={a.avatar_url || generatePixelAvatar(a.username || a.display_name)} alt="" title={a.display_name || a.username} className="h-5 w-5 rounded-full object-cover" style={{ boxShadow: '0 0 0 2px var(--bg-app)' }} />
       ))}
     </div>
   );
@@ -193,6 +242,19 @@ function FeedCardMenu({ post, onHide }) {
 
   const followAuthor = () => { if (needAuth() || fAuthor) return; setFAuthor(true); post_(`/api/users/${author.username}/follow`); setOpen(false); };
   const followOrg = () => { if (needAuth() || fOrg) return; setFOrg(true); post_(`/api/orgs/${org.slug}/follow`); setOpen(false); };
+  const showLess = () => {
+    if (needAuth()) return;
+    post_('/api/signals', { blogId: post.id, tags: post.tags || [], type: 'show_less', weight: -2 });
+    if ((post.tags || []).length) {
+      fetch('/api/users/me/interests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ remove: post.tags }),
+      }).catch(() => {});
+    }
+    setOpen(false);
+    onHide?.(post.id);
+  };
   const muteAuthor = () => { if (needAuth()) return; post_('/api/mutes', { targetType: 'author', targetId: post.author_id }); setOpen(false); onHide?.(post.id); };
   const muteOrg = () => { if (needAuth()) return; post_('/api/mutes', { targetType: 'org', targetId: org.id }); setOpen(false); onHide?.(post.id); };
   const muteTopics = () => { if (needAuth()) return; (post.tags || []).forEach(t => post_('/api/mutes', { targetType: 'tag', targetId: t, blogId: post.id })); setOpen(false); onHide?.(post.id); };
@@ -230,6 +292,7 @@ function FeedCardMenu({ post, onHide }) {
               {!ownsAuthor && !isSelf && item(fAuthor ? `Following ${author.display_name || author.username}` : `Follow ${author.display_name || author.username}`, followAuthor, false, false, fAuthor)}
               {org && !ownsPublication && item(fOrg ? `Following ${org.name}` : `Follow ${org.name}`, followOrg, false, false, fOrg)}
               <div className="my-1.5" style={{ borderTop: '1px solid var(--divider)' }} />
+              {item('Show less like this', showLess)}
               {!ownsAuthor && !isSelf && item('Mute author', muteAuthor)}
               {org && !ownsPublication && item('Mute publication', muteOrg)}
               {(post.tags || []).length > 0 && item('Mute topics', muteTopics, false, true)}
@@ -252,7 +315,7 @@ function FeedCardActions({ post, onHide }) {
   const [reposted, setReposted] = useState(!!post.reposted);
   const [repostCount, setRepostCount] = useState(post.repost_count || 0);
   const [toast, setToast] = useState('');
-  const href = `/${(post.org?.slug) || post.author?.username || 'unknown'}/${post.slug}`;
+  const href = feedPostHref(post);
   // Author / co-authors / org members can't repost their own blog.
   const cannotRepost = !!(post.is_author || post.is_co_author || post.can_edit);
 
@@ -324,7 +387,7 @@ function FeedCard({ post, onHide }) {
   const cardRef = useRef(null);
   const author = post.author || {};
   const cover = post.cover_image_r2_key || generateBlogThumbnail(post.id || post.slug);
-  const href = `/${(post.org?.slug) || author.username || 'unknown'}/${post.slug}`;
+  const href = feedPostHref(post);
   const allAuthors = [{ display_name: author.display_name, username: author.username, avatar_url: author.avatar_url }, ...(post.co_authors || [])];
 
   useEffect(() => {
@@ -350,6 +413,11 @@ function FeedCard({ post, onHide }) {
         <div className="flex items-center gap-1.5 mb-2 text-[12px] font-medium" style={{ color: 'var(--text-faint)' }}>
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 014-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>
           Reposted by {post.reshared_by.display_name || post.reshared_by.username}
+        </div>
+      )}
+      {!post.reshared_by && post.recommendation_reason?.[0] && (
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium" style={{ color: 'var(--text-faint)' }}>
+          <ion-icon name="sparkles-outline" /> Suggested · {post.recommendation_reason[0]}
         </div>
       )}
       <Link href={href} className="flex gap-5 cursor-pointer">
@@ -419,7 +487,7 @@ function TopPickCard({ post, index }) {
   ];
   const accents = ['#9b7bf7', '#60a5fa', '#f472b6'];
   return (
-    <Link href={`/${author.username || 'unknown'}/${post.slug}`}>
+    <Link href={feedPostHref(post)}>
       <div
         className="p-3.5 rounded-xl cursor-pointer group mb-2.5 transition-all duration-200 hover:scale-[1.02]"
         style={{
@@ -429,13 +497,7 @@ function TopPickCard({ post, index }) {
         }}
       >
         <div className="flex items-center gap-2 mb-2">
-          {author.avatar_url ? (
-            <img src={author.avatar_url} alt="" className="h-5 w-5 rounded-full object-cover ring-1 ring-white/10" />
-          ) : (
-            <div className="h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-faint)' }}>
-              {(author.display_name || author.username || '?')[0].toUpperCase()}
-            </div>
-          )}
+          <img src={author.avatar_url || generatePixelAvatar(author.username || author.display_name)} alt="" className="h-5 w-5 rounded-full object-cover ring-1 ring-white/10" />
           <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
             {author.display_name || author.username}
           </span>
@@ -483,11 +545,7 @@ function FollowSuggestion({ u }) {
   return (
     <div className="flex items-center gap-2.5 mb-3.5">
       <Link href={`/${u.username}`} className="flex-shrink-0">
-        {u.avatar_url ? (
-          <img src={u.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
-        ) : (
-          <div className="h-9 w-9 rounded-full flex items-center justify-center text-[12px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-faint)' }}>{(u.display_name || u.username || '?')[0].toUpperCase()}</div>
-        )}
+        <img src={u.avatar_url || generatePixelAvatar(u.username || u.display_name)} alt="" className="h-9 w-9 rounded-full object-cover" />
       </Link>
       <Link href={`/${u.username}`} className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{u.display_name || u.username}</p>
@@ -530,6 +588,21 @@ function FeedSkeleton() {
 }
 
 const FIXED_TAGS = ['Tech', 'Finance', 'Sports', 'Entertainment'];
+const FEED_REQUEST_TTL_MS = 5_000;
+const feedRequests = new Map();
+
+function fetchFeedOnce(url) {
+  const now = Date.now();
+  const cached = feedRequests.get(url);
+  if (cached && now - cached.startedAt < FEED_REQUEST_TTL_MS) return cached.promise;
+
+  const promise = fetch(url, { cache: 'no-store' }).then(response => {
+    if (!response.ok) throw new Error(`Feed request failed (${response.status})`);
+    return response.json();
+  });
+  feedRequests.set(url, { promise, startedAt: now });
+  return promise;
+}
 
 function recommendedTopics(interests, popular) {
   const seen = new Set();
@@ -550,15 +623,28 @@ function recommendedTopics(interests, popular) {
   return topics;
 }
 
-export default function App() {
+function feedPostHref(post) {
+  const owner = post.org?.slug || post.author?.username || 'unknown';
+  const parts = [owner];
+  if (post.org?.slug && post.collection?.slug) parts.push(post.collection.slug);
+  parts.push(post.slug);
+  return `/${parts.map(part => encodeURIComponent(part)).join('/')}`;
+}
+
+export default function App({ initialPosts = [], showBrandIntro = false }) {
   const { user, loading: authLoading } = useAuth();
-  const [posts, setPosts] = useState([]);
+  const userId = user?.id || null;
+  const isSignedIn = Boolean(userId);
+  const [posts, setPosts] = useState(initialPosts);
   const [topPicks, setTopPicks] = useState([]);
   const [popularTags, setPopularTags] = useState([]);
   const [userInterests, setUserInterests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [liveContests, setLiveContests] = useState([]);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [activeTopic, setActiveTopic] = useState(0);
   const [tagFilter, setTagFilter] = useState(null); // active Recommended-topic pill
+  const firstFeedLoadRef = useRef(true);
+  const hasServerStoriesRef = useRef(initialPosts.length > 0);
 
   // Two tabs only: "For you" (personalized/blended) and "Featured" (editorial).
   const topics = [
@@ -583,26 +669,41 @@ export default function App() {
 
   // Fetch feed — a Recommended-topic pill (tagFilter) overrides the tab.
   useEffect(() => {
-    setLoading(true);
+    // Waiting for auth prevents an anonymous request immediately followed by the
+    // same request again for the resolved account. `fetchFeedOnce` also absorbs
+    // React's development effect replay without hiding the server-rendered feed.
+    if (authLoading) return undefined;
+    const preserveServerStories = firstFeedLoadRef.current
+      && hasServerStoriesRef.current
+      && !tagFilter
+      && activeTopic === 0;
+    if (!preserveServerStories) setLoading(true);
     let url = '/api/feed?limit=20';
     if (tagFilter) url += `&tag=${encodeURIComponent(tagFilter)}`;
     else if (topics[activeTopic]?.filter) url += `&filter=${topics[activeTopic].filter}`;
 
-    fetch(url, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(data => setPosts(data.posts || []))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [activeTopic, tagFilter, user]);
+    let active = true;
+    fetchFeedOnce(url)
+      .then(data => { if (active) setPosts(data.posts || []); })
+      .catch(() => { if (active && !preserveServerStories) setPosts([]); })
+      .finally(() => {
+        if (!active) return;
+        firstFeedLoadRef.current = false;
+        setLoading(false);
+      });
+    return () => { active = false; };
+  }, [activeTopic, authLoading, isSignedIn, tagFilter]);
 
   // Fetch sidebar data once
   useEffect(() => {
+    if (authLoading) return;
     fetch('/api/feed/trending?limit=3').then(r => r.json()).then(d => setTopPicks(d.posts || [])).catch(() => {});
     fetch('/api/tags/popular?limit=12').then(r => r.json()).then(d => setPopularTags(d.tags || [])).catch(() => {});
-    if (user) {
+    fetch('/api/contests', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => setLiveContests((d?.contests || []).filter(contest => contest.status === 'live').slice(0, 4))).catch(() => {});
+    if (isSignedIn) {
       fetch('/api/users/me/interests').then(r => r.json()).then(d => setUserInterests(d.interests || [])).catch(() => {});
     }
-  }, [user]);
+  }, [authLoading, isSignedIn]);
 
   const topicSuggestions = recommendedTopics(userInterests, popularTags);
 
@@ -611,6 +712,7 @@ export default function App() {
       <div className="flex justify-center">
         {/* Center Feed */}
         <div className="w-full max-w-[740px] min-w-0" style={{ borderRight: '1px solid var(--divider)' }}>
+          {showBrandIntro && <BrandIntro />}
           {/* Search + Topic Tabs — sticky header */}
           <div className="sticky top-14 z-40 backdrop-blur-md" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-app) 92%, transparent)', borderBottom: '1px solid var(--divider)' }}>
             <div className="max-w-[680px] mx-auto">
@@ -641,6 +743,7 @@ export default function App() {
           {/* Feed */}
           <div className="px-6 pt-4 max-w-[680px] mx-auto">
             <NewUserActions user={user} authLoading={authLoading} />
+            {!tagFilter && activeTopic === 0 && liveContests.length > 0 && <LiveContestFeedCard contest={liveContests[0]} additional={liveContests.length - 1} />}
             <DailyTipCard user={user} authLoading={authLoading} />
             {tagFilter && (
               <div className="flex items-center gap-2 mb-1 py-2">
@@ -668,6 +771,17 @@ export default function App() {
                     Start writing
                   </Link>
                 )}
+              </div>
+            )}
+            {posts.length > 0 && !tagFilter && (
+              <div className="py-8 text-center">
+                <Link
+                  href="/explore"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] px-5 py-2.5 text-[13px] font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
+                >
+                  Browse all stories
+                  <ion-icon name="arrow-forward-outline" style={{ fontSize: '15px' }} />
+                </Link>
               </div>
             )}
           </div>
