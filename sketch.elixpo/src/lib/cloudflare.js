@@ -9,6 +9,8 @@ export function getCloudflareBindings() {
   return {
     DB: env.DB,
     KV: env.KV,
+    MCP_RELAY_URL: env.MCP_RELAY_URL,
+    MCP_RELAY_SECRET: env.MCP_RELAY_SECRET,
   }
 }
 

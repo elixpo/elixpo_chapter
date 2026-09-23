@@ -112,6 +112,7 @@ export default function AppMenu() {
   const { t, language } = useTranslation()
 
   const LINKS = [
+    { label: 'Templates', icon: 'bx-store-alt', href: '/templates' },
     { label: t('links.documentation'), icon: 'bx-book-open', href: '/docs' },
     { label: t('links.github'), icon: 'bxl-github', href: 'https://github.com/elixpo/sketch.elixpo' },
     { label: t('links.reportIssue'), icon: 'bx-bug', href: 'https://github.com/elixpo/sketch.elixpo/issues' },

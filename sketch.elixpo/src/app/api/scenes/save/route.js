@@ -45,24 +45,33 @@ export async function POST(request) {
     if (existing) {
       // Update existing workspace — no limit check needed
       const sizeBytes = new Blob([body.encryptedData]).size
-      await DB.prepare(
+      const expectedRevision = Number(body.expectedRevision)
+      const conditional = Number.isInteger(expectedRevision) && expectedRevision >= 0
+      const update = await DB.prepare(
         `UPDATE scenes SET encrypted_data = ?, workspace_name = ?, updated_at = datetime('now'),
-         last_accessed_at = datetime('now'), size_bytes = ?, owner_type = ?
-         WHERE id = ?`
+         last_accessed_at = datetime('now'), size_bytes = ?, owner_type = ?,
+         agent_revision = agent_revision + 1
+         WHERE id = ?${conditional ? ' AND agent_revision = ?' : ''}`
       ).bind(
         body.encryptedData,
         workspaceName,
         sizeBytes,
         ownerType,
-        existing.id
+        existing.id,
+        ...(conditional ? [expectedRevision] : [])
       ).run()
+      if (conditional && !update.meta?.changes) {
+        const current = await DB.prepare(`SELECT agent_revision FROM scenes WHERE id = ?`).bind(existing.id).first()
+        return NextResponse.json({ error: 'REVISION_CONFLICT', expectedRevision, currentRevision: Number(current?.agent_revision || 0) }, { status: 409 })
+      }
 
       // Get existing token
       const perm = await DB.prepare(
         `SELECT token FROM scene_permissions WHERE scene_id = ?`
       ).bind(existing.id).first()
 
-      return NextResponse.json({ sceneId: existing.id, token: perm?.token || null })
+      const revision = await DB.prepare(`SELECT agent_revision FROM scenes WHERE id = ?`).bind(existing.id).first()
+      return NextResponse.json({ sceneId: existing.id, token: perm?.token || null, revision: Number(revision?.agent_revision || 0) })
     }
 
     // New workspace — enforce limit
@@ -111,7 +120,7 @@ export async function POST(request) {
       ),
     ])
 
-    return NextResponse.json({ sceneId, token }, { status: 201 })
+    return NextResponse.json({ sceneId, token, revision: 0 }, { status: 201 })
   } catch (err) {
     console.error('[api/scenes/save] Error:', err)
     return NextResponse.json({ error: 'Failed to save scene' }, { status: 500 })

@@ -21,6 +21,7 @@ export async function GET(request) {
     const token = url.searchParams.get('token')
     const sessionId = url.searchParams.get('sessionId')
     const shouldTouch = url.searchParams.get('touch') !== '0'
+    const metadataOnly = url.searchParams.get('meta') === '1'
 
     if (!token && !sessionId) {
       return NextResponse.json({ error: 'Missing token or sessionId' }, { status: 400 })
@@ -30,7 +31,7 @@ export async function GET(request) {
     
     if (token) {
       perm = await DB.prepare(
-        `SELECT sp.permission, s.encrypted_data, s.workspace_name, s.session_id, s.updated_at,
+        `SELECT sp.permission, s.encrypted_data, s.workspace_name, s.session_id, s.updated_at, s.agent_revision,
                 (SELECT slug FROM workspace_templates WHERE source_session_id = s.session_id LIMIT 1) AS template_slug,
                 (SELECT status FROM workspace_templates WHERE source_session_id = s.session_id LIMIT 1) AS template_status
          FROM scene_permissions sp
@@ -41,7 +42,7 @@ export async function GET(request) {
       // Intentional bypass: querying by sessionId directly allows owners/initial creators
       // to load the scene from their local storage or URL without needing a share token.
       perm = await DB.prepare(
-        `SELECT permission, encrypted_data, workspace_name, session_id, updated_at,
+        `SELECT permission, encrypted_data, workspace_name, session_id, updated_at, agent_revision,
                 (SELECT slug FROM workspace_templates WHERE source_session_id = session_id LIMIT 1) AS template_slug,
                 (SELECT status FROM workspace_templates WHERE source_session_id = session_id LIMIT 1) AS template_status
          FROM scenes
@@ -67,10 +68,11 @@ export async function GET(request) {
     }
 
     return NextResponse.json({
-      encryptedData: perm.encrypted_data,
+      encryptedData: metadataOnly ? undefined : perm.encrypted_data,
       permission: perm.permission,
       workspaceName: perm.workspace_name,
       updatedAt: perm.updated_at,
+      revision: Number(perm.agent_revision || 0),
       lastAccessedAt: shouldTouch ? new Date().toISOString() : undefined,
       templateSlug: perm.template_slug || null,
       templateStatus: perm.template_status || null,

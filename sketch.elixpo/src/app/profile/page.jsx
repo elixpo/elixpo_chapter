@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
@@ -12,6 +12,7 @@ import CloudinaryIntegrationCard from '@/components/profile/CloudinaryIntegratio
 import PollinationsIntegrationCard from '@/components/profile/PollinationsIntegrationCard'
 import PersonalDetailsCard from '@/components/profile/PersonalDetailsCard'
 import LandingNav from '@/components/landing/LandingNav'
+import McpWorkspaceAccessModal from '@/components/profile/McpWorkspaceAccessModal'
 
 function reconcileActiveWorkspaceName(workspaces) {
   if (typeof window === 'undefined' || !Array.isArray(workspaces)) return workspaces || []
@@ -175,20 +176,18 @@ function MetricCard({ icon, label, value, detail, color = '#8B88E8' }) {
 
 // ── Workspace card ───────────────────────────────────────────────────────────
 
-function WorkspaceCard({ workspace, index, onDelete }) {
+function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
   const sizeKB = ((workspace.size_bytes || 0) / 1024).toFixed(1)
   const lastAccessedDate = parseDatabaseDate(workspace.last_accessed_at)
   const lastAccessed = lastAccessedDate
     ? lastAccessedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Never'
-  const created = workspace.created_at
-    ? parseDatabaseDate(workspace.created_at)?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) || '—'
-    : '—'
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const accessLabel = workspace.permission === 'edit'
     ? 'Editable link'
     : workspace.permission === 'view' ? 'View link' : 'Private'
+  const hasActiveMcp = Number(workspace.active_mcp_grants || 0) > 0
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -208,74 +207,70 @@ function WorkspaceCard({ workspace, index, onDelete }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.25) }}
+      className="group rounded-xl border border-white/[0.08] bg-[#141120]/80 p-3 transition-colors hover:border-[#8B88E8]/35 hover:bg-[#181426]"
     >
-      <RoughCard color="#4A90D9">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-text-primary text-sm font-medium font-[lixFont] truncate">
-              {workspace.workspace_name || 'Untitled'}
-            </h3>
-            <span className="text-text-dim text-[10px] bg-surface-hover px-2 py-0.5 rounded-full">
-              {sizeKB} KB
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div>
-              <span className="text-text-dim">Created</span>
-              <p className="text-text-secondary">{created}</p>
-            </div>
-            <div>
-              <span className="text-text-dim">Last accessed</span>
-              <p className="text-text-secondary">{lastAccessed}</p>
-            </div>
-            <div>
-              <span className="text-text-dim">Views</span>
-              <p className="text-text-secondary">{workspace.view_count || 0}</p>
-            </div>
-            <div>
-              <span className="text-text-dim">Session</span>
-              <p className="text-text-secondary font-mono truncate text-[10px]" title={workspace.session_id}>{workspace.session_id?.slice(0, 12)}...</p>
-            </div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-white/[0.06] pt-3 text-[9px]">
-            <span className="rounded-full bg-green-500/10 px-2 py-1 text-green-400"><i className="bx bx-shield-quarter mr-1" />E2E encrypted</span>
-            <span className="rounded-full bg-[#8B88E8]/10 px-2 py-1 text-[#A99CF1]"><i className="bx bx-link mr-1" />{accessLabel}</span>
-            <span className="rounded-full bg-white/[0.04] px-2 py-1 text-text-dim">Scene {sizeKB} KB</span>
-            {workspace.template_mode === 'fork' && workspace.template_slug && <Link href={`/templates/${workspace.template_slug}`} className="rounded-full bg-accent-blue/10 px-2 py-1 text-accent-blue hover:bg-accent-blue/20"><i className="bx bx-git-repo-forked mr-1" />Forked from {workspace.template_title || 'template'}</Link>}
-          </div>
-
-          <div className="flex gap-2 mt-3">
-            <Link
-              href={`/c/${workspace.session_id}`}
-              className="flex-1 cursor-pointer text-center py-1.5 rounded-lg text-xs text-accent-blue border border-accent-blue/30 hover:bg-accent-blue/10 transition-all"
-            >
-              Open
-            </Link>
-            <button
-              onClick={handleDelete}
-              onMouseLeave={() => setConfirmDelete(false)}
-              disabled={deleting}
-              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs transition-all ${
-                confirmDelete
-                  ? 'text-red-400 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20'
-                  : 'text-text-dim border border-white/10 hover:border-red-500/30 hover:text-red-400'
-              } ${deleting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={confirmDelete ? 'Click again to confirm' : 'Delete workspace'}
-            >
-              {deleting ? (
-                <i className="bx bx-loader-alt bx-spin text-sm" />
-              ) : confirmDelete ? (
-                <span className="text-[10px] font-medium">Confirm?</span>
-              ) : (
-                <i className="bx bx-trash text-sm" />
-              )}
-            </button>
-          </div>
+      <div className="flex items-start gap-2.5">
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#8B88E8]/12 text-[#A99CF1]">
+          <i className="bx bx-shape-square text-base" />
+          {hasActiveMcp && <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[#141120] bg-[#54D6A0] text-[#141120]" title="Remote MCP active"><i className="bx bx-plug text-[9px]" /></span>}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-medium text-text-primary" title={workspace.workspace_name || 'Untitled'}>
+            {workspace.workspace_name || 'Untitled'}
+          </h3>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-text-dim">
+            <span><i className="bx bx-time-five mr-1" />{lastAccessed}</span>
+            <span>{sizeKB} KB</span>
+            <span>{accessLabel}</span>
+          </p>
         </div>
-      </RoughCard>
+        <div className="flex shrink-0 items-center gap-1">
+          {hasActiveMcp && <span className="inline-flex items-center gap-1 rounded-full border border-[#54D6A0]/20 bg-[#54D6A0]/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-[#70DFB3]" title={`${workspace.active_mcp_grants} active Remote MCP client${Number(workspace.active_mcp_grants) === 1 ? '' : 's'}`}><i className="bx bx-plug text-[9px]" />MCP</span>}
+          <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-green-400" title="End-to-end encrypted">E2E</span>
+        </div>
+      </div>
+
+      {workspace.template_mode === 'fork' && workspace.template_slug && (
+        <Link href={`/templates/${workspace.template_slug}`} className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-[9px] text-[#A99CF1] hover:underline">
+          <i className="bx bx-git-repo-forked" />
+          Forked from {workspace.template_title || 'template'}
+        </Link>
+      )}
+
+      <div className="mt-3 flex gap-1.5 border-t border-white/[0.06] pt-2.5">
+        <Link
+          href={`/c/${workspace.session_id}`}
+          className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-[#8B88E8] px-2 py-1.5 text-[10px] text-white transition-colors hover:bg-[#9E91EE]"
+        >
+          <i className="bx bx-window-open" />
+          Open canvas
+        </Link>
+        {onMcpAccess && (
+          <button
+            type="button"
+            onClick={() => onMcpAccess(workspace)}
+            className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#8B88E8]/30 px-2.5 py-1.5 text-[10px] text-[#B6ACF4] transition-colors hover:bg-[#8B88E8]/10"
+            title="Manage Remote MCP access"
+          >
+            <i className="bx bx-plug text-xs" />
+            Remote MCP
+          </button>
+        )}
+        <button
+          onClick={handleDelete}
+          onMouseLeave={() => setConfirmDelete(false)}
+          disabled={deleting}
+          className={`min-w-8 cursor-pointer rounded-lg border px-2 py-1.5 text-[10px] transition-all ${
+            confirmDelete
+              ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+              : 'border-white/10 text-text-dim hover:border-red-500/30 hover:text-red-400'
+          } ${deleting ? 'cursor-not-allowed opacity-50' : ''}`}
+          title={confirmDelete ? 'Click again to confirm' : 'Delete workspace'}
+        >
+          {deleting ? <i className="bx bx-loader-alt bx-spin text-xs" /> : confirmDelete ? 'Confirm?' : <i className="bx bx-trash text-xs" />}
+        </button>
+      </div>
     </motion.div>
   )
 }
@@ -312,12 +307,22 @@ export default function ProfilePage() {
   const login = useAuthStore((s) => s.login)
   const logout = useAuthStore((s) => s.logout)
   const init = useAuthStore((s) => s.init)
+  const authLoading = useAuthStore((s) => s.loading)
 
   const [quotaData, setQuotaData] = useState(null)
   const [workspaces, setWorkspaces] = useState([])
   const [publishedTemplates, setPublishedTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('personal')
+  const [mcpWorkspace, setMcpWorkspace] = useState(null)
+
+  const handleMcpGrantCountChange = useCallback((sessionId, count) => {
+    setWorkspaces((current) => current.map((workspace) => (
+      workspace.session_id === sessionId
+        ? { ...workspace, active_mcp_grants: count }
+        : workspace
+    )))
+  }, [])
 
   const headerRef = useRef(null)
   const headerInView = useInView(headerRef, { once: true })
@@ -348,6 +353,7 @@ export default function ProfilePage() {
 
   // Fetch quota + workspaces
   useEffect(() => {
+    if (authLoading) return
     const fetchData = async () => {
       setLoading(true)
       try {
@@ -387,7 +393,7 @@ export default function ProfilePage() {
       setLoading(false)
     }
     fetchData()
-  }, [isAuthenticated, user?.id])
+  }, [authLoading, isAuthenticated, user?.id])
 
   const handleDeleteWorkspace = async (workspace) => {
     try {
@@ -434,11 +440,9 @@ export default function ProfilePage() {
   const maxCollaborators = quotaData?.collaboration?.maxParticipants || (isAuthenticated ? 3 : 1)
   const pdfExport = Boolean(quotaData?.exports?.pdf)
   const activeTabDetails = PROFILE_TABS.find((tab) => tab.id === activeTab) || PROFILE_TABS[0]
-  const latestWorkspace = [...workspaces].sort((left, right) => {
-    const leftTime = parseDatabaseDate(left.last_accessed_at)?.getTime() || 0
-    const rightTime = parseDatabaseDate(right.last_accessed_at)?.getTime() || 0
-    return rightTime - leftTime
-  })[0]
+  const workspaceUsagePercent = workspaceLimit > 0
+    ? Math.min(100, (workspaces.length / workspaceLimit) * 100)
+    : 0
 
   return (
     <div className="profile-page relative min-h-screen bg-[#0a0a12] text-text-primary overflow-hidden">
@@ -528,7 +532,7 @@ export default function ProfilePage() {
           })}
         </nav>
 
-        {loading ? (
+        {loading || authLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="relative w-8 h-8">
               <div className="absolute inset-0 rounded-full border-2 border-accent-blue/20" />
@@ -593,11 +597,6 @@ export default function ProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              <div className="mb-5 grid gap-3 sm:grid-cols-3">
-                <MetricCard icon="bx-folder" label="Owned workspaces" value={`${workspaces.length} / ${workspaceLimit}`} detail={`${workspaceRemaining} slot${workspaceRemaining === 1 ? '' : 's'} available`} />
-                <MetricCard icon="bx-time-five" label="Most recent" value={latestWorkspace?.workspace_name || 'No activity'} detail={latestWorkspace ? 'Most recently accessed workspace' : 'Create a workspace to get started'} color="#D99BF0" />
-                <MetricCard icon="bx-group" label="Room capacity" value={`${maxCollaborators}`} detail="Maximum realtime participants per workspace" color="#2ECC71" />
-              </div>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-medium font-[lixFont] text-text-primary">Your canvases</h3>
@@ -629,12 +628,30 @@ export default function ProfilePage() {
                   </div>
                 </RoughCard>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {workspaces.map((ws, i) => (
-                    <WorkspaceCard key={ws.id || ws.session_id} workspace={ws} index={i} onDelete={handleDeleteWorkspace} />
+                    <WorkspaceCard key={ws.id || ws.session_id} workspace={ws} index={i} onDelete={handleDeleteWorkspace} onMcpAccess={isAuthenticated ? setMcpWorkspace : null} />
                   ))}
                 </div>
               )}
+
+              <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+                <div className="mb-2 flex items-center justify-between gap-3 text-[10px]">
+                  <span className="text-text-secondary">Workspace usage</span>
+                  <span className="font-mono text-[#B6ACF4]">{workspaces.length} / {workspaceLimit}</span>
+                </div>
+                <div
+                  className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]"
+                  role="progressbar"
+                  aria-label="Workspace usage"
+                  aria-valuemin={0}
+                  aria-valuemax={workspaceLimit}
+                  aria-valuenow={workspaces.length}
+                >
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#7568C8] to-[#B094EA] transition-[width] duration-500" style={{ width: `${workspaceUsagePercent}%` }} />
+                </div>
+                <p className="mt-2 text-[9px] text-text-dim">{workspaceRemaining} workspace slot{workspaceRemaining === 1 ? '' : 's'} remaining on the {tier} plan.</p>
+              </div>
 
               {isAuthenticated && <div className="mt-8 border-t border-border-light pt-6">
                 <div className="mb-4 flex items-center justify-between">
@@ -804,6 +821,7 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+      {mcpWorkspace && <McpWorkspaceAccessModal workspace={mcpWorkspace} onClose={() => setMcpWorkspace(null)} onGrantCountChange={handleMcpGrantCountChange} />}
     </div>
   )
 }

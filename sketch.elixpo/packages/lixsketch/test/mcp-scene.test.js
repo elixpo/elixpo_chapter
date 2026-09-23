@@ -45,6 +45,10 @@ test('MCP server exposes scene reads and dry-run patches', async () => {
   const store = new MemorySceneStore(createEmptyScene());
   const templateProvider = { search: async () => [], load: async () => { throw new Error('unused'); } };
   const server = createLixSketchMcpServer({ store, templateProvider });
+  const initialized = await server.handleRequest({ method: 'initialize', params: { protocolVersion: '2025-06-18' } });
+  assert.match(initialized.instructions, /call canvas_get/);
+  assert.match(initialized.instructions, /dryRun: true/);
+  assert.match(initialized.instructions, /Never clear or replace/);
   const listed = await server.handleRequest({ method: 'tools/list' });
   assert.ok(listed.tools.some((tool) => tool.name === 'canvas_apply_patch'));
   const result = await server.callTool('canvas_apply_patch', { dryRun: true, expectedRevision: 0, operations: [{ op: 'add', shape: { type: 'circle', x: 100, y: 100, rx: 40, ry: 40 } }] });
@@ -52,4 +56,3 @@ test('MCP server exposes scene reads and dry-run patches', async () => {
   assert.equal(result.structuredContent.dryRun, true);
   assert.equal((await store.read()).shapes.length, 0);
 });
-

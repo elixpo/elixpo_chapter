@@ -60,6 +60,25 @@ export class RoomDurableObject {
     const url = new URL(request.url);
     const upgradeHeader = request.headers.get('Upgrade');
 
+    if (request.method === 'POST' && url.pathname.endsWith('/agent-op')) {
+      if (!this.env.MCP_RELAY_SECRET || request.headers.get('X-LixSketch-Relay') !== this.env.MCP_RELAY_SECRET) {
+        return new Response('Not authorized', { status: 401 });
+      }
+      const message = await request.json() as { payload?: string; revision?: number; agent?: { id?: string; label?: string } };
+      if (typeof message.payload !== 'string' || message.payload.length > 900_000) {
+        return new Response('Invalid operation', { status: 400 });
+      }
+      this.broadcast(null, {
+        type: 'agent-op',
+        from: `agent:${message.agent?.id || 'mcp'}`,
+        displayName: message.agent?.label || 'MCP agent',
+        revision: Number(message.revision || 0),
+        serverSeq: ++this.serverSeq,
+        payload: message.payload,
+      });
+      return new Response(null, { status: 204 });
+    }
+
     if (upgradeHeader !== 'websocket') {
       return new Response('Expected WebSocket', { status: 426 });
     }
