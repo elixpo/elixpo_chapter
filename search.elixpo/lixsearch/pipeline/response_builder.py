@@ -7,6 +7,8 @@ from loguru import logger
 
 from pipeline.config import POLLINATIONS_ENDPOINT, LLM_MODEL, LOG_MESSAGE_PREVIEW_TRUNCATE
 from pipeline.helpers import _scrub_tool_names, sanitize_final_response
+from sessions.clarification import artifacts_blocked
+from sessions.artifacts import ArtifactRejected, create_artifact_snapshot
 from pipeline.utils import format_sse
 
 MODEL = LLM_MODEL
@@ -95,12 +97,35 @@ def derive_pdf_title(query: str, content: str) -> str:
         candidate = heading.group(1).strip(" *_`#")
         if candidate and not re.match(r"^(?:got it|here.?s|i(?:.ll| will)|export_to_pdf)\b", candidate, re.I):
             return candidate[:120]
+    request_text = query or ""
+    if re.search(r"\bClarified requirements\s*:", request_text, re.I):
+        request_text = re.split(
+            r"\bClarified requirements\s*:", request_text, maxsplit=1, flags=re.I,
+        )[1].strip()
+        request_text = re.sub(
+            r"(?:^|;\s*)[a-z0-9_.-]+\s*:\s*", " ", request_text,
+            flags=re.I,
+        ).strip()
     candidate = re.sub(
         r"^\s*(?:please\s+)?(?:give|make|create|generate|export|download)\s+(?:me\s+)?(?:a\s+)?pdf\s+(?:of|about|for)\s+",
-        "", query or "", flags=re.IGNORECASE,
+        "", request_text, flags=re.IGNORECASE,
 ).strip(" .?!")
+    candidate = re.sub(
+        r"\b(?:and\s+)?(?:create|generate|export|make|provide)\s+(?:me\s+)?(?:a\s+)?pdf\b.*$",
+        "", candidate, flags=re.IGNORECASE,
+    ).strip(" .?!")
     candidate = re.sub(r"^the\s+", "", candidate, flags=re.IGNORECASE)
-    return (candidate or "OreoLook Report")[:120].title()
+    candidate = (candidate or "OreoLook Report")[:120]
+
+    def _title_token(match):
+        token = match.group(0)
+        # Preserve intentional casing in names such as PostgreSQL, MySQL, APIs,
+        # and brands while formatting the surrounding prose consistently.
+        if re.search(r"[A-Z]", token[1:]):
+            return token
+        return "-".join(part[:1].upper() + part[1:].lower() for part in token.split("-"))
+
+    return re.sub(r"\b[\w]+(?:-[\w]+)*\b", _title_token, candidate)
 
 
 def is_placeholder_or_fallback(content: str) -> bool:
@@ -114,6 +139,29 @@ def is_placeholder_or_fallback(content: str) -> bool:
         content,
         re.IGNORECASE,
     ))
+
+
+def is_exportable_pdf_document(content: str) -> bool:
+    """Reject model drafts that have not crossed the document commit boundary."""
+    value = normalize_pdf_document(content)
+    if not value or len(value) <= 100 or is_placeholder_or_fallback(value):
+        return False
+    opening = value[:700]
+    if re.match(
+        r"^\s*(?:got it|sure|absolutely|okay|alright|i(?:'ll| will)|let(?:'s| us))\b",
+        opening,
+        re.IGNORECASE,
+    ):
+        return False
+    if re.search(
+        r"\b(?:quick\s+)?clarification\b|\bcould you (?:please )?(?:specify|clarify)\b",
+        opening,
+        re.IGNORECASE,
+    ):
+        return False
+    if re.search(r"\[(?:title|source|citation)\]\((?:url|link)\)", value, re.IGNORECASE):
+        return False
+    return True
 
 
 async def try_image_synthesis(messages, user_query, image_pool, headers, event_id):
@@ -151,27 +199,85 @@ async def auto_generate_pdf(final_content, query_lower, memoized_results, event_
     _already_has_pdf = bool(memoized_results.get("generated_pdfs"))
     if _already_has_pdf or memoized_results.get("pdf_export_attempted"):
         return None
-    if memoized_results.get("suppress_pdf_export"):
+    if memoized_results.get("suppress_pdf_export") or artifacts_blocked(memoized_results):
         return None
     if not any(kw in query_lower.lower() for kw in ("pdf", "export", "save as", "document")):
         return None
-    if not final_content or len(final_content) <= 100:
+    if not is_exportable_pdf_document(final_content):
+        memoized_results["pdf_export_blocked"] = "uncommitted_document"
+        logger.warning("[FINAL] PDF export blocked: content did not pass document validation")
         return None
 
     logger.info(f"[FINAL] Auto-generating PDF ({len(final_content)} chars)")
-    from functionCalls.generatePDF import create_pdf_from_content
     _title = derive_pdf_title(query_lower, final_content)
     memoized_results["pdf_export_attempted"] = True
+    return await commit_pdf_artifact(
+        final_content,
+        _title,
+        memoized_results,
+        event_id=event_id,
+    )
+
+
+async def commit_pdf_artifact(
+    content: str,
+    title: str,
+    memoized_results: dict,
+    *,
+    event_id: str | None = None,
+) -> str | None:
+    """Commit one validated PDF snapshot and return its stable URL."""
+    from functionCalls.generatePDF import create_pdf_from_content
+
     try:
-        pdf_url = await create_pdf_from_content(final_content, _title)
+        snapshot = create_artifact_snapshot(
+            kind="pdf",
+            title=title,
+            content=content,
+            request_context=memoized_results.get("request_context"),
+            source_turn_ids=tuple(memoized_results.get("source_turn_ids") or ()),
+            evidence_ids=tuple(
+                memoized_results.get("collected_sources")
+                or memoized_results.get("evidence_ids")
+                or ()
+            ),
+            request_id=str(memoized_results.get("ledger_request_id") or event_id or ""),
+            memory_scope=memoized_results.get("memory_scope"),
+        )
+    except ArtifactRejected as exc:
+        memoized_results["pdf_export_blocked"] = str(exc)
+        logger.warning(f"[FINAL] PDF export blocked: {exc}")
+        return None
+    try:
+        pdf_url = await create_pdf_from_content(
+            content,
+            title,
+            content_id=f"{snapshot.slug}-{snapshot.artifact_id}",
+            artifact_metadata=snapshot.to_dict(),
+        )
     except Exception as exc:
         memoized_results["pdf_export_error"] = str(exc)
         raise
     if "generated_pdfs" not in memoized_results:
         memoized_results["generated_pdfs"] = []
     memoized_results["generated_pdfs"].append(pdf_url)
+    memoized_results.setdefault("artifact_snapshots", []).append(snapshot.to_dict())
     logger.info(f"[FINAL] PDF generated: {pdf_url}")
     return pdf_url
+
+
+def artifact_ledger_fields(memoized_results: dict) -> dict:
+    """Return bounded immutable artifact identity and provenance for a turn."""
+    snapshots = memoized_results.get("artifact_snapshots") or []
+    if not snapshots:
+        return {}
+    bounded = snapshots[:10]
+    return {
+        "artifact_ids": [
+            item.get("artifact_id") for item in bounded if item.get("artifact_id")
+        ],
+        "artifact_provenance": bounded,
+    }
 
 
 def assemble_images(final_content, collected_images_from_web, collected_similar_images,
@@ -286,7 +392,21 @@ async def save_to_caches(user_query, final_content, collected_sources, tool_call
 
     if session_context:
         try:
-            session_context.add_message(role="assistant", content=final_content)
+            request_id = memoized_results.get("ledger_request_id")
+            metadata = {
+                "sources": collected_sources[:5],
+                "evidence_refs": collected_sources[:5],
+                "artifact_refs": (
+                    memoized_results.get("generated_pdfs", [])
+                    + memoized_results.get("generated_images", [])
+                )[:10],
+                "tool_calls": tool_call_count,
+                "iteration": current_iteration,
+            }
+            metadata.update(artifact_ledger_fields(memoized_results))
+            if request_id:
+                metadata["request_id"] = f"{request_id}:assistant"
+            session_context.add_message(role="assistant", content=final_content, metadata=metadata)
             memoized_results["_assistant_response_saved"] = True
         except Exception as e:
             logger.warning(f"[Pipeline] Failed to store reply in session: {e}")

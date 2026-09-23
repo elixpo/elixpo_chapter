@@ -4,6 +4,7 @@ import json
 import base64
 import os
 from datetime import datetime, timezone
+from urllib.parse import quote
 from quart import request, jsonify, Response
 from pipeline.searchPipeline import run_elixposearch_pipeline
 from pipeline.config import (
@@ -35,8 +36,9 @@ def _b64_data_url_to_hosted(data_url: str) -> str:
             ct = header.split(":")[1].split(";")[0]
         image_bytes = base64.b64decode(payload)
         image_id = uuid.uuid4().hex[:16]
-        store_image(image_id, image_bytes, ct)
-        return f"{_PUBLIC_BASE_URL}/api/image/{image_id}.png"
+        capability = store_image(image_id, image_bytes, ct)
+        access = f"?access={quote(capability, safe='')}" if capability else ""
+        return f"{_PUBLIC_BASE_URL}/api/image/{image_id}.png{access}"
     except Exception as e:
         logger.warning(f"[completions] Failed to host base64 image: {e}")
         return data_url  # fallback: pass through as-is

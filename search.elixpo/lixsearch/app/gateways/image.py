@@ -1,8 +1,11 @@
 import logging
+import json
 import os
 import time
 import threading
-from quart import Response
+from quart import Response, request
+
+from commons.artifact_access import artifact_access_allowed, prepare_artifact_access
 
 logger = logging.getLogger("lixsearch-api")
 
@@ -34,13 +37,24 @@ def _content_type_from_ext(ext: str) -> str:
     }.get(ext, "image/png")
 
 
-def store_image(image_id: str, data: bytes, content_type: str = "image/png") -> None:
+def store_image(
+    image_id: str, data: bytes, content_type: str = "image/png",
+    *, artifact_metadata: dict | None = None,
+) -> str | None:
 
+    capability = prepare_artifact_access(IMAGE_DIR, image_id, artifact_metadata)
     ext = _ext_from_content_type(content_type)
     path = os.path.join(IMAGE_DIR, f"{image_id}{ext}")
     with open(path, "wb") as f:
         f.write(data)
+    if artifact_metadata:
+        manifest = os.path.join(IMAGE_DIR, f"{image_id}.artifact.json")
+        temporary = f"{manifest}.{os.getpid()}.tmp"
+        with open(temporary, "w", encoding="utf-8") as handle:
+            json.dump(artifact_metadata, handle, sort_keys=True, separators=(",", ":"))
+        os.replace(temporary, manifest)
     logger.debug(f"[Image] Stored {image_id} ({len(data)} bytes, {content_type})")
+    return capability
 
 
 def _cleanup_expired_images() -> None:
@@ -76,6 +90,9 @@ async def serve_image(image_id: str):
     # Strip extension from ID if present (e.g. "abc123.png" → "abc123")
     image_id = os.path.splitext(image_id)[0]
 
+    if not artifact_access_allowed(IMAGE_DIR, image_id, request.args.get("access", "")):
+        return Response("Image not found", status=404)
+
     _cleanup_expired_images()
 
     # Try to find the file, with back-off for in-progress generation
@@ -90,7 +107,7 @@ async def serve_image(image_id: str):
                         data = f.read()
                     content_type = _content_type_from_ext(ext)
                     return Response(data, content_type=content_type, headers={
-                        "Cache-Control": "public, max-age=86400",
+                        "Cache-Control": "private, max-age=86400",
                     })
                 except Exception as e:
                     logger.error(f"[Image] Failed to read {fpath}: {e}")

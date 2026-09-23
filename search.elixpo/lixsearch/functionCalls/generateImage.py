@@ -5,6 +5,7 @@ import uuid
 import requests
 from urllib.parse import quote
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 from loguru import logger
 import sys
 import time
@@ -39,11 +40,10 @@ async def _try_generate(prompt: str, model: str, seed: int, headers: dict, timeo
     return response.content, content_type
 
 
-async def create_image_from_prompt(prompt: str) -> str:
+async def create_image_from_prompt(prompt: str, memory_scope=None) -> str:
     seed = random.randint(0, 10000)
     image_id = str(uuid.uuid4())
-    url = f"{_BASE_URL}/api/image/{image_id}.png"
-    headers = {"Authorization": f"Bearer {os.getenv('POLLINATIONS_API_KEY')}"}
+    headers = pollinations_auth_headers(json_content=False)
 
     t0 = time.perf_counter()
     last_error = None
@@ -52,7 +52,16 @@ async def create_image_from_prompt(prompt: str) -> str:
         try:
             image_bytes, content_type = await _try_generate(prompt, model, seed, headers)
             from app.gateways.image import store_image
-            store_image(image_id, image_bytes, content_type)
+            metadata = {
+                "artifact_id": image_id,
+                "kind": "image",
+                **(memory_scope.filters() if memory_scope is not None else {}),
+            }
+            capability = store_image(
+                image_id, image_bytes, content_type, artifact_metadata=metadata,
+            )
+            access = f"?access={quote(capability, safe='')}" if capability else ""
+            url = f"{_BASE_URL}/api/image/{image_id}.png{access}"
             elapsed = time.perf_counter() - t0
             logger.info(f"[Image] Generated with {model} (seed={seed}) in {elapsed:.2f}s ({len(image_bytes)} bytes) -> {image_id}")
             return url

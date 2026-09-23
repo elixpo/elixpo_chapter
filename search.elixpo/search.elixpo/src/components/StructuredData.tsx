@@ -1,4 +1,4 @@
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_IMAGE } from '@/lib/site-metadata';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_IMAGE, SPACE_URL } from '@/lib/site-metadata';
 
 export default function StructuredData() {
   const data = {
@@ -32,6 +32,8 @@ export default function StructuredData() {
         image: `${SITE_URL}${SOCIAL_IMAGE.url}`,
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         codeRepository: 'https://github.com/pollinations/lixsearch',
+        sameAs: [SPACE_URL, 'https://github.com/pollinations/lixsearch'],
+        installUrl: SPACE_URL,
         featureList: [
           'Live web search', 'Cited answers', 'Deep research',
           'OpenAI-compatible API', 'Streaming responses', 'Semantic memory',

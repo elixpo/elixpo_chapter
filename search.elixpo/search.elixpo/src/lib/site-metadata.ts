@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 
 export const SITE_URL = 'https://search.elixpo.com';
 export const SITE_NAME = 'OreoLook';
+export const SPACE_URL =
+  process.env.NEXT_PUBLIC_OREOLOOK_SPACE_URL || 'https://huggingface.co/spaces/Elixpo/OreoLook';
 export const SITE_TITLE = 'OreoLook — Search the web. Get the answer. Keep the receipts.';
 export const SITE_DESCRIPTION =
   'OreoLook is an open-source AI answer engine that searches live sources, reads the useful pages, and streams a grounded answer with citations. Use it through Pollinations or any OpenAI-compatible client.';

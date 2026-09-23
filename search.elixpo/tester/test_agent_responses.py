@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -11,6 +12,7 @@ API_KEY = ENV.get("API_KEY", "")
 sys.path.insert(0, str(ROOT / "lixsearch"))
 
 from agentRuntime.state import ResponseStateStore, canonical_conversation_id
+from commons.auth_context import RequestAuthContext
 import importlib.util
 
 _spec = importlib.util.spec_from_file_location("responses_gateway", ROOT / "lixsearch" / "app" / "gateways" / "responses.py")
@@ -19,6 +21,7 @@ _spec.loader.exec_module(responses)
 
 _auth_spec = importlib.util.spec_from_file_location("app_auth", ROOT / "lixsearch" / "app" / "auth.py")
 app_auth = importlib.util.module_from_spec(_auth_spec)
+sys.modules[_auth_spec.name] = app_auth
 _auth_spec.loader.exec_module(app_auth)
 
 
@@ -127,6 +130,36 @@ class AgentResponseTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("event: response.output_text.delta", stream_body)
             self.assertIn("event: response.completed", stream_body)
             self.assertIn("data: [DONE]", stream_body)
+
+    async def test_delegated_bearer_streams_responses_api(self):
+        token = "ag_test-delegated-token"
+        context = RequestAuthContext(
+            mode="delegated",
+            principal_id="poll_responses_test",
+            delegated_token=token,
+            expires_at=int(time.time()) + 300,
+        )
+        delegated_state = ResponseStateStore(
+            client=self.redis,
+            ttl_seconds=60,
+            owner_scope=context.principal_id,
+        )
+        with patch.object(
+            app_auth._VALIDATOR, "validate", return_value=context
+        ), patch.object(
+            responses, "AgentRunner", FakeRunner
+        ), patch.object(
+            responses, "ResponseStateStore", return_value=delegated_state
+        ), patch.object(responses, "_remember_turn", AsyncMock()):
+            reply = await self.app.test_client().post(
+                "/v1/responses",
+                json={"input": "delegated stream", "stream": True},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            body = (await reply.get_data()).decode()
+        self.assertEqual(reply.status_code, 200)
+        self.assertIn("event: response.completed", body)
+        self.assertNotIn(token, body)
 
 
     async def test_reasoning_effort_reaches_non_streaming_and_streaming_runner(self):

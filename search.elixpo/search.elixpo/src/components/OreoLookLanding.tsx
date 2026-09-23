@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import {
   ArrowRight, BookOpen, Bot, BrainCircuit, CheckCircle2, Code2, Database,
-  ExternalLink, FileSearch, Github, Globe2, Layers3, Radio, Search, Sparkles, Zap,
+  ExternalLink, FileSearch, Github, Globe2, Layers3, Radio, Rocket, Search, Sparkles, Zap,
 } from 'lucide-react';
+import { SPACE_URL } from '@/lib/site-metadata';
 
 const features = [
   { icon: Globe2, title: 'Searches the live web', text: 'OreoLook fans out across current sources, then reads the pages worth reading.' },
@@ -34,10 +35,16 @@ export default function OreoLookLanding() {
           <Link href="/" className="active"><Search size={16} /> Overview</Link>
           <Link href="/docs"><BookOpen size={16} /> Docs</Link>
           <Link href="/paper"><FileSearch size={16} /> Paper</Link>
+          <a href={SPACE_URL} target="_blank" rel="noreferrer"><Rocket size={16} /> Try live</a>
         </nav>
-        <a className="source-link" href="https://github.com/pollinations/lixsearch" target="_blank" rel="noreferrer">
-          <Github size={15} /> <span>GitHub source</span>
-        </a>
+        <div className="nav-actions">
+          <a className="space-link" href={SPACE_URL} target="_blank" rel="noreferrer">
+            <Rocket size={15} /> <span>Live Space</span>
+          </a>
+          <a className="source-link" href="https://github.com/pollinations/search.elixpo" target="_blank" rel="noreferrer">
+            <Github size={15} /> <span>GitHub source</span>
+          </a>
+        </div>
       </header>
 
       <section className="hero-wrap">
@@ -46,8 +53,8 @@ export default function OreoLookLanding() {
           <h1>Search the web.<br />Get the answer.<br /><em>Keep the receipts.</em></h1>
           <p>OreoLook searches live sources, reads what matters, and streams one grounded answer with citations. Fast when it can be. Thorough when it should be.</p>
           <div className="hero-actions">
-            <a className="primary-action" href="https://enter.pollinations.ai" target="_blank" rel="noreferrer">
-              Try on Pollinations <ArrowRight size={17} />
+            <a className="primary-action" href={SPACE_URL} target="_blank" rel="noreferrer">
+              Try the live Space <ArrowRight size={17} />
             </a>
             <Link className="secondary-action" href="/docs">Read the API docs</Link>
           </div>
@@ -99,6 +106,18 @@ export default function OreoLookLanding() {
         </div>
       </section>
 
+      <section className="space-section">
+        <div className="space-orbit"><Rocket size={28} /><span /></div>
+        <div>
+          <span className="eyebrow">No setup, just curiosity</span>
+          <h2>Take OreoLook for a spin.</h2>
+          <p>Run quick searches, launch deep research, inspect citations, continue a conversation, and download PDF reports from the official Hugging Face Space.</p>
+        </div>
+        <a className="primary-action" href={SPACE_URL} target="_blank" rel="noreferrer">
+          Open the Space <ExternalLink size={16} />
+        </a>
+      </section>
+
       <section className="api-section">
         <div>
           <span className="eyebrow"><Code2 size={13} /> One familiar API</span>
@@ -116,7 +135,8 @@ export default function OreoLookLanding() {
         <PackageMark />
         <div><span className="eyebrow">Open by design</span><h2>Inspect it. Fork it. Make search yours.</h2><p>OreoLook is open source, self-hostable, and powered by OreoFlow with Pollinations AI. The research architecture and three-layer cache paper are public too.</p></div>
         <div className="open-links">
-          <a href="https://github.com/pollinations/lixsearch" target="_blank" rel="noreferrer">Browse the repository <ExternalLink size={14} /></a>
+          <a href={SPACE_URL} target="_blank" rel="noreferrer">Try the Hugging Face Space <ExternalLink size={14} /></a>
+          <a href="https://github.com/pollinations/search.elixpo" target="_blank" rel="noreferrer">Browse the repository <ExternalLink size={14} /></a>
           <Link href="/paper">Read the research paper <ArrowRight size={14} /></Link>
         </div>
       </section>
@@ -124,7 +144,7 @@ export default function OreoLookLanding() {
       <footer className="site-footer">
         <div className="site-brand"><img src="/favicon.png" alt="" width="30" height="30" /><span><strong>OreoLook</strong><small>Search smarter. Verify everything.</small></span></div>
         <p>Built by Ayushman Bhattacharya and Nihal Gazi with <a href="https://pollinations.ai">Pollinations AI</a>.</p>
-        <div><Link href="/docs">Docs</Link><Link href="/paper">Paper</Link><a href="https://github.com/pollinations/lixsearch">GitHub</a></div>
+        <div><a href={SPACE_URL} target="_blank" rel="noreferrer">Live Space</a><Link href="/docs">Docs</Link><Link href="/paper">Paper</Link><a href="https://github.com/pollinations/search.elixpo">GitHub</a></div>
       </footer>
     </main>
   );

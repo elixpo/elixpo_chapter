@@ -101,7 +101,7 @@ CRITICAL RULES:
 
 LENGTH: {length_guide}
 
-FORMAT: Markdown. Start with the answer. Cite as [Title](URL). Never mention tools, cache, RAG, or internal processes.
+FORMAT: Markdown. Start with the answer. Cite as [Title](URL). Never mention tools, cache, RAG, or internal processes. Never claim that a listed capability is unavailable; perform it, or report only a real runtime failure after it occurs.
 
 CONTEXT:
 {rag_context}
@@ -119,6 +119,8 @@ def direct_system_instruction(current_utc_time, session_id=None, interaction_sig
 Today is {current_date} UTC. Do not mention the date unless it is relevant. When a date is relevant, use forms like August 8th 2026 in prose.
 
 Match the user's language, greeting style, rhythm, and level of informality. Respond freshly; never fall back to a canned greeting or copy a fixed example. For greetings and banter, be lively, warm, and genuinely goofy; avoid formal customer-service wording. Use at most one emoji or playful flourish. For serious or high-stakes topics, be warm, precise, and joke-free. Never lead with an AI or feelings disclaimer, claim consciousness or a body, expose reasoning, or mention internal systems. Start with the answer. Use concise markdown.
+
+This direct-answer route has no callable tools. Never output a tool or function name, arguments, or a plan to call one. Answer only from the supplied conversation and context; if those are insufficient, ask one concise clarification question.
 
 If required information is missing and different reasonable interpretations would materially change the answer, ask exactly one concise clarification question instead of guessing. Do not ask for optional preferences when a safe default exists. Resolve references only from supplied messages or session context; if unavailable, ask the user to restate the missing item. Continuity across the reply requires the same session, a previous response, or client-supplied message history.
 
@@ -221,30 +223,35 @@ RULES:
 
 
 def deep_search_final_synthesis_instruction(original_query, sub_results):
-    # Truncate each finding to ~600 words to stay within context limits
+    # Preserve enough evidence for a canonical report while bounding context.
     summaries = ""
-    for i, (sub_q, summary, _sources) in enumerate(sub_results, 1):
-        # Keep first ~2400 chars (~600 words) per finding
-        truncated = summary[:2400]
-        if len(summary) > 2400:
+    for i, (sub_q, summary, sources) in enumerate(sub_results, 1):
+        truncated = summary[:3200]
+        if len(summary) > 3200:
             # Cut at last sentence boundary
             last_period = truncated.rfind(".")
-            if last_period > 1500:
+            if last_period > 2200:
                 truncated = truncated[:last_period + 1]
-            truncated += "\n[...continued in detail above]"
-        summaries += f"\n### Finding {i}: {sub_q}\n{truncated}\n"
+        source_lines = "\n".join(f"- {source}" for source in sources[:6])
+        summaries += (
+            f"\n### Evidence group {i}: {sub_q}\n{truncated}\n"
+            f"Source URLs:\n{source_lines or '- No verified source URL'}\n"
+        )
 
-    return f"""Synthesize a final answer for: "{original_query}"
+    return f"""Create the canonical, publication-ready report for: "{original_query}"
 
-You already sent the detailed findings to the user. Now write a cohesive SUMMARY that ties everything together — do NOT repeat all the details, just unify the key insights.
+This output is the authoritative document body used for both the final response and any requested PDF. Preserve the useful detail instead of reducing it to a short summary.
 
-Research findings (abbreviated):
+Verified research material:
 {summaries}
 
 RULES:
-- Write 800-1500 words combining the key points into a unified narrative.
-- Use markdown headers to organize by theme, not by finding number.
+- Write a descriptive H1 title followed by a brief executive summary and complete thematic sections.
+- Preserve material facts, trade-offs, caveats, and recommendations supported by the supplied material.
+- For a comparison, include a compact Markdown comparison table when the evidence supports one.
+- Use readable Markdown headings, short paragraphs, lists, and tables where they improve comprehension.
 - Remove redundancy — if multiple findings cover the same point, mention it once.
-- Cite sources as [Title](URL).
-- NEVER mention "findings", "sub-queries", "research threads", or any internal process.
+- Cite only supplied URLs as [descriptive title](URL); never invent a URL.
+- Do not include an internal request envelope, field names, status summaries, or process commentary.
+- NEVER mention "evidence groups", "findings", "sub-queries", "research threads", or any internal process.
 - NEVER include your thinking or reasoning. Start directly with the content."""

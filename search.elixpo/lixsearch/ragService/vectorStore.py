@@ -6,7 +6,7 @@ from pathlib import Path
 import threading
 import time
 import uuid
-from typing import Dict, List
+from typing import Any, Dict, List, Mapping
 
 from loguru import logger
 import numpy as np
@@ -75,6 +75,23 @@ class VectorStore:
             )
             logger.info("[VectorStore] Created {} (dim={}, disk={}, scalar-int8=true)", self.collection_name, self.embedding_dim, QDRANT_ON_DISK)
 
+        for field_name, field_schema in (
+            ("tenant_id", models.PayloadSchemaType.KEYWORD),
+            ("user_id", models.PayloadSchemaType.KEYWORD),
+            ("session_id", models.PayloadSchemaType.KEYWORD),
+            ("schema", models.PayloadSchemaType.KEYWORD),
+            ("expires_at", models.PayloadSchemaType.INTEGER),
+        ):
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=field_schema,
+                    wait=True,
+                )
+            except Exception as exc:
+                logger.debug("[VectorStore] Payload index {} unchanged: {}", field_name, exc)
+
         self.chunk_count = self.client.count(collection_name=self.collection_name, exact=True).count
         self._ready = True
         logger.info("[VectorStore] Qdrant ready at {} with {} points", endpoint, self.chunk_count)
@@ -118,6 +135,126 @@ class VectorStore:
                 ))
             self.client.upsert(collection_name=self.collection_name, points=points, wait=True)
             self.chunk_count = self.client.count(collection_name=self.collection_name, exact=True).count
+
+    @staticmethod
+    def _required_filter(filters: Mapping[str, Any]) -> models.Filter:
+        required = ("tenant_id", "user_id", "session_id")
+        missing = [key for key in required if not str(filters.get(key) or "").strip()]
+        if missing:
+            raise ValueError(f"episodic retrieval requires filters: {', '.join(missing)}")
+        return models.Filter(must=[
+            models.FieldCondition(key=key, match=models.MatchValue(value=str(filters[key])))
+            for key in required
+        ])
+
+    @staticmethod
+    def _owner_filter(
+        tenant_id: str, user_id: str, session_id: str | None = None,
+    ) -> models.Filter:
+        values = {"tenant_id": tenant_id, "user_id": user_id}
+        if session_id is not None:
+            values["session_id"] = session_id
+        if any(not str(value or "").strip() for value in values.values()):
+            raise ValueError("tenant_id and user_id are required")
+        return models.Filter(must=[
+            models.FieldCondition(key=key, match=models.MatchValue(value=str(value)))
+            for key, value in values.items()
+        ] + [
+            models.FieldCondition(key="schema", match=models.MatchValue(value="oreolook-episode-v1"))
+        ])
+
+    def upsert_episodes(self, episodes: List[Dict]) -> None:
+        """Upsert deterministic typed episodes; retries replace rather than duplicate."""
+        if not episodes or not self._ensure_ready():
+            return
+        points = []
+        for episode in episodes:
+            payload = {key: value for key, value in episode.items() if key != "embedding"}
+            point_id = str(episode.get("point_id") or "").strip()
+            if not point_id:
+                raise ValueError("episodic point_id is required")
+            self._required_filter(payload)
+            points.append(models.PointStruct(
+                id=point_id,
+                vector=self._normalize(episode["embedding"]),
+                payload=payload,
+            ))
+        with self.lock:
+            self.client.upsert(collection_name=self.collection_name, points=points, wait=True)
+            self.chunk_count = self.client.count(collection_name=self.collection_name, exact=True).count
+
+    def search_episodes(
+        self,
+        query_embedding: np.ndarray,
+        *,
+        filters: Mapping[str, Any],
+        top_k: int,
+    ) -> List[Dict]:
+        if not self._ensure_ready():
+            return []
+        query_filter = self._required_filter(filters)
+        with self.lock:
+            response = self.client.query_points(
+                collection_name=self.collection_name,
+                query=self._normalize(query_embedding),
+                limit=max(1, min(int(top_k), 24)),
+                with_payload=True,
+                query_filter=query_filter,
+                search_params=models.SearchParams(
+                    quantization=models.QuantizationSearchParams(rescore=True)
+                ),
+            )
+        return [
+            {"score": float(point.score), "metadata": dict(point.payload or {})}
+            for point in response.points
+        ]
+
+    def delete_episodes(self, *, filters: Mapping[str, Any]) -> None:
+        if not self._ensure_ready():
+            return
+        query_filter = self._required_filter(filters)
+        with self.lock:
+            self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=models.FilterSelector(filter=query_filter),
+                wait=True,
+            )
+
+    def delete_owned_episodes(
+        self, *, tenant_id: str, user_id: str, session_id: str | None = None,
+    ) -> int:
+        if not self._ensure_ready():
+            raise RuntimeError("Qdrant is unavailable")
+        query_filter = self._owner_filter(tenant_id, user_id, session_id)
+        with self.lock:
+            count = self.client.count(
+                collection_name=self.collection_name, count_filter=query_filter, exact=True,
+            ).count
+            self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=models.FilterSelector(filter=query_filter), wait=True,
+            )
+            self.chunk_count = max(0, self.chunk_count - int(count))
+        return int(count)
+
+    def delete_expired_episodes(self, now: int) -> int:
+        if not self._ensure_ready():
+            raise RuntimeError("Qdrant is unavailable")
+        query_filter = models.Filter(must=[
+            models.FieldCondition(key="schema", match=models.MatchValue(value="oreolook-episode-v1")),
+            models.FieldCondition(key="expires_at", range=models.Range(lt=int(now))),
+        ])
+        with self.lock:
+            count = self.client.count(
+                collection_name=self.collection_name, count_filter=query_filter, exact=True,
+            ).count
+            self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=models.FilterSelector(filter=query_filter),
+                wait=True,
+            )
+            self.chunk_count = max(0, self.chunk_count - int(count))
+        return int(count)
 
     def search(self, query_embedding: np.ndarray, top_k: int = 5, conversation_id: str | None = None) -> List[Dict]:
         if not self._ensure_ready() or self.chunk_count == 0:

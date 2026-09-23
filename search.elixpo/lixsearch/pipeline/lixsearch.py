@@ -1,15 +1,33 @@
 from datetime import datetime, timezone
 from loguru import logger
-from ragService.semanticCacheRedis import SemanticCacheRedis as SemanticCache, SessionContextWindow
+from ragService.semanticCacheRedis import SemanticCacheRedis as SemanticCache
 import random
 import requests
 import json
 import re
 from pipeline.tools import tools
 from sessions.conversation_cache import ConversationCacheManager
+from sessions.clarification import (
+    ClarificationNeed,
+    ResolutionAction,
+    TaskStatus,
+    apply_resolution,
+    create_pending_task,
+    has_decision_contract,
+    has_resolution_contract,
+    parse_clarification_need,
+    parse_resolution,
+    pending_for_request,
+    task_with_status,
+)
+from sessions.ledger import LedgerSessionContext
+from sessions.request_context import DeliverableKind, build_request_context
+from sessions.episodic_memory import continuation_episodic_context, request_memory_scope
+from graphMemory.client import GraphMemoryClient, format_graph_context
 
 import os
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 from pipeline.config import *
 from pipeline.instruction import direct_system_instruction, system_instruction, user_instruction, synthesis_instruction
 from pipeline.optimized_tool_execution import optimized_tool_execution
@@ -23,6 +41,7 @@ from pipeline.helpers import (
     _evaluate_fetch_quality,
     sanitize_final_response,
     extract_leaked_tool_call,
+    looks_like_tool_intent,
     StreamingTagFilter,
 )
 from pipeline.synthesis import (
@@ -43,25 +62,90 @@ from pipeline.response_builder import (
     requested_coverage_gap,
     requested_day_count,
     missing_local_date_anchor,
+    artifact_ledger_fields,
 )
 from pipeline.deep_search import _run_deep_search_pipeline
 from functionCalls.getImagePrompt import describe_image, replyFromImage
 import asyncio
+import uuid
 
 load_local_environment()
 
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 MODEL = LLM_MODEL
 MODEL_FALLBACK = LLM_MODEL_FALLBACK
 
 
-_DECISION_INSTRUCTION = """Classify tool need and conversation dependence for this request.
-Return only JSON: {"mode":"DIRECT|TOOLS","context":"STANDALONE|CONTINUATION"}.
-TOOLS: live/current facts, search, URL reading, time zones, images, audio, YouTube, PDF export, or multi-step research.
+async def _recall_session_episodes(core_service, scope, query: str) -> list[dict]:
+    if core_service is None or scope is None:
+        return []
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(
+                core_service.recall_episodes,
+                scope.filters(),
+                query,
+                EPISODIC_MEMORY_TOP_K,
+                EPISODIC_MEMORY_MAX_CHARS,
+            ),
+            timeout=EPISODIC_MEMORY_TIMEOUT_SECONDS,
+        )
+    except Exception as exc:
+        logger.debug(f"[EpisodicMemory] Recall skipped: {exc}")
+        return []
+
+
+async def _remember_session_episode(core_service, scope, episode_id, user_text, assistant_text,
+                                    source_turn_ids, evidence_ids, artifact_ids) -> None:
+    if core_service is None or scope is None or not assistant_text:
+        return
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                core_service.remember_episodes,
+                scope.filters(),
+                episode_id,
+                user_text,
+                assistant_text,
+                list(source_turn_ids),
+                list(evidence_ids),
+                list(artifact_ids),
+            ),
+            timeout=max(2.0, EPISODIC_MEMORY_TIMEOUT_SECONDS * 4),
+        )
+    except Exception as exc:
+        logger.debug(f"[EpisodicMemory] Write skipped: {exc}")
+
+
+async def _recall_cached_graph(scope) -> list[dict]:
+    """One Redis GET only; graph traversal and writes stay off the request path."""
+    if scope is None or not GRAPH_MEMORY_ENABLED:
+        return []
+    try:
+        return await asyncio.to_thread(GraphMemoryClient().get_cached_for_request, scope)
+    except Exception as exc:
+        logger.debug(f"[GraphMemory] Cached neighborhood skipped: {exc}")
+        return []
+
+
+_DECISION_INSTRUCTION = """Classify tool need, conversation dependence, and absent inputs. Never answer the request.
+Return only JSON: {"mode":"DIRECT|TOOLS","context":"STANDALONE|CONTINUATION","clarification":{"required":false,"blocking_fields":[],"defaultable_fields":[],"questions":{}}}.
+Use exact snake_case field names. Put only indispensable inputs in blocking_fields. Put optional preferences and output metadata in defaultable_fields. For every blocking field, questions must contain one concise question under the identical key.
+TOOLS: live/current facts, search, URL reading, time zones, images, audio, YouTube, artifact creation, or multi-step research.
 DIRECT: greetings, casual conversation, opinions, explanations, writing, coding, math, and stable knowledge.
-CONTINUATION: the request cannot be interpreted correctly without earlier turns, such as explicit references to "that", "it", "the previous answer", continuing prior work, recaps, or exporting existing conversation content.
-STANDALONE: the request states a complete subject and desired output. Repeated or reformulated complete requests remain STANDALONE even when a session exists. "Give me a PDF of the latest news from India" is STANDALONE because it requests new live research, not prior content.
-Attached images require TOOLS. Never answer the request."""
+CONTINUATION: the request cannot be interpreted correctly without earlier turns because it refers to earlier content or continues earlier work.
+STANDALONE: the request states a complete subject and desired output. A new result remains standalone even when its output is an artifact; transforming an earlier result is a continuation.
+Identity, user-owned values, credentials, authorization decisions, irreversible choices, and genuinely required scope are blocking. Preferences and output metadata are always safely defaultable and never block execution. Output names, titles, styling, layout, verbosity, and presentation belong in defaultable_fields unless the user explicitly made a particular value mandatory. A count, category, pronoun, generic label, or placeholder is not an identity. A referent supplied by conversation context is not absent. Set required=true exactly when blocking_fields is non-empty. Defaultable fields must never appear in questions. The runtime ignores defaultable_fields when constructing clarification state.
+Attached images require TOOLS."""
+
+
+_RESOLUTION_INSTRUCTION = """Resolve a reply against one pending clarification task.
+Return only JSON: {"action":"resolve|partial|unrelated|cancel|replace","values":{},"defaulted_fields":[],"question":"","replacement_request":""}.
+resolve: the reply plus the original request makes the task executable. Put explicitly supplied information under exact missing-field keys in values. Put any remaining nonessential fields that have safe, reversible, context-appropriate defaults in defaulted_fields.
+partial: indispensable information is still absent; include supplied values, any safely defaulted fields, and one concise question covering only what remains indispensable.
+unrelated: it does not answer or complete the pending task; keep values and defaulted_fields empty and repeat or improve the concise question.
+cancel: it clearly cancels the pending task.
+replace: it clearly requests a different task; put that complete new request in replacement_request.
+Never default an identity, secret, user-owned value, authorization decision, or irreversible choice. Never invent supplied values, never treat an unrelated reply as an answer, and never execute the task."""
 
 
 def _parse_decision_mode(content: str) -> str:
@@ -74,39 +158,180 @@ def _parse_context_mode(content: str) -> str:
     return match.group(1).lower() if match else "standalone"
 
 
-async def _decide_request_mode(user_query: str, image_count: int, headers: dict) -> tuple[str, str]:
-    """Run the cheap routing decision while local context is prepared."""
+def _may_stream_uncommitted_output(
+    event_id: str | None,
+    *,
+    has_tools: bool,
+    artifact_requested: bool,
+) -> bool:
+    """Allow progressive output only when no validation/export commit is pending."""
+    return bool(event_id) and not has_tools and not artifact_requested
+
+
+def _enforce_capability_route(request_mode: str, *, artifact_requested: bool) -> str:
+    """Keep explicit artifact work on the tool-capable orchestration path."""
+    if artifact_requested and request_mode == "direct":
+        return "tools"
+    return request_mode
+
+
+async def _decide_request_mode(
+    user_query: str,
+    image_count: int,
+    headers: dict,
+    context_excerpt: str = "",
+) -> tuple[str, str, object]:
+    """Return the first valid decision from redundant bounded routers."""
     query = user_query or "(no text)"
     if image_count:
         query += f"\n[Attached images: {image_count}]"
-    payload = {
-        "model": LLM_DECISION_MODEL,
-        "messages": [
-            {"role": "system", "content": _DECISION_INSTRUCTION},
-            {"role": "user", "content": query},
-        ],
-        "max_tokens": 30,
-        "temperature": 0,
-    }
+    if context_excerpt:
+        query += f"\n[Available conversation context]\n{context_excerpt[:1200]}"
 
-    def _call():
+    messages = [
+        {"role": "system", "content": _DECISION_INSTRUCTION},
+        {"role": "user", "content": query},
+    ]
+    models = list(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))
+
+    def _call(model):
         response = requests.post(
-            POLLINATIONS_ENDPOINT, json=payload, headers=headers,
-            timeout=LLM_DECISION_TIMEOUT_SECONDS,
+            POLLINATIONS_ENDPOINT,
+            json={
+                "model": model,
+                "messages": messages,
+                "max_tokens": 260,
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+            },
+            headers=headers,
+            timeout=max(LLM_DECISION_TIMEOUT_SECONDS, 5.0),
         )
         response.raise_for_status()
-        message = response.json()["choices"][0]["message"]
-        content = message.get("content", "")
-        return _parse_decision_mode(content), _parse_context_mode(content)
+        content = response.json()["choices"][0]["message"].get("content", "")
+        if not has_decision_contract(content):
+            raise ValueError(f"router model {model} returned an invalid contract")
+        return (
+            _parse_decision_mode(content),
+            _parse_context_mode(content),
+            parse_clarification_need(content),
+        )
 
+    tasks = [asyncio.create_task(asyncio.to_thread(_call, model)) for model in models]
     try:
-        mode, context_mode = await asyncio.to_thread(_call)
-        logger.debug(f"[pipeline] request_mode={mode} context_mode={context_mode}")
-        return mode, context_mode
-    except Exception as exc:
-        logger.debug(f"[pipeline] decision fallback=tools/standalone error={exc}")
-        return "tools", "standalone"
+        for completed in asyncio.as_completed(tasks):
+            try:
+                mode, context_mode, clarification = await completed
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                logger.debug(
+                    f"[pipeline] request_mode={mode} context_mode={context_mode}"
+                )
+                logger.info(
+                    "[clarification] route required={} blocking_fields={}",
+                    clarification.required,
+                    list(clarification.missing_fields),
+                )
+                return mode, context_mode, clarification
+            except Exception as exc:
+                logger.warning(f"[pipeline] request router attempt failed: {exc}")
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
 
+    # Routing is an admission boundary. If every bounded router fails, do not
+    # let the more permissive tool orchestrator guess at an underspecified
+    # request. Persist one generic, resolvable field so the next turn can
+    # continue the original task in the same session.
+    logger.error("[pipeline] every request router failed; requesting safe clarification")
+    return (
+        "tools",
+        "standalone",
+        ClarificationNeed(
+            required=True,
+            missing_fields=("request_details",),
+            question="What specific subject or inputs should I use for this request?",
+        ),
+    )
+
+
+async def _resolve_pending_clarification(
+    active_task: dict,
+    pending: dict,
+    user_reply: str,
+    headers: dict,
+):
+    base_messages = [
+        {"role": "system", "content": _RESOLUTION_INSTRUCTION},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "active_task": active_task,
+                    "pending_clarification": pending,
+                    "reply": user_reply,
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+    models = list(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))
+
+    def _call(model):
+        response = requests.post(
+            POLLINATIONS_ENDPOINT,
+            json={
+                "model": model,
+                "messages": base_messages,
+                "max_tokens": 220,
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+            },
+            headers=headers,
+            timeout=max(LLM_DECISION_TIMEOUT_SECONDS, 5.0),
+        )
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"].get("content", "")
+        if not has_resolution_contract(content):
+            raise ValueError(f"resolver model {model} returned an invalid contract")
+        return parse_resolution(content)
+
+    tasks = [asyncio.create_task(asyncio.to_thread(_call, model)) for model in models]
+    try:
+        for completed in asyncio.as_completed(tasks):
+            try:
+                resolution = await completed
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                return resolution
+            except Exception as exc:
+                logger.warning(f"[pipeline] clarification resolver attempt failed: {exc}")
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+
+    # The admission fallback creates exactly one generic field. Its answer is
+    # the user's next explicit message, so it can be bound without semantic
+    # guessing when resolver models are unavailable. All model-declared fields
+    # remain fail-closed.
+    missing_fields = tuple(pending.get("missing_fields") or ())
+    reply = (user_reply or "").strip()
+    if missing_fields == ("request_details",) and reply:
+        logger.warning("[pipeline] resolver unavailable; binding generic request details")
+        return parse_resolution(json.dumps({
+            "action": "resolve",
+            "values": {"request_details": reply},
+            "defaulted_fields": [],
+            "question": "",
+            "replacement_request": "",
+        }))
+
+    logger.warning("[pipeline] every clarification resolver failed safely")
+    return parse_resolution("")
 
 async def _stream_llm_call(payload: dict, headers: dict):
     """Stream an LLM call from Pollinations. Yields ("content", str) for text
@@ -237,15 +462,17 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
     status_tracker = SSEStatusTracker(emit_fn=emit_event, stale_threshold=10.0)
     semantic_cache = None
     memoized_results = {}
+    session_context = None
+    session_lock_token = None
+    ledger_request_id = event_id or uuid.uuid4().hex
+    task_failed = False
+    episodic_recall_task = None
+    graph_recall_task = None
+    episodic_scope = None
 
     try:
         current_utc_time = datetime.now(timezone.utc)
-        headers = {"Content-Type": "application/json",
-                   "Authorization": f"Bearer {POLLINATIONS_API_KEY}"}
-        decision_task = asyncio.create_task(
-            _decide_request_mode(original_user_query, len(user_images), headers)
-        )
-
+        headers = pollinations_auth_headers()
         try:
             from ipcService.coreServiceManager import get_core_embedding_service
             core_service = get_core_embedding_service()
@@ -259,18 +486,160 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             "session_id": session_id or "", "generated_images": [],
         }
 
+        if session_id and not is_ephemeral:
+            episodic_scope = request_memory_scope(session_id, namespace="search")
+            memoized_results["memory_scope"] = episodic_scope
+
+        if session_id and not is_ephemeral and core_service is not None:
+            episodic_recall_task = asyncio.create_task(
+                _recall_session_episodes(core_service, episodic_scope, original_user_query)
+            )
+        if session_id and not is_ephemeral and GRAPH_MEMORY_ENABLED:
+            graph_recall_task = asyncio.create_task(_recall_cached_graph(episodic_scope))
+
         # --- Session context (skip for ephemeral — no history to load or persist) ---
-        session_context = None
         previous_messages = []
+        snapshot = None
+        source_turn = 0
         if session_id and not is_ephemeral:
             try:
-                session_context = SessionContextWindow(session_id=session_id)
+                session_context = LedgerSessionContext(session_id=session_id)
+                session_lock_token = await asyncio.to_thread(session_context.ledger.acquire_lock)
+                if not session_lock_token:
+                    raise RuntimeError(f"session {session_id} is busy")
                 memoized_results["session_context"] = session_context
-                previous_messages = session_context.get_context()
-                session_context.add_message(role="user", content=user_query)
+                snapshot = await asyncio.to_thread(session_context.ledger.load_snapshot)
+                previous_messages = snapshot.messages
+                memoized_results["session_snapshot"] = snapshot
+                memoized_results["ledger_request_id"] = ledger_request_id
+                source_turn = session_context.add_message(
+                    role="user",
+                    content=user_query,
+                    metadata={"request_id": f"{ledger_request_id}:user"},
+                )
                 logger.info(f"[Pipeline] Session {session_id}: {len(previous_messages)} hot messages")
-            except Exception:
+            except Exception as exc:
+                if session_context and session_lock_token:
+                    try:
+                        await asyncio.to_thread(session_context.ledger.release_lock, session_lock_token)
+                    except Exception:
+                        pass
+                    session_lock_token = None
                 session_context = None
+                logger.error(f"[Pipeline] Session ledger unavailable: {exc}")
+                raise
+
+        resolved_pending_task = False
+
+        # Pending clarification is resolved before general routing. Only the
+        # same durable session can load and consume this state.
+        request_pending = pending_for_request(snapshot, session_id, is_ephemeral)
+        if request_pending:
+            memoized_results["active_task"] = snapshot.active_task or {}
+            memoized_results["pending_clarification"] = request_pending
+            memoized_results["suppress_pdf_export"] = True
+            resolution = await _resolve_pending_clarification(
+                snapshot.active_task or {},
+                snapshot.pending_clarification,
+                user_query,
+                headers,
+            )
+            logger.info(
+                "[clarification] resolution action={} supplied_fields={} defaulted_fields={}",
+                resolution.action.value,
+                sorted(resolution.values),
+                list(resolution.defaulted_fields),
+            )
+            next_task, next_pending, executable_request = apply_resolution(
+                snapshot.active_task or {},
+                snapshot.pending_clarification,
+                resolution,
+            )
+            await asyncio.to_thread(
+                session_context.ledger.set_task_state,
+                active_task=next_task or None,
+                pending_clarification=next_pending,
+            )
+            memoized_results["active_task"] = next_task
+            memoized_results["pending_clarification"] = next_pending
+
+            if resolution.action == ResolutionAction.CANCEL:
+                reply = "Got it — I’ve cancelled that request."
+                memoized_results["final_response"] = reply
+                memoized_results["task_terminal"] = True
+                if event_id:
+                    yield format_sse("RESPONSE", reply)
+                    yield format_sse("INFO", "<TASK>DONE</TASK>")
+                else:
+                    yield reply
+                return
+
+            if resolution.action == ResolutionAction.REPLACE and executable_request:
+                user_query = executable_request
+                original_user_query = executable_request
+                memoized_results["suppress_pdf_export"] = False
+            elif executable_request:
+                user_query = executable_request
+                original_user_query = executable_request
+                memoized_results["suppress_pdf_export"] = False
+                resolved_pending_task = True
+            else:
+                question = (
+                    (next_pending or {}).get("question")
+                    or request_pending.get("question")
+                    or "Could you clarify the missing information?"
+                )
+                memoized_results["final_response"] = question
+                memoized_results["clarification_blocked"] = True
+                if event_id:
+                    yield format_sse("RESPONSE", question)
+                    yield format_sse("INFO", "<TASK>DONE</TASK>")
+                else:
+                    yield question
+                return
+
+        context_messages = chat_history if chat_history is not None else previous_messages
+        request_context = build_request_context(
+            request_id=ledger_request_id,
+            current_request=original_user_query,
+            source_turn_id=source_turn,
+            messages=context_messages or (),
+            active_task=(
+                memoized_results.get("active_task")
+                if "active_task" in memoized_results
+                else (snapshot.active_task if snapshot else None)
+            ),
+            pending_clarification=(
+                memoized_results.get("pending_clarification")
+                if "pending_clarification" in memoized_results
+                else (snapshot.pending_clarification if snapshot else None)
+            ),
+        )
+        memoized_results["request_context"] = request_context
+        context_excerpt = request_context.routing_excerpt()
+        if (
+            request_context.requested_deliverable
+            and request_context.requested_deliverable.kind == DeliverableKind.PDF
+            and request_context.referent_source
+        ):
+            memoized_results["continuation_pdf_content"] = (
+                request_context.referent_source.content
+            )
+        decision_task = None
+        if resolved_pending_task:
+            stored_routing = (memoized_results.get("active_task") or {}).get("routing") or {}
+            request_mode = stored_routing.get("mode") or "tools"
+            context_mode = "standalone"
+            clarification = ClarificationNeed()
+        else:
+            decision_task = asyncio.create_task(
+                _decide_request_mode(
+                    original_user_query,
+                    len(user_images),
+                    headers,
+                    context_excerpt=context_excerpt,
+                )
+            )
 
         # --- Conversation cache + Semantic cache (skip for ephemeral — no history) ---
         conversation_cache = None
@@ -294,6 +663,86 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 redis_db=SEMANTIC_CACHE_REDIS_DB
             )
             semantic_cache.load_for_request(session_id)
+
+        if decision_task is not None:
+            request_mode, context_mode, clarification = await decision_task
+
+        episodic_memories = []
+        graph_memories = []
+        if episodic_recall_task is not None:
+            if context_mode == "continuation":
+                episodic_memories = await episodic_recall_task
+            else:
+                episodic_recall_task.cancel()
+            episodic_recall_task = None
+        if graph_recall_task is not None:
+            if context_mode == "continuation":
+                graph_memories = await graph_recall_task
+            else:
+                graph_recall_task.cancel()
+            graph_recall_task = None
+
+        _pdf_requested = any(
+            keyword in original_user_query.lower()
+            for keyword in ("pdf", "export", "save as", "document", "download")
+        )
+        enforced_mode = _enforce_capability_route(
+            request_mode,
+            artifact_requested=_pdf_requested,
+        )
+        if enforced_mode != request_mode:
+            logger.warning(
+                "[pipeline] overriding contradictory direct route for explicit artifact request"
+            )
+            request_mode = enforced_mode
+
+        if clarification.required:
+            memoized_results["suppress_pdf_export"] = True
+            memoized_results["clarification_blocked"] = True
+            if session_context:
+                active_task, pending = create_pending_task(
+                    original_user_query,
+                    clarification.missing_fields,
+                    clarification.question,
+                    source_turn=source_turn,
+                    request_id=ledger_request_id,
+                    routing={"mode": request_mode, "context": context_mode},
+                )
+                await asyncio.to_thread(
+                    session_context.ledger.set_task_state,
+                    active_task=active_task,
+                    pending_clarification=pending,
+                )
+                memoized_results["active_task"] = active_task
+                memoized_results["pending_clarification"] = pending
+            memoized_results["final_response"] = clarification.question
+            if event_id:
+                yield format_sse("RESPONSE", clarification.question)
+                yield format_sse("INFO", "<TASK>DONE</TASK>")
+            else:
+                yield clarification.question
+            return
+
+        if session_context:
+            current_task = memoized_results.get("active_task") or {}
+            if current_task.get("status") == TaskStatus.READY_TO_EXECUTE.value:
+                active_task = task_with_status(current_task, TaskStatus.ACTIVE)
+            else:
+                active_task = task_with_status(
+                    {
+                        "original_request": original_user_query,
+                        "source_turn": source_turn,
+                        "request_id": ledger_request_id,
+                    },
+                    TaskStatus.ACTIVE,
+                )
+            await asyncio.to_thread(
+                session_context.ledger.set_task_state,
+                active_task=active_task,
+                pending_clarification=None,
+            )
+            memoized_results["active_task"] = active_task
+            memoized_results["pending_clarification"] = None
 
         # --- Image handling ---
         image_context_provided = False
@@ -404,12 +853,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             {"role": "system", "name": "elixposearch-agent-system",
              "content": system_instruction(rag_context, current_utc_time, is_detailed=is_detailed_mode, session_id=session_id, interaction_signals=interaction_signals, global_revelations=global_revelations)},
         ]
+        episodic_context = continuation_episodic_context(context_mode, episodic_memories)
+        if episodic_context:
+            messages.append({"role": "system", "content": episodic_context})
+        graph_context = format_graph_context(graph_memories)
+        if graph_context:
+            messages.append({"role": "system", "content": graph_context})
         direct_prompt = direct_system_instruction(
             current_utc_time, session_id=session_id, interaction_signals=interaction_signals,
             global_revelations=global_revelations, rag_context="",
         )
-
-        request_mode, context_mode = await decision_task
 
         # Explicit OpenAI messages history is authoritative. Server-loaded
         # session history enters only genuine continuation requests.
@@ -431,9 +884,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     _injected_history += 1
         elif context_mode == "continuation" and session_id and session_context:
             try:
-                _prev = session_context.get_context()
-                if _prev and _prev[-1].get("role") == "user" and _prev[-1].get("content") == user_query:
-                    _prev = _prev[:-1]
+                _prev = previous_messages
                 _trimmed = []
                 for msg in reversed(_prev):
                     _content = msg.get("content", "")
@@ -453,22 +904,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                             _last_msg_ts = float(_ts)
             except Exception as e:
                 logger.warning(f"[Pipeline] Failed to inject conversation history: {e}")
-
-        # A referential PDF follow-up must export the prior grounded answer,
-        # not ask the model to recreate it from general knowledge.
-        _pdf_terms = ("pdf", "export", "download", "document", "save as")
-        if context_mode == "continuation" and any(term in user_query.lower() for term in _pdf_terms):
-            _history_source = chat_history if chat_history is not None else previous_messages
-            for _candidate in reversed(_history_source or []):
-                _candidate_content = _candidate.get("content", "")
-                if (
-                    _candidate.get("role") == "assistant"
-                    and len(_candidate_content.strip()) >= 200
-                    and "[ERROR]" not in _candidate_content
-                    and "<TASK>" not in _candidate_content
-                ):
-                    memoized_results["continuation_pdf_content"] = _candidate_content.strip()
-                    break
 
         # Inject timing context for returning users
         if _injected_history > 0 and _last_msg_ts:
@@ -542,7 +977,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 payload = {"model": MODEL, "messages": _direct_messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
             else:
                 payload = {"model": MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
-                payload["tools"] = tools
+                # Document export is a final commit owned by the runtime after
+                # synthesis and validation. It is never available during
+                # planning/tool selection.
+                payload["tools"] = [
+                    tool for tool in tools
+                    if not (
+                        _pdf_requested
+                        and tool.get("function", {}).get("name") == "export_to_pdf"
+                    )
+                ]
                 payload["tool_choice"] = "auto"
 
             _stale_event = status_tracker.refresh_if_stale()
@@ -552,10 +996,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             # Provider-routed tool selection is currently non-streaming: both configured
             # models reject stream=true with this tool catalog (HTTP 400). Final
             # synthesis has no tools and remains progressively streamed.
-            _pdf_requested = any(kw in original_user_query.lower() for kw in ("pdf", "export", "save as", "document", "download"))
             # Buffer PDF synthesis until document structure and coverage validate.
-            _use_streaming = bool(event_id) and not payload.get("tools") and not (force_synthesis and _pdf_requested)
+            # Artifact drafts are buffered until synthesis, validation, and export
+            # complete; uncommitted model text must never leak to the client.
+            _use_streaming = _may_stream_uncommitted_output(
+                event_id,
+                has_tools=bool(payload.get("tools")),
+                artifact_requested=_pdf_requested,
+            )
             _streamed_content = ""
+            _model_protocol_content = ""
 
             if _use_streaming:
                 assistant_message = None
@@ -592,6 +1042,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                                         yield format_sse("RESPONSE", _buffered)
                                 assistant_message = _sdata
                                 assistant_message["content"] = _visible_streamed_content
+                        _model_protocol_content = _streamed_content
                         if assistant_message and (assistant_message.get("content") or assistant_message.get("tool_calls")):
                             break  # direct answer or structured tool call
                         logger.warning(f"Streaming model={_stream_model} returned empty, trying fallback")
@@ -607,7 +1058,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 if assistant_message.get("tool_calls"):
                     _streamed_content = ""
                 else:
-                    _streamed_content = assistant_message.get("content", "")
+                    _streamed_content = _model_protocol_content or assistant_message.get("content", "")
             else:
                 # --- Non-streaming path: blocking call with keepalive + fallback ---
                 response_data = None
@@ -649,6 +1100,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 assistant_message = choice.get("message") or choice.get("delta")
                 if not assistant_message:
                     break
+                _model_protocol_content = assistant_message.get("content", "")
 
             assistant_message.pop("reasoning_content", None)
             if not assistant_message.get("content"):
@@ -659,6 +1111,30 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             if not tool_calls:
                 raw_content = assistant_message.get("content", "")
+
+                # A provider may serialize a desired function call as plain
+                # content even when this turn was admitted to the direct path.
+                # The streaming filter has withheld that protocol text; retry
+                # once through the structured tool path instead of displaying
+                # or guessing arguments from it.
+                if (
+                    not force_synthesis
+                    and looks_like_tool_intent(_model_protocol_content)
+                    and current_iteration < max_iterations
+                ):
+                    logger.warning(
+                        "[runtime] bare tool intent on direct path; rerouting through structured tools"
+                    )
+                    request_mode = "tools"
+                    assistant_message["content"] = "Processing..."
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            "Use the structured function-calling interface for the required action. "
+                            "Return only a function call, not a tool name or arguments as text."
+                        ),
+                    })
+                    continue
 
                 if force_synthesis and _pdf_requested:
                     raw_content = normalize_pdf_document(raw_content)
@@ -712,25 +1188,23 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                     assistant_message["content"] = f"Calling {leaked_fn}..."
                     assistant_message["tool_calls"] = tool_calls
 
-                # Recovery: detect PDF content dumped as plain text
-                # If the user asked for a PDF and the LLM output markdown instead of calling the tool
-                if not force_synthesis and not tool_calls and not memoized_results.get("generated_pdfs"):
-                    _pdf_keywords = ("pdf", "export", "save as", "download", "document")
-                    _query_wants_pdf = any(kw in original_user_query.lower() for kw in _pdf_keywords)
-                    _content_long_enough = len(raw_content) > 200
-                    if _query_wants_pdf and _content_long_enough and not raw_content.strip().startswith("I "):
-                        import uuid as _uuid
-                        logger.info(f"[RECOVERY] LLM dumped PDF content as text ({len(raw_content)} chars), converting to export_to_pdf call")
-                        _pdf_args = {"content": raw_content}
-                        _title_match = re.search(r'^#+\s+(.+)', raw_content, re.MULTILINE)
-                        if _title_match:
-                            _pdf_args["title"] = _title_match.group(1).strip()
-                        tool_calls = [{"id": f"recovered-pdf-{_uuid.uuid4().hex[:8]}", "type": "function",
-                                       "function": {"name": "export_to_pdf", "arguments": json.dumps(_pdf_args)}}]
-                        assistant_message["content"] = "Generating PDF..."
-                        assistant_message["tool_calls"] = tool_calls
-
                 if not tool_calls:
+                    # A model-authored artifact draft is never committed directly.
+                    # Give it one bounded synthesis pass under the final-document
+                    # contract before runtime-owned export.
+                    if _pdf_requested and not force_synthesis and current_iteration < max_iterations:
+                        messages.append({
+                            "role": "user",
+                            "content": synthesis_instruction(
+                                original_user_query,
+                                image_context=image_context_provided,
+                                is_detailed=is_detailed_mode,
+                                pdf_already_generated=False,
+                            ),
+                        })
+                        force_synthesis = True
+                        continue
+
                     is_reasoning_leak = _looks_like_internal_reasoning(raw_content)
                     is_placeholder = (
                         raw_content.strip() in ("Processing your request...", "I'll help you with that.", "")
@@ -793,14 +1267,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             # Deep research handoff
             if _deep_research_call:
-                try:
-                    _dr_args = json.loads(_deep_research_call["function"]["arguments"])
-                    _dr_query = _dr_args.get("query", original_user_query)
-                except Exception:
-                    _dr_query = original_user_query
+                # The tool argument is a model-generated research hint and may
+                # narrow or rewrite the request. Decomposition must start from
+                # the complete user/clarification intent retained by runtime.
+                _dr_query = original_user_query
                 async for event in _run_deep_search_pipeline(
                     user_query=_dr_query, user_image=user_image,
                     event_id=event_id, session_id=session_id, emit_event=emit_event,
+                    ledger_request_id=ledger_request_id,
+                    request_intent=original_user_query,
+                    request_context=request_context,
                 ):
                     yield event
                 return
@@ -1010,7 +1486,16 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         pass
                     if session_context:
                         try:
-                            session_context.add_message(role="assistant", content=final_message_content)
+                            session_context.add_message(
+                                role="assistant",
+                                content=final_message_content,
+                                metadata={
+                                    "request_id": f"{ledger_request_id}:assistant",
+                                    "evidence_refs": collected_sources[:5],
+                                    "artifact_refs": memoized_results.get("generated_pdfs", [])[:10],
+                                    **artifact_ledger_fields(memoized_results),
+                                },
+                            )
                             memoized_results["_assistant_response_saved"] = True
                         except Exception:
                             pass
@@ -1103,6 +1588,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if not _already_streamed:
                 final_message_content = await sanitize_final_response(final_message_content, user_query, collected_sources, headers)
             final_message_content = _scrub_tool_names(final_message_content)
+            memoized_results["collected_sources"] = collected_sources[:active_max_sources]
 
             # Research/document requests are exported only after synthesis. This
             # single runtime-owned call prevents partial exports and tool loops.
@@ -1180,6 +1666,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             return
 
     except Exception as e:
+        task_failed = True
         logger.error(f"Pipeline error: {e}", exc_info=True)
         _error_msg = (
             "Oops — something unexpected went wrong on my end. "
@@ -1192,15 +1679,61 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         else:
             yield _error_msg
     finally:
+        if episodic_recall_task is not None:
+            episodic_recall_task.cancel()
+        if graph_recall_task is not None:
+            graph_recall_task.cancel()
         # Skip all persistence for ephemeral sessions — nothing to save
         if not is_ephemeral:
+            if session_context and memoized_results.get("active_task") and not memoized_results.get("clarification_blocked") and not memoized_results.get("task_terminal"):
+                try:
+                    terminal_status = TaskStatus.FAILED if task_failed else TaskStatus.COMPLETED
+                    terminal_task = task_with_status(
+                        memoized_results["active_task"],
+                        terminal_status,
+                    )
+                    await asyncio.to_thread(
+                        session_context.ledger.set_task_state,
+                        active_task=terminal_task,
+                        pending_clarification=None,
+                    )
+                    memoized_results["active_task"] = terminal_task
+                except Exception as exc:
+                    logger.warning(f"[Pipeline] Failed to finalize task state: {exc}")
             if session_id and "session_context" in memoized_results and memoized_results["session_context"]:
                 try:
                     ctx = memoized_results["session_context"]
                     if memoized_results.get("final_response") and not memoized_results.get("_assistant_response_saved"):
-                        ctx.add_message(role="assistant", content=memoized_results["final_response"])
+                        ctx.add_message(
+                            role="assistant",
+                            content=memoized_results["final_response"],
+                            metadata={
+                                "request_id": f"{ledger_request_id}:assistant",
+                                "evidence_refs": memoized_results.get("collected_sources", [])[:5],
+                                "artifact_refs": memoized_results.get("generated_pdfs", [])[:10],
+                                **artifact_ledger_fields(memoized_results),
+                            },
+                        )
                 except Exception:
                     pass
+
+            if (
+                memoized_results.get("final_response")
+                and not memoized_results.get("clarification_blocked")
+                and not task_failed
+            ):
+                request_context = memoized_results.get("request_context")
+                snapshots = memoized_results.get("artifact_snapshots") or []
+                await _remember_session_episode(
+                    core_service,
+                    episodic_scope,
+                    ledger_request_id,
+                    original_user_query,
+                    memoized_results["final_response"],
+                    request_context.source_turn_ids if request_context else (),
+                    memoized_results.get("collected_sources") or (),
+                    [item.get("artifact_id") for item in snapshots if item.get("artifact_id")],
+                )
 
             if session_id and semantic_cache is not None:
                 semantic_cache.save_for_request(session_id)
@@ -1209,6 +1742,12 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         conversation_cache.save_to_disk(session_id=session_id)
                 except Exception:
                     pass
+
+        if session_context and session_lock_token:
+            try:
+                await asyncio.to_thread(session_context.ledger.release_lock, session_lock_token)
+            except Exception as exc:
+                logger.warning(f"[Pipeline] Failed to release session lock: {exc}")
 
         # Publish latency metrics to Redis for the monitor service
         try:

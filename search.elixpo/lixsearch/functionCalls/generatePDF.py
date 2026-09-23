@@ -3,6 +3,7 @@ import os
 import re
 import uuid
 from datetime import datetime
+from urllib.parse import quote
 
 _BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://search.elixpo.com").rstrip("/")
 
@@ -84,6 +85,24 @@ def _parse_inline(text: str):
     return segments if segments else [("text", text)]
 
 
+def _plain_table_cell(text: str) -> str:
+    """Reduce inline Markdown to readable text for fpdf2 table cells."""
+    value = _strip_emojis(text.strip())
+    value = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", value)
+    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
+    value = re.sub(r"(?:\*\*\*|\*\*|\*|__|_|`)", "", value)
+    return value.strip()
+
+
+def _table_row(line: str) -> list[str]:
+    return [_plain_table_cell(cell) for cell in line.strip().strip("|").split("|")]
+
+
+def _is_table_separator(line: str) -> bool:
+    cells = line.strip().strip("|").split("|")
+    return bool(cells) and all(re.fullmatch(r"\s*:?-{3,}:?\s*", cell) for cell in cells)
+
+
 def _write_md(pdf, text: str, font: str = "DejaVu", size: int = 11,
               color=(50, 50, 50), lh: float = 6):
     text = _strip_emojis(text)
@@ -131,7 +150,7 @@ def _markdown_to_pdf(markdown_text: str, title: str = "lixSearch Response") -> b
         def header(self):
             self.set_font("DejaVu", "B", 9)
             self.set_text_color(100, 100, 100)
-            self.cell(0, 8, "LixSearch", align="L")
+            self.cell(0, 8, "OreoLook", align="L")
             self.ln(0)
             self.cell(0, 8, "search.elixpo.com", align="R")
             self.ln(8)
@@ -171,15 +190,16 @@ def _markdown_to_pdf(markdown_text: str, title: str = "lixSearch Response") -> b
     pdf.add_page()
 
     title = _strip_emojis(title)
-    pdf.set_font("DejaVu", "B", 20)
+    title_size = 20 if len(title) <= 65 else 17 if len(title) <= 100 else 15
+    pdf.set_font("DejaVu", "B", title_size)
     pdf.set_text_color(30, 30, 60)
-    pdf.multi_cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.multi_cell(0, title_size * 0.55, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(2)
 
     pdf.set_font("DejaVu", "", 9)
     pdf.set_text_color(120, 120, 120)
     ts = datetime.now(tz=__import__('datetime').timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
-    pdf.cell(0, 6, f"Generated {ts}  |  Powered by LixSearch")
+    pdf.cell(0, 6, f"Generated {ts}  |  Powered by OreoLook")
     pdf.ln(8)
 
     pdf.set_draw_color(200, 200, 200)
@@ -190,12 +210,58 @@ def _markdown_to_pdf(markdown_text: str, title: str = "lixSearch Response") -> b
     text = _strip_emojis(markdown_text.replace("\\n", "\n"))
     in_code_block = False
 
-    for line in text.split("\n"):
+    lines = text.split("\n")
+    skipped_lines = set()
+    first_content_line = next((i for i, value in enumerate(lines) if value.strip()), None)
+    normalized_title = re.sub(r"\W+", "", title).casefold()
+
+    for line_index, line in enumerate(lines):
+        if line_index in skipped_lines:
+            continue
         stripped = line.strip()
 
         if not stripped:
             pdf.ln(4)
             continue
+
+        # The cover already renders the document H1; avoid printing it twice.
+        if line_index == first_content_line and stripped.startswith("# "):
+            normalized_heading = re.sub(r"\W+", "", stripped[2:]).casefold()
+            if normalized_heading == normalized_title:
+                continue
+
+        # Render GitHub-style Markdown tables as real, wrapping tables rather
+        # than a series of pipe-delimited body paragraphs.
+        if (
+            stripped.startswith("|")
+            and line_index + 1 < len(lines)
+            and _is_table_separator(lines[line_index + 1])
+        ):
+            rows = [_table_row(stripped)]
+            cursor = line_index + 2
+            while cursor < len(lines) and lines[cursor].strip().startswith("|"):
+                rows.append(_table_row(lines[cursor]))
+                cursor += 1
+            skipped_lines.update(range(line_index + 1, cursor))
+            if rows and all(len(row) == len(rows[0]) for row in rows):
+                from fpdf.fonts import FontFace
+                pdf.set_font("DejaVu", "", 8.5)
+                with pdf.table(
+                    rows=rows,
+                    width=pdf.epw,
+                    text_align="LEFT",
+                    line_height=5,
+                    padding=2,
+                    headings_style=FontFace(
+                        family="DejaVu",
+                        emphasis="B",
+                        color=(30, 30, 60),
+                        fill_color=(235, 238, 246),
+                    ),
+                ):
+                    pass
+                pdf.ln(5)
+                continue
 
         if stripped.startswith("```"):
             in_code_block = not in_code_block
@@ -262,7 +328,13 @@ def _markdown_to_pdf(markdown_text: str, title: str = "lixSearch Response") -> b
     return pdf.output()
 
 
-async def create_pdf_from_content(content: str, title: str = None) -> str:
+async def create_pdf_from_content(
+    content: str,
+    title: str = None,
+    *,
+    content_id: str | None = None,
+    artifact_metadata: dict | None = None,
+) -> str:
     from app.gateways.content import store_content
 
     if not content:
@@ -275,7 +347,13 @@ async def create_pdf_from_content(content: str, title: str = None) -> str:
 
     # Derive the filename slug from the visible subject title.
     slug = _generate_title_slug(title, max_words=12)
-    content_id = f"{slug}-{uuid.uuid4().hex[:8]}"
-    store_content(content_id, pdf_bytes, ".pdf")
+    content_id = content_id or f"{slug}-{uuid.uuid4().hex[:8]}"
+    capability = store_content(
+        content_id,
+        pdf_bytes,
+        ".pdf",
+        artifact_metadata=artifact_metadata,
+    )
+    access = f"?access={quote(capability, safe='')}" if capability else ""
 
-    return f"{_BASE_URL}/api/content/{content_id}.pdf"
+    return f"{_BASE_URL}/api/content/{content_id}.pdf{access}"

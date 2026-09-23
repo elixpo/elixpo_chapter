@@ -29,3 +29,16 @@ def test_pdf_filename_slug_is_derived_from_visible_title():
     )
 
     assert slug == "kolkata-7-day-weather-forecast"
+
+
+def test_pdf_renders_markdown_comparison_table():
+    rendered = generatePDF._markdown_to_pdf(
+        "# Database Comparison\n\n"
+        "| Database | Best fit | Trade-off |\n"
+        "|---|---|---|\n"
+        "| PostgreSQL | Complex transactions | Operational tuning |\n"
+        "| MongoDB | Flexible documents | Join complexity |\n",
+        "Database Comparison",
+    )
+
+    assert bytes(rendered).startswith(b"%PDF")

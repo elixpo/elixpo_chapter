@@ -712,6 +712,7 @@ parse_target_actions() {
     NO_CACHE=false
     PULL=false
     QUICK=false
+    GRAPH=false
     REPLICAS="${APP_REPLICAS:-2}"
     SELECTED_SERVICES=()
 
@@ -720,6 +721,7 @@ parse_target_actions() {
             build)      WANT_BUILD=true ;;
             deploy)     WANT_DEPLOY=true ;;
             --quick)    QUICK=true ;;
+            --graph)    GRAPH=true ;;
             --no-cache) NO_CACHE=true ;;
             --pull)     PULL=true ;;
             --redis)    SELECTED_SERVICES+=(redis) ;;
@@ -752,6 +754,10 @@ parse_target_actions() {
 
 pages_target() {
     parse_target_actions "$@"
+    [ "$GRAPH" != "true" ] || {
+        error "--graph applies only to --model"
+        exit 1
+    }
     [ ${#SELECTED_SERVICES[@]} -eq 0 ] || {
         error "Service selectors apply only to --model"
         exit 1
@@ -807,13 +813,23 @@ model_target() {
             esac
         done
     fi
+    if [ "$GRAPH" = "true" ]; then
+        buildable+=(graph-memory-worker)
+        pullable+=(falkordb)
+    fi
 
     if [ "$WANT_BUILD" = "true" ]; then
         if [ ${#pullable[@]} -gt 0 ] && [ "$PULL" = "true" ]; then
-            compose_cmd pull "${pullable[@]}"
+            if [ "$GRAPH" = "true" ]; then
+                compose_cmd --profile graph-memory pull "${pullable[@]}"
+            else
+                compose_cmd pull "${pullable[@]}"
+            fi
         fi
         if [ ${#buildable[@]} -gt 0 ]; then
-            local build_args=(build)
+            local build_args=()
+            [ "$GRAPH" != "true" ] || build_args+=(--profile graph-memory)
+            build_args+=(build)
             [ "$PULL" != "true" ] || build_args+=(--pull)
             [ "$NO_CACHE" != "true" ] || build_args+=(--no-cache)
             build_args+=("${buildable[@]}")
@@ -825,13 +841,19 @@ model_target() {
 
     if [ "$WANT_DEPLOY" = "true" ]; then
         if [ ${#SELECTED_SERVICES[@]} -eq 0 ]; then
-            compose_cmd up -d --remove-orphans --wait --wait-timeout 240 --scale "lixsearch-app=$REPLICAS"
+            local all_up_args=()
+            [ "$GRAPH" != "true" ] || all_up_args+=(--profile graph-memory)
+            all_up_args+=(up -d --remove-orphans --wait --wait-timeout 240 --scale "lixsearch-app=$REPLICAS")
+            compose_cmd "${all_up_args[@]}"
         else
-            local up_args=(up -d --no-deps --wait --wait-timeout 180)
+            local up_args=()
+            [ "$GRAPH" != "true" ] || up_args+=(--profile graph-memory)
+            up_args+=(up -d --no-deps --wait --wait-timeout 180)
             if [[ " ${SELECTED_SERVICES[*]} " == *" lixsearch-app "* ]]; then
                 up_args+=(--scale "lixsearch-app=$REPLICAS")
             fi
             up_args+=("${SELECTED_SERVICES[@]}")
+            [ "$GRAPH" != "true" ] || up_args+=(falkordb graph-memory-worker)
             compose_cmd "${up_args[@]}"
         fi
         [ "$DRY_RUN" = "true" ] || show_status
@@ -840,6 +862,10 @@ model_target() {
 
 mcp_target() {
     parse_target_actions "$@"
+    [ "$GRAPH" != "true" ] || {
+        error "--graph applies only to --model"
+        exit 1
+    }
     [ ${#SELECTED_SERVICES[@]} -eq 0 ] || {
         error "Service selectors apply only to --model"
         exit 1
@@ -881,6 +907,7 @@ ${YELLOW}Targeted usage:${NC}
 
 ${YELLOW}Target options:${NC}
   --quick             Validate and hot-copy model code without rebuilding images
+  --graph             Include the optional FalkorDB + Graphiti worker profile
   --app | --ipc       Select app workers or the shared IPC service
   --redis | --qdrant  Select a state service (add --pull to refresh its image)
   --monitor | --nginx Select monitoring or edge proxy
@@ -1006,10 +1033,16 @@ case "${1:-help}" in
         done
         # Also update ipc-service if running
         ipc_cid=$(compose ps -q ipc-service 2>/dev/null)
+        ipc_updated=false
         if [ -n "$ipc_cid" ]; then
             docker cp lixsearch/. "$ipc_cid":/app/lixsearch/
             docker cp skills/. "$ipc_cid":/app/skills/
             info "  Updated ipc-service"
+            ipc_updated=true
+        fi
+        if [ "$ipc_updated" = "true" ]; then
+            info "Restarting IPC service to load updated search workers..."
+            compose restart ipc-service
         fi
         info "Restarting $count app container(s)..."
         compose restart lixsearch-app

@@ -11,9 +11,19 @@ from quart import Response, jsonify, request
 from agentRuntime import AGENT_SPECS, AgentRunner
 from agentRuntime.runner import response_content
 from pipeline.streaming import TaskAwareChunkBuffer
-from pipeline.config import AGENT_STREAM_CHUNK_CHARS, AGENT_STREAM_DEFAULT
+from pipeline.config import (
+    AGENT_STREAM_CHUNK_CHARS,
+    AGENT_STREAM_DEFAULT,
+    EPISODIC_MEMORY_MAX_CHARS,
+    EPISODIC_MEMORY_TIMEOUT_SECONDS,
+    EPISODIC_MEMORY_TOP_K,
+)
+from sessions.episodic_memory import format_episodic_context, request_memory_scope
+from graphMemory.client import GraphMemoryClient, format_graph_context
+from pipeline.config import GRAPH_MEMORY_ENABLED
 from agentRuntime.state import (
     ResponseStateStore,
+    canonical_conversation_id,
     new_message_id,
     new_response_id,
 )
@@ -126,14 +136,13 @@ async def _run_response(data: dict[str, Any], state: ResponseStateStore) -> dict
 
     previous_response_id = data.get("previous_response_id") or None
     requested_conversation = _conversation_id(data.get("conversation"))
-    conversation_id, stored_history = await asyncio.to_thread(
-        state.resolve_context,
+    conversation_id, history = await _resolve_history(
+        state,
         previous_response_id=previous_response_id,
-        conversation_id=requested_conversation,
+        requested_conversation=requested_conversation,
+        request_history=request_history,
+        query=prompt,
     )
-    if not stored_history and requested_conversation:
-        stored_history = await _recall_durable(conversation_id, prompt)
-    history = stored_history + request_history
 
     instructions = data.get("instructions")
     if instructions:
@@ -178,10 +187,33 @@ async def _recall_durable(conversation_id: str, query: str) -> list[dict[str, st
     try:
         from ipcService.coreServiceManager import CoreServiceManager
         manager = CoreServiceManager.get_instance()
-        results = await asyncio.to_thread(manager.call, "core", "recall_turns", conversation_id, query, 4)
-        memories = [item.get("metadata", {}).get("text", "") for item in results]
-        text = "\n\n".join(memory for memory in memories if memory)
-        return [{"role": "assistant", "content": f"Relevant prior conversation memory:\n{text}"}] if text else []
+        scope = request_memory_scope(conversation_id, namespace="responses")
+        results = await asyncio.wait_for(
+            asyncio.to_thread(
+                manager.call,
+                "core",
+                "recall_episodes",
+                scope.filters(),
+                query,
+                EPISODIC_MEMORY_TOP_K,
+                EPISODIC_MEMORY_MAX_CHARS,
+            ),
+            timeout=EPISODIC_MEMORY_TIMEOUT_SECONDS,
+        )
+        text = format_episodic_context(results)
+        return [{"role": "system", "content": text}] if text else []
+    except Exception:
+        return []
+
+
+async def _recall_graph(conversation_id: str) -> list[dict[str, str]]:
+    if not GRAPH_MEMORY_ENABLED:
+        return []
+    try:
+        scope = request_memory_scope(conversation_id, namespace="responses")
+        facts = await asyncio.to_thread(GraphMemoryClient().get_cached_for_request, scope)
+        text = format_graph_context(facts)
+        return [{"role": "system", "content": text}] if text else []
     except Exception:
         return []
 
@@ -190,11 +222,66 @@ async def _remember_turn(conversation_id: str, response_id: str, prompt: str, co
     try:
         from ipcService.coreServiceManager import CoreServiceManager
         manager = CoreServiceManager.get_instance()
-        await asyncio.to_thread(manager.call, "core", "remember_turn", conversation_id, response_id, prompt, content)
+        scope = request_memory_scope(conversation_id, namespace="responses")
+        await asyncio.to_thread(
+            manager.call,
+            "core",
+            "remember_episodes",
+            scope.filters(),
+            response_id,
+            prompt,
+            content,
+        )
     except Exception:
         # Redis remains the source of truth for hot response chains. Durable memory
         # failure must not fail an otherwise successful model response.
         return
+
+
+async def _resolve_history(
+    state: ResponseStateStore,
+    *,
+    previous_response_id: str | None,
+    requested_conversation: str | None,
+    request_history: list[dict[str, str]],
+    query: str,
+) -> tuple[str, list[dict[str, str]]]:
+    """Resolve authoritative Redis history while Qdrant recall runs in parallel."""
+    recall_task = None
+    graph_task = None
+    hinted_conversation = None
+    if requested_conversation and not previous_response_id:
+        hinted_conversation = canonical_conversation_id(requested_conversation)
+        recall_task = asyncio.create_task(_recall_durable(hinted_conversation, query))
+        graph_task = asyncio.create_task(_recall_graph(hinted_conversation))
+    try:
+        conversation_id, stored_history = await asyncio.to_thread(
+            state.resolve_context,
+            previous_response_id=previous_response_id,
+            conversation_id=requested_conversation,
+        )
+    except Exception:
+        if recall_task:
+            recall_task.cancel()
+        if graph_task:
+            graph_task.cancel()
+        raise
+    if stored_history:
+        if recall_task:
+            recall_task.cancel()
+        graph = await graph_task if graph_task else await _recall_graph(conversation_id)
+        return conversation_id, graph + list(stored_history) + request_history
+    if not requested_conversation:
+        return conversation_id, request_history
+    if recall_task and hinted_conversation == conversation_id:
+        durable = await recall_task
+    else:
+        durable = await _recall_durable(conversation_id, query)
+    if graph_task and hinted_conversation == conversation_id:
+        graph = await graph_task
+    else:
+        graph = await _recall_graph(conversation_id)
+    return conversation_id, graph + durable + request_history
 
 
 def _sse(event: str, payload: dict[str, Any]) -> str:
@@ -211,12 +298,13 @@ async def _stream_response(data: dict[str, Any], state: ResponseStateStore):
     request_history = [item for item in input_messages[:last_user] if item["role"] in {"user", "assistant"}]
     previous_response_id = data.get("previous_response_id") or None
     requested_conversation = _conversation_id(data.get("conversation"))
-    conversation_id, stored_history = await asyncio.to_thread(
-        state.resolve_context, previous_response_id=previous_response_id, conversation_id=requested_conversation
+    conversation_id, history = await _resolve_history(
+        state,
+        previous_response_id=previous_response_id,
+        requested_conversation=requested_conversation,
+        request_history=request_history,
+        query=prompt,
     )
-    if not stored_history and requested_conversation:
-        stored_history = await _recall_durable(conversation_id, prompt)
-    history = stored_history + request_history
     if data.get("instructions"):
         prompt = f'{data["instructions"]}\n\n{prompt}'
     requested_model = str(data.get("model") or "auto")
@@ -287,10 +375,10 @@ async def _stream_response(data: dict[str, Any], state: ResponseStateStore):
                 "output_index": 0, "content_index": 0, "text": content,
             })
             yield emit("response.completed", {"type": "response.completed", "response": result})
-        except Exception as exc:
+        except Exception:
             yield emit("response.failed", {
                 "type": "response.failed", "response": {**created, "status": "failed",
-                "error": {"code": "server_error", "message": str(exc)}},
+                "error": {"code": "server_error", "message": "Internal server error"}},
             })
         yield "data: [DONE]\n\n"
 

@@ -4,7 +4,6 @@ import json
 import random
 import asyncio
 import requests
-import os
 from loguru import logger
 from commons.environment import load_local_environment
 
@@ -23,9 +22,6 @@ from pipeline.sse_messages import get_status_message
 load_local_environment()
 
 MODEL = LLM_MODEL
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
-
-
 def _scrub_tool_names(text: str) -> str:
     if not text:
         return text
@@ -50,13 +46,35 @@ _TOOL_CALL_TOKEN_RE = re.compile(
 _TOOL_NAME_TOKEN_RE = re.compile(r"<\|tool_call_name:(\w+)\|>")
 
 
-_PLAIN_TOOL_CALL_RE = re.compile(
-    r"^\s*(web_search|fetch_full_text|export_to_pdf|image_search|create_image|"
-    r"get_local_time|deep_research|transcribe_audio|youtubeMetadata|"
-    r"get_session_conversation_history|generate_prompt_from_image|replyFromImage)"
-    r"\s*\n\s*\{",
-    re.MULTILINE,
+_TOOL_PROTOCOL_NAMES = (
+    "web_search", "fetch_full_text", "export_to_pdf", "image_search",
+    "create_image", "get_local_time", "deep_research", "transcribe_audio",
+    "youtubeMetadata", "get_session_conversation_history",
+    "generate_prompt_from_image", "replyFromImage",
 )
+_TOOL_PROTOCOL_PATTERN = "|".join(re.escape(name) for name in _TOOL_PROTOCOL_NAMES)
+
+
+_PLAIN_TOOL_CALL_RE = re.compile(
+    rf"^\s*({_TOOL_PROTOCOL_PATTERN})"
+    r"\s*\n\s*\{",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+_BARE_TOOL_INTENT_RE = re.compile(
+    rf"^\s*(?:Functions?\.)?(?:{_TOOL_PROTOCOL_PATTERN})\b",
+    re.IGNORECASE,
+)
+
+
+def looks_like_tool_intent(content: str) -> bool:
+    """Detect model protocol text that must never become a user answer."""
+    value = content or ""
+    return bool(
+        _BARE_TOOL_INTENT_RE.search(value)
+        or any(hint in value.lower() for hint in _XML_LEAK_HINTS)
+    )
 
 
 # Anthropic-style XML tool calls. Some Pollinations routes (notably kimi) return
@@ -254,7 +272,7 @@ class StreamingTagFilter:
     answer text after a reasoning block continues streaming.
     """
 
-    __slots__ = ("_buffer", "_silenced", "_reasoning_close")
+    __slots__ = ("_buffer", "_silenced", "_reasoning_close", "_at_start")
 
     _REASONING_TAGS = ("thinking", "reasoning", "analysis")
 
@@ -262,11 +280,41 @@ class StreamingTagFilter:
         self._buffer = ""
         self._silenced = False
         self._reasoning_close = None
+        self._at_start = True
+
+    @staticmethod
+    def _tool_prefix_state(value: str) -> str:
+        """Return possible/tool/safe while the first stream token is unresolved."""
+        probe = (value or "").lstrip().lower()
+        if not probe:
+            return "possible"
+        for name in _TOOL_PROTOCOL_NAMES:
+            lowered = name.lower()
+            if probe == lowered:
+                return "tool"
+            if lowered.startswith(probe):
+                return "possible"
+            if probe.startswith(lowered):
+                suffix = probe[len(lowered):]
+                if suffix and (suffix[0].isspace() or suffix[0] in ":({["):
+                    return "tool"
+        return "safe"
 
     def feed(self, chunk: str) -> str:
         if self._silenced or not chunk:
             return ""
         self._buffer += chunk
+
+        if self._at_start:
+            prefix_state = self._tool_prefix_state(self._buffer)
+            if prefix_state == "possible":
+                return ""
+            if prefix_state == "tool":
+                self._silenced = True
+                self._buffer = ""
+                return ""
+            self._at_start = False
+
         output = []
 
         while self._buffer:
@@ -324,6 +372,10 @@ class StreamingTagFilter:
     def flush(self) -> str:
         if self._silenced or self._reasoning_close:
             self._buffer = ""
+            return ""
+        if self._at_start and self._tool_prefix_state(self._buffer) == "tool":
+            self._buffer = ""
+            self._silenced = True
             return ""
         output = self._buffer
         self._buffer = ""
