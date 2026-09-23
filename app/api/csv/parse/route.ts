@@ -93,10 +93,10 @@ export async function POST(request: NextRequest) {
                 validRecipientsMap.set(email, vars);
             }
         }
-        
+
         const validRecipients = Array.from(validRecipientsMap.entries()).map(([email, vars]) => ({
             email,
-            vars
+            vars,
         }));
 
         return NextResponse.json({

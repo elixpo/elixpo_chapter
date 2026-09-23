@@ -216,7 +216,7 @@ export default function TemplateSendDialog({
 
     // Variable values
     const [vars, setVars] = useState<Record<string, string>>({});
-    
+
     // Per-recipient variable values (from CSV upload)
     const [recipientVars, setRecipientVars] = useState<Record<string, Record<string, string>>>({});
 
@@ -655,27 +655,39 @@ export default function TemplateSendDialog({
                                     }}
                                 />
                             </Box>
-                            
-                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1 }}>
+
+                            <Stack
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="space-between"
+                                sx={{ mt: 1 }}
+                            >
                                 <Box>
                                     <Typography
                                         sx={{ fontSize: "0.72rem", color: TEXT_40, mx: 0.2 }}
                                     >
-                                        Type an email then comma or Enter to add it. Up to {MAX_RECIPIENTS}.
+                                        Type an email then comma or Enter to add it. Up to{" "}
+                                        {MAX_RECIPIENTS}.
                                     </Typography>
                                     <Typography
                                         sx={{
                                             mt: 0.2,
                                             fontSize: "0.78rem",
                                             fontWeight: 600,
-                                            color: overLimit ? RED : recipientCount > 0 ? GREEN : TEXT_40,
+                                            color: overLimit
+                                                ? RED
+                                                : recipientCount > 0
+                                                  ? GREEN
+                                                  : TEXT_40,
                                         }}
                                     >
                                         {recipientCount === 0
                                             ? "No valid recipients yet"
                                             : `${recipientCount} valid recipient${recipientCount === 1 ? "" : "s"}${
-                                                overLimit ? ` — over the limit of ${MAX_RECIPIENTS}` : ""
-                                            }`}
+                                                  overLimit
+                                                      ? ` — over the limit of ${MAX_RECIPIENTS}`
+                                                      : ""
+                                              }`}
                                     </Typography>
                                 </Box>
 
@@ -683,9 +695,14 @@ export default function TemplateSendDialog({
                                     size="small"
                                     startIcon={
                                         isUploadingCsv ? (
-                                            <CircularProgress size={12} sx={{ color: "var(--fg-muted)" }} />
+                                            <CircularProgress
+                                                size={12}
+                                                sx={{ color: "var(--fg-muted)" }}
+                                            />
                                         ) : (
-                                            <FileUploadIcon sx={{ fontSize: "1.1rem !important" }} />
+                                            <FileUploadIcon
+                                                sx={{ fontSize: "1.1rem !important" }}
+                                            />
                                         )
                                     }
                                     disabled={isUploadingCsv}
