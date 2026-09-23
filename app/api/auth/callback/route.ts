@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDatabase } from "@/lib/d1-client";
-import { SESSION_COOKIE, signSession } from "@/lib/session";
+import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSession } from "@/lib/session";
 import { exchangeCodeForUser } from "@/lib/sso";
 import { getOrBootstrapTenant } from "@/lib/tenant";
 import { getMembership, linkUserToMemberships } from "@/lib/workspace";
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
-            maxAge: 15 * 86400,
+            maxAge: SESSION_TTL_SECONDS,
             path: "/",
         });
         res.cookies.delete(STATE_COOKIE);

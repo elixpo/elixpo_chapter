@@ -1,6 +1,8 @@
 export const runtime = "edge";
 
 import { getDatabase } from "@/lib/d1-client";
+import { newId } from "@/lib/ids";
+import { getSession } from "@/lib/session";
 import {
     getWorkspaceInfo,
     getWorkspaceLink,
@@ -14,6 +16,64 @@ import {
 } from "@/lib/workspace";
 import { guard } from "@/lib/workspace-guard";
 import { type NextRequest, NextResponse } from "next/server";
+
+/** POST /api/workspace — create a shared workspace owned by the signed-in user. */
+export async function POST(request: NextRequest) {
+    const session = await getSession(request);
+    if (!session) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+    let body: { name?: string; description?: string };
+    try {
+        body = (await request.json()) as typeof body;
+    } catch {
+        return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    }
+    const name = body.name?.trim() || "";
+    if (name.length < 2) {
+        return NextResponse.json(
+            { error: "invalid_name", message: "Enter a workspace name." },
+            { status: 400 },
+        );
+    }
+
+    const db = await getDatabase();
+    const tenantId = newId("tenant");
+    const memberId = newId("member");
+    const slug = await uniqueSlug(db, slugifyWorkspace(name));
+    await db.batch([
+        db
+            .prepare(
+                `INSERT INTO tenants (id, name, email, owner_uid, status, slug, description)
+             VALUES (?, ?, ?, ?, 'active', ?, ?)`,
+            )
+            .bind(
+                tenantId,
+                name,
+                session.email,
+                session.uid,
+                slug,
+                body.description?.trim() || null,
+            ),
+        db
+            .prepare(
+                `INSERT INTO workspace_members
+             (id, tenant_id, user_uid, email, name, avatar, role, status)
+             VALUES (?, ?, ?, ?, ?, ?, 'owner', 'active')`,
+            )
+            .bind(
+                memberId,
+                tenantId,
+                session.uid,
+                session.email.toLowerCase(),
+                session.name || null,
+                session.avatar || null,
+            ),
+    ]);
+    return NextResponse.json(
+        { ok: true, workspace: { id: tenantId, name, slug } },
+        { status: 201 },
+    );
+}
 
 /** GET /api/workspace — overview for the settings page (info + members; link if admin). */
 export async function GET(request: NextRequest) {

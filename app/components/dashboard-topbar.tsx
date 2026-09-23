@@ -1,17 +1,18 @@
 "use client";
 
+import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import GroupsIcon from "@mui/icons-material/Groups";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LogoutIcon from "@mui/icons-material/Logout";
-import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import {
     Avatar,
     Box,
@@ -36,6 +37,7 @@ interface WorkspaceOption {
     slug: string | null;
     role: string;
     active: boolean;
+    kind: "personal" | "shared";
 }
 
 const BORDER = "var(--border)";
@@ -189,6 +191,29 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
 
                 <ThemeToggle />
 
+                {activeWorkspace && (
+                    <Chip
+                        icon={<GroupsIcon sx={{ fontSize: "16px !important" }} />}
+                        label={`${activeWorkspace.kind === "shared" ? "Shared" : "Personal"} · ${activeWorkspace.name}`}
+                        size="small"
+                        sx={{
+                            display: { xs: "none", md: "inline-flex" },
+                            maxWidth: 220,
+                            color:
+                                activeWorkspace.kind === "shared"
+                                    ? "var(--accent)"
+                                    : "var(--fg-muted)",
+                            bgcolor:
+                                activeWorkspace.kind === "shared"
+                                    ? "var(--accent-tint)"
+                                    : "var(--overlay)",
+                            border: `1px solid ${activeWorkspace.kind === "shared" ? "var(--accent-border)" : BORDER}`,
+                            fontWeight: 700,
+                            "& .MuiChip-label": { overflow: "hidden", textOverflow: "ellipsis" },
+                        }}
+                    />
+                )}
+
                 {/* Profile menu */}
                 <Box
                     component="button"
@@ -260,9 +285,9 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                             {user.email}
                         </Typography>
                     </Stack>
-                    <KeyboardArrowDownIcon
+                    <SwapVertIcon
                         sx={{
-                            fontSize: 18,
+                            fontSize: 19,
                             color: "var(--fg-muted)",
                             display: { xs: "none", sm: "block" },
                         }}
@@ -436,7 +461,7 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                     <Divider sx={{ borderColor: BORDER }} />
 
                     {/* Workspace switcher */}
-                    {workspaces.length > 1 && (
+                    {workspaces.length > 0 && (
                         <>
                             <Typography
                                 sx={{
@@ -450,7 +475,7 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                                     color: "var(--fg-faint)",
                                 }}
                             >
-                                Switch workspace
+                                Switch account or workspace
                             </Typography>
                             {workspaces.map((w) => (
                                 <MenuItem
@@ -485,7 +510,9 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                                                 textTransform: "capitalize",
                                             }}
                                         >
-                                            {w.role}
+                                            {w.kind === "personal"
+                                                ? "Personal account"
+                                                : `Shared workspace · ${w.role}`}
                                         </Typography>
                                     </Box>
                                     {w.active && <CheckIcon sx={{ fontSize: 16, color: ACCENT }} />}
@@ -510,23 +537,20 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                         href={
                             activeWorkspace?.slug
                                 ? `/workspace/${activeWorkspace.slug}`
-                                : "/workspace"
+                                : "/workspace/new"
                         }
                         onClick={() => setAnchorEl(null)}
                         sx={MENU_ITEM_SX}
                     >
-                        <GroupsIcon sx={MENU_ICON_SX} />
-                        Workspace &amp; team
+                        <SettingsOutlinedIcon sx={MENU_ICON_SX} />
+                        {activeWorkspace ? "Manage workspace" : "Create workspace"}
                     </MenuItem>
-                    <MenuItem
-                        component={Link}
-                        href="/dashboard/settings"
-                        onClick={() => setAnchorEl(null)}
-                        sx={MENU_ITEM_SX}
-                    >
-                        <ManageAccountsIcon sx={MENU_ICON_SX} />
-                        Account &amp; workspace
-                    </MenuItem>
+                    {!activeWorkspace && (
+                        <MenuItem component={Link} href="/workspace/new" sx={MENU_ITEM_SX}>
+                            <AddBusinessIcon sx={MENU_ICON_SX} />
+                            Create workspace
+                        </MenuItem>
+                    )}
                     <MenuItem
                         component={Link}
                         href="/dashboard/billing"
