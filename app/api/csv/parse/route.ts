@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const validEmails: string[] = [];
+        const validRecipientsMap = new Map<string, Record<string, string>>();
         const malformedRows: { row: number; error: string }[] = [];
 
         for (let i = 1; i < lines.length; i++) {
@@ -81,12 +81,27 @@ export async function POST(request: NextRequest) {
                 continue;
             }
 
-            validEmails.push(email);
+            if (!validRecipientsMap.has(email)) {
+                const vars: Record<string, string> = {};
+                for (let j = 0; j < headers.length; j++) {
+                    if (j === emailIndex) continue;
+                    const header = headers[j];
+                    if (header && values[j] !== undefined) {
+                        vars[header] = values[j].trim();
+                    }
+                }
+                validRecipientsMap.set(email, vars);
+            }
         }
+        
+        const validRecipients = Array.from(validRecipientsMap.entries()).map(([email, vars]) => ({
+            email,
+            vars
+        }));
 
         return NextResponse.json({
             ok: true,
-            validEmails: Array.from(new Set(validEmails)), // Deduplicate
+            validRecipients, // Deduplicated array of { email, vars }
             malformedRows,
             totalRows: lines.length - 1,
         });
