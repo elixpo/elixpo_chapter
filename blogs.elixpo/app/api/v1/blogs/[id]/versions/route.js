@@ -6,6 +6,7 @@ import { blogEntityTag } from '../../../../../../lib/api/v1/entityTag';
 import { recordApiAudit } from '../../../../../../lib/api/v1/operations';
 import { checkIfMatch } from '../../../../../../lib/api/v1/preconditions';
 import { apiError, apiSuccess, requestContext } from '../../../../../../lib/api/v1/responses';
+import { presentBlogVersion } from '../../../../../../lib/blogVersions';
 import { canEditBlog } from '../../../../../../lib/permissions';
 
 export async function GET(request, { params }) {
@@ -15,11 +16,22 @@ export async function GET(request, { params }) {
   const { auth, db, rateHeaders } = authorized;
   const { id } = await params;
   if (!(await canEditBlog(db, id, auth.userId)).ok) return apiError(context, 'blog_not_found', 'The blog was not found.', 404, { headers: rateHeaders });
-  const rows = await db.prepare(`SELECT v.id, v.label, v.created_at, v.created_by,
+
+  const versionId = new URL(request.url).searchParams.get('version');
+  if (versionId) {
+    const version = await db.prepare(`SELECT v.*, u.username, u.display_name
+      FROM blog_versions v LEFT JOIN users u ON u.id=v.created_by
+      WHERE v.id=? AND v.blog_id=? LIMIT 1`).bind(versionId, id).first();
+    if (!version) return apiError(context, 'version_not_found', 'The version was not found.', 404, { headers: rateHeaders });
+    await recordApiAudit(db, { requestId: context.requestId, userId: auth.userId, clientId: auth.clientId, action: 'blogs.versions.get', resourceType: 'blog_version', resourceId: versionId });
+    return apiSuccess(context, presentBlogVersion(version, { includeContent: true }), { headers: rateHeaders });
+  }
+
+  const rows = await db.prepare(`SELECT v.id, v.content, v.label, v.created_at, v.created_by,
     u.username, u.display_name FROM blog_versions v LEFT JOIN users u ON u.id=v.created_by
     WHERE v.blog_id=? ORDER BY v.created_at DESC LIMIT 50`).bind(id).all();
   await recordApiAudit(db, { requestId: context.requestId, userId: auth.userId, clientId: auth.clientId, action: 'blogs.versions.list', resourceType: 'blog', resourceId: id });
-  return apiSuccess(context, rows?.results || [], { headers: rateHeaders });
+  return apiSuccess(context, (rows?.results || []).map((row) => presentBlogVersion(row)), { headers: rateHeaders });
 }
 
 export async function POST(request, { params }) {

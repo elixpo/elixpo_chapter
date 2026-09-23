@@ -8,6 +8,7 @@ export { CollabDurableObject };
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const isWebSocketUpgrade = request.headers.get('Upgrade')?.toLowerCase() === 'websocket';
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
@@ -70,7 +71,7 @@ export default {
     // `webSocket` attachment. Reconstructing it with `new Response()` drops
     // that attachment and interrupts every otherwise-authorized connection.
     // Upgrade responses must be returned from the Durable Object untouched.
-    if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
+    if (isWebSocketUpgrade) {
       return doResponse;
     }
 

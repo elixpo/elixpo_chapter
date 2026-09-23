@@ -24,6 +24,20 @@ Press Enter to open the verification URL or copy it to another device. The
 username becomes the profile alias unless `--profile` overrides it. Use
 `profiles` and `use <username>` to switch accounts.
 
+For CI, containers, and scheduled automation, create a scoped token in
+**LixBlogs → Settings → API** and expose it only to the CLI process:
+
+```bash
+LIXBLOGS_TOKEN="$LIXBLOGS_PAT" lixblogs blog list --json --no-input
+lixblogs --token-file /run/secrets/lixblogs blog list --json --no-input
+LIXBLOGS_TOKEN_FILE=/run/secrets/lixblogs lixblogs whoami --json --no-input
+```
+
+Resolution order is `--token-file`, `LIXBLOGS_TOKEN`, `LIXBLOGS_TOKEN_FILE`,
+then the active device-login profile. Direct tokens are not copied into the
+keychain or profile registry. Scopes and personal/organization boundaries
+remain server-enforced.
+
 ### Blog lifecycle
 
 ```bash
@@ -37,10 +51,16 @@ lixblogs blog delete <id> --yes
 lixblogs blog list --status trashed
 lixblogs blog restore <id> --yes
 lixblogs blog history <id>
+lixblogs blog history <id> --version <version-id>
 lixblogs blog restore-version <id> --version <version-id> --yes
 ```
 
 Titles, subtitles, slugs, tags, icon emoji, cover URL/position/zoom, publication target, collection, comment policy, membership, secret state, and published/unlisted visibility are supported by `blog create`, `blog edit`, and `blog publish`.
+
+`--secret` selects anonymous public publishing while a story is still a draft;
+`--not-secret` clears it before first publish. Both use the existing
+`lixblogs:blog:write` scope. Secret mode hides the writer across public LixBlogs
+surfaces but does not make the short-ID story URL access-restricted.
 
 Inspect valid publication targets before assigning organization metadata:
 
@@ -62,6 +82,41 @@ lixblogs collab role BLOG_ID --user reviewer --role editor --yes
 lixblogs collab accept BLOG_ID --yes
 lixblogs collab decline BLOG_ID --yes
 ```
+
+Curate public stories without copying their content or changing attribution:
+
+```bash
+lixblogs collection list
+lixblogs collection create --title "Systems reading" --visibility private
+lixblogs collection add COLLECTION_ID --blog BLOG_ID --note "Start here"
+lixblogs collection entries COLLECTION_ID
+lixblogs collection edit COLLECTION_ID --visibility public
+lixblogs collection remove COLLECTION_ID --blog BLOG_ID --yes
+```
+
+Collection reads use `lixblogs:blog:read`; mutations use `lixblogs:blog:write`.
+
+Run and enter writing contests while keeping every submitted post under its author's canonical URL:
+
+```bash
+lixblogs contest list
+lixblogs contest create --title "Open web" \
+  --starts-at 2026-10-01T00:00:00Z \
+  --submissions-close-at 2026-10-15T23:59:59Z \
+  --judging-closes-at 2026-10-20T23:59:59Z \
+  --problem "Write about the open web" --rules "Original work only" \
+  --tag open-web --contest-tag community --allowed-target personal \
+  --minimum-account-age-months 1 --require-bio
+lixblogs contest publish CONTEST_ID --yes
+lixblogs contest submit CONTEST_ID --blog BLOG_ID
+lixblogs contest submissions CONTEST_ID --snapshot --json
+lixblogs contest role CONTEST_ID --user reviewer --role judge
+lixblogs contest results CONTEST_ID --award winner:SUBMISSION_ID --finalize --yes
+```
+
+Use `contest list --mine` for contests you organize and `--status live` to filter by lifecycle. Repeat `--eligible-user <username>` to create an invite-only eligibility list; use `contest edit --clear-eligible-users` to reopen eligibility. Organizers can edit contest copy, dates, topics, targets, entry limits, and eligibility; assign or remove moderators and judges; publish or cancel; save or finalize results; and delete a private draft with `contest delete <id> --yes`.
+
+Only organizers and judges can request frozen snapshots. Publishing, cancelling, deleting, withdrawing, and finalizing results require explicit confirmation where applicable. Published contests cannot be deleted; cancel them to preserve submissions and audit history.
 
 ### Creator analytics
 
@@ -106,10 +161,17 @@ lixblogs skill list
 lixblogs skill inspect lixblogs-author
 lixblogs skill install lixblogs-author --target .agents/skills --dry-run
 lixblogs skill install lixblogs-author --target .agents/skills --yes
+lixblogs skill install --all --target .agents/skills --dry-run
+lixblogs skill install --all --target .agents/skills --yes
 ```
 
 Install only the needed skill. Existing files require explicit `--force --yes`.
 Each skill declares its minimum CLI version and scopes.
+
+The skills live inside the npm artifact; a separate agent machine does not
+need this repository. Run the commands from the target workspace and point
+`--target` at that agent runtime's workspace-skill directory. Skill
+installation is offline and does not authenticate an account or grant scopes.
 
 `create`, `edit`, `publish`, `unpublish`, `delete`, and `restore` accept
 `--dry-run`. Content input is mutually exclusive: `--file`, `--stdin`,

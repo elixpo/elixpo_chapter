@@ -90,8 +90,12 @@ export async function blogPublish({ client, id, options }) {
   return client.publish(id, { etag: options.etag || current.etag, status: targetStatus, idempotencyKey: options['idempotency-key'] });
 }
 
-export async function blogHistory({ client, id }) {
+export async function blogHistory({ client, id, options = {} }) {
   if (!id) throw new Error('A blog ID is required.');
+  if (options.version) {
+    const version = await client.version(id, options.version);
+    return { ...version, markdown: blocksToMarkdown(version.content) };
+  }
   return { data: await client.versions(id) };
 }
 

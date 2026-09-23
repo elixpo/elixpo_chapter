@@ -93,6 +93,7 @@ export async function GET(request, { params }) {
                 id: org.id,
                 slug: org.slug,
                 name: org.name,
+                tagline: org.tagline || "",
                 description: org.description || "",
                 role,
                 isOwner: Boolean(isOwner),

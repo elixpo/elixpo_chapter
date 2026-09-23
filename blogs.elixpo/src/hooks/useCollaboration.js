@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 const COLLAB_WS_URL = process.env.NEXT_PUBLIC_COLLAB_URL || 'wss://elixpoblogs-collab.ayushbhatt633.workers.dev';
 
 const MAX_ACTIVE_USERS = 5;
+const CONNECTION_ERROR_GRACE_MS = 8000;
 
 export function useCollaboration({ blogId, subpageId = null, user, enabled = false }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -20,6 +21,7 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
   const ydocRef = useRef(null);
   const providerRef = useRef(null);
   const heartbeatRef = useRef(null);
+  const connectionErrorTimerRef = useRef(null);
 
   // Collaboration config for BlockNote (null when not in collab mode)
   const [collaboration, setCollaboration] = useState(null);
@@ -28,13 +30,34 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
     if (!enabled || !blogId || !user) return;
 
     let cancelled = false;
+    const requestController = new AbortController();
+
+    const clearConnectionErrorTimer = () => {
+      if (!connectionErrorTimerRef.current) return;
+      clearTimeout(connectionErrorTimerRef.current);
+      connectionErrorTimerRef.current = null;
+    };
+
+    const deferConnectionError = (provider) => {
+      clearConnectionErrorTimer();
+      connectionErrorTimerRef.current = setTimeout(() => {
+        connectionErrorTimerRef.current = null;
+        if (cancelled || providerRef.current !== provider || provider.wsconnected) return;
+        setError('Live collaboration is temporarily unavailable. Reconnecting automatically');
+      }, CONNECTION_ERROR_GRACE_MS);
+    };
 
     async function init() {
       try {
+        setError(null);
+        setRoomFull(false);
         // The collaboration worker runs on workers.dev, so the app's session
         // cookie cannot cross that domain boundary. Exchange it server-side for
         // a signed, blog-scoped token before contacting the worker.
-        const tokenResponse = await fetch(`/api/collab/token?blogId=${encodeURIComponent(blogId)}`);
+        const tokenResponse = await fetch(`/api/collab/token?blogId=${encodeURIComponent(blogId)}`, {
+          cache: 'no-store',
+          signal: requestController.signal,
+        });
         const tokenData = await tokenResponse.json().catch(() => ({}));
         if (!tokenResponse.ok || !tokenData.token) {
           throw new Error(tokenData.error || 'Collaboration authorization failed');
@@ -56,6 +79,7 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
           roomResponse = await fetch(`${httpBase}/${path}?token=${encodeURIComponent(collabToken)}`, {
             cache: 'no-store',
             referrerPolicy: 'no-referrer',
+            signal: requestController.signal,
           });
         } catch {
           throw new Error('Live collaboration is temporarily unavailable');
@@ -89,6 +113,7 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
               token: collabToken,
             },
             connect: true,
+            maxBackoffTime: 10000,
           }
         );
         providerRef.current = provider;
@@ -105,18 +130,23 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
         provider.on('status', ({ status }) => {
           if (!cancelled) {
             setIsConnected(status === 'connected');
-            if (status === 'connected') setError(null);
+            if (status === 'connected') {
+              clearConnectionErrorTimer();
+              setError(null);
+            } else if (status === 'disconnected' && provider.shouldConnect) {
+              deferConnectionError(provider);
+            }
           }
         });
 
         provider.on('connection-error', () => {
           if (!cancelled) {
             setIsConnected(false);
-            setError('Live collaboration connection failed');
-            // y-websocket retries forever by default. A rejected authenticated
-            // upgrade will not recover without a fresh token/page load, so stop
-            // the retry loop instead of flooding the browser console and worker.
-            provider.disconnect();
+            // A browser can emit this while the first upgrade is interrupted or
+            // the network changes. The authenticated HTTP preflight already
+            // rejected permanent access errors, so keep y-websocket's bounded
+            // reconnect loop alive and only surface an error after a grace period.
+            deferConnectionError(provider);
           }
         });
 
@@ -177,7 +207,7 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
         }).catch(() => {});
 
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled && err?.name !== 'AbortError') setError(err.message);
       }
     }
 
@@ -185,9 +215,14 @@ export function useCollaboration({ blogId, subpageId = null, user, enabled = fal
 
     return () => {
       cancelled = true;
+      requestController.abort();
+      clearConnectionErrorTimer();
 
       // Cleanup
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
 
       if (providerRef.current) {
         providerRef.current.disconnect();

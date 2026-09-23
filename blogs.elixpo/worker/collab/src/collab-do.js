@@ -104,7 +104,7 @@ export class CollabDurableObject {
     }
 
     // Handle WebSocket upgrade
-    if (request.headers.get('Upgrade') === 'websocket') {
+    if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 

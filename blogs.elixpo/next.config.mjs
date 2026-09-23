@@ -1,7 +1,20 @@
 import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async redirects() {
+    return [
+      { source: '/docs/editor-overview', destination: '/docs/lixeditor#editor-overview', permanent: true },
+      { source: '/docs/installation', destination: '/docs/lixeditor#installation', permanent: true },
+      { source: '/docs/quick-start', destination: '/docs/lixeditor#quick-start', permanent: true },
+      { source: '/docs/props', destination: '/docs/lixeditor#props', permanent: true },
+      { source: '/docs/imperative-api', destination: '/docs/lixeditor#imperative-api', permanent: true },
+      { source: '/docs/block-model', destination: '/docs/lixeditor#block-model', permanent: true },
+      { source: '/docs/markdown-shortcuts', destination: '/docs/lixeditor#markdown-shortcuts', permanent: true },
+      { source: '/docs/rendering', destination: '/docs/lixeditor#rendering', permanent: true },
+    ];
+  },
+};
 
 if (process.env.NODE_ENV === 'development') {
   const { existsSync } = await import('node:fs');

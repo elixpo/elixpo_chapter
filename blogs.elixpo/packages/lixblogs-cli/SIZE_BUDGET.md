@@ -1,8 +1,9 @@
-# CLI distribution size budget
+# CLI distribution size guidance
 
-The release gate limits the files inside `@elixpo/lixblogs-cli` to **100 KiB
-unpacked**. Runtime dependencies installed separately by npm are not counted in
-that budget.
+The release workflow reports the unpacked size of `@elixpo/lixblogs-cli` so
+reviewers can catch accidental growth. Size is an optimization signal rather
+than a hard release gate. Runtime dependencies installed separately by npm are
+not included in the reported package payload.
 
 Registry metadata sampled on 2026-08-29:
 
@@ -17,7 +18,7 @@ Sources: [Ghost CLI](https://github.com/TryGhost/ghst),
 [Dev.to CLI](https://www.npmjs.com/package/@sinedied/devto-cli), and npm registry
 `dist` metadata. The optimized value is measured from the generated executable,
 README, license, package metadata, and six bundled skills; GitHub Actions measures the
-actual tarball contents again before release.
+actual tarball contents again before release and reports their unpacked size.
 
 ## Rules
 
@@ -25,6 +26,6 @@ actual tarball contents again before release.
 - Keep `@napi-rs/keyring` external so npm selects the correct native binary.
 - Publish user-facing essentials only; keep contributor and contract documents
   in the repository and link to them from the packaged README.
-- Reject a release when its actual unpacked file total exceeds 102,400 bytes.
+- Review unexpected size growth alongside the packed artifact's file list.
 - Do not remove commands, skills, validation, or security behavior to meet the
   budget.

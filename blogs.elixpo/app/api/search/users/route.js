@@ -35,11 +35,11 @@ export async function GET(request) {
           u.followers = fc?.c || 0;
         }
         if (fields.includes('blogs')) {
-          const bc = await db.prepare("SELECT COUNT(*) as c FROM blogs WHERE author_id = ? AND status = 'published'").bind(u.id).first();
+          const bc = await db.prepare("SELECT COUNT(*) as c FROM blogs WHERE author_id = ? AND status = 'published' AND secret = 0").bind(u.id).first();
           u.blog_count = bc?.c || 0;
         }
         if (fields.includes('likes')) {
-          const lc = await db.prepare("SELECT COUNT(*) as c FROM likes l JOIN blogs b ON b.id = l.blog_id WHERE b.author_id = ?").bind(u.id).first();
+          const lc = await db.prepare("SELECT COUNT(*) as c FROM likes l JOIN blogs b ON b.id = l.blog_id WHERE b.author_id = ? AND b.secret = 0").bind(u.id).first();
           u.total_likes = lc?.c || 0;
         }
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { generatePixelAvatar } from '../../utils/pixelAvatar';
 
 const ROLES = [
   { value: 'viewer', label: 'Viewer', desc: 'Can view the blog in the editor' },
@@ -135,13 +136,7 @@ export default function CollaboratorPanel({ slugid, onClose }) {
                           onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
                           onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                          {u.avatar_url ? (
-                            <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-faint)' }}>
-                              {(u.display_name || u.username || '?')[0].toUpperCase()}
-                            </div>
-                          )}
+                          <img src={u.avatar_url || generatePixelAvatar(u.username || u.display_name)} alt="" className="w-6 h-6 rounded-full object-cover" />
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] truncate">{u.display_name || u.username}</p>
                             <p className="text-[11px] truncate" style={{ color: 'var(--text-faint)' }}>@{u.username}</p>
@@ -178,13 +173,7 @@ export default function CollaboratorPanel({ slugid, onClose }) {
             <div>
               <label className="text-[11px] font-semibold uppercase tracking-widest mb-3 block" style={{ color: 'var(--text-faint)' }}>Author</label>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-                {author.avatar_url ? (
-                  <img src={author.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                    {(author.display_name || author.username || '?')[0].toUpperCase()}
-                  </div>
-                )}
+                <img src={author.avatar_url || generatePixelAvatar(author.username || author.display_name)} alt="" className="w-9 h-9 rounded-full object-cover" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{author.display_name || author.username}</p>
                   <p className="text-[11px] truncate" style={{ color: 'var(--text-faint)' }}>@{author.username}</p>
@@ -216,13 +205,7 @@ export default function CollaboratorPanel({ slugid, onClose }) {
               <div className="space-y-2">
                 {collaborators.map(c => (
                   <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-                    {c.avatar_url ? (
-                      <img src={c.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                        {(c.display_name || c.username || '?')[0].toUpperCase()}
-                      </div>
-                    )}
+                    <img src={c.avatar_url || generatePixelAvatar(c.username || c.display_name)} alt="" className="w-9 h-9 rounded-full object-cover" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-[13px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{c.display_name || c.username}</p>

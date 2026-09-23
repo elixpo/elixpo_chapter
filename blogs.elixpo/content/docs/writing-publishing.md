@@ -17,9 +17,14 @@ Before publishing, review:
 - **Cover** — upload and crop an image, or keep the default cosmetic cover.
 - **Slug** — the owner-controlled final part of the public URL.
 - **Publication** — publish as yourself or an organization where you have permission.
-- **Visibility** — public stories are discoverable; unlisted and secret stories are excluded from normal discovery.
+- **Visibility** — public stories are discoverable; unlisted stories are excluded from normal discovery; secret stories are public by short-ID URL but cannot be connected to their author through LixBlogs surfaces.
 
 The default cover is a visual placeholder and is not uploaded as creator media.
+
+Secret mode protects the writer's identity; it is not a reader access control.
+It can be selected while the story is a draft and is locked after first publish.
+The API and CLI expose the same setting through the normal
+`lixblogs:blog:write` permission.
 
 ## Publish and update
 

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { rememberReadingProgress } from '../utils/readingProgress';
 
 /**
  * BlogInteractionBar — renders at the bottom of a blog post.
  * Handles: view recording, read progress, likes, claps, bookmarks, share.
  * Also reports dwell time as a taste signal.
  */
-export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = false, dotsMenu = null }) {
+export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, canRepost = false, dotsMenu = null }) {
   const { user } = useAuth();
   const [interactions, setInteractions] = useState(null);
   const [clapAnim, setClapAnim] = useState(false);
@@ -69,6 +70,7 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
     if (!blogId) return;
 
     const sendProgress = (progress, dwellSeconds = 0, beacon = false) => {
+      rememberReadingProgress({ blogId, title: blogTitle, url: window.location.pathname, progress, readerKey: user?.id || 'guest' });
       const complete = progress >= 0.9;
       const url = user ? `/api/blogs/${blogId}/progress` : '/api/analytics/event';
       const body = user
@@ -102,11 +104,13 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
       clearInterval(interval);
       window.removeEventListener('scroll', reportProgress);
       const dwellSeconds = Math.floor((Date.now() - startTime.current) / 1000);
-      if (dwellSeconds > 10) {
+      // A revisit that never scrolls must not erase the position from the
+      // previous session. Explicit "Start over" uses the reset endpoint.
+      if (dwellSeconds > 10 && progressReported.current >= 0.02) {
         sendProgress(progressReported.current, dwellSeconds, true);
       }
     };
-  }, [blogId, user]);
+  }, [blogId, blogTitle, user]);
 
   const [likeAnim, setLikeAnim] = useState(false);
 
@@ -163,6 +167,47 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
 
   const [shareOpen, setShareOpen] = useState(false);
   const shareRef = useRef(null);
+  const [curateOpen, setCurateOpen] = useState(false);
+  const [curatedCollections, setCuratedCollections] = useState([]);
+  const [curateBusy, setCurateBusy] = useState('');
+  const [curateError, setCurateError] = useState('');
+
+  const openCurator = async () => {
+    if (!user) {
+      window.location.href = `/sign-in?next=${encodeURIComponent(window.location.pathname)}`;
+      return;
+    }
+    setCurateOpen(true);
+    setCurateError('');
+    try {
+      const response = await fetch('/api/library/collections');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Collections could not be loaded');
+      setCuratedCollections((data.collections || []).filter(collection => !collection.isDefault));
+    } catch (error) {
+      setCurateError(error.message);
+    }
+  };
+
+  const curateBlog = async (collection) => {
+    setCurateBusy(collection.id);
+    setCurateError('');
+    try {
+      const response = await fetch(`/api/library/collections/${encodeURIComponent(collection.id)}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blogId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'The post could not be added');
+      setCurateOpen(false);
+      flashToast(`Added to ${collection.name}`);
+    } catch (error) {
+      setCurateError(error.message);
+    } finally {
+      setCurateBusy('');
+    }
+  };
 
   useEffect(() => {
     if (!shareOpen) return;
@@ -170,6 +215,13 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [shareOpen]);
+
+  useEffect(() => {
+    if (!curateOpen) return;
+    const close = (event) => { if (event.key === 'Escape') setCurateOpen(false); };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [curateOpen]);
 
   // ── Report ──
   const [reportOpen, setReportOpen] = useState(false);
@@ -251,6 +303,31 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
           <ion-icon name="checkmark-circle" style={{ fontSize: '15px' }} /> {toast}
         </div>
       )}
+      {curateOpen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }} onMouseDown={(event) => event.target === event.currentTarget && setCurateOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl p-5 shadow-2xl" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-[16px] font-bold" style={{ color: 'var(--text-primary)' }}>Add to a collection</h3>
+                <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>The original author and license stay attached.</p>
+              </div>
+              <button onClick={() => setCurateOpen(false)} className="p-2" title="Close" style={{ color: 'var(--text-muted)' }}><ion-icon name="close-outline" /></button>
+            </div>
+            {curateError && <p className="text-[12px] text-red-500 mb-3">{curateError}</p>}
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {curatedCollections.map(collection => (
+                <button key={collection.id} onClick={() => curateBlog(collection)} disabled={!!curateBusy} className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left disabled:opacity-60" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
+                  <ion-icon name="albums-outline" style={{ fontSize: '18px', color: 'var(--accent)' }} />
+                  <span className="flex-1 min-w-0 truncate text-[13px] font-medium">{collection.name}</span>
+                  {curateBusy === collection.id && <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Adding…</span>}
+                </button>
+              ))}
+              {!curatedCollections.length && !curateError && <p className="text-[13px] py-5 text-center" style={{ color: 'var(--text-muted)' }}>Create a collection in your Library first.</p>}
+            </div>
+            <a href="/library" className="block text-center text-[12px] mt-4" style={{ color: 'var(--accent)' }}>Manage collections</a>
+          </div>
+        </div>
+      )}
       {/* Left — engagement actions */}
       <div className="flex items-center gap-1">
         {/* Like */}
@@ -322,6 +399,15 @@ export default function BlogInteractionBar({ blogId, blogAuthorId, canRepost = f
           title={interactions.bookmarked ? 'Remove from library' : 'Save to library'}
         >
           <ion-icon name={interactions.bookmarked ? 'bookmark' : 'bookmark-outline'} style={{ fontSize: '18px' }} />
+        </button>
+
+        <button
+          onClick={openCurator}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full transition-all"
+          style={{ color: 'var(--text-muted)' }}
+          title="Add to a collection"
+        >
+          <ion-icon name="albums-outline" style={{ fontSize: '18px' }} />
         </button>
 
         {/* Share dropdown */}

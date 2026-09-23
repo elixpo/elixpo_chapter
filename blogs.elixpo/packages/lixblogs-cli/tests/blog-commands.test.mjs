@@ -4,9 +4,10 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { BlogApiError } from '../src/api/BlogClient.js';
-import { blogCreate, blogDelete, blogEdit, blogPublish, enrichBlogMutationResult } from '../src/commands/blog/index.js';
+import { blogCreate, blogDelete, blogEdit, blogHistory, blogPublish, enrichBlogMutationResult } from '../src/commands/blog/index.js';
 import { blocksToMarkdown, markdownToBlocks } from '../src/content/markdown.js';
 import { validateBlogInput } from '../src/content/validate.js';
+import { metadataFromOptions } from '../src/commands/blog/input.js';
 
 test('Markdown conversion retains supported structural blocks', () => {
   const markdown = '# Title\n\n- One\n\n```mermaid\ngraph TD\n A-->B\n```';
@@ -57,6 +58,11 @@ test('create dry-run validates input without calling the API', async () => {
   assert.equal(result.input.content[0].type, 'paragraph');
 });
 
+test('maps secret mode flags onto API blog input', () => {
+  assert.deepEqual(metadataFromOptions({ secret: true }), { secret: true });
+  assert.deepEqual(metadataFromOptions({ 'not-secret': true }), { secret: false });
+});
+
 test('local validation rejects oversized metadata and short publishing content', () => {
   assert.throws(() => validateBlogInput({ title: 'x'.repeat(301), content: [] }), /300/);
   assert.throws(() => validateBlogInput({ title: 'Post', content: markdownToBlocks('too short') }, { publishing: true }), /20 words/);
@@ -88,6 +94,23 @@ test('blog mutation results include the latest status and canonical URL', async 
 
   assert.equal(result.status, 'unlisted');
   assert.equal(result.url, 'https://blogs.elixpo.com/author/post');
+});
+
+test('history can inspect one retained version as Markdown', async () => {
+  const result = await blogHistory({
+    client: {
+      version: async (blogId, versionId) => ({
+        id: versionId,
+        blogId,
+        content: markdownToBlocks('Earlier **content**'),
+      }),
+    },
+    id: 'blog-1',
+    options: { version: 'version-1' },
+  });
+
+  assert.equal(result.id, 'version-1');
+  assert.equal(result.markdown, 'Earlier **content**');
 });
 
 test('permanent deletion retains the former URL and reports deleted status', async () => {

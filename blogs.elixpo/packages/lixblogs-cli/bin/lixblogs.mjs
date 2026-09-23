@@ -25,6 +25,7 @@ import { spawn } from "node:child_process";
 import { resolveConfig } from "../src/config/config.js";
 import { createAuthProvider } from "../src/config/providerFactory.js";
 import { createCredentialStore } from "../src/config/credentialStoreFactory.js";
+import { resolveApiToken } from "../src/config/apiToken.js";
 import { safeJsonStringify, redactErrorMessage } from "../src/config/redact.js";
 import { authLogin } from "../src/commands/auth/login.js";
 import { authStatus } from "../src/commands/auth/status.js";
@@ -40,6 +41,8 @@ import { CollaborationClient } from "../src/api/CollaborationClient.js";
 import { AnalyticsClient } from "../src/api/AnalyticsClient.js";
 import { IntegrationsClient } from "../src/api/IntegrationsClient.js";
 import { MediaClient } from "../src/api/MediaClient.js";
+import { CollectionClient } from "../src/api/CollectionClient.js";
+import { ContestClient } from "../src/api/ContestClient.js";
 import { EXIT_CODES, errorEnvelope, normalizeCommand } from "../src/cli/contract.js";
 import {
   colorEnabled,
@@ -81,12 +84,38 @@ import {
   collabRemove,
   collabRole,
 } from "../src/commands/collab/index.js";
-import { skillInspect, skillInstall, skillList } from "../src/commands/skill/index.js";
+import { skillInspect, skillInstall, skillInstallAll, skillList } from "../src/commands/skill/index.js";
 import { analyticsExport, analyticsQuery } from "../src/commands/analytics/index.js";
 import { cloudinaryDisconnect } from "../src/commands/integrations/cloudinary-disconnect.js";
 import { cloudinaryStatus } from "../src/commands/integrations/cloudinary-status.js";
 import { mediaDelete, mediaGenerate, mediaUpload } from "../src/commands/media/index.js";
 import { commentAdd, commentDelete, commentList, commentReply } from "../src/commands/comment/index.js";
+import {
+  collectionAdd,
+  collectionCreate,
+  collectionDelete,
+  collectionEdit,
+  collectionEntries,
+  collectionGet,
+  collectionList,
+  collectionRemove,
+} from "../src/commands/collection/index.js";
+import {
+  contestCancel,
+  contestCreate,
+  contestDelete,
+  contestEdit,
+  contestGet,
+  contestList,
+  contestMembers,
+  contestPublish,
+  contestRemoveMember,
+  contestResults,
+  contestRole,
+  contestSubmissions,
+  contestSubmit,
+  contestWithdraw,
+} from "../src/commands/contest/index.js";
 
 
 const OPTIONS = {
@@ -99,11 +128,13 @@ const OPTIONS = {
   "auth-provider": { type: "string" },
   "accounts-url": { type: "string" },
   "api-url": { type: "string" },
+  "token-file": { type: "string" },
   "client-id": { type: "string" },
   audience: { type: "string" },
   scope: { type: "string", multiple: true },
   open: { type: "boolean", default: false },
   status: { type: "string" },
+  mine: { type: "boolean", default: false },
   limit: { type: "string" },
   cursor: { type: "string" },
   range: { type: "string" },
@@ -123,7 +154,13 @@ const OPTIONS = {
   emoji: { type: "string" },
   publication: { type: "string" },
   collection: { type: "string" },
+  visibility: { type: "string" },
+  description: { type: "string" },
+  introduction: { type: "string" },
+  note: { type: "string" },
+  category: { type: "string" },
   cover: { type: "string" },
+  license: { type: "string" },
   "member-only": { type: "boolean", default: false },
   "no-member-only": { type: "boolean", default: false },
   secret: { type: "boolean", default: false },
@@ -138,6 +175,7 @@ const OPTIONS = {
   "hide-on-profile": { type: "boolean", default: false },
   target: { type: "string" },
   force: { type: "boolean", default: false },
+  all: { type: "boolean", default: false },
   prompt: { type: "string" },
   reference: { type: "string" },
   model: { type: "string" },
@@ -157,6 +195,25 @@ const OPTIONS = {
   "cover-x": { type: "string" },
   "cover-y": { type: "string" },
   "cover-zoom": { type: "string" },
+  "starts-at": { type: "string" },
+  "submissions-close-at": { type: "string" },
+  "judging-closes-at": { type: "string" },
+  "results-at": { type: "string" },
+  "allowed-target": { type: "string", multiple: true },
+  "minimum-account-age-months": { type: "string" },
+  "contest-tag": { type: "string", multiple: true },
+  "require-bio": { type: "boolean", default: false },
+  "no-require-bio": { type: "boolean", default: false },
+  "eligible-user": { type: "string", multiple: true },
+  "clear-eligible-users": { type: "boolean", default: false },
+  problem: { type: "string" },
+  rules: { type: "string" },
+  theme: { type: "string" },
+  template: { type: "string" },
+  submission: { type: "string" },
+  snapshot: { type: "boolean", default: false },
+  award: { type: "string", multiple: true },
+  finalize: { type: "boolean", default: false },
   help: { type: "boolean", short: "h", default: false },
 };
 
@@ -185,7 +242,7 @@ Usage:
   lixblogs blog delete <id> --yes [--permanent] [--dry-run] [--json]
   lixblogs blog trash <id> --yes [--dry-run] [--json]
   lixblogs blog restore <id> --yes [--dry-run] [--json]
-  lixblogs blog history <id> [--json]
+  lixblogs blog history <id> [--version <version-id>] [--json]
   lixblogs blog restore-version <id> --version <version-id> --yes [--json]
   lixblogs comment list <blog-id> [--json]
   lixblogs comment add <blog-id> --content <text> [--json]
@@ -196,6 +253,28 @@ Usage:
   lixblogs org collections <id> [--json]
   lixblogs org members <id>  [--json]
   lixblogs org targets       [--json]
+  lixblogs collection list   [--json]
+  lixblogs collection get <id> [--json]
+  lixblogs collection create --title <name> [--slug <slug>] [--visibility private|unlisted|public]
+  lixblogs collection edit <id> [--title <name>] [--description <text>] [--introduction <text>] [--visibility <value>]
+  lixblogs collection delete <id> --yes
+  lixblogs collection entries <id> [--json]
+  lixblogs collection add <id> --blog <blog-id> [--note <text>] [--category <name>]
+  lixblogs collection remove <id> --blog <blog-id> --yes
+  lixblogs contest list [--status <status>] [--mine] [--json]
+  lixblogs contest get <id-or-slug> [--json]
+  lixblogs contest create --title <title> --starts-at <date> --submissions-close-at <date> --judging-closes-at <date> [--slug <slug>] [--contest-tag <tag>] [--minimum-account-age-months <n>] [--limit <1-5>]
+  lixblogs contest edit <id> [--slug <slug>] [--description <text>] [--problem <markdown>] [--rules <markdown>] [--contest-tag <tag>] [--minimum-account-age-months <n>] [--limit <1-5>]
+  lixblogs contest publish <id> --yes
+  lixblogs contest cancel <id> --yes
+  lixblogs contest delete <id> --yes
+  lixblogs contest submissions <id> [--snapshot] [--json]
+  lixblogs contest submit <id> --blog <blog-id>
+  lixblogs contest withdraw <id> --submission <submission-id> --yes
+  lixblogs contest members <id> [--json]
+  lixblogs contest role <id> --user <username-or-id> --role <moderator|judge>
+  lixblogs contest remove-member <id> --user <user-id> --yes
+  lixblogs contest results <id> --award winner:<submission-id> [--award runner-up:<id>] [--finalize --yes]
   lixblogs collab list <blog-id> [--json]
   lixblogs collab invitations   [--json]
   lixblogs collab invite <blog-id> --user <username> --role <viewer|editor|admin> --yes
@@ -215,6 +294,7 @@ Usage:
   lixblogs skill list             [--json]
   lixblogs skill inspect <name>   [--json]
   lixblogs skill install <name>   [--target <directory>] [--dry-run] --yes
+  lixblogs skill install --all    [--target <directory>] [--dry-run] --yes
   lixblogs disconnect cloudinary --yes
   lixblogs disconnect pollinations
 
@@ -224,6 +304,7 @@ Global flags:
   --auth-provider <provider>  elixpo, or mock in development/test only
   --accounts-url <url>        override the Accounts discovery origin
   --api-url <url>             LixBlogs API origin (default: https://blogs.elixpo.com)
+  --token-file <path>         read a personal access token from a file
   --scope <scope>             request an OAuth scope (repeatable)
   --file <path>               read blog Markdown from a file
   --stdin                     read blog Markdown from stdin
@@ -233,6 +314,7 @@ Global flags:
   --tag <tag>                 set a tag (repeatable, up to five)
   --publication <target>      personal or org:<id>
   --collection <id>           organization collection ID
+  --license <id>              all-rights-reserved, cc-by-4.0, cc-by-sa-4.0, cc-by-nc-4.0, or cc0-1.0
   --dry-run                   validate and show the intended action without writing
   --permanent                 permanently delete instead of moving to trash
   --open                      open the device verification URL immediately
@@ -246,6 +328,7 @@ Global flags:
 Machine mode:
   --json --no-input produces stable JSON on stdout, diagnostics on stderr, and
   never prompts. Publishing and destructive state changes require --yes.
+  Set LIXBLOGS_TOKEN or LIXBLOGS_TOKEN_FILE for non-interactive authentication.
 `;
 
 const DEFAULT_SCOPES = [
@@ -431,6 +514,27 @@ async function runStatus(opts) {
 
 async function authenticatedBlogClient(opts) {
   const config = resolveConfig({ flags: configFlags(opts) });
+  let tokenCredential;
+  try {
+    tokenCredential = await resolveApiToken({ flags: { tokenFile: opts["token-file"] } });
+  } catch (error) {
+    fail(opts, error, EXIT_CODES.AUTH);
+    return null;
+  }
+  if (tokenCredential) {
+    const http = new AuthenticatedClient({
+      accessToken: tokenCredential.token,
+      apiBaseUrl: config.apiBaseUrl,
+    });
+    return {
+      client: new BlogClient(http),
+      http,
+      config,
+      credentialStore: null,
+      profileId: null,
+      credentialSource: tokenCredential.source,
+    };
+  }
   const profileRegistry = new ProfileRegistry();
   const profileId = await selectedProfile(config, profileRegistry);
   const credentialStore = await getCredentialStoreOrFail(opts, profileRegistry);
@@ -438,7 +542,7 @@ async function authenticatedBlogClient(opts) {
   let provider;
   try { provider = createAuthProvider(config); } catch (error) { fail(opts, error); return null; }
   const http = new AuthenticatedClient({ provider, credentialStore, profileId, apiBaseUrl: config.apiBaseUrl });
-  return { client: new BlogClient(http), http, config, credentialStore, profileId };
+  return { client: new BlogClient(http), http, config, credentialStore, profileId, credentialSource: "device-oauth" };
 }
 
 async function runWhoami(opts) {
@@ -446,23 +550,26 @@ async function runWhoami(opts) {
   if (!context) return;
   try {
     const [identity, credentials] = await withProgress(opts, "Loading account…", () => Promise.all([
-        context.client.whoami(),
-        context.credentialStore.get(context.profileId),
-      ]));
+      context.client.whoami(),
+      context.http.credentials(),
+    ]));
     const result = {
       ok: true,
-      profile: context.profileId,
+      profile: context.profileId || identity.username,
       environment: context.config.environment,
+      authentication: credentials.credentialType || "device_oauth",
       identity,
-      scopes: credentials?.scopes || [],
+      scopes: credentials?.scopes,
       expiresAt: credentials?.expiresAt ? new Date(credentials.expiresAt).toISOString() : null,
-      expired: credentials ? Date.now() >= credentials.expiresAt : true,
+      expired: credentials?.expiresAt ? Date.now() >= credentials.expiresAt : false,
     };
     output(opts, result);
     if (!opts.json && !opts.quiet) {
       console.log(`${identity.displayName || identity.username} (@${identity.username})`);
-      console.log(`Profile: ${context.profileId} · ${result.environment}`);
-      console.log(`Scopes: ${result.scopes.join(', ') || 'none'}`);
+      if (identity.designation) console.log(identity.designation);
+      console.log(`Profile: ${result.profile} · ${result.environment}`);
+      console.log(`Authentication: ${result.authentication}`);
+      console.log(`Scopes: ${result.scopes?.join(', ') || 'validated by server'}`);
       console.log(`Expires: ${result.expiresAt || 'unknown'}`);
     }
   } catch (error) {
@@ -539,10 +646,6 @@ async function runRevoke(opts) {
   }
 }
 async function runIntegrations(opts, args, action) {
-  const config = resolveConfig({ flags: configFlags(opts) });
-  const profileRegistry = new ProfileRegistry();
-  const profileId = await selectedProfile(config, profileRegistry);
-
   if ((action === 'cloudinary-disconnect' || action === 'pollinations-disconnect') && !opts.yes) {
     return fail(
       opts,
@@ -550,19 +653,9 @@ async function runIntegrations(opts, args, action) {
     );
   }
 
-  let provider;
-  try {
-    provider = createAuthProvider(config);
-  } catch (err) {
-    return fail(opts, err.message);
-  }
-  const credentialStore = await getCredentialStoreOrFail(opts, profileRegistry);
-  if (!credentialStore) return;
-
-  const http = new AuthenticatedClient({
-    provider, credentialStore, profileId, apiBaseUrl: config.apiBaseUrl,
-  });
-  const integrationsClient = new IntegrationsClient(http);
+  const context = await authenticatedBlogClient(opts);
+  if (!context) return;
+  const integrationsClient = new IntegrationsClient(context.http);
 
   const result = await withProgress(opts, action.endsWith('status') ? "Checking integration…" : "Disconnecting integration…", async () => {
     if (action === 'cloudinary-status') return cloudinaryStatus({ integrationsClient });
@@ -648,7 +741,9 @@ const COLLAB_COMMANDS = {
 const SKILL_COMMANDS = {
   list: ({ options }) => skillList(options),
   inspect: ({ id }) => skillInspect({ name: id }),
-  install: ({ id, options }) => skillInstall({ name: id, options }),
+  install: ({ id, options }) => options.all
+    ? skillInstallAll({ options })
+    : skillInstall({ name: id, options }),
 };
 
 const ANALYTICS_COMMANDS = {
@@ -658,19 +753,37 @@ const ANALYTICS_COMMANDS = {
 
 const MEDIA_COMMANDS = { generate: mediaGenerate, upload: mediaUpload, delete: mediaDelete };
 const COMMENT_COMMANDS = { list: commentList, add: commentAdd, reply: commentReply, delete: commentDelete };
+const COLLECTION_COMMANDS = {
+  list: collectionList,
+  get: collectionGet,
+  create: collectionCreate,
+  edit: collectionEdit,
+  delete: collectionDelete,
+  entries: collectionEntries,
+  add: collectionAdd,
+  remove: collectionRemove,
+};
+const CONTEST_COMMANDS = {
+  list: contestList,
+  get: contestGet,
+  create: contestCreate,
+  edit: contestEdit,
+  publish: contestPublish,
+  cancel: contestCancel,
+  delete: contestDelete,
+  submissions: contestSubmissions,
+  submit: contestSubmit,
+  withdraw: contestWithdraw,
+  members: contestMembers,
+  role: contestRole,
+  'remove-member': contestRemoveMember,
+  results: contestResults,
+};
 
 async function runBlog(opts, args, action) {
-  const config = resolveConfig({ flags: configFlags(opts) });
-  const profileRegistry = new ProfileRegistry();
-  const profileId = await selectedProfile(config, profileRegistry);
-  const credentialStore = await getCredentialStoreOrFail(opts, profileRegistry);
-  if (!credentialStore) return;
-  let provider;
-  try { provider = createAuthProvider(config); } catch (error) { return fail(opts, error.message); }
-  const http = new AuthenticatedClient({
-    provider, credentialStore, profileId, apiBaseUrl: config.apiBaseUrl,
-  });
-  const client = new BlogClient(http);
+  const context = await authenticatedBlogClient(opts);
+  if (!context) return;
+  const client = context.client;
   const normalized = {
     ...opts,
     limit: opts.limit === undefined ? undefined : Number.parseInt(opts.limit, 10),
@@ -690,7 +803,14 @@ async function runBlog(opts, args, action) {
       } else if (action === 'get' || action === 'preview') {
         console.log(`${result.title || '(untitled)'} [${result.status}]\n${result.markdown || ''}`);
       } else if (action === 'history') {
-        for (const version of result.data || []) console.log(`${version.id}\t${version.label || 'snapshot'}\t${version.created_at}\t${version.username || 'system'}`);
+        if (result.markdown !== undefined) {
+          console.log(`${result.id}\t${result.label || 'snapshot'}\t${result.created_at}\t${result.username || 'system'}`);
+          process.stdout.write(`${result.markdown}\n`);
+        } else {
+          for (const version of result.data || []) {
+            console.log(`${version.id}\t${version.label || 'snapshot'}\t${version.created_at}\t${version.word_count || 0} words\t${version.username || 'system'}\t${version.excerpt || ''}`);
+          }
+        }
       } else if (result.dryRun) {
         console.log(warningLine(`Dry run: ${action} validated; no changes sent.`, colorEnabled()));
       } else {
@@ -736,6 +856,56 @@ async function runOrg(opts, args, action) {
         row.slug || row.username,
         row.name || row.displayName,
       ].filter(Boolean).join('\t'));
+    }
+  } catch (error) {
+    fail(opts, error, error.status === 401 || error.status === 403 ? EXIT_CODES.AUTH : EXIT_CODES.ERROR);
+  }
+}
+
+async function runCollection(opts, args, action) {
+  const context = await authenticatedBlogClient(opts);
+  if (!context) return;
+  try {
+    const result = await withProgress(opts, action === 'list' || action === 'get' || action === 'entries' ? 'Loading collections…' : 'Updating collection…', () => COLLECTION_COMMANDS[action]({
+      client: new CollectionClient(context.http), id: args[0], options: opts,
+    }));
+    output(opts, { ok: true, data: result });
+    if (opts.json || opts.quiet) return;
+    if (action === 'list') {
+      for (const collection of result || []) console.log(`${collection.id}\t${collection.visibility}\t${collection.count} posts\t${collection.name}`);
+    } else if (action === 'entries') {
+      for (const entry of result || []) console.log(`${entry.blogId}\t${entry.author?.username || ''}\t${entry.title}`);
+    } else if (action === 'get') {
+      console.log(`${result.id}\t${result.visibility}\t${result.count} posts\t${result.name}`);
+    } else {
+      console.log(successLine(action === 'delete' ? 'Collection deleted.' : action === 'remove' ? 'Post removed from collection.' : action === 'add' ? 'Post added to collection.' : 'Collection updated.', colorEnabled()));
+    }
+  } catch (error) {
+    fail(opts, error, error.status === 401 || error.status === 403 ? EXIT_CODES.AUTH : EXIT_CODES.ERROR);
+  }
+}
+
+async function runContest(opts, args, action) {
+  const context = await authenticatedBlogClient(opts);
+  if (!context) return;
+  try {
+    const loading = ['list', 'get', 'submissions', 'members'].includes(action);
+    const result = await withProgress(opts, loading ? 'Loading contests…' : 'Updating contest…', () => CONTEST_COMMANDS[action]({ client: new ContestClient(context.http), id: args[0], options: opts }));
+    output(opts, { ok: true, data: result });
+    if (opts.json || opts.quiet) return;
+    if (action === 'list') for (const contest of result || []) console.log(`${contest.id}\t${contest.status}\t${contest.submissionCount} entries\t${contest.title}`);
+    else if (action === 'submissions') for (const item of result || []) console.log(`${item.id}\t${item.author?.username || ''}\t${item.placement || 'entry'}\t${item.title}`);
+    else if (action === 'members') for (const item of result || []) console.log(`${item.user_id}\t${item.role}\t${item.username}`);
+    else if (action === 'get') console.log(`${result.id}\t${result.status}\t${result.submissionCount} entries\t${result.title}`);
+    else {
+      const messages = {
+        create: `Contest draft created: ${result.slug} (${result.id}).`,
+        edit: 'Contest updated.', publish: 'Contest published.', cancel: 'Contest cancelled.',
+        delete: 'Contest draft deleted.', submit: `Entry submitted: ${result.id}.`,
+        withdraw: 'Entry withdrawn.', role: 'Contest role updated.',
+        'remove-member': 'Contest member removed.', results: result.finalized ? 'Contest results finalized.' : 'Contest results saved.',
+      };
+      console.log(successLine(messages[action] || `Contest ${action} completed.`, colorEnabled()));
     }
   } catch (error) {
     fail(opts, error, error.status === 401 || error.status === 403 ? EXIT_CODES.AUTH : EXIT_CODES.ERROR);
@@ -815,8 +985,12 @@ async function runSkill(opts, args, action) {
       for (const skill of result) console.log(`${skill.name}\tCLI >= ${skill.minimumCliVersion || 'unknown'}\t${skill.description}`);
     } else if (action === 'inspect') {
       process.stdout.write(result.content);
+    } else if (result.dryRun && result.all) {
+      console.log(warningLine(`Dry run: install ${result.skills.length} skills to ${result.targetRoot}.`, colorEnabled()));
     } else if (result.dryRun) {
       console.log(warningLine(`Dry run: install ${result.name} to ${result.target}${result.replace ? ' (replace)' : ''}.`, colorEnabled()));
+    } else if (result.all) {
+      console.log(successLine(`Installed ${result.skills.length} LixBlogs skills at ${result.targetRoot}.`, colorEnabled()));
     } else {
       console.log(successLine(`Installed ${result.name} at ${result.target}.`, colorEnabled()));
     }
@@ -875,6 +1049,14 @@ const ROUTES = {
   org: Object.fromEntries(Object.keys(ORG_COMMANDS).map((action) => [
     action,
     (opts, args) => runOrg(opts, args, action),
+  ])),
+  collection: Object.fromEntries(Object.keys(COLLECTION_COMMANDS).map((action) => [
+    action,
+    (opts, args) => runCollection(opts, args, action),
+  ])),
+  contest: Object.fromEntries(Object.keys(CONTEST_COMMANDS).map((action) => [
+    action,
+    (opts, args) => runContest(opts, args, action),
   ])),
   collab: Object.fromEntries(Object.keys(COLLAB_COMMANDS).map((action) => [
     action,

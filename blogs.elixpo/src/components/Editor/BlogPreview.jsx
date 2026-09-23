@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import LinkPreviewTooltip, { useLinkPreview } from './LinkPreviewTooltip';
 import { readTimeFromWords } from '../../../lib/readTime';
@@ -10,6 +10,7 @@ import { renderMermaidSvg } from '../../utils/mermaidRenderer';
 import { getLixShikiHighlighter, normalizeShikiLanguage } from '../../utils/shikiHighlighter';
 import { clearInheritedBlockTextColors } from '../../utils/blockColorNormalization';
 import { normalizeLegacyChecklistBlocks } from '../../utils/checklistBlocks';
+import TopicInterestChips from '../TopicInterestChips';
 
 let previewLanguageLoadTail = Promise.resolve();
 const previewLoadedLanguages = new Set();
@@ -72,8 +73,17 @@ function FloatingTOC({ headings }) {
       top: itemRect.top - listRect.top,
       height: itemRect.height,
     });
-    // Scroll the TOC list so the active item stays visible
-    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // Keep the item visible by scrolling only the TOC container. scrollIntoView
+    // may also move the document viewport in Chromium/WebKit.
+    const scrollContainer = listRef.current.closest('.preview-floating-toc');
+    const containerRect = scrollContainer?.getBoundingClientRect();
+    if (scrollContainer && containerRect) {
+      if (itemRect.top < containerRect.top) {
+        scrollContainer.scrollBy({ top: itemRect.top - containerRect.top - 8, behavior: 'smooth' });
+      } else if (itemRect.bottom > containerRect.bottom) {
+        scrollContainer.scrollBy({ top: itemRect.bottom - containerRect.bottom + 8, behavior: 'smooth' });
+      }
+    }
   }, [activeId]);
 
   return (
@@ -384,7 +394,7 @@ function renderBlocksToHTML(blocks) {
 }
 
 export default function BlogPreview({
-  paywalled = false, title, subtitle, coverPreview, coverZoom, coverPos, pageEmoji, tags, html, blocks, user, org, coAuthorCount, coAuthors = [], wordCount, followSlot = null, memberOnly = false, featured = false, publishedAt = null, headerActions = null, hideHighlights = false, readTimeMinutes = 0, anonymous = false }) {
+  paywalled = false, title, subtitle, coverPreview, coverZoom, coverPos, pageEmoji, tags, html, blocks, user, org, coAuthorCount, coAuthors = [], wordCount, followSlot = null, memberOnly = false, featured = false, publishedAt = null, headerActions = null, hideHighlights = false, readTimeMinutes = 0, anonymous = false, readerMode = false }) {
   const { isDark } = useTheme();
   const contentRef = useRef(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -414,11 +424,14 @@ export default function BlogPreview({
   }, []);
 
   // Determine which HTML to use — prefer blocks-based rendering
-  const safeBlocks = Array.isArray(blocks) ? blocks : [];
-  const renderedHTML = safeBlocks.length > 0 ? renderBlocksToHTML(safeBlocks) : html;
+  const safeBlocks = useMemo(() => (Array.isArray(blocks) ? blocks : []), [blocks]);
+  const renderedHTML = useMemo(
+    () => (safeBlocks.length > 0 ? renderBlocksToHTML(safeBlocks) : html),
+    [safeBlocks, html],
+  );
 
   // Extract headings + subpages for floating TOC
-  const headings = (() => {
+  const headings = useMemo(() => {
     const result = [];
     for (const b of safeBlocks) {
       if (b.type === 'heading' && Array.isArray(b.content) && b.content.length > 0) {
@@ -438,7 +451,7 @@ export default function BlogPreview({
       }
     }
     return result;
-  })();
+  }, [safeBlocks]);
 
   // Set innerHTML via ref so React never overwrites our post-processed DOM.
   // Then render KaTeX, mermaid, Shiki into the live DOM elements.
@@ -964,6 +977,11 @@ export default function BlogPreview({
 
   return (
     <div className="blog-preview" id="blog-preview-top">
+      {readerMode && (
+        <div className="reader-progress" aria-hidden="true">
+          <span style={{ transform: `scaleX(${scrollProgress})` }} />
+        </div>
+      )}
       {/* Floating TOC with scroll spy */}
       {headings.length >= 2 && <FloatingTOC headings={headings} />}
 
@@ -973,7 +991,7 @@ export default function BlogPreview({
           className="preview-back-to-top"
           onClick={() => document.getElementById('blog-preview-top')?.scrollIntoView({ behavior: 'smooth' })}
           title="Back to top"
-          style={{ position: 'fixed', bottom: '2rem', right: '2rem', width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-elevated)', border: 'none', cursor: 'pointer', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+          aria-label="Back to the beginning of this story"
         >
           <svg width="40" height="40" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', transform: 'rotate(-90deg)' }}>
             <circle
@@ -994,10 +1012,10 @@ export default function BlogPreview({
       {/* Cover + emoji */}
       <div className="relative mb-2">
         {coverPreview && (
-          <div className="rounded-xl overflow-hidden" style={{ height: '220px' }}>
+          <div className="blog-preview-cover rounded-xl overflow-hidden">
             <img
               src={coverPreview}
-              alt="Cover"
+              alt={title ? `${title} cover` : 'Story cover'}
               className="w-full h-full object-cover"
               style={{
                 objectPosition: `${coverPos?.x ?? 50}% ${coverPos?.y ?? 50}%`,
@@ -1045,23 +1063,25 @@ export default function BlogPreview({
 
       {/* Title */}
       {title && (
-        <h1 className={`text-[2.2em] font-extrabold leading-tight ${(memberOnly || featured) ? 'mt-0' : 'mt-6'} mb-2`} style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}>{title}</h1>
+        <h1 className={`blog-preview-title text-[2.2em] font-extrabold leading-tight ${(memberOnly || featured) ? 'mt-0' : 'mt-6'} mb-2`} style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}>{title}</h1>
       )}
 
       {/* Subtitle */}
       {subtitle && (
-        <p className="text-xl mb-3" style={{ color: 'var(--text-muted)', fontFamily: "'Source Serif 4', Georgia, serif" }}>{subtitle}</p>
+        <p className="blog-preview-subtitle text-xl mb-3" style={{ color: 'var(--text-muted)', fontFamily: "'Source Serif 4', Georgia, serif" }}>{subtitle}</p>
       )}
 
       {/* Tags — directly under the title */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {tags.map((tag) => (
-            <span key={tag} className="px-2.5 py-0.5 bg-[#9b7bf70a] rounded-full text-[13px] text-[#9b7bf7]">
-              #{tag}
-            </span>
-          ))}
-        </div>
+        readerMode ? <TopicInterestChips tags={tags} /> : (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {tags.map((tag) => (
+              <span key={tag} className="px-2.5 py-0.5 bg-[#9b7bf70a] rounded-full text-[13px] text-[#9b7bf7]">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )
       )}
 
       {/* Author bar — under title. Primary author + accepted co-authors, with
@@ -1073,11 +1093,12 @@ export default function BlogPreview({
         const authors = anonymous
           ? [{ name: 'Anonymous', avatar_url: null, username: null }]
           : [
-            { name: user.display_name || user.username || 'Author', avatar_url: user.avatar_url, username: user.username },
+            { name: user.display_name || user.username || 'Author', designation: user.designation, avatar_url: user.avatar_url, username: user.username },
             // Co-authors come from /api/resolve with display_name/username — normalize
             // to `name` so their names actually render (not just the primary author).
             ...coAuthors.map((c) => ({
               name: c.name || c.display_name || c.username || 'Author',
+              designation: c.designation,
               avatar_url: c.avatar_url,
               username: c.username,
             })),
@@ -1087,7 +1108,7 @@ export default function BlogPreview({
         const shownNames = authors.slice(0, 3);
         const moreNames = authors.length - shownNames.length;
         return (
-          <div className="flex items-center gap-3 mt-1 mb-2">
+          <div className="blog-preview-byline flex items-center gap-3 mt-1 mb-2">
             <div className="flex -space-x-2 items-center">
               {shownAvatars.map((a, i) => {
                 const avatar = a.avatar_url ? (
@@ -1143,6 +1164,12 @@ export default function BlogPreview({
               {moreNames > 0 && (
                 <span className="text-[var(--text-faint)]">+ {moreNames} more</span>
               )}
+              {!anonymous && authors.length === 1 && authors[0].designation && (
+                <>
+                  <span className="text-[var(--text-faint)]">·</span>
+                  <span className="text-[var(--text-secondary)]">{authors[0].designation}</span>
+                </>
+              )}
               <span className="text-[var(--text-faint)]">·</span>
               <span>{readTimeMinutes > 0 ? readTimeMinutes : readTimeFromWords(wordCount)} min read</span>
               {publishedAt && (
@@ -1159,7 +1186,7 @@ export default function BlogPreview({
 
       {/* Header action bar (clap / comment / repost / save / share) */}
       {headerActions && (
-        <div className="py-2 mb-1" style={{ borderTop: '1px solid var(--divider)', borderBottom: '1px solid var(--divider)' }}>
+        <div className="blog-preview-actions py-2 mb-1" style={{ borderTop: '1px solid var(--divider)', borderBottom: '1px solid var(--divider)' }}>
           {headerActions}
         </div>
       )}

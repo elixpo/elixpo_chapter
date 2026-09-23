@@ -5,7 +5,7 @@ description: Draft, inspect, and revise LixBlogs posts through the supported CLI
 
 # LixBlogs author
 
-Use `@elixpo/lixblogs-cli` 1.2.0 or newer. Run every automation command with `--json --no-input`. Never use D1, session cookies, passwords, bearer tokens, or direct API calls.
+Use `@elixpo/lixblogs-cli` 1.5.8 or newer. Run every automation command with `--json --no-input`. Never use D1, session cookies, passwords, bearer tokens, or direct API calls.
 
 ## Access
 
@@ -38,7 +38,7 @@ lixblogs blog edit BLOG_ID --file post.md --json --no-input
 
 Metadata-only revisions use `--title`, `--subtitle`, `--slug`, repeatable `--tag`, `--emoji`, `--cover`, `--cover-x`, `--cover-y`, `--cover-zoom`, `--publication`, `--collection`, `--member-only` / `--no-member-only`, `--allow-comments` / `--no-comments`, and `--secret` / `--not-secret`. Content inputs `--file`, `--stdin`, `--content`, and `--editor` are mutually exclusive.
 
-Use `lixblogs blog history BLOG_ID` to inspect snapshots and `lixblogs blog restore-version BLOG_ID --version VERSION_ID --yes` only with explicit approval. Use the separate `lixblogs-media` skill for uploads or billable Pollinations generation.
+Use `lixblogs blog history BLOG_ID` to list snapshots. Inspect the exact content before proposing a restore with `lixblogs blog history BLOG_ID --version VERSION_ID`; restore with `lixblogs blog restore-version BLOG_ID --version VERSION_ID --yes` only after explicit approval. Use the separate `lixblogs-media` skill for uploads or billable Pollinations generation.
 
 ## Recovery
 

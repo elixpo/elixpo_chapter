@@ -15,6 +15,13 @@ export async function GET() {
       audience: 'blogs.elixpo.com',
       tokenSettings: 'https://blogs.elixpo.com/settings?tab=api',
     },
+    capabilities: {
+      secretPublishing: {
+        scope: 'lixblogs:blog:write',
+        semantics: 'anonymous-public',
+        mutableWhile: 'draft',
+      },
+    },
     resources: {
       profile: '/api/v1/me',
       blogs: '/api/v1/blogs',
@@ -26,6 +33,14 @@ export async function GET() {
       organization: '/api/v1/orgs/{id}',
       organizationCollections: '/api/v1/orgs/{id}/collections',
       organizationMembers: '/api/v1/orgs/{id}/members',
+      collections: '/api/v1/collections',
+      collection: '/api/v1/collections/{id}',
+      collectionEntries: '/api/v1/collections/{id}/entries',
+      contests: '/api/v1/contests',
+      contest: '/api/v1/contests/{id}',
+      contestSubmissions: '/api/v1/contests/{id}/submissions',
+      contestMembers: '/api/v1/contests/{id}/members',
+      contestResults: '/api/v1/contests/{id}/results',
       collaborators: '/api/v1/blogs/{id}/collaborators',
       collaborationInvitations: '/api/v1/collaboration/invitations',
       analytics: '/api/v1/analytics',

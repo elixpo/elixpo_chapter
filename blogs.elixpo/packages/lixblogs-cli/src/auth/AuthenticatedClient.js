@@ -39,6 +39,7 @@ export class AuthenticatedClient {
     apiBaseUrl = "https://blogs.elixpo.com",
     fetchImpl = globalThis.fetch,
     refreshSkewMs = DEFAULT_REFRESH_SKEW_MS,
+    accessToken = null,
   }) {
     this.provider = provider;
     this.credentialStore = credentialStore;
@@ -46,6 +47,7 @@ export class AuthenticatedClient {
     this.apiBaseUrl = new URL(apiBaseUrl);
     this.fetchImpl = fetchImpl;
     this.refreshSkewMs = refreshSkewMs;
+    this.accessToken = accessToken;
   }
 
   async _refresh(credentials, { force = false } = {}) {
@@ -87,6 +89,15 @@ export class AuthenticatedClient {
   }
 
   async credentials({ forceRefresh = false } = {}) {
+    if (this.accessToken) {
+      return {
+        accessToken: this.accessToken,
+        refreshToken: null,
+        expiresAt: null,
+        scopes: null,
+        credentialType: "personal_access_token",
+      };
+    }
     const stored = await this.credentialStore.get(this.profileId);
     if (!stored) throw new LoginRequiredError(this.profileId);
     if (forceRefresh || stored.expiresAt - Date.now() <= this.refreshSkewMs) {
@@ -115,7 +126,7 @@ export class AuthenticatedClient {
       headers: { ...options.headers, authorization: `Bearer ${credentials.accessToken}` },
     });
     let response = await send();
-    if (response.status === 401) {
+    if (response.status === 401 && !this.accessToken) {
       credentials = await this.credentials({ forceRefresh: true });
       response = await send();
     }
@@ -124,6 +135,9 @@ export class AuthenticatedClient {
 
   async requireScopes(required) {
     const credentials = await this.credentials();
+    // PAT scopes are intentionally not duplicated into local configuration.
+    // The resource server remains authoritative and returns insufficient_scope.
+    if (!Array.isArray(credentials.scopes)) return;
     const missing = required.filter((scope) => !credentials.scopes.includes(scope));
     if (missing.length) {
       const error = new Error(`Login again with the required scope${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`);

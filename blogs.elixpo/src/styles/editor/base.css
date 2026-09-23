@@ -391,7 +391,7 @@
   min-height: 28px !important;
   align-items: center;
   align-self: flex-start !important;
-  overflow: hidden;
+  overflow: visible;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -407,6 +407,39 @@
 
 .blog-editor-wrapper .bn-side-menu button:hover {
   color: #c4b5fd;
+}
+
+/* The drag-handle's Delete action is separate from the move/colour menu.
+   BlockNote renders it as the first menu item; positioning it outside the
+   dropdown keeps the destructive action distinct without changing its logic. */
+.blog-editor-wrapper .bn-drag-handle-menu {
+  overflow: visible;
+}
+
+.blog-editor-wrapper .bn-drag-handle-menu > .bn-menu-item:first-child {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  width: max-content;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--bg-surface);
+  color: #ef6464;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.blog-editor-wrapper .bn-drag-handle-menu > .bn-menu-item:first-child:hover {
+  background: rgba(239, 100, 100, 0.12);
+  color: #dc4545;
+}
+
+@media (max-width: 640px) {
+  .blog-editor-wrapper .bn-drag-handle-menu > .bn-menu-item:first-child {
+    right: auto;
+    left: calc(100% + 8px);
+  }
 }
 
 .blog-editor-wrapper .bn-drag-handle {

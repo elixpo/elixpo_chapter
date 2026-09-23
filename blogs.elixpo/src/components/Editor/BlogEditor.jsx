@@ -53,6 +53,7 @@ import {
 import { getLixShikiHighlighter } from "../../utils/shikiHighlighter";
 import { clearInheritedBlockTextColors } from "../../utils/blockColorNormalization";
 import { parseChecklistShortcut } from "../../utils/checklistShortcut";
+import { getHeadingSection } from "../../utils/headingSections";
 import AICommandMenu from "./AICommandMenu";
 import AISelectionToolbar from "./AISelectionToolbar";
 import { AIBlock } from "./blocks/AIBlock";
@@ -116,14 +117,55 @@ function withoutBlockIds(block) {
 
 function EditorSideMenu({ onBlockContextMenu }) {
     const editor = useBlockNoteEditor();
+    const temporarySectionEndRef = useRef(null);
     const block = useExtensionState(SideMenuExtension, {
         editor,
         selector: (state) => state?.block,
     });
 
+    const prepareSectionDrag = (event) => {
+        if (!event.target.closest?.('button[draggable="true"]')) return;
+        if (block?.type !== "heading") return;
+
+        const section = getHeadingSection(editor.document, block.id);
+        if (section.length <= 1) return;
+        let endBlock = section[section.length - 1];
+
+        try {
+            editor.setSelection(block.id, endBlock.id);
+        } catch {
+            // BlockNote cannot end a range selection on content-less blocks
+            // such as images or diagrams. Add an invisible trailing paragraph
+            // for the duration of the drag so those blocks remain in the range.
+            const [temporaryEnd] = editor.insertBlocks(
+                [{ type: "paragraph", content: [] }],
+                endBlock.id,
+                "after",
+            );
+            if (!temporaryEnd) return;
+            temporarySectionEndRef.current = temporaryEnd.id;
+            editor.setSelection(block.id, temporaryEnd.id);
+        }
+    };
+
+    const finishSectionDrag = () => {
+        const temporaryId = temporarySectionEndRef.current;
+        temporarySectionEndRef.current = null;
+        if (!temporaryId) return;
+        // The drop transaction is synchronous, but cleanup on the next frame
+        // keeps it out of BlockNote's drag-end selection bookkeeping.
+        requestAnimationFrame(() => {
+            try {
+                if (editor.getBlock(temporaryId)) editor.removeBlocks([temporaryId]);
+            } catch {}
+        });
+    };
+
     return (
         <div
             className="blog-editor-side-menu-host"
+            onDragStartCapture={prepareSectionDrag}
+            onDragEnd={finishSectionDrag}
             onContextMenu={(event) => {
                 const dragHandle = event.target.closest?.(
                     '[data-test="dragHandle"], button[draggable="true"]',
@@ -1273,7 +1315,6 @@ const BlogEditor = forwardRef(function BlogEditor(
         onTitleChange,
         blogId,
         mediaStorageStatus,
-        mediaStorageReturnTo,
         collaboration,
         onCollabSeeded,
         editable = true,
@@ -1343,10 +1384,39 @@ const BlogEditor = forwardRef(function BlogEditor(
             if (!editable || !SPECIAL_BLOCK_LABELS[block?.type]) return;
             event.preventDefault();
             event.stopPropagation();
+            const handle = event.target.closest?.(
+                'button[draggable="true"]',
+            );
+            const anchor = handle?.getBoundingClientRect();
+            const menuWidth = 210;
+            const menuGap = 10;
+            const viewportPadding = 8;
+            const preferredLeft =
+                (anchor?.left ?? event.clientX) - menuWidth - menuGap;
+            const fallbackRight = (anchor?.right ?? event.clientX) + menuGap;
             setPageMenu(null);
             setBlockMenu({
-                x: Math.min(event.clientX, window.innerWidth - 230),
-                y: Math.min(event.clientY, window.innerHeight - 170),
+                // Keep block actions outside the content block, beside the
+                // drag controls. Fall back to the right only on narrow screens.
+                x:
+                    preferredLeft >= viewportPadding
+                        ? preferredLeft
+                        : Math.max(
+                              viewportPadding,
+                              Math.min(
+                                  fallbackRight,
+                                  window.innerWidth -
+                                      menuWidth -
+                                      viewportPadding,
+                              ),
+                          ),
+                y: Math.max(
+                    viewportPadding,
+                    Math.min(
+                        anchor?.top ?? event.clientY,
+                        window.innerHeight - 170,
+                    ),
+                ),
                 blockId: block.id,
                 blockType: block.type,
             });
@@ -2330,7 +2400,7 @@ const BlogEditor = forwardRef(function BlogEditor(
             return (
                 /^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|^\s*>\s|^\s*\[[ xX]\](?:\s|$)|```|^\|.+\|/m.test(
                     text,
-                ) || /\*\*.+\*\*|\[.+\]\(.+\)|!\[/.test(text)
+                ) || /(?:^|\n)[ \t]*~{3,}|\*\*.+\*\*|\[.+\]\(.+\)|!\[/.test(text)
             );
         }
 
@@ -2346,6 +2416,8 @@ const BlogEditor = forwardRef(function BlogEditor(
             );
             const hasClipboardMermaid =
                 extractedClipboardMermaid.diagrams.length > 0;
+            const hasMarkdownFence =
+                /(?:^|\n)[ \t]*(?:`{3,}|~{3,})[ \t]*[^\r\n]*\r?\n/.test(textData);
 
             // If pasting a bare URL, convert to a link inline
             if (
@@ -2403,10 +2475,10 @@ const BlogEditor = forwardRef(function BlogEditor(
                 textData &&
                 (looksLikeMarkdown(textData) || hasClipboardMermaid)
             ) {
-                // Raw Markdown is intercepted normally. Rich clipboard data is
-                // intercepted only when it explicitly contains Mermaid; other
-                // rich text should continue through BlockNote's HTML parser.
-                if (!htmlData || hasClipboardMermaid) {
+                // Fenced Markdown must go through the Markdown parser even
+                // when a clipboard app also supplies HTML. Otherwise a code
+                // sample can become paragraphs with escaped line breaks (\\).
+                if (!htmlData || hasClipboardMermaid || hasMarkdownFence) {
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -2774,11 +2846,13 @@ const BlogEditor = forwardRef(function BlogEditor(
             }
         }
 
-        editorEl.addEventListener("paste", handlePaste);
+        // Handle Markdown fences before ProseMirror converts them into a
+        // generic code block (or stops the bubbling paste event).
+        editorEl.addEventListener("paste", handlePaste, true);
         editorEl.addEventListener("drop", handleEditorDrop);
         editorEl.addEventListener("dragover", handleEditorDragOver);
         return () => {
-            editorEl.removeEventListener("paste", handlePaste);
+            editorEl.removeEventListener("paste", handlePaste, true);
             editorEl.removeEventListener("drop", handleEditorDrop);
             editorEl.removeEventListener("dragover", handleEditorDragOver);
         };
@@ -4300,7 +4374,6 @@ const BlogEditor = forwardRef(function BlogEditor(
                 value={{
                     blogId,
                     mediaStorageStatus,
-                    mediaStorageReturnTo,
                 }}
             >
                 <BlockNoteView

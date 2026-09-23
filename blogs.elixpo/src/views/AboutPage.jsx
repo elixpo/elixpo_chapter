@@ -1,6 +1,3 @@
-'use client';
-
-import { useEffect } from 'react';
 import Link from 'next/link';
 import AppShell from '../components/AppShell';
 
@@ -11,9 +8,9 @@ const FEATURES = [
     desc: 'A Notion-style WYSIWYG editor with 20+ block types — code, equations, diagrams, embeds, images, and more.',
   },
   {
-    icon: 'flash-outline',
-    title: 'AI-Powered Writing',
-    desc: 'Press Space on an empty line to summon AI. Generate text, images, and get inline editing suggestions as you write.',
+    icon: 'terminal-outline',
+    title: 'CLI & API Publishing',
+    desc: 'Draft, revise and publish through the browser or automate a complete editorial workflow with the supported CLI and API.',
   },
   {
     icon: 'people-outline',
@@ -39,16 +36,12 @@ const FEATURES = [
 
 const STATS = [
   { icon: 'cube-outline', value: '20+', label: 'Block types' },
-  { icon: 'sparkles-outline', value: 'AI', label: 'Built-in assistant' },
+  { icon: 'terminal-outline', value: '3', label: 'Publishing interfaces' },
   { icon: 'git-merge-outline', value: 'Real-time', label: 'Collaboration' },
   { icon: 'globe-outline', value: 'Edge', label: 'Deployed globally' },
 ];
 
 export default function AboutPage() {
-  useEffect(() => {
-    document.title = 'About - LixBlogs';
-  }, []);
-
   return (
     <AppShell>
       <div className="max-w-[860px] mx-auto px-6 py-16">
@@ -73,9 +66,9 @@ export default function AboutPage() {
             className="text-[16px] leading-relaxed max-w-[540px] mx-auto mb-8"
             style={{ color: 'var(--text-muted)' }}
           >
-            LixBlogs is a modern blogging platform with a rich block editor,
-            AI writing tools, real-time collaboration, and organizations — all
-            deployed on the edge.
+            LixBlogs is an open-source publishing platform with a rich block
+            editor, real-time collaboration, organizations, and first-class
+            web, CLI, and API workflows.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link
@@ -86,7 +79,7 @@ export default function AboutPage() {
               Start writing
             </Link>
             <Link
-              href="/"
+              href="/explore"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-medium transition-colors"
               style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
             >
@@ -172,7 +165,7 @@ export default function AboutPage() {
             LixBlogs is open source. Explore the codebase, report issues, or contribute on GitHub.
           </p>
           <a
-            href="https://github.com/elixpo/lixblogs"
+            href="https://github.com/elixpo/blogs.elixpo"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full text-[14px] font-medium transition-colors"
@@ -226,9 +219,9 @@ export default function AboutPage() {
                     <div className="h-2 w-16 rounded-full" style={{ backgroundColor: 'var(--bg-elevated)' }} />
                   </div>
                 </div>
-                {/* Mock AI sparkle line */}
+                {/* Mock publishing status line */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--accent-subtle)' }}>
-                  <ion-icon name="sparkles" style={{ fontSize: '12px', color: 'var(--accent)' }} />
+                  <ion-icon name="cloud-done-outline" style={{ fontSize: '12px', color: 'var(--accent)' }} />
                   <div className="h-2 w-32 rounded-full" style={{ backgroundColor: 'rgba(155,123,247,0.2)' }} />
                   <div className="h-2 w-20 rounded-full" style={{ backgroundColor: 'rgba(155,123,247,0.15)' }} />
                 </div>
@@ -259,6 +252,8 @@ export default function AboutPage() {
           <div className="flex items-center justify-center gap-6 mb-4">
             {[
               { label: 'Home', href: '/' },
+              { label: 'Explore', href: '/explore' },
+              { label: 'Docs', href: '/docs' },
               { label: 'Pricing', href: '/pricing' },
               { label: 'Privacy', href: '/privacy' },
               { label: 'Terms', href: '/terms' },
@@ -274,7 +269,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="text-[12px]" style={{ color: 'var(--text-faint)' }}>
-            LixBlogs by Elixpo
+            LixBlogs is an open-source publishing platform by <a href="https://elixpo.com" className="font-semibold hover:text-[var(--accent)]">Elixpo</a>.
           </p>
         </footer>
       </div>

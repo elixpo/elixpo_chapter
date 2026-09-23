@@ -19,9 +19,12 @@ export async function GET(request) {
 
     let query = `
       SELECT bk.blog_id, bk.collection_id, bk.created_at as saved_at,
-        b.slug, b.title, b.subtitle, b.cover_image_r2_key, b.page_emoji,
-        b.read_time_minutes, b.published_at, b.author_id,
-        u.username as author_username, u.display_name as author_name, u.avatar_url as author_avatar
+        b.slug, b.title, b.subtitle, b.cover_image_r2_key, b.page_emoji, b.secret,
+        b.read_time_minutes, b.published_at,
+        CASE WHEN b.secret = 0 THEN b.author_id END as author_id,
+        CASE WHEN b.secret = 0 THEN u.username END as author_username,
+        CASE WHEN b.secret = 0 THEN u.display_name END as author_name,
+        CASE WHEN b.secret = 0 THEN u.avatar_url END as author_avatar
       FROM bookmarks bk
       JOIN blogs b ON b.id = bk.blog_id
       JOIN users u ON u.id = b.author_id

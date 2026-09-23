@@ -27,7 +27,7 @@ Token scopes do not increase the creator's permissions. Every request is also ch
 | --- | --- |
 | `lixblogs:profile:read` | Read the authenticated profile |
 | `lixblogs:blog:read` | List blogs, read content, and inspect history |
-| `lixblogs:blog:write` | Create and revise drafts |
+| `lixblogs:blog:write` | Create and revise drafts, including their secret-author setting |
 | `lixblogs:blog:publish` | Publish, unlist, or unpublish blogs |
 | `lixblogs:blog:delete` | Move owned blogs to trash and restore them |
 | `lixblogs:media:read` | Read tracked media metadata |
@@ -84,6 +84,13 @@ curl --fail-with-body https://blogs.elixpo.com/api/v1/blogs/BLOG_ID/publish \
 
 Publishing is always a separate operation. Creating or editing a draft never makes it public implicitly.
 
+Set `"secret":true` while creating or revising a draft to publish without the
+author's identity. This uses `lixblogs:blog:write`; it does not require a broader
+identity scope. Secret mode is anonymous publishing, not access control: the
+short-ID story URL remains public, while author routes, profiles, recommendations,
+digests, sitemap entries, and search author qualifiers cannot connect it to its
+writer. The setting is locked after the story is first published.
+
 ## Media, comments, and collaboration
 
 The API also exposes the workflows used by the CLI:
@@ -97,10 +104,34 @@ The API also exposes the workflows used by the CLI:
 
 Media continues through the normal optimization, storage quota, provider selection, ownership, and deletion pipeline. Provider credentials are never returned to API clients.
 
+## Curated collections
+
+Personal tokens can automate collection curation with the existing blog scopes:
+
+- `GET|POST /api/v1/collections` lists or creates collections;
+- `GET|PATCH|DELETE /api/v1/collections/{id}` reads, edits, or deletes one collection; and
+- `GET|POST|DELETE /api/v1/collections/{id}/entries` lists, adds, or removes referenced public blogs.
+
+Reads require `lixblogs:blog:read`; mutations require `lixblogs:blog:write`. An entry stores the blog reference, ordering, category, and optional curator note. The response resolves the original author, canonical URL, and author-selected license from the source blog. Organization-scoped tokens cannot manage personal collections.
+
+Adding a post fails when it is not public, is secret, has been deleted, or its author has disabled third-party curation. Authors may remove their own work from another user's collection through the signed-in web interface.
+
+## Writing contests
+
+Contest automation uses the existing blog scopes:
+
+- `GET|POST /api/v1/contests` discovers or creates contests;
+- `GET|PATCH|DELETE /api/v1/contests/{id}` inspects or manages a contest; deletion is limited to organizer-owned private drafts;
+- `GET|POST|DELETE /api/v1/contests/{id}/submissions` lists, submits, or withdraws entries;
+- `GET|POST|DELETE /api/v1/contests/{id}/members` manages moderator and judge roles; and
+- `POST /api/v1/contests/{id}/results` assigns and finalizes placements.
+
+Submission reads and discovery require `lixblogs:blog:read`; creation, roles, and entries require `lixblogs:blog:write`; final results require `lixblogs:blog:publish`. Snapshot content is returned only with `?snapshot=true` and only to the organizer or an assigned judge. A submitted blog remains owned by its author and the API stores an immutable judging snapshot.
+
 ## Responses and operational safety
 
 Successful responses use the stable `data` envelope. Errors include a machine-readable `code`, message, and request ID. Pagination uses opaque cursors. Rate-limit headers report the active window; automation should honor `429` and `Retry-After` rather than retrying immediately.
 
-Use a separate token per workflow. Rotate a token by creating its replacement, updating the consuming secret, confirming the new credential works, and revoking the old token in **Settings → API**. Revocation takes effect immediately. API audit records identify the token used without recording its secret.
+Use a separate token per workflow. Rotate a token by creating its replacement, updating the consuming secret, confirming the new credential works, and revoking the old token in **Settings → API**. Revocation takes effect on the next request because PAT authentication reads the token record for every request rather than caching authorization. API audit records identify the token used without recording its secret.
 
 For interactive or multi-user applications, use the Accounts OAuth flow instead of asking users to paste personal access tokens. For local agent workflows, the [LixBlogs CLI](/docs/cli) remains the simplest interface and preserves the same scopes, ETags, idempotency, and confirmation rules.

@@ -21,14 +21,23 @@ logged by the resource API.
 | --- | --- | --- | --- |
 | `GET` | `/api/v1` | public | API and compatibility metadata |
 | `GET` | `/api/v1/me` | `lixblogs:profile:read` | Current LixBlogs identity |
+| `PATCH` | `/api/v1/me` | `lixblogs:profile:write` | Update the current profile designation |
 | `GET` | `/api/v1/blogs` | `lixblogs:blog:read` | Accessible blog metadata |
 | `GET` | `/api/v1/blogs/{id}` | `lixblogs:blog:read` | One accessible blog and its content |
-| `POST` | `/api/v1/blogs` | `lixblogs:blog:write` | Create a draft |
-| `PATCH` | `/api/v1/blogs/{id}` | `lixblogs:blog:write` | Edit a draft or post |
+| `POST` | `/api/v1/blogs` | `lixblogs:blog:write` | Create a draft, including secret-author mode |
+| `PATCH` | `/api/v1/blogs/{id}` | `lixblogs:blog:write` | Edit a draft or post; secret mode is draft-only |
 | `POST` | `/api/v1/blogs/{id}/publish` | `lixblogs:blog:publish` | Publish a post |
 | `POST` | `/api/v1/blogs/{id}/unpublish` | `lixblogs:blog:publish` | Return a post to draft |
 | `DELETE` | `/api/v1/blogs/{id}` | `lixblogs:blog:delete` | Move a post to trash |
 | `POST` | `/api/v1/blogs/{id}/restore` | `lixblogs:blog:delete` | Restore a trashed post |
+| `GET`, `POST` | `/api/v1/collections` | `lixblogs:blog:read`, `lixblogs:blog:write` | List or create personal curated collections |
+| `GET`, `PATCH`, `DELETE` | `/api/v1/collections/{id}` | `lixblogs:blog:read`, `lixblogs:blog:write` | Inspect, edit, or delete an owned collection |
+| `GET`, `POST`, `DELETE` | `/api/v1/collections/{id}/entries` | `lixblogs:blog:read`, `lixblogs:blog:write` | List, add, or remove canonical public-blog references |
+| `GET`, `POST` | `/api/v1/contests` | `lixblogs:blog:read`, `lixblogs:blog:write` | Discover or create contests |
+| `GET`, `PATCH`, `DELETE` | `/api/v1/contests/{id}` | `lixblogs:blog:read`, `lixblogs:blog:write`, `lixblogs:blog:delete` | Inspect or manage a contest lifecycle; delete private drafts |
+| `GET`, `POST`, `DELETE` | `/api/v1/contests/{id}/submissions` | `lixblogs:blog:read`, `lixblogs:blog:write` | Review, submit, or withdraw immutable entries |
+| `GET`, `POST`, `DELETE` | `/api/v1/contests/{id}/members` | `lixblogs:blog:read`, `lixblogs:blog:write` | Manage moderator and judge roles |
+| `POST` | `/api/v1/contests/{id}/results` | `lixblogs:blog:publish` | Save or finalize placements |
 | `GET` | `/api/v1/orgs` | `lixblogs:organizations:read` | Organizations the caller belongs to |
 | `GET` | `/api/v1/orgs/{id}` | `lixblogs:organizations:read` | One caller-visible organization and role |
 | `GET` | `/api/v1/orgs/{id}/collections` | `lixblogs:organizations:read` | Collections within a caller membership |
@@ -48,6 +57,10 @@ logged by the resource API.
 | `POST` | `/api/v1/media/upload` | `lixblogs:media:write` | Send an image through the canonical storage pipeline |
 | `DELETE` | `/api/v1/media/{id}` | `lixblogs:media:write` | Delete an owned tracked asset from its storage provider |
 
+`GET /api/v1/blogs/{id}/versions` returns retained snapshot summaries. Add
+`?version={versionId}` to retrieve one snapshot's full block content before a
+restore. Restoration remains a conditional write using `If-Match`.
+
 `GET /api/v1/analytics` accepts `scope=personal|org:<id>`, `range=7d|30d|90d|12m|custom`,
 `from`, `to`, `dimension=overview|timeline|posts|sources|devices|countries`, `limit=1..100`,
 and an opaque `cursor`. Organization queries additionally require `lixblogs:organizations:read`
@@ -58,6 +71,11 @@ visitor identifiers are never returned.
 an opaque `cursor`. Results include authored blogs, accepted collaborations,
 and blogs belonging to organizations of which the caller is a member. Access
 misses return `404` so resource existence is not disclosed.
+
+`secret: true` means anonymous public publishing, not reader access control.
+The API and CLI use `lixblogs:blog:write` to set it on a draft. After first
+publication it cannot be changed. Public author surfaces and recommendations
+must not reveal or allow inference of the writer.
 
 Permanent deletion uses `DELETE /api/v1/blogs/{id}?permanent=true`. It requires
 the additional `lixblogs:blog:delete:permanent` scope and an

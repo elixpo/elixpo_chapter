@@ -4,7 +4,6 @@ import { createReactBlockSpec } from '@blocknote/react';
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { IMAGE_ACCEPT_ATTR } from '../../../utils/allowedImageTypes';
 import { createMediaUploadId, enqueueMediaUpload, resumeMediaUpload } from '../../../utils/mediaUploadQueue';
-import MediaStorageChip from '../MediaStorageChip';
 
 const IMAGE_MODELS = ['gptimage', 'flux', 'klein'];
 
@@ -32,7 +31,7 @@ export const BlogImageBlock = createReactBlockSpec(
 );
 
 function BlogImageRenderer({ block, editor }) {
-  const { blogId, mediaStorageStatus, mediaStorageReturnTo } = useContext(BlogImageUploadContext);
+  const { blogId, mediaStorageStatus } = useContext(BlogImageUploadContext);
   const { url, caption, _imageId, _uploading, _uploadJobId } = block.props;
   const [mode, setMode] = useState('idle'); // idle | embed | generate | generating
   const [embedUrl, setEmbedUrl] = useState('');
@@ -521,9 +520,6 @@ function BlogImageRenderer({ block, editor }) {
         >
           {caption || 'Add a caption...'}
         </p>
-      )}
-      {block.props._mediaId && (
-        <MediaStorageChip status={mediaStorageStatus} returnTo={mediaStorageReturnTo} />
       )}
     </div>
   );

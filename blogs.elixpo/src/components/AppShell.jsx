@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { generatePixelAvatar } from '../utils/pixelAvatar';
@@ -11,6 +11,7 @@ import { CreatorBadgeMark } from './CreatorBadge';
 import { CREATOR_BADGE_MAP } from '../../lib/badgeDefinitions';
 import { useSeasonalTheme } from '../themes/seasonal/SeasonalThemeProvider';
 import { onNotificationsUpdate } from '../utils/notificationEvents';
+import ContextualTipToast, { ContextualTipButton } from './ContextualTipToast';
 
 // ─── Notification type config ───
 const NOTIF_CONFIG = {
@@ -22,6 +23,13 @@ const NOTIF_CONFIG = {
   blog_invite:    { icon: 'create-outline',          color: '#c084fc', label: 'invited you to collaborate on' },
   blog_published: { icon: 'document-text-outline',   color: '#60a5fa', label: 'published' },
   badge_awarded:  { icon: 'ribbon-outline',          color: '#ec4899', label: 'awarded you' },
+  collection_add: { icon: 'albums-outline',          color: '#14b8a6', label: 'added your story to' },
+  contest_submission: { icon: 'document-attach-outline', color: '#0ea5e9', label: 'submitted an entry to' },
+  contest_role: { icon: 'people-circle-outline', color: '#8b5cf6', label: 'assigned you a contest role in' },
+  contest_results: { icon: 'trophy-outline', color: '#f59e0b', label: 'published results for' },
+  contest_opened: { icon: 'flag-outline', color: '#22c55e', label: 'opened' },
+  contest_deadline: { icon: 'timer-outline', color: '#f97316', label: 'is closing soon:' },
+  contest_judging: { icon: 'scale-outline', color: '#6366f1', label: 'entered judging:' },
 };
 
 function timeAgo(ts) {
@@ -35,7 +43,6 @@ function timeAgo(ts) {
 
 function NotificationDropdown() {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -101,11 +108,12 @@ function NotificationDropdown() {
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/notifications', {
+      const response = await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ all: true }),
       });
+      if (!response.ok) return;
       setUnread(0);
       setNotifications(prev => prev.map(n => ({ ...n, read: 1 })));
     } catch {}
@@ -123,17 +131,24 @@ function NotificationDropdown() {
     } catch {}
   };
 
+  const hasUnreadNotifications = notifications.some(notification => !notification.read);
+
+  const togglePanel = () => {
+    if (!open) {
+      // Opening the panel acknowledges the badge without changing the read
+      // state. The user can still mark individual or all entries as read.
+      setUnread(0);
+      notifications.forEach(notification => seenIdsRef.current.add(notification.id));
+    }
+    setOpen(!open);
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => {
-          // Clear the badge and remember current notifications as "seen" so
-          // the 30s poll doesn't resurrect the count if the user just viewed
-          // them without marking read.
-          setUnread(0);
-          notifications.forEach(n => seenIdsRef.current.add(n.id));
-          router.push('/notifications');
-        }}
+        onClick={togglePanel}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
         style={{ color: 'var(--text-muted)' }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
@@ -156,13 +171,13 @@ function NotificationDropdown() {
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid var(--divider)' }}>
             <h3 className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>Notifications</h3>
-            {unread > 0 && (
+            {hasUnreadNotifications && (
               <button
                 onClick={markAllRead}
                 className="text-[12px] font-medium transition-colors"
                 style={{ color: 'var(--accent)' }}
               >
-                Mark all read
+                Mark all as read
               </button>
             )}
           </div>
@@ -257,30 +272,22 @@ function NotificationDropdown() {
 /** Avatar with fallback — handles broken image URLs gracefully */
 function UserAvatar({ src, name, size = 32, className = '', style = {} }) {
   const [failed, setFailed] = useState(false);
-  const initial = (name || '?')[0].toUpperCase();
   const s = { width: size, height: size, ...style };
+  const avatarSrc = src && !failed ? src : generatePixelAvatar(name || 'lixblogs-user');
 
-  if (src && !failed) {
-    return (
-      <img
-        src={src} alt="" className={`rounded-full object-cover ${className}`}
-        style={s}
-        onError={() => setFailed(true)}
-      />
-    );
-  }
   return (
-    <div
-      className={`rounded-full flex items-center justify-center font-bold ${className}`}
-      style={{ ...s, backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: Math.round(size * 0.38) }}
-    >
-      {initial}
-    </div>
+    <img
+      src={avatarSrc} alt="" className={`rounded-full object-cover ${className}`}
+      style={s}
+      onError={() => setFailed(true)}
+    />
   );
 }
 
 const NAV_ITEMS = [
-  { label: 'Home', icon: 'home-outline', href: '/' },
+  { label: 'Home', icon: 'home-outline', href: '/', public: true },
+  { label: 'Explore', icon: 'compass-outline', href: '/explore', public: true },
+  { label: 'Contests', icon: 'trophy-outline', href: '/contests', public: true },
   { label: 'Library', icon: 'bookmark-outline', href: '/library' },
   { label: 'Profile', icon: 'person-outline', href: '/profile' },
   { label: 'Stories', icon: 'book-outline', href: '/stories' },
@@ -462,6 +469,7 @@ export default function AppShell({ children, showSidebar = true }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app)' }}>
       <JoinedToast />
+      <ContextualTipToast />
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-app) 92%, transparent)', borderBottom: '1px solid var(--border-default)' }}>
         <div className="max-w-[1400px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
@@ -516,7 +524,10 @@ export default function AppShell({ children, showSidebar = true }) {
             ) : user ? (
               <>
                 <NotificationDropdown />
-                <ProfileDropdown user={user} logout={logout} />
+                <ContextualTipButton />
+                <div className="ml-1 sm:ml-2">
+                  <ProfileDropdown user={user} logout={logout} />
+                </div>
               </>
             ) : (
               // Single sign-in entry point (Sign In and Get Started did the same thing).
@@ -534,7 +545,7 @@ export default function AppShell({ children, showSidebar = true }) {
         {/* Left Sidebar */}
         {showSidebar && <aside className="hidden lg:flex flex-col w-[220px] flex-shrink-0 sticky top-14 h-[calc(100vh-56px)] px-4 py-6 justify-between" style={{ borderRight: '1px solid var(--border-default)' }}>
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.filter((item) => user || item.href === '/').map((item) => {
+            {NAV_ITEMS.filter((item) => user || item.public).map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
                 <Link

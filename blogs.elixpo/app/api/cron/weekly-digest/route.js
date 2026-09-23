@@ -35,7 +35,7 @@ export async function GET(request) {
              b.author_id, u.username AS author_username, u.display_name AS author_name, u.avatar_url AS author_avatar
       FROM blogs b
       JOIN users u ON u.id = b.author_id
-      WHERE b.status = 'published' AND b.published_at > ?
+      WHERE b.status = 'published' AND b.secret = 0 AND b.published_at > ?
       ORDER BY b.like_count DESC, b.view_count DESC, b.published_at DESC
       LIMIT 5
     `).bind(weekAgo).all();

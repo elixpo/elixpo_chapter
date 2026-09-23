@@ -42,7 +42,7 @@ export async function GET() {
       }
 
       return db.prepare(`
-        SELECT id, email, username, display_name, bio, avatar_url, avatar_r2_key, banner_r2_key, locale,
+        SELECT id, email, username, display_name, designation, bio, avatar_url, avatar_r2_key, banner_r2_key, locale,
                tier, storage_used_bytes, ai_usage_today, ai_usage_date,
                location, timezone, pronouns, website, company, links,
                created_at, updated_at

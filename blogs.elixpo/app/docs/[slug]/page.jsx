@@ -1,18 +1,29 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { docsNavFlat, getDocsSiblings } from '../../../src/config/docsNav';
 import { extractHeadings } from '../../../src/lib/extractHeadings';
 import { renderDocsMarkdown } from '../../../src/lib/docsMarked';
 import DocsToc from '../../../src/components/docs/DocsToc';
+
+const LEGACY_REDIRECTS = {
+  'editor-overview': 'editor-overview',
+  'installation': 'installation',
+  'quick-start': 'quick-start',
+  'props': 'props',
+  'imperative-api': 'imperative-api',
+  'block-model': 'block-model',
+  'markdown-shortcuts': 'markdown-shortcuts',
+  'rendering': 'rendering',
+};
 
 export function generateStaticParams() {
   return docsNavFlat.map((item) => ({ slug: item.slug }));
 }
 
 export async function generateMetadata({ params }) {
-  const { slug }=await params;
+  const { slug } = await params;
   const item = docsNavFlat.find((i) => i.slug === slug);
   if (!item) return {};
   return {
@@ -23,9 +34,14 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function DocsPage({ params }) {
-  params=await params;
+  params = await params;
   const item = docsNavFlat.find((i) => i.slug === params.slug);
-  if (!item) notFound();
+  if (!item) {
+    if (LEGACY_REDIRECTS[params.slug]) {
+      redirect(`/docs/lixeditor#${LEGACY_REDIRECTS[params.slug]}`);
+    }
+    notFound();
+  }
 
   const filePath = path.join(process.cwd(), 'content/docs', `${params.slug}.md`);
   const md = readFileSync(filePath, 'utf8');

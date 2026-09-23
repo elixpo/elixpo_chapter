@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { generateBlogThumbnail } from '../utils/pixelAvatar';
+import { generateBlogThumbnail, generatePixelAvatar } from '../utils/pixelAvatar';
 
 // "More to read" under the comments — related blogs (by tag, author, trending).
 export default function BlogRecommendations({ blogId }) {
@@ -32,11 +32,7 @@ export default function BlogRecommendations({ blogId }) {
             <Link key={p.id} href={href} className="group flex gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1 text-[12px]" style={{ color: 'var(--text-secondary)' }}>
-                  {author.avatar_url ? (
-                    <img src={author.avatar_url} alt="" className="h-4 w-4 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-4 w-4 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-faint)' }}>{(author.display_name || author.username || '?')[0].toUpperCase()}</div>
-                  )}
+                  <img src={author.avatar_url || generatePixelAvatar(author.username || author.display_name)} alt="" className="h-4 w-4 rounded-full object-cover" />
                   <span className="truncate">{p.org ? `In ${p.org.name}` : (author.display_name || author.username)}</span>
                 </div>
                 <p className="text-[15px] font-bold leading-[1.3] line-clamp-2 group-hover:opacity-80 transition-opacity" style={{ color: 'var(--text-primary)', fontFamily: "'Source Serif 4', Georgia, serif" }}>{p.title || 'Untitled'}</p>

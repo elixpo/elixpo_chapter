@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
         b.read_time_minutes, b.published_at,
         u.username as author_username, u.display_name as author_name, u.avatar_url as author_avatar
       FROM likes l
-      JOIN blogs b ON b.id = l.blog_id AND b.status = 'published'
+      JOIN blogs b ON b.id = l.blog_id AND b.status = 'published' AND b.secret = 0
       JOIN users u ON u.id = b.author_id
       WHERE l.user_id = ?
       ORDER BY l.created_at DESC

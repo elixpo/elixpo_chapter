@@ -36,16 +36,16 @@ export async function GET(request) {
       const session = await getSession().catch(() => null);
       const viewerId = session?.userId || null;
       const orgs = await db.prepare(`
-        SELECT id, slug, name, logo_url
+        SELECT id, slug, name, tagline, logo_url
         FROM orgs
-        WHERE (LOWER(slug) LIKE ? OR LOWER(name) LIKE ?)
+        WHERE (LOWER(slug) LIKE ? OR LOWER(name) LIKE ? OR LOWER(tagline) LIKE ?)
           AND (
             visibility != 'private'
             OR owner_id = ?
             OR id IN (SELECT org_id FROM org_members WHERE user_id = ?)
           )
         LIMIT 5
-      `).bind(pattern, pattern, viewerId, viewerId).all();
+      `).bind(pattern, pattern, pattern, viewerId, viewerId).all();
       results.orgs = orgs?.results || [];
     }
 

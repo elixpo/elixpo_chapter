@@ -1,10 +1,12 @@
 /**
- * Deterministic pixel art generators for avatars and banners.
- * Pixels cluster near corners/edges with a solid color center.
+ * Deterministic generators for avatars and banners in 3 different styles:
+ * 1. Neo-Brutalist (Active Default)
+ * 2. Premium Aesthetic (Mesh Gradient)
+ * 3. Classic Pixel-Art
  */
 
 // Shared hash function
-function hashSeed(seed) {
+export function hashSeed(seed) {
   let hash = 0;
   const s = seed || 'default';
   for (let i = 0; i < s.length; i++) {
@@ -13,183 +15,295 @@ function hashSeed(seed) {
   return Math.abs(hash);
 }
 
-// Curated palettes: [bg, primary, accent]
-const PALETTES = [
-  ['#1a1040', '#c084fc', '#e9d5ff'], // purple → lavender
-  ['#0f2a1a', '#4ade80', '#bbf7d0'], // green → mint
-  ['#0c1a2e', '#60a5fa', '#bfdbfe'], // navy → sky blue
-  ['#2a1215', '#fb7185', '#fecdd3'], // rose → pink
-  ['#1a1708', '#fbbf24', '#fef08a'], // gold → amber
-  ['#0f1f2e', '#22d3ee', '#a5f3fc'], // teal → cyan
-  ['#1e1028', '#a78bfa', '#ddd6fe'], // indigo → violet
-  ['#1a0f08', '#fb923c', '#fed7aa'], // ember → orange
-  ['#0f1a1a', '#2dd4bf', '#99f6e4'], // sea → teal
-  ['#1a0820', '#e879f9', '#f5d0fe'], // magenta → fuchsia
-  ['#101828', '#818cf8', '#c7d2fe'], // slate → periwinkle
-  ['#1a1a08', '#a3e635', '#d9f99d'], // olive → lime
+// ============================================================================
+// 1. NEO-BRUTALIST STYLE (Currently Active)
+// ============================================================================
+
+export const BRUTALIST_PALETTES = [
+  ['#FBE54D', '#FF7E67', '#74E291'], 
+  ['#A7EDE7', '#FFB3FD', '#FBE54D'],
+  ['#74E291', '#FBE54D', '#FF7E67'],
+  ['#FFA1F5', '#A7EDE7', '#FBE54D'],
+  ['#FF7E67', '#74E291', '#A7EDE7'],
+  ['#E2F0CB', '#FF9AA2', '#C7CEEA'],
+  ['#C7CEEA', '#B5EAD7', '#FFDFD3'],
+  ['#FFD166', '#EF476F', '#118AB2'],
+  ['#06D6A0', '#EF476F', '#FFD166'],
+  ['#FCFCFC', '#FF7E67', '#A7EDE7'],
+  ['#FCA311', '#E5E5E5', '#14213D'],
+  ['#FFBE0B', '#FF006E', '#8338EC'],
 ];
 
-/**
- * Generate a deterministic pixel avatar SVG data URL.
- * Pixels cluster near corners with a solid center.
- */
-export function generatePixelAvatar(seed) {
-  const h = hashSeed(seed);
-  const palette = PALETTES[h % PALETTES.length];
-  const [bg, fg, fgLight] = palette;
-
-  const SIZE = 48;
-  const GRID = 6;
-  const CELL = SIZE / GRID;
-
-  // Generate pattern — higher probability near edges/corners
-  const bits = [];
-  for (let y = 0; y < GRID; y++) {
-    for (let x = 0; x < Math.ceil(GRID / 2); x++) {
-      // Distance from center (0 = center, 1 = corner)
-      const cx = Math.abs(x - (GRID - 1) / 2) / ((GRID - 1) / 2);
-      const cy = Math.abs(y - (GRID - 1) / 2) / ((GRID - 1) / 2);
-      const edgeness = Math.max(cx, cy);
-
-      // Higher threshold in center = fewer pixels; lower near edges = more pixels
-      const threshold = 60 + (1 - edgeness) * 120;
-      bits.push(((h * (y * 11 + x * 17 + 7)) & 0xFF) > threshold);
-    }
+function drawBrutalistShape(type, x, y, size, fill, hash) {
+  const shadowOffset = 8;
+  const sw = 6;
+  if (type === 0) { // Circle
+    return `<circle cx="${x + shadowOffset}" cy="${y + shadowOffset}" r="${size}" fill="#000000" /><circle cx="${x}" cy="${y}" r="${size}" fill="${fill}" stroke="#000000" stroke-width="${sw}" />`;
+  } else if (type === 1) { // Rectangle
+    return `<rect x="${x - size + shadowOffset}" y="${y - size + shadowOffset}" width="${size*2}" height="${size*2}" fill="#000000" /><rect x="${x - size}" y="${y - size}" width="${size*2}" height="${size*2}" fill="${fill}" stroke="#000000" stroke-width="${sw}" />`;
+  } else if (type === 2) { // Pill
+    return `<rect x="${x - size*1.5 + shadowOffset}" y="${y - size*0.5 + shadowOffset}" width="${size*3}" height="${size}" rx="${size/2}" fill="#000000" /><rect x="${x - size*1.5}" y="${y - size*0.5}" width="${size*3}" height="${size}" rx="${size/2}" fill="${fill}" stroke="#000000" stroke-width="${sw}" />`;
+  } else { // Polygon
+    const points = `${x},${y-size} ${x+size},${y} ${x},${y+size} ${x-size},${y}`;
+    const shadowPoints = `${x+shadowOffset},${y-size+shadowOffset} ${x+size+shadowOffset},${y+shadowOffset} ${x+shadowOffset},${y+size+shadowOffset} ${x-size+shadowOffset},${y+shadowOffset}`;
+    return `<polygon points="${shadowPoints}" fill="#000000" /><polygon points="${points}" fill="${fill}" stroke="#000000" stroke-width="${sw}" stroke-linejoin="round" />`;
   }
-
-  let rects = '';
-  for (let y = 0; y < GRID; y++) {
-    for (let x = 0; x < GRID; x++) {
-      const bx = x < Math.ceil(GRID / 2) ? x : GRID - 1 - x; // mirror
-      if (bits[y * Math.ceil(GRID / 2) + bx]) {
-        const fill = ((x + y) % 3 === 0) ? fgLight : fg;
-        rects += `<rect x="${x * CELL}" y="${y * CELL}" width="${CELL}" height="${CELL}" fill="${fill}" rx="1"/>`;
-      }
-    }
-  }
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}" rx="8"/>${rects}</svg>`;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
-/**
- * Generate a deterministic blog banner SVG data URL.
- * Same style as org avatars — symmetric pixel blocks in 4 corners, solid center.
- */
+export function generatePixelAvatar(seed) {
+  const h = hashSeed(seed);
+  const palette = BRUTALIST_PALETTES[h % BRUTALIST_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const SIZE = 240;
+  const grid = `<pattern id="grid_${h}" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#000000" stroke-width="2" opacity="0.15"/></pattern><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/><rect width="${SIZE}" height="${SIZE}" fill="url(#grid_${h})"/>`;
+  let shapes = '';
+  for(let i=0; i<2; i++) {
+     const type = (h + i*7) % 4;
+     const cx = 60 + ((h * (i*13 + 7)) % 120);
+     const cy = 60 + ((h * (i*17 + 11)) % 120);
+     const size = 40 + ((h * (i*19 + 23)) % 40);
+     shapes += drawBrutalistShape(type, cx, cy, size, i === 0 ? c1 : c2, h);
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}">${grid}${shapes}<rect width="${SIZE}" height="${SIZE}" fill="none" stroke="#000000" stroke-width="12"/></svg>`)}`;
+}
+
+export function generateProfileBanner(seed, tintSeed) {
+  const h = hashSeed(seed);
+  const paletteHash = tintSeed ? hashSeed(tintSeed) : h;
+  const palette = BRUTALIST_PALETTES[paletteHash % BRUTALIST_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const W = 1056, H = 160;
+  const grid = `<pattern id="grid_pb_${h}" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#000000" stroke-width="2" opacity="0.15"/></pattern><rect width="${W}" height="${H}" fill="${bg}"/><rect width="${W}" height="${H}" fill="url(#grid_pb_${h})"/>`;
+  let shapes = '';
+  for(let i=0; i<4; i++) {
+     const type = (h + i*11) % 4;
+     const cx = 100 + ((h * (i*13 + 7)) % (W - 200));
+     const cy = ((h * (i*17 + 11)) % H);
+     const size = 50 + ((h * (i*19 + 23)) % 70);
+     shapes += drawBrutalistShape(type, cx, cy, size, i % 2 === 0 ? c1 : c2, h);
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">${grid}${shapes}<rect width="${W}" height="${H}" fill="none" stroke="#000000" stroke-width="12"/></svg>`)}`;
+}
+
 export function generateBlogBanner(seed) {
   const h = hashSeed(seed);
-  const palette = PALETTES[h % PALETTES.length];
+  const palette = BRUTALIST_PALETTES[h % BRUTALIST_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const W = 720, H = 240;
+  const grid = `<pattern id="grid_bb_${h}" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="2" fill="#000000" opacity="0.3"/></pattern><rect width="${W}" height="${H}" fill="${bg}"/><rect width="${W}" height="${H}" fill="url(#grid_bb_${h})"/>`;
+  let shapes = '';
+  for(let i=0; i<4; i++) {
+     const type = (h + i*13) % 4;
+     const cx = 100 + ((h * (i*7 + 11)) % (W - 200));
+     const cy = 40 + ((h * (i*17 + 23)) % (H - 80));
+     const size = 60 + ((h * (i*19 + 31)) % 80);
+     shapes += drawBrutalistShape(type, cx, cy, size, i % 2 === 0 ? c1 : c2, h);
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">${grid}${shapes}<rect width="${W}" height="${H}" fill="none" stroke="#000000" stroke-width="12"/></svg>`)}`;
+}
+
+export function generateBlogThumbnail(seed) {
+  const h = hashSeed(seed);
+  const palette = BRUTALIST_PALETTES[h % BRUTALIST_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const SIZE = 240;
+  const grid = `<pattern id="grid_tb_${h}" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="15" cy="15" r="2" fill="#000000" opacity="0.3"/></pattern><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/><rect width="${SIZE}" height="${SIZE}" fill="url(#grid_tb_${h})"/>`;
+  let shapes = '';
+  for(let i=0; i<2; i++) {
+     const type = (h + i*5) % 4;
+     const cx = 60 + ((h * (i*13 + 7)) % (SIZE - 120));
+     const cy = 60 + ((h * (i*17 + 11)) % (SIZE - 120));
+     const size = 40 + ((h * (i*19 + 23)) % 50);
+     shapes += drawBrutalistShape(type, cx, cy, size, i === 0 ? c1 : c2, h);
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}">${grid}${shapes}<rect width="${SIZE}" height="${SIZE}" fill="none" stroke="#000000" stroke-width="12"/></svg>`)}`;
+}
+
+
+// ============================================================================
+// 2. PREMIUM AESTHETIC (Mesh Gradient)
+// ============================================================================
+
+export const AESTHETIC_PALETTES = [
+  ['#1a1040', '#9b7bf7', '#c084fc'], ['#00224D', '#5D0E41', '#FF204E'],
+  ['#001C30', '#176B87', '#64CCC5'], ['#1A120B', '#5A3E2B', '#D5CEA3'],
+  ['#1F1717', '#CE5A67', '#FCF5ED'], ['#0F0F0F', '#232D3F', '#008170'],
+  ['#0B2447', '#19376D', '#576CBC'], ['#2B2A4C', '#B31312', '#EA906C'],
+  ['#1B262C', '#0F4C75', '#BBE1FA'], ['#18122B', '#443C68', '#635985'],
+];
+
+export function generatePixelAvatarAesthetic(seed) {
+  const h = hashSeed(seed);
+  const palette = AESTHETIC_PALETTES[h % AESTHETIC_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const SIZE = 240;
+  let shapes = '';
+  for(let i=0; i<4; i++) {
+     const cx = ((h * (i*13 + 7)) % (SIZE*1.5)) - (SIZE/4);
+     const cy = ((h * (i*17 + 11)) % (SIZE*1.5)) - (SIZE/4);
+     const r = 80 + ((h * (i*19 + 23)) % 120);
+     const opacity = 0.5 + (((h * (i*37 + 41)) % 30) / 100);
+     shapes += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${i % 2 === 0 ? c1 : c2}" opacity="${opacity}"/>`;
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}" rx="12"/>${shapes}<path d="M0 0 L${SIZE} ${SIZE} L${SIZE} 0 Z" fill="#ffffff" opacity="0.06"/></svg>`)}`;
+}
+
+export function generateProfileBannerAesthetic(seed, tintSeed) {
+  const h = hashSeed(seed);
+  const paletteHash = tintSeed ? hashSeed(tintSeed) : h;
+  const palette = AESTHETIC_PALETTES[paletteHash % AESTHETIC_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const W = 1056, H = 160;
+  let shapes = '';
+  for(let i=0; i<6; i++) {
+     const cx = ((h * (i*13 + 7)) % (W * 1.2)) - (W * 0.1);
+     const cy = ((h * (i*17 + 11)) % (H * 2)) - (H/2);
+     const rx = 200 + ((h * (i*19 + 23)) % 400);
+     const ry = 150 + ((h * (i*29 + 31)) % 200);
+     const opacity = 0.4 + (((h * (i*37 + 41)) % 40) / 100);
+     shapes += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${i % 2 === 0 ? c1 : c2}" opacity="${opacity}"/>`;
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><rect width="${W}" height="${H}" fill="${bg}"/>${shapes}<path d="M0 ${H} L${W} 0 L${W} ${H} Z" fill="#000000" opacity="0.15"/><path d="M0 0 L${W/2} 0 L0 ${H} Z" fill="#ffffff" opacity="0.08"/></svg>`)}`;
+}
+
+export function generateBlogBannerAesthetic(seed) {
+  const h = hashSeed(seed);
+  const palette = AESTHETIC_PALETTES[h % AESTHETIC_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const W = 720, H = 240;
+  let shapes = '';
+  for(let i=0; i<6; i++) {
+     const cx = ((h * (i*13 + 7)) % (W * 1.2)) - (W * 0.1);
+     const cy = ((h * (i*17 + 11)) % (H * 2)) - (H/2);
+     const rx = 150 + ((h * (i*19 + 23)) % 300);
+     const ry = 150 + ((h * (i*29 + 31)) % 250);
+     const opacity = 0.4 + (((h * (i*37 + 41)) % 40) / 100);
+     shapes += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${i % 2 === 0 ? c1 : c2}" opacity="${opacity}"/>`;
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><rect width="${W}" height="${H}" fill="${bg}"/>${shapes}<path d="M0 ${H} L${W} 0 L${W} ${H} Z" fill="#000000" opacity="0.15"/><path d="M0 0 L${W/3} 0 L0 ${H} Z" fill="#ffffff" opacity="0.08"/></svg>`)}`;
+}
+
+export function generateBlogThumbnailAesthetic(seed) {
+  const h = hashSeed(seed);
+  const palette = AESTHETIC_PALETTES[h % AESTHETIC_PALETTES.length];
+  const [bg, c1, c2] = palette;
+  const SIZE = 240;
+  let shapes = '';
+  for(let i=0; i<4; i++) {
+     const cx = ((h * (i*13 + 7)) % (SIZE*1.5)) - (SIZE/4);
+     const cy = ((h * (i*17 + 11)) % (SIZE*1.5)) - (SIZE/4);
+     const r = 80 + ((h * (i*19 + 23)) % 100);
+     const opacity = 0.4 + (((h * (i*37 + 41)) % 40) / 100);
+     shapes += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${i % 2 === 0 ? c1 : c2}" opacity="${opacity}"/>`;
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${shapes}<rect x="6" y="6" width="${SIZE - 12}" height="${SIZE - 12}" rx="14" fill="none" stroke="${c1}" stroke-opacity="0.3" stroke-width="2"/></svg>`)}`;
+}
+
+
+// ============================================================================
+// 3. CLASSIC PIXEL-ART STYLE
+// ============================================================================
+
+export const CLASSIC_PALETTES = [
+  ['#e0f2fe', '#0284c7', '#7dd3fc'], ['#fce7f3', '#db2777', '#f9a8d4'],
+  ['#dcfce7', '#16a34a', '#86efac'], ['#fef3c7', '#d97706', '#fcd34d'],
+  ['#f3e8ff', '#9333ea', '#d8b4fe'], ['#fee2e2', '#dc2626', '#fca5a5'],
+];
+
+export function generatePixelAvatarClassic(seed) {
+  const h = hashSeed(seed);
+  const palette = CLASSIC_PALETTES[h % CLASSIC_PALETTES.length];
   const [bg, fg, fgLight] = palette;
+  const CX = 6, CY = 6, PX = 8;
+  const bits = [];
+  for (let i = 0; i < CX * CY; i++) bits.push(((h * (i * 13 + 3)) & 0xFF) > 128);
+  let rects = '';
+  for (let y = 0; y < CY; y++) {
+    for (let x = 0; x < CX; x++) {
+      if (!bits[y * CX + x]) continue;
+      const fill = ((x + y) % 3 === 0) ? fgLight : fg;
+      rects += `<rect x="${x * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${96 - (x + 1) * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${x * PX}" y="${96 - (y + 1) * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${96 - (x + 1) * PX}" y="${96 - (y + 1) * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/>`;
+    }
+  }
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" fill="${bg}" rx="8"/>${rects}</svg>`)}`;
+}
 
-  const W = 720;
-  const H = 240;
-  const PX = 10;
-  // Corner block size in cells
-  const CX = 10;
-  const CY = 8;
-
-  // Generate one corner pattern (CX x CY), then mirror to all 4
+export function generateProfileBannerClassic(seed, tintSeed) {
+  const h = hashSeed(seed);
+  const paletteHash = tintSeed ? hashSeed(tintSeed) : h;
+  const palette = CLASSIC_PALETTES[paletteHash % CLASSIC_PALETTES.length];
+  const [bg, fg, fgLight] = palette;
+  const W = 1056, H = 160, PX = 8, CX = 12, CY = 8;
   const bits = [];
   for (let y = 0; y < CY; y++) {
     for (let x = 0; x < CX; x++) {
-      // Denser at corner (x=0,y=0), sparser further out
       const dist = Math.sqrt(x * x + y * y) / Math.sqrt(CX * CX + CY * CY);
-      const threshold = dist * 200;
-      bits.push(((h * (y * 7 + x * 13 + 3)) & 0xFF) > threshold);
+      bits.push(((h * (y * 7 + x * 13 + 3)) & 0xFF) > (dist * 200));
     }
   }
-
   let rects = '';
   const drawCorner = (ox, oy, flipX, flipY) => {
     for (let y = 0; y < CY; y++) {
       for (let x = 0; x < CX; x++) {
         if (!bits[y * CX + x]) continue;
-        const fill = ((x + y) % 3 === 0) ? fgLight : fg;
         const px = flipX ? ox - (x + 1) * PX : ox + x * PX;
         const py = flipY ? oy - (y + 1) * PX : oy + y * PX;
-        rects += `<rect x="${px}" y="${py}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/>`;
+        rects += `<rect x="${px}" y="${py}" width="${PX}" height="${PX}" fill="${((x + y) % 3 === 0) ? fgLight : fg}" rx="1"/>`;
       }
     }
   };
-
-  drawCorner(0, 0, false, false);       // top-left
-  drawCorner(W, 0, true, false);        // top-right
-  drawCorner(0, H, false, true);        // bottom-left
-  drawCorner(W, H, true, true);         // bottom-right
-
-  // Scattered low-opacity pixels for blocksy texture
+  drawCorner(0, 0, false, false); drawCorner(W, 0, true, false); drawCorner(0, H, false, true); drawCorner(W, H, true, true);
   let bgPixels = '';
   for (let y = 0; y < Math.floor(H / PX); y += 2) {
-    for (let x = 0; x < Math.floor(W / PX); x += 2) {
+    for (let x = 0; x < Math.floor(W / PX); x += 3) {
       const v = (h * (y * 53 + x * 37 + 19)) & 0xFF;
-      if (v > 220) {
-        const fill = v > 240 ? fgLight : fg;
-        const op = v > 240 ? '0.12' : '0.08';
-        bgPixels += `<rect x="${x * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${fill}" opacity="${op}" rx="1"/>`;
-      }
+      if (v > 225) bgPixels += `<rect x="${x * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${v > 242 ? fgLight : fg}" opacity="${v > 242 ? '0.10' : '0.06'}" rx="1"/>`;
     }
   }
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><rect width="${W}" height="${H}" fill="${bg}"/>${bgPixels}${rects}</svg>`;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><rect width="${W}" height="${H}" fill="${bg}"/>${bgPixels}${rects}</svg>`)}`;
 }
 
-/**
- * Generate the square companion for a default blog banner.
- *
- * The wide banner deliberately puts its strongest detail in the corners. A
- * square `object-cover` crop only sees its quiet centre, so feed cards used to
- * look almost black. This keeps the same seed, palette and pixel language while
- * composing the pattern for a square canvas.
- */
-export function generateBlogThumbnail(seed) {
+export function generateBlogBannerClassic(seed) {
   const h = hashSeed(seed);
-  const palette = PALETTES[h % PALETTES.length];
+  const palette = CLASSIC_PALETTES[h % CLASSIC_PALETTES.length];
   const [bg, fg, fgLight] = palette;
-
-  const SIZE = 240;
-  const PX = 12;
-  const CORNER = 8;
-
+  const W = 720, H = 240, PX = 8, CX = 15, CY = 15;
   const bits = [];
-  for (let y = 0; y < CORNER; y++) {
-    for (let x = 0; x < CORNER; x++) {
-      const dist = Math.sqrt(x * x + y * y) / Math.sqrt(2 * CORNER * CORNER);
-      const threshold = dist * 205;
-      bits.push(((h * (y * 7 + x * 13 + 3)) & 0xFF) > threshold);
+  for (let y = 0; y < CY; y++) {
+    for (let x = 0; x < CX; x++) {
+      const dist = Math.sqrt(x * x + y * y) / Math.sqrt(CX * CX + CY * CY);
+      bits.push(((h * (y * 7 + x * 13 + 3)) & 0xFF) > (dist * 200));
     }
   }
-
   let rects = '';
   const drawCorner = (ox, oy, flipX, flipY) => {
-    for (let y = 0; y < CORNER; y++) {
-      for (let x = 0; x < CORNER; x++) {
-        if (!bits[y * CORNER + x]) continue;
-        const fill = ((x + y) % 3 === 0) ? fgLight : fg;
+    for (let y = 0; y < CY; y++) {
+      for (let x = 0; x < CX; x++) {
+        if (!bits[y * CX + x]) continue;
         const px = flipX ? ox - (x + 1) * PX : ox + x * PX;
         const py = flipY ? oy - (y + 1) * PX : oy + y * PX;
-        rects += `<rect x="${px}" y="${py}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/>`;
+        rects += `<rect x="${px}" y="${py}" width="${PX}" height="${PX}" fill="${((x + y) % 3 === 0) ? fgLight : fg}" rx="1"/>`;
       }
     }
   };
+  drawCorner(0, 0, false, false); drawCorner(W, 0, true, false); drawCorner(0, H, false, true); drawCorner(W, H, true, true);
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="${bg}"/>${rects}</svg>`)}`;
+}
 
-  drawCorner(0, 0, false, false);
-  drawCorner(SIZE, 0, true, false);
-  drawCorner(0, SIZE, false, true);
-  drawCorner(SIZE, SIZE, true, true);
-
-  let texture = '';
-  for (let y = 2; y < SIZE / PX - 2; y += 2) {
-    for (let x = 2; x < SIZE / PX - 2; x += 2) {
-      const v = (h * (y * 53 + x * 37 + 19)) & 0xFF;
-      if (v > 212) {
-        texture += `<rect x="${x * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${v > 238 ? fgLight : fg}" opacity="${v > 238 ? '0.16' : '0.1'}" rx="1"/>`;
-      }
+export function generateBlogThumbnailClassic(seed) {
+  const h = hashSeed(seed);
+  const palette = CLASSIC_PALETTES[h % CLASSIC_PALETTES.length];
+  const [bg, fg, fgLight] = palette;
+  const SIZE = 240, PX = 8, CX = 8, CY = 8;
+  const bits = [];
+  for (let i = 0; i < CX * CY; i++) bits.push(((h * (i * 13 + 3)) & 0xFF) > 128);
+  let rects = '';
+  for (let y = 0; y < CY; y++) {
+    for (let x = 0; x < CX; x++) {
+      if (!bits[y * CX + x]) continue;
+      const fill = ((x + y) % 3 === 0) ? fgLight : fg;
+      rects += `<rect x="${x * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${SIZE - (x + 1) * PX}" y="${y * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${x * PX}" y="${SIZE - (y + 1) * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/><rect x="${SIZE - (x + 1) * PX}" y="${SIZE - (y + 1) * PX}" width="${PX}" height="${PX}" fill="${fill}" rx="1"/>`;
     }
   }
-
-  // A subtle inset frame gives the small tile definition without changing the
-  // intentionally dark character of the default artwork.
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/><rect x="6" y="6" width="${SIZE - 12}" height="${SIZE - 12}" rx="14" fill="none" stroke="${fg}" stroke-opacity="0.16" stroke-width="2"/>${texture}${rects}</svg>`;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  return `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}" rx="12"/>${rects}</svg>`)}`;
 }

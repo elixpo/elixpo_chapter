@@ -17,6 +17,13 @@ const NOTIF_CONFIG = {
   blog_invite:    { icon: 'create-outline',          color: '#c084fc', label: 'invited you to collaborate on' },
   blog_published: { icon: 'document-text-outline',   color: '#60a5fa', label: 'published' },
   badge_awarded:  { icon: 'ribbon-outline',          color: '#ec4899', label: 'awarded you' },
+  collection_add: { icon: 'albums-outline',          color: '#14b8a6', label: 'added your story to' },
+  contest_submission: { icon: 'document-attach-outline', color: '#0ea5e9', label: 'submitted an entry to' },
+  contest_role: { icon: 'people-circle-outline', color: '#8b5cf6', label: 'assigned you a contest role in' },
+  contest_results: { icon: 'trophy-outline', color: '#f59e0b', label: 'published results for' },
+  contest_opened: { icon: 'flag-outline', color: '#22c55e', label: 'opened' },
+  contest_deadline: { icon: 'timer-outline', color: '#f97316', label: 'is closing soon:' },
+  contest_judging: { icon: 'scale-outline', color: '#6366f1', label: 'entered judging:' },
 };
 
 const FILTERS = [
@@ -125,10 +132,8 @@ export default function NotificationsPage() {
       fetchNotifications(true).then(list => {
         if (list) {
           // Viewing the notifications page counts as having seen them, so
-          // clear the local unread count for this page's own display and tell
-          // the navbar to mark the current notifications as seen (so the badge
-          // doesn't resurrect on the next poll for direct URL navigation).
-          setUnread(0);
+          // tell the navbar to clear its badge. Read state remains independent,
+          // so this page can still offer "Mark all as read".
           dispatchNotificationsUpdate(list.map(n => n.id));
         }
       });

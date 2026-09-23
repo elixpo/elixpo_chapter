@@ -46,6 +46,10 @@ export async function POST(request) {
     await db.prepare(
       'INSERT OR IGNORE INTO mutes (user_id, target_type, target_id) VALUES (?, ?, ?)'
     ).bind(session.userId, targetType, String(targetId)).run();
+    if (targetType === 'tag') {
+      await db.prepare('DELETE FROM user_interests WHERE user_id = ? AND LOWER(tag) = LOWER(?)')
+        .bind(session.userId, String(targetId)).run();
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

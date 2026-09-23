@@ -52,6 +52,8 @@ async function readJob(id) {
 }
 
 async function loadJob(id) {
+  const inMemory = memoryJobs.get(id);
+  if (inMemory) return inMemory;
   try {
     const persisted = await readJob(id);
     if (persisted) memoryJobs.set(id, persisted);
@@ -91,10 +93,55 @@ async function blobToBase64(blob) {
   return btoa(binary);
 }
 
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function waitForQueuedJob(id, timeoutMs = 30 * 1000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const job = await loadJob(id);
+    if (job) return job;
+    await delay(100);
+  }
+  return null;
+}
+
+async function waitForSettledUpload(job, timeoutMs = 3 * 60 * 1000) {
+  const deadline = Date.now() + timeoutMs;
+  const url = `/api/media/upload?uploadId=${encodeURIComponent(job.id)}`;
+  while (Date.now() < deadline) {
+    await delay(2000);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        if (result?.url) return result;
+      } else if ([400, 401, 403].includes(response.status)) {
+        const detail = await response.json().catch(() => ({}));
+        const error = new Error(detail.error || `Upload status failed (${response.status})`);
+        error.nonRetryable = true;
+        throw error;
+      }
+    } catch (error) {
+      if (error.nonRetryable) throw error;
+      // A status poll can fail for the same transient reason as the upload.
+      // Keep the durable job pending and try again until the settlement window.
+    }
+  }
+  return null;
+}
+
 async function runUpload(id) {
   if (activeUploads.has(id)) return activeUploads.get(id);
   const task = (async () => {
-    const job = await loadJob(id);
+    // A newly inserted image marks its block as uploading before client-side
+    // compression has produced and persisted the upload body. The renderer's
+    // reload-resume effect can arrive here during that gap; wait for enqueue
+    // instead of turning the placeholder into a false error state.
+    const job = await waitForQueuedJob(id);
     if (!job) throw new Error('Upload is no longer available');
     if (job.status === 'complete' && job.result) return job.result;
     job.status = 'uploading';
@@ -137,9 +184,20 @@ async function runUpload(id) {
         }
       } catch (error) {
         lastError = error;
+        // Fetch aborts and connection resets are ambiguous: the Worker may still
+        // finish the upload. Poll the idempotent result instead of flashing a
+        // false failure and starting a duplicate Cloudinary request.
+        if (!error.nonRetryable && (error?.name === 'AbortError' || error instanceof TypeError)) {
+          const settled = await waitForSettledUpload(job);
+          if (settled) {
+            data = settled;
+            break;
+          }
+          throw new Error('The upload did not finish. Check your connection and retry.');
+        }
         if (error.nonRetryable || attempt === 2) throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, 500 * (2 ** attempt)));
+      await delay(500 * (2 ** attempt));
     }
     if (!data?.url) throw lastError || new Error('Upload failed');
     job.status = 'complete';

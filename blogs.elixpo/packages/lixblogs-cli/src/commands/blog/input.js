@@ -46,6 +46,7 @@ export function metadataFromOptions(options) {
   const mappings = {
     title: 'title', subtitle: 'subtitle', slug: 'slug', emoji: 'emoji',
     publication: 'publishedAs', collection: 'collectionId', cover: 'coverUrl',
+    license: 'license',
   };
   for (const [option, field] of Object.entries(mappings)) {
     if (options[option] !== undefined) input[field] = options[option];

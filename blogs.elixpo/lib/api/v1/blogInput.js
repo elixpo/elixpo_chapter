@@ -1,4 +1,5 @@
 import { byteLength, MAX_BLOG_CONTENT_BYTES, MAX_SUBTITLE_LEN, MAX_TITLE_LEN } from '../../limits.js';
+import { BLOG_LICENSES } from '../../curatedCollections.js';
 
 export class BlogInputError extends Error {
   constructor(code, message, status = 400) {
@@ -37,8 +38,20 @@ export function normalizeBlogInput(body, { partial = false } = {}) {
   copyString('publishedAs', 128);
   copyString('collectionId', 128);
   copyString('coverUrl', 2048);
+  copyString('license', 40);
+  copyString('language', 16);
+  copyString('region', 16);
+  if (output.license && !BLOG_LICENSES.has(output.license)) {
+    throw new BlogInputError('invalid_license', 'license is not supported.');
+  }
   if (output.coverUrl && !/^https:\/\//i.test(output.coverUrl)) {
     throw new BlogInputError('invalid_coverUrl', 'coverUrl must use HTTPS.');
+  }
+  if (output.language !== undefined && !/^(und|[a-z]{2,3})(?:-[a-z0-9]{2,8})*$/i.test(output.language)) {
+    throw new BlogInputError('invalid_language', 'language must be a BCP-47 language tag or und.');
+  }
+  if (output.region !== undefined && !/^(global|[a-z]{2})$/i.test(output.region)) {
+    throw new BlogInputError('invalid_region', 'region must be a two-letter country code or global.');
   }
 
   if (!partial && output.title === undefined) output.title = '';

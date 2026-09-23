@@ -89,8 +89,11 @@ export async function syncAccountProfile(db, profile) {
   }
 
   try {
-    const { kvInvalidate } = await import('./cache');
-    await kvInvalidate(`v1:user:${userId}`);
+    const { kvInvalidate, PUBLIC_SITEMAP_CACHE_KEY } = await import('./cache');
+    await kvInvalidate(
+      `v1:user:${userId}`,
+      ...(usernameChanged ? [PUBLIC_SITEMAP_CACHE_KEY] : []),
+    );
   } catch {}
 
   return { found: true, usernameChanged, previousUsername: current.username, username: nextUsername };

@@ -7,6 +7,7 @@ import { generatePixelAvatar } from '../../utils/pixelAvatar';
 import AppShell from '../../components/AppShell';
 import TabBar from '../../components/TabBar';
 import Link from 'next/link';
+import TopicPreferences from '../../components/TopicPreferences';
 
 const TABS = [
   { label: 'Account', icon: 'person-outline' },
@@ -19,11 +20,13 @@ const TABS = [
   { label: 'Subscription', icon: 'diamond-outline' },
 ];
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, onChange, disabled = false }) {
   return (
     <button
+      type="button"
+      disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-[#9b7bf7]' : 'bg-[var(--bg-elevated)]'}`}
+      className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-50 ${checked ? 'bg-[#9b7bf7]' : 'bg-[var(--bg-elevated)]'}`}
     >
       <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'left-[22px]' : 'left-[3px]'}`} />
     </button>
@@ -102,17 +105,49 @@ const TIMEZONES = [
 ];
 
 const USER_LINK_PRESETS = [
-  { key: 'website', label: 'Website', icon: 'globe-outline', placeholder: 'https://example.com' },
-  { key: 'github', label: 'GitHub', icon: 'logo-github', placeholder: 'https://github.com/username' },
-  { key: 'twitter', label: 'X / Twitter', icon: 'logo-twitter', placeholder: 'https://x.com/username' },
-  { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', placeholder: 'https://linkedin.com/in/username' },
-  { key: 'mastodon', label: 'Mastodon', icon: 'globe-outline', placeholder: 'https://mastodon.social/@user' },
-  { key: 'custom', label: 'Custom Link', icon: 'link-outline', placeholder: 'https://...' },
+  { key: 'website', label: 'Website', icon: 'globe-outline', placeholder: 'https://example.com', prefix: 'https://' },
+  { key: 'github', label: 'GitHub', icon: 'logo-github', placeholder: 'https://github.com/username', prefix: 'https://github.com/' },
+  { key: 'twitter', label: 'X / Twitter', icon: 'logo-twitter', placeholder: 'https://x.com/username', prefix: 'https://x.com/' },
+  { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', placeholder: 'https://linkedin.com/in/username', prefix: 'https://linkedin.com/in/' },
+  { key: 'mastodon', label: 'Mastodon', icon: 'globe-outline', placeholder: 'https://mastodon.social/@user', prefix: 'https://' },
+  { key: 'custom', label: 'Custom Link', icon: 'link-outline', placeholder: 'https://...', prefix: 'https://' },
 ];
+
+function OrganizationMentionField({ value, onChange, organizations, multiline = false, className, ...props }) {
+  const mention = value.match(/(?:^|\s)@([a-z0-9-]*)$/i);
+  const query = mention?.[1]?.toLowerCase() || '';
+  const suggestions = mention
+    ? organizations.filter(org => org.slug?.toLowerCase().includes(query) || org.name?.toLowerCase().includes(query)).slice(0, 5)
+    : [];
+
+  const choose = (org) => {
+    const start = mention.index + mention[0].lastIndexOf('@');
+    onChange(`${value.slice(0, start)}@${org.slug} ${value.slice(mention.index + mention[0].length)}`);
+  };
+  const Field = multiline ? 'textarea' : 'input';
+
+  return (
+    <div className="relative">
+      <Field value={value} onChange={e => onChange(e.target.value)} className={className} {...props} />
+      {suggestions.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-xl">
+          {suggestions.map(org => (
+            <button key={org.id} type="button" onMouseDown={event => event.preventDefault()} onClick={() => choose(org)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[var(--bg-elevated)]">
+              <span className="text-xs font-semibold text-[var(--accent)]">@{org.slug}</span>
+              <span className="truncate text-xs text-[var(--text-muted)]">{org.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Account Tab ──
 function AccountTab({ user, refetchUser }) {
   const [displayName, setDisplayName] = useState(user.display_name || '');
+  const [designation, setDesignation] = useState(user.designation || '');
   const [bio, setBio] = useState(user.bio || '');
   const [pronouns, setPronouns] = useState(user.pronouns || '');
   const [location, setLocation] = useState(user.location || '');
@@ -124,25 +159,42 @@ function AccountTab({ user, refetchUser }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
 
-  const addLink = (preset) => setLinks([...links, { type: preset.key, label: preset.label, url: '' }]);
+  const profileFingerprint = JSON.stringify({ displayName, designation, bio, pronouns, location, timezone, website, company, links });
+  const [savedFingerprint, setSavedFingerprint] = useState(profileFingerprint);
+  const hasChanges = profileFingerprint !== savedFingerprint;
+
+  useEffect(() => {
+    fetch('/api/orgs')
+      .then(response => response.ok ? response.json() : { orgs: [] })
+      .then(data => setOrganizations((data.orgs || []).filter(org => org.visibility !== 'private')))
+      .catch(() => setOrganizations([]));
+  }, []);
+
+  const addLink = (preset) => setLinks([...links, { type: preset.key, label: preset.label, url: preset.prefix }]);
   const updateLink = (i, field, value) => { const u = [...links]; u[i] = { ...u[i], [field]: value }; setLinks(u); };
   const removeLink = (i) => setLinks(links.filter((_, idx) => idx !== i));
   const addedTypes = new Set(links.map(l => l.type));
 
   const handleSave = async () => {
-    if (saving) return;
+    if (saving || !hasChanges) return;
     setSaving(true);
     try {
+      const activeLinks = links.filter(link => {
+        const preset = USER_LINK_PRESETS.find(item => item.key === link.type);
+        return link.url?.trim() && link.url.trim() !== preset?.prefix;
+      });
       const res = await fetch('/api/users/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          display_name: displayName, bio, pronouns, location, timezone, website, company,
-          links: links.filter(l => l.url?.trim()),
+          display_name: displayName, designation, bio, pronouns, location, timezone,
+          website: website === 'https://' ? '' : website, company, links: activeLinks,
         }),
       });
       if (res.ok) {
+        setSavedFingerprint(profileFingerprint);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         refetchUser?.();
@@ -160,13 +212,7 @@ function AccountTab({ user, refetchUser }) {
         <h3 className="text-[11px] font-semibold text-[var(--text-faint)] uppercase tracking-widest mb-4">Profile</h3>
         <div className="space-y-4">
           <div className="flex items-center gap-4 p-4 bg-[var(--card-bg)] border border-[var(--border-default)] rounded-xl">
-            {user.avatar_url ? (
-              <img src={user.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-[var(--border-default)]" />
-            ) : (
-              <div className="h-16 w-16 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center text-2xl text-[var(--text-muted)] font-bold ring-2 ring-[var(--border-default)]">
-                {(user.display_name || user.username || '?')[0].toUpperCase()}
-              </div>
-            )}
+            <img src={user.avatar_url || generatePixelAvatar(user.username || user.display_name)} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-[var(--border-default)]" />
             <div className="min-w-0">
               <p className="text-[15px] text-[var(--text-primary)] font-semibold">{user.display_name || user.username}</p>
               <p className="text-[13px] text-[var(--text-faint)]">@{user.username} &middot; {user.email}</p>
@@ -196,10 +242,23 @@ function AccountTab({ user, refetchUser }) {
           </div>
 
           <div>
+            <label className="text-[13px] text-[var(--text-primary)] mb-1 block font-medium">Designation</label>
+            <p className="text-[11px] text-[var(--text-faint)] mb-2">A short professional headline shown beside your authorship</p>
+            <input
+              value={designation}
+              onChange={e => setDesignation(e.target.value)}
+              placeholder="Software engineer and technical writer"
+              maxLength={100}
+              className={inputCls}
+            />
+            <p className="text-[10px] text-[var(--text-muted)] mt-1 text-right">{designation.length}/100</p>
+          </div>
+
+          <div>
             <label className="text-[13px] text-[var(--text-primary)] mb-1 block font-medium">Bio</label>
             <p className="text-[11px] text-[var(--text-faint)] mb-2">Tell readers a little about yourself</p>
-            <textarea
-              value={bio} onChange={e => setBio(e.target.value)} rows={3} placeholder="Developer, writer, creator..."
+            <OrganizationMentionField
+              value={bio} onChange={setBio} organizations={organizations} multiline rows={3} placeholder="Developer, writer, creator... Mention an organization with @"
               maxLength={300}
               className={`${inputCls} resize-none`}
             />
@@ -225,7 +284,8 @@ function AccountTab({ user, refetchUser }) {
             <label className="text-[13px] text-[var(--text-primary)] mb-1 block font-medium">Company</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><ion-icon name="business-outline" style={{ fontSize: '15px' }} /></span>
-              <input value={company} onChange={e => setCompany(e.target.value)} placeholder="Where you work" className={`${inputCls} pl-9`} />
+              <OrganizationMentionField value={company} onChange={setCompany} organizations={organizations}
+                placeholder="Where you work — type @ to tag an organization" className={`${inputCls} pl-9`} />
             </div>
           </div>
           <div>
@@ -237,9 +297,10 @@ function AccountTab({ user, refetchUser }) {
           </div>
           <div>
             <label className="text-[13px] text-[var(--text-primary)] mb-1 block font-medium">Website</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><ion-icon name="globe-outline" style={{ fontSize: '15px' }} /></span>
-              <input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://yoursite.com" className={`${inputCls} pl-9`} />
+            <div className="flex items-center overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] focus-within:border-[#9b7bf7]/50">
+              <span className="shrink-0 pl-3 text-[13px] text-[var(--text-muted)]">https://</span>
+              <input value={website.replace(/^https?:\/\//, '')} onChange={e => setWebsite(e.target.value ? `https://${e.target.value.replace(/^https?:\/\//, '')}` : '')}
+                placeholder="yoursite.com" className="min-w-0 flex-1 bg-transparent px-1 py-2.5 text-[13px] text-[var(--text-primary)] outline-none placeholder-[var(--text-faint)]" />
             </div>
           </div>
         </div>
@@ -295,13 +356,17 @@ function AccountTab({ user, refetchUser }) {
 
       <div className="h-px bg-[#1e2736]" />
 
+      <TopicPreferences />
+
+      <div className="h-px bg-[#1e2736]" />
+
       {/* ── Save ── */}
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving}
+        <button onClick={handleSave} disabled={saving || !hasChanges}
           className="px-6 py-2.5 bg-[#9b7bf7] text-white font-semibold rounded-lg text-[13px] hover:bg-[#b69aff] transition-colors disabled:opacity-40">
-          {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Profile'}
+          {saving ? 'Saving...' : saved && !hasChanges ? 'Saved!' : 'Save changes'}
         </button>
-        {saved && <span className="text-[12px] text-[#4ade80] flex items-center gap-1"><ion-icon name="checkmark-circle" style={{ fontSize: '14px' }} /> Profile updated</span>}
+        {saved && !hasChanges && <span className="text-[12px] text-[#4ade80] flex items-center gap-1"><ion-icon name="checkmark-circle" style={{ fontSize: '14px' }} /> Profile updated</span>}
       </div>
 
       <div className="h-px bg-[#1e2736]" />
@@ -318,7 +383,34 @@ function PublishingTab({ user }) {
   const [tipping, setTipping] = useState(false);
   const [emailReplies, setEmailReplies] = useState(false);
   const [replyTo, setReplyTo] = useState(user.email || '');
-  const [license, setLicense] = useState('all-rights');
+  const [license, setLicense] = useState('all-rights-reserved');
+  const [allowPublicCuration, setAllowPublicCuration] = useState(true);
+  const [curationLoading, setCurationLoading] = useState(true);
+  const [curationSaved, setCurationSaved] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/library/curation-preferences')
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(data => {
+        setAllowPublicCuration(data.allowPublicCuration !== false);
+        setLicense(data.defaultLicense || 'all-rights-reserved');
+      })
+      .catch(() => {})
+      .finally(() => setCurationLoading(false));
+  }, []);
+
+  const updateCurationPreferences = async (changes) => {
+    setCurationSaved(false);
+    const response = await fetch('/api/library/curation-preferences', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    });
+    if (response.ok) {
+      setCurationSaved(true);
+      setTimeout(() => setCurationSaved(false), 1800);
+    }
+  };
 
   return (
     <div>
@@ -346,17 +438,24 @@ function PublishingTab({ user }) {
         right={
           <DropdownSelect
             value={license}
-            onChange={setLicense}
+            onChange={(value) => { setLicense(value); updateCurationPreferences({ defaultLicense: value }); }}
             options={[
-              { value: 'all-rights', label: 'All Rights Reserved' },
-              { value: 'cc-by', label: 'CC BY 4.0' },
-              { value: 'cc-by-sa', label: 'CC BY-SA 4.0' },
-              { value: 'cc-by-nc', label: 'CC BY-NC 4.0' },
-              { value: 'cc0', label: 'Public Domain (CC0)' },
+              { value: 'all-rights-reserved', label: 'All Rights Reserved' },
+              { value: 'cc-by-4.0', label: 'CC BY 4.0' },
+              { value: 'cc-by-sa-4.0', label: 'CC BY-SA 4.0' },
+              { value: 'cc-by-nc-4.0', label: 'CC BY-NC 4.0' },
+              { value: 'cc0-1.0', label: 'Public Domain (CC0)' },
             ]}
           />
         }
       />
+
+      <SettingRow
+        title="Allow public curation"
+        description="Let other users add your public stories to their collections. Attribution, canonical ownership, and your selected license are always preserved."
+        right={<Toggle checked={allowPublicCuration} disabled={curationLoading} onChange={(value) => { setAllowPublicCuration(value); updateCurationPreferences({ allowPublicCuration: value }); }} />}
+      />
+      {curationSaved && <p className="px-1 pb-3 text-[12px] text-emerald-500">Publishing preferences saved.</p>}
 
       <div className="h-px bg-[var(--bg-elevated)] mt-2" />
 
@@ -529,6 +628,7 @@ function getRandomOrgNames(count = 3) {
 function CreateOrgModal({ onClose, onCreated }) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
@@ -571,7 +671,7 @@ function CreateOrgModal({ onClose, onCreated }) {
       const res = await fetch('/api/orgs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), slug, description, bio, website, visibility: 'public' }),
+        body: JSON.stringify({ name: name.trim(), slug, tagline, description, bio, website, visibility: 'public' }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -677,8 +777,15 @@ function CreateOrgModal({ onClose, onCreated }) {
           </div>
 
           <div>
+            <label className="text-[12px] text-[var(--text-muted)] mb-1.5 block font-medium">Tagline</label>
+            <input value={tagline} onChange={e => setTagline(e.target.value)} placeholder="Open-source infrastructure and engineering" maxLength={100}
+              className="w-full bg-[var(--bg-app)] text-[var(--text-primary)] rounded-lg px-3 py-2 outline-none text-[13px] border border-[var(--border-default)] focus:border-[var(--border-hover)] placeholder-[var(--text-faint)]" />
+            <p className="mt-1 text-right text-[10px] text-[var(--text-muted)]">{tagline.length}/100</p>
+          </div>
+
+          <div>
             <label className="text-[12px] text-[var(--text-muted)] mb-1.5 block font-medium">Description</label>
-            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short tagline"
+            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="What does your organization publish?" maxLength={160}
               className="w-full bg-[var(--bg-app)] text-[var(--text-primary)] rounded-lg px-3 py-2 outline-none text-[13px] border border-[var(--border-default)] focus:border-[var(--border-hover)] placeholder-[var(--text-faint)]" />
           </div>
 
@@ -1602,7 +1709,7 @@ const TOKEN_SCOPE_LABELS = {
   'lixblogs:profile:read': 'Read profile',
   'lixblogs:profile:write': 'Update profile',
   'lixblogs:blog:read': 'Read blogs and revisions',
-  'lixblogs:blog:write': 'Create and update blogs',
+  'lixblogs:blog:write': 'Create and update blogs, including secret drafts',
   'lixblogs:blog:publish': 'Publish and unpublish blogs',
   'lixblogs:blog:delete': 'Trash and delete blogs',
   'lixblogs:media:read': 'Read media',

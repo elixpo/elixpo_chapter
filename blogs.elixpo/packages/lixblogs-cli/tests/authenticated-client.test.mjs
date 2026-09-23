@@ -122,3 +122,21 @@ test("requireScopes fails locally before an under-scoped API operation", async (
     (error) => error.code === "insufficient_scope" && error.missingScopes[0] === "lixblogs:blog:write",
   );
 });
+
+test("personal access tokens authenticate without a credential store or refresh", async () => {
+  let calls = 0;
+  const client = new AuthenticatedClient({
+    accessToken: `lix_pat_${"a".repeat(43)}`,
+    apiBaseUrl: "https://blogs.elixpo.com",
+    fetchImpl: async (_url, options) => {
+      calls += 1;
+      assert.match(options.headers.authorization, /^Bearer lix_pat_/);
+      return Response.json({ error: { code: "invalid_token" } }, { status: 401 });
+    },
+  });
+
+  await client.requireScopes(["lixblogs:blog:read"]);
+  const response = await client.request("/api/v1/blogs");
+  assert.equal(response.status, 401);
+  assert.equal(calls, 1);
+});

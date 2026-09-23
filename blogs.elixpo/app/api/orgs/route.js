@@ -43,7 +43,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { name, slug, description, bio, website, visibility } = await request.json();
+  const { name, slug, tagline, description, bio, website, visibility } = await request.json();
 
   if (!name?.trim() || !slug?.trim()) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -51,7 +51,9 @@ export async function POST(request) {
 
   // Content + website validation (https-only, no NSFW).
   const { findProfanity, normalizeHttpsUrl } = await import('../../../lib/validate');
-  const badWord = findProfanity(name) || findProfanity(description) || findProfanity(bio) || findProfanity(slug);
+  const cleanTagline = String(tagline || '').trim();
+  if (cleanTagline.length > 100) return NextResponse.json({ error: 'Organization tagline must be 100 characters or fewer' }, { status: 400 });
+  const badWord = findProfanity(name) || findProfanity(cleanTagline) || findProfanity(description) || findProfanity(bio) || findProfanity(slug);
   if (badWord) return NextResponse.json({ error: 'Contains language that is not allowed' }, { status: 400 });
   let normWebsite = website || '';
   if (website) {
@@ -89,9 +91,9 @@ export async function POST(request) {
     const now = Math.floor(Date.now() / 1000);
 
     await db.prepare(`
-      INSERT INTO orgs (id, slug, name, description, bio, website, visibility, owner_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(orgId, cleanSlug, name.trim(), description || '', bio || '', normWebsite || '', visibility || 'public', session.userId, now, now).run();
+      INSERT INTO orgs (id, slug, name, tagline, description, bio, website, visibility, owner_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(orgId, cleanSlug, name.trim(), cleanTagline, description || '', bio || '', normWebsite || '', visibility || 'public', session.userId, now, now).run();
 
     // Owner is also a member with admin role
     await db.prepare(`
@@ -112,14 +114,16 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { orgId, slug, name, description, bio, website, links, visibility, featured_blog_ids, timezone, location, contact_email } = await request.json();
+  const { orgId, slug, name, tagline, description, bio, website, links, visibility, featured_blog_ids, timezone, location, contact_email } = await request.json();
   if (!orgId) {
     return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
   }
 
   // Content + website validation (https-only, no NSFW).
   const { findProfanity, normalizeHttpsUrl } = await import('../../../lib/validate');
-  const badWord = findProfanity(name) || findProfanity(description) || findProfanity(bio) || findProfanity(location);
+  const cleanTagline = tagline === undefined ? undefined : String(tagline || '').trim();
+  if (cleanTagline !== undefined && cleanTagline.length > 100) return NextResponse.json({ error: 'Organization tagline must be 100 characters or fewer' }, { status: 400 });
+  const badWord = findProfanity(name) || findProfanity(cleanTagline) || findProfanity(description) || findProfanity(bio) || findProfanity(location);
   if (badWord) return NextResponse.json({ error: 'Contains language that is not allowed' }, { status: 400 });
   let normWebsite = website;
   if (website != null && website !== '') {
@@ -174,7 +178,7 @@ export async function PUT(request) {
 
     const now = Math.floor(Date.now() / 1000);
     await db.prepare(`
-      UPDATE orgs SET name = COALESCE(?, name), description = COALESCE(?, description),
+      UPDATE orgs SET name = COALESCE(?, name), tagline = COALESCE(?, tagline), description = COALESCE(?, description),
         bio = COALESCE(?, bio), website = COALESCE(?, website),
         links = COALESCE(?, links), visibility = COALESCE(?, visibility),
         featured_blog_ids = COALESCE(?, featured_blog_ids),
@@ -182,7 +186,7 @@ export async function PUT(request) {
         contact_email = COALESCE(?, contact_email), updated_at = ?
       WHERE id = ?
     `).bind(
-      name || null, description || null, bio || null, normWebsite ?? null,
+      name || null, cleanTagline ?? null, description || null, bio || null, normWebsite ?? null,
       normLinks ? JSON.stringify(normLinks) : null, visibility || null,
       featured_blog_ids ? JSON.stringify(featured_blog_ids) : null,
       timezone || null, location || null, contact_email || null, now, orgId

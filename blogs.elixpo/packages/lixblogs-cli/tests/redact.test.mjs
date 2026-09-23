@@ -69,3 +69,9 @@ test("redactErrorMessage: handles Bearer-prefixed tokens", () => {
   const redacted = redactErrorMessage(message);
   assert.doesNotMatch(redacted, /abc123\.xyz789/);
 });
+
+test("personal access tokens are redacted in values and free-form errors", () => {
+  const token = `lix_pat_${"a".repeat(43)}`;
+  assert.equal(redactObject({ value: token }).value, "[REDACTED]");
+  assert.equal(redactErrorMessage(`Request failed for ${token}`), "Request failed for [REDACTED]");
+});

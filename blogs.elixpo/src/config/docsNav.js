@@ -7,6 +7,8 @@ export const docsNav = [
       { title: 'Collaboration', slug: 'collaboration', description: 'Invite co-authors and edit a story together safely.' },
       { title: 'Media and storage', slug: 'media-storage', description: 'Upload, track, replace, and delete covers and editor images.' },
       { title: 'Creator analytics', slug: 'creator-analytics', description: 'Read creator metrics, compare date ranges, and export reports.' },
+      { title: 'Curated collections', slug: 'collections', description: 'Curate public stories while preserving authorship, canonical ownership, and licenses.' },
+      { title: 'Writing contests', slug: 'contests', description: 'Create contests, submit immutable blog revisions, judge entries, and publish results.' },
       { title: 'LixBlogs CLI', slug: 'cli', description: 'Authenticate, write, publish, and automate through the supported command line.' },
       { title: 'API automation', slug: 'api', description: 'Create scoped access tokens and automate publishing through the versioned API.' },
     ],
@@ -29,14 +31,7 @@ export const docsNav = [
   {
     title: 'LixEditor Developers',
     items: [
-      { title: 'Editor overview', slug: 'editor-overview', description: 'Understand the block editor package that powers LixBlogs.' },
-      { title: 'Installation', slug: 'installation', description: 'Install the package via npm.' },
-      { title: 'Quick Start', slug: 'quick-start', description: 'Render your first editor.' },
-      { title: '<LixEditor> Props', slug: 'props', description: 'All supported props.' },
-      { title: 'Imperative API (ref)', slug: 'imperative-api', description: 'getBlocks, getEditor, replaceBlocks.' },
-      { title: 'Block Model', slug: 'block-model', description: 'The shape of a block and built-in types.' },
-      { title: 'Markdown & Slash Commands', slug: 'markdown-shortcuts', description: 'Shortcuts while typing.' },
-      { title: 'Rendering Stored Content', slug: 'rendering', description: 'Read-only render of saved blocks.' },
+      { title: 'LixEditor Developer Guide', slug: 'lixeditor', description: 'Overview, installation, quick start, props, imperative API, block model, markdown shortcuts, and rendering.' },
     ],
   },
 ];
