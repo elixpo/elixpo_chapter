@@ -4,6 +4,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
     Box,
@@ -23,6 +24,7 @@ import {
     TextField,
     Tooltip,
     Typography,
+    IconButton,
 } from "@mui/material";
 import NextLink from "next/link";
 import type React from "react";
@@ -227,6 +229,10 @@ export default function TemplateSendDialog({
     // Send
     const [send, setSend] = useState<SendState>({ phase: "idle" });
     const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
+
+    const [isUploadingCsv, setIsUploadingCsv] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [csvErrors, setCsvErrors] = useState<{ row: number; error: string }[]>([]);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -449,6 +455,47 @@ export default function TemplateSendDialog({
         }
     }
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingCsv(true);
+        setCsvErrors([]);
+        
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/csv/parse", {
+                method: "POST",
+                body: formData,
+            });
+
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok || !d?.ok) throw new Error(d?.error || "CSV parsing failed.");
+
+            const validEmails: string[] = d.validEmails || [];
+            if (validEmails.length > 0) {
+                setChips((c) => Array.from(new Set([...c, ...validEmails])));
+            }
+            
+            if (d.malformedRows && d.malformedRows.length > 0) {
+                setCsvErrors(d.malformedRows);
+                setToast({ text: `CSV parsed: ${validEmails.length} valid, ${d.malformedRows.length} errors.`, ok: false });
+            } else {
+                setToast({ text: `CSV parsed: added ${validEmails.length} valid emails.`, ok: true });
+            }
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : "Upload failed.";
+            setToast({ text: msg, ok: false });
+        } finally {
+            setIsUploadingCsv(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    };
+
     const canSend =
         recipientCount > 0 && !overLimit && !!senderId && hasSenders && send.phase !== "loading";
 
@@ -491,7 +538,32 @@ export default function TemplateSendDialog({
                     {/* ── Left column: recipients, sender, send-as, variables ── */}
                     <Stack spacing={2.2}>
                         <Box>
-                            <FieldLabel>Recipients (required)</FieldLabel>
+                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <FieldLabel>Recipients (required)</FieldLabel>
+                                <Button
+                                    size="small"
+                                    startIcon={isUploadingCsv ? <CircularProgress size={12} color="inherit" /> : <FileUploadIcon sx={{ fontSize: 16 }} />}
+                                    disabled={isUploadingCsv}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    sx={{
+                                        textTransform: "none",
+                                        fontSize: "0.75rem",
+                                        color: TEXT_55,
+                                        p: 0,
+                                        mb: 0.7,
+                                        "&:hover": { color: TEXT, background: "transparent" },
+                                    }}
+                                >
+                                    Upload CSV
+                                </Button>
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    ref={fileInputRef}
+                                    style={{ display: "none" }}
+                                    onChange={handleFileUpload}
+                                />
+                            </Box>
                             <Box
                                 onClick={(e) => {
                                     const input = (e.currentTarget as HTMLElement).querySelector(
@@ -593,6 +665,18 @@ export default function TemplateSendDialog({
                                           overLimit ? ` — over the limit of ${MAX_RECIPIENTS}` : ""
                                       }`}
                             </Typography>
+                            {csvErrors.length > 0 && (
+                                <Box sx={{ mt: 1, p: 1, borderRadius: "6px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", maxHeight: 120, overflowY: "auto" }}>
+                                    <Typography sx={{ fontSize: "0.72rem", color: RED, fontWeight: 700, mb: 0.5 }}>
+                                        CSV Errors ({csvErrors.length})
+                                    </Typography>
+                                    {csvErrors.map((err, idx) => (
+                                        <Typography key={idx} sx={{ fontSize: "0.7rem", color: RED, lineHeight: 1.4 }}>
+                                            Row {err.row}: {err.error}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                            )}
                         </Box>
 
                         <Box>
