@@ -79,6 +79,14 @@ interface TemplateSummary {
     variables: string[];
     status: string;
     updated_at: string;
+    workspace: {
+        tenantId: string;
+        name: string;
+        slug: string | null;
+        role: string;
+        kind: "personal" | "shared";
+        active: boolean;
+    };
 }
 
 const NEW_BTN = {
@@ -163,6 +171,21 @@ export default function TemplatesList() {
     useEffect(() => {
         load();
     }, []);
+
+    async function openTemplate(t: TemplateSummary) {
+        if (!t.workspace.active) {
+            const res = await fetch("/api/workspace/switch", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tenantId: t.workspace.tenantId }),
+            });
+            if (!res.ok) {
+                setError("Could not switch to that workspace.");
+                return;
+            }
+        }
+        window.location.href = `/dashboard/templates/${t.id}`;
+    }
 
     async function remove(id: string) {
         if (!confirm("Delete this template? This cannot be undone.")) return;
@@ -289,8 +312,9 @@ export default function TemplatesList() {
                         <GlassCard key={t.id} sx={{ p: 0 }}>
                             <Stack direction="row" alignItems="center" sx={{ p: 2, gap: 2 }}>
                                 <Box
-                                    component={Link}
-                                    href={`/dashboard/templates/${t.id}`}
+                                    component="button"
+                                    type="button"
+                                    onClick={() => openTemplate(t)}
                                     sx={{
                                         display: "flex",
                                         alignItems: "center",
@@ -299,6 +323,11 @@ export default function TemplatesList() {
                                         minWidth: 0,
                                         textDecoration: "none",
                                         color: "inherit",
+                                        border: 0,
+                                        background: "transparent",
+                                        textAlign: "left",
+                                        cursor: "pointer",
+                                        p: 0,
                                         "&:hover .t-name": { color: ACCENT },
                                     }}
                                 >
@@ -357,6 +386,29 @@ export default function TemplatesList() {
                                                     }}
                                                 />
                                             )}
+                                            <Chip
+                                                label={`${t.workspace.kind === "personal" ? "Personal" : "Shared"} · ${t.workspace.name}`}
+                                                size="small"
+                                                sx={{
+                                                    height: 20,
+                                                    maxWidth: 190,
+                                                    fontSize: "0.67rem",
+                                                    fontWeight: 700,
+                                                    color:
+                                                        t.workspace.kind === "shared"
+                                                            ? "var(--accent)"
+                                                            : "var(--fg-muted)",
+                                                    bgcolor:
+                                                        t.workspace.kind === "shared"
+                                                            ? "var(--accent-tint)"
+                                                            : "var(--overlay)",
+                                                    border: "1px solid var(--border)",
+                                                    "& .MuiChip-label": {
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    },
+                                                }}
+                                            />
                                         </Stack>
                                         <Typography
                                             sx={{
@@ -375,8 +427,7 @@ export default function TemplatesList() {
                                 </Box>
                                 <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                                     <Button
-                                        component={Link}
-                                        href={`/dashboard/templates/${t.id}`}
+                                        onClick={() => openTemplate(t)}
                                         startIcon={
                                             <EditIcon sx={{ fontSize: "1rem !important" }} />
                                         }
@@ -393,7 +444,7 @@ export default function TemplatesList() {
                                     >
                                         Edit
                                     </Button>
-                                    {canWrite && (
+                                    {canWrite && t.workspace.active && (
                                         <Button
                                             onClick={() => remove(t.id)}
                                             disabled={deleting === t.id}

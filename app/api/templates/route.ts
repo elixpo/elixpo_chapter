@@ -5,7 +5,7 @@ import { cleanupOrphanImages } from "@/lib/cloudinary";
 import { getDatabase } from "@/lib/d1-client";
 import { getProduct, slugify } from "@/lib/products";
 import { getSession } from "@/lib/session";
-import { createTemplate, listTemplates, toSummary } from "@/lib/templates";
+import { type TemplateRow, createTemplate, toSummary } from "@/lib/templates";
 import { requireWriteRole } from "@/lib/workspace-guard";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -15,14 +15,48 @@ function sessionUrls(body: any): string[] {
         : [];
 }
 
-/** GET /api/templates — list the tenant's templates (summaries). */
+/** GET /api/templates — list templates across every workspace the user can access. */
 export async function GET(request: NextRequest) {
     const session = await getSession(request);
     if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const rows = await listTemplates(db, session.tenantId);
-    return NextResponse.json({ ok: true, templates: rows.map(toSummary) });
+    const result = await db
+        .prepare(
+            `SELECT tpl.*, t.name AS workspace_name, t.slug AS workspace_slug,
+                    m.role AS workspace_role,
+                    CASE WHEN t.id = (
+                        SELECT id FROM tenants WHERE owner_uid = ? ORDER BY created_at ASC LIMIT 1
+                    ) THEN 1 ELSE 0 END AS workspace_personal
+             FROM templates tpl
+             JOIN tenants t ON t.id = tpl.tenant_id
+             JOIN workspace_members m ON m.tenant_id = tpl.tenant_id
+             WHERE m.status = 'active' AND (m.user_uid = ? OR m.email = ?)
+             ORDER BY tpl.updated_at DESC`,
+        )
+        .bind(session.uid, session.uid, session.email.toLowerCase())
+        .all();
+    type AccessibleTemplate = TemplateRow & {
+        workspace_name: string;
+        workspace_slug: string | null;
+        workspace_personal: number;
+        workspace_role: string;
+    };
+    const rows = (result.results || []) as unknown as AccessibleTemplate[];
+    return NextResponse.json({
+        ok: true,
+        templates: rows.map((row) => ({
+            ...toSummary(row),
+            workspace: {
+                tenantId: row.tenant_id,
+                name: row.workspace_name,
+                slug: row.workspace_slug,
+                role: row.workspace_role,
+                kind: row.workspace_personal === 1 ? "personal" : "shared",
+                active: row.tenant_id === session.tenantId,
+            },
+        })),
+    });
 }
 
 /** POST /api/templates — create a template (one-time by default; product optional). */
