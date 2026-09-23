@@ -1,65 +1,56 @@
 {
   "heading": "PROJECTS",
-  "description": "This page contains some of my projects that I have worked on. You can find the source code and more details about each project by clicking on the project title. Feel free to explore and reach out if you have any questions or would like to collaborate on any of these projects!",
+  "description": "Selected open-source systems I maintain or build across generative AI, search, contributor infrastructure, identity, and developer tooling. Star counts are a snapshot from 20 September 2026.",
   "projects": [
     {
+      "name": "pollinations",
+      "description": "An open-source generative AI platform where I maintain contributor rewards, triage automation, application workflows, model curation, and developer tooling.",
+      "stars": 5101,
+      "url": "https://github.com/pollinations/pollinations",
+      "owner": "pollinations",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/86964862?v=4",
+      "topics": ["generative-ai", "open-source", "developer-tools", "automation"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "search.elixpo",
+      "displayName": "OreoLook",
+      "description": "An open-source, OpenAI-compatible agentic web-search and deep-research engine with Redis memory, Qdrant retrieval, MCP tools, streaming, citations, and PDF exports.",
+      "stars": 22,
+      "url": "https://github.com/pollinations/search.elixpo",
+      "owner": "pollinations",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/86964862?v=4",
+      "topics": ["agentic-search", "deep-research", "redis", "mcp-server", "rag"],
+      "language": "Python"
+    },
+    {
       "name": "elixpo_chapter",
-      "description": "A Collaborative Repository focusing on Computer Science from all the aspects that it deserves attention from!",
-      "stars": 85,
+      "description": "A collaborative open-source repository where community members learn by contributing projects spanning software, cloud, AI, and developer tooling.",
+      "stars": 86,
       "url": "https://github.com/elixpo/elixpo_chapter",
       "owner": "elixpo",
       "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
-      "topics": ["cloud-computing", "community-driven", "discord-bot", "docker", "full-stack", "hacktoberfest", "open-source", "search-engine"],
+      "topics": ["community-driven", "hacktoberfest", "open-source", "full-stack"],
       "language": "JavaScript"
     },
     {
-      "name": "CNN_Facecom_2",
-      "description": "Collaborative Repository for CNN Facial Classification and Gender Recognition",
-      "stars": 0,
-      "url": "https://github.com/Circuit-Overtime/CNN_Facecom_2",
-      "owner": "Circuit-Overtime",
-      "ownerLogo": "https://avatars.githubusercontent.com/u/74301576?v=4",
-      "topics": ["cnn", "flask", "python", "resnet50", "tensorflow", "vgg19"],
-      "language": "Python"
-    },
-    {
-      "name": "jackeyBot",
-      "description": "A free text2image discord bot service on discord, implementing discord.js",
-      "stars": 4,
-      "url": "https://github.com/Circuit-Overtime/jackeyBot",
-      "owner": "Circuit-Overtime",
-      "ownerLogo": "https://avatars.githubusercontent.com/u/74301576?v=4",
-      "topics": ["discord-bot", "discord-js-v14", "image-generation", "text-to-image-generation"],
-      "language": "CSS"
-    },
-    {
-      "name": "lixSearch",
-      "description": "Research Based Project on Crawlers and Rankers with a LLM Supported Native Search Engine",
-      "stars": 18,
-      "url": "https://github.com/pollinations/lixSearch",
-      "owner": "pollinations",
-      "ownerLogo": "https://avatars.githubusercontent.com/u/86964862?v=4",
-      "topics": ["cloud-computing", "docker", "langchain", "langgraph", "python"],
-      "language": "Python"
+      "name": "accounts.elixpo",
+      "description": "An open identity and user-management platform with SSO, OAuth/OIDC, passkeys, social login, webhooks, and an edge-safe TypeScript SDK.",
+      "stars": 8,
+      "url": "https://github.com/elixpo/accounts.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["authentication", "cloudflare", "identity-provider", "openid-connect", "passkeys"],
+      "language": "TypeScript"
     },
     {
       "name": "terminal-ascii",
-      "description": "An Experimental Approach to Define and Display Media Files like Images and Videos as its Equivalent ANSI representation inside OS Terminal",
+      "description": "An experimental terminal renderer that converts image and video media into ANSI representations.",
       "stars": 2,
       "url": "https://github.com/Circuit-Overtime/terminal-ascii",
       "owner": "Circuit-Overtime",
       "ownerLogo": "https://avatars.githubusercontent.com/u/74301576?v=4",
-      "topics": ["ascii-art", "python"],
-      "language": "Jupyter Notebook"
-    },
-    {
-      "name": "Image_Compression",
-      "description": "Research on various compression algorithms on BW, GRAY, RGB, RGBA encodings, and a custom encoder .lix was built",
-      "stars": 2,
-      "url": "https://github.com/Circuit-Overtime/Image_Compression",
-      "owner": "Circuit-Overtime",
-      "ownerLogo": "https://avatars.githubusercontent.com/u/74301576?v=4",
-      "topics": ["algorithms", "encoder-decoder", "image-compression", "mathematics"],
+      "topics": ["ascii-art", "python", "terminal"],
       "language": "Jupyter Notebook"
     }
   ]

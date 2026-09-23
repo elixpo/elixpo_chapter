@@ -117,5 +117,38 @@
       "Open Source"
     ],
     "affiliations": ["Elixpo", "FlyRank AI"]
+  },
+  "bhumika": {
+    "title": "Bhumika Sudarshani — Full-Stack Developer | Elixpo",
+    "description": "Bhumika Sudarshani is an open-source contributor and full-stack developer building data-driven products, REST APIs, dashboards and applied AI tools.",
+    "givenName": "Bhumika",
+    "familyName": "Sudarshani",
+    "imageWidth": 693,
+    "imageHeight": 693,
+    "jobTitle": "Open-Source Contributor and Full-Stack Developer",
+    "aliases": ["Bhumika", "bhumikasudarshani-cmd"],
+    "keywords": [
+      "full-stack developer",
+      "open source contributor",
+      "digital product developer",
+      "applied AI",
+      "data analytics",
+      "REST APIs",
+      "React developer",
+      "Python developer",
+      "GSSoC",
+      "Elixpo"
+    ],
+    "knowsAbout": [
+      "Full-Stack Development",
+      "Open Source",
+      "Applied Artificial Intelligence",
+      "Data Analytics",
+      "REST APIs",
+      "Database Design",
+      "React",
+      "Python"
+    ],
+    "affiliations": ["Elixpo", "GSSoC"]
   }
 }

@@ -1,6 +1,6 @@
 {
   "heading": "Sessions & Talks",
-  "description": "Selected highlights from talks, workshops, and community sessions on open source, DevOps, and building developer communities.",
+  "description": "Selected talks and workshops on open-source maintainership, contributor systems, platform engineering, web development, and developer communities.",
   "sessions": [
     {
       "title": "The Client Boundary - What 'use client' Really Does in Modern React.",
@@ -20,7 +20,7 @@
     {
       "title": "Building the Contributor Pipeline at Pollinations.ai",
       "venue": "GitHub Open Source Friday",
-      "date": "10th July 2026",
+      "date": "10 July 2026",
       "location": "Remote",
       "status": "past",
       "link" : "www.youtube.com/watch?v=apxwKja5JWE"
@@ -36,54 +36,32 @@
     {
       "title": "How to Be the Contributor Maintainers Actually Want",
       "venue": "GitHub Maintainer Month 2026",
-      "date": "31st May 2026",
+      "date": "31 May 2026",
       "location": "Remote",
       "status": "past"
     },
     {
-      "title": "Cracking Google Summer of Code - GSoC Info Session 2026",
-      "venue": "GDG on Campus, JIS University",
-      "date": "Jan 2026",
+      "title": "Cracking Google Summer of Code: GSoC Info Session 2026",
+      "venue": "GDG on Campus JIS University",
+      "date": "January 2026",
       "location": "Kolkata, India",
       "status": "past",
       "link": "https://github.com/dscjisu/gsoc-2026"
     },
     {
       "title": "Chill Out & Level Up: Fun with Git & GitHub",
-      "venue": "GDG on Campus, JIS University",
-      "date": "Nov 2025",
+      "venue": "GDG on Campus JIS University",
+      "date": "November 2025",
       "location": "Kolkata, India",
       "status": "past"
-    },
-    {
-      "title": "Kickstart Hacktoberfest 2025 & Google Study Jams",
-      "venue": "GDG on Campus, JIS University",
-      "date": "Oct 2025",
-      "location": "Kolkata, India",
-      "status": "past",
-      "link": "https://github.com/dscjisu/hacktoberfest-meetup-25"
     },
     {
       "title": "Hacktoberfest Meetup Kolkata 2025",
-      "venue": "GDG on Campus, JIS University",
-      "date": "Oct 2025",
+      "venue": "GDG on Campus JIS University",
+      "date": "October 2025",
       "location": "Kolkata, India",
       "status": "past",
       "link": "https://github.com/dscjisu/hacktoberfest-meetup-25"
-    },
-    {
-      "title": "Version Control with Git & GitHub - Live Session",
-      "venue": "GDG on Campus, JIS University",
-      "date": "2024",
-      "location": "Kolkata, India",
-      "status": "past"
-    },
-    {
-      "title": "Hands-on React Workshop co-Hosted Session",
-      "venue": "GDG Kolkata",
-      "date": "2024",
-      "location": "Kolkata, India",
-      "status": "past"
     }
   ]
 }
