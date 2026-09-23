@@ -4,6 +4,7 @@ import { requireDashboardSession } from "@/lib/dashboard-session";
 import { resolveActiveRole } from "@/lib/workspace-guard";
 import { Box, Container } from "@mui/material";
 import type React from "react";
+import ContextualTip from "../components/contextual-tip";
 import DashboardTopbar, { type DashboardUser } from "../components/dashboard-topbar";
 import { RoleProvider } from "../components/role-provider";
 
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                         {children}
                     </Container>
                 </Box>
+                <ContextualTip />
             </Box>
         </RoleProvider>
     );

@@ -8,13 +8,14 @@ import { redirect } from "next/navigation";
 /** /workspace — redirect to the active workspace's slugged page. */
 export default async function WorkspaceIndex() {
     const session = await requireDashboardSession();
-    let slug = session.tenantId;
+    let slug: string | null = null;
     try {
         const db = await getDatabase();
         const info = await getWorkspaceInfo(db, session.tenantId);
-        slug = info?.slug || session.tenantId;
+        slug = info?.slug || null;
     } catch {
-        slug = session.tenantId;
+        slug = null;
     }
+    if (!slug) redirect("/workspace/new");
     redirect(`/workspace/${slug}`);
 }

@@ -1,6 +1,5 @@
 # Retry command: when an org member comments "@elixpoo retry" on an issue/PR,
-# find the most recent FAILED workflow run that touched this issue/PR
-# (pr-review-request, issue-auto-fix, or on-merge) and re-run its failed jobs.
+# find the most recent failed Elixpo workflow run and re-run its failed jobs.
 #
 # Uses the GitHub Actions API endpoint:
 #   POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs
@@ -30,7 +29,7 @@ jobs:
     steps:
       - name: Authorize + rerun
         env:
-          GH_TOKEN: ${{ secrets.CI_AGENT_TOKEN }}
+          GH_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           COMMENTER: ${{ github.event.comment.user.login }}
