@@ -113,8 +113,7 @@ const ServicesPage = () => {
         "confidential",
     );
     const filteredServices = services.filter(
-        (service) =>
-            (service.client_type || "confidential") === serviceType,
+        (service) => (service.client_type || "confidential") === serviceType,
     );
 
     // Deep-link revoke: blogs.elixpo (and other first-party apps) send the user
