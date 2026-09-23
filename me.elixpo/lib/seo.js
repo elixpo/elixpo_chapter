@@ -3,7 +3,25 @@ import { getMemberSeo, getPersonContent } from "@/lib/content";
 export const SITE_URL = "https://me.elixpo.com";
 export const LANDING_TITLE = "Elixpo Members — Portfolios of Builders & Creators";
 export const LANDING_DESCRIPTION =
-  "Meet Ayushman Bhattacharya, Anwesha Chakraborty, Vivek Yadav, and Karan Ray. Explore the portfolios and projects of the people building Elixpo.";
+  "Meet Ayushman Bhattacharya, Anwesha Chakraborty, Vivek Yadav, Karan Ray, and Bhumika Sudarshani—the people building Elixpo.";
+
+export const MEMBER_SECTION_SLUGS = [
+  "about",
+  "projects",
+  "publications",
+  "blogs",
+  "talks",
+  "connect",
+];
+
+const SECTION_HAS_CONTENT = {
+  about: (content) => Boolean(content?.intro),
+  projects: (content) => Boolean(content?.projects?.length),
+  publications: (content) => Boolean(content?.papers?.length),
+  blogs: (content) => Boolean(content?.posts?.length),
+  talks: (content) => Boolean(content?.sessions?.length),
+  connect: (content) => Boolean(content?.emails?.length || content?.socialLinks?.length),
+};
 
 const SECTION_COPY = {
   about: {
@@ -76,11 +94,25 @@ export function getAbsoluteUrl(pathname = "/") {
   return new URL(pathname, SITE_URL).toString();
 }
 
+export function isMemberSectionIndexable(person, section) {
+  const hasContent = SECTION_HAS_CONTENT[section];
+  if (!hasContent) return false;
+
+  try {
+    return hasContent(getPersonContent(person, section));
+  } catch {
+    return false;
+  }
+}
+
 export function buildMemberMetadata({ person, section }) {
   const { profile, seo, name, role } = getMemberDetails(person);
   const sectionCopy = section ? SECTION_COPY[section] : null;
   const pathname = section ? `/${person}/${section}` : `/${person}`;
   const image = getMemberImagePath(person);
+  const imageWidth = seo.imageWidth || 384;
+  const imageHeight = seo.imageHeight || 384;
+  const indexable = !section || isMemberSectionIndexable(person, section);
   const title = sectionCopy
     ? `${sectionCopy.title(name)} | Elixpo`
     : seo.title || `${name} — ${role} | Elixpo`;
@@ -109,10 +141,10 @@ export function buildMemberMetadata({ person, section }) {
     publisher: "Elixpo",
     alternates: { canonical: pathname },
     robots: {
-      index: true,
+      index: indexable,
       follow: true,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         noimageindex: false,
         "max-image-preview": "large",
@@ -131,7 +163,7 @@ export function buildMemberMetadata({ person, section }) {
         lastName: seo.familyName,
         username: person,
       }),
-      images: [{ url: image, width: 384, height: 384, alt: imageAlt }],
+      images: [{ url: image, width: imageWidth, height: imageHeight, alt: imageAlt }],
     },
     twitter: {
       card: "summary",
@@ -146,7 +178,17 @@ export function buildMemberProfileJsonLd(person) {
   const { profile, seo, name, role } = getMemberDetails(person);
   const profileUrl = getAbsoluteUrl(`/${person}`);
   const imageUrl = getAbsoluteUrl(getMemberImagePath(person));
+  const imageWidth = seo.imageWidth || 384;
+  const imageHeight = seo.imageHeight || 384;
   const sameAs = profile.socials?.map(({ url }) => url).filter(Boolean) || [];
+  const relatedPages = MEMBER_SECTION_SLUGS
+    .filter((section) => isMemberSectionIndexable(person, section))
+    .map((section) => ({
+      "@type": "WebPage",
+      "@id": `${getAbsoluteUrl(`/${person}/${section}`)}#webpage`,
+      url: getAbsoluteUrl(`/${person}/${section}`),
+      name: `${SECTION_COPY[section].title(name)} | Elixpo`,
+    }));
   let focusTags = seo.knowsAbout;
 
   try {
@@ -169,8 +211,8 @@ export function buildMemberProfileJsonLd(person) {
     image: {
       "@type": "ImageObject",
       url: imageUrl,
-      width: 384,
-      height: 384,
+      width: imageWidth,
+      height: imageHeight,
     },
     description: seo.description || role,
     jobTitle: seo.jobTitle || role,
@@ -200,10 +242,11 @@ export function buildMemberProfileJsonLd(person) {
     primaryImageOfPage: {
       "@type": "ImageObject",
       url: imageUrl,
-      width: 384,
-      height: 384,
+      width: imageWidth,
+      height: imageHeight,
       caption: `Portrait of ${name}`,
     },
+    hasPart: relatedPages,
     mainEntity: personSchema,
   };
 }

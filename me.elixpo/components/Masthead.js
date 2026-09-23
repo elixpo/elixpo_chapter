@@ -28,7 +28,7 @@ export default function Masthead({ hero, person, memberName }) {
       {/* Body: intro + credentials + CTAs (left) · portrait (right) */}
       <div className="mastheadBody flex flex-col-reverse lg:flex-row gap-6 sm:gap-10 mt-6 sm:mt-10">
         <div className="mastheadInfo flex flex-col justify-between flex-1 gap-6 sm:gap-8">
-          <p className="mastheadIntro text-[#222] text-lg sm:text-2xl md:text-3xl lg:text-[2.2em] leading-snug tracking-[0.5px] max-w-[850px]">
+          <p className="mastheadIntro whitespace-pre-line text-[#222] text-lg sm:text-2xl md:text-3xl lg:text-[2.2em] leading-snug tracking-[0.5px] max-w-[850px]">
             {hero.intro}
           </p>
 

@@ -56,7 +56,7 @@ export default async function ProjectsPage({ params }) {
                   rel="noopener noreferrer"
                   className="projectName font-extrabold text-lg sm:text-xl md:text-[2.3em] text-[#222] underline cursor-pointer underline-offset-[4px] sm:underline-offset-[6px] decoration-[#555] transition-[0.25s] hover:text-[#66460c] font-[Canopee,serif] tracking-wide truncate"
                 >
-                  {data.name}
+                  {data.displayName || data.name}
                 </a>
               </div>
               <div className="w-full px-3 sm:px-5 flex flex-row gap-2 items-center">
@@ -75,9 +75,14 @@ export default async function ProjectsPage({ params }) {
                 <p className="text-xs sm:text-base md:text-[1.2em] text-[#333] font-semibold w-full sm:w-[70%]">
                   {data.description || "No description provided."}
                 </p>
-                {data.language && (
-                  <span className="text-xs sm:text-[1em] text-[#888] font-mono">{data.language}</span>
-                )}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {Number.isInteger(data.stars) && (
+                    <span className="text-xs sm:text-[1em] text-[#664600] font-bold">★ {data.stars.toLocaleString()}</span>
+                  )}
+                  {data.language && (
+                    <span className="text-xs sm:text-[1em] text-[#888] font-mono">{data.language}</span>
+                  )}
+                </div>
               </div>
               {data.topics.length > 0 && (
                 <div className="w-full px-3 sm:px-5 mt-2 flex flex-row items-left justify-left gap-1 sm:gap-2 flex-wrap">

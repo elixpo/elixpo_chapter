@@ -1,23 +1,19 @@
-import { getPersonContent, getPortfolioPersons } from "@/lib/content";
-import { getAbsoluteUrl, getMemberImagePath, SITE_URL } from "@/lib/seo";
+import { getPortfolioPersons } from "@/lib/content";
+import {
+  getAbsoluteUrl,
+  getMemberImagePath,
+  isMemberSectionIndexable,
+  MEMBER_SECTION_SLUGS,
+  SITE_URL,
+} from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-const SECTION_SLUGS = {
-  About: "about",
-  Projects: "projects",
-  Talks: "talks",
-  Publications: "publications",
-  Blogs: "blogs",
-};
-
 export default function sitemap() {
   const memberPages = getPortfolioPersons().flatMap((person) => {
-    const profile = getPersonContent(person, "profile");
-    const sections = new Set([
-      "connect",
-      ...profile.menuItems.map((item) => SECTION_SLUGS[item]).filter(Boolean),
-    ]);
+    const sections = MEMBER_SECTION_SLUGS.filter((section) =>
+      isMemberSectionIndexable(person, section),
+    );
 
     return [
       {
@@ -26,7 +22,7 @@ export default function sitemap() {
         priority: 0.9,
         images: [getAbsoluteUrl(getMemberImagePath(person))],
       },
-      ...Array.from(sections, (section) => ({
+      ...sections.map((section) => ({
         url: getAbsoluteUrl(`/${person}/${section}`),
         changeFrequency: "monthly",
         priority: 0.7,
@@ -39,6 +35,7 @@ export default function sitemap() {
       url: SITE_URL,
       changeFrequency: "weekly",
       priority: 1,
+      images: [getAbsoluteUrl("/og-image.webp")],
     },
     ...memberPages,
   ];
