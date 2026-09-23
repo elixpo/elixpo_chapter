@@ -471,7 +471,12 @@ export default function TemplateSendDialog({
                 body: formData,
             });
 
-            const d = await res.json().catch(() => ({}));
+            const d = (await res.json().catch(() => ({}))) as {
+                ok?: boolean;
+                error?: string;
+                validEmails?: string[];
+                malformedRows?: { row: number; error: string }[];
+            };
             if (!res.ok || !d?.ok) throw new Error(d?.error || "CSV parsing failed.");
 
             const validEmails: string[] = d.validEmails || [];
