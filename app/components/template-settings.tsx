@@ -3,14 +3,22 @@
 import type { EmailFooter } from "@/lib/render";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BoltIcon from "@mui/icons-material/Bolt";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SaveIcon from "@mui/icons-material/Save";
 import SendIcon from "@mui/icons-material/Send";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import WebhookIcon from "@mui/icons-material/Webhook";
 import {
+    Alert,
     Box,
     Button,
     Chip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     MenuItem,
     Select,
     Snackbar,
@@ -23,6 +31,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { GHOST_BTN, PRIMARY_BTN } from "./dashboard-ui";
 import GlassCard from "./glass-card";
+import { useRole } from "./role-provider";
 import TemplateSendDialog from "./template-send-dialog";
 import TemplateTestDialog from "./template-test-dialog";
 
@@ -76,6 +85,22 @@ interface Tmpl {
     content_html: string | null;
     bg_color: string | null;
 }
+interface WorkspaceOpt {
+    tenantId: string;
+    name: string;
+    slug: string | null;
+    role: string;
+    active: boolean;
+    kind: "personal" | "shared";
+}
+interface TransferResult {
+    destination: { id: string; name: string; slug: string | null };
+    webhookCredentials?: {
+        product: { client_id: string; name: string };
+        secret: string;
+    };
+    senderReset: boolean;
+}
 
 /** Field label used across the footer editor. */
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -105,6 +130,7 @@ const FOOTER_FIELDS: { key: keyof EmailFooter; label: string; placeholder: strin
 ];
 
 export default function TemplateSettings({ templateId }: { templateId: string }) {
+    const { canWrite } = useRole();
     const [tmpl, setTmpl] = useState<Tmpl | null>(null);
     const [products, setProducts] = useState<ProductOpt[]>([]);
     const [senders, setSenders] = useState<SenderOpt[]>([]);
@@ -122,19 +148,28 @@ export default function TemplateSettings({ templateId }: { templateId: string })
     const [error, setError] = useState<string | null>(null);
     const [sendOpen, setSendOpen] = useState(false);
     const [testOpen, setTestOpen] = useState(false);
+    const [workspaces, setWorkspaces] = useState<WorkspaceOpt[]>([]);
+    const [transferOpen, setTransferOpen] = useState(false);
+    const [destinationTenantId, setDestinationTenantId] = useState("");
+    const [confirmationName, setConfirmationName] = useState("");
+    const [transferring, setTransferring] = useState(false);
+    const [transferError, setTransferError] = useState("");
+    const [transferResult, setTransferResult] = useState<TransferResult | null>(null);
 
     useEffect(() => {
         let alive = true;
         (async () => {
             try {
-                const [tRes, pRes, sRes] = await Promise.all([
+                const [tRes, pRes, sRes, meRes] = await Promise.all([
                     fetch(`/api/templates/${templateId}`),
                     fetch("/api/products"),
                     fetch("/api/senders"),
+                    fetch("/api/auth/me"),
                 ]);
                 const tData: any = await tRes.json();
                 const pData: any = await pRes.json().catch(() => ({}));
                 const sData: any = await sRes.json().catch(() => ({}));
+                const meData: any = await meRes.json().catch(() => ({}));
                 if (!alive) return;
                 if (!tRes.ok || !tData?.ok)
                     throw new Error(tData?.error || "Could not load template.");
@@ -147,6 +182,7 @@ export default function TemplateSettings({ templateId }: { templateId: string })
                 setFooter(t.footer || {});
                 if (Array.isArray(pData?.products)) setProducts(pData.products);
                 if (Array.isArray(sData?.senders)) setSenders(sData.senders);
+                if (Array.isArray(meData?.workspaces)) setWorkspaces(meData.workspaces);
             } catch (e: any) {
                 if (alive) setError(e?.message || "Could not load settings.");
             } finally {
@@ -192,6 +228,48 @@ export default function TemplateSettings({ templateId }: { templateId: string })
         } finally {
             setSaving(false);
         }
+    }
+
+    const writableDestinations = workspaces.filter(
+        (workspace) =>
+            !workspace.active &&
+            (workspace.role === "owner" ||
+                workspace.role === "admin" ||
+                workspace.role === "writer"),
+    );
+
+    async function transfer() {
+        if (!tmpl || transferring || confirmationName !== tmpl.name || !destinationTenantId) return;
+        setTransferring(true);
+        setTransferError("");
+        try {
+            const res = await fetch(`/api/templates/${templateId}/transfer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ destinationTenantId, confirmed: true }),
+            });
+            const data = (await res.json().catch(() => ({}))) as TransferResult & {
+                ok?: boolean;
+                message?: string;
+            };
+            if (!res.ok || !data.ok)
+                throw new Error(data.message || "Could not transfer template.");
+            setTransferResult(data);
+        } catch (e) {
+            setTransferError(e instanceof Error ? e.message : "Could not transfer template.");
+        } finally {
+            setTransferring(false);
+        }
+    }
+
+    async function openTransferredTemplate() {
+        if (!transferResult) return;
+        const res = await fetch("/api/workspace/switch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenantId: transferResult.destination.id }),
+        });
+        if (res.ok) window.location.href = `/dashboard/templates/${templateId}`;
     }
 
     if (loading) {
@@ -441,6 +519,49 @@ export default function TemplateSettings({ templateId }: { templateId: string })
                 </GlassCard>
 
                 {/* Send */}
+                <GlassCard sx={{ p: 2.5, border: "1px solid rgba(245,158,11,0.28)" }}>
+                    <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        alignItems={{ sm: "center" }}
+                        justifyContent="space-between"
+                        spacing={2}
+                    >
+                        <Box>
+                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.4 }}>
+                                <SwapHorizIcon sx={{ color: "#f59e0b", fontSize: 20 }} />
+                                <Typography
+                                    sx={{ fontWeight: 700, fontSize: "0.95rem", color: TEXT }}
+                                >
+                                    Transfer ownership
+                                </Typography>
+                            </Stack>
+                            <Typography sx={{ fontSize: "0.82rem", color: TEXT_60, maxWidth: 520 }}>
+                                Move this template, its attachments, and webhook events to another
+                                workspace where you have writer access or higher.
+                            </Typography>
+                        </Box>
+                        <Button
+                            onClick={() => {
+                                setTransferError("");
+                                setTransferOpen(true);
+                            }}
+                            disabled={!canWrite || writableDestinations.length === 0}
+                            startIcon={<SwapHorizIcon />}
+                            sx={{ ...GHOST_BTN, whiteSpace: "nowrap" }}
+                        >
+                            Transfer template
+                        </Button>
+                    </Stack>
+                    {(!canWrite || writableDestinations.length === 0) && (
+                        <Typography sx={{ mt: 1.2, fontSize: "0.76rem", color: "var(--fg-faint)" }}>
+                            {!canWrite
+                                ? "You need writer access or higher in the current workspace to transfer this template."
+                                : "No other workspace currently grants you writer, admin, or owner access."}
+                        </Typography>
+                    )}
+                </GlassCard>
+
+                {/* Send */}
                 <GlassCard sx={{ p: 2.5 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: TEXT, mb: 0.4 }}>
                         {mode === "webhook" ? "Send manually" : "Whom to send"}
@@ -487,6 +608,159 @@ export default function TemplateSettings({ templateId }: { templateId: string })
                 getContentHtml={async () => tmpl.content_html || ""}
                 bgColor={tmpl.bg_color || undefined}
             />
+
+            <Dialog
+                open={transferOpen}
+                onClose={() => !transferring && !transferResult && setTransferOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                PaperProps={{
+                    sx: {
+                        bgcolor: "var(--menu-surface)",
+                        color: TEXT,
+                        border: "1px solid var(--border)",
+                        borderRadius: "14px",
+                    },
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800 }}>
+                    {transferResult ? "Template transferred" : "Transfer template"}
+                </DialogTitle>
+                <DialogContent>
+                    {transferResult ? (
+                        <Stack spacing={2}>
+                            <Alert severity="success">
+                                Moved to {transferResult.destination.name}. Attachments and webhook
+                                endpoints were preserved.
+                            </Alert>
+                            {transferResult.webhookCredentials && (
+                                <Alert severity="warning" icon={<WarningAmberIcon />}>
+                                    <Typography sx={{ fontWeight: 800, fontSize: "0.86rem" }}>
+                                        Save the new webhook secret now
+                                    </Typography>
+                                    <Typography sx={{ fontSize: "0.78rem", mb: 1 }}>
+                                        The destination product has new credentials. This secret is
+                                        shown only once.
+                                    </Typography>
+                                    <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>
+                                        Client ID
+                                    </Typography>
+                                    <Typography
+                                        component="code"
+                                        sx={{ display: "block", wordBreak: "break-all", mb: 1 }}
+                                    >
+                                        {transferResult.webhookCredentials.product.client_id}
+                                    </Typography>
+                                    <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>
+                                        Secret
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography
+                                            component="code"
+                                            sx={{ wordBreak: "break-all", flex: 1 }}
+                                        >
+                                            {transferResult.webhookCredentials.secret}
+                                        </Typography>
+                                        <Button
+                                            onClick={() =>
+                                                navigator.clipboard.writeText(
+                                                    transferResult.webhookCredentials?.secret || "",
+                                                )
+                                            }
+                                            startIcon={<ContentCopyIcon />}
+                                            sx={GHOST_BTN}
+                                        >
+                                            Copy
+                                        </Button>
+                                    </Stack>
+                                </Alert>
+                            )}
+                            {transferResult.senderReset && (
+                                <Typography sx={{ color: TEXT_60, fontSize: "0.8rem" }}>
+                                    Sender credentials were not copied. Choose a sender owned by the
+                                    destination workspace before sending.
+                                </Typography>
+                            )}
+                        </Stack>
+                    ) : (
+                        <Stack spacing={2} sx={{ pt: 0.5 }}>
+                            <Alert severity="warning" icon={<WarningAmberIcon />}>
+                                This moves the template out of the current workspace. Historical
+                                delivery logs and sender credentials remain here. Save any pending
+                                settings changes first.
+                            </Alert>
+                            <Box>
+                                <FieldLabel>Destination workspace</FieldLabel>
+                                <Select
+                                    value={destinationTenantId}
+                                    onChange={(e) => setDestinationTenantId(e.target.value)}
+                                    displayEmpty
+                                    fullWidth
+                                    size="small"
+                                    sx={darkSelect}
+                                >
+                                    <MenuItem value="" disabled>
+                                        Choose a workspace…
+                                    </MenuItem>
+                                    {writableDestinations.map((workspace) => (
+                                        <MenuItem
+                                            key={workspace.tenantId}
+                                            value={workspace.tenantId}
+                                        >
+                                            {workspace.name} · {workspace.role}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </Box>
+                            <Box>
+                                <FieldLabel>
+                                    Type “{tmpl.name}” to confirm this ownership transfer
+                                </FieldLabel>
+                                <TextField
+                                    value={confirmationName}
+                                    onChange={(e) => setConfirmationName(e.target.value)}
+                                    placeholder={tmpl.name}
+                                    fullWidth
+                                    size="small"
+                                    sx={darkField}
+                                />
+                            </Box>
+                            {transferError && (
+                                <Typography sx={{ color: "var(--danger)", fontSize: "0.82rem" }}>
+                                    {transferError}
+                                </Typography>
+                            )}
+                        </Stack>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    {transferResult ? (
+                        <Button onClick={openTransferredTemplate} sx={PRIMARY_BTN}>
+                            Open in {transferResult.destination.name}
+                        </Button>
+                    ) : (
+                        <>
+                            <Button onClick={() => setTransferOpen(false)} sx={GHOST_BTN}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={transfer}
+                                disabled={
+                                    transferring ||
+                                    !destinationTenantId ||
+                                    confirmationName !== tmpl.name
+                                }
+                                sx={{
+                                    ...PRIMARY_BTN,
+                                    background: "linear-gradient(135deg, #d97706, #f59e0b)",
+                                }}
+                            >
+                                {transferring ? <CircularProgress size={18} /> : "Confirm transfer"}
+                            </Button>
+                        </>
+                    )}
+                </DialogActions>
+            </Dialog>
 
             <Snackbar
                 open={savedMsg}
