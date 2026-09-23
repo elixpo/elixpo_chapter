@@ -26,11 +26,10 @@ from scripts._common import call_llm, github_rest  # noqa: E402
 
 REPO = os.environ["REPO"]
 PR_NUMBER = os.environ["PR_NUMBER"]
-# Word-bounded @elixpoo (rejects @elixpooo). Accepts any phrasing after it
-# — "fill the PR description", "write me a description", "draft this", etc.
-# The LLM generates the body either way; we just detect the mention and
-# strip it from the final output so the workflow doesn't re-fire on our edit.
-TRIGGER_RE = re.compile(r"@elixpoo\b", re.IGNORECASE)
+# This helper is intentionally narrower than the repository agent: ordinary
+# mentions belong to elixpo-agent.yml, while description rewriting requires an
+# explicit command and must not run merely because a PR discusses @elixpoo.
+TRIGGER_RE = re.compile(r"@elixpoo\s+fill\b", re.IGNORECASE)
 MAX_DIFF_CHARS = 18000
 
 SYSTEM_PROMPT = """\
@@ -111,7 +110,11 @@ def main() -> int:
     )
 
     print(f"Calling {LLM_MODEL_AGENT} to draft PR description...")
-    new_body = call_llm(LLM_MODEL_AGENT, SYSTEM_PROMPT, user_msg).strip()
+    try:
+        new_body = call_llm(LLM_MODEL_AGENT, SYSTEM_PROMPT, user_msg).strip()
+    except Exception as exc:
+        print(f"Description generation unavailable ({exc}); leaving PR body unchanged.")
+        return 0
 
     # Safety: the LLM must not reintroduce the trigger, else we loop on edit.
     if TRIGGER_RE.search(new_body):
