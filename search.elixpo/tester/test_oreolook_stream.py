@@ -1,6 +1,16 @@
 import unittest
 
-from tester.oreolook_stream import split_content
+from tester.oreolook_stream import iter_sse_data, split_content
+
+
+class FakeStreamingResponse:
+    def __init__(self, lines):
+        self.lines = lines
+
+    def iter_lines(self, *, chunk_size, decode_unicode):
+        assert chunk_size == 1
+        assert decode_unicode is True
+        return iter(self.lines)
 
 
 class OreoLookStreamTests(unittest.TestCase):
@@ -18,6 +28,15 @@ class OreoLookStreamTests(unittest.TestCase):
         tasks, visible = split_content("Hi<TASKS>Done</TASKS> there", info_event=False)
         self.assertEqual(tasks, ["Done"])
         self.assertEqual(visible, "Hi there")
+
+    def test_harness_reads_each_sse_line_without_buffering(self):
+        response = FakeStreamingResponse([
+            "data: first",
+            "",
+            "data: second",
+            "",
+        ])
+        self.assertEqual(list(iter_sse_data(response)), ["first", "second"])
 
 
 if __name__ == "__main__":

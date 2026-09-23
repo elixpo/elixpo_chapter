@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 from urllib.parse import quote
 import atexit
 import time
-from pipeline.config import MAX_LINKS_TO_TAKE, isHeadless, MAX_IMAGES_TO_INCLUDE, LOG_MESSAGE_QUERY_TRUNCATE, SEARCH_AGENT_POOL_SIZE, SEARCH_AGENT_MAX_TABS
+from pipeline.config import MAX_LINKS_TO_TAKE, isHeadless, MAX_IMAGES_TO_INCLUDE, LOG_MESSAGE_QUERY_TRUNCATE, SEARCH_AGENT_POOL_SIZE, SEARCH_AGENT_MAX_TABS, DEEP_SEARCH_WEB_SEARCH_TIMEOUT_SECONDS
 import shutil
 import os
 import json
@@ -96,8 +96,11 @@ class SearchAgentPool:
         self.image_agent_tabs = []
         self.lock = asyncio.Lock()
         self.initialized = False
-        # Concurrency semaphores — limit concurrent browser operations
-        self.text_semaphore = asyncio.Semaphore(pool_size * 3)
+        self._text_cursor = 0
+        self._image_cursor = 0
+        # One active browser operation per warm agent. Opening several tabs in
+        # one Yahoo context triggers throttling and stalls every caller.
+        self.text_semaphore = asyncio.Semaphore(max(1, pool_size))
         self.image_semaphore = asyncio.Semaphore(pool_size * 2)
     
     async def initialize_pool(self):
@@ -125,8 +128,8 @@ class SearchAgentPool:
     
     async def get_text_agent(self):
         async with self.lock:
-            min_tabs = min(self.text_agent_tabs)
-            agent_idx = self.text_agent_tabs.index(min_tabs)
+            agent_idx = self._text_cursor % len(self.text_agents)
+            self._text_cursor += 1
             
             if self.text_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
                 logger.info(f"[POOL] Restarting text agent {agent_idx} after {self.text_agent_tabs[agent_idx]} tabs")
@@ -146,8 +149,8 @@ class SearchAgentPool:
     
     async def get_image_agent(self):
         async with self.lock:
-            min_tabs = min(self.image_agent_tabs)
-            agent_idx = self.image_agent_tabs.index(min_tabs)
+            agent_idx = self._image_cursor % len(self.image_agents)
+            self._image_cursor += 1
             
             if self.image_agent_tabs[agent_idx] >= self.max_tabs_per_agent:
                 logger.info(f"[POOL] Restarting image agent {agent_idx} after {self.image_agent_tabs[agent_idx]} tabs")
@@ -660,7 +663,10 @@ class accessSearchAgents:
 
         async with agent_pool.text_semaphore:
             agent, agent_idx = await agent_pool.get_text_agent()
-            results = await agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx)
+            results = await asyncio.wait_for(
+                agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx),
+                timeout=float(DEEP_SEARCH_WEB_SEARCH_TIMEOUT_SECONDS),
+            )
             return results
 
     async def _async_get_youtube_metadata(self, url):
@@ -819,4 +825,3 @@ atexit.register(shutdown_graceful)
 
 port_manager = searchPortManager(start_port=10000, end_port=19999)
 agent_pool = SearchAgentPool(pool_size=SEARCH_AGENT_POOL_SIZE, max_tabs_per_agent=SEARCH_AGENT_MAX_TABS)
-

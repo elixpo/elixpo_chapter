@@ -13,6 +13,40 @@ permissions:
   contents: read
 
 jobs:
+  memory:
+    name: CPU memory release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "6379"
+      IPC_HOST: 127.0.0.1
+      IPC_PORT: "9510"
+      IPC_AUTHKEY: local-evaluation-only
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install evaluation dependency
+        run: python -m pip install pytest
+
+      - name: Run deterministic memory tests
+        run: PYTHONPATH=lixsearch python -m pytest -q tester/test_memory_release_gates.py
+
+      - name: Produce CPU-only memory report
+        run: PYTHONPATH=lixsearch python -m memoryEval local --output-dir data/evals/memory
+
+      - name: Upload memory report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-release-gate
+          path: data/evals/memory/
+
   verify:
     name: Edge audit and Pages build
     runs-on: ubuntu-latest

@@ -17,6 +17,7 @@ from pipeline.config import (
     REQUEST_ID_HEX_SLICE_SIZE
 )
 from ragService.retrievalPipeline import RetrievalPipeline
+from sessions.episodic_memory import EpisodicMemoryManager, MemoryScope
 import torch
 import threading
 from typing import Dict, List, Optional
@@ -45,6 +46,10 @@ class CoreEmbeddingService:
         self.retrieval_pipeline = RetrievalPipeline(
             self.embedding_service,
             self.vector_store
+        )
+        self.episodic_memory = EpisodicMemoryManager(
+            self.embedding_service,
+            self.vector_store,
         )
         
         self._gpu_lock = threading.Lock()
@@ -161,22 +166,60 @@ class CoreEmbeddingService:
     def get_vector_store_stats(self) -> Dict:
         return self.vector_store.get_stats()
 
-    def remember_turn(self, conversation_id: str, response_id: str, user_text: str, assistant_text: str) -> None:
-        summary = f"User: {user_text[:1000]}\nAssistant: {assistant_text[:2000]}"
-        embedding = self.embedding_service.embed_single(summary)
-        self.vector_store.add_chunks([{
-            "text": summary,
-            "url": f"memory://{conversation_id}/{response_id}",
-            "chunk_id": response_id,
-            "conversation_id": conversation_id,
-            "response_id": response_id,
-            "kind": "conversation_turn",
-            "embedding": embedding,
-        }])
+    @staticmethod
+    def _memory_scope(scope: Dict) -> MemoryScope:
+        return MemoryScope(
+            tenant_id=str(scope.get("tenant_id") or ""),
+            user_id=str(scope.get("user_id") or ""),
+            session_id=str(scope.get("session_id") or ""),
+        )
 
-    def recall_turns(self, conversation_id: str, query: str, top_k: int = 4) -> List[Dict]:
-        embedding = self.embedding_service.embed_single(query)
-        return self.vector_store.search(embedding, top_k=top_k, conversation_id=conversation_id)
+    def remember_episodes(
+        self,
+        scope: Dict,
+        episode_id: str,
+        user_text: str,
+        assistant_text: str,
+        source_turn_ids: List[int] | None = None,
+        evidence_ids: List[str] | None = None,
+        artifact_ids: List[str] | None = None,
+    ) -> int:
+        return self.episodic_memory.remember_turn(
+            scope=self._memory_scope(scope),
+            episode_id=episode_id,
+            user_text=user_text,
+            assistant_text=assistant_text,
+            source_turn_ids=source_turn_ids or (),
+            evidence_ids=evidence_ids or (),
+            artifact_ids=artifact_ids or (),
+        )
+
+    def recall_episodes(
+        self,
+        scope: Dict,
+        query: str,
+        top_k: int,
+        max_chars: int,
+    ) -> List[Dict]:
+        return self.episodic_memory.recall(
+            scope=self._memory_scope(scope),
+            query=query,
+            top_k=top_k,
+            max_chars=max_chars,
+        )
+
+    def delete_episodes(self, scope: Dict) -> None:
+        self.episodic_memory.delete(self._memory_scope(scope))
+
+    def delete_owned_episodes(
+        self, tenant_id: str, user_id: str, session_id: str | None = None,
+    ) -> int:
+        return self.episodic_memory.delete_owner(
+            tenant_id, user_id, session_id=session_id,
+        )
+
+    def expire_episodes(self, now: int | None = None) -> int:
+        return self.episodic_memory.expire(now)
     
     def get_semantic_cache_stats(self) -> Dict:
         return self.semantic_cache.get_stats()
@@ -219,6 +262,7 @@ class CoreEmbeddingService:
         while not self._shutdown_event.wait(PERSIST_VECTOR_STORE_INTERVAL):
             try:
                 self.vector_store.persist_to_disk()
+                self.expire_episodes()
             except Exception as e:
                 logger.error(f"[CORE] Persist worker error: {e}")
 

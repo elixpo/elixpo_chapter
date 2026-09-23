@@ -4,9 +4,11 @@ import random
 import asyncio
 import requests
 import os
+import uuid
 from datetime import datetime, timezone
 from loguru import logger
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 
 from pipeline.config import *
 from pipeline.instruction import (
@@ -18,18 +20,20 @@ from pipeline.instruction import (
 )
 from pipeline.tools import tools
 from pipeline.optimized_tool_execution import optimized_tool_execution
+from pipeline.response_builder import artifact_ledger_fields, auto_generate_pdf
 from pipeline.helpers import (
     _scrub_tool_names,
     _decompose_query_with_llm,
 )
 from pipeline.utils import format_sse
 from sessions.conversation_cache import ConversationCacheManager
-from ragService.semanticCacheRedis import SemanticCacheRedis as SemanticCache, SessionContextWindow
+from ragService.semanticCacheRedis import SemanticCacheRedis as SemanticCache
+from sessions.ledger import LedgerSessionContext
+from sessions.episodic_memory import request_memory_scope
 
 load_local_environment()
 
 MODEL = LLM_MODEL
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 
 import re as _re
 
@@ -97,6 +101,65 @@ def _strip_reasoning_leak(text: str) -> str:
     return result
 
 
+def _build_evidence_synthesis_messages(
+    messages: list,
+    sub_query: str,
+) -> list:
+    """Build a valid, tool-free handoff for forced sub-query synthesis.
+
+    The research transcript may contain assistant ``tool_calls`` followed by
+    several ``tool`` messages. Slicing that transcript can orphan either side
+    of the OpenAI tool-call pair, which providers reject with HTTP 400. The
+    synthesis pass only needs the gathered evidence, so flatten it into one
+    ordinary user message instead of replaying protocol state.
+    """
+    evidence_parts = []
+    for message in messages:
+        if message.get("role") != "tool":
+            continue
+        content = str(message.get("content") or "").strip()
+        if content and content != "No result":
+            evidence_parts.append(content[:1200])
+
+    evidence = "\n\n".join(evidence_parts)
+    if len(evidence) > 6000:
+        evidence = evidence[:6000]
+
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are OreoLook's research writer. Produce only the final, "
+                "user-facing, sourced answer. Use only the supplied evidence; "
+                "never mention tools, internal processing, or missing protocol state."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Research question: {sub_query}\n\n"
+                f"Gathered evidence:\n{evidence or 'No usable evidence was returned.'}\n\n"
+                f"{synthesis_instruction(sub_query, is_detailed=True)}"
+            ),
+        },
+    ]
+
+
+def _search_urls_from_tool_result(tool_result) -> list[str]:
+    """Read URLs from this search result, never from shared request state."""
+    try:
+        payload = json.loads(tool_result) if isinstance(tool_result, str) else tool_result
+    except (TypeError, json.JSONDecodeError):
+        return []
+    if not isinstance(payload, dict):
+        return []
+    return [
+        item.get("url")
+        for item in payload.get("results", [])
+        if isinstance(item, dict) and _is_clean_url(item.get("url"))
+    ]
+
+
 async def _evaluate_deep_search_need(query: str, headers: dict) -> bool:
     gating_messages = [
         {"role": "system", "content": "You are a query complexity evaluator. Return only JSON."},
@@ -147,6 +210,7 @@ async def _execute_deep_search_sub_query(
     emit_event,
     core_service,
     current_utc_time,
+    search_semaphore,
 ):
     collected_sources = []
     collected_images = []
@@ -235,6 +299,23 @@ async def _execute_deep_search_sub_query(
         tool_calls = assistant_message.get("tool_calls")
 
         if not tool_calls:
+            # Deep research is not allowed to manufacture an answer from model
+            # memory. Give the model bounded chances to gather web evidence;
+            # the caller applies a second commit gate before any text reaches
+            # SSE, caches, or an artifact.
+            if not collected_sources and iteration < DEEP_SEARCH_MAX_ITERATIONS_PER_SUB:
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "No verifiable web evidence has been collected yet. Use the available "
+                        "search and fetch tools now. Do not answer from memory or invent sources."
+                    ),
+                })
+                logger.warning(
+                    f"[DeepSearch:Sub{sub_query_index}] Iteration {iteration}: "
+                    "source-free answer rejected; requesting evidence"
+                )
+                continue
             final_content = assistant_message.get("content")
             logger.info(f"[DeepSearch:Sub{sub_query_index}] Iteration {iteration}: no tool calls, final content ready ({len(final_content or '')} chars)")
             break
@@ -258,16 +339,40 @@ async def _execute_deep_search_sub_query(
         tool_call_count += len(tool_calls)
 
         if web_search_calls:
+            if len(web_search_calls) > DEEP_SEARCH_MAX_WEB_SEARCHES_PER_SUB:
+                logger.info(
+                    f"[DeepSearch:Sub{sub_query_index}] Bounding web search fan-out "
+                    f"from {len(web_search_calls)} to {DEEP_SEARCH_MAX_WEB_SEARCHES_PER_SUB}"
+                )
+            web_search_calls = web_search_calls[:DEEP_SEARCH_MAX_WEB_SEARCHES_PER_SUB]
+
             async def _exec_ws(idx, tc):
                 fn_name = tc["function"]["name"]
                 fn_args = json.loads(tc["function"]["arguments"])
                 logger.info(f"[DeepSearch:Sub{sub_query_index}] WebSearch #{idx+1}: {fn_args.get('query', '')[:50]}")
                 tool_result = None
-                async for result in optimized_tool_execution(fn_name, fn_args, memoized_results, emit_event):
-                    if isinstance(result, tuple):
-                        tool_result = result[0]
-                    elif isinstance(result, str) and not result.startswith("event:"):
-                        tool_result = result
+
+                async def _consume_search():
+                    nonlocal tool_result
+                    async for result in optimized_tool_execution(
+                        fn_name, fn_args, memoized_results, emit_event
+                    ):
+                        if isinstance(result, tuple):
+                            tool_result = result[0]
+                        elif isinstance(result, str) and not result.startswith("event:"):
+                            tool_result = result
+
+                try:
+                    async with search_semaphore:
+                        await asyncio.wait_for(
+                            _consume_search(),
+                            timeout=float(DEEP_SEARCH_WEB_SEARCH_TIMEOUT_SECONDS),
+                        )
+                except (asyncio.TimeoutError, TimeoutError):
+                    logger.warning(
+                        f"[DeepSearch:Sub{sub_query_index}] Web search timed out "
+                        f"after {DEEP_SEARCH_WEB_SEARCH_TIMEOUT_SECONDS}s"
+                    )
                 return {"tool_call_id": tc["id"], "name": fn_name, "result": tool_result}
 
             ws_results = await asyncio.gather(
@@ -276,10 +381,7 @@ async def _execute_deep_search_sub_query(
             )
             for r in ws_results:
                 if not isinstance(r, Exception):
-                    if "current_search_urls" in memoized_results:
-                        collected_sources.extend(
-                            u for u in memoized_results["current_search_urls"][:3] if _is_clean_url(u)
-                        )
+                    collected_sources.extend(_search_urls_from_tool_result(r["result"])[:3])
                     tool_outputs.append({
                         "role": "tool",
                         "tool_call_id": r["tool_call_id"],
@@ -350,11 +452,7 @@ async def _execute_deep_search_sub_query(
 
     if not final_content:
         logger.info(f"[DeepSearch:Sub{sub_query_index}] Forcing synthesis after {DEEP_SEARCH_MAX_ITERATIONS_PER_SUB} iterations")
-        synthesis_messages = messages[:2] + messages[-4:] if len(messages) > 6 else messages
-        synthesis_messages.append({
-            "role": "user",
-            "content": synthesis_instruction(sub_query, is_detailed=True),
-        })
+        synthesis_messages = _build_evidence_synthesis_messages(messages, sub_query)
         try:
             resp = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -471,14 +569,15 @@ async def _run_deep_search_pipeline(
     event_id: str,
     session_id: str,
     emit_event,
+    ledger_request_id: str = None,
+    request_intent: str = None,
+    request_context=None,
 ):
     logger.info(f"[DeepSearch] Starting deep search for: '{user_query[:80]}'")
+    ledger_request_id = ledger_request_id or event_id or uuid.uuid4().hex
 
     current_utc_time = datetime.now(timezone.utc)
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {POLLINATIONS_API_KEY}",
-    }
+    headers = pollinations_auth_headers()
 
     core_service = None
     try:
@@ -490,10 +589,15 @@ async def _run_deep_search_pipeline(
     session_context = None
     if session_id:
         try:
-            session_context = SessionContextWindow(session_id=session_id)
-            session_context.add_message(role="user", content=user_query)
+            session_context = LedgerSessionContext(session_id=session_id)
+            if request_context is None:
+                session_context.add_message(
+                    role="user",
+                    content=user_query,
+                    metadata={"request_id": f"{ledger_request_id}:user"},
+                )
         except Exception as e:
-            logger.warning(f"[DeepSearch] SessionContextWindow init failed: {e}")
+            logger.warning(f"[DeepSearch] session ledger init failed: {e}")
 
     memoized_results = {
         "timezone_info": {},
@@ -507,6 +611,8 @@ async def _run_deep_search_pipeline(
         "cached_response": None,
         "session_id": session_id or "",
         "generated_images": [],
+        "request_context": request_context,
+        "ledger_request_id": ledger_request_id,
     }
 
     conversation_cache = None
@@ -573,6 +679,7 @@ async def _run_deep_search_pipeline(
     all_sub_results = []
     all_collected_sources = []
     all_collected_images = []
+    search_semaphore = asyncio.Semaphore(DEEP_SEARCH_WEB_SEARCH_CONCURRENCY)
 
     # Run ALL sub-queries in parallel — results stream as they complete
     async def _run_sub(sq_idx, sub_query):
@@ -590,6 +697,7 @@ async def _run_deep_search_pipeline(
                     emit_event=emit_event,
                     core_service=core_service,
                     current_utc_time=current_utc_time,
+                    search_semaphore=search_semaphore,
                 ),
                 timeout=float(DEEP_SEARCH_TIMEOUT_PER_SUB),
             )
@@ -597,7 +705,16 @@ async def _run_deep_search_pipeline(
                 sq_response = _scrub_tool_names(sq_response)
                 # Strip reasoning leaks: remove everything before the first markdown heading or real content
                 sq_response = _strip_reasoning_leak(sq_response)
-            return sq_idx, sub_query, sq_response, sq_sources, sq_images
+            evidence_sources = list(dict.fromkeys(
+                source for source in (sq_sources or []) if _is_clean_url(source)
+            ))
+            if sq_response and not evidence_sources:
+                logger.warning(
+                    f"[DeepSearch] Sub-query {sq_idx} rejected by evidence commit gate: "
+                    "no clean sources"
+                )
+                sq_response = None
+            return sq_idx, sub_query, sq_response, evidence_sources, sq_images
         except asyncio.TimeoutError:
             logger.error(f"[DeepSearch] Sub-query {sq_idx} timed out after {DEEP_SEARCH_TIMEOUT_PER_SUB}s")
             return sq_idx, sub_query, None, [], []
@@ -642,10 +759,28 @@ async def _run_deep_search_pipeline(
             if timeout_event:
                 yield timeout_event
 
+    if not all_sub_results:
+        failure = (
+            "I couldn’t gather enough verifiable sources to answer this reliably. "
+            "Please try again in a moment."
+        )
+        if event_id:
+            yield format_sse("RESPONSE", failure)
+        else:
+            yield failure
+        done_event = emit_event("INFO", "<TASK>DONE</TASK>")
+        if done_event:
+            yield done_event
+        logger.warning("[DeepSearch] Aborted: no source-backed research passed the commit gate")
+        return
+
     # ── Clean sources: filter out ad tracking / redirect URLs ──
     unique_sources = sorted(set(s for s in all_collected_sources if _is_clean_url(s)))[:8]
+    memoized_results["collected_sources"] = unique_sources
 
-    # Append sources
+    # Append sources to the stream and retain the same verified appendix for
+    # the canonical document/cache payload.
+    source_block = ""
     if unique_sources:
         source_block = "\n\n---\n**Sources:**\n"
         for i, src in enumerate(unique_sources, 1):
@@ -655,6 +790,7 @@ async def _run_deep_search_pipeline(
         else:
             yield source_block
 
+    final_response = ""
     if len(all_sub_results) > 1:
         # Only attempt synthesis if total content isn't already too large
         _total_chars = sum(len(r[1]) for r in all_sub_results)
@@ -686,16 +822,58 @@ async def _run_deep_search_pipeline(
             except Exception as e:
                 logger.error(f"[DeepSearch] Final synthesis failed: {e}", exc_info=True)
 
+    # The global synthesis is the canonical report. Raw per-thread content is
+    # only a fallback when no global synthesis was needed or could be produced.
+    research_content = "\n\n".join(r[1] for r in all_sub_results)
+    combined_content = final_response or research_content
+    document_content = f"{combined_content}{source_block}" if combined_content else None
+
+    # Never turn metadata-only emergency summaries into a document. A failed
+    # synthesis should remain a failed export instead of producing a polished-
+    # looking PDF with no substantive content.
+    status_only = bool(research_content) and all(
+        re.fullmatch(r"Research on '.+' gathered \d+ sources\.?", result[1].strip())
+        for result in all_sub_results
+    )
+    if status_only and not final_response:
+        document_content = None
+        logger.warning("[DeepSearch] PDF blocked: only source-count status summaries available")
+
+    # Complete any requested artifact from the researched content before DONE.
+    # The shared finalizer determines whether this request asks for an export;
+    # this path does not special-case a subject, field name, or prompt shape.
+    if document_content:
+        try:
+            pdf_url = await auto_generate_pdf(
+                document_content,
+                request_intent or user_query,
+                memoized_results,
+                event_id,
+            )
+            if pdf_url:
+                ready_event = emit_event("INFO", "<TASK>PDF ready for download</TASK>")
+                if ready_event:
+                    yield ready_event
+                link = f"\n\n---\n\n[Download PDF]({pdf_url})"
+                if event_id:
+                    yield format_sse("RESPONSE", link)
+                else:
+                    yield link
+        except Exception as e:
+            logger.error(f"[DeepSearch] PDF auto-generation failed: {e}")
+
     # ── Save to caches (fire-and-forget, never block DONE) ──
-    combined_content = "\n\n".join(r[1] for r in all_sub_results) if all_sub_results else None
     try:
-        if combined_content:
-            memoized_results["final_response"] = combined_content
+        if document_content:
+            memoized_results["final_response"] = document_content
             cache_metadata = {
                 "sources": unique_sources,
+                "evidence_refs": unique_sources,
+                "artifact_refs": memoized_results.get("generated_pdfs", [])[:10],
                 "deep_search": True,
                 "sub_queries": len(all_sub_results),
             }
+            cache_metadata.update(artifact_ledger_fields(memoized_results))
             _cache_embedding = None
             if core_service:
                 try:
@@ -705,14 +883,39 @@ async def _run_deep_search_pipeline(
             if conversation_cache is not None:
                 conversation_cache.add_to_cache(
                     query=user_query,
-                    response=combined_content,
+                    response=document_content,
                     metadata=cache_metadata,
                     query_embedding=_cache_embedding,
                 )
 
             if session_context:
-                session_context.add_message(role="assistant", content=combined_content)
+                session_context.add_message(
+                    role="assistant",
+                    content=document_content,
+                    metadata={
+                        "request_id": f"{ledger_request_id}:assistant",
+                        **cache_metadata,
+                    },
+                )
                 memoized_results["_assistant_response_saved"] = True
+            if core_service and session_id:
+                snapshots = memoized_results.get("artifact_snapshots") or []
+                try:
+                    await asyncio.wait_for(
+                        asyncio.to_thread(
+                            core_service.remember_episodes,
+                            request_memory_scope(session_id, namespace="search").filters(),
+                            ledger_request_id,
+                            request_intent or user_query,
+                            document_content,
+                            list(request_context.source_turn_ids if request_context else ()),
+                            list(unique_sources),
+                            [item.get("artifact_id") for item in snapshots if item.get("artifact_id")],
+                        ),
+                        timeout=max(2.0, EPISODIC_MEMORY_TIMEOUT_SECONDS * 4),
+                    )
+                except Exception as exc:
+                    logger.debug(f"[EpisodicMemory] Deep-search write skipped: {exc}")
     except Exception as e:
         logger.warning(f"[DeepSearch] Cache save failed: {e}")
 

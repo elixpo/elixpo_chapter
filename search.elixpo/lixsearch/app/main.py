@@ -101,6 +101,41 @@ def _run_content_cleanup() -> None:
         logger.debug(f"[APP] Content cleanup error: {e}")
 
 
+def _run_memory_janitor(*, dry_run: bool = False) -> dict:
+    """Run one cluster-wide lifecycle pass; Redis lock elects one replica."""
+    from graphMemory.client import GraphMemoryClient
+    from ipcService.coreServiceManager import get_core_embedding_service
+    from memoryJanitor import Janitor
+    from pipeline.config import (
+        AGENT_STATE_REDIS_DB, CONVERSATION_ARCHIVE_DIR, GRAPH_MEMORY_REDIS_DB,
+        JANITOR_ENABLED, SESSION_LEDGER_REDIS_DB, create_redis_client,
+    )
+
+    if not JANITOR_ENABLED:
+        return {"enabled": False, "acquired": False}
+
+    graph_redis = create_redis_client(db=GRAPH_MEMORY_REDIS_DB, decode_responses=True)
+    janitor = Janitor(
+        lock_redis=graph_redis,
+        ledger_redis=create_redis_client(db=SESSION_LEDGER_REDIS_DB, decode_responses=True),
+        state_redis=create_redis_client(db=AGENT_STATE_REDIS_DB, decode_responses=True),
+        graph_redis=graph_redis,
+        graph_client=GraphMemoryClient(graph_redis, enabled=True),
+        core_service=get_core_embedding_service(),
+        artifact_dirs=(
+            os.getenv("CONTENT_STORE_DIR", "/app/data/cache/content"),
+            os.getenv("IMAGE_STORE_DIR", "/app/data/cache/images"),
+        ),
+        conversation_dir=CONVERSATION_ARCHIVE_DIR,
+    )
+    report = janitor.run(dry_run=dry_run).to_dict()
+    if report["acquired"]:
+        logger.info("[Janitor] lifecycle report=%s", report)
+    else:
+        logger.debug("[Janitor] another replica owns the maintenance lock")
+    return report
+
+
 class lixSearch:
     
     def __init__(self):
@@ -296,19 +331,21 @@ class lixSearch:
                     if HYBRID_STARTUP_CLEANUP:
                         await asyncio.to_thread(_run_archive_cleanup)
                         await asyncio.to_thread(_run_global_memory_maintenance)
+                        await asyncio.to_thread(_run_memory_janitor)
                 except Exception as e:
                     logger.warning(f"[APP] Archive startup cleanup failed (non-fatal): {e}")
 
                 # Start periodic maintenance task (cleanup + Redis memory monitoring)
                 async def _periodic_maintenance():
-
+                    from pipeline.config import JANITOR_INTERVAL_SECONDS
                     while True:
-                        await asyncio.sleep(6 * 3600)
+                        await asyncio.sleep(JANITOR_INTERVAL_SECONDS)
                         try:
                             await asyncio.to_thread(_run_archive_cleanup)
                             await asyncio.to_thread(_run_content_cleanup)
                             await asyncio.to_thread(_run_redis_memory_check)
                             await asyncio.to_thread(_run_global_memory_maintenance)
+                            await asyncio.to_thread(_run_memory_janitor)
                             logger.info("[APP] Periodic maintenance completed")
                         except Exception as e:
                             logger.warning(f"[APP] Periodic maintenance error: {e}")

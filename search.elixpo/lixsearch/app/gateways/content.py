@@ -1,8 +1,11 @@
 import logging
+import json
 import os
 import time
 import threading
-from quart import Response
+from quart import Response, request
+
+from commons.artifact_access import artifact_access_allowed, prepare_artifact_access
 
 logger = logging.getLogger("lixsearch-api")
 
@@ -15,12 +18,55 @@ _cleanup_lock = threading.Lock()
 _last_cleanup = 0.0
 
 
-def store_content(content_id: str, data: bytes, extension: str = ".pdf") -> None:
+def _store_artifact_metadata(content_id: str, metadata: dict) -> None:
+    path = os.path.join(CONTENT_DIR, f"{content_id}.artifact.json")
+    canonical = json.dumps(metadata, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    normalized = json.loads(canonical)
 
+    def verify_existing() -> None:
+        with open(path, "r", encoding="utf-8") as handle:
+            existing = json.load(handle)
+        identity_fields = (
+            "artifact_id", "kind", "title", "slug", "content_hash",
+            "status", "source_turn_ids", "evidence_ids",
+        )
+        if any(existing.get(field) != normalized.get(field) for field in identity_fields):
+            raise ValueError("artifact identity collision")
+
+    if os.path.exists(path):
+        verify_existing()
+        return
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except FileExistsError:
+        verify_existing()
+        return
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(canonical)
+
+
+def store_content(
+    content_id: str,
+    data: bytes,
+    extension: str = ".pdf",
+    *,
+    artifact_metadata: dict | None = None,
+) -> str | None:
+
+    capability = prepare_artifact_access(CONTENT_DIR, content_id)
     path = os.path.join(CONTENT_DIR, f"{content_id}{extension}")
-    with open(path, "wb") as f:
-        f.write(data)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        descriptor = None
+    if descriptor is not None:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+    if artifact_metadata:
+        _store_artifact_metadata(content_id, artifact_metadata)
     logger.debug(f"[Content] Stored {content_id} ({len(data)} bytes, {extension})")
+    return capability
 
 
 def _content_type_from_ext(ext: str) -> str:
@@ -63,6 +109,9 @@ async def serve_content(content_id: str):
     # Strip extension from ID if present (e.g. "my-doc-abc123.pdf" → "my-doc-abc123")
     content_id = os.path.splitext(content_id)[0]
 
+    if not artifact_access_allowed(CONTENT_DIR, content_id, request.args.get("access", "")):
+        return Response("Content not found", status=404)
+
     _cleanup_expired_content()
 
     for fname in os.listdir(CONTENT_DIR):
@@ -74,7 +123,7 @@ async def serve_content(content_id: str):
                     data = f.read()
                 content_type = _content_type_from_ext(ext)
                 headers = {
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": "private, max-age=86400",
                 }
                 if content_type == "application/pdf":
                     headers["Content-Disposition"] = f'inline; filename="{content_id}.pdf"'

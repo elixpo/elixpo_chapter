@@ -7,6 +7,7 @@ import time
 import uuid
 from typing import Any
 
+from commons.auth_context import current_principal_id
 from pipeline.config import AGENT_HISTORY_MAX_MESSAGES, AGENT_RESPONSE_TTL_SECONDS, AGENT_STATE_REDIS_DB, create_redis_client
 
 _PREFIX = "elixpo:agent"
@@ -35,17 +36,25 @@ def canonical_conversation_id(value: str | None) -> str:
 
 
 class ResponseStateStore:
-    def __init__(self, client=None, ttl_seconds: int = AGENT_RESPONSE_TTL_SECONDS):
+    def __init__(
+        self,
+        client=None,
+        ttl_seconds: int = AGENT_RESPONSE_TTL_SECONDS,
+        owner_scope: str | None = None,
+    ):
         self.client = client or create_redis_client(db=AGENT_STATE_REDIS_DB)
         self.ttl_seconds = ttl_seconds
+        self.owner_scope = owner_scope or current_principal_id()
 
-    @staticmethod
-    def _response_key(response_id: str) -> str:
-        return f"{_PREFIX}:response:{response_id}"
+    def _response_key(self, response_id: str) -> str:
+        if self.owner_scope == "local":
+            return f"{_PREFIX}:response:{response_id}"
+        return f"{_PREFIX}:{self.owner_scope}:response:{response_id}"
 
-    @staticmethod
-    def _conversation_key(conversation_id: str) -> str:
-        return f"{_PREFIX}:conversation:{conversation_id}"
+    def _conversation_key(self, conversation_id: str) -> str:
+        if self.owner_scope == "local":
+            return f"{_PREFIX}:conversation:{conversation_id}"
+        return f"{_PREFIX}:{self.owner_scope}:conversation:{conversation_id}"
 
     def get_response(self, response_id: str) -> dict[str, Any] | None:
         raw = self.client.get(self._response_key(response_id))

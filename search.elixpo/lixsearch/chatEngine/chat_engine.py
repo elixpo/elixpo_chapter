@@ -5,10 +5,10 @@ import requests
 import random
 from pipeline.config import POLLINATIONS_ENDPOINT, LOG_MESSAGE_PREVIEW_TRUNCATE, LLM_MODEL
 from commons.environment import load_local_environment
+from commons.auth_context import pollinations_auth_headers
 import os
 load_local_environment()
 
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 MODEL = LLM_MODEL
 class ChatEngine:
     
@@ -56,10 +56,7 @@ class ChatEngine:
                 requests.post,
                 POLLINATIONS_ENDPOINT,
                 json=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {POLLINATIONS_API_KEY}"
-                },
+                headers=pollinations_auth_headers(),
                 timeout=30
             )
             response.raise_for_status()
@@ -165,4 +162,3 @@ class ChatEngine:
         lines = data.splitlines()
         data_str = ''.join(f"data: {line}\n" for line in lines)
         return f"event: {event}\n{data_str}\n\n"
-
