@@ -1,7 +1,7 @@
 "use client";
 
 import { WordsPullUpMultiStyle } from "./WordsPullUpMultiStyle";
-import { ProjectsGrid } from "./ProjectsGrid";
+import { ProductDirectoryTeaser } from "./ProductDirectoryTeaser";
 import { Segment } from "@/lib/elixpo-links";
 
 export function FeaturesSection() {
@@ -16,13 +16,13 @@ export function FeaturesSection() {
   return (
     <section
       id="features"
-      className="min-h-screen bg-black text-[#E1E0CC] py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden select-none"
+      className="bg-black text-[#E1E0CC] pt-24 pb-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden select-none"
     >
       {/* Subtle background noise overlay */}
       <div className="absolute inset-0 bg-noise opacity-[0.15] mix-blend-overlay pointer-events-none z-0" />
 
       {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-primary/[0.02] blur-[160px] rounded-full pointer-events-none" />
+      <div className="absolute hidden md:block top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-primary/[0.02] blur-[160px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header containing multi-style headers */}
@@ -40,8 +40,8 @@ export function FeaturesSection() {
           />
         </div>
 
-        <div className="mb-20">
-          <ProjectsGrid />
+        <div>
+          <ProductDirectoryTeaser />
         </div>
       </div>
     </section>

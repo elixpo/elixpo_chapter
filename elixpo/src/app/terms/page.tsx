@@ -1,14 +1,13 @@
-import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo";
 import { LegalHero } from "@/components/LegalHero";
 import { ELIXPO_LINKS } from "@/lib/elixpo-links";
 import { VIDEOS } from "@/lib/media";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Terms of Service",
-  description:
-    "The terms that govern your use of Elixpo's open-source tools, packages, and services.",
-  alternates: { canonical: "/terms" },
-};
+  description: "Read the terms governing Elixpo's hosted services, open-source tools, software packages, acceptable use, licensing, and reserved brand rights.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

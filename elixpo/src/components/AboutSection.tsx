@@ -6,7 +6,7 @@ import { WordsPullUpMultiStyle } from "./WordsPullUpMultiStyle";
 import { AnimatedParagraph } from "./AnimatedParagraph";
 import { ELIXPO_LINKS, Segment } from "@/lib/elixpo-links";
 import { VIDEOS } from "@/lib/media";
-import { PingPongVideo } from "./PingPongVideo";
+import { SmartVideo } from "./SmartVideo";
 
 export function AboutSection() {
   // Headings segments
@@ -25,8 +25,8 @@ export function AboutSection() {
     >
       <div className="bg-[#161616] border-t border-white/10 rounded-[1.5rem] md:rounded-[2.5rem] p-8 sm:p-12 md:py-12 md:px-16 max-w-6xl mx-auto shadow-2xl relative overflow-hidden">
         {/* Cinematic background highlight */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none select-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-neutral-950 rounded-full blur-[80px] pointer-events-none select-none" />
+        <div className="absolute hidden md:block top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none select-none" />
+        <div className="absolute hidden md:block bottom-0 left-0 w-[400px] h-[400px] bg-neutral-950 rounded-full blur-[80px] pointer-events-none select-none" />
 
         {/* Side-by-side Layout */}
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start text-left relative z-10 mb-12">
@@ -76,7 +76,7 @@ export function AboutSection() {
 
           {/* Cinematic art panel */}
           <div className="relative rounded-2xl overflow-hidden border border-white/10 max-w-4xl mx-auto aspect-[21/9] mb-8 group">
-            <PingPongVideo
+            <SmartVideo
               src={VIDEOS.about}
               className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
             />

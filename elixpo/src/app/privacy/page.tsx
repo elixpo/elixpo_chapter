@@ -1,14 +1,13 @@
-import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/seo";
 import { LegalHero } from "@/components/LegalHero";
 import { ELIXPO_LINKS } from "@/lib/elixpo-links";
 import { VIDEOS } from "@/lib/media";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Privacy Policy",
-  description:
-    "How Elixpo handles your data - a privacy-first, no-tracking approach across our open-source tools.",
-  alternates: { canonical: "/privacy" },
-};
+  description: "How Elixpo handles your data—a privacy-first approach to accounts, hosted services, open-source tools, and third-party integrations.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

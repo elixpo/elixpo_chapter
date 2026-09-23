@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView } from "motion/react";
 import { ArrowRight } from "lucide-react";
-import { PingPongVideo } from "./PingPongVideo";
+import { SmartVideo } from "./SmartVideo";
 import { PROJECTS, type Project } from "@/lib/projects";
 
 // Responsive column count for the masonry.
@@ -45,7 +45,7 @@ function ProjectCard({ card, index }: ProjectCardProps) {
       transition={{ duration: 0.85, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
       className={`relative rounded-2xl overflow-hidden bg-[#141414] border border-white/10 hover:border-primary/20 transition-colors duration-300 group ${card.aspect} flex flex-col justify-between`}
     >
-      <PingPongVideo
+      <SmartVideo
         src={card.video}
         className={`absolute inset-0 w-full h-full object-cover ${card.pos} select-none pointer-events-none`}
       />

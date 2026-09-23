@@ -85,7 +85,7 @@ export function Contributors() {
       className="bg-black text-[#E1E0CC] py-24 md:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden select-none"
     >
       {/* Ambient background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vw] h-[50vw] bg-primary/[0.03] rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute hidden md:block top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vw] h-[50vw] bg-primary/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12">

@@ -1,3 +1,5 @@
+import { SmartVideo } from "./SmartVideo";
+
 interface PingPongVideoProps {
   src: string;
   className?: string;
@@ -12,16 +14,5 @@ interface PingPongVideoProps {
  * browsers and cheap to run.
  */
 export function PingPongVideo({ src, className }: PingPongVideoProps) {
-  return (
-    <video
-      muted
-      playsInline
-      autoPlay
-      loop
-      preload="auto"
-      className={className}
-    >
-      <source src={src} type="video/mp4" />
-    </video>
-  );
+  return <SmartVideo src={src} className={className} />;
 }
