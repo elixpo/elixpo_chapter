@@ -73,7 +73,6 @@ export function WordsPullUp({
           className="absolute -top-[0.18em] -right-[0.02em] w-[0.6em] h-[0.6em] select-none pointer-events-none"
         >
           <motion.img
-            // eslint-disable-next-line @next/next/no-img-element
             src={logoSrc}
             alt="Elixpo"
             animate={{ y: ["0%", "-24%", "0%"], rotate: [0, -5, 0] }}

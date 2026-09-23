@@ -1,4 +1,4 @@
-import { ContributorAvatar } from "@/components/ContributorAvatar";
+import { ContributorOrbitAvatar, ContributorOrbitRing } from "@/components/ContributorOrbit";
 import contributorsData from "@/data/contributors.json";
 
 export const metadata = {
@@ -64,84 +64,6 @@ export default async function CommunityPage() {
   const orbit1 = ranked.slice(1, 7);
   const orbit2 = ranked.slice(7, 16);
   const orbit3 = ranked.slice(16);
-
-  const rankStyles = [
-    "from-yellow-300 to-amber-500 text-black", // 1
-    "from-slate-200 to-slate-400 text-black", // 2
-    "from-orange-300 to-orange-600 text-black", // 3
-  ];
-
-  function Avatar({
-    c,
-    rank,
-    size,
-  }: {
-    c: Contributor;
-    rank: number;
-    size: number;
-  }) {
-    return (
-      <a
-        href={c.html_url || `https://github.com/${c.login}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={`${c.login}${c.contributions ? ` · ${c.contributions} contributions` : ""}`}
-        className="relative block group/av"
-      >
-        <ContributorAvatar
-          login={c.login}
-          src={c.avatar_url}
-          size={size}
-          className={`border-2 ${rank < 3 ? "border-primary" : "border-[#DEDBC8]/30"} shadow-md group-hover/av:border-primary transition-colors`}
-        />
-        {rank < 3 && (
-          <span
-            className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gradient-to-br ${rankStyles[rank]} text-[10px] font-bold flex items-center justify-center shadow-md ring-2 ring-black`}
-          >
-            {rank + 1}
-          </span>
-        )}
-      </a>
-    );
-  }
-
-  function Ring({
-    items,
-    inset,
-    spin,
-    counter,
-    size,
-    startRank,
-  }: {
-    items: Contributor[];
-    inset: string;
-    spin: string;
-    counter: string;
-    size: number;
-    startRank: number;
-  }) {
-    return (
-      <div className={`absolute ${inset} rounded-full border border-white/10`}>
-        <div className={`relative w-full h-full ${spin}`}>
-          {items.map((c, i) => {
-            const angle = (i / items.length) * 360;
-            const rad = (angle * Math.PI) / 180;
-            const x = 50 + 50 * Math.cos(rad);
-            const y = 50 + 50 * Math.sin(rad);
-            return (
-              <div
-                key={c.login}
-                className={`absolute ${counter}`}
-                style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
-              >
-                <Avatar c={c} rank={startRank + i} size={size} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <section className="py-24 md:py-32 overflow-hidden">
@@ -216,13 +138,13 @@ export default async function CommunityPage() {
           {/* Center - #1 contributor */}
           {center && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-              <Avatar c={center} rank={0} size={96} />
+              <ContributorOrbitAvatar contributor={center} rank={0} size={96} />
             </div>
           )}
 
-          <Ring items={orbit1} inset="inset-[28%]" spin="animate-orbit-slow" counter="animate-counter-orbit-slow" size={48} startRank={1} />
-          <Ring items={orbit2} inset="inset-[14%]" spin="animate-orbit-medium" counter="animate-counter-orbit-medium" size={40} startRank={7} />
-          <Ring items={orbit3} inset="inset-0" spin="animate-orbit-outer" counter="animate-counter-orbit-outer" size={34} startRank={16} />
+          <ContributorOrbitRing items={orbit1} inset="inset-[28%]" spin="animate-orbit-slow" counter="animate-counter-orbit-slow" size={48} startRank={1} />
+          <ContributorOrbitRing items={orbit2} inset="inset-[14%]" spin="animate-orbit-medium" counter="animate-counter-orbit-medium" size={40} startRank={7} />
+          <ContributorOrbitRing items={orbit3} inset="inset-0" spin="animate-orbit-outer" counter="animate-counter-orbit-outer" size={34} startRank={16} />
         </div>
 
         <p className="text-center text-sm text-muted mt-10 font-mono">

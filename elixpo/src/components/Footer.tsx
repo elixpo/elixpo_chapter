@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Copy, Check, Github, MessagesSquare, Heart, Star } from "lucide-react";
 import { ELIXPO_LINKS } from "@/lib/elixpo-links";
-import { PROJECTS, projectName } from "@/lib/projects";
+import { ECOSYSTEM_PRODUCTS } from "@/lib/catalog";
 
 // Single source of truth - exactly the projects shown on /projects.
-const ecosystem = PROJECTS.map((p) => ({ label: projectName(p), href: p.href }));
+const ecosystem = ECOSYSTEM_PRODUCTS.map((product) => ({ label: product.name, href: product.url }));
 
 const community = [
   { label: "GitHub Org", href: ELIXPO_LINKS.github },

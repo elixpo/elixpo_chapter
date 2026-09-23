@@ -126,8 +126,8 @@ export function NominationSection() {
       className="bg-black text-[#E1E0CC] py-20 px-4 sm:px-6 lg:px-8 relative select-none overflow-hidden"
     >
       {/* Background gradient pulses */}
-      <div className="absolute top-1/4 right-[8%] w-[380px] h-[380px] bg-primary/[0.07] rounded-full blur-[110px] pointer-events-none" />
-      <div className="absolute bottom-0 left-[5%] w-[300px] h-[300px] bg-[#44386e]/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute hidden md:block top-1/4 right-[8%] w-[380px] h-[380px] bg-primary/[0.07] rounded-full blur-[110px] pointer-events-none" />
+      <div className="absolute hidden md:block bottom-0 left-[5%] w-[300px] h-[300px] bg-[#44386e]/15 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto">
 

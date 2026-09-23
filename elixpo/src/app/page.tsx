@@ -1,8 +1,10 @@
-import { HeroSection } from "@/components/HeroSection";
+import { LandingHero } from "@/components/LandingHero";
 import { AboutSection } from "@/components/AboutSection";
 import { NominationSection } from "@/components/NominationSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
-import { PackagesSection } from "@/components/PackagesSection";
+import { PackageCatalogSection } from "@/components/PackageCatalogSection";
+import { ECOSYSTEM_PRODUCTS } from "@/lib/catalog";
+import { serializeJsonLd } from "@/lib/seo";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { Contributors } from "@/components/Contributors";
 import { FeatureProjectCTA } from "@/components/FeatureProjectCTA";
@@ -16,15 +18,25 @@ const jsonLd = {
   "@type": "Organization",
   name: "Elixpo",
   url: "https://elixpo.com",
-  logo: "/logos/logo.webp",
+  logo: "https://elixpo.com/logos/logo.webp",
   description:
-    "A developer-first open-source ecosystem of interconnected projects spanning AI art, intelligent search, collaborative sketching, and more.",
+    "An open-source ecosystem spanning publishing, visual collaboration, AI-assisted search, identity, links, software distribution, and the Oreo open-hardware badge.",
   founder: {
     "@type": "Person",
     name: "Ayushman Bhattacharya",
     url: "https://github.com/Circuit-Overtime",
   },
-  sameAs: ["https://github.com/elixpo/elixpo_chapter"],
+  sameAs: ["https://github.com/elixpo", "https://github.com/elixpo/elixpo_chapter"],
+  makesOffer: ECOSYSTEM_PRODUCTS.map((product) => ({
+    "@type": "Offer",
+    itemOffered: {
+      "@type": product.schemaType ?? "SoftwareApplication",
+      name: product.name,
+      url: product.url,
+      description: product.shortDescription,
+      image: new URL(product.icon, "https://elixpo.com").toString(),
+    },
+  })),
 };
 
 export default function Home() {
@@ -32,13 +44,13 @@ export default function Home() {
     <main className="bg-black text-[#E1E0CC]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
-      <HeroSection />
+      <LandingHero />
       <AboutSection />
       <NominationSection />
       <FeaturesSection />
-      <PackagesSection />
+      <PackageCatalogSection />
       <NewsletterSection />
       <Contributors />
       <FeatureProjectCTA />

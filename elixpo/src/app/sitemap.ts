@@ -1,30 +1,29 @@
 import type { MetadataRoute } from "next";
+import { ECOSYSTEM_PRODUCTS } from "@/lib/catalog";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-const baseUrl = "https://elixpo.com";
-
-const routes: { path: string; freq: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
-  { path: "", freq: "weekly", priority: 1 },
-  { path: "/projects", freq: "weekly", priority: 0.9 },
-  { path: "/community", freq: "weekly", priority: 0.8 },
-  { path: "/about", freq: "monthly", priority: 0.8 },
-  { path: "/architecture", freq: "monthly", priority: 0.7 },
-  { path: "/assets", freq: "monthly", priority: 0.7 },
-  { path: "/features", freq: "monthly", priority: 0.7 },
-  { path: "/resources", freq: "monthly", priority: 0.7 },
-  { path: "/contributing", freq: "monthly", priority: 0.6 },
-  { path: "/code-of-conduct", freq: "monthly", priority: 0.5 },
-  { path: "/terms", freq: "yearly", priority: 0.3 },
-  { path: "/privacy", freq: "yearly", priority: 0.3 },
-];
+const ROUTES = [
+  "/",
+  "/projects",
+  "/community",
+  "/about",
+  "/architecture",
+  "/assets",
+  "/features",
+  "/resources",
+  "/contributing",
+  "/code-of-conduct",
+  "/terms",
+  "/privacy",
+] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
-  return routes.map(({ path, freq, priority }) => ({
-    url: `${baseUrl}${path}`,
-    lastModified,
-    changeFrequency: freq,
-    priority,
+  const staticRoutes = ROUTES.map((path) => ({ url: absoluteUrl(path) }));
+  const productRoutes = ECOSYSTEM_PRODUCTS.map(({ slug }) => ({
+    url: absoluteUrl(`/projects/${slug}`),
   }));
+
+  return [...staticRoutes, ...productRoutes];
 }

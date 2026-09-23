@@ -3,15 +3,17 @@
 import { Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { VIDEOS } from "@/lib/media";
-import { PingPongVideo } from "./PingPongVideo";
+import { SmartVideo } from "./SmartVideo";
 
 export function NewsletterSection() {
   return (
-    <section className="min-h-screen bg-black overflow-hidden relative flex flex-col justify-between select-none">
+    <section className="min-h-[70svh] md:min-h-screen bg-black overflow-hidden relative flex flex-col justify-between select-none">
       {/* Background Video Player */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <PingPongVideo
+        <div className="absolute inset-0 bg-[url('/og-image.webp')] bg-cover bg-center opacity-20 md:hidden" />
+        <SmartVideo
           src={VIDEOS.contact}
+          desktopOnly
           className="w-full h-full object-cover translate-y-[17%] pointer-events-none scale-105"
         />
         {/* Dark film tint overlays of the video */}
@@ -21,7 +23,7 @@ export function NewsletterSection() {
       </div>
 
       {/* Decorative Top Gap */}
-      <div className="h-16 relative z-10" />
+      <div className="h-8 md:h-16 relative z-10" />
 
       {/* Main "Coming soon" widget */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 text-center max-w-4xl mx-auto w-full">
@@ -59,7 +61,7 @@ export function NewsletterSection() {
       </div>
 
       {/* Empty decorative bottom spacing */}
-      <div className="pb-16" />
+      <div className="pb-8 md:pb-16" />
     </section>
   );
 }
