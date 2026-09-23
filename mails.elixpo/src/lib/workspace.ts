@@ -151,6 +151,7 @@ export interface WorkspaceMembership {
     logo_url: string | null;
     role: string;
     status: string;
+    owner_uid: string | null;
 }
 
 /** Every workspace a user is an ACTIVE member of (for the switcher + profile). */
@@ -161,7 +162,7 @@ export async function listWorkspacesForUser(
 ): Promise<WorkspaceMembership[]> {
     const res = await db
         .prepare(
-            `SELECT t.id AS tenant_id, t.name, t.slug, t.logo_url, m.role, m.status
+            `SELECT t.id AS tenant_id, t.name, t.slug, t.logo_url, t.owner_uid, m.role, m.status
              FROM workspace_members m
              JOIN tenants t ON t.id = m.tenant_id
              WHERE m.status = 'active' AND (m.user_uid = ? OR m.email = ?)

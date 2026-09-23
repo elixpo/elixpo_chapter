@@ -19,16 +19,21 @@ export async function GET(request: NextRequest) {
         slug: string | null;
         role: string;
         active: boolean;
+        kind: "personal" | "shared";
     }> = [];
     try {
         const db = await getDatabase();
         const rows = await listWorkspacesForUser(db, session.uid, session.email);
+        // The first tenant bootstrapped for this account is its personal space;
+        // later owner-created tenants are shared workspaces.
+        const personalTenantId = rows.find((w) => w.owner_uid === session.uid)?.tenant_id;
         workspaces = rows.map((w) => ({
             tenantId: w.tenant_id,
             name: w.name,
             slug: w.slug,
             role: w.role,
             active: w.tenant_id === session.tenantId,
+            kind: w.tenant_id === personalTenantId ? "personal" : "shared",
         }));
     } catch {
         // best-effort; the navbar still works without the switcher list

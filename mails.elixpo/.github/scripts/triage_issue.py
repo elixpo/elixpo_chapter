@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Issue Triage Bot — accounts.elixpo
+Issue Triage Bot — blogs.elixpo
 Categorizes and prioritizes new GitHub issues via LLM, then files them
 into the matching per-category GitHub Project V2 with labels and a comment.
 """
@@ -51,6 +51,8 @@ LABEL_COLORS = {
     "MEDIUM": "fbca04",
     "LOW": "0e8a16",
     "ELIXPO": "0e8a16",
+    "MODERATION": "b60205",
+    "REPORT": "d93f0b",
 }
 
 
@@ -228,50 +230,61 @@ def main() -> None:
 
     is_org_member = ISSUE_AUTHOR in ORG_MEMBERS
     if is_org_member:
-        print(f"Author @{ISSUE_AUTHOR} is an org member — auto-assigning")
+        print(f"Author @{ISSUE_AUTHOR} is an org member — assigning reporter")
         try:
             assign_issue(ISSUE_NUMBER, ISSUE_AUTHOR)
         except Exception as exc:
             print(f"[warn] Assign failed: {exc}")
 
-    # ── Step 1: LLM triage ────────────────────────────────────────────────
+    # ── Moderation short-circuit ──────────────────────────────────────────
+    # Blog-report issues are opened by @elixpoo already carrying the REPORT/
+    # MODERATION label. They're pre-classified — route straight to the
+    # Moderation board at High priority and skip the LLM call.
+    issue_labels = {(l.get("name") or "").upper() for l in (issue_data.get("labels") or [])}
+    is_moderation = "REPORT" in issue_labels or "MODERATION" in issue_labels
+
+    # ── Step 1: triage (LLM, unless org-forced or moderation) ─────────────
     category = DEFAULT_CATEGORY
     priority = DEFAULT_PRIORITY
     summary = DEFAULT_SUMMARY
 
-    try:
-        print("Calling LLM for triage...")
-        llm_result = triage_llm(
-            issue_title, issue_body, include_category=True  
-        )
-        print(f"LLM response: {json.dumps(llm_result)}")
+    if is_moderation:
+        category = "Moderation"
+        priority = "High"
+        summary = "Blog report — review for takedown"
+        print("Moderation issue detected — skipping LLM, routing to Moderation board.")
+    else:
+        try:
+            print("Calling LLM for triage...")
+            llm_result = triage_llm(issue_title, issue_body, include_category=True)
+            print(f"LLM response: {json.dumps(llm_result)}")
 
-        raw_category = llm_result.get("category", category)
-        raw_priority = llm_result.get("priority", DEFAULT_PRIORITY)
-        raw_summary = llm_result.get("summary", DEFAULT_SUMMARY)
+            raw_category = llm_result.get("category", category)
+            raw_priority = llm_result.get("priority", DEFAULT_PRIORITY)
+            raw_summary = llm_result.get("summary", DEFAULT_SUMMARY)
 
-        if raw_category in CATEGORIES:
-            category = raw_category
-        else:
-            print(
-                f"[warn] Unknown category '{raw_category}', defaulting to {DEFAULT_CATEGORY}"
-            )
-            category = DEFAULT_CATEGORY
+            if raw_category in CATEGORIES:
+                category = raw_category
+            else:
+                print(
+                    f"[warn] Unknown category '{raw_category}', defaulting to {DEFAULT_CATEGORY}"
+                )
+                category = DEFAULT_CATEGORY
 
-        if raw_priority in PRIORITIES:
-            priority = raw_priority
-        else:
-            print(
-                f"[warn] Unknown priority '{raw_priority}', defaulting to {DEFAULT_PRIORITY}"
-            )
-            priority = DEFAULT_PRIORITY
+            if raw_priority in PRIORITIES:
+                priority = raw_priority
+            else:
+                print(
+                    f"[warn] Unknown priority '{raw_priority}', defaulting to {DEFAULT_PRIORITY}"
+                )
+                priority = DEFAULT_PRIORITY
 
-        summary = (raw_summary or DEFAULT_SUMMARY).strip() or DEFAULT_SUMMARY
+            summary = (raw_summary or DEFAULT_SUMMARY).strip() or DEFAULT_SUMMARY
 
-    except Exception as exc:
-        print(f"[error] LLM call failed: {exc}")
-        print("Falling back to defaults.")
-        # Keep existing defaults; org override already applied above.
+        except Exception as exc:
+            print(f"[error] LLM call failed: {exc}")
+            print("Falling back to defaults.")
+            # Keep existing defaults; org override already applied above.
 
     print(f"Triage result => Category: {category} | Priority: {priority}")
     print(f"Summary: {summary}")

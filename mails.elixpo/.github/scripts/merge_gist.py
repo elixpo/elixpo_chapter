@@ -4,8 +4,8 @@ merge_gist.py — Runs on PR merge.
   1. Creates/updates a Gist changelog entry (via Pollinations LLM).
   2. Closes issues linked to the merged PR.
 
-Env vars: AGENT_TOKEN (@elixpoo PAT with repo + gist scope),
-          POLLINATIONS_KEY, PR_NUMBER, REPO
+Env vars: AGENT_TOKEN (@elixpoo PAT with repository permissions),
+          GIST_TOKEN (gist-only PAT), POLLINATIONS_KEY, PR_NUMBER, REPO
 """
 
 import os
@@ -20,9 +20,8 @@ from ci_config import *  # noqa: F401, F403
 from _common import github_rest, call_llm
 
 # ── Environment ────────────────────────────────────────
-# AGENT_TOKEN is a PAT for @elixpoo with both repo and gist scopes — used for
-# PR/issue ops AND gist ops so every action appears as the @elixpoo user.
 AGENT_TOKEN = os.environ["AGENT_TOKEN"]
+GIST_TOKEN = os.environ["GIST_TOKEN"]
 POLLINATIONS_KEY = os.environ["POLLINATIONS_KEY"]
 PR_NUMBER = os.environ["PR_NUMBER"]
 REPO = os.environ.get("REPO", globals().get("REPO", ""))
@@ -88,13 +87,14 @@ def run_gist_digest():
 
     if gist_id:
         # Update existing gist — prepend new entry
-        gist_data = github_rest("GET", f"/gists/{gist_id}")
+        gist_data = github_rest("GET", f"/gists/{gist_id}", token=GIST_TOKEN)
         existing = gist_data["files"].get(gist_filename, {}).get("content", "")
         new_content = entry + existing
         github_rest(
             "PATCH",
             f"/gists/{gist_id}",
             {"files": {gist_filename: {"content": new_content}}},
+            token=GIST_TOKEN,
         )
         gist_url = gist_data["html_url"]
         print(f"Gist updated: {gist_url}")
@@ -105,7 +105,7 @@ def run_gist_digest():
             "public": True,
             "files": {gist_filename: {"content": entry}},
         }
-        created = github_rest("POST", "/gists", gist_payload)
+        created = github_rest("POST", "/gists", gist_payload, token=GIST_TOKEN)
         gist_url = created["html_url"]
         new_gist_id = created["id"]
         print(f"GIST_ID={new_gist_id}")

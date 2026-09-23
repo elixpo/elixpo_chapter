@@ -5,6 +5,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import DnsIcon from "@mui/icons-material/Dns";
 import HistoryIcon from "@mui/icons-material/History";
 import InventoryIcon from "@mui/icons-material/Inventory2";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
 import WebhookIcon from "@mui/icons-material/Webhook";
 import { Box, Stack } from "@mui/material";
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
     { label: "Senders", href: "/dashboard/senders", icon: DnsIcon },
     { label: "Webhooks", href: "/dashboard/webhooks", icon: WebhookIcon },
     { label: "Logs", href: "/dashboard/logs", icon: HistoryIcon },
+    { label: "Docs", href: "/docs", icon: MenuBookIcon },
 ];
 
 export function isActive(pathname: string, href: string): boolean {

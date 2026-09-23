@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDatabase } from "@/lib/d1-client";
-import { SESSION_COOKIE, getSession, signSession } from "@/lib/session";
+import { SESSION_COOKIE, SESSION_TTL_SECONDS, getSession, signSession } from "@/lib/session";
 import { getMembership } from "@/lib/workspace";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 15 * 86400,
+        maxAge: SESSION_TTL_SECONDS,
         path: "/",
     });
     return res;

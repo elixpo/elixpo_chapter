@@ -11,6 +11,7 @@ import { base64url, base64urlDecode, hmacSha256Hex, timingSafeEqual } from "./cr
 import { getEnv, requireEnv } from "./env";
 
 export const SESSION_COOKIE = "mail_session";
+export const SESSION_TTL_SECONDS = 30 * 86400;
 
 export interface SessionData {
     uid: string; // Elixpo Accounts subject
@@ -30,7 +31,7 @@ export function sessionRole(s: { role?: string } | null): string {
 
 export async function signSession(
     data: Omit<SessionData, "iat" | "exp">,
-    ttlSeconds = 15 * 86400,
+    ttlSeconds = SESSION_TTL_SECONDS,
 ): Promise<string> {
     const secret = await requireEnv("ELIXPO_MAIL_SESSION_SECRET");
     const now = Math.floor(Date.now() / 1000);
