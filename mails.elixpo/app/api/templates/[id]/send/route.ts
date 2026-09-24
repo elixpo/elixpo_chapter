@@ -101,13 +101,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             fromName = alias.from_name;
         }
 
-        const vars = body?.vars && typeof body.vars === "object" ? body.vars : {};
+        const globalVars = body?.vars && typeof body.vars === "object" ? body.vars : {};
+        const recipientVars =
+            body?.recipientVars && typeof body.recipientVars === "object" ? body.recipientVars : {};
         const product = template.product_id
             ? await getProduct(db, session.tenantId, template.product_id)
             : null;
 
         const results = [];
         for (const to of recipients) {
+            const vars = { ...globalVars, ...(recipientVars[to] || {}) };
             const r = await deliverTemplate(db, {
                 tenantId: session.tenantId,
                 template: effectiveTemplate,
