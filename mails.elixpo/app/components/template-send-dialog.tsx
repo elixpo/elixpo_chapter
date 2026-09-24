@@ -217,6 +217,9 @@ export default function TemplateSendDialog({
     // Variable values
     const [vars, setVars] = useState<Record<string, string>>({});
 
+    // Per-recipient variable values (from CSV upload)
+    const [recipientVars, setRecipientVars] = useState<Record<string, Record<string, string>>>({});
+
     // Live snapshot of the body taken once on open (reflects unsaved editor edits).
     const contentHtmlRef = useRef<string>("");
     const subjectRef = useRef<string>(subject);
@@ -421,6 +424,7 @@ export default function TemplateSendDialog({
                 body: JSON.stringify({
                     to: parsed.join(", "),
                     vars,
+                    recipientVars,
                     senderId,
                     aliasId: aliasId || undefined,
                     subject: subjectRef.current,
@@ -474,25 +478,37 @@ export default function TemplateSendDialog({
             const d = (await res.json().catch(() => ({}))) as {
                 ok?: boolean;
                 error?: string;
-                validEmails?: string[];
+                validRecipients?: { email: string; vars: Record<string, string> }[];
                 malformedRows?: { row: number; error: string }[];
             };
             if (!res.ok || !d?.ok) throw new Error(d?.error || "CSV parsing failed.");
 
-            const validEmails: string[] = d.validEmails || [];
-            if (validEmails.length > 0) {
-                setChips((c) => Array.from(new Set([...c, ...validEmails])));
+            const validRecipients = d.validRecipients || [];
+            if (validRecipients.length > 0) {
+                const newEmails = validRecipients.map((r) => r.email);
+                setChips((c) => Array.from(new Set([...c, ...newEmails])));
+
+                // Map new recipient variables
+                setRecipientVars((current) => {
+                    const updated = { ...current };
+                    for (const { email, vars } of validRecipients) {
+                        if (Object.keys(vars).length > 0) {
+                            updated[email] = { ...(updated[email] || {}), ...vars };
+                        }
+                    }
+                    return updated;
+                });
             }
 
             if (d.malformedRows && d.malformedRows.length > 0) {
                 setCsvErrors(d.malformedRows);
                 setToast({
-                    text: `CSV parsed: ${validEmails.length} valid, ${d.malformedRows.length} errors.`,
+                    text: `CSV parsed: ${validRecipients.length} valid, ${d.malformedRows.length} errors.`,
                     ok: false,
                 });
             } else {
                 setToast({
-                    text: `CSV parsed: added ${validEmails.length} valid emails.`,
+                    text: `CSV parsed: added ${validRecipients.length} valid emails.`,
                     ok: true,
                 });
             }
@@ -549,44 +565,14 @@ export default function TemplateSendDialog({
                     {/* ── Left column: recipients, sender, send-as, variables ── */}
                     <Stack spacing={2.2}>
                         <Box>
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <FieldLabel>Recipients (required)</FieldLabel>
-                                <Button
-                                    size="small"
-                                    startIcon={
-                                        isUploadingCsv ? (
-                                            <CircularProgress size={12} color="inherit" />
-                                        ) : (
-                                            <FileUploadIcon sx={{ fontSize: 16 }} />
-                                        )
-                                    }
-                                    disabled={isUploadingCsv}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    sx={{
-                                        textTransform: "none",
-                                        fontSize: "0.75rem",
-                                        color: TEXT_55,
-                                        p: 0,
-                                        mb: 0.7,
-                                        "&:hover": { color: TEXT, background: "transparent" },
-                                    }}
-                                >
-                                    Upload CSV
-                                </Button>
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    ref={fileInputRef}
-                                    style={{ display: "none" }}
-                                    onChange={handleFileUpload}
-                                />
-                            </Box>
+                            <FieldLabel>Recipients (required)</FieldLabel>
+                            <input
+                                type="file"
+                                accept=".csv"
+                                ref={fileInputRef}
+                                style={{ display: "none" }}
+                                onChange={handleFileUpload}
+                            />
                             <Box
                                 onClick={(e) => {
                                     const input = (e.currentTarget as HTMLElement).querySelector(
@@ -669,25 +655,63 @@ export default function TemplateSendDialog({
                                     }}
                                 />
                             </Box>
-                            <Typography
-                                sx={{ mt: 0.5, fontSize: "0.72rem", color: TEXT_40, mx: 0.2 }}
+
+                            <Stack
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="space-between"
+                                sx={{ mt: 1 }}
                             >
-                                Type an email then comma or Enter to add it. Up to {MAX_RECIPIENTS}.
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    mt: 0.6,
-                                    fontSize: "0.78rem",
-                                    fontWeight: 600,
-                                    color: overLimit ? RED : recipientCount > 0 ? GREEN : TEXT_40,
-                                }}
-                            >
-                                {recipientCount === 0
-                                    ? "No valid recipients yet"
-                                    : `${recipientCount} valid recipient${recipientCount === 1 ? "" : "s"}${
-                                          overLimit ? ` — over the limit of ${MAX_RECIPIENTS}` : ""
-                                      }`}
-                            </Typography>
+                                <Box>
+                                    <Typography
+                                        sx={{ fontSize: "0.72rem", color: TEXT_40, mx: 0.2 }}
+                                    >
+                                        Type an email then comma or Enter to add it. Up to{" "}
+                                        {MAX_RECIPIENTS}.
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            mt: 0.2,
+                                            fontSize: "0.78rem",
+                                            fontWeight: 600,
+                                            color: overLimit
+                                                ? RED
+                                                : recipientCount > 0
+                                                  ? GREEN
+                                                  : TEXT_40,
+                                        }}
+                                    >
+                                        {recipientCount === 0
+                                            ? "No valid recipients yet"
+                                            : `${recipientCount} valid recipient${recipientCount === 1 ? "" : "s"}${
+                                                  overLimit
+                                                      ? ` — over the limit of ${MAX_RECIPIENTS}`
+                                                      : ""
+                                              }`}
+                                    </Typography>
+                                </Box>
+
+                                <Button
+                                    size="small"
+                                    startIcon={
+                                        isUploadingCsv ? (
+                                            <CircularProgress
+                                                size={12}
+                                                sx={{ color: "var(--fg-muted)" }}
+                                            />
+                                        ) : (
+                                            <FileUploadIcon
+                                                sx={{ fontSize: "1.1rem !important" }}
+                                            />
+                                        )
+                                    }
+                                    disabled={isUploadingCsv}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    sx={{ ...GHOST_BTN, py: 0.5, px: 1.5 }}
+                                >
+                                    Upload CSV
+                                </Button>
+                            </Stack>
                             {csvErrors.length > 0 && (
                                 <Box
                                     sx={{
