@@ -34,6 +34,11 @@ Canonical reference for the Lix badge's input. If anything here disagrees with
 Active-low: idle reads `1` (pulled to 3V3 internally), pressed reads `0`
 (shorted to GND through the switch).
 
+The firmware applies an **8 ms software debounce window** to accepted press
+and release edges. GPIO interrupts latch short taps while the display is busy;
+the OS consumes the latched edge on its next update without producing duplicate
+presses from switch bounce.
+
 ## Why these pins specifically
 
 - **D-pad on GPIO 4-5-6-7**: four contiguous pins → cleanest possible parallel wire run on the breadboard. Spatial GPIO order roughly mirrors UP/DOWN/LEFT/RIGHT.

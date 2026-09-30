@@ -126,7 +126,7 @@ def _list_docs():
             continue
         for name in entries:
             low = name.lower()
-            if not (low.endswith(".md") or low.endswith(".txt")):
+            if not low.endswith((".md", ".txt", ".mdz", ".txtz")):
                 continue
             full = base + "/" + name
             if full in seen:
@@ -142,6 +142,19 @@ def _list_docs():
 
 def _read_lines(path):
     try:
+        if path.lower().endswith((".mdz", ".txtz")):
+            import deflate
+            import io
+            with open(path, "rb") as f:
+                head = f.read(8)
+                if len(head) != 8 or head[:4] != b"ODZ\x01":
+                    return []
+                expected = (head[4] | (head[5] << 8) |
+                            (head[6] << 16) | (head[7] << 24))
+                plain = deflate.DeflateIO(io.BytesIO(f.read())).read()
+            if len(plain) != expected:
+                return []
+            return plain.decode("utf-8").splitlines()
         with open(path) as f:
             return f.read().splitlines()
     except OSError:

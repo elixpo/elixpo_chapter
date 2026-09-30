@@ -47,6 +47,7 @@ def _list_photos():
             if f.startswith("_"):
                 continue
             if (f.endswith(".py") or f.endswith(".r565") or
+                    f.endswith(".rz565") or
                     f.endswith(".rv565")):
                 out.append(f)
         out.sort()
@@ -60,6 +61,8 @@ def _load_photo(name):
     Dispatch on extension."""
     if name.endswith(".r565"):
         return _load_r565(_GALLERY_DIR + "/" + name)
+    if name.endswith(".rz565"):
+        return _load_rz565(_GALLERY_DIR + "/" + name)
     if name.endswith(".py"):
         stem = name[:-3]
         try:
@@ -93,7 +96,7 @@ class _Video:
         self._f = open(path, "rb")
         head = self._f.read(_VIDEO_HEADER_SIZE)
         if (len(head) != _VIDEO_HEADER_SIZE or head[:3] != b"RV5" or
-                head[3] not in (1, 2, 3, 4)):
+                head[3] not in (1, 2, 3, 4, 6)):
             self.close()
             raise ValueError("bad RV565 header")
         self.version = head[3]
@@ -134,7 +137,7 @@ class _Video:
         # to ~0.5 FPS and starved button polling. One readinto() per frame is
         # both allocation-free and dramatically faster.
         packed_cap = (0 if self.version in (3, 4) else
-                      len(self.data) + 1024 if self.version == 2 else
+                      len(self.data) + 1024 if self.version in (2, 6) else
                       len(self.data) + (len(self.data) // 2) + 16)
         self._packed = bytearray(packed_cap)
         self.index = 0
@@ -218,7 +221,7 @@ class _Video:
             self.index = 0
             return
         self._f.seek(_VIDEO_HEADER_SIZE)
-        if self.version in (2, 4):
+        if self.version in (2, 4, 6):
             self.index = 0
             return
         # Clear in small chunks so looping a clip does not briefly allocate a
@@ -270,10 +273,9 @@ class _Video:
         if got != left:
             return False
 
-        if self.version == 2:
-            # Version 2 stores independent zlib frames at the LCD's native
-            # resolution. Inflate is native code; retaining only this frame is
-            # the lazy RAM cache, so clip length does not affect heap usage.
+        if self.version in (2, 6):
+            # V2/V6 store independent zlib frames. V6 keeps the benchmark's
+            # high-quality 180x135 RGB565 source; native C scales it below.
             try:
                 packed = bytes(packed_view)
                 try:
@@ -357,6 +359,34 @@ def _load_r565(path):
                 return None
             data = f.read(w * h * 2)
         if len(data) < w * h * 2:
+            return None
+        return (bytearray(data), w, h)
+    except Exception:
+        return None
+
+
+def _load_rz565(path):
+    """Inflate R5Z v1 once when a photo is opened.
+
+    The compressed file stays small on flash; the normal Gallery cache owns
+    the decoded RGB565 buffer until the user leaves that photo.
+    """
+    try:
+        import deflate
+        import io
+        with open(path, "rb") as f:
+            head = f.read(12)
+            if len(head) != 12 or head[:4] != b"R5Z\x01":
+                return None
+            w = head[4] | (head[5] << 8)
+            h = head[6] | (head[7] << 8)
+            raw_len = (head[8] | (head[9] << 8) |
+                       (head[10] << 16) | (head[11] << 24))
+            if (w <= 0 or h <= 0 or w > 320 or h > 240 or
+                    raw_len != w * h * 2):
+                return None
+            data = deflate.DeflateIO(io.BytesIO(f.read())).read()
+        if len(data) != raw_len:
             return None
         return (bytearray(data), w, h)
     except Exception:
@@ -457,6 +487,15 @@ class App(oreoOS.App):
 
     def on_exit(self):
         self._close_video()
+
+    def realtime_mode(self):
+        """Tell the OS scheduler that video owns the frame budget.
+
+        Buttons are still polled every loop, but OTA, transfer-server and
+        watchdog housekeeping are deferred until playback is paused or the
+        user leaves the clip.
+        """
+        return self._is_video() and self._video_playing
 
     def _close_video(self):
         if self._video is not None:
@@ -559,7 +598,7 @@ class App(oreoOS.App):
             if self._is_add_tile():
                 return
             name = self._names[self._idx] if self._idx < len(self._names) else ""
-            if not name or not name.endswith((".r565", ".rv565")):
+            if not name or not name.endswith((".r565", ".rz565", ".rv565")):
                 return
             self._close_video()
             path = _GALLERY_DIR + "/" + name
@@ -646,7 +685,7 @@ class App(oreoOS.App):
             if cur_name.endswith(".rv565"):
                 state = "pause" if self._video_playing else "play"
                 widgets.draw_hint(d, "L/R=next  A=%s  B=delete" % state)
-            elif cur_name.endswith(".r565"):
+            elif cur_name.endswith((".r565", ".rz565")):
                 widgets.draw_hint(d, "L/R=prev/next  A=refresh  B=delete")
             else:
                 widgets.draw_hint(d, "L/R=prev/next  A=refresh")
@@ -700,6 +739,12 @@ class App(oreoOS.App):
                     video.w, video.h, SW, SH)
                 # We intentionally use the hardware buffer directly to keep
                 # the accelerator Gallery-local. Tell Display to flush it.
+                d._dirty = True
+            elif (video.version == 6 and _gallery_native is not None and
+                    native_buf is not None):
+                _gallery_native.rgb565_scale(
+                    video.data, native_buf, video.w, video.h,
+                    0, 0, SW, SH, SW)
                 d._dirty = True
             # V2 uploads are already native LCD frames: one C-level buffer copy
             # replaces the old Python scaling loop. V1 remains readable for
