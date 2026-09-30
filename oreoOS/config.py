@@ -26,7 +26,7 @@ RELEASE_DATE      = "2026-05-16"
 
 GITHUB_USER       = "Circuit-Overtime"
 DISPLAY_NAME      = "Ayushman Bhattacharya"
-DESIGNATION       = "OSSMaintainer @pollinations"
+DESIGNATION       = "OSS Maintainer @pollinations"
 WEATHER_LAT       = 22.57
 WEATHER_LON       = 88.36
 WEATHER_NAME      = ""
