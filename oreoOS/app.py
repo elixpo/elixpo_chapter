@@ -17,6 +17,15 @@ class App:
     def update(self, dt):
         """Per-frame state update. dt = seconds since last frame."""
 
+    def realtime_mode(self):
+        """True while an app needs the low-latency scheduler.
+
+        Realtime mode preserves input polling but defers OS network/storage
+        housekeeping. Apps should enable it only for the active playback or
+        capture interval, never for their whole lifetime.
+        """
+        return False
+
     def draw(self, display):
         """Per-frame rendering. Don't call display.present() — the OS does that."""
 

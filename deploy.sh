@@ -23,6 +23,7 @@ TARGET=""
 PREVIEW=false
 FULL_BOARD=false
 BOARD_PORT="/dev/ttyACM0"
+FLASH_BAUD=921600
 BOARD_ARGS=()
 
 usage() {
@@ -41,6 +42,7 @@ Pages options:
 
 Board options:
   --port <device>         Serial port (default: /dev/ttyACM0)
+  --flash-baud <rate>     Firmware flash baud (default: 921600; auto-fallback)
   --full                  Reflash MicroPython + clean-install OreoOS (board target)
   --override <apps>       Replace comma-separated app trees, e.g. gallery,reader
   --clean                 Wipe and fully reinstall the badge filesystem
@@ -98,6 +100,17 @@ while (($#)); do
       BOARD_ARGS+=("$BOARD_PORT")
       shift
       ;;
+    --flash-baud)
+      [[ $# -ge 2 ]] || fail "--flash-baud requires a rate"
+      [[ "$2" =~ ^[0-9]+$ ]] || fail "--flash-baud must be a positive integer"
+      FLASH_BAUD="$2"
+      shift 2
+      ;;
+    --flash-baud=*)
+      FLASH_BAUD="${1#*=}"
+      [[ "$FLASH_BAUD" =~ ^[0-9]+$ ]] || fail "--flash-baud must be a positive integer"
+      shift
+      ;;
     --full|--reflash)
       set_target board
       FULL_BOARD=true
@@ -150,6 +163,18 @@ fi
 
 $PREVIEW && fail "--preview is only valid with --pages"
 
+# The device-native video is generated, not committed. Recreate it when a
+# clean checkout lacks the artifact or the tracked source video is newer.
+VIDEO_SOURCE="$SCRIPT_DIR/oreo.elixpo/public/video_assn.mp4"
+VIDEO_ASSET="$SCRIPT_DIR/apps/gallery/assets/optimized/video_assn.rv565"
+if [[ -f "$VIDEO_SOURCE" && (! -f "$VIDEO_ASSET" || "$VIDEO_SOURCE" -nt "$VIDEO_ASSET") ]]; then
+  printf 'Preparing Gallery video (RV565 v6, 180x135 @ 24 FPS)...\n'
+  "$PYTHON" tools/media_ingest.py "$VIDEO_SOURCE" \
+    --output-dir apps/gallery/assets/optimized \
+    --seconds 10 --fps 24 --width 180 --height 135
+  printf '\n'
+fi
+
 if $FULL_BOARD; then
   # Resolve the firmware before touching the board. Refuse an ambiguous set so
   # a future second image cannot silently flash the wrong hardware variant.
@@ -175,10 +200,18 @@ if $FULL_BOARD; then
   printf 'Full board recovery → %s\n' "$BOARD_PORT"
   printf 'Firmware: %s\n\n' "${FIRMWARE#$SCRIPT_DIR/}"
 
-  "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
-    --baud 460800 erase-flash
-  "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
-    --baud 460800 write-flash -z 0x0 "$FIRMWARE"
+  if ! "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
+      --baud "$FLASH_BAUD" erase-flash; then
+    printf 'High-speed erase failed; retrying at 460800 baud...\n'
+    "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
+      --baud 460800 erase-flash
+  fi
+  if ! "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
+      --baud "$FLASH_BAUD" write-flash -z 0x0 "$FIRMWARE"; then
+    printf 'High-speed write failed; retrying at 460800 baud...\n'
+    "$PYTHON" -m esptool --chip esp32s3 --port "$BOARD_PORT" \
+      --baud 460800 write-flash -z 0x0 "$FIRMWARE"
+  fi
 
   printf '\nWaiting for MicroPython REPL'
   repl_ready=false

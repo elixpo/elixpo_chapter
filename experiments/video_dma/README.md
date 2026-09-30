@@ -4,11 +4,13 @@ This is a standalone ESP-IDF firmware, not an OreoOS app. It boots directly
 into a full-screen video loop and leaves Wi-Fi, Bluetooth, MicroPython, the app
 launcher, and the normal framebuffer out of the measurement.
 
-The host encoder produces RV565 v5: 180×135 RGB565 frames with Lanczos scaling,
-24 FPS, and no palette reduction. The firmware expands each frame into two
-small internal-RAM stripe buffers. SPI2 GDMA sends one stripe while the CPU
-prepares the next from memory-mapped flash. At 40 MHz, the LCD wire time is
-about 30.7 ms per frame, leaving roughly 11 ms of the 41.7 ms frame budget.
+The host encoder produces RV565 v6: independently Deflate-compressed 180×135
+RGB565 frames with Lanczos scaling, 24 FPS, and no palette reduction. The ROM
+inflater decodes one frame into a reusable PSRAM buffer. The firmware then
+expands it into two small internal-RAM stripe buffers while SPI2 GDMA sends the
+other stripe. At 40 MHz, the LCD wire time is about 30.7 ms per frame, leaving
+roughly 11 ms of the 41.7 ms frame budget for inflate and scaling. Pass `--raw`
+to the encoder to produce the uncompressed RV565 v5 baseline.
 
 ## Prerequisites
 
@@ -35,8 +37,8 @@ python3 tools/encode_video_benchmark.py /path/to/video.mp4 \
   experiments/video_dma/main/video.rv565 --seconds 10 --fps 24
 ```
 
-Ten seconds at the default 180×135 resolution occupies about 11.1 MiB. The
-generated video and ESP-IDF build output are gitignored.
+The reference ten-second clip occupies about 4.1 MiB in v6 versus 11.1 MiB in
+v5. The generated video and ESP-IDF build output are gitignored.
 
 ## 3. Build and flash only the benchmark
 

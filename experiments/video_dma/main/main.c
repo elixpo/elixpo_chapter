@@ -183,8 +183,11 @@ static bool parse_clip(clip_t *clip)
             clip->frames * sizeof(*clip->compressed_frames), MALLOC_CAP_INTERNAL);
         clip->compressed_sizes = heap_caps_malloc(
             clip->frames * sizeof(*clip->compressed_sizes), MALLOC_CAP_INTERNAL);
-        clip->decoded_frame = heap_caps_malloc(clip->frame_bytes,
-                                                MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        // One 180x135 RGB565 frame is only 48.6 KB. Keep it in internal RAM:
+        // the standalone benchmark does not enable the external-PSRAM
+        // allocator, and internal memory also gives the scaler lower latency.
+        clip->decoded_frame = heap_caps_malloc(
+            clip->frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         if (!clip->compressed_frames || !clip->compressed_sizes ||
                 !clip->decoded_frame) {
             ESP_LOGE(TAG, "could not allocate RV565 v6 decode state");
