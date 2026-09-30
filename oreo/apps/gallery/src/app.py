@@ -6,7 +6,7 @@ can add photos and videos directly.
 
 Controls:
   LEFT / RIGHT   previous / next tile (photos + the ADD tile at the end)
-  UP   / DOWN    scroll the instruction panel (when on the ADD tile)
+  UP   / DOWN    seek -5/+5 seconds in video; scroll ADD instructions
   A              play/pause video, or refresh the media listing
   B              delete the currently-shown uploaded media (frees flash).
                  Only enabled on .r565/.rv565 uploads — baked .py photos are
@@ -91,6 +91,7 @@ class _Video:
         self._loaded = 0
         self._payload_size = 0
         self._frame_size = 0
+        self._frame_offsets = None
         self._load_error = False
         self.frame_offset = 0
         self._f = open(path, "rb")
@@ -230,6 +231,47 @@ class _Video:
         for off in range(0, len(self.data), len(zero)):
             self.data[off:off + len(zero)] = zero[:len(self.data) - off]
         self.index = 0
+
+    def _index_independent_frames(self):
+        """Build a small, lazy frame-offset table for V2/V6 seeking."""
+        if self.version not in (2, 6) or self._f is None:
+            return False
+        if self._frame_offsets is not None:
+            return True
+        offsets = []
+        try:
+            pos = _VIDEO_HEADER_SIZE
+            for _ in range(self.frames):
+                self._f.seek(pos)
+                size_b = self._f.read(4)
+                if len(size_b) != 4:
+                    return False
+                size = (size_b[0] | (size_b[1] << 8) |
+                        (size_b[2] << 16) | (size_b[3] << 24))
+                if size <= 0 or size > len(self._packed):
+                    return False
+                offsets.append(pos)
+                pos += 4 + size
+            self._frame_offsets = offsets
+            return True
+        except Exception:
+            return False
+
+    def seek_frame(self, frame):
+        """Decode an independently stored frame without walking the clip."""
+        frame = max(0, min(self.frames - 1, int(frame)))
+        if self.version == 4:
+            if not self.ready:
+                return False
+            self.index = frame
+            return self.next_frame()
+        if self.version in (2, 6):
+            if not self._index_independent_frames():
+                return False
+            self._f.seek(self._frame_offsets[frame])
+            self.index = frame
+            return self.next_frame()
+        return False
 
     def next_frame(self):
         """Decode one delta frame in place. Returns False on corrupt/EOF."""
@@ -552,6 +594,9 @@ class App(oreoOS.App):
 
     def on_button_press(self, btn):
         total = len(self._names) + 1     # photos + ADD tile
+        if self._is_video() and btn in (api.BTN_UP, api.BTN_DOWN):
+            self._seek_video(-5 if btn == api.BTN_UP else 5)
+            return
         if btn == api.BTN_LEFT:
             self._close_video()
             self._video_failed_name = ""
@@ -620,6 +665,16 @@ class App(oreoOS.App):
             if self._idx >= len(self._names) + 1:
                 self._idx = max(0, len(self._names))
             self._scroll = 0
+            self._dirty = True
+
+    def _seek_video(self, seconds):
+        video = self._open_video()
+        if video is None or not video.ready:
+            return
+        shown = max(0, video.index - 1)
+        target = shown + int(seconds * video.fps)
+        if video.seek_frame(target):
+            self._video_elapsed = 0.0
             self._dirty = True
 
     def update(self, dt):
@@ -769,6 +824,26 @@ class App(oreoOS.App):
                        api.WHITE, fill=True)
                 d.rect(SW // 2 + 3, SH // 2 - 8, 4, 16,
                        api.WHITE, fill=True)
+
+            # Compact always-visible playback HUD. It overlays the final 22
+            # rows, so video still owns the complete 320x240 viewport.
+            hud_y = SH - 22
+            d.rect(0, hud_y, SW, 22, api.BLACK, fill=True)
+            track_y = hud_y + 2
+            d.rect(6, track_y, SW - 12, 3, theme.MUTED, fill=True)
+            progress = min(video.frames, max(0, video.index))
+            fill = (SW - 12) * progress // max(1, video.frames)
+            if fill:
+                d.rect(6, track_y, fill, 3, theme.PRIMARY, fill=True)
+            elapsed = max(0, video.index - 1) // video.fps
+            duration = (video.frames + video.fps - 1) // video.fps
+            left = "%d:%02d" % (elapsed // 60, elapsed % 60)
+            right = "%d:%02d" % (duration // 60, duration % 60)
+            hint = ("UP/DN seek  A pause" if self._video_playing
+                    else "UP/DN seek  A play")
+            d.text(left, 6, hud_y + 9, api.WHITE)
+            d.text(hint, (SW - len(hint) * 8) // 2, hud_y + 9, api.WHITE)
+            d.text(right, SW - len(right) * 8 - 6, hud_y + 9, api.WHITE)
 
     # ── photo render ─────────────────────────────────────────────────────
     def _draw_photo(self, d):
