@@ -171,8 +171,8 @@ def _on_edge(p):
     """Pin IRQ fires on every rising/falling edge of TSOP OUT.
 
     We just record the elapsed micros since the previous edge — the pulse
-    widths are what carry the data. Edge interrupts are cheap and the
-    This path is only a compatibility fallback for firmware without the
+    widths are what carry the data. This path is only a compatibility
+    fallback for firmware without the
     native RMT receiver; precise capture uses ``_oreo_ir``.
     """
     global _last_edge_us, _frame_start, _pulse_count, _pulse_overflow
