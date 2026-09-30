@@ -109,6 +109,18 @@ def _get_rmt(carrier_hz):
     return _rmt
 
 
+def _release_rmt_tx():
+    """Release the idle TX channel before handing RMT back to RX."""
+    global _rmt, _rmt_carrier
+    if _rmt is not None:
+        try:
+            _rmt.deinit()
+        except Exception:
+            pass
+    _rmt = None
+    _rmt_carrier = 0
+
+
 def transmit_nec(code32, carrier_hz=38000):
     """Encode a 32-bit NEC frame least-significant-bit first."""
     global _last_error
@@ -204,6 +216,9 @@ def start_receive(on_packet, mode="focus"):
     _pulse_overflow = False
     _last_edge_us = 0
     if _HAVE_NATIVE_RX:
+        # TX keeps its hardware channel after a send. Release the idle
+        # transmitter before recreating RX during a SEND -> FOCUS switch.
+        _release_rmt_tx()
         _native_rx.start(pins.IR_RX)
         _last_error = None
         return

@@ -25,6 +25,7 @@ static rmt_symbol_word_t *s_symbols;
 static volatile size_t s_symbol_count;
 static volatile bool s_frame_ready;
 static bool s_started;
+static int s_rx_gpio = -1;
 
 static rmt_receive_config_t s_receive_config = {
     .signal_range_min_ns = OREO_IR_MIN_NS,
@@ -59,19 +60,34 @@ static esp_err_t oreo_ir_arm(void) {
     );
 }
 
-static void oreo_ir_stop_internal(void) {
+static esp_err_t oreo_ir_stop_internal(void) {
+    esp_err_t cleanup_err = ESP_OK;
     if (s_rx_channel != NULL) {
-        rmt_disable(s_rx_channel);
-        rmt_del_channel(s_rx_channel);
-        s_rx_channel = NULL;
+        // rmt_disable() accepts both ENABLE and RUN. Do not free the DMA
+        // buffer unless deletion succeeds: a state-transition failure must
+        // never leave RMT writing into released memory.
+        esp_err_t disable_err = rmt_disable(s_rx_channel);
+        esp_err_t delete_err = rmt_del_channel(s_rx_channel);
+        if (delete_err == ESP_OK) {
+            s_rx_channel = NULL;
+        } else {
+            cleanup_err = delete_err;
+            if (disable_err != ESP_OK) {
+                cleanup_err = disable_err;
+            }
+        }
     }
-    if (s_symbols != NULL) {
+    if (s_rx_channel == NULL && s_symbols != NULL) {
         heap_caps_free(s_symbols);
         s_symbols = NULL;
     }
-    s_symbol_count = 0;
-    s_frame_ready = false;
-    s_started = false;
+    if (s_rx_channel == NULL) {
+        s_symbol_count = 0;
+        s_frame_ready = false;
+        s_started = false;
+        s_rx_gpio = -1;
+    }
+    return cleanup_err;
 }
 
 static mp_obj_t oreo_ir_start(mp_obj_t pin_obj) {
@@ -80,7 +96,16 @@ static mp_obj_t oreo_ir_start(mp_obj_t pin_obj) {
         mp_raise_ValueError(MP_ERROR_TEXT("invalid IR RX GPIO"));
     }
 
-    oreo_ir_stop_internal();
+    // App redraws and tab transitions can request the same receiver twice.
+    // Treat that as success instead of tearing down a live transaction.
+    if (s_started && s_rx_gpio == pin) {
+        return mp_const_none;
+    }
+
+    esp_err_t err = oreo_ir_stop_internal();
+    if (err != ESP_OK) {
+        oreo_ir_raise(err, "RMT RX cleanup");
+    }
 
     s_symbols = heap_caps_aligned_calloc(
         64,
@@ -101,7 +126,7 @@ static mp_obj_t oreo_ir_start(mp_obj_t pin_obj) {
         .gpio_num = (gpio_num_t)pin,
         .flags.with_dma = true,
     };
-    esp_err_t err = rmt_new_rx_channel(&channel_config, &s_rx_channel);
+    err = rmt_new_rx_channel(&channel_config, &s_rx_channel);
     if (err != ESP_OK) {
         // DMA is preferred, but hardware timing still remains exact when the
         // target/IDF cannot allocate a DMA-capable RMT RX channel.
@@ -117,24 +142,32 @@ static mp_obj_t oreo_ir_start(mp_obj_t pin_obj) {
         .on_recv_done = oreo_ir_rx_done,
     };
     err = rmt_rx_register_event_callbacks(s_rx_channel, &callbacks, NULL);
-    if (err == ESP_OK) {
-        err = rmt_enable(s_rx_channel);
-    }
-    if (err == ESP_OK) {
-        err = oreo_ir_arm();
-    }
     if (err != ESP_OK) {
         oreo_ir_stop_internal();
-        oreo_ir_raise(err, "RMT RX start");
+        oreo_ir_raise(err, "RMT RX callback");
+    }
+    err = rmt_enable(s_rx_channel);
+    if (err != ESP_OK) {
+        oreo_ir_stop_internal();
+        oreo_ir_raise(err, "RMT RX enable");
+    }
+    err = oreo_ir_arm();
+    if (err != ESP_OK) {
+        oreo_ir_stop_internal();
+        oreo_ir_raise(err, "RMT RX arm");
     }
 
     s_started = true;
+    s_rx_gpio = pin;
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(oreo_ir_start_obj, oreo_ir_start);
 
 static mp_obj_t oreo_ir_stop(void) {
-    oreo_ir_stop_internal();
+    esp_err_t err = oreo_ir_stop_internal();
+    if (err != ESP_OK) {
+        oreo_ir_raise(err, "RMT RX stop");
+    }
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(oreo_ir_stop_obj, oreo_ir_stop);
