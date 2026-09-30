@@ -239,7 +239,7 @@ for _root in _app_roots:
                         continue
                     if p.name == "README.md":
                         continue
-                    if p.suffix.lower() not in (".md", ".txt"):
+                    if p.suffix.lower() not in (".md", ".txt", ".mdz", ".txtz"):
                         continue
                     DEPLOY.append((str(p),
                                    "%s/assets/%s" % (rel, p.name)))
@@ -276,6 +276,9 @@ for _root in _app_roots:
             # WiFi-uploaded clips these are intentional firmware assets and
             # are included by --force / --override=gallery deployments.
             if app_dir.name == "gallery":
+                for photo in sorted(opt.glob("*.rz565")):
+                    DEPLOY.append((str(photo), "%s/%s" %
+                                   (r_base, photo.name)))
                 for video in sorted(opt.glob("*.rv565")):
                     DEPLOY.append((str(video), "%s/%s" %
                                    (r_base, video.name)))

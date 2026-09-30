@@ -14,9 +14,9 @@
  *   • Respects prefers-reduced-motion (slower smoothing, less mouse
  *     influence) so we don't ship a "fancy" hero that's hostile to
  *     vestibular-sensitive users.
- *   • Caps frame rate to ~60 fps via requestAnimationFrame and only
- *     re-resolves theme colours on a documentElement mutation — keeps
- *     the canvas tab below 4% CPU on a 2020 MBP.
+ *   • Uses one allocation-free 60 fps loop, precomputed geometry and a
+ *     desynchronised canvas. Theme colours and gradients are rebuilt only
+ *     when their inputs change.
  */
 
 import { motion, type Variants } from "framer-motion";
@@ -72,7 +72,10 @@ export default function WavesHero() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: false,
+      desynchronized: true,
+    });
     if (!ctx) return;
 
     /* Visibility-driven RAF gating. The hero is the most CPU-hungry
@@ -82,9 +85,13 @@ export default function WavesHero() {
      * when the user scrolls back. document.hidden also pauses on tab
      * background. Together these drop the idle-tab cost to ~0%. */
     let animationId: number = 0;
-    let time = 0;
     let isVisible    = true;
     let docHidden    = false;
+    let centerY      = 0;
+    let bounds       = canvas.getBoundingClientRect();
+    let background: CanvasGradient | string = "#09090b";
+    let xSamples     = new Float32Array(0);
+    let influence    = new Float32Array(0);
     const running    = () => isVisible && !docHidden;
 
     /* Pull live colour values off the CSS variables we set in
@@ -134,8 +141,15 @@ export default function WavesHero() {
     };
 
     let themeColors = computeThemeColors();
+    const rebuildBackground = () => {
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, themeColors.backgroundTop);
+      gradient.addColorStop(1, themeColors.backgroundBottom);
+      background = gradient;
+    };
     const observer = new MutationObserver(() => {
       themeColors = computeThemeColors();
+      rebuildBackground();
     });
     observer.observe(document.documentElement, {
       attributes: true, attributeFilter: ["class", "data-theme"],
@@ -146,6 +160,7 @@ export default function WavesHero() {
     const mouseInfluence = prefersReducedMotion ? 10 : 70;
     const influenceRadius = prefersReducedMotion ? 160 : 320;
     const smoothing       = prefersReducedMotion ? 0.04 : 0.10;
+    const lowPower = (navigator.hardwareConcurrency || 8) <= 4;
 
     const resizeCanvas = () => {
       // Match the parent element's height instead of full viewport so
@@ -153,6 +168,19 @@ export default function WavesHero() {
       const parent = canvas.parentElement;
       canvas.width  = parent?.clientWidth  ?? window.innerWidth;
       canvas.height = parent?.clientHeight ?? window.innerHeight;
+      centerY = canvas.height / 2;
+      bounds = canvas.getBoundingClientRect();
+      // A slightly wider segment spacing on constrained/mobile CPUs removes
+      // thousands of trig calls per second without a visible loss of curve
+      // quality because Canvas interpolates between the points.
+      const step = lowPower ? 7 : canvas.width > 1600 ? 6 : 5;
+      const count = Math.ceil(canvas.width / step) + 1;
+      xSamples = new Float32Array(count);
+      influence = new Float32Array(count);
+      for (let i = 0; i < count; i += 1) {
+        xSamples[i] = Math.min(canvas.width, i * step);
+      }
+      rebuildBackground();
     };
     const recenterMouse = () => {
       const c = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -160,63 +188,65 @@ export default function WavesHero() {
       targetMouseRef.current = c;
     };
     const handleResize    = () => { resizeCanvas(); recenterMouse(); };
-    const handleMouseMove = (e: MouseEvent) => {
-      const r = canvas.getBoundingClientRect();
-      targetMouseRef.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+    const handleMouseMove = (e: PointerEvent) => {
+      targetMouseRef.current = {
+        x: e.clientX - bounds.left,
+        y: e.clientY - bounds.top,
+      };
     };
     const handleMouseLeave = () => recenterMouse();
 
     resizeCanvas();
     recenterMouse();
     window.addEventListener("resize", handleResize);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
+    canvas.addEventListener("pointermove", handleMouseMove, { passive: true });
+    canvas.addEventListener("pointerleave", handleMouseLeave);
 
-    const drawWave = (wave: WaveConfig) => {
-      ctx.save();
+    const drawWave = (wave: WaveConfig, phase: number) => {
       ctx.beginPath();
-      for (let x = 0; x <= canvas.width; x += 4) {
-        const dx = x - mouseRef.current.x;
-        const dy = canvas.height / 2 - mouseRef.current.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const influence = Math.max(0, 1 - distance / influenceRadius);
+      for (let i = 0; i < xSamples.length; i += 1) {
+        const x = xSamples[i];
         const mouseEffect =
-          influence * mouseInfluence *
-          Math.sin(time * 0.001 + x * 0.01 + wave.offset);
+          influence[i] * mouseInfluence *
+          Math.sin(phase * 0.5 + x * 0.01 + wave.offset);
         const y =
-          canvas.height / 2 +
-          Math.sin(x * wave.frequency + time * 0.002 + wave.offset) *
+          centerY +
+          Math.sin(x * wave.frequency + phase + wave.offset) *
             wave.amplitude +
-          Math.sin(x * wave.frequency * 0.4 + time * 0.003) *
+          Math.sin(x * wave.frequency * 0.4 + phase * 1.5) *
             (wave.amplitude * 0.45) +
           mouseEffect;
-        if (x === 0) ctx.moveTo(x, y);
+        if (i === 0) ctx.moveTo(x, y);
         else         ctx.lineTo(x, y);
       }
       ctx.lineWidth   = 2.5;
       ctx.strokeStyle = wave.color;
       ctx.globalAlpha = wave.opacity;
-      ctx.shadowBlur  = 35;
+      ctx.shadowBlur  = lowPower ? 12 : 24;
       ctx.shadowColor = wave.color;
       ctx.stroke();
-      ctx.restore();
     };
 
-    const animate = () => {
+    const animate = (timestamp: number) => {
       if (!running()) { animationId = 0; return; }   // paused — leave loop
-      time += 1;
       mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * smoothing;
       mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * smoothing;
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, themeColors.backgroundTop);
-      gradient.addColorStop(1, themeColors.backgroundBottom);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const mouseX = mouseRef.current.x;
+      const dy = centerY - mouseRef.current.y;
+      for (let i = 0; i < xSamples.length; i += 1) {
+        const dx = xSamples[i] - mouseX;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        influence[i] = Math.max(0, 1 - distance / influenceRadius);
+      }
 
       ctx.globalAlpha = 1;
-      ctx.shadowBlur  = 0;
-      themeColors.wavePalette.forEach(drawWave);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const phase = timestamp * 0.00012;
+      themeColors.wavePalette.forEach((wave) => drawWave(wave, phase));
 
       animationId = window.requestAnimationFrame(animate);
     };
@@ -246,8 +276,8 @@ export default function WavesHero() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
+      canvas.removeEventListener("pointermove", handleMouseMove);
+      canvas.removeEventListener("pointerleave", handleMouseLeave);
       document.removeEventListener("visibilitychange", onVisibility);
       io.disconnect();
       cancelAnimationFrame(animationId);

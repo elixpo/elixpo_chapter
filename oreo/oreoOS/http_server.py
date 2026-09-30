@@ -163,9 +163,9 @@ _DOCS_DIR     = "documents"
 # (magic 'R5' + width LE16 + height LE16), then W*H 2-byte RGB565
 # pixels. The browser does the conversion before upload — see the
 # canvas pipeline in _UPLOAD_FORM below.
-_IMG_EXTS = (".r565",)
+_IMG_EXTS = (".r565", ".rz565")
 _VIDEO_EXTS = (".rv565",)
-_DOC_EXTS = (".md", ".txt")
+_DOC_EXTS = (".md", ".txt", ".mdz", ".txtz")
 
 
 def _ensure_dir(path):
@@ -217,6 +217,58 @@ def _safe_filename(raw):
         if 32 <= c < 127 and ch not in "/\\?*:|\"<>":
             out.append(ch)
     return "".join(out)[:64] or "upload"
+
+
+def _validate_uploaded_asset(path, kind):
+    """Reject truncated/wrong-format files before the atomic commit."""
+    try:
+        size = _os.stat(path)[6]
+        with open(path, "rb") as f:
+            head = f.read(12)
+            if kind == "image":
+                if head[:4] == b"R5Z\x01" and len(head) == 12:
+                    w = head[4] | (head[5] << 8)
+                    h = head[6] | (head[7] << 8)
+                    raw = (head[8] | (head[9] << 8) |
+                           (head[10] << 16) | (head[11] << 24))
+                    return 0 < w <= 320 and 0 < h <= 240 and raw == w * h * 2
+                if head[:2] == b"R5" and len(head) >= 6:
+                    w = head[2] | (head[3] << 8)
+                    h = head[4] | (head[5] << 8)
+                    return 0 < w <= 320 and 0 < h <= 240 and size == 6 + w * h * 2
+                return False
+            if kind == "document":
+                if path.lower().endswith((".mdz", ".txtz")):
+                    return len(head) >= 8 and head[:4] == b"ODZ\x01"
+                return path.lower().endswith((".md", ".txt"))
+            if len(head) != 12 or head[:3] != b"RV5" or head[3] not in (1, 2, 3, 4, 5, 6):
+                return False
+            w = head[4] | (head[5] << 8)
+            h = head[6] | (head[7] << 8)
+            fps = head[8]
+            frames = head[10] | (head[11] << 8)
+            if not (0 < w <= 320 and 0 < h <= 240 and 0 < fps <= 30 and frames > 0):
+                return False
+            if head[3] == 5:
+                return size == 12 + w * h * 2 * frames
+            if head[3] == 6:
+                cursor = 12
+                for _ in range(frames):
+                    f.seek(cursor)
+                    nbuf = f.read(4)
+                    if len(nbuf) != 4:
+                        return False
+                    packed = (nbuf[0] | (nbuf[1] << 8) |
+                              (nbuf[2] << 16) | (nbuf[3] << 24))
+                    if packed <= 0:
+                        return False
+                    cursor += 4 + packed
+                    if cursor > size:
+                        return False
+                return cursor == size
+            return True
+    except Exception:
+        return False
 
 
 # ── server lifecycle ────────────────────────────────────────────────────
@@ -870,7 +922,7 @@ _UPLOAD_FORM = (
     b"Powered by <a href='https://oreo.elixpo.com' target='_blank'>oreo.elixpo.com</a></div>"
     b"<script>"
     b"const $=id=>document.getElementById(id);"
-    b"const MAX_DIM=240,VIDEO_W=320,VIDEO_H=240,VIDEO_FPS=20,VIDEO_SECONDS=10,MAX_UPLOAD=8*1024*1024;"
+    b"const MAX_DIM=240,VIDEO_W=180,VIDEO_H=135,VIDEO_FPS=24,VIDEO_SECONDS=10,MAX_UPLOAD=8*1024*1024;"
     # The server inlined our device_id into the markup as
     # __DEVICE_ID__ before sending the page, so we just read it off
     # the DOM rather than running an auth handshake.
@@ -973,15 +1025,14 @@ _UPLOAD_FORM = (
     b"  const ctx=c.getContext('2d');"
     b"  ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);"
     b"  const px=ctx.getImageData(0,0,w,h).data;"
-    b"  const out=new Uint8Array(6+w*h*2);"
-    b"  out[0]=0x52;out[1]=0x35;"
-    b"  out[2]=w&0xff;out[3]=(w>>8)&0xff;"
-    b"  out[4]=h&0xff;out[5]=(h>>8)&0xff;"
-    b"  let o=6;"
+    b"  const raw=new Uint8Array(w*h*2);let o=0;"
     b"  for(let i=0;i<px.length;i+=4){"
     b"    const r=px[i]>>3,g=px[i+1]>>2,b=px[i+2]>>3;"
-    b"    const v=(r<<11)|(g<<5)|b;out[o++]=(v>>8)&0xff;out[o++]=v&0xff;}"
-    b"  return new Blob([out],{type:'application/octet-stream'});}"
+    b"    const v=(r<<11)|(g<<5)|b;raw[o++]=(v>>8)&0xff;raw[o++]=v&0xff;}"
+    b"  const enc=await compressFrame(raw),head=new Uint8Array(12),n=raw.length;"
+    b"  head.set([82,53,90,1]);head[4]=w&255;head[5]=w>>8;head[6]=h&255;head[7]=h>>8;"
+    b"  head[8]=n&255;head[9]=(n>>8)&255;head[10]=(n>>16)&255;head[11]=(n>>24)&255;"
+    b"  return new Blob([head,enc],{type:'application/octet-stream'});}"
     # RV565: 12-byte header followed by length-prefixed delta frames.
     # Each command covers 1..64 pixels: 00=unchanged, 01=literal RGB565,
     # 10=repeated colour. Exact unchanged areas are particularly effective
@@ -1011,12 +1062,11 @@ _UPLOAD_FORM = (
     b"  try{await new Promise((r,j)=>{v.onloadeddata=r;v.onerror=()=>j(new Error('unsupported video'));});"
     b"    const dur=Math.min(v.duration,VIDEO_SECONDS);"
     b"    if(!isFinite(dur)||dur<=0)throw new Error('video has no readable duration');"
-    # Fixed 4:3 canvas maps exactly to the 320x240 LCD via the native 2x
-    # playback kernel. Cover scaling deliberately crops wide/tall edges rather
-    # than letterboxing, as requested for true fullscreen playback.
+    # A compact 4:3 source is expanded to 320x240 by the native playback
+    # kernel. Cover scaling crops wide/tall edges rather than letterboxing.
     b"    const w=VIDEO_W,h=VIDEO_H;"
     b"    const count=Math.max(1,Math.floor(dur*VIDEO_FPS));"
-    b"    const head=new Uint8Array(12);head.set([82,86,53,2]);"
+    b"    const head=new Uint8Array(12);head.set([82,86,53,6]);"
     b"    head[4]=w&255;head[5]=w>>8;head[6]=h&255;head[7]=h>>8;"
     b"    head[8]=VIDEO_FPS;head[10]=count&255;head[11]=count>>8;"
     b"    const chunks=[head];"
@@ -1029,10 +1079,9 @@ _UPLOAD_FORM = (
     b"      ctx.drawImage(v,(w-dw)/2,(h-dh)/2,dw,dh);"
     b"      const rgba=ctx.getImageData(0,0,w,h).data;"
     b"      const raw=new Uint8Array(w*h*2);"
-    # Quantise RGB565 to 4/4/4 effective colour bits. On the reference video
-    # this cuts zlib output from ~6.85 MB to ~3.05 MB at identical resolution
-    # and FPS, materially reducing inflate and flash pressure.
-    b"      for(let i=0,o=0;i<rgba.length;i+=4,o++){let px=((rgba[i]>>3)<<11)|((rgba[i+1]>>2)<<5)|(rgba[i+2]>>3);px&=0xF79E;raw[o*2]=px>>8;raw[o*2+1]=px&255;}"
+    # Preserve the panel's full RGB565 colour precision. Deflate is lossless
+    # and each frame remains independently seekable.
+    b"      for(let i=0,o=0;i<rgba.length;i+=4,o++){const px=((rgba[i]>>3)<<11)|((rgba[i+1]>>2)<<5)|(rgba[i+2]>>3);raw[o*2]=px>>8;raw[o*2+1]=px&255;}"
     b"      const enc=await compressFrame(raw),sz=new Uint8Array(4),n=enc.length;"
     b"      sz[0]=n&255;sz[1]=(n>>8)&255;sz[2]=(n>>16)&255;sz[3]=(n>>24)&255;"
     b"      chunks.push(sz,enc);"
@@ -1045,7 +1094,7 @@ _UPLOAD_FORM = (
     b"  let payload=picked,name=picked.name;"
     b"  const kind=mediaKind(picked);"
     b"  if(kind==='image'){"
-    b"    try{payload=await imgToR565(picked);name=name.replace(/\\.[^.]+$/,'')+'.r565';}"
+    b"    try{payload=await imgToR565(picked);name=name.replace(/\\.[^.]+$/,'')+'.rz565';}"
     b"    catch(err){"
     b"      showModal('Image decode failed',String(err),'err',true);"
     b"      $('go').disabled=false;return;}}"
@@ -1055,6 +1104,14 @@ _UPLOAD_FORM = (
     b"        throw new Error('optimised video needs '+fmtKB(payload.size)+', but the badge does not have enough space');}"
     b"    catch(err){showModal('Video conversion failed',String(err),'err',true);"
     b"      $('go').disabled=false;return;}}"
+    b"  else{try{const raw=new Uint8Array(await picked.arrayBuffer());"
+    b"    new TextDecoder('utf-8',{fatal:true}).decode(raw);const enc=await compressFrame(raw);"
+    b"    const head=new Uint8Array(8),n=raw.length;head.set([79,68,90,1]);"
+    b"    head[4]=n&255;head[5]=(n>>8)&255;head[6]=(n>>16)&255;head[7]=(n>>24)&255;"
+    b"    payload=new Blob([head,enc],{type:'application/octet-stream'});"
+    b"    name=name.replace(/\\.[^.]+$/,'')+(name.toLowerCase().endsWith('.md')?'.mdz':'.txtz');"
+    b"    if(freeBytes>0&&payload.size+FREE_HEADROOM>freeBytes)throw new Error('compressed document does not fit');}"
+    b"    catch(err){showModal('Document conversion failed',String(err),'err',true);$('go').disabled=false;return;}}"
     b"  const fd=new FormData();fd.append('f',payload,name);"
     b"  const xhr=new XMLHttpRequest();activeXhr=xhr;"
     b"  xhr.upload.addEventListener('progress',(ev)=>{"
@@ -1427,6 +1484,11 @@ def _handle_upload(sock, headers, body_prefix, qs):
     if clen <= 0 or clen > MAX_BODY:
         _send_status(sock, 413, "Payload Too Large", b"file too large")
         return
+    # Content-Length includes a small multipart envelope, so this is a
+    # conservative admission check. It runs before a .part file is created.
+    if clen + 64 * 1024 > free_bytes():
+        _send_status(sock, 507, "Insufficient Storage", b"not enough free space")
+        return
 
     # Find the first part's header block.
     head_buf = bytearray(body_prefix)
@@ -1505,8 +1567,13 @@ def _handle_upload(sock, headers, body_prefix, qs):
     closing = b"\r\n" + boundary_marker
     tail_keep = len(closing) + 4
     written = 0
+    part_path = dst_path + ".part"
     try:
-        f = open(dst_path, "wb")
+        try:
+            _os.remove(part_path)
+        except OSError:
+            pass
+        f = open(part_path, "wb")
     except Exception:
         _send_status(sock, 500, "Internal Error",
                      b"write failed (out of space?)")
@@ -1589,10 +1656,27 @@ def _handle_upload(sock, headers, body_prefix, qs):
 
     if written <= 0:
         try:
-            _os.remove(dst_path)
+            _os.remove(part_path)
         except Exception:
             pass
         _send_status(sock, 400, "Bad Request", b"empty upload")
+        return
+
+    if not _validate_uploaded_asset(part_path, kind):
+        try:
+            _os.remove(part_path)
+        except Exception:
+            pass
+        _send_status(sock, 422, "Unprocessable Content", b"invalid or truncated asset")
+        return
+    try:
+        _os.rename(part_path, dst_path)
+    except Exception:
+        try:
+            _os.remove(part_path)
+        except Exception:
+            pass
+        _send_status(sock, 500, "Internal Error", b"could not commit upload")
         return
 
     # Mark the upload on the session so the WiFi UI can show "got 2

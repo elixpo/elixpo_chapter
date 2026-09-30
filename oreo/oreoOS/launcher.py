@@ -348,22 +348,33 @@ def run_app(os_obj, app):
                 if frame_errs >= FRAME_ERR_LIMIT:
                     raise
 
+            # A realtime app (currently Gallery RV565 playback) retains the
+            # normal input path but defers unbounded network/filesystem work.
+            # It also gets a 1 ms scheduler floor while waiting for its next
+            # frame; the normal 30 ms floor would quantise a 24 FPS timeline
+            # into visibly uneven 30/60 ms intervals.
+            try:
+                realtime = bool(app.realtime_mode())
+            except Exception:
+                realtime = False
+
             # Idle check AFTER the frame so the user sees the result of their
             # last input before the chip dozes off. PowerManager calls
             # machine.deepsleep() internally when the threshold is hit — that
             # call never returns; next reset starts main.py fresh.
-            if pm:
+            if pm and not realtime:
                 pm.tick(app)
 
             # Background OTA probe — cheap, rate-limited internally to one
             # call every 6 hours, and only fires when WiFi is up. The call
             # itself is bounded by T_GH_API so a slow GitHub can never
             # stall the frame loop.
-            try:
-                from oreoOS import ota as _ota
-                _ota.background_check(os_obj)
-            except Exception:
-                pass
+            if not realtime:
+                try:
+                    from oreoOS import ota as _ota
+                    _ota.background_check(os_obj)
+                except Exception:
+                    pass
 
             # Gestures are NOT polled in the OS run loop. The IMU is
             # opt-in per app: an app that wants tilt / tap / shake
@@ -378,11 +389,12 @@ def run_app(os_obj, app):
             # does it actually re-issue gap_advertise. Fixes the
             # "phone says paired-but-not-connected and won't reconnect"
             # case where adv silently stopped between sessions.
-            try:
-                from oreoWare import bt as _bt
-                _bt.watchdog_tick()
-            except Exception:
-                pass
+            if not realtime:
+                try:
+                    from oreoWare import bt as _bt
+                    _bt.watchdog_tick()
+                except Exception:
+                    pass
 
             # LAN HTTP upload server tick. Non-blocking accept on the
             # listening socket — costs one syscall per frame on the
@@ -391,15 +403,17 @@ def run_app(os_obj, app):
             # duration of the upload (fine for sub-second photo
             # transfers; we'll move to a background worker later if
             # uploads ever grow above a few hundred KB).
-            try:
-                from oreoOS import http_server as _hs
-                _hs.tick()
-            except Exception:
-                pass
+            if not realtime:
+                try:
+                    from oreoOS import http_server as _hs
+                    _hs.tick()
+                except Exception:
+                    pass
 
             elapsed = time.ticks_diff(time.ticks_ms(), now)
-            if elapsed < FRAME_MIN_MS:
-                time.sleep_ms(FRAME_MIN_MS - elapsed)
+            frame_floor = 1 if realtime else FRAME_MIN_MS
+            if elapsed < frame_floor:
+                time.sleep_ms(frame_floor - elapsed)
     finally:
         app.on_exit()
         gc.collect()
