@@ -11,8 +11,8 @@ Three tabs cycled with B:
           a recent-history strip of the last six payloads. No baked match
           table — every signal is welcome.
 
-  SEND    pick a payload from CODES + a carrier from FREQS, press A to
-          fire. Last selection is persisted on the OS settings dict.
+  SEND    replay the last capture or pick a predefined payload, select a
+          carrier, then press A to fire.
 
 Hardware: TSOP38238 RX on GPIO 18, 2N2222/IR-LED TX on GPIO 2 via the
 oreoWare.ir driver (RMT for TX, pin-edge IRQ for RX).
@@ -42,6 +42,7 @@ CODES = (
 FREQS = (38000, 40000, 56000)
 
 HISTORY_MAX = 6
+SEND_RECORDED = 0
 
 
 def _hex32(v):
@@ -71,7 +72,7 @@ class App(oreoOS.App):
         # SEND-tab persistence
         self._send_sel  = os.settings_get("ir_code_idx",  0) or 0
         self._send_freq = os.settings_get("ir_freq_idx",  0) or 0
-        if self._send_sel  >= len(CODES): self._send_sel  = 0
+        if self._send_sel  > len(CODES): self._send_sel  = 0
         if self._send_freq >= len(FREQS): self._send_freq = 0
 
         # Live RX state (mutated by _on_packet)
@@ -80,7 +81,9 @@ class App(oreoOS.App):
         self._last_kind     = None       # "nec" / "raw"
         self._last_pulse_n  = 0
         self._last_seen_ms  = 0
+        self._last_capture  = None
         self._history       = []         # list of (kind, payload) tuples
+        self._error         = None
 
         # Send-tab feedback timer
         self._send_flash_ms = 0
@@ -101,17 +104,21 @@ class App(oreoOS.App):
     # ── RX plumbing ─────────────────────────────────────────────────────
     def _start_rx(self):
         if self._ir is None: return
+        if self._tab == TAB_SEND: return
         try:
-            self._ir.start_receive(self._on_packet, mode="focus")
-        except Exception:
-            pass
+            mode = "beacon" if self._tab == TAB_BEACON else "focus"
+            self._ir.start_receive(self._on_packet, mode=mode)
+            self._error = None
+        except Exception as exc:
+            self._error = "RX: %s" % exc
+            self._dirty = True
 
     def _stop_rx(self):
         if self._ir is None: return
         try:
             self._ir.stop_receive()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._error = "RX stop: %s" % exc
 
     def _on_packet(self, code, info):
         """Driver callback when a complete frame arrives."""
@@ -120,6 +127,7 @@ class App(oreoOS.App):
         self._last_kind     = info.get("protocol", "raw")
         self._last_pulse_n  = info.get("pulse_count", 0)
         self._last_seen_ms  = time.ticks_ms()
+        self._last_capture  = info
         # Keep a short history for the beacon tab.
         self._history.append((self._last_kind, code))
         if len(self._history) > HISTORY_MAX:
@@ -129,7 +137,9 @@ class App(oreoOS.App):
     # ── input ──────────────────────────────────────────────────────────
     def on_button_press(self, btn):
         if btn == api.BTN_B:
+            self._stop_rx()
             self._tab = (self._tab + 1) % 3
+            self._start_rx()
             self._dirty = True
             return
         if self._tab == TAB_SEND:
@@ -137,9 +147,9 @@ class App(oreoOS.App):
 
     def _on_send_button(self, btn):
         if btn == api.BTN_UP:
-            self._send_sel = (self._send_sel - 1) % len(CODES)
+            self._send_sel = (self._send_sel - 1) % (len(CODES) + 1)
         elif btn == api.BTN_DOWN:
-            self._send_sel = (self._send_sel + 1) % len(CODES)
+            self._send_sel = (self._send_sel + 1) % (len(CODES) + 1)
         elif btn == api.BTN_LEFT:
             self._send_freq = (self._send_freq - 1) % len(FREQS)
         elif btn == api.BTN_RIGHT:
@@ -153,26 +163,33 @@ class App(oreoOS.App):
     def _fire_send(self):
         if self._ir is None:
             return
-        _,    code = CODES[self._send_sel]
         freq       = FREQS[self._send_freq]
         try:
             # Stop RX briefly during TX so we don't capture our own carrier
             # bleeding into the TSOP — re-arms automatically below.
             self._stop_rx()
-            self._ir.transmit_nec(int(code), carrier_hz=int(freq))
-        except Exception:
-            pass
+            if self._send_sel == SEND_RECORDED:
+                self._ir.transmit_capture(self._last_capture,
+                                          carrier_hz=int(freq))
+            else:
+                _, code = CODES[self._send_sel - 1]
+                self._ir.transmit_nec(int(code), carrier_hz=int(freq))
+            self._error = None
+        except Exception as exc:
+            self._error = "Send: %s" % exc
         finally:
             self._start_rx()
-        self._send_flash_ms = 600
+        if self._error is None:
+            self._send_flash_ms = 600
 
     # ── per-frame ───────────────────────────────────────────────────────
     def update(self, dt):
         if self._ir is not None:
             try:
                 self._ir.poll()
-            except Exception:
-                pass
+            except Exception as exc:
+                self._error = "RX: %s" % exc
+                self._dirty = True
         # tick the SEND-tab "fired" toast
         if self._send_flash_ms > 0:
             self._send_flash_ms = max(0, self._send_flash_ms - int(dt * 1000))
@@ -194,6 +211,10 @@ class App(oreoOS.App):
 
         if self._ir is None:
             self._draw_no_hw(d)
+            return
+
+        if self._error:
+            self._draw_error(d)
             return
 
         if self._tab == TAB_FOCUS:
@@ -237,6 +258,16 @@ class App(oreoOS.App):
         for i, m in enumerate(msg):
             d.text(m, cx + 16, cy + 44 + i * 14, theme.TEXT_BRIGHT)
 
+    def _draw_error(self, d):
+        msg = str(self._error)
+        if len(msg) > 35:
+            msg = msg[:35]
+        d.text("IR error", 12, widgets.HEADER_H + 16,
+               theme.PRIMARY, scale=2)
+        d.text(msg, 12, widgets.HEADER_H + 48, theme.TEXT_BRIGHT)
+        d.text("B changes tab / retries RX", 12,
+               widgets.HEADER_H + 68, theme.MUTED)
+
     def _draw_focus(self, d):
         # Big card: the most recent decoded code in giant hex.
         cw, ch = SW - 24, SH - widgets.HEADER_H - widgets.HINT_H - 12
@@ -263,7 +294,7 @@ class App(oreoOS.App):
                    theme.PRIMARY, scale=2)
 
         # Stats row at the bottom of the card.
-        info = "pulses %d   carrier 38 kHz" % self._last_pulse_n
+        info = "pulses %d   carrier ~38 kHz" % self._last_pulse_n
         d.text(info, cx + 12, cy + ch - 22, theme.TEXT_BRIGHT)
         # "Xs ago"
         if self._last_seen_ms:
@@ -312,7 +343,7 @@ class App(oreoOS.App):
         freq_s  = "Carrier  <  %d kHz  >" % (freq // 1000)
         d.text(freq_s, cx + 12, cy + 10, theme.PRIMARY, scale=2)
 
-        # Code list — UP/DOWN picks, A fires.
+        # Captured frame first, followed by predefined NEC codes.
         list_top = cy + 40
         row_h    = 18
         max_rows = (cy + ch - list_top - 16) // row_h
@@ -320,15 +351,23 @@ class App(oreoOS.App):
         first = 0
         if self._send_sel >= max_rows:
             first = self._send_sel - max_rows + 1
-        for i in range(first, min(len(CODES), first + max_rows)):
-            name, code = CODES[i]
+        item_count = len(CODES) + 1
+        for i in range(first, min(item_count, first + max_rows)):
+            if i == SEND_RECORDED:
+                name, code = "Recorded", None
+            else:
+                name, code = CODES[i - 1]
             y   = list_top + (i - first) * row_h
             sel = (i == self._send_sel)
             if sel:
                 d.rect(cx + 4, y - 2, cw - 8, row_h, theme.DOCK_SEL, fill=True)
                 d.rect(cx + 4, y - 2, 3,      row_h, theme.PRIMARY, fill=True)
             d.text(name, cx + 16, y + 2, theme.PRIMARY if sel else theme.TEXT_BRIGHT, scale=1)
-            hexs = _hex32(code)
+            if code is None:
+                hexs = ("%d pulses" % self._last_capture.get("pulse_count", 0)
+                        if self._last_capture else "empty")
+            else:
+                hexs = _hex32(code)
             d.text(hexs, cx + cw - len(hexs) * 8 - 14, y + 2,
                    theme.MUTED)
 
