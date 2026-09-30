@@ -25,6 +25,10 @@ _BTN_TO_GPIO = {
     api.BTN_RIGHT: pins.BTN_RIGHT,
 }
 
+# Breadboard tactile switches typically bounce for 2-6 ms. Eight
+# milliseconds removes duplicate edges without making a press feel delayed.
+DEBOUNCE_MS = 8
+
 
 class Buttons(api.Buttons):
     def __init__(self):
@@ -34,7 +38,7 @@ class Buttons(api.Buttons):
         self._irq_release_pending = bytearray(len(api.BUTTONS))
         self._pressed_edges = bytearray(len(api.BUTTONS))
         self._released_edges = bytearray(len(api.BUTTONS))
-        self._last_irq_ms = [0] * len(api.BUTTONS)
+        self._last_edge_ms = [0] * len(api.BUTTONS)
         self._irq_handlers = []
         self._curr = {b: 1 for b in _BTN_TO_GPIO}
         self._prev = {b: 1 for b in _BTN_TO_GPIO}
@@ -72,30 +76,38 @@ class Buttons(api.Buttons):
             released = self._irq_release_pending[idx]
             self._irq_release_pending[idx] = 0
             v = p.value()
-            if latched and time.ticks_diff(now, self._last_irq_ms[idx]) >= 80:
-                self._pressed_edges[idx] = 1
-                self._last_irq_ms[idx] = now
-            else:
-                self._pressed_edges[idx] = 0
-            self._released_edges[idx] = 1 if released and v == 1 else 0
             self._prev[b] = self._curr[b]
-            self._curr[b] = v
-            if self._prev[b] == 1 and v == 0:
-                # Falling edge — record the press timestamp.
+            self._pressed_edges[idx] = 0
+            self._released_edges[idx] = 0
+
+            elapsed = time.ticks_diff(now, self._last_edge_ms[idx])
+            # IRQ latching preserves taps that occur during a display flush.
+            # Polling the current level is the fallback when IRQ is absent.
+            wants_press = bool(latched) or (v == 0 and self._curr[b] == 1)
+            wants_release = (bool(released) or
+                             (v == 1 and self._curr[b] == 0))
+
+            if (wants_press and self._curr[b] == 1 and
+                    elapsed >= DEBOUNCE_MS):
+                self._curr[b] = 0
+                self._pressed_edges[idx] = 1
+                self._last_edge_ms[idx] = now
                 self._press_ms[b] = now
-            elif v == 1:
+            elif (wants_release and self._curr[b] == 0 and
+                  elapsed >= DEBOUNCE_MS):
+                self._curr[b] = 1
+                self._released_edges[idx] = 1
+                self._last_edge_ms[idx] = now
                 self._press_ms[b] = None
 
     def is_pressed(self, btn):
         return self._curr[btn] == 0
 
     def just_pressed(self, btn):
-        return (bool(self._pressed_edges[self._button_index[btn]]) or
-                (self._curr[btn] == 0 and self._prev[btn] == 1))
+        return bool(self._pressed_edges[self._button_index[btn]])
 
     def just_released(self, btn):
-        return (bool(self._released_edges[self._button_index[btn]]) or
-                (self._curr[btn] == 1 and self._prev[btn] == 0))
+        return bool(self._released_edges[self._button_index[btn]])
 
     def pressed_for_ms(self, btn):
         """Milliseconds the button has been held, or 0 if currently up.
