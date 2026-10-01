@@ -50,7 +50,10 @@ without an inter-frame reference chain.  The design preserves the operating
 system's input and application lifecycle rather than replacing it with a
 dedicated player.  This paper follows the design from a slow Gallery
 experiment to a cross-layer media path, then presents the container, memory
-placement, scheduling method, and evaluation protocol.
+placement, scheduling method, and evaluation protocol.  In a standalone
+ten-run experiment comprising 7,200 displayed frames, the native DMA path
+sustained 24.004 FPS without a drop or deadline miss; pooled frame-work p99 was
+40.206 ms against a 41.667 ms period.
 \end{abstract}
 
 \section{Introduction}
@@ -73,7 +76,10 @@ input bandwidth scale directly with the number of pixels.
 
 This work asks whether host-side preprocessing and device-specific data-path
 design can deliver smooth, controllable playback within a high-level embedded
-application platform.  We make the following contributions:
+application platform.  The complete OreoOS implementation, RV565 host tools,
+firmware modules, standalone benchmark, and paper sources are developed in the
+public project repository~\cite{bhattacharya2026oreo}.  We make the following
+contributions:
 
 \begin{itemize}
   \item a compact frame-independent container whose decoded representation is
@@ -579,10 +585,10 @@ Operating environment & OreoOS v1.4.119, MicroPython v1.28.0 \\
 Firmware framework & ESP-IDF v5.5.1 \\
 Encoded source frame & 180$\times$135 RGB565BE \\
 Container target & Independent frames at 24 FPS \\
-Measured CPU clock & \wideblank \\
-Measured SPI clock & \wideblank \\
+Measured CPU clock & 240 MHz \\
+Driver-reported SPI clock & 40 MHz \\
 Firmware commit & \wideblank \\
-Configuration hash & \wideblank \\
+Configuration SHA-256 & \texttt{18a8142f\ldots} \\
 Measured supply voltage & \wideblank \\
 \bottomrule
 \end{tabular}
@@ -598,6 +604,13 @@ allowing $T_{overlap}$ to be derived rather than guessed.  Displayed FPS is
 completed presentations divided by wall time; a drop is a source-frame index
 advanced without presentation to restore the absolute schedule.  Reports
 include p50, p95, p99, maximum work time, and deadline-miss count.
+
+The completed standalone experiment uses a two-second, 48-frame warm-up and a
+30-second, 720-frame timed window.  Ten independently reset runs provide 7,200
+frame samples.  Frame percentiles use the pooled empirical distribution;
+confidence intervals over run-level aggregates are two-sided 95\% Student-$t$
+intervals.  Per-frame records are retained in RAM and printed only after the
+timed window, preventing serial output from entering the reported latency.
 
 Control latency is measured from a GPIO edge to entry into the corresponding
 Gallery action.  A test-harness GPIO produces the input edge and the
@@ -637,7 +650,7 @@ Raw RGB565 & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
 RV565 v4 indexed & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
 RV565 v6 Python inflate & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
 RV565 v6 native inflate & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-RV565 v6 native + DMA stripes & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
+RV565 v6 native + DMA stripes & 4.074 & 24.004 & 0 & 38.552 & 39.690 & 40.206 & \blank \\
 MJPEG baseline & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
 \bottomrule
 \end{tabular}
@@ -661,6 +674,16 @@ an incremental ablation: the difference between adjacent rows isolates the
 cost of the interpreter boundary and then the benefit of overlapping display
 transfer.
 
+The completed native-DMA row is the standalone ESP-IDF experiment, not yet the
+full OreoOS integration.  All ten runs used the same application, media, and
+configuration hashes.  Across 7,200 frames, the maximum observed work time was
+40.346 ms, leaving 1.321 ms before the 24 FPS deadline.  Inflation contributed
+8.889 ms at p99, while the overlapped LCD path measured 31.321 ms at p99;
+scaling and DMA-wait p99 values were 2.608 ms and 28.478 ms, respectively, and
+must not be summed because they overlap.  The paced FPS confidence interval is
+correspondingly narrow; zero deadline misses and the tail-work margin are the
+more informative results.
+
 \begin{table}[h]
 \centering
 \caption{Resource and energy results.}
@@ -672,7 +695,7 @@ Method & SRAM & PSRAM & Energy/frame \\
 \midrule
 RV565 v6 Python & \blank & \blank & \blank \\
 Native framebuffer & \blank & \blank & \blank \\
-Native DMA stripes & \blank & \blank & \blank \\
+Native DMA stripes & 79.9 KiB & 0 & \blank \\
 \bottomrule
 \end{tabular}
 }
@@ -686,13 +709,20 @@ power penalty, which matters for a wearable badge.  Together, Tables
 \ref{tab:results} and~\ref{tab:resources} describe performance as a resource
 envelope rather than as a single headline frame rate.
 
+The standalone SRAM value is incremental internal allocation for decoded-frame
+state and two DMA stripes.  It excludes the 23.0 KiB measurement-sample array,
+which is identified separately in the raw heap records.  This build does not
+allocate PSRAM; the OreoOS-integrated player is evaluated separately because
+its framebuffer and interpreter already occupy external memory.
+
 \subsection{Ablation studies}
 
 The evaluation separately disables double buffering, DMA overlap, native
 inflation, frame-offset indexing, and real-time OS deferral.  It also compares
 flash streaming with external storage and tests playback with radios disabled,
-Wi-Fi active, and normal background services active.  Each experiment is
-repeated \blank{} times; confidence intervals use \wideblank{}.
+Wi-Fi active, and normal background services active.  The completed native-DMA
+experiment is repeated 10 times; confidence intervals use two-sided 95\%
+Student-$t$ intervals over run-level aggregates.
 
 Visual quality is measured against the resized RGB888 reference after RGB565
 conversion using PSNR and SSIM.  Because Deflate is lossless, RV565 v6's visual
@@ -729,6 +759,12 @@ the development history shows why isolated decoder optimisation is
 insufficient: storage, allocation, colour representation, interpreter
 boundaries, scheduling, and display transfer must be treated as one timed
 system.
+
+The standalone evaluation sustains 24.004 FPS across 7,200 frames with no
+drops or deadline misses and a 40.206 ms pooled p99 frame-work time.  These
+results establish the hardware-path claim while deliberately leaving the
+OreoOS-integrated and input-latency claims open for their own controlled
+measurements.
 
 \section*{Artifact Availability}
 
