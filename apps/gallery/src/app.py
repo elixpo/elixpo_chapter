@@ -28,6 +28,14 @@ try:
 except Exception:
     _gallery_native = None
 
+try:
+    # Built into the OreoOS MicroPython firmware.  RV565 v6 frames are
+    # inflated by the ESP32-S3 ROM miniz routine directly between two reused
+    # buffers; no temporary Python bytes object is created on this path.
+    import _oreo_rv565
+except Exception:
+    _oreo_rv565 = None
+
 SW = api.SCREEN_W
 SH = api.SCREEN_H
 
@@ -317,8 +325,14 @@ class _Video:
 
         if self.version in (2, 6):
             # V2/V6 store independent zlib frames. V6 keeps the benchmark's
-            # high-quality 180x135 RGB565 source; native C scales it below.
+            # high-quality 180x135 RGB565 source. Custom OreoOS firmware
+            # inflates V6 directly into the reusable frame buffer; native C
+            # scales it below.
             try:
+                if self.version == 6 and _oreo_rv565 is not None:
+                    _oreo_rv565.inflate_frame(packed_view, self.data)
+                    self.index += 1
+                    return True
                 packed = bytes(packed_view)
                 try:
                     import deflate

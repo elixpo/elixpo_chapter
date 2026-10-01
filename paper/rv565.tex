@@ -513,11 +513,16 @@ For each requested frame the firmware follows the same sequence:
 
 Gallery owns playback policy while firmware owns the hot data path.  The
 Python layer opens media, requests a frame or seek target, and renders compact
-controls.  The native API validates and decodes media and returns structured
-status.  At most one frame is advanced per OS tick; accumulated lateness is
-discarded instead of triggering a burst of catch-up decodes.  This policy
-bounds the time before the next input poll and makes frame dropping preferable
-to an unresponsive interface.
+controls.  For RV565 v6, Gallery reads one length-prefixed payload into a
+reused compressed buffer and passes memoryviews of that buffer and the reused
+RGB565 destination to the firmware-resident \texttt{\_oreo\_rv565} module.
+That module calls the ESP32-S3 ROM \texttt{tinfl} decoder, validates the exact
+decoded length, and returns without constructing a temporary Python
+\texttt{bytes} object or a Python-managed Deflate stream.  Scaling remains a
+native Gallery operation.  At most one frame is advanced per OS tick;
+accumulated lateness is discarded instead of triggering a burst of catch-up
+decodes.  This policy bounds the time before the next input poll and makes
+frame dropping preferable to an unresponsive interface.
 
 \subsection{Scheduling and interaction semantics}
 
@@ -561,8 +566,10 @@ module designation provides 16 MiB of flash and 8 MiB of octal PSRAM, while
 the application runs on the ESP32-S3's dual Xtensa LX7 cores.  The badge uses
 an ST7789-compatible 320$\times$240 panel in RGB565 mode.  OreoOS and Gallery
 run under a custom MicroPython v1.28.0 firmware built with ESP-IDF v5.5.1; the
-native RV565 module is compiled into that firmware so the compressed-frame hot
-path does not cross the Python interpreter for every processing step.
+RV565 inflater is compiled into that firmware and invokes the ESP32-S3 ROM
+Deflate implementation directly on reusable MicroPython buffers.  The
+standalone measurements below evaluate the equivalent native decode and DMA
+data path; they do not constitute an OreoOS-integrated performance result.
 
 Table~\ref{tab:platform} separates fixed design facts from values that must be
 captured for the evaluated build.  This distinction prevents nominal settings
