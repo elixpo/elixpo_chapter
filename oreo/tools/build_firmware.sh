@@ -235,8 +235,11 @@ MICROPY_IMAGE="$BUILD_DIR/micropython.bin"
 [[ -s "$MICROPY_IMAGE" ]] || fail "MicroPython image was not produced"
 strings "$MICROPY_IMAGE" | grep '_oreo_ir' >/dev/null || fail \
   "native _oreo_ir module is missing from the image"
+strings "$MICROPY_IMAGE" | grep '_oreo_rv565' >/dev/null || fail \
+  "native _oreo_rv565 module is missing from the image"
 
 printf 'Verified native module: _oreo_ir\n'
+printf 'Verified native module: _oreo_rv565\n'
 printf 'Built: %s\n' "$FIRMWARE_IMAGE"
 
 if $COPY_IMAGE; then

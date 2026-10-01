@@ -29,6 +29,9 @@ class App:
     def draw(self, display):
         """Per-frame rendering. Don't call display.present() — the OS does that."""
 
+    def after_present(self, elapsed_us):
+        """Optional notification after the OS completes an LCD presentation."""
+
     def on_button_press(self, btn):
         pass
 
