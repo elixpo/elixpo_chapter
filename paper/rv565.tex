@@ -219,6 +219,13 @@ critical path one layer at a time.
 
 \section{Background and Previous Work}
 
+RV565 combines established ideas---display-native pixels, independent
+compression, external memory, and DMA-backed transfers---under the constraints
+of an interactive MicroPython system.  This section separates those foundations
+from the contribution of their integration.  It first considers direct RGB565
+playback, then image and video alternatives, the properties inherited from
+Deflate, and finally the ESP32-S3 mechanisms used to build the data path.
+
 \subsection{Display-native playback}
 
 Microcontroller video demonstrations have long stored frames in a form close
@@ -259,6 +266,13 @@ the panel transfer without violating DMA memory constraints.
 
 \section{The \system{} Method}
 
+The method follows the path of a frame from offline preparation to visible LCD
+output.  Its organising principle is to move expensive, unconstrained work to
+the host while keeping every device-side stage bounded and observable.  The
+subsections define the design goals, independence trade-off, memory and DMA
+architecture, file contract, validation rules, encoding process, native
+pipeline, and the scheduling boundary through which Gallery retains control.
+
 \subsection{Design goals}
 
 The architecture targets four properties: predictable per-frame work,
@@ -267,6 +281,28 @@ assumes offline access to substantially more compute than is available on the
 badge.  Expensive resize and format decisions are therefore moved to the host;
 the device performs only parsing, inflation, nearest-neighbour scaling, and
 display transfer.
+
+\subsection{Why frame independence}
+
+RV565 v6 makes every compressed payload a complete frame rather than a delta
+from an earlier image.  A decoder can therefore start from any indexed frame
+with only the global header and that frame's four-byte length prefix.  This
+property is useful beyond seeking: looping does not require decoder history, a
+missed deadline can be handled by advancing the frame index, and a damaged
+payload cannot alter the dictionary used by later frames.  After one linear
+scan builds the offset table in $O(N)$ time, lookup is $O(1)$ and requires four
+bytes of logical offset data per frame.  Runtime overhead is higher when those
+offsets are represented as MicroPython integer objects rather than a packed
+native array.
+
+The cost is deliberately paid in storage.  Deflate's dictionary restarts at
+every frame, so repeated content across adjacent frames cannot be referenced
+and each payload carries its own zlib framing.  Inter-frame codecs generally
+compress video more efficiently, but also require reference pictures, more
+decoder state, and catch-up decoding after a seek.  RV565 chooses bounded
+reconstruction work and local recovery because predictable latency and control
+response are more important here than minimum file size.  The evaluation
+reports this storage penalty rather than treating independence as free.
 
 \subsection{End-to-end architecture}
 
@@ -343,31 +379,24 @@ to overlap display transfer.  Dashed arrows carry scheduling and control.}
 \label{fig:architecture}
 \end{figure*}
 
-Figure~\ref{fig:hardware-placeholders} reserves space for two pieces of
-hardware evidence that will accompany the final measurements.  The LCD panel
-schematic should make the SPI clock, data, command/data, reset, chip-select,
-and backlight paths explicit.  The system schematic should show the ESP32-S3,
-flash/PSRAM configuration, power domain, USB connection, display, and the
-controls that must remain responsive during playback.
+Figure~\ref{fig:hardware-platform} documents the hardware boundary used by the
+measurements.  The first panel isolates the LCD clock, data, command/data,
+reset, chip-select, power, and backlight paths.  The second places that display
+beside the DevKit's flash/PSRAM configuration, USB connection, active-low
+controls, and the optional logic-analyser header used for input-latency tests.
 
-\begin{figure*}[t]
+\begin{figure*}[!tp]
 \centering
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\figureplaceholder{43mm}{LCD interface schematic\\SPI2, control signals, power,
-and backlight}
-\\[1mm]\textbf{(a)} LCD connection and signal path
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\figureplaceholder{43mm}{ESP32-S3 circuit schematic\\memory, power, USB,
-display, and controls}
-\\[1mm]\textbf{(b)} Complete experimental circuit
-\end{minipage}
-\caption{Hardware figures to be replaced by publication-quality schematics
-from the tested board revision.  Pin names and electrical values must match
-the artifact used for evaluation.}
-\label{fig:hardware-placeholders}
+\includegraphics[width=0.94\textwidth]{figures/lcd_interface.pdf}
+\\[-1mm]\textbf{(a)} LCD connection and signal path
+\\[2mm]
+\includegraphics[width=0.94\textwidth]{figures/experimental_platform.pdf}
+\\[-1mm]\textbf{(b)} Complete experimental circuit
+\caption{Board-level schematics of the RV565 test platform.  Panel (a) shows
+the 40 MHz write-only ST7789P3 interface.  Panel (b) shows the complete video
+and interaction test path; GPIO21 and GPIO33 are reserved for stimulus and
+acknowledgement markers in measurement firmware.}
+\label{fig:hardware-platform}
 \end{figure*}
 
 \subsection{Container format}
@@ -409,6 +438,26 @@ The length prefix permits a frame-offset table to be constructed in one scan.
 Seeking then changes the compressed input position directly and does not
 decode preceding frames.  The table requires one offset per frame and can be
 built lazily when the first seek occurs.
+
+\subsection{Validation and failure recovery}
+
+Media is checked at two boundaries.  Before transfer, the host ingest tool
+decodes every compressed frame and verifies the magic, version, dimensions,
+frame rate, frame count, exact RGB565 output length, complete payload coverage,
+and absence of trailing data.  It then compares the encoded artifact---not the
+source file---with both the media budget and free space reported by the badge.
+An interrupted or malformed conversion is consequently rejected before it can
+become Gallery input.
+
+Device validation is repeated because stored media cannot be assumed to remain
+trusted.  Dimensions must fit the panel, frame rate is limited to 1--30 FPS,
+frame count and compressed lengths must be nonzero, and each length must remain
+within the file and allocated input buffer.  Inflation succeeds only when it
+produces exactly $2wh$ bytes.  The frame index advances only after that check,
+so a partial decode is never presented as a new frame.  Gallery currently
+fails closed when retrying the frame after rewind also fails.  Independence
+would permit a future policy to skip a corrupt indexed payload and resume at
+the next valid boundary; that policy is not counted as an implemented result.
 
 \subsection{Host encoding}
 
@@ -463,6 +512,35 @@ discarded instead of triggering a burst of catch-up decodes.  This policy
 bounds the time before the next input poll and makes frame dropping preferable
 to an unresponsive interface.
 
+\subsection{Scheduling and interaction semantics}
+
+For a clip rate $f$, the period is $P=1/f$ and the nominal deadline of frame
+$i$ is
+
+\begin{equation}
+d_i=t_0+iP.
+\end{equation}
+
+The standalone player advances this absolute deadline after every transfer.
+If the clock is more than one period late, it advances both the deadline and
+frame index until they again describe a future presentation; late frames are
+never decoded merely to catch up.  Gallery applies the same bounded-work rule
+at the OS boundary: no more than one frame is decoded during an update tick,
+and excess accumulated delay is discarded rather than converted into a burst
+of back-to-back work.  Source progress, displayed frames, and dropped frames
+are therefore reported separately.
+
+Input preservation and input response are also distinct.  Each active-low
+button latches rising and falling GPIO edges in a minimal interrupt handler
+while inflation or display transfer is running.  The handler only writes
+preallocated bytes; application callbacks remain in the normal OS loop.  A
+subsequent poll applies an 8 ms software debounce before emitting one press or
+release event.  A short press is thus retained during the native path, but
+takes effect only after the current bounded frame operation returns.  Pause
+changes playback state, HOME leaves Gallery, and UP/DOWN changes the indexed
+seek target.  Input-latency measurement consequently covers the complete
+scheduling boundary rather than only GPIO interrupt time.
+
 \section{Evaluation}
 
 Each result is tied to a firmware commit, compiler configuration, test-media
@@ -509,6 +587,33 @@ Measured supply voltage & \wideblank \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Measurement methodology}
+
+Timing uses the ESP32-S3 monotonic microsecond timer after an initial warm-up.
+A frame-work interval begins immediately before payload inflation and ends
+when the final queued LCD transaction completes.  Separate timestamps surround
+input read, inflation, stripe production, DMA wait, and deferred OS work,
+allowing $T_{overlap}$ to be derived rather than guessed.  Displayed FPS is
+completed presentations divided by wall time; a drop is a source-frame index
+advanced without presentation to restore the absolute schedule.  Reports
+include p50, p95, p99, maximum work time, and deadline-miss count.
+
+Control latency is measured from a GPIO edge to entry into the corresponding
+Gallery action.  A test-harness GPIO produces the input edge and the
+instrumented handler toggles a second line; a logic analyser measures the
+interval independently of serial logging.  Pause, seek, and HOME are exercised
+at distributed positions within a frame period so presses during inflation and
+DMA activity are represented.
+
+Internal SRAM and PSRAM are sampled separately before media open, after
+allocation, and during steady-state playback; both current free space and the
+minimum-ever watermark are retained.  Energy per displayed frame is the
+time-integral of measured supply voltage and current divided by completed
+frames.  Raw events, firmware and media hashes, compiler configuration,
+warm-up duration, repetition count, and the percentile script accompany each
+experiment.  Serial output is disabled during timed windows unless its
+overhead is the subject of the test.
 
 \subsection{Workloads and baselines}
 
