@@ -6,9 +6,22 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_type:
+        description: Item type to backfill
+        required: true
+        type: choice
+        options:
+          - issue
+          - pull_request
+      target_number:
+        description: Issue or pull request number
+        required: true
+        type: number
 
 concurrency:
-  group: elixpo-triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: elixpo-triage-${{ github.event_name }}-${{ inputs.target_type || 'event' }}-${{ github.event.issue.number || github.event.pull_request.number || inputs.target_number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -21,14 +34,15 @@ jobs:
       issues: write
       pull-requests: write
     env:
-      AGENT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+      PROJECT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_PROJECT_TOKEN }}
+      REPO_TOKEN: ${{ github.token }}
       POLLINATIONS_KEY: ${{ secrets.ELIXPO_POLLINATIONS_API_KEY }}
       REPO: ${{ github.repository }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -41,7 +55,7 @@ jobs:
           workflow: artifact-update.yml
           path: .elixpo-context
           if_no_artifact_found: warn
-          github_token: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+          github_token: ${{ github.token }}
 
       - name: Complete sparse issue description
         if: github.event_name == 'issues'
@@ -51,16 +65,20 @@ jobs:
           CONTEXT_PATH: .elixpo-context/context.md
         run: python .github/scripts/issue_description.py
 
-      - name: Categorize issue and fill project fields
-        if: github.event_name == 'issues'
+      - name: Categorize event and fill project fields
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          TARGET_TYPE: ${{ inputs.target_type }}
+          TARGET_NUMBER: ${{ inputs.target_number }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
-        run: python .github/scripts/triage_issue.py
-
-      - name: Categorize pull request and fill project fields
-        if: github.event_name == 'pull_request'
-        env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-        run: python .github/scripts/triage_pr.py
+        run: |
+          if [[ "$EVENT_NAME" == "issues" || "$TARGET_TYPE" == "issue" ]]; then
+            export ISSUE_NUMBER="${ISSUE_NUMBER:-$TARGET_NUMBER}"
+            python .github/scripts/triage_issue.py
+          else
+            export PR_NUMBER="${PR_NUMBER:-$TARGET_NUMBER}"
+            python .github/scripts/triage_pr.py
+          fi

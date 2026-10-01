@@ -17,7 +17,8 @@ repository that installs the agent workflows:
 | Secret | Purpose | Required access |
 | --- | --- | --- |
 | `ELIXPO_POLLINATIONS_API_KEY` | Every model request: agent, triage, PR metadata, and changelog summaries | Pollinations text API; this is the only model credential |
-| `ELIXPOO_GITHUB_AGENTIC_TOKEN` | Repository reads/writes, issue and PR metadata, branches, failed-run retries, repository variables, and Project V2 fields | See the token profiles below |
+| `ELIXPOO_GITHUB_AGENTIC_TOKEN` | Cross-repository agent operations, branches, failed-run retries, and repository variables | See the token profiles below |
+| `ELIXPOO_GITHUB_PROJECT_TOKEN` | Organization Project V2 lookup and field mutations during issue/PR triage | Organization Projects read/write; no repository write access is required |
 | `ELIXPOO_GITHUB_NOTIFICATIONS_TOKEN` | Optional discovery of mentions outside repositories with installed webhooks | Classic PAT with `notifications`; fine-grained PATs are unsupported by this endpoint |
 | `AGENT_GITHUB_SOLVER_TOKEN` | Solve/Submit fork creation, fork branch pushes, and pull-request creation | Classic PAT from the fork owner with `public_repo` for public targets |
 | `ELIXPOO_GIST_AGENTIC_TOKEN` | Merge changelog and Steward follow-up memory | Gist read/write |
@@ -42,8 +43,7 @@ Recommended `ELIXPOO_GITHUB_AGENTIC_TOKEN` fine-grained PAT:
 - Repository permissions: Actions read/write, Contents read/write, Issues
   read/write, Pull requests read/write, Variables read/write, Workflows
   read/write, and Metadata read.
-- Organization permissions: Projects read/write.
-Classic PAT fallback for `ELIXPOO_GITHUB_AGENTIC_TOKEN`: `repo`, `workflow`, and `project`.
+Classic PAT fallback for `ELIXPOO_GITHUB_AGENTIC_TOKEN`: `repo` and `workflow`.
 Add `read:org` only if the organization restricts project access in a
 way that requires membership lookup. This is broader than the fine-grained
 profile.
@@ -78,6 +78,12 @@ GitHub credential.
 `ELIXPO_POLLINATIONS_API_KEY` is not a GitHub token and receives no
 GitHub permissions. Give it only Pollinations text-generation access.
 
+`ELIXPOO_GITHUB_PROJECT_TOKEN` is deliberately separate from repository and
+agent credentials. Triage uses the event-scoped `GITHUB_TOKEN` for labels and
+native Issue Type changes, and uses this organization token only for Project
+V2 lookup, membership, Priority, and Status. Project node, field, and option
+IDs are resolved at runtime from the organization login and project number.
+
 Use expirations and rotation reminders on both PATs. Organization secret
 visibility should be limited to selected agent-enabled repositories until the
 workflow is rolled out everywhere.
@@ -93,12 +99,13 @@ Required organization secrets:
 
 - `ELIXPO_POLLINATIONS_API_KEY`
 - `ELIXPOO_GITHUB_AGENTIC_TOKEN`
+- `ELIXPOO_GITHUB_PROJECT_TOKEN`
 - `AGENT_GITHUB_SOLVER_TOKEN`
 - `ELIXPOO_GIST_AGENTIC_TOKEN`
 
 No `GH_SECRET` is required. GitHub supplies `GITHUB_TOKEN` automatically, while
-cross-repository and Project V2 operations use
-`ELIXPOO_GITHUB_AGENTIC_TOKEN`.
+cross-repository agent operations use `ELIXPOO_GITHUB_AGENTIC_TOKEN`, while
+Project V2 triage uses `ELIXPOO_GITHUB_PROJECT_TOKEN`.
 
 No SOPS/age key is required by the agent stack. If a repository separately
 decrypts deployment configuration, keep that key in a deployment environment
