@@ -38,12 +38,13 @@ const HIGHLIGHT_PILLS = [
   "Open hardware",
   "Open firmware",
   "On-device app store",
+  "24 FPS native video",
 ] as const;
 
 const HERO_STATS: { label: string; value: string }[] = [
   { label: "First-party apps", value: "20+" },
   { label: "MicroPython",      value: "1.28" },
-  { label: "Boots in",         value: "<2 s" },
+  { label: "Native video",     value: "24 FPS" },
 ];
 
 const containerVariants: Variants = {

@@ -34,6 +34,7 @@ const COLUMNS: FooterColumn[] = [
       { label: "OreoOS",       href: "https://github.com/elixpo/oreo",            external: true },
       { label: "Hardware",     href: "https://github.com/elixpo/oreo/tree/main/docs", external: true },
       { label: "Video Architecture", href: "/docs/video-architecture/" },
+      { label: "RV565 Paper", href: "/paper/" },
       { label: "Contributing", href: "https://github.com/elixpo/oreo/blob/main/CONTRIBUTING.md", external: true },
       { label: "License",      href: "https://github.com/elixpo/oreo/blob/main/LICENSE", external: true },
     ],
