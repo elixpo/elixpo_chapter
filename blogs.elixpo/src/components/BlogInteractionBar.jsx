@@ -18,6 +18,15 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   const [toast, setToast] = useState('');
   const flashToast = (m) => { setToast(m); setTimeout(() => setToast(''), 2200); };
 
+  // Shared auth guard: redirects guests to the sign-in page with the current
+  // path preserved as `?next=…` so they can return after signing in.
+  const requireAuth = () => {
+    if (user) return true;
+    const next = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname) : '/';
+    window.location.href = `/sign-in?next=${next}`;
+    return false;
+  };
+
   // Repost state — always fetch the count (shown even on your own blog).
   useEffect(() => {
     if (!blogId) return;
@@ -28,7 +37,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
 
   const toggleRepost = () => {
     if (!canRepost) return;
-    if (!user) { window.location.href = `/sign-in?next=${typeof window !== 'undefined' ? window.location.pathname : '/'}`; return; }
+    if (!requireAuth()) return;
     const was = reposted;
     setReposted(!was); setRepostCount(c => c + (was ? -1 : 1));
     fetch(`/api/blogs/${blogId}/repost`, { method: was ? 'DELETE' : 'POST' })
@@ -117,7 +126,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   // Interactions are optimistic: update the UI instantly, write to the DB in the
   // background, reconcile with the server's authoritative count, and revert on failure.
   const toggleLike = () => {
-    if (!user) return;
+    if (!requireAuth()) return;
     setLikeAnim(true);
     setTimeout(() => setLikeAnim(false), 400);
     setInteractions(prev => {
@@ -136,7 +145,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   };
 
   const addClap = () => {
-    if (!user) return;
+    if (!requireAuth()) return;
     setClapAnim(true);
     setTimeout(() => setClapAnim(false), 300);
     setInteractions(prev => prev ? { ...prev, userClaps: (prev.userClaps || 0) + 1, totalClaps: (prev.totalClaps || 0) + 1 } : prev);
@@ -151,7 +160,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   };
 
   const toggleBookmark = () => {
-    if (!user) return;
+    if (!requireAuth()) return;
     const wasBookmarked = !!interactions?.bookmarked;
     setInteractions(prev => prev ? { ...prev, bookmarked: !wasBookmarked } : prev);
     const req = wasBookmarked
@@ -173,10 +182,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   const [curateError, setCurateError] = useState('');
 
   const openCurator = async () => {
-    if (!user) {
-      window.location.href = `/sign-in?next=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
+    if (!requireAuth()) return;
     setCurateOpen(true);
     setCurateError('');
     try {
@@ -243,10 +249,7 @@ export default function BlogInteractionBar({ blogId, blogTitle, blogAuthorId, ca
   ];
   const submitReport = async (reason) => {
     setReportOpen(false);
-    if (!user) {
-      window.location.href = `/sign-in?next=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
+    if (!requireAuth()) return;
     try {
       const res = await fetch(`/api/blogs/${blogId}/report`, {
         method: 'POST',

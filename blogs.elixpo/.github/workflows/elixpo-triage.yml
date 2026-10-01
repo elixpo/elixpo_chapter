@@ -22,6 +22,9 @@ jobs:
       pull-requests: write
     env:
       AGENT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+      # Repository writes should use the event-scoped token. The organization
+      # PAT is reserved for Project V2 and native issue-type GraphQL calls.
+      REPO_TOKEN: ${{ github.token }}
       POLLINATIONS_KEY: ${{ secrets.ELIXPO_POLLINATIONS_API_KEY }}
       REPO: ${{ github.repository }}
 
@@ -51,16 +54,16 @@ jobs:
           CONTEXT_PATH: .elixpo-context/context.md
         run: python .github/scripts/issue_description.py
 
-      - name: Categorize issue and fill project fields
-        if: github.event_name == 'issues'
+      - name: Categorize event and fill project fields
         env:
+          EVENT_NAME: ${{ github.event_name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
-        run: python .github/scripts/triage_issue.py
-
-      - name: Categorize pull request and fill project fields
-        if: github.event_name == 'pull_request'
-        env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-        run: python .github/scripts/triage_pr.py
+        run: |
+          if [[ "$EVENT_NAME" == "issues" ]]; then
+            python .github/scripts/triage_issue.py
+          else
+            python .github/scripts/triage_pr.py
+          fi

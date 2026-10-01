@@ -41,12 +41,11 @@ export async function snapshotVersion(db, blogId, compressedContent, opts = {}) 
   if (!db || !blogId || !compressedContent) return;
   try {
     const now = Math.floor(Date.now() / 1000);
-    if (opts.throttleSeconds) {
-      const last = await db.prepare(
-        'SELECT created_at FROM blog_versions WHERE blog_id = ? ORDER BY created_at DESC LIMIT 1'
-      ).bind(blogId).first();
-      if (last && now - last.created_at < opts.throttleSeconds) return;
-    }
+    const last = await db.prepare(
+      'SELECT content, created_at FROM blog_versions WHERE blog_id = ? ORDER BY created_at DESC, id DESC LIMIT 1'
+    ).bind(blogId).first();
+    if (last?.content === compressedContent) return;
+    if (opts.throttleSeconds && last && now - last.created_at < opts.throttleSeconds) return;
 
     const id = crypto.randomUUID();
     await db.prepare(

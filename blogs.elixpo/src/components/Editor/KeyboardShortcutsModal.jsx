@@ -2,30 +2,33 @@
 
 import { useEffect, useRef } from 'react';
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+const modifier = isMac ? '⌘' : 'Ctrl';
+
 const SHORTCUT_GROUPS = [
   {
     title: 'General',
     shortcuts: [
-      { keys: ['Ctrl', 'S'], desc: 'Save & sync to cloud' },
-      { keys: ['Ctrl', 'O'], desc: 'Import markdown file (.md)' },
-      { keys: ['Ctrl', 'Shift', 'I'], desc: 'Invite collaborators' },
-      { keys: ['Ctrl', 'D'], desc: 'Insert date chip' },
-      { keys: ['Ctrl', 'Shift', 'P'], desc: 'Toggle editor / preview' },
-      { keys: ['Ctrl', 'Z'], desc: 'Undo' },
-      { keys: ['Ctrl', 'Shift', 'Z'], desc: 'Redo' },
-      { keys: ['Ctrl', 'A'], desc: 'Select all' },
+      { keys: [modifier, 'S'], desc: 'Save & sync to cloud' },
+      { keys: [modifier, 'O'], desc: 'Import markdown file (.md)' },
+      { keys: [modifier, 'Shift', 'I'], desc: 'Invite collaborators' },
+      { keys: [modifier, 'D'], desc: 'Insert date chip' },
+      { keys: [modifier, 'Shift', 'P'], desc: 'Toggle editor / preview' },
+      { keys: [modifier, 'Z'], desc: 'Undo' },
+      { keys: [modifier, 'Shift', 'Z'], desc: 'Redo' },
+      { keys: [modifier, 'A'], desc: 'Select all' },
       { keys: ['?'], desc: 'Show this help' },
     ],
   },
   {
     title: 'Text Formatting',
     shortcuts: [
-      { keys: ['Ctrl', 'B'], desc: 'Bold' },
-      { keys: ['Ctrl', 'I'], desc: 'Italic' },
-      { keys: ['Ctrl', 'U'], desc: 'Underline' },
-      { keys: ['Ctrl', 'E'], desc: 'Code (inline)' },
-      { keys: ['Ctrl', 'Shift', 'S'], desc: 'Strikethrough' },
-      { keys: ['Ctrl', 'K'], desc: 'Add link' },
+      { keys: [modifier, 'B'], desc: 'Bold' },
+      { keys: [modifier, 'I'], desc: 'Italic' },
+      { keys: [modifier, 'U'], desc: 'Underline' },
+      { keys: [modifier, 'E'], desc: 'Code (inline)' },
+      { keys: [modifier, 'Shift', 'S'], desc: 'Strikethrough' },
+      { keys: [modifier, 'K'], desc: 'Add link' },
     ],
   },
   {
@@ -72,6 +75,8 @@ export default function KeyboardShortcutsModal({ onClose }) {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div
         ref={ref}
+        role="dialog"
+        aria-modal="true"
         className="w-full max-w-[520px] max-h-[80vh] rounded-2xl shadow-2xl overflow-hidden"
         style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-lg)' }}
       >
@@ -83,6 +88,7 @@ export default function KeyboardShortcutsModal({ onClose }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close keyboard shortcuts"
             className="transition-colors p-1"
             style={{ color: 'var(--text-faint)' }}
           >

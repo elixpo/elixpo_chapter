@@ -220,6 +220,12 @@ export async function POST(request) {
         slugid, slug, title || '', subtitle || '', compressedContent, excerpt,
         session.userId, publishAs || 'personal', pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, now
       ).run();
+      if (compressedContent) {
+        try {
+          const { snapshotVersion } = await import('../../../../lib/blogVersions');
+          await snapshotVersion(db, slugid, compressedContent, { label: 'draft', userId: session.userId });
+        } catch {}
+      }
     }
 
     // Media can be uploaded before a brand-new draft row exists. Associate

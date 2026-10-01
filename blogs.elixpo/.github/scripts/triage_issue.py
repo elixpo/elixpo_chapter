@@ -27,8 +27,8 @@ from _common import (
 # Note: ISSUE_TITLE and ISSUE_BODY are intentionally NOT read from env vars.
 # The event payload is stale if issue_description.py has already rewritten
 # the body in an earlier step. We fetch them fresh from the GitHub API below.
-# AGENT_TOKEN is a PAT for the @elixpoo account with full project write scope,
-# used for both REST and GraphQL (Project V2) calls.
+# AGENT_TOKEN is the organization PAT used for Project V2 and issue-type
+# GraphQL calls. Repository REST writes use REPO_TOKEN through _common.py.
 AGENT_TOKEN = os.environ["AGENT_TOKEN"]
 POLLINATIONS_KEY = os.environ.get("POLLINATIONS_KEY", "")
 ISSUE_NUMBER = os.environ["ISSUE_NUMBER"]
@@ -215,6 +215,7 @@ def set_issue_type(issue_node_id: str, issue_type_id: str) -> None:
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> None:
     print(f"=== Issue Triage: #{ISSUE_NUMBER} ===")
+    failures: list[str] = []
 
     # ── Step 0: Fetch fresh issue data from the API ───────────────────────
     # The event payload may be stale (an earlier step can rewrite the body),
@@ -307,6 +308,7 @@ def main() -> None:
             set_issue_type(issue_node_id, type_id)
         except Exception as exc:
             print(f"[warn] Failed to set issue type: {exc}")
+            failures.append("native issue type")
     else:
         print(f"[warn] No issue type ID for '{type_name}', skipping")
 
@@ -327,6 +329,7 @@ def main() -> None:
     except Exception as exc:
         print(f"[error] Failed to add to project: {exc}")
         item_id = None
+        failures.append("Project V2 item")
 
     # ── Step 4: Set priority field ────────────────────────────────────────
     if item_id and priority_option_id:
@@ -337,6 +340,7 @@ def main() -> None:
             )
         except Exception as exc:
             print(f"[warn] Failed to set priority: {exc}")
+            failures.append("project priority")
     elif not priority_option_id:
         print(f"[warn] No option ID for priority '{priority}', skipping field update")
 
@@ -351,6 +355,7 @@ def main() -> None:
                 print("Status set to 'Todo'")
             except Exception as exc:
                 print(f"[warn] Failed to set Status=Todo: {exc}")
+                failures.append("project status")
         else:
             print("[warn] Status field or 'Todo' option not found on project — skipping status set")
 
@@ -369,8 +374,12 @@ def main() -> None:
         add_labels(REPO, ISSUE_NUMBER, [cat_label, pri_label])
     except Exception as exc:
         print(f"[warn] Label application failed: {exc}")
+        failures.append("repository labels")
 
     print("=== Triage complete ===")
+    if failures:
+        failed = ", ".join(dict.fromkeys(failures))
+        raise SystemExit(f"Triage incomplete; failed operations: {failed}")
 
 
 if __name__ == "__main__":

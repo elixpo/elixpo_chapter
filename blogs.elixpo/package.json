@@ -7,10 +7,10 @@
   "homepage": "https://blogs.elixpo.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/elixpo/lixblogs"
+    "url": "https://github.com/elixpo/blogs.elixpo"
   },
   "bugs": {
-    "url": "https://github.com/elixpo/lixblogs/issues"
+    "url": "https://github.com/elixpo/blogs.elixpo/issues"
   },
   "keywords": [
     "blog",
@@ -32,6 +32,7 @@
     "@elixpo/lixeditor": "file:./packages/lixeditor",
     "@elixpo/lixsketch": "5.5.0",
     "cropperjs": "^2.1.0",
+    "diff": "^4.0.4",
     "framer-motion": "^12.38.0",
     "katex": "^0.16.43",
     "marked": "^16.4.2",

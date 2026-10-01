@@ -200,6 +200,10 @@ export async function POST(request) {
       target.publishedAs, target.collectionId, input.emoji || '', input.coverUrl || '',
       input.secret ? 1 : 0, input.memberOnly ? 1 : 0, license, discovery.language, discovery.region, now, now,
     ).run();
+    try {
+      const { snapshotVersion } = await import('../../../../lib/blogVersions');
+      await snapshotVersion(db, id, compressed, { label: 'draft', userId: auth.userId });
+    } catch {}
     for (const tag of input.tags || []) {
       await db.prepare('INSERT OR IGNORE INTO blog_tags (blog_id, tag) VALUES (?, ?)').bind(id, tag).run();
     }
