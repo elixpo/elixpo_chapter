@@ -109,6 +109,18 @@ function invertShapeColors(prevResolved, nextResolved) {
       shape.draw()
     }
   }
+function readStoredTheme() {
+  if (typeof window === 'undefined') return 'dark'
+  try {
+    const theme = localStorage.getItem('theme')
+    if (theme && ['dark', 'light', 'system'].includes(theme)) return theme
+  } catch {}
+  try {
+    const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}')
+    return ['dark', 'light', 'system'].includes(prefs.theme) ? prefs.theme : 'dark'
+  } catch {
+    return 'dark'
+  }
 }
 
 function applyTheme(theme) {
@@ -215,7 +227,7 @@ const useUIStore = create((set, get) => ({
   setCanvasLoading: (loading, message) => set({ canvasLoading: loading, canvasLoadingMessage: message || 'Loading canvas...' }),
 
   // --- Theme ---
-  theme: 'dark',
+  theme: readStoredTheme(),
   setTheme: (newTheme) => {
     const prev = get().theme
     const resolve = (t) => t === 'system'
@@ -224,6 +236,13 @@ const useUIStore = create((set, get) => ({
     invertShapeColors(resolve(prev), resolve(newTheme))
     applyTheme(newTheme)
     set({ theme: newTheme })
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('theme', newTheme)
+        const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}')
+        localStorage.setItem('lix_ui_prefs', JSON.stringify({ ...prefs, theme: newTheme }))
+      } catch {}
+    }
   },
 
   // --- Language / i18n ---
