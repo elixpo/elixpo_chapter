@@ -9,22 +9,18 @@
 # Validate locally with: pip install cffconvert && cffconvert -i CITATION.cff -f bibtex
 
 cff-version: 1.2.0
-message: "If you use the Oreo Badge or OreoOS in research, classrooms, or talks, please cite it as below."
-title: "OreoOS — the Oreo Badge Operating System"
+message: "If you use OreoOS, the Oreo Badge, or the RV565 media pipeline, please cite this software."
+title: "OreoOS: The Oreo Badge Operating System and RV565 Media Pipeline"
 type: software
 abstract: >
-  OreoOS is a MicroPython-based operating system for the Oreo Badge,
-  a wearable, programmable conference badge built around an ESP32-S3
-  microcontroller, a 320x240 IPS LCD, an MPU-6050 IMU, an IR
-  transmit/receive pair, and a capacitive touch pad. The OS ships a
-  themed launcher, an OTA update client, a power manager, and a
-  curated set of apps written against a three-method app SDK.
+  OreoOS is a MicroPython-based application operating system for an
+  ESP32-S3 conference badge. The repository includes the operating system,
+  hardware drivers, host media-ingestion tools, and RV565, a frame-independent
+  compressed RGB565 playback pipeline with native scaling and DMA experiments.
 authors:
   - family-names: Bhattacharya
     given-names: Ayushman
-    alias: Circuit-Overtime
-    affiliation: Elixpo
-    email: hello@elixpo.com
+    email: ayushman@pollinations.ai
 keywords:
   - conference-badge
   - micropython
@@ -34,15 +30,18 @@ keywords:
   - ota
   - hardware
   - oreoos
-  - elixpo
-license: LicenseRef-Oreo-PCL-1.0
+  - rgb565
+  - video-playback
+  - direct-memory-access
+license: MIT
+license-url: "https://github.com/elixpo/oreo/blob/main/LICENSE"
 repository-code: "https://github.com/elixpo/oreo"
-url: "https://elixpo.com"
+url: "https://oreo.elixpo.com"
 contact:
-  - email: hello@elixpo.com
-    name: Elixpo
+  - email: ayushman@pollinations.ai
+    name: Ayushman Bhattacharya
 # `version` and `date-released` are auto-updated by tools/release.py
 # whenever a new release is cut. Don't hand-edit them unless you're
 # fixing a typo.
-version: "v1.2.55"
-date-released: "2026-05-15"
+version: "v1.4.119"
+date-released: "2026-09-30"

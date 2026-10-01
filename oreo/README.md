@@ -415,7 +415,7 @@ Cutting a release takes one command: `python tools/release.py`. Details in [`CON
 | 🔌 **Building your own PCB?** | [`docs/DATASHEET.md`](docs/DATASHEET.md) + [`oreoWare/pins.py`](oreoWare/pins.py) |
 | 🤝 **Joining the community?** | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) + [`SUPPORT.md`](SUPPORT.md) |
 | 🛡 **Found a vulnerability?** | [`SECURITY.md`](SECURITY.md) |
-| 📖 **Citing OreoOS?** | [`CITATION.cff`](CITATION.cff) |
+| 📖 **Citing OreoOS or RV565?** | [`CITATION.cff`](CITATION.cff) + [`paper/`](paper/) |
 
 A docs index lives at [`docs/README.md`](docs/README.md).
 
@@ -537,4 +537,3 @@ With 💖 by [**Ayushman Bhattacharya**](https://github.com/Circuit-Overtime).
 Want to help, ship an app, sponsor a build, or just say hi - ✉️ **hello@elixpo.com**
 
 </div>
-
