@@ -6,9 +6,22 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_type:
+        description: Item type to backfill
+        required: true
+        type: choice
+        options:
+          - issue
+          - pull_request
+      target_number:
+        description: Issue or pull request number
+        required: true
+        type: number
 
 concurrency:
-  group: elixpo-triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: elixpo-triage-${{ github.event.issue.number || github.event.pull_request.number || inputs.target_number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -22,6 +35,7 @@ jobs:
       pull-requests: write
     env:
       AGENT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+      PROJECT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_PROJECT_TOKEN }}
       # Repository writes should use the event-scoped token. The organization
       # PAT is reserved for Project V2 and native issue-type GraphQL calls.
       REPO_TOKEN: ${{ github.token }}
@@ -57,13 +71,17 @@ jobs:
       - name: Categorize event and fill project fields
         env:
           EVENT_NAME: ${{ github.event_name }}
+          TARGET_TYPE: ${{ inputs.target_type }}
+          TARGET_NUMBER: ${{ inputs.target_number }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          if [[ "$EVENT_NAME" == "issues" ]]; then
+          if [[ "$EVENT_NAME" == "issues" || "$TARGET_TYPE" == "issue" ]]; then
+            export ISSUE_NUMBER="${ISSUE_NUMBER:-$TARGET_NUMBER}"
             python .github/scripts/triage_issue.py
           else
+            export PR_NUMBER="${PR_NUMBER:-$TARGET_NUMBER}"
             python .github/scripts/triage_pr.py
           fi
