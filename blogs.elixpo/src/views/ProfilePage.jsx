@@ -48,6 +48,7 @@ export default function ProfilePage() {
   const [followModal, setFollowModal] = useState(null); // 'followers' | 'following'
   const [blogActionId, setBlogActionId] = useState('');
   const [blogActionError, setBlogActionError] = useState('');
+  const [shareFeedback, setShareFeedback] = useState('');
 
   useEffect(() => {
     if (!user?.username) return;
@@ -97,6 +98,66 @@ export default function ProfilePage() {
       setBlogActionError(requestError.message || 'The blog could not be updated');
     } finally {
       setBlogActionId('');
+    }
+  }
+
+  function publicProfileUrl() {
+    return new URL(`/${encodeURIComponent(user.username)}`, window.location.origin).toString();
+  }
+
+  async function copyProfileLink(fallbackMessage = 'Profile link copied.') {
+    if (!user?.username) return false;
+    const url = publicProfileUrl();
+    let copied = false;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        copied = true;
+      }
+    } catch {}
+
+    if (!copied) {
+      const input = document.createElement('textarea');
+      input.value = url;
+      input.setAttribute('readonly', '');
+      input.setAttribute('aria-hidden', 'true');
+      input.tabIndex = -1;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      try {
+        copied = document.execCommand('copy');
+      } catch {}
+      input.remove();
+    }
+
+    setShareFeedback(copied ? fallbackMessage : 'Could not copy the link. Open your public profile to copy its URL.');
+    return copied;
+  }
+
+  async function shareProfile() {
+    if (!user?.username) return;
+    const url = publicProfileUrl();
+    if (typeof navigator.share !== 'function') {
+      await copyProfileLink('Sharing is unavailable; profile link copied.');
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `${user.display_name || user.username} on LixBlogs`,
+        url,
+      });
+      setShareFeedback('Profile shared.');
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        setShareFeedback('Sharing canceled.');
+        return;
+      }
+      const copied = await copyProfileLink('Sharing failed; profile link copied instead.');
+      if (!copied) setShareFeedback('Sharing failed. Use Copy link to try again.');
     }
   }
 
@@ -300,22 +361,40 @@ export default function ProfilePage() {
         </div>
 
         {/* User Info */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">{user.display_name || user.username}</h1>
             <p className="text-[var(--text-muted)] text-sm mt-0.5">@{user.username}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Link
               href={`/${encodeURIComponent(user.username)}`}
-              className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
             >
-              <ion-icon name="eye-outline" style={{ fontSize: '16px' }} />
+              <ion-icon name="eye-outline" aria-hidden="true" style={{ fontSize: '16px' }} />
               View Public Profile
             </Link>
+            <button
+              type="button"
+              onClick={shareProfile}
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+              aria-label="Share public profile"
+            >
+              <ion-icon name="share-social-outline" aria-hidden="true" style={{ fontSize: '16px' }} />
+              Share
+            </button>
+            <button
+              type="button"
+              onClick={() => copyProfileLink()}
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+              aria-label="Copy public profile link"
+            >
+              <ion-icon name="link-outline" aria-hidden="true" style={{ fontSize: '16px' }} />
+              Copy link
+            </button>
             <Link
               href="/settings"
-              className="px-4 py-2 text-[13px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+              className="px-3 py-2 text-[12px] font-medium text-[var(--text-body)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
             >
               Edit Profile
             </Link>
@@ -323,11 +402,17 @@ export default function ProfilePage() {
               href="/settings"
               className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-[var(--border-hover)] transition-colors"
               title="Settings"
+              aria-label="Settings"
             >
               <ion-icon name="settings-outline" style={{ fontSize: '16px', color: 'var(--text-muted)' }} />
             </Link>
           </div>
         </div>
+        {shareFeedback && (
+          <p role="status" aria-live="polite" className="-mt-4 mb-6 text-right text-xs text-[var(--text-muted)]">
+            {shareFeedback}
+          </p>
+        )}
 
         {user.bio && (
           <p className="text-[var(--text-secondary)] text-[15px] leading-relaxed mb-6">{user.bio}</p>

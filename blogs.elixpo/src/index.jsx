@@ -784,6 +784,23 @@ export default function App({ initialPosts = [], showBrandIntro = false }) {
                 </Link>
               </div>
             )}
+            <div className="flex justify-center px-6 pb-8 pt-2">
+              <a
+                href="https://launchaf.com/"
+                target="_blank"
+                rel="noopener"
+                data-launchaf-badge="true"
+                className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-app)]"
+              >
+                <img
+                  src="https://launchaf.com/api/badge/light?v=launchaf-blue-2026-2"
+                  alt="Featured on LaunchAF"
+                  width="200"
+                  height="56"
+                  className="h-auto max-w-full"
+                />
+              </a>
+            </div>
           </div>
         </div>
 

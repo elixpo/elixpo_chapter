@@ -40,6 +40,15 @@ def _agent_token() -> str:
     return tok
 
 
+def _repo_token() -> str:
+    """Token for repository-scoped REST mutations.
+
+    Actions' event token has the exact repository permissions declared by the
+    workflow. Fall back to the agent PAT for local/manual script execution.
+    """
+    return os.environ.get("REPO_TOKEN", "").strip() or _agent_token()
+
+
 def _pollinations_key() -> str:
     return os.environ.get("POLLINATIONS_KEY", "").strip()
 
@@ -96,9 +105,11 @@ def github_rest(
     accept: str = "application/vnd.github+json",
     raise_on_status: bool = True,
 ) -> dict | list:
-    """Make an authenticated GitHub REST API call as @elixpoo.
+    """Make an authenticated GitHub REST API call.
 
     `path` starts with `/` (e.g. `/repos/foo/bar/issues/1`).
+    Uses REPO_TOKEN for repository operations when available; explicit tokens
+    remain supported for Gist and other account-scoped calls.
     Returns parsed JSON, or {} for 204 No Content.
     """
     url = f"https://api.github.com{path}"
@@ -106,7 +117,7 @@ def github_rest(
 
     def _do():
         req = urllib.request.Request(url, data=data, method=method)
-        req.add_header("Authorization", f"Bearer {token or _agent_token()}")
+        req.add_header("Authorization", f"Bearer {token or _repo_token()}")
         req.add_header("Accept", accept)
         req.add_header("X-GitHub-Api-Version", "2022-11-28")
         req.add_header("User-Agent", USER_AGENT)
@@ -153,8 +164,8 @@ def github_graphql(query: str, variables: dict | None = None) -> dict:
             return json.loads(resp.read().decode())
 
     result = _with_retry(_do, label="GraphQL")
-    if "errors" in result:
-        print(f"[warn] GraphQL errors: {result['errors']}", file=sys.stderr)
+    if result.get("errors"):
+        raise RuntimeError(f"GraphQL request failed: {result['errors']}")
     return result
 
 

@@ -14,6 +14,7 @@ import ReadingResumePrompt from "../components/ReadingResumePrompt";
 import BlogInteractionBar from "../components/BlogInteractionBar";
 import BlogInviteOverlay from "../components/BlogInviteOverlay";
 import BlogRecommendations from "../components/BlogRecommendations";
+import RevisionTimeline from "../components/RevisionTimeline";
 import ContributionGraph from "../components/ContributionGraph";
 import { CreatorBadgeMark } from "../components/CreatorBadge";
 import FollowListModal from "../components/FollowListModal";
@@ -1048,6 +1049,9 @@ function HandlePageInner({ path, initialData = null }) {
                         />
                     )}
                     <ReadingResumePrompt blogId={blog.id} />
+                    {!blog.secret && !blog.member_only && !blog.paywalled && (
+                        <RevisionTimeline blogId={blog.id} />
+                    )}
                     {canEdit && (
                         <div className="flex items-center justify-end mb-4">
                             <Link

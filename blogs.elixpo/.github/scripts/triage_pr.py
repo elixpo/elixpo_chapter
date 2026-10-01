@@ -209,6 +209,7 @@ def set_single_select_field(
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> None:
     print(f"=== PR Triage: #{PR_NUMBER} ===")
+    failures: list[str] = []
 
     pr_data = fetch_pr(PR_NUMBER)
     pr_node_id = pr_data["node_id"]
@@ -253,6 +254,7 @@ def main() -> None:
         print(f"Project item ID: {item_id}")
     except Exception as exc:
         print(f"[error] Failed to add to project: {exc}")
+        failures.append("Project V2 item")
 
     if item_id:
         priority_option = project["priority_options"].get(priority)
@@ -264,11 +266,13 @@ def main() -> None:
                 print(f"Priority set to '{priority}'")
             except Exception as exc:
                 print(f"[warn] Failed to set priority: {exc}")
+                failures.append("project priority")
         try:
             if set_status_todo(project["id"], item_id):
                 print("Status set to 'Todo'")
         except Exception as exc:
             print(f"[warn] Failed to set Status=Todo: {exc}")
+            failures.append("project status")
 
     # Labels expose classification outside the project board as well.
     cat_label = category.upper()
@@ -282,8 +286,12 @@ def main() -> None:
         add_labels(REPO, PR_NUMBER, [cat_label, pri_label, type_label])
     except Exception as exc:
         print(f"[warn] Label application failed: {exc}")
+        failures.append("repository labels")
 
     print("=== PR triage complete ===")
+    if failures:
+        failed = ", ".join(dict.fromkeys(failures))
+        raise SystemExit(f"PR triage incomplete; failed operations: {failed}")
 
 
 if __name__ == "__main__":

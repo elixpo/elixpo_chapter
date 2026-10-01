@@ -4,6 +4,7 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { SeasonalThemeProvider } from '../src/themes/seasonal/SeasonalThemeProvider';
 import { seasonalThemeBootstrapScript } from '../src/themes/seasonal/index';
+import ScrollToTopButton from '../src/components/ScrollToTopButton';
 
 const SITE_URL = 'https://blogs.elixpo.com';
 const SITE_NAME = 'LixBlogs';
@@ -223,6 +224,7 @@ export default function RootLayout({ children }) {
           <ThemeProvider>
             <AuthProvider>
               {children}
+              <ScrollToTopButton />
             </AuthProvider>
           </ThemeProvider>
         </SeasonalThemeProvider>

@@ -1975,7 +1975,15 @@ export default function SettingsPage() {
           <nav aria-label="Settings sections" className="sticky top-20 hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-2 md:block">
             {TABS.map((tab, index) => (
               <button key={tab.label} type="button" aria-current={activeTab === index ? 'page' : undefined} onClick={() => selectTab(index)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition-colors ${activeTab === index ? 'bg-[var(--accent-subtle)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'}`}>
-                <ion-icon name={tab.icon} className={activeTab === index ? 'text-[var(--accent)]' : 'text-[var(--text-faint)]'} />
+                <ion-icon
+                  name={tab.icon}
+                  aria-hidden="true"
+                  style={{
+                    color: activeTab === index ? 'var(--accent)' : 'var(--text-faint)',
+                    fontSize: '16px',
+                    flexShrink: 0,
+                  }}
+                />
                 {tab.label}
               </button>
             ))}

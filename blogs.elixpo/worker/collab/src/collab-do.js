@@ -11,34 +11,57 @@ import { encoding, decoding } from 'lib0';
 const MSG_SYNC = 0;
 const MSG_AWARENESS = 1;
 
+// Close codes that a server may legally send. 1004/1005/1006/1015 are reserved
+// for "reported" statuses and make WebSocket#close() throw if echoed back.
+function sendableCloseCode(code) {
+  const ok = (code >= 1000 && code <= 1003)
+    || (code >= 1007 && code <= 1014)
+    || (code >= 3000 && code <= 4999);
+  return ok ? code : 1000;
+}
+
 export class CollabDurableObject {
   constructor(ctx, env) {
     this.ctx = ctx;
     this.env = env;
     this.doc = new Y.Doc();
     this.awareness = new awarenessProtocol.Awareness(this.doc);
-    this.initialized = false;
-    this.persistTimer = null;
     this.blogId = null;
+    this.subpageId = null;
+
+    // Hibernatable WebSockets evict this object from memory while the sockets
+    // stay open. The next event (message, close, alarm) runs on a brand-new
+    // instance whose constructor has just executed, so EVERY handler must see a
+    // fully hydrated doc and room identity. blockConcurrencyWhile holds all
+    // incoming events until hydration finishes; if it throws, the object is
+    // reset instead of continuing with an empty doc that would later be
+    // persisted over the real state.
+    this.ready = ctx.blockConcurrencyWhile(() => this.hydrate());
+    this.ready.catch(() => {});
   }
 
-  // Load Yjs state from DO Storage on first access
-  async initialize() {
-    if (this.initialized) return;
-    this.initialized = true;
+  // Load Yjs state and room identity from DO Storage.
+  async hydrate() {
+    const [stored, blogId, subpageId] = await Promise.all([
+      this.ctx.storage.get('yjs_state'),
+      this.ctx.storage.get('blog_id'),
+      this.ctx.storage.get('subpage_id'),
+    ]);
 
-    const stored = await this.ctx.storage.get('yjs_state');
     if (stored) {
       try {
         Y.applyUpdate(this.doc, new Uint8Array(stored));
       } catch (err) {
         console.error('Failed to load Yjs state:', err);
+        throw err;
       }
     }
 
-    this.blogId = await this.ctx.storage.get('blog_id');
+    this.blogId = blogId || null;
+    this.subpageId = subpageId || null;
 
-    // Listen for doc updates → persist (debounced via alarm)
+    // Listen for doc updates → persist (debounced via alarm). Registered after
+    // the stored state is applied so loading it doesn't schedule a rewrite.
     this.doc.on('update', () => {
       this.schedulePersist();
     });
@@ -52,6 +75,7 @@ export class CollabDurableObject {
   }
 
   async alarm() {
+    await this.ready;
     await this.persistState();
   }
 
@@ -86,7 +110,7 @@ export class CollabDurableObject {
   }
 
   async fetch(request) {
-    await this.initialize();
+    await this.ready;
 
     const url = new URL(request.url);
 
@@ -177,7 +201,7 @@ export class CollabDurableObject {
   }
 
   async webSocketMessage(ws, message) {
-    await this.initialize();
+    await this.ready;
 
     try {
       const data = new Uint8Array(message);
@@ -215,6 +239,11 @@ export class CollabDurableObject {
   }
 
   async webSocketClose(ws, code, reason) {
+    // After hibernation this may be the first event on a fresh instance.
+    // Without hydration the doc below would be empty and persistState() would
+    // overwrite the stored document with it.
+    await this.ready;
+
     // Clean up awareness for disconnected client
     try {
       const meta = ws.deserializeAttachment();
@@ -229,21 +258,27 @@ export class CollabDurableObject {
       }
     } catch {}
 
-    ws.close(code, reason);
+    // Echoing a reserved code (1005 "no status", 1006 abnormal) throws and
+    // would skip the persistence below, so normalise it first.
+    try {
+      ws.close(sendableCloseCode(code), reason);
+    } catch {}
 
     // If no more clients, persist and snapshot
-    const remaining = this.ctx.getWebSockets();
+    const remaining = this.ctx.getWebSockets().filter((s) => s !== ws);
     if (remaining.length === 0) {
       await this.persistState();
       await this.snapshotToD1();
       // Clear editing lock
-      this.clearEditingLock();
+      await this.clearEditingLock();
     }
   }
 
   webSocketError(ws, error) {
     console.error('WebSocket error:', error);
-    ws.close(1011, 'Internal error');
+    try {
+      ws.close(1011, 'Internal error');
+    } catch {}
   }
 
   broadcastExcept(sender, data) {

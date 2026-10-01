@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import MentionTextarea, { renderMentions } from './MentionTextarea';
 import { generatePixelAvatar } from '../utils/pixelAvatar';
 
@@ -67,6 +68,10 @@ function BlurredBody() {
 
 export default function BlogComments({ blogId, blogAuthorId }) {
   const { user } = useAuth();
+  const pathname = usePathname();
+  const signInHref = pathname
+    ? `/sign-in?next=${encodeURIComponent(`${pathname}#comments`)}`
+    : '/sign-in';
   const [comments, setComments] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -211,7 +216,7 @@ export default function BlogComments({ blogId, blogAuthorId }) {
       ) : (
         <div className="text-center py-6 mb-8 rounded-xl" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
           <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-            <Link href="/sign-in" className="font-medium" style={{ color: 'var(--accent)' }}>Sign in</Link> to join the conversation.
+            <Link href={signInHref} className="font-medium" style={{ color: 'var(--accent)' }}>Sign in</Link> to join the conversation.
           </p>
         </div>
       )}

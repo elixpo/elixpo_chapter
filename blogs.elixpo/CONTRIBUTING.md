@@ -25,10 +25,33 @@ every Elixpo repository.
 1. **Fork** the repository and create a branch from `main`:
    `git checkout -b feat/short-description`
 2. **Make your change.** Match the existing code style and keep commits focused.
-3. **Test it.** Make sure the project builds and existing checks pass.
+3. **Test it.** Run the same quality gate used by pull requests:
+   ```bash
+   npm ci
+   npm test
+   npm run pages:build
+   ```
 4. **Open a pull request** with a clear title and description of what changed
    and why. Link any related issue.
 5. A maintainer will review. Address feedback, and once approved we merge.
+
+## What automation reviews
+
+Pull requests to `main` receive one fork-safe quality gate. It installs from the
+lockfile, runs the test suite, and builds with the same Cloudflare Pages adapter
+used before production. These checks need no repository secrets, so external
+contributors can receive useful validation without receiving deployment access.
+
+Pull requests from branches in `elixpo/blogs.elixpo` also receive a temporary
+Cloudflare Pages preview after the quality gate passes. Fork pull requests do
+not receive a remote preview because deployment credentials are never exposed
+to code from a fork. A maintainer can reproduce the branch in a trusted context
+when a visual preview is needed.
+
+Preview and production are separate decisions. A preview publishes only the
+Pages output and does not apply remote database migrations, deploy Workers, or
+publish packages. Production deployment remains in the merge-to-`main`
+workflow after automated checks and human review are complete.
 
 ## Commit & PR conventions
 
