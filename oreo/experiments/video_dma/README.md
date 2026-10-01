@@ -48,10 +48,19 @@ idf.py set-target esp32s3
 idf.py -p /dev/ttyACM0 erase-flash flash monitor
 ```
 
-The serial monitor reports measured FPS, average and worst frame-work time, the
-uncapped hardware ceiling, and dropped frames every two seconds.
+The instrumented firmware warms up for two seconds, records 30 seconds of
+per-frame timings in RAM, and prints the samples only after the timed window.
 The first completed frame enables the backlight, avoiding uninitialised LCD
-memory on startup.
+memory on startup. Capture and validate the run from the repository root:
+
+```bash
+.venv/bin/python tools/collect_video_benchmark.py --port /dev/ttyACM0
+```
+
+The collector resets the application, waits for the complete run, verifies
+that every numbered frame arrived, computes p50/p95/p99 timing, and writes the
+raw log, frame CSV and JSON summary under `paper/measurements/`. It also hashes
+the application binary, encoded media and `sdkconfig` used for the run.
 
 ## Restore the badge exactly as it was
 
