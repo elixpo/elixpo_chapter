@@ -37,7 +37,12 @@ function contrastText(fill) {
 }
 
 function isDark() {
-    return typeof document !== 'undefined' && document.body?.classList.contains('theme-dark');
+    if (typeof document === 'undefined') return true;
+    if (document.body) {
+        if (document.body.classList.contains('theme-dark')) return true;
+        if (document.body.classList.contains('theme-light')) return false;
+    }
+    return !document.documentElement || document.documentElement.classList.contains('dark');
 }
 
 function theme() {

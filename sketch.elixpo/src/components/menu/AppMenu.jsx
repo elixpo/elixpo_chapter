@@ -6,7 +6,7 @@ import useUIStore from '@/store/useUIStore'
 import useSketchStore from '@/store/useSketchStore'
 import useAuthStore, { WORKER_URL } from '@/store/useAuthStore'
 import { useProfileStore } from '@/hooks/useGuestProfile'
-import { beginWorkspaceDeletion, triggerCloudSync, writeLocalScene } from '@/hooks/useAutoSave'
+import { beginWorkspaceDeletion } from '@/hooks/useAutoSave'
 import { discardPendingDocChanges } from '@/hooks/useDocAutoSave'
 import { useTranslation } from '@/hooks/useTranslation'
 // Issue #38 follow-up: swatches are paired per theme. The light set
@@ -47,7 +47,7 @@ function DangerWarningDialog({ action, busy, error, workspaceName, onCancel, onC
     : 'Every shape on this canvas will be removed. The workspace and its document will remain available.'
   const warning = deleting
     ? 'This cannot be undone. Shared links to this workspace will stop working, and you will be moved to a new blank workspace.'
-    : 'This cannot be undone after the empty canvas is saved or synced.'
+    : 'You can undo this with Ctrl+Z until the empty canvas syncs to the cloud or this page is reloaded.'
 
   return createPortal(
     <div
@@ -240,13 +240,7 @@ export default function AppMenu() {
     const serializer = window.__sceneSerializer
     if (serializer) {
       const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
-      const sceneData = serializer.save(workspaceName)
-      const sessionId = window.__sessionID
-      if (sessionId) {
-        writeLocalScene(`lixsketch-autosave-${sessionId}`, sceneData)
-      }
-      useUIStore.getState().setSaveStatus('local')
-      triggerCloudSync()
+      serializer.download(workspaceName)
     }
     closeMenu()
   }
@@ -264,6 +258,13 @@ export default function AppMenu() {
     setDangerAction(action)
     closeMenu()
   }
+
+  useEffect(() => {
+    window.__requestCanvasResetConfirmation = () => openDangerWarning('reset')
+    return () => {
+      delete window.__requestCanvasResetConfirmation
+    }
+  }, [])
 
   const closeDangerWarning = () => {
     if (dangerBusy) return
@@ -299,7 +300,7 @@ export default function AppMenu() {
     try {
       const serializer = window.__sceneSerializer
       if (dangerAction === 'reset') {
-        serializer?.resetCanvas?.()
+        serializer?.resetCanvas?.({ workspaceName: useUIStore.getState().workspaceName || 'Untitled' })
         clearShapes()
         clearHistory()
         useUIStore.getState().setSaveStatus('local')
@@ -332,7 +333,7 @@ export default function AppMenu() {
       discardPendingDocChanges()
       window.__disconnectCollaboration?.()
       clearLocalWorkspace(sessionId)
-      serializer?.resetCanvas?.()
+      serializer?.resetCanvas?.({ undoable: false })
       clearShapes()
       clearHistory()
       useUIStore.getState().setSaveStatus('idle')

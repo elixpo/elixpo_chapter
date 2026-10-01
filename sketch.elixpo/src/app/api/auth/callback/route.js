@@ -109,10 +109,10 @@ export async function GET(request) {
 
   // Establish the browser session for Edge routes immediately. The landing
   // callback also mirrors this into localStorage for client-side restoration.
-  response.cookies.set('lixsketch-session', JSON.stringify({
+  response.cookies.set('lixsketch-session', encodeURIComponent(JSON.stringify({
     sessionToken,
     user: sessionUser,
-  }), {
+  })), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

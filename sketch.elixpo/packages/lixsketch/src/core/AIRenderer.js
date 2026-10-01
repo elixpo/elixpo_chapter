@@ -44,8 +44,14 @@ export function parseMermaid(src) {
     const classDefs = new Map();   // classDef name -> { fill, stroke, strokeWidth }
     const classAssigns = [];        // { nodeIds: [...], className }
     const nodeStyles = new Map();   // Mermaid `style A fill:...,stroke:...`
-    const darkTheme = typeof document === 'undefined'
-        || document.body?.classList.contains('theme-dark');
+    const darkTheme = (() => {
+        if (typeof document === 'undefined') return true;
+        if (document.body) {
+            if (document.body.classList.contains('theme-dark')) return true;
+            if (document.body.classList.contains('theme-light')) return false;
+        }
+        return !document.documentElement || document.documentElement.classList.contains('dark');
+    })();
     const palette = darkTheme
         ? [
             { fill: '#352b52', stroke: '#9d86df' },

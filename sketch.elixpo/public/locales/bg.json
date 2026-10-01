@@ -132,5 +132,25 @@
     "resetZoom": "Нулиране на мащаба",
     "toggleGrid": "Превключване на решетката",
     "shortcutsHelp": "Клавишни комбинации"
+  },
+  "landing": {
+    "nav": {
+      "pricing": "Ценообразуване",
+      "teams": "Екипи",
+      "templates": "Шаблони",
+      "roadmap": "Пътна карта",
+      "blog": "Блог",
+      "resources": "Ресурси",
+      "openCanvas": "Отвори платно",
+      "myCanvases": "Моите платна",
+      "starUs": "Дайте ни звезда в GitHub"
+    },
+    "resources": {
+      "howToStart": "Как да започнем",
+      "community": "Общност",
+      "useCases": "Случаи на употреба",
+      "security": "Сигурност",
+      "docs": "Документация"
+    }
   }
 }

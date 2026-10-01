@@ -185,6 +185,10 @@ export function applyTheme(theme) {
 function readStoredTheme() {
   if (typeof window === 'undefined') return 'dark'
   try {
+    const theme = localStorage.getItem('theme')
+    if (theme && ['dark', 'light', 'system'].includes(theme)) return theme
+  } catch {}
+  try {
     const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}')
     return ['dark', 'light', 'system'].includes(prefs.theme) ? prefs.theme : 'dark'
   } catch {
@@ -200,6 +204,9 @@ function persistTheme(theme) {
   } catch {
     localStorage.setItem('lix_ui_prefs', JSON.stringify({ theme }))
   }
+  try {
+    localStorage.setItem('theme', theme)
+  } catch {}
 }
 
 function applyCanvasTheme(resolved) {

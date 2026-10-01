@@ -6,7 +6,7 @@ Import pattern:
     from ci_config import *
     from scripts._common import github_rest, github_graphql, call_llm
 
-All functions read AGENT_TOKEN, POLLINATIONS_KEY, etc. from the environment.
+GitHub helpers route repository, Project V2, and agent credentials by purpose.
 """
 
 from __future__ import annotations
@@ -38,6 +38,16 @@ def _agent_token() -> str:
     if not tok:
         raise RuntimeError("AGENT_TOKEN env var is not set")
     return tok
+
+
+def _repo_token() -> str:
+    """Token for repository REST and repository-scoped GraphQL operations."""
+    return os.environ.get("REPO_TOKEN", "").strip() or _agent_token()
+
+
+def _project_token() -> str:
+    """Token for organization Project V2 queries and mutations."""
+    return os.environ.get("PROJECT_TOKEN", "").strip() or _agent_token()
 
 
 def _pollinations_key() -> str:
@@ -96,9 +106,10 @@ def github_rest(
     accept: str = "application/vnd.github+json",
     raise_on_status: bool = True,
 ) -> dict | list:
-    """Make an authenticated GitHub REST API call as @elixpoo.
+    """Make an authenticated GitHub REST API call.
 
     `path` starts with `/` (e.g. `/repos/foo/bar/issues/1`).
+    Repository calls use REPO_TOKEN unless an explicit token is supplied.
     Returns parsed JSON, or {} for 204 No Content.
     """
     url = f"https://api.github.com{path}"
@@ -106,7 +117,7 @@ def github_rest(
 
     def _do():
         req = urllib.request.Request(url, data=data, method=method)
-        req.add_header("Authorization", f"Bearer {token or _agent_token()}")
+        req.add_header("Authorization", f"Bearer {token or _repo_token()}")
         req.add_header("Accept", accept)
         req.add_header("X-GitHub-Api-Version", "2022-11-28")
         req.add_header("User-Agent", USER_AGENT)
@@ -130,11 +141,14 @@ def github_rest(
 
 
 # ── GitHub GraphQL ────────────────────────────────────────────────────────
-def github_graphql(query: str, variables: dict | None = None) -> dict:
-    """Make a GraphQL call as @elixpoo.
+def github_graphql(
+    query: str, variables: dict | None = None, *, token: str | None = None
+) -> dict:
+    """Make a GraphQL call with PROJECT_TOKEN by default.
 
     Uses the `variables` parameter so user-controlled values don't need to be
-    interpolated into the query string (safer + more robust).
+    interpolated into the query string. Repository-scoped mutations must pass
+    REPO_TOKEN explicitly.
     """
     payload: dict = {"query": query}
     if variables:
@@ -146,16 +160,101 @@ def github_graphql(query: str, variables: dict | None = None) -> dict:
             data=json.dumps(payload).encode(),
             method="POST",
         )
-        req.add_header("Authorization", f"Bearer {_agent_token()}")
+        req.add_header("Authorization", f"Bearer {token or _project_token()}")
         req.add_header("Content-Type", "application/json")
         req.add_header("User-Agent", USER_AGENT)
         with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT) as resp:
             return json.loads(resp.read().decode())
 
     result = _with_retry(_do, label="GraphQL")
-    if "errors" in result:
-        print(f"[warn] GraphQL errors: {result['errors']}", file=sys.stderr)
+    if result.get("errors"):
+        raise RuntimeError(f"GraphQL request failed: {result['errors']}")
     return result
+
+
+def resolve_org_project(owner: str, number: int) -> dict:
+    """Resolve a Project V2 board and its single-select metadata at runtime."""
+    query = """
+    query($owner: String!, $number: Int!) {
+      organization(login: $owner) {
+        projectsV2(first: 50) { nodes { id number title } }
+        projectV2(number: $number) {
+          id
+          fields(first: 50) {
+            nodes {
+              ... on ProjectV2SingleSelectField {
+                id
+                name
+                options { id name }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    result = github_graphql(query, {"owner": owner, "number": number})
+    organization = (result.get("data") or {}).get("organization") or {}
+    project = organization.get("projectV2")
+    if not project:
+        visible = [
+            f"#{item.get('number')} {item.get('title')}"
+            for item in (organization.get("projectsV2") or {}).get("nodes") or []
+            if item
+        ]
+        raise RuntimeError(
+            f"Project V2 {owner}/{number} is unavailable to PROJECT_TOKEN; "
+            f"visible organization projects: {', '.join(visible) or 'none'}"
+        )
+
+    resolved = {"id": project["id"], "number": number}
+    for field in (project.get("fields") or {}).get("nodes") or []:
+        if not field or not field.get("name"):
+            continue
+        key = field["name"].strip().lower()
+        resolved[f"{key}_field_id"] = field.get("id")
+        resolved[f"{key}_options"] = {
+            option["name"]: option["id"]
+            for option in field.get("options") or []
+            if option.get("name") and option.get("id")
+        }
+    return resolved
+
+
+def ensure_project_item(project_id: str, content_id: str) -> str:
+    """Return an existing Project V2 item or add it exactly once."""
+    query = """
+    query($contentId: ID!) {
+      node(id: $contentId) {
+        ... on Issue {
+          projectItems(first: 100) { nodes { id project { id } } }
+        }
+        ... on PullRequest {
+          projectItems(first: 100) { nodes { id project { id } } }
+        }
+      }
+    }
+    """
+    result = github_graphql(query, {"contentId": content_id})
+    node = (result.get("data") or {}).get("node") or {}
+    for item in (node.get("projectItems") or {}).get("nodes") or []:
+        if item and (item.get("project") or {}).get("id") == project_id:
+            return item["id"]
+
+    mutation = """
+    mutation($projectId: ID!, $contentId: ID!) {
+      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+        item { id }
+      }
+    }
+    """
+    result = github_graphql(
+        mutation, {"projectId": project_id, "contentId": content_id}
+    )
+    try:
+        return result["data"]["addProjectV2ItemById"]["item"]["id"]
+    except (KeyError, TypeError) as exc:
+        raise RuntimeError(f"Failed to add content to Project V2: {result}") from exc
 
 
 # ── LLM (Pollinations) ────────────────────────────────────────────────────

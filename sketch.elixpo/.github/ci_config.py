@@ -20,9 +20,9 @@ LLM_MAX_TOKENS_SEARCH = 2500
 LLM_MODEL = LLM_MODEL_CHAT
 
 # ── Repository ──────────────────────────────────────
-REPO = "elixpo/agent.elixpo"
-PROJECT_NAME = "agent.elixpo"
-PROJECT_DESCRIPTION = "Elixpo agent orchestration hub"
+REPO = "elixpo/sketch.elixpo"
+PROJECT_NAME = "LixSketch"
+PROJECT_DESCRIPTION = "Collaborative infinite canvas for diagrams, sketches, and documents"
 
 # ── GitHub Projects V2 ──────────────────────────────
 # Shared org-wide projects (linked to all elixpo repos).
@@ -32,52 +32,20 @@ PROJECT_OWNER = "elixpo"
 
 PROJECTS = {
     "Feature": {
-        "id": "PVT_kwDOCZpXlc4BU5G2",
         "number": 2,
         "url": "https://github.com/orgs/elixpo/projects/2",
-        "priority_field_id": "PVTSSF_lADOCZpXlc4BU5G2zhI73CA",
-        "priority_options": {
-            "Urgent": "b23fe0c8",
-            "High": "d7eb7128",
-            "Medium": "5f4dffcc",
-            "Low": "69fbb73e",
-        },
     },
     "Bugs": {
-        "id": "PVT_kwDOCZpXlc4BU5G4",
         "number": 3,
         "url": "https://github.com/orgs/elixpo/projects/3",
-        "priority_field_id": "PVTSSF_lADOCZpXlc4BU5G4zhI74wo",
-        "priority_options": {
-            "Urgent": "941c406a",
-            "High": "bf1e8234",
-            "Medium": "26edf47b",
-            "Low": "a8b967d7",
-        },
     },
     "Support": {
-        "id": "PVT_kwDOCZpXlc4BU5G6",
         "number": 4,
         "url": "https://github.com/orgs/elixpo/projects/4",
-        "priority_field_id": "PVTSSF_lADOCZpXlc4BU5G6zhI76r8",
-        "priority_options": {
-            "Urgent": "31ddaa82",
-            "High": "6bedb306",
-            "Medium": "843e5a46",
-            "Low": "f57a96cd",
-        },
     },
     "Dev": {
-        "id": "PVT_kwDOCZpXlc4BU5G7",
         "number": 5,
         "url": "https://github.com/orgs/elixpo/projects/5",
-        "priority_field_id": "PVTSSF_lADOCZpXlc4BU5G7zhI78bE",
-        "priority_options": {
-            "Urgent": "0442c856",
-            "High": "fe20675f",
-            "Medium": "508c18fa",
-            "Low": "987b0728",
-        },
     },
 }
 
