@@ -1,5 +1,13 @@
 const GEN_URL = 'https://gen.pollinations.ai'
 
+function modelName(row) {
+  const name = String(row.model || row.model_id || '').toLowerCase()
+  return ({
+    'black-forest-labs/flux.1-schnell': 'flux',
+    'black-forest-labs/flux.2-klein-4b': 'klein',
+  })[name] || name
+}
+
 async function providerJson(path, accessToken) {
   const response = await fetch(`${GEN_URL}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
@@ -37,7 +45,7 @@ export async function getPollinationsAccountSnapshot(accessToken) {
   const balanceData = balanceResult.value
   const balance = numberFrom(balanceData, ['pollen', 'balance', 'available', 'remaining', 'total'], undefined)
   const usageRows = usageResult.status === 'fulfilled' ? rowsFrom(usageResult.value) : []
-  const imageRows = usageRows.filter((row) => ['flux', 'klein'].includes(String(row.model || row.model_id || '').toLowerCase()))
+  const imageRows = usageRows.filter((row) => ['flux', 'klein'].includes(modelName(row)))
   const usage = imageRows.reduce((total, row) => ({
     requests: total.requests + (numberFrom(row, ['requests', 'request_count', 'count']) || 1),
     promptTokens: total.promptTokens + numberFrom(row, ['prompt_tokens', 'promptTokens', 'input_tokens']),
@@ -49,7 +57,7 @@ export async function getPollinationsAccountSnapshot(accessToken) {
 
   const healthRows = healthResult.status === 'fulfilled' ? rowsFrom(healthResult.value) : []
   const health = ['flux', 'klein'].map((model) => {
-    const row = healthRows.find((entry) => String(entry.model || entry.model_id || '').toLowerCase() === model)
+    const row = healthRows.find((entry) => modelName(entry) === model)
     const success = numberFrom(row, ['status_2xx', 'success_count', 'successes', 'ok'])
     const serverErrors = numberFrom(row, ['errors_5xx', 'status_5xx', 'server_error_count', 'errors'])
     const total = success + serverErrors

@@ -65,6 +65,30 @@ export function pushDeleteAction(shape, meta = null) {
     notifyCollaboration();
 }
 
+export function pushCanvasResetAction(snapshot, restore, reset) {
+    if (!snapshot || typeof restore !== 'function' || typeof reset !== 'function') return;
+    // A reset is a new history boundary. Older per-shape actions reference
+    // objects that the scene loader will replace, so only the atomic reset
+    // snapshot remains undoable.
+    undoStack.length = 0;
+    redoStack.length = 0;
+    undoStack.push({ type: 'canvasReset', snapshot, restore, reset });
+}
+
+export function invalidateCanvasResetUndo() {
+    for (let index = undoStack.length - 1; index >= 0; index -= 1) {
+        if (undoStack[index]?.type === 'canvasReset') undoStack.splice(index, 1);
+    }
+    for (let index = redoStack.length - 1; index >= 0; index -= 1) {
+        if (redoStack[index]?.type === 'canvasReset') redoStack.splice(index, 1);
+    }
+}
+
+export function clearUndoHistory() {
+    undoStack.length = 0;
+    redoStack.length = 0;
+}
+
 // Enhanced delete action to clean up attached arrows
 export function pushDeleteActionWithAttachments(shape) {
     let affectedArrows = [];
@@ -458,6 +482,13 @@ export function undo() {
     if (undoStack.length === 0) return;
     const action = undoStack.pop();
     try {
+    if (action.type === 'canvasReset') {
+        action.restore(action.snapshot);
+        redoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
     if (action.type === 'frameTransform') {
         // Handle frame transformation undo
         action.shape.x = action.oldPos.x;
@@ -975,6 +1006,13 @@ export function redo() {
     if (redoStack.length === 0) return;
     const action = redoStack.pop();
     try {
+    if (action.type === 'canvasReset') {
+        action.reset();
+        undoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
     if (action.type === 'frameTransform') {
         // Handle frame transformation redo
         action.shape.x = action.newPos.x;
@@ -1484,6 +1522,9 @@ document.getElementById('redo')?.addEventListener('click', redo);
 // Expose globally for plain scripts
 window.pushCreateAction = pushCreateAction;
 window.pushDeleteAction = pushDeleteAction;
+window.pushCanvasResetAction = pushCanvasResetAction;
+window.invalidateCanvasResetUndo = invalidateCanvasResetUndo;
+window.clearUndoHistory = clearUndoHistory;
 window.pushDeleteActionWithAttachments = pushDeleteActionWithAttachments;
 window.pushTransformAction = pushTransformAction;
 window.pushOptionsChangeAction = pushOptionsChangeAction;

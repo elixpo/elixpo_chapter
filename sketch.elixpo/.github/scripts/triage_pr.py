@@ -8,7 +8,7 @@ GitHub Project V2 board with an UPPERCASE category label.
 Every PR is classified from its content. The author never overrides the
 category because an org member can open feature, bug, support, or dev work.
 
-Env vars: AGENT_TOKEN, POLLINATIONS_KEY, PR_NUMBER, PR_AUTHOR, REPO
+Env vars: REPO_TOKEN, PROJECT_TOKEN, POLLINATIONS_KEY, PR_NUMBER, PR_AUTHOR, REPO
 """
 
 import json
@@ -26,13 +26,16 @@ from _common import (
     parse_llm_json,
     ensure_label,
     add_labels,
+    ensure_project_item,
+    resolve_org_project,
 )
 
 # ── Environment ────────────────────────────────────────────────────────────
-AGENT_TOKEN = os.environ["AGENT_TOKEN"]
+PROJECT_TOKEN = os.environ["PROJECT_TOKEN"]
+REPO_TOKEN = os.environ["REPO_TOKEN"]
 POLLINATIONS_KEY = os.environ.get("POLLINATIONS_KEY", "")
 PR_NUMBER = os.environ["PR_NUMBER"]
-PR_AUTHOR = os.environ["PR_AUTHOR"]
+PR_AUTHOR = os.environ.get("PR_AUTHOR", "")
 REPO = os.environ["REPO"]
 
 # ── Defaults ───────────────────────────────────────────────────────────────
@@ -102,23 +105,6 @@ def fetch_pr_files(pr_number: str, limit: int = 100) -> list[str]:
     except Exception as exc:
         print(f"[warn] Failed to fetch PR files: {exc}")
     return []
-
-
-def add_to_project(project_id: str, pr_node_id: str) -> str | None:
-    mutation = """
-    mutation($projectId: ID!, $contentId: ID!) {
-      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-        item { id }
-      }
-    }
-    """
-    result = github_graphql(
-        mutation, {"projectId": project_id, "contentId": pr_node_id}
-    )
-    try:
-        return result["data"]["addProjectV2ItemById"]["item"]["id"]
-    except (KeyError, TypeError):
-        return None
 
 
 def find_status_todo(project_id: str) -> tuple[str | None, str | None]:
@@ -209,13 +195,15 @@ def set_single_select_field(
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> None:
     print(f"=== PR Triage: #{PR_NUMBER} ===")
+    failures: list[str] = []
 
     pr_data = fetch_pr(PR_NUMBER)
     pr_node_id = pr_data["node_id"]
     pr_title = pr_data.get("title") or ""
     pr_body = pr_data.get("body") or ""
+    pr_author = PR_AUTHOR or (pr_data.get("user") or {}).get("login", "")
     print(f"Title:  {pr_title}")
-    print(f"Author: @{PR_AUTHOR}")
+    print(f"Author: @{pr_author}")
 
     category = DEFAULT_CATEGORY
     priority = DEFAULT_PRIORITY
@@ -243,32 +231,52 @@ def main() -> None:
 
     # Resolve project
     project = PROJECTS.get(category) or PROJECTS[DEFAULT_CATEGORY]
+    try:
+        project = {**project, **resolve_org_project(PROJECT_OWNER, project["number"])}
+    except Exception as exc:
+        raise SystemExit(
+            f"PR triage incomplete; failed operation: Project V2 lookup: {exc}"
+        ) from exc
+
+    priority_field_id = project.get("priority_field_id")
+    priority_options = project.get("priority_options") or {}
+    if not priority_field_id:
+        print("[error] Project Priority field was not found")
+        failures.append("project priority field")
 
     # Add to project board + set Status=Todo so we don't rely on
     # github-project-automation[bot] for the initial status.
     print(f"Adding PR to '{category}' project ({project['id']})...")
     item_id = None
     try:
-        item_id = add_to_project(project["id"], pr_node_id)
+        item_id = ensure_project_item(project["id"], pr_node_id)
         print(f"Project item ID: {item_id}")
     except Exception as exc:
         print(f"[error] Failed to add to project: {exc}")
+        failures.append("Project V2 item")
 
     if item_id:
-        priority_option = project["priority_options"].get(priority)
-        if priority_option:
+        priority_option = priority_options.get(priority)
+        if priority_field_id and priority_option:
             try:
                 set_single_select_field(
-                    project["id"], item_id, project["priority_field_id"], priority_option
+                    project["id"], item_id, priority_field_id, priority_option
                 )
                 print(f"Priority set to '{priority}'")
             except Exception as exc:
                 print(f"[warn] Failed to set priority: {exc}")
+                failures.append("project priority")
+        elif not priority_option:
+            print(f"[error] Priority option '{priority}' was not found")
+            failures.append("project priority option")
         try:
             if set_status_todo(project["id"], item_id):
                 print("Status set to 'Todo'")
+            else:
+                failures.append("project status metadata")
         except Exception as exc:
             print(f"[warn] Failed to set Status=Todo: {exc}")
+            failures.append("project status")
 
     # Labels expose classification outside the project board as well.
     cat_label = category.upper()
@@ -282,8 +290,12 @@ def main() -> None:
         add_labels(REPO, PR_NUMBER, [cat_label, pri_label, type_label])
     except Exception as exc:
         print(f"[warn] Label application failed: {exc}")
+        failures.append("repository labels")
 
     print("=== PR triage complete ===")
+    if failures:
+        failed = ", ".join(dict.fromkeys(failures))
+        raise SystemExit(f"PR triage incomplete; failed operations: {failed}")
 
 
 if __name__ == "__main__":

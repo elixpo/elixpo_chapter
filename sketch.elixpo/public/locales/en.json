@@ -132,5 +132,25 @@
     "resetZoom": "Reset Zoom",
     "toggleGrid": "Toggle Grid",
     "shortcutsHelp": "Shortcuts"
+  },
+  "landing": {
+    "nav": {
+      "pricing": "Pricing",
+      "teams": "Teams",
+      "templates": "Templates",
+      "roadmap": "Roadmap",
+      "blog": "Blog",
+      "resources": "Resources",
+      "openCanvas": "Open Canvas",
+      "myCanvases": "My Canvases",
+      "starUs": "Star us on GitHub"
+    },
+    "resources": {
+      "howToStart": "How to start",
+      "community": "Community",
+      "useCases": "Use Cases",
+      "security": "Security",
+      "docs": "Docs"
+    }
   }
 }

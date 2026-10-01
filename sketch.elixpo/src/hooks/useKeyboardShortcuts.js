@@ -3,8 +3,6 @@
 import { useEffect } from 'react'
 import useSketchStore, { TOOLS, SHORTCUT_MAP } from '@/store/useSketchStore'
 import useUIStore from '@/store/useUIStore'
-import { triggerCloudSync, writeLocalScene } from '@/hooks/useAutoSave'
-import { triggerDocCloudSync } from '@/hooks/useDocAutoSave'
 import { showToast } from '@/utils/toast'
 
 export default function useKeyboardShortcuts() {
@@ -64,37 +62,12 @@ export default function useKeyboardShortcuts() {
         }
         if (key === 's' && !e.shiftKey) {
           e.preventDefault()
-          // Quick save to localStorage + cloud sync
           const serializer = window.__sceneSerializer
-          const shapes = window.shapes
-          if (serializer && shapes) {
+          if (serializer) {
             const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
-            const sceneData = serializer.save(workspaceName)
-            try {
-              // Issue #24 bug #8: session-scoped key + compressed payload.
-              const sessionId = window.__sessionID
-              if (sessionId) {
-                writeLocalScene(`lixsketch-autosave-${sessionId}`, sceneData)
-                localStorage.setItem(`lixsketch-autosave-meta-${sessionId}`, JSON.stringify({
-                  workspaceName,
-                  savedAt: Date.now(),
-                  shapeCount: shapes.length,
-                }))
-              }
-              useUIStore.getState().setSaveStatus('local')
-            } catch {}
-            // Trigger cloud sync immediately — both scene and doc together.
-            // Doc sync is a no-op if there's no buffered content.
-            Promise.all([
-              triggerCloudSync(),
-              triggerDocCloudSync(),
-            ]).catch(() => {})
-            // Show brief visual feedback
-            const el = document.getElementById('save-toast')
-            if (el) {
-              el.classList.remove('hidden')
-              setTimeout(() => el.classList.add('hidden'), 1500)
-            }
+            serializer.download(workspaceName)
+              .then(({ fileName }) => showToast(`Saved ${fileName}`, { tone: 'success', duration: 1800 }))
+              .catch(() => showToast('Could not save the .lixjson file', { tone: 'warn' }))
           }
           return
         }

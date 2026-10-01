@@ -1864,6 +1864,16 @@ document.addEventListener('keydown', (e) => {
 function deleteSelectedShapes() {
     if (multiSelection.selectedShapes.size === 0) return;
 
+    if (
+        Array.isArray(window.shapes) &&
+        window.shapes.length > 0 &&
+        multiSelection.selectedShapes.size >= window.shapes.length &&
+        typeof window.__requestCanvasResetConfirmation === 'function'
+    ) {
+        window.__requestCanvasResetConfirmation();
+        return;
+    }
+
     const shapesToDelete = Array.from(multiSelection.selectedShapes);
     multiSelection.clearSelection();
 

@@ -21,18 +21,21 @@ from _common import (
     parse_llm_json,
     ensure_label,
     add_labels,
+    ensure_project_item,
+    resolve_org_project,
 )
 
 # ── Environment variables ──────────────────────────────────────────────────
 # Note: ISSUE_TITLE and ISSUE_BODY are intentionally NOT read from env vars.
 # The event payload is stale if issue_description.py has already rewritten
 # the body in an earlier step. We fetch them fresh from the GitHub API below.
-# AGENT_TOKEN is a PAT for the @elixpoo account with full project write scope,
-# used for both REST and GraphQL (Project V2) calls.
-AGENT_TOKEN = os.environ["AGENT_TOKEN"]
+# PROJECT_TOKEN is used for Project V2 operations through _common.py.
+# Repository REST writes and native Issue Type mutations use REPO_TOKEN.
+PROJECT_TOKEN = os.environ["PROJECT_TOKEN"]
+REPO_TOKEN = os.environ["REPO_TOKEN"]
 POLLINATIONS_KEY = os.environ.get("POLLINATIONS_KEY", "")
 ISSUE_NUMBER = os.environ["ISSUE_NUMBER"]
-ISSUE_AUTHOR = os.environ["ISSUE_AUTHOR"]
+ISSUE_AUTHOR = os.environ.get("ISSUE_AUTHOR", "")
 REPO = os.environ["REPO"]
 
 # ── Defaults ───────────────────────────────────────────────────────────────
@@ -116,24 +119,6 @@ def assign_issue(issue_number: str, assignee: str) -> None:
         print(f"[warn] Failed to assign @{assignee}: {exc}")
 
 
-def add_to_project(project_id: str, issue_node_id: str) -> str:
-    """Add an issue to a Project V2 board. Returns the project item ID."""
-    mutation = """
-    mutation($projectId: ID!, $contentId: ID!) {
-      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-        item { id }
-      }
-    }
-    """
-    result = github_graphql(
-        mutation, {"projectId": project_id, "contentId": issue_node_id}
-    )
-    try:
-        return result["data"]["addProjectV2ItemById"]["item"]["id"]
-    except (KeyError, TypeError) as exc:
-        raise RuntimeError(f"Failed to add issue to project: {result}") from exc
-
-
 def find_status_todo(project_id: str) -> tuple[str | None, str | None]:
     """Return (status_field_id, todo_option_id) or (None, None) if absent."""
     query = """
@@ -208,13 +193,16 @@ def set_issue_type(issue_node_id: str, issue_type_id: str) -> None:
     }
     """
     github_graphql(
-        mutation, {"issueId": issue_node_id, "issueTypeId": issue_type_id}
+        mutation,
+        {"issueId": issue_node_id, "issueTypeId": issue_type_id},
+        token=REPO_TOKEN,
     )
 
 
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> None:
     print(f"=== Issue Triage: #{ISSUE_NUMBER} ===")
+    failures: list[str] = []
 
     # ── Step 0: Fetch fresh issue data from the API ───────────────────────
     # The event payload may be stale (an earlier step can rewrite the body),
@@ -224,15 +212,16 @@ def main() -> None:
     issue_node_id = issue_data["node_id"]
     issue_title = issue_data.get("title") or ""
     issue_body = issue_data.get("body") or ""
+    issue_author = ISSUE_AUTHOR or (issue_data.get("user") or {}).get("login", "")
     print(f"Title:  {issue_title}")
-    print(f"Author: {ISSUE_AUTHOR}")
+    print(f"Author: {issue_author}")
     print(f"Node ID: {issue_node_id}")
 
-    is_org_member = ISSUE_AUTHOR in ORG_MEMBERS
+    is_org_member = issue_author in ORG_MEMBERS
     if is_org_member:
-        print(f"Author @{ISSUE_AUTHOR} is an org member — assigning reporter")
+        print(f"Author @{issue_author} is an org member — assigning reporter")
         try:
-            assign_issue(ISSUE_NUMBER, ISSUE_AUTHOR)
+            assign_issue(ISSUE_NUMBER, issue_author)
         except Exception as exc:
             print(f"[warn] Assign failed: {exc}")
 
@@ -298,6 +287,13 @@ def main() -> None:
         category = "Support"
         project = PROJECTS["Support"]
 
+    try:
+        project = {**project, **resolve_org_project(PROJECT_OWNER, project["number"])}
+    except Exception as exc:
+        raise SystemExit(
+            f"Triage incomplete; failed operation: Project V2 lookup: {exc}"
+        ) from exc
+
     # ── Step 2a: Set native GitHub Issue Type (sidebar "Type") ────────────
     type_name = CATEGORY_TO_TYPE.get(category, "Task")
     type_id = ISSUE_TYPES.get(type_name)
@@ -307,36 +303,47 @@ def main() -> None:
             set_issue_type(issue_node_id, type_id)
         except Exception as exc:
             print(f"[warn] Failed to set issue type: {exc}")
+            failures.append("native issue type")
     else:
-        print(f"[warn] No issue type ID for '{type_name}', skipping")
+        print(f"[error] No issue type ID for '{type_name}'")
+        failures.append("native issue type lookup")
 
-    priority_option_id = project["priority_options"].get(priority)
+    priority_field_id = project.get("priority_field_id")
+    priority_options = project.get("priority_options") or {}
+    if not priority_field_id:
+        print("[error] Project Priority field was not found")
+        failures.append("project priority field")
+    priority_option_id = priority_options.get(priority)
     if priority_option_id is None:
         print(
             f"[warn] No option ID for priority '{priority}' in project '{category}', "
             f"defaulting to {DEFAULT_PRIORITY}"
         )
         priority = DEFAULT_PRIORITY
-        priority_option_id = project["priority_options"].get(priority)
+        priority_option_id = priority_options.get(priority)
+    if not priority_option_id:
+        failures.append("project priority option")
 
     # ── Step 3: Add to project ────────────────────────────────────────────
     print(f"Adding issue to '{category}' project ({project['id']})...")
     try:
-        item_id = add_to_project(project["id"], issue_node_id)
+        item_id = ensure_project_item(project["id"], issue_node_id)
         print(f"Project item ID: {item_id}")
     except Exception as exc:
         print(f"[error] Failed to add to project: {exc}")
         item_id = None
+        failures.append("Project V2 item")
 
     # ── Step 4: Set priority field ────────────────────────────────────────
-    if item_id and priority_option_id:
+    if item_id and priority_field_id and priority_option_id:
         print(f"Setting Priority field to '{priority}'...")
         try:
             set_single_select_field(
-                project["id"], item_id, project["priority_field_id"], priority_option_id
+                project["id"], item_id, priority_field_id, priority_option_id
             )
         except Exception as exc:
             print(f"[warn] Failed to set priority: {exc}")
+            failures.append("project priority")
     elif not priority_option_id:
         print(f"[warn] No option ID for priority '{priority}', skipping field update")
 
@@ -351,8 +358,10 @@ def main() -> None:
                 print("Status set to 'Todo'")
             except Exception as exc:
                 print(f"[warn] Failed to set Status=Todo: {exc}")
+                failures.append("project status")
         else:
-            print("[warn] Status field or 'Todo' option not found on project — skipping status set")
+            print("[error] Status field or 'Todo' option not found on project")
+            failures.append("project status metadata")
 
     # ── Step 5: Apply labels ──────────────────────────────────────────────
     cat_label = category.upper()
@@ -369,8 +378,12 @@ def main() -> None:
         add_labels(REPO, ISSUE_NUMBER, [cat_label, pri_label])
     except Exception as exc:
         print(f"[warn] Label application failed: {exc}")
+        failures.append("repository labels")
 
     print("=== Triage complete ===")
+    if failures:
+        failed = ", ".join(dict.fromkeys(failures))
+        raise SystemExit(f"Triage incomplete; failed operations: {failed}")
 
 
 if __name__ == "__main__":

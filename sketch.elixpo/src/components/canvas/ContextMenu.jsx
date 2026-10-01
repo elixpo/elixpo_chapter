@@ -452,8 +452,7 @@ export default function ContextMenu() {
 
           <Separator />
           <MenuItem label="Reset canvas" danger onClick={() => {
-            const serializer = window.__sceneSerializer
-            if (serializer?.resetCanvas) serializer.resetCanvas()
+            window.__requestCanvasResetConfirmation?.()
             close()
           }} />
         </>
