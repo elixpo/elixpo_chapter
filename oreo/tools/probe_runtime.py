@@ -35,6 +35,23 @@ result["implementation_name"] = sys.implementation.name
 result["implementation_version"] = list(sys.implementation.version)
 result["platform"] = sys.platform
 
+result["native_modules"] = {}
+for module_name, capability in (
+    ("_oreo_ir", "poll"),
+    ("_oreo_rv565", "inflate_frame"),
+):
+    try:
+        module = __import__(module_name)
+        result["native_modules"][module_name] = {
+            "available": True,
+            capability: hasattr(module, capability),
+        }
+    except Exception as exc:
+        result["native_modules"][module_name] = {
+            "available": False,
+            "error": repr(exc),
+        }
+
 try:
     uname = os.uname()
     result["uname"] = {
