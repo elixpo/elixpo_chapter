@@ -331,7 +331,14 @@ def run_app(os_obj, app):
                         pair_pp.draw(os_obj.display)
                     except Exception:
                         pass
-                os_obj.display.present()
+                present_hook = getattr(app, "after_present", None)
+                if present_hook is None:
+                    os_obj.display.present()
+                else:
+                    present_start_us = time.ticks_us()
+                    os_obj.display.present()
+                    present_hook(time.ticks_diff(
+                        time.ticks_us(), present_start_us))
                 frame_errs = 0
             except Exception as e:
                 # Per-frame exception swallow + counter. Logging via

@@ -17,6 +17,8 @@ Controls:
 
 import gc as _gc
 import os as _os
+import struct as _struct
+import time as _time
 import oreoOS
 from oreoOS import api
 from oreoOS import theme, widgets
@@ -41,6 +43,11 @@ SH = api.SCREEN_H
 
 
 _GALLERY_DIR = "apps/gallery/assets/optimized"
+_BENCHMARK_FLAG = "/.rv565-benchmark"
+_BENCHMARK_WARMUP = 48
+_BENCHMARK_FRAMES = 720
+_BENCHMARK_FIELDS = 9
+_BENCHMARK_RECORD_SIZE = _BENCHMARK_FIELDS * 4
 
 
 def _list_photos():
@@ -101,6 +108,8 @@ class _Video:
         self._frame_size = 0
         self._frame_offsets = None
         self._load_error = False
+        self.last_read_us = 0
+        self.last_inflate_us = 0
         self.frame_offset = 0
         self._f = open(path, "rb")
         head = self._f.read(_VIDEO_HEADER_SIZE)
@@ -316,10 +325,12 @@ class _Video:
         if left <= 0 or left > len(self._packed):
             return False
         packed_view = memoryview(self._packed)[:left]
+        read_start = _time.ticks_us()
         try:
             got = self._f.readinto(packed_view)
         except Exception:
             got = 0
+        self.last_read_us = _time.ticks_diff(_time.ticks_us(), read_start)
         if got != left:
             return False
 
@@ -330,7 +341,10 @@ class _Video:
             # scales it below.
             try:
                 if self.version == 6 and _oreo_rv565 is not None:
+                    inflate_start = _time.ticks_us()
                     _oreo_rv565.inflate_frame(packed_view, self.data)
+                    self.last_inflate_us = _time.ticks_diff(
+                        _time.ticks_us(), inflate_start)
                     self.index += 1
                     return True
                 packed = bytes(packed_view)
@@ -540,6 +554,31 @@ class App(oreoOS.App):
         self._video_error = ""
         self._video_failed_name = ""
         self._dirty = True
+        self._bench_enabled = False
+        self._bench_done = 0
+        self._bench_samples = 0
+        self._bench_misses = 0
+        self._bench_first_us = 0
+        self._bench_elapsed_us = 0
+        self._bench_pending_active = False
+        self._bench_pending = [0, 0, 0, 0, 0, 0]
+        self._bench_data = None
+        try:
+            _os.stat(_BENCHMARK_FLAG)
+            _os.remove(_BENCHMARK_FLAG)
+            for index, name in enumerate(self._names):
+                if name.endswith(".rv565"):
+                    self._idx = index
+                    self._bench_enabled = True
+                    self._bench_data = bytearray(
+                        _BENCHMARK_FRAMES * _BENCHMARK_RECORD_SIZE)
+                    print("RV565_OS_READY,warmup=%d,sample_frames=%d,media=%s" % (
+                        _BENCHMARK_WARMUP, _BENCHMARK_FRAMES, name))
+                    break
+            if not self._bench_enabled:
+                print("RV565_OS_ERROR,no_rv565_media")
+        except OSError:
+            pass
 
     def on_exit(self):
         self._close_video()
@@ -721,6 +760,7 @@ class App(oreoOS.App):
         if self._video_elapsed < frame_time:
             return
         self._video_elapsed %= frame_time
+        work_start_us = (_time.ticks_us() if self._bench_enabled else 0)
         if video.index >= video.frames or not video.next_frame():
             try:
                 video.rewind()
@@ -730,6 +770,16 @@ class App(oreoOS.App):
             except Exception:
                 self._close_video()
                 return
+        if (self._bench_enabled and
+                self._bench_done < _BENCHMARK_WARMUP + _BENCHMARK_FRAMES):
+            pending = self._bench_pending
+            pending[0] = max(0, video.index - 1)
+            pending[1] = work_start_us
+            pending[2] = video.last_read_us
+            pending[3] = video.last_inflate_us
+            pending[4] = 0
+            pending[5] = 0
+            self._bench_pending_active = True
         self._dirty = True
 
     def draw(self, d):
@@ -774,6 +824,9 @@ class App(oreoOS.App):
         self._dirty = False
 
     def _draw_video(self, d):
+        draw_start_us = (_time.ticks_us()
+                         if self._bench_pending_active else 0)
+        scale_us = 0
         video = self._open_video()
         if self._video_needs_clear:
             d.clear(api.BLACK)
@@ -811,9 +864,14 @@ class App(oreoOS.App):
                 d._dirty = True
             elif (video.version == 6 and _gallery_native is not None and
                     native_buf is not None):
+                scale_start_us = (_time.ticks_us()
+                                  if self._bench_pending_active else 0)
                 _gallery_native.rgb565_scale(
                     video.data, native_buf, video.w, video.h,
                     0, 0, SW, SH, SW)
+                if self._bench_pending_active:
+                    scale_us = _time.ticks_diff(
+                        _time.ticks_us(), scale_start_us)
                 d._dirty = True
             # V2 uploads are already native LCD frames: one C-level buffer copy
             # replaces the old Python scaling loop. V1 remains readable for
@@ -858,6 +916,55 @@ class App(oreoOS.App):
             d.text(left, 6, hud_y + 9, api.WHITE)
             d.text(hint, (SW - len(hint) * 8) // 2, hud_y + 9, api.WHITE)
             d.text(right, SW - len(right) * 8 - 6, hud_y + 9, api.WHITE)
+        if self._bench_pending_active:
+            self._bench_pending[4] = scale_us
+            self._bench_pending[5] = _time.ticks_diff(
+                _time.ticks_us(), draw_start_us)
+
+    def after_present(self, elapsed_us):
+        """Record one complete OreoOS Gallery frame after its LCD flush."""
+        if not self._bench_enabled or not self._bench_pending_active:
+            return
+        self._bench_pending_active = False
+        finished_us = _time.ticks_us()
+        pending = self._bench_pending
+        work_us = _time.ticks_diff(finished_us, pending[1])
+        self._bench_done += 1
+        if self._bench_done <= _BENCHMARK_WARMUP:
+            return
+
+        sequence = self._bench_samples
+        if sequence == 0:
+            self._bench_first_us = pending[1]
+        period_us = 1000000 // max(1, self._video.fps)
+        missed = 1 if work_us > period_us else 0
+        self._bench_misses += missed
+        _struct.pack_into(
+            "<9I", self._bench_data, sequence * _BENCHMARK_RECORD_SIZE,
+            sequence, pending[0], pending[2], pending[3], pending[4],
+            pending[5], elapsed_us, work_us, missed)
+        self._bench_samples += 1
+        if self._bench_samples < _BENCHMARK_FRAMES:
+            return
+
+        self._bench_elapsed_us = _time.ticks_diff(
+            finished_us, self._bench_first_us)
+        self._video_playing = False
+        fps = (_BENCHMARK_FRAMES * 1000000.0 /
+               max(1, self._bench_elapsed_us))
+        print("RV565_OS_COLUMNS,sequence,source_frame,read_us,inflate_us,"
+              "scale_us,draw_us,present_us,work_us,deadline_missed")
+        print("RV565_OS_SUMMARY,frames=%d,elapsed_us=%d,fps=%.6f,drops=0,"
+              "deadline_misses=%d" % (
+                  _BENCHMARK_FRAMES, self._bench_elapsed_us, fps,
+                  self._bench_misses))
+        for index in range(_BENCHMARK_FRAMES):
+            values = _struct.unpack_from(
+                "<9I", self._bench_data,
+                index * _BENCHMARK_RECORD_SIZE)
+            print("RV565_OS_FRAME,%d,%d,%d,%d,%d,%d,%d,%d,%d" % values)
+        print("RV565_OS_END")
+        self._bench_enabled = False
 
     # ── photo render ─────────────────────────────────────────────────────
     def _draw_photo(self, d):
