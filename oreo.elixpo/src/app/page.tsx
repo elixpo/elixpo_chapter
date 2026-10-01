@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cpu, Wifi, Bluetooth, Code2 } from "lucide-react";
+import { Cpu, Wifi, Bluetooth, Code2, Film } from "lucide-react";
 import { Reveal } from "@/components/MotionWrap";
 import AppCard from "@/components/AppCard";
 import WavesHero from "@/components/WavesHero";
@@ -24,6 +24,12 @@ const FEATURES = [
     body:
       "BT will return for proximity-based features — IR-quest assists, sync gestures, badge-to-badge nudges.",
   },
+  {
+    Icon: Film,
+    title: "Video, built for the hardware",
+    body:
+      "RV565 combines full-colour independent frames, firmware inflation, and a proven 24 FPS native DMA display path.",
+  },
 ];
 
 export default function Home() {
@@ -36,10 +42,10 @@ export default function Home() {
       <section className="container-page py-24">
         <Reveal>
           <h2 className="font-display text-3xl tracking-tight">
-            Three things make the badge feel alive
+            Four things make the badge feel alive
           </h2>
         </Reveal>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f, i) => (
             <Reveal key={f.title} delay={0.05 * i}>
               <div className="card-surface group relative h-full overflow-hidden p-6
