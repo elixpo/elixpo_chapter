@@ -1,7 +1,7 @@
 {
   "menu": {
     "open": "Open",
-    "quickSave": "Quick Save",
+    "quickSave": "Save .lixjson",
     "saveShare": "Save & Share",
     "exportImage": "Export Image",
     "commands": "Commands",

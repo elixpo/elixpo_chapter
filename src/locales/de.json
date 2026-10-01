@@ -1,7 +1,7 @@
 {
   "menu": {
     "open": "Öffnen",
-    "quickSave": "Schnellspeichern",
+    "quickSave": ".lixjson speichern",
     "saveShare": "Speichern & Teilen",
     "exportImage": "Bild exportieren",
     "commands": "Befehle",

@@ -243,12 +243,7 @@ export default function CommandPalette() {
         }
         break
       case 'resetCanvas': {
-        const serializer = window.__sceneSerializer
-        if (serializer?.resetCanvas) {
-          serializer.resetCanvas()
-        }
-        useSketchStore.getState().clearShapes()
-        useSketchStore.getState().clearHistory()
+        window.__requestCanvasResetConfirmation?.()
         break
       }
       case 'findOnCanvas':

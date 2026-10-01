@@ -1,7 +1,7 @@
 {
   "menu": {
     "open": "Отвори",
-    "quickSave": "Бързо запазване",
+    "quickSave": "Запази .lixjson",
     "saveShare": "Запази и сподели",
     "exportImage": "Експортирай изображение",
     "commands": "Команди",

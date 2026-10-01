@@ -17,8 +17,10 @@ import { TextShape } from '../shapes/TextShape.js';
 import { CodeShape } from '../shapes/CodeShape.js';
 import { ImageShape } from '../shapes/ImageShape.js';
 import { IconShape } from '../shapes/IconShape.js';
+import { clearUndoHistory, pushCanvasResetAction } from './UndoRedo.js';
 
 const FORMAT_VERSION = 1;
+const GZIP_MAGIC = [0x1f, 0x8b];
 
 // Generate a unique session ID for each scene
 let _sessionID = null;
@@ -608,21 +610,62 @@ export function loadScene(sceneData) {
 }
 
 // ============================================================
-// DOWNLOAD: Trigger browser download of .lixsketch file
+// DOWNLOAD: Trigger browser download of an optimized .lixjson file
 // ============================================================
-export function downloadScene(workspaceName = 'Untitled') {
+function sceneFileTimestamp(date = new Date()) {
+    const iso = date.toISOString();
+    return `${iso.slice(0, 10).replace(/-/g, '')}-${iso.slice(11, 19).replace(/:/g, '')}`;
+}
+
+function safeWorkspaceFileName(workspaceName) {
+    const safe = String(workspaceName || 'Untitled')
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return safe || 'Untitled';
+}
+
+export async function encodeSceneFile(scene) {
+    const json = JSON.stringify(scene);
+    if (typeof CompressionStream === 'undefined') {
+        return new Blob([json], { type: 'application/json' });
+    }
+
+    const compressed = new Blob([json])
+        .stream()
+        .pipeThrough(new CompressionStream('gzip'));
+    const buffer = await new Response(compressed).arrayBuffer();
+    return new Blob([buffer], { type: 'application/vnd.lixsketch.scene+gzip' });
+}
+
+export async function decodeSceneFile(buffer) {
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    const isGzip = bytes[0] === GZIP_MAGIC[0] && bytes[1] === GZIP_MAGIC[1];
+    if (!isGzip) return new TextDecoder().decode(bytes);
+    if (typeof DecompressionStream === 'undefined') {
+        throw new Error('This browser cannot open compressed .lixjson files.');
+    }
+
+    const decompressed = new Blob([bytes])
+        .stream()
+        .pipeThrough(new DecompressionStream('gzip'));
+    return new Response(decompressed).text();
+}
+
+export async function downloadScene(workspaceName = 'Untitled') {
     const scene = saveScene(workspaceName);
-    const json = JSON.stringify(scene, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = await encodeSceneFile(scene);
     const url = URL.createObjectURL(blob);
+    const fileName = `${safeWorkspaceFileName(workspaceName)}-${sceneFileTimestamp()}.lixjson`;
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${workspaceName.replace(/[^a-zA-Z0-9_-]/g, '_')}.lixjson`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return { fileName, sizeBytes: blob.size, compressed: blob.type.includes('gzip') };
 }
 
 // ============================================================
@@ -648,29 +691,26 @@ export function uploadScene() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.lixjson,.json';
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return resolve(false);
 
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    const validation = validateScene(data);
-                    if (!validation.valid) {
-                        console.error('[SceneSerializer] Invalid file:', validation.error);
-                        resolve({ success: false, error: validation.error });
-                        return;
-                    }
-                    resetSessionID(); // New session for loaded scene
-                    const result = loadScene(data);
-                    resolve({ success: result, validation });
-                } catch (err) {
-                    console.error('[SceneSerializer] Failed to parse file:', err);
-                    resolve({ success: false, error: 'Failed to parse JSON file' });
+            try {
+                const json = await decodeSceneFile(await file.arrayBuffer());
+                const data = JSON.parse(json);
+                const validation = validateScene(data);
+                if (!validation.valid) {
+                    console.error('[SceneSerializer] Invalid file:', validation.error);
+                    resolve({ success: false, error: validation.error });
+                    return;
                 }
-            };
-            reader.readAsText(file);
+                resetSessionID(); // New session for loaded scene
+                const result = loadScene(data);
+                resolve({ success: result, validation });
+            } catch (err) {
+                console.error('[SceneSerializer] Failed to parse file:', err);
+                resolve({ success: false, error: err.message || 'Failed to parse .lixjson file' });
+            }
         };
         input.click();
     });
@@ -808,12 +848,15 @@ export function exportAsPDF() {
 // ============================================================
 // RESET: Clear the entire canvas
 // ============================================================
-export function resetCanvas() {
+export function resetCanvas({ undoable = true, clearStorage = true, clearHistory = true, workspaceName = 'Untitled' } = {}) {
     const svgEl = window.svg;
     if (!svgEl) return;
 
     // Remove all shape DOM elements + frame clipGroups/clipPaths
     const existingShapes = window.shapes || [];
+    const resetSnapshot = undoable && existingShapes.length > 0
+        ? saveScene(workspaceName)
+        : null;
     existingShapes.forEach(shape => {
         if (shape.shapeName === 'frame') {
             if (shape.clipGroup && shape.clipGroup.parentNode) {
@@ -848,16 +891,28 @@ export function resetCanvas() {
         window.disableAllSideBars();
     }
 
-    // Clear auto-save (both legacy and session-scoped keys)
-    try {
-        localStorage.removeItem('lixsketch-autosave');
-        localStorage.removeItem('lixsketch-autosave-meta');
-        const sid = window.__sessionID;
-        if (sid) {
-            localStorage.removeItem(`lixsketch-autosave-${sid}`);
-            localStorage.removeItem(`lixsketch-autosave-meta-${sid}`);
-        }
-    } catch (_) {}
+    if (clearStorage) {
+        // Clear auto-save (both legacy and session-scoped keys)
+        try {
+            localStorage.removeItem('lixsketch-autosave');
+            localStorage.removeItem('lixsketch-autosave-meta');
+            const sid = window.__sessionID;
+            if (sid) {
+                localStorage.removeItem(`lixsketch-autosave-${sid}`);
+                localStorage.removeItem(`lixsketch-autosave-meta-${sid}`);
+            }
+        } catch (_) {}
+    }
+
+    if (resetSnapshot) {
+        pushCanvasResetAction(
+            resetSnapshot,
+            (snapshot) => loadScene(snapshot),
+            () => resetCanvas({ undoable: false, clearStorage: true, clearHistory: false, workspaceName }),
+        );
+    } else if (clearHistory) {
+        clearUndoHistory();
+    }
 
     console.log('[SceneSerializer] Canvas reset');
     if (typeof window.__collabSceneChanged === 'function') {

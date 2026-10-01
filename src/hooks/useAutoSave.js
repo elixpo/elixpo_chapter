@@ -246,6 +246,7 @@ async function saveToDb({ force = false } = {}) {
       useUIStore.getState().setSaveStatus('cloud')
       // Store encryption key for this session
       useUIStore.getState().setSessionEncryptionKey?.(key, sessionId)
+      window.invalidateCanvasResetUndo?.()
       console.log('[AutoSave] Synced to cloud')
       return true
     } else if (res.status === 409) {
