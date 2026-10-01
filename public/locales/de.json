@@ -132,5 +132,25 @@
     "resetZoom": "Zoom zurücksetzen",
     "toggleGrid": "Raster umschalten",
     "shortcutsHelp": "Tastenkombinationen"
+  },
+  "landing": {
+    "nav": {
+      "pricing": "Preise",
+      "teams": "Teams",
+      "templates": "Vorlagen",
+      "roadmap": "Roadmap",
+      "blog": "Blog",
+      "resources": "Ressourcen",
+      "openCanvas": "Leinwand öffnen",
+      "myCanvases": "Meine Leinwände",
+      "starUs": "Uns auf GitHub bewerten"
+    },
+    "resources": {
+      "howToStart": "Erste Schritte",
+      "community": "Community",
+      "useCases": "Anwendungsfälle",
+      "security": "Sicherheit",
+      "docs": "Dokumentation"
+    }
   }
 }

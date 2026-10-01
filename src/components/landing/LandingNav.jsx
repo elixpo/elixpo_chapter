@@ -5,10 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import useAuthStore from '@/store/useAuthStore'
+import { useTranslation } from '@/hooks/useTranslation'
 
 function OpenCanvasButton({ className }) {
   const router = useRouter()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const { t } = useTranslation()
 
   const handleClick = () => {
     if (isAuthenticated) {
@@ -21,22 +23,23 @@ function OpenCanvasButton({ className }) {
 
   return (
     <button onClick={handleClick} className={className}>
-      {isAuthenticated ? 'My Canvases' : 'Open Canvas'}
+      {isAuthenticated ? t('landing.nav.myCanvases') : t('landing.nav.openCanvas')}
     </button>
   )
 }
 
 function SignInButton() {
   const login = useAuthStore((state) => state.login)
+  const { t } = useTranslation()
   return (
     <button
       type="button"
       onClick={() => login()}
-      title="Sign in to LixSketch"
+      title={t('menu.signIn')}
       className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-border-light bg-white/[0.025] px-3 text-sm text-text-muted transition-all hover:border-[#8b6de0]/60 hover:bg-[#8b6de0]/10 hover:text-white"
     >
       <i className="bx bx-log-in text-base" />
-      <span className="hidden sm:inline">Sign in</span>
+      <span className="hidden sm:inline">{t('menu.signIn')}</span>
     </button>
   )
 }
@@ -210,9 +213,9 @@ function AccountMenu({ onOpenChange }) {
 }
 
 const resourceLinks = [
-  { href: '/resources/how-to-start', label: 'How to start', icon: 'bx bx-rocket' },
-  { href: '/resources/community', label: 'Community', icon: 'bx bx-group' },
-  { href: '/resources/security', label: 'Security', icon: 'bx bx-shield' },
+  { href: '/resources/how-to-start', key: 'howToStart', label: 'How to start', icon: 'bx bx-rocket' },
+  { href: '/resources/community', key: 'community', label: 'Community', icon: 'bx bx-group' },
+  { href: '/resources/security', key: 'security', label: 'Security', icon: 'bx bx-shield' },
 ]
 
 // Compact star-count formatter: 999 → "999", 1200 → "1.2k", 12345 → "12.3k".
@@ -270,21 +273,22 @@ export default function LandingNav() {
   const [resourcesOpen, setResourcesOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const dropdownRef = useRef(null)
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const initAuth = useAuthStore((state) => state.init)
   const stars = useGitHubStars(GH_REPO)
   const starsLabel = formatStars(stars)
+  const { t } = useTranslation()
 
   useEffect(() => { initAuth() }, [initAuth])
 
   useEffect(() => {
-    function handleClick(e) {
+    function handleOutsideClick(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setResourcesOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
 
   return (
@@ -304,16 +308,16 @@ export default function LandingNav() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-7 text-sm text-text-muted">
           <Link href="/pricing" className="hover:text-text-primary transition-colors">
-            Pricing
+            {t('landing.nav.pricing')}
           </Link>
           <Link href="/teams" className="hover:text-text-primary transition-colors">
-            Teams
+            {t('landing.nav.teams')}
           </Link>
           <Link href="/templates" className="hover:text-text-primary transition-colors">
-            Templates
+            {t('landing.nav.templates')}
           </Link>
           <Link href="/docs" className="hover:text-text-primary transition-colors">
-            Docs
+            {t('landing.resources.docs')}
           </Link>
 
           {/* Resources dropdown */}
@@ -322,7 +326,7 @@ export default function LandingNav() {
               onClick={() => setResourcesOpen(!resourcesOpen)}
               className="flex items-center gap-1 hover:text-text-primary transition-colors cursor-pointer"
             >
-              Resources
+              {t('landing.nav.resources')}
               <i className={`bx bx-chevron-down text-base transition-transform duration-200 ${resourcesOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -347,7 +351,7 @@ export default function LandingNav() {
                         {...extraProps}
                       >
                         <i className={`${item.icon} text-base text-text-dim`} />
-                        {item.label}
+                        {t(`landing.resources.${item.key}`)}
                         {item.external && <i className="bx bx-link-external text-xs text-text-dim ml-auto" />}
                       </Tag>
                     )
@@ -371,7 +375,7 @@ export default function LandingNav() {
             <i className="bx bxl-github text-lg" />
             <i className="bx bx-star text-sm" />
             {starsLabel && <span className="tabular-nums text-xs font-medium">{starsLabel}</span>}
-            <span className="hidden lg:inline">GitHub</span>
+            <span className="hidden lg:inline">{t('links.github')}</span>
           </a>
 
           <OpenCanvasButton className="px-4 py-2 cursor-pointer bg-accent-blue hover:bg-accent-blue-hover text-white text-sm rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/20" />
@@ -408,10 +412,10 @@ export default function LandingNav() {
           >
             <div className="px-6 py-4 flex flex-col gap-1">
               {[
-                { href: '/pricing', label: 'Pricing' },
-                { href: '/teams', label: 'Teams' },
-                { href: '/templates', label: 'Templates' },
-                { href: '/docs', label: 'Docs' },
+                { href: '/pricing', labelKey: 'pricing' },
+                { href: '/teams', labelKey: 'teams' },
+                { href: '/templates', labelKey: 'templates' },
+                { href: '/docs', labelKey: 'docs', isResource: true },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -419,11 +423,11 @@ export default function LandingNav() {
                   onClick={() => setMobileOpen(false)}
                   className="py-2.5 text-text-muted hover:text-text-primary transition-colors text-sm"
                 >
-                  {item.label}
+                  {item.isResource ? t(`landing.resources.${item.labelKey}`) : t(`landing.nav.${item.labelKey}`)}
                 </Link>
               ))}
 
-              <div className="py-2 text-text-dim text-xs uppercase tracking-wider mt-2">Resources</div>
+              <div className="py-2 text-text-dim text-xs uppercase tracking-wider mt-2">{t('landing.nav.resources')}</div>
               {resourceLinks.map((item) => {
                 const Tag = item.external ? 'a' : Link
                 const extraProps = item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {}
@@ -436,7 +440,7 @@ export default function LandingNav() {
                     {...extraProps}
                   >
                     <i className={`${item.icon} text-sm text-text-dim`} />
-                    {item.label}
+                    {t(`landing.resources.${item.key}`)}
                     {item.external && <i className="bx bx-link-external text-xs text-text-dim ml-1" />}
                   </Tag>
                 )
@@ -450,7 +454,7 @@ export default function LandingNav() {
               >
                 <i className="bx bxl-github text-base" />
                 <i className="bx bx-star text-sm" />
-                Star us on GitHub
+                {t('landing.nav.starUs')}
               </a>
             </div>
           </motion.div>
