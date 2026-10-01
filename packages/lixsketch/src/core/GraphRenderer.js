@@ -17,9 +17,14 @@ const GRAPH_COLORS = [
 // labels stay readable on the warm off-white canvas. The equation
 // curves themselves keep their colours from GRAPH_COLORS.
 function graphThemeTokens() {
-    const isDark = typeof document !== 'undefined'
-        && document.body
-        && document.body.classList.contains('theme-dark');
+    const isDark = (() => {
+        if (typeof document === 'undefined') return true;
+        if (document.body) {
+            if (document.body.classList.contains('theme-dark')) return true;
+            if (document.body.classList.contains('theme-light')) return false;
+        }
+        return !document.documentElement || document.documentElement.classList.contains('dark');
+    })();
     if (isDark) {
         return {
             outerBg:   '#0d1117',

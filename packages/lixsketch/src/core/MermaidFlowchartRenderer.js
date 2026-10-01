@@ -22,7 +22,11 @@ const FONT_FAMILY = 'lixFont, sans-serif';
 // so a single render call uses whichever palette is active.
 function isThemeDark() {
     if (typeof document === 'undefined') return true;
-    return !!(document.body && document.body.classList.contains('theme-dark'));
+    if (document.body) {
+        if (document.body.classList.contains('theme-dark')) return true;
+        if (document.body.classList.contains('theme-light')) return false;
+    }
+    return !document.documentElement || document.documentElement.classList.contains('dark');
 }
 function nodeStrokeColor() { return isThemeDark() ? '#fff' : '#1a1a2e'; }
 function edgeStrokeColor() { return isThemeDark() ? '#888' : '#444'; }
