@@ -150,6 +150,7 @@ def main() -> int:
         raise SystemExit("Provide at least two distinct run JSON files")
 
     records: list[dict[str, object]] = []
+    run_paths: list[Path] = []
     all_frames: list[dict[str, int]] = []
     expected_hashes: dict[str, str] | None = None
     expected_metadata: dict[str, object] | None = None
@@ -171,6 +172,8 @@ def main() -> int:
 
     for path in paths:
         record = json.loads(path.read_text(encoding="utf-8"))
+        if "aggregate_schema_version" in record:
+            continue
         hashes = {
             name: artifact_hash(record, name)
             for name in ("application", "media", "sdkconfig")
@@ -185,7 +188,11 @@ def main() -> int:
             raise SystemExit(f"{path}: firmware/media metadata differs from the first run")
         frames = read_frames(path, record)
         records.append(record)
+        run_paths.append(path)
         all_frames.extend(frames)
+
+    if len(records) < 2:
+        raise SystemExit("Fewer than two run records remained after validation")
 
     fps_values = [float(record["summary"]["fps"]) for record in records]
     elapsed_values = [float(record["summary"]["elapsed_us"]) for record in records]
@@ -227,7 +234,7 @@ def main() -> int:
             "latency_percentiles": "pooled empirical distribution over all frames",
             "run_confidence_intervals": "two-sided 95% Student-t",
         },
-        "inputs": [str(path.relative_to(REPO_ROOT)) for path in paths],
+        "inputs": [str(path.relative_to(REPO_ROOT)) for path in run_paths],
         "artifacts": expected_hashes,
         "metadata": expected_metadata,
         "container_size_mib": int(records[0]["metadata"]["container_bytes"])

@@ -19,8 +19,6 @@
 }
 
 \newcommand{\system}{RV565}
-\newcommand{\blank}{\rule{1.25cm}{0.4pt}}
-\newcommand{\wideblank}{\rule{2.3cm}{0.4pt}}
 \newcommand{\figureplaceholder}[2]{%
   \fbox{\parbox[c][#1][c]{0.92\linewidth}{\centering
     \textbf{Figure placeholder}\\[2mm]#2}}}
@@ -91,7 +89,7 @@ contributions:
   \item integration boundaries that keep seeking, pause, exit, and button
         handling inside the normal OreoOS application lifecycle; and
   \item an open, reproducible evaluation plan covering throughput, tail
-        latency, memory, responsiveness, size, and energy.
+        latency, memory, responsiveness, and encoded size.
 \end{itemize}
 
 \system{} is not presented as a new entropy-coding algorithm.  Version 6 uses
@@ -254,9 +252,12 @@ and the runtime is designed to coexist with a MicroPython application system.
 
 \subsection{Deflate and independent frames}
 
-Deflate combines LZ77 back-references with Huffman coding
-\cite{deutsch1996deflate}; the zlib wrapper specifies framing and integrity
-metadata~\cite{deutsch1996zlib}.  Compressing each frame separately resets the
+Deflate combines the dictionary construction introduced by Ziv and
+Lempel~\cite{ziv1977universal} with Huffman's minimum-redundancy prefix
+codes~\cite{huffman1952method}; RFC~1951 defines their specific use in the
+Deflate bitstream~\cite{deutsch1996deflate}.  The zlib wrapper specifies
+framing and integrity metadata~\cite{deutsch1996zlib}.  Compressing each frame
+separately resets the
 dictionary at every boundary.  This can sacrifice cross-frame compression,
 but it bounds corruption, enables direct seeking, and avoids reconstructing a
 dependency chain after a dropped or skipped frame.
@@ -387,7 +388,7 @@ to overlap display transfer.  Dashed arrows carry scheduling and control.}
 
 Figure~\ref{fig:hardware-platform} documents the hardware boundary used by the
 measurements.  The first panel isolates the LCD clock, data, command/data,
-reset, chip-select, power, and backlight paths.  The second places that display
+reset, chip-select, and backlight paths.  The second places that display
 beside the DevKit's flash/PSRAM configuration, USB connection, active-low
 controls, and the optional logic-analyser header used for input-latency tests.
 
@@ -549,10 +550,9 @@ scheduling boundary rather than only GPIO interrupt time.
 
 \section{Evaluation}
 
-Each result is tied to a firmware commit, compiler configuration, test-media
-hash, and raw serial log.  This makes a row in the comparison tables traceable
-to the code and media that produced it rather than to a manually observed
-screen.
+Each result is tied to a compiler configuration, exact test artifact, and raw
+serial log.  This makes a reported value traceable to the software and media
+that produced it rather than to a manually observed screen.
 
 \subsection{Platform configuration}
 
@@ -566,7 +566,7 @@ path does not cross the Python interpreter for every processing step.
 
 Table~\ref{tab:platform} separates fixed design facts from values that must be
 captured for the evaluated build.  This distinction prevents nominal settings
-from being mistaken for measured bus, clock, or power behaviour.
+from being mistaken for measured bus or clock behaviour.
 
 \begin{table}[h]
 \centering
@@ -587,12 +587,24 @@ Encoded source frame & 180$\times$135 RGB565BE \\
 Container target & Independent frames at 24 FPS \\
 Measured CPU clock & 240 MHz \\
 Driver-reported SPI clock & 40 MHz \\
-Firmware commit & \wideblank \\
-Configuration SHA-256 & \texttt{18a8142f\ldots} \\
-Measured supply voltage & \wideblank \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{table*}[!t]
+\centering
+\caption{Measured standalone RV565 v6 performance over ten runs.}
+\label{tab:results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+\toprule
+Method & Size (MiB) & Frames & FPS & Drops & Misses & Mean (ms) & p50 (ms) & p95 (ms) & p99 (ms) \\
+\midrule
+Native inflate + DMA stripes & 4.074 & 7,200 & 24.004 & 0 & 0 & 38.411 & 38.552 & 39.690 & 40.206 \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
 
 \subsection{Measurement methodology}
 
@@ -621,50 +633,27 @@ DMA activity are represented.
 
 Internal SRAM and PSRAM are sampled separately before media open, after
 allocation, and during steady-state playback; both current free space and the
-minimum-ever watermark are retained.  Energy per displayed frame is the
-time-integral of measured supply voltage and current divided by completed
-frames.  Raw events, firmware and media hashes, compiler configuration,
-warm-up duration, repetition count, and the percentile script accompany each
-experiment.  Serial output is disabled during timed windows unless its
-overhead is the subject of the test.
+minimum-ever watermark are retained.  Raw events, the exact firmware and media
+artifacts, compiler configuration, warm-up duration, repetition count, and the
+percentile script accompany each experiment.  Serial output is disabled during
+timed windows unless its overhead is the subject of the test.
 
 \subsection{Workloads and baselines}
 
-The dataset should contain low-motion, high-motion, animation, photographic
-noise, dark scenes, hard cuts, and repeated texture.  Clip licences and SHA-256
-hashes must be published.  Baselines are raw RGB565, RV565 v4 indexed colour,
-RV565 v6 Deflate, and MJPEG configured for comparable output quality.  Where
-available, Espressif's player is included as a reference implementation rather
-than reimplemented from memory.
+The completed experiment evaluates the native RV565 v6 DMA path with one
+240-frame clip replayed during each 30-second window.  A broader dataset should
+add low-motion, high-motion, animation, photographic noise, dark scenes, hard
+cuts, and repeated texture.  Planned baselines are raw RGB565, RV565 v4 indexed
+colour, RV565 v6 with Python inflation, native inflation without DMA overlap,
+and MJPEG at comparable output quality.  Where available, Espressif's player
+should be used as a reference implementation rather than reimplemented from
+memory.
 
-\begin{table*}[t]
-\centering
-\caption{Primary performance comparison.}
-\label{tab:results}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccc}
-\toprule
-Method & Size (MiB) & FPS & Drops & Frame p50 (ms) & p95 (ms) & p99 (ms) & Input p95 (ms) \\
-\midrule
-Raw RGB565 & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-RV565 v4 indexed & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-RV565 v6 Python inflate & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-RV565 v6 native inflate & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-RV565 v6 native + DMA stripes & 4.074 & 24.004 & 0 & 38.552 & 39.690 & 40.206 & \blank \\
-MJPEG baseline & \blank & \blank & \blank & \blank & \blank & \blank & \blank \\
-\bottomrule
-\end{tabular}
-}
-\end{table*}
-
-Table~\ref{tab:results} answers more than whether a clip appears smooth.
-Average FPS describes throughput, but dropped frames and upper-tail frame time
-show whether the system repeatedly misses its presentation budget.  Input p95
-measures the user-visible consequence of those misses: a player that reaches a
-high average rate while delaying pause or HOME is not successful inside
-OreoOS.  Encoded size is reported beside timing because an architecture that
-meets the deadline only by storing raw frames shifts the problem into flash or
-external-storage bandwidth.
+Table~\ref{tab:results} reports every metric established by the completed
+standalone experiment.  Encoded size appears beside tail latency, drops, and
+deadline misses so paced average FPS cannot conceal deadline failures.  Input
+latency is deliberately excluded: it belongs to the instrumented OreoOS
+experiment, and a standalone player cannot establish that interaction claim.
 
 The comparison must use identical decoded dimensions, frame rate, clip range,
 and RGB565 conversion.  MJPEG quality should be selected by a documented
@@ -674,46 +663,12 @@ an incremental ablation: the difference between adjacent rows isolates the
 cost of the interpreter boundary and then the benefit of overlapping display
 transfer.
 
-The completed native-DMA row is the standalone ESP-IDF experiment, not yet the
-full OreoOS integration.  All ten runs used the same application, media, and
-configuration hashes.  Across 7,200 frames, the maximum observed work time was
-40.346 ms, leaving 1.321 ms before the 24 FPS deadline.  Inflation contributed
-8.889 ms at p99, while the overlapped LCD path measured 31.321 ms at p99;
-scaling and DMA-wait p99 values were 2.608 ms and 28.478 ms, respectively, and
-must not be summed because they overlap.  The paced FPS confidence interval is
-correspondingly narrow; zero deadline misses and the tail-work margin are the
-more informative results.
-
-\begin{table}[h]
-\centering
-\caption{Resource and energy results.}
-\label{tab:resources}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccc}
-\toprule
-Method & SRAM & PSRAM & Energy/frame \\
-\midrule
-RV565 v6 Python & \blank & \blank & \blank \\
-Native framebuffer & \blank & \blank & \blank \\
-Native DMA stripes & 79.9 KiB & 0 & \blank \\
-\bottomrule
-\end{tabular}
-}
-\end{table}
-
-Table~\ref{tab:resources} complements the timing results with the cost of
-achieving them.  Internal SRAM and PSRAM are reported separately because DMA
-buffers and general frame storage are not interchangeable on the target.  The
-energy-per-frame column prevents a higher-throughput path from hiding a large
-power penalty, which matters for a wearable badge.  Together, Tables
-\ref{tab:results} and~\ref{tab:resources} describe performance as a resource
-envelope rather than as a single headline frame rate.
-
-The standalone SRAM value is incremental internal allocation for decoded-frame
-state and two DMA stripes.  It excludes the 23.0 KiB measurement-sample array,
-which is identified separately in the raw heap records.  This build does not
-allocate PSRAM; the OreoOS-integrated player is evaluated separately because
-its framebuffer and interpreter already occupy external memory.
+The completed row is the standalone ESP-IDF path, with identical application,
+media, and configuration hashes across all runs.  Its 40.346 ms maximum leaves
+1.321 ms before the deadline.  At p99, inflation is 8.889 ms and the overlapped
+LCD path is 31.321 ms; scaling (2.608 ms) and DMA wait (28.478 ms) overlap and
+must not be summed.  Tail margin and zero misses are more informative than the
+narrow confidence interval of a paced FPS value.
 
 \subsection{Ablation studies}
 
@@ -725,7 +680,7 @@ experiment is repeated 10 times; confidence intervals use two-sided 95\%
 Student-$t$ intervals over run-level aggregates.
 
 Visual quality is measured against the resized RGB888 reference after RGB565
-conversion using PSNR and SSIM.  Because Deflate is lossless, RV565 v6's visual
+conversion using PSNR and SSIM~\cite{wang2004image}.  Because Deflate is lossless, RV565 v6's visual
 loss arises from spatial resampling and RGB565 quantisation rather than the
 compression stage itself.
 
@@ -741,40 +696,58 @@ output and synchronisation, adaptive quality selection, and evaluation on
 other microcontrollers and bus widths.
 
 The implementation should not be compared with H.264 or MJPEG solely on file
-size or frame rate.  Those systems offer different quality, compatibility,
-hardware support, and feature sets.  The useful comparison is the complete
+size or frame rate.  H.264, for example, was designed around a broader
+rate--distortion and application envelope~\cite{wiegand2003overview}.  Those
+systems offer different quality, compatibility, hardware support, and feature
+sets.  The useful comparison is the complete
 resource envelope required to provide controllable playback on this specific
 class of application platform.
 
+\begin{table}[t]
+\centering
+\caption{Measured standalone memory use.}
+\label{tab:resources}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+Allocation & SRAM & PSRAM & Drift & Minimum free \\
+\midrule
+Native DMA path & 79.9 KiB & 0 KiB & 1.3 KiB & 241.2 KiB \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+Table~\ref{tab:resources} separates internal SRAM from PSRAM because DMA and
+general frame storage are not interchangeable.  The standalone value is the
+79.9 KiB incremental allocation for decode state and two stripes; it excludes
+the separately recorded 23.0 KiB sample array and uses no PSRAM.  The OreoOS
+player requires a separate measurement because its framebuffer and interpreter
+already occupy external memory.
+
 \section{Conclusion}
 
-\system{} treats microcontroller video as an end-to-end scheduling and memory
-problem.  Offline display-native conversion, independent compressed frames,
-reused decode storage, double-buffered DMA stripes, and deadline-aware OS
-integration together form a small and testable architecture.  The standalone
-prototype establishes that the hardware path is viable; integrating the same
-path beneath Gallery tests the more consequential claim that smooth playback
-can coexist with an interactive MicroPython operating system.  More broadly,
-the development history shows why isolated decoder optimisation is
-insufficient: storage, allocation, colour representation, interpreter
-boundaries, scheduling, and display transfer must be treated as one timed
-system.
-
-The standalone evaluation sustains 24.004 FPS across 7,200 frames with no
-drops or deadline misses and a 40.206 ms pooled p99 frame-work time.  These
-results establish the hardware-path claim while deliberately leaving the
-OreoOS-integrated and input-latency claims open for their own controlled
-measurements.
+\system{} treats microcontroller video as one timed storage, memory, decoding,
+scheduling, and display problem.  Host conversion, independent frames, reused
+decode state, and double-buffered DMA stripes form a bounded native path.  In
+the standalone evaluation it sustains 24.004 FPS across 7,200 frames with no
+drops or deadline misses and 40.206 ms pooled p99 work.  This establishes the
+hardware-path claim; controlled OreoOS and input-latency experiments remain
+necessary to establish coexistence with the interactive MicroPython system.
 
 \section*{Artifact Availability}
 
 The operating system, encoders, standalone benchmark, firmware user modules,
 and paper source are available in the OreoOS repository
-\cite{bhattacharya2026oreo}.  The final artifact package will additionally
-contain firmware hashes, test-media manifests, raw serial logs, analysis
-scripts, and exact commands for reproducing every table.
+\cite{bhattacharya2026oreo}.  The evaluated artifact includes the exact
+firmware, media, and configuration together with raw serial logs, per-frame
+CSV data, the aggregation script, and the commands used to produce the
+reported row.
 
+\begingroup
+\scriptsize
 \bibliographystyle{plain}
 \bibliography{references}
+\endgroup
 
 \end{document}
