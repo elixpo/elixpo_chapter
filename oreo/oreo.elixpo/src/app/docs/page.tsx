@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Boxes, Code2 } from "lucide-react";
+import { ArrowRight, BookOpen, Boxes, Code2, FileText } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -19,10 +19,17 @@ const docs = [
   },
   {
     href: "/docs/video-architecture/",
-    title: "Gallery video architecture",
-    description: "How RV565 v4, PSRAM frame blocks, native Xtensa code, and the display scheduler deliver 24 FPS video.",
+    title: "RV565 video architecture",
+    description: "Independent RGB565 frames, firmware inflation, SPI2 GDMA stripes, and the measured path from 0.5 to 24 FPS.",
     icon: Boxes,
     accent: "text-primary",
+  },
+  {
+    href: "/paper/",
+    title: "RV565 research paper",
+    description: "Preview the forthcoming paper, authors, measured results, and scope of the cross-layer video architecture.",
+    icon: FileText,
+    accent: "text-lilac",
   },
 ];
 
