@@ -57,7 +57,10 @@ experiment to a cross-layer media path, then presents the container, memory
 placement, scheduling method, and evaluation protocol.  In a standalone
 ten-run experiment comprising 7,200 displayed frames, the native DMA path
 sustained 24.004 FPS without a drop or deadline miss; pooled frame-work p99 was
-40.206 ms against a 41.667 ms period.
+40.206 ms against a 41.667 ms period.  A subsequent measurement inside the
+complete OreoOS Gallery sustained 14.093 FPS with 78.938 ms p99 work, exposing
+serialized filesystem input and framebuffer presentation as the remaining
+integration bottlenecks.
 \end{abstract}
 
 \section{Introduction}
@@ -561,27 +564,7 @@ scheduling boundary rather than only GPIO interrupt time.
 
 \section{Evaluation}
 
-Each result is tied to a compiler configuration, exact test artifact, and raw
-serial log.  This makes a reported value traceable to the software and media
-that produced it rather than to a manually observed screen.
-
-\subsection{Platform configuration}
-
-The evaluation platform is an ESP32-S3-DevKitC-1 N16R8 configuration.  Its
-module designation provides 16 MiB of flash and 8 MiB of octal PSRAM, while
-the application runs on the ESP32-S3's dual Xtensa LX7 cores.  The badge uses
-an ST7789-compatible 320$\times$240 panel in RGB565 mode.  OreoOS and Gallery
-run under a custom MicroPython v1.28.0 firmware built with ESP-IDF v5.5.1; the
-RV565 inflater is compiled into that firmware and invokes the ESP32-S3 ROM
-Deflate implementation directly on reusable MicroPython buffers.  The
-standalone measurements below evaluate the equivalent native decode and DMA
-data path; they do not constitute an OreoOS-integrated performance result.
-
-Table~\ref{tab:platform} separates fixed design facts from values that must be
-captured for the evaluated build.  This distinction prevents nominal settings
-from being mistaken for measured bus or clock behaviour.
-
-\begin{table}[h]
+\begin{table}[t]
 \centering
 \caption{Target configuration.}
 \label{tab:platform}
@@ -606,7 +589,7 @@ Driver-reported SPI clock & 40 MHz \\
 
 \begin{table*}[!t]
 \centering
-\caption{Measured standalone RV565 v6 performance over ten runs.}
+\caption{Measured RV565 v6 performance.}
 \label{tab:results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccccccc}
@@ -614,10 +597,32 @@ Driver-reported SPI clock & 40 MHz \\
 Method & Size (MiB) & Frames & FPS & Drops & Misses & Mean (ms) & p50 (ms) & p95 (ms) & p99 (ms) \\
 \midrule
 Native inflate + DMA stripes & 4.074 & 7,200 & 24.004 & 0 & 0 & 38.411 & 38.552 & 39.690 & 40.206 \\
+OreoOS Gallery + firmware inflate & 4.074 & 720 & 14.093 & 0 & 720 & 69.212 & 69.535 & 76.988 & 78.938 \\
 \bottomrule
 \end{tabular}
 }
 \end{table*}
+
+Each result is tied to a compiler configuration, exact test artifact, and raw
+serial log.  This makes a reported value traceable to the software and media
+that produced it rather than to a manually observed screen.
+
+\subsection{Platform configuration}
+
+The evaluation platform is an ESP32-S3-DevKitC-1 N16R8 configuration.  Its
+module designation provides 16 MiB of flash and 8 MiB of octal PSRAM, while
+the application runs on the ESP32-S3's dual Xtensa LX7 cores.  The badge uses
+an ST7789-compatible 320$\times$240 panel in RGB565 mode.  OreoOS and Gallery
+run under a custom MicroPython v1.28.0 firmware built with ESP-IDF v5.5.1; the
+RV565 inflater is compiled into that firmware and invokes the ESP32-S3 ROM
+Deflate implementation directly on reusable MicroPython buffers.  The
+standalone measurements below evaluate the equivalent native decode and DMA
+data path.  A separate Gallery measurement evaluates the current integrated
+path without attributing the standalone DMA result to OreoOS.
+
+Table~\ref{tab:platform} separates fixed design facts from values that must be
+captured for the evaluated build.  This distinction prevents nominal settings
+from being mistaken for measured bus or clock behaviour.
 
 \subsection{Measurement methodology}
 
@@ -637,12 +642,10 @@ confidence intervals over run-level aggregates are two-sided 95\% Student-$t$
 intervals.  Per-frame records are retained in RAM and printed only after the
 timed window, preventing serial output from entering the reported latency.
 
-Control latency is measured from a GPIO edge to entry into the corresponding
-Gallery action.  A test-harness GPIO produces the input edge and the
-instrumented handler toggles a second line; a logic analyser measures the
-interval independently of serial logging.  Pause, seek, and HOME are exercised
-at distributed positions within a frame period so presses during inflation and
-DMA activity are represented.
+Control latency is measured independently with a logic analyser from a
+test-harness GPIO edge to an acknowledgement edge emitted when Gallery enters
+the corresponding pause, seek, or HOME action.  Stimuli are distributed across
+the frame period so inflation and display activity are represented.
 
 Internal SRAM and PSRAM are sampled separately before media open, after
 allocation, and during steady-state playback; both current free space and the
@@ -653,20 +656,17 @@ timed windows unless its overhead is the subject of the test.
 
 \subsection{Workloads and baselines}
 
-The completed experiment evaluates the native RV565 v6 DMA path with one
-240-frame clip replayed during each 30-second window.  A broader dataset should
-add low-motion, high-motion, animation, photographic noise, dark scenes, hard
-cuts, and repeated texture.  Planned baselines are raw RGB565, RV565 v4 indexed
-colour, RV565 v6 with Python inflation, native inflation without DMA overlap,
-and MJPEG at comparable output quality.  Where available, Espressif's player
-should be used as a reference implementation rather than reimplemented from
-memory.
+The completed experiment replays one 240-frame clip during each 30-second
+window.  Future workloads should span motion, animation, noise, dark scenes,
+hard cuts, and repeated texture.  Planned baselines are raw RGB565, RV565 v4,
+Python and native RV565 v6 inflation, and quality-matched MJPEG; Espressif's
+player should be used directly where applicable.
 
-Table~\ref{tab:results} reports every metric established by the completed
-standalone experiment.  Encoded size appears beside tail latency, drops, and
-deadline misses so paced average FPS cannot conceal deadline failures.  Input
-latency is deliberately excluded: it belongs to the instrumented OreoOS
-experiment, and a standalone player cannot establish that interaction claim.
+Table~\ref{tab:results} reports the standalone native-DMA experiment and the
+subsequent integrated Gallery run.  Encoded size appears beside tail latency,
+drops, and deadline misses so paced average FPS cannot conceal deadline
+failures.  Input-event latency remains a separate experiment and is not
+inferred from frame timing.
 
 The comparison must use identical decoded dimensions, frame rate, clip range,
 and RGB565 conversion.  MJPEG quality should be selected by a documented
@@ -683,38 +683,34 @@ LCD path is 31.321 ms; scaling (2.608 ms) and DMA wait (28.478 ms) overlap and
 must not be summed.  Tail margin and zero misses are more informative than the
 narrow confidence interval of a paced FPS value.
 
+The integrated row uses the same 4.074 MiB RV565 artifact, a 48-frame warm-up,
+and a 720-frame timed window in the actual OreoOS Gallery loop.  It records
+14.093 FPS and misses the 41.667 ms deadline on all 720 measured frames.  Mean
+filesystem read, firmware inflation, Gallery draw, and LCD presentation times
+are 18.193, 7.798, 9.116, and 33.308 ms respectively.  Their serialization
+explains the 69.212 ms mean frame work: moving Deflate into firmware removes
+Python decompression overhead, but does not reproduce the standalone design's
+memory-resident input or overlap between scaling and display DMA.
+
 \subsection{Ablation studies}
 
-The evaluation separately disables double buffering, DMA overlap, native
-inflation, frame-offset indexing, and real-time OS deferral.  It also compares
-flash streaming with external storage and tests playback with radios disabled,
-Wi-Fi active, and normal background services active.  The completed native-DMA
-experiment is repeated 10 times; confidence intervals use two-sided 95\%
-Student-$t$ intervals over run-level aggregates.
-
-Visual quality is measured against the resized RGB888 reference after RGB565
-conversion using PSNR and SSIM~\cite{wang2004image}.  Because Deflate is lossless, RV565 v6's visual
-loss arises from spatial resampling and RGB565 quantisation rather than the
-compression stage itself.
+Ablations disable double buffering, DMA overlap, native inflation, indexing,
+and OS deferral, and compare flash with external storage and active background
+services.  The native-DMA experiment uses 10 repetitions and two-sided 95\%
+Student-$t$ intervals.  Quality is assessed against the resized RGB888
+reference using PSNR and SSIM~\cite{wang2004image}; because Deflate is
+lossless, loss arises from resampling and RGB565 quantisation.
 
 \section{Discussion and Limitations}
 
 Frame independence exchanges compression efficiency for bounded decoding and
-seekability.  The format is currently silent, fixed to RGB565 output, and
-designed for small displays.  Deflate decode time remains content-dependent,
-so deadline claims must be supported by tail-latency measurements across a
-diverse corpus.  Full-screen SPI transfer can remain the dominant cost even
-after decode optimisation.  Future work includes SD-backed streaming, audio
-output and synchronisation, adaptive quality selection, and evaluation on
-other microcontrollers and bus widths.
-
-The implementation should not be compared with H.264 or MJPEG solely on file
-size or frame rate.  H.264, for example, was designed around a broader
-rate--distortion and application envelope~\cite{wiegand2003overview}.  Those
-systems offer different quality, compatibility, hardware support, and feature
-sets.  The useful comparison is the complete
-resource envelope required to provide controllable playback on this specific
-class of application platform.
+seeking.  RV565 is currently silent, RGB565-specific, and intended for small
+displays; content-dependent Deflate latency still requires diverse tail tests,
+and full-screen SPI transfer remains dominant.  Future work includes SD
+streaming, synchronised audio, adaptive quality, and other processors and bus
+widths.  Comparisons with H.264 or MJPEG must consider quality, compatibility,
+hardware support, and the complete resource envelope rather than size or FPS
+alone~\cite{wiegand2003overview}.
 
 \begin{table}[t]
 \centering
@@ -745,21 +741,20 @@ scheduling, and display problem.  Host conversion, independent frames, reused
 decode state, and double-buffered DMA stripes form a bounded native path.  In
 the standalone evaluation it sustains 24.004 FPS across 7,200 frames with no
 drops or deadline misses and 40.206 ms pooled p99 work.  This establishes the
-hardware-path claim; controlled OreoOS and input-latency experiments remain
-necessary to establish coexistence with the interactive MicroPython system.
+hardware-path claim.  The integrated Gallery run reaches 14.093 FPS and shows
+that firmware inflation alone is insufficient while input, scaling, and LCD
+transfer remain serialized.  Fusing them around DMA overlap is the next step;
+input latency remains to be measured independently.
 
 \section*{Artifact Availability}
 
-The operating system, encoders, standalone benchmark, firmware user modules,
-and paper source are available in the OreoOS repository
-\cite{bhattacharya2026oreo}.  The evaluated artifact includes the exact
-firmware, media, and configuration together with raw serial logs, per-frame
-CSV data, the aggregation script, and the commands used to produce the
-reported row.
+OreoOS, its encoders, firmware modules, benchmarks, paper source, exact test
+artifacts, raw logs, per-frame data, and aggregation commands are available in
+the project repository~\cite{bhattacharya2026oreo}.
 
 \begingroup
-\scriptsize
-\bibliographystyle{plain}
+\fontsize{7pt}{7.4pt}\selectfont
+\bibliographystyle{abbrv}
 \bibliography{references}
 \endgroup
 
