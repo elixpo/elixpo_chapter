@@ -108,6 +108,28 @@ function DangerWarningDialog({ action, busy, error, workspaceName, onCancel, onC
   )
 }
 
+function focusItems(root) {
+  return Array.from(root?.querySelectorAll(
+    'button:not([disabled]), a[href], select:not([disabled]), input:not([disabled])',
+  ) || []).filter((element) => !element.closest('[inert]'))
+}
+
+function handleArrowNavigation(event, root) {
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+  const items = focusItems(root)
+  if (!items.length) return
+  const current = items.indexOf(document.activeElement)
+  const next = event.key === 'Home'
+    ? 0
+    : event.key === 'End'
+      ? items.length - 1
+      : event.key === 'ArrowDown'
+        ? (current + 1 + items.length) % items.length
+        : (current - 1 + items.length) % items.length
+  event.preventDefault()
+  items[next]?.focus()
+}
+
 export default function AppMenu() {
   const { t, language } = useTranslation()
 
@@ -174,12 +196,48 @@ export default function AppMenu() {
   const [dangerError, setDangerError] = useState('')
   const actionsButtonRef = useRef(null)
   const prefsButtonRef = useRef(null)
+  const menuRef = useRef(null)
+  const actionsFlyoutRef = useRef(null)
+  const prefsFlyoutRef = useRef(null)
+  const openerRef = useRef(null)
 
   useEffect(() => {
-    if (menuOpen) return
+    if (menuOpen) {
+      openerRef.current = document.activeElement
+      requestAnimationFrame(() => actionsButtonRef.current?.focus())
+      return undefined
+    }
     setActionsOpen(false)
     setPrefsOpen(false)
+    openerRef.current?.focus?.()
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      if (actionsOpen) {
+        setActionsOpen(false)
+        actionsButtonRef.current?.focus()
+      } else if (prefsOpen) {
+        setPrefsOpen(false)
+        prefsButtonRef.current?.focus()
+      } else {
+        closeMenu()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [actionsOpen, closeMenu, menuOpen, prefsOpen])
+
+  useEffect(() => {
+    if (actionsOpen) requestAnimationFrame(() => focusItems(actionsFlyoutRef.current)[0]?.focus())
+  }, [actionsOpen])
+
+  useEffect(() => {
+    if (prefsOpen) requestAnimationFrame(() => focusItems(prefsFlyoutRef.current)[0]?.focus())
+  }, [prefsOpen])
 
   const flyoutPosition = (button, width, estimatedHeight) => {
     const rect = button?.getBoundingClientRect()
@@ -352,13 +410,20 @@ export default function AppMenu() {
     <>
       {menuOpen && (
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-999"
           onClick={() => { closeMenu(); setActionsOpen(false); setPrefsOpen(false) }}
         />
       )}
       <div
+        ref={menuRef}
+        role="dialog"
+        aria-label="Application menu"
+        aria-hidden={!menuOpen}
+        inert={!menuOpen}
+        onKeyDown={(event) => handleArrowNavigation(event, menuRef.current)}
         onScroll={() => { setActionsOpen(false); setPrefsOpen(false) }}
-        className={`absolute top-14 right-4 w-[230px] max-h-[calc(100vh-72px)] overflow-y-auto overscroll-contain no-scrollbar bg-surface/75 backdrop-blur-lg rounded-2xl z-[1000] border border-border-light p-1.5 font-[lixFont] text-[13px] transition-all duration-200 ${
+        className={`absolute top-14 right-4 w-[230px] max-h-[calc(100vh-72px)] overflow-y-auto overscroll-contain no-scrollbar bg-surface/75 backdrop-blur-lg rounded-2xl z-[1000] border border-border-light p-1.5 font-[lixFont] text-[13px] transition-all duration-200 [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-accent [&_a:focus-visible]:outline-none [&_a:focus-visible]:ring-2 [&_a:focus-visible]:ring-accent ${
           menuOpen
             ? 'opacity-100 blur-0 pointer-events-auto'
             : 'opacity-0 blur-[20px] pointer-events-none'
@@ -367,6 +432,10 @@ export default function AppMenu() {
         {/* File/search actions */}
         <button
           ref={actionsButtonRef}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={actionsOpen}
+          aria-controls="app-actions-menu"
           onClick={toggleActionsFlyout}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-text-secondary text-[12.5px] hover:bg-surface-hover cursor-pointer transition-all duration-200 ${actionsOpen ? 'bg-surface-hover' : ''}`}
         >
@@ -382,6 +451,10 @@ export default function AppMenu() {
         <div className="relative">
           <button
             ref={prefsButtonRef}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={prefsOpen}
+            aria-controls="app-preferences-menu"
             onClick={togglePreferencesFlyout}
             className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-text-secondary text-[12.5px] hover:bg-surface-hover cursor-pointer transition-all duration-200 ${prefsOpen ? 'bg-surface-hover' : ''}`}
           >
@@ -484,6 +557,9 @@ export default function AppMenu() {
             ].map((t) => (
               <button
                 key={t.value}
+                type="button"
+                aria-label={`Use ${t.value} theme`}
+                aria-pressed={theme === t.value}
                 onClick={() => setTheme(t.value)}
                 className={`flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${
                   theme === t.value
@@ -506,8 +582,11 @@ export default function AppMenu() {
             {(resolvedTheme === 'dark' ? CANVAS_BACKGROUNDS_DARK : CANVAS_BACKGROUNDS_LIGHT).map((bg) => (
               <button
                 key={bg.color}
+                type="button"
                 onClick={() => setCanvasBackground(bg.color)}
                 title={t(bg.label)}
+                aria-label={`Use ${t(bg.label)} canvas background`}
+                aria-pressed={canvasBackground === bg.color}
                 className={`w-7 h-7 rounded-full border-2 cursor-pointer transition-all duration-200 ${
                   canvasBackground === bg.color
                     ? 'border-accent scale-110'
@@ -525,12 +604,19 @@ export default function AppMenu() {
         <>
           {actionsOpen && (
             <div
-              className="fixed w-[230px] bg-surface-card border border-border-light rounded-2xl p-1.5 shadow-2xl shadow-black/40 z-[1001] font-[lixFont]"
+              id="app-actions-menu"
+              ref={actionsFlyoutRef}
+              role="menu"
+              aria-label="Actions"
+              onKeyDown={(event) => handleArrowNavigation(event, actionsFlyoutRef.current)}
+              className="fixed w-[230px] bg-surface-card border border-border-light rounded-2xl p-1.5 shadow-2xl shadow-black/40 z-[1001] font-[lixFont] [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-accent"
               style={actionsFlyoutPosition}
             >
               {actionItems.map((item) => (
                 <button
                   key={item.label}
+                  type="button"
+                  role="menuitem"
                   onClick={() => { setActionsOpen(false); item.onClick() }}
                   className="w-full flex items-center justify-between px-3 py-2 border-b border-border-light last:border-b-0 text-text-secondary text-[11.5px] hover:bg-surface-hover cursor-pointer transition-all duration-200"
                 >
@@ -546,7 +632,12 @@ export default function AppMenu() {
 
           {prefsOpen && (
             <div
-              className="fixed w-[240px] max-h-[60vh] overflow-y-auto overscroll-contain no-scrollbar bg-surface-card border border-border-light rounded-2xl p-1.5 shadow-2xl shadow-black/40 z-[1001] font-[lixFont]"
+              id="app-preferences-menu"
+              ref={prefsFlyoutRef}
+              role="menu"
+              aria-label="Preferences"
+              onKeyDown={(event) => handleArrowNavigation(event, prefsFlyoutRef.current)}
+              className="fixed w-[240px] max-h-[60vh] overflow-y-auto overscroll-contain no-scrollbar bg-surface-card border border-border-light rounded-2xl p-1.5 shadow-2xl shadow-black/40 z-[1001] font-[lixFont] [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-accent [&_select:focus-visible]:outline-none [&_select:focus-visible]:ring-2 [&_select:focus-visible]:ring-accent"
               style={prefsFlyoutPosition}
             >
               <div className="w-full flex items-center justify-between px-3 py-2 border-b border-border-light text-text-secondary text-[11px]">
@@ -580,6 +671,8 @@ export default function AppMenu() {
               {PREFERENCE_ITEMS.map((item) => (
                 <button
                   key={item.id}
+                  type="button"
+                  role="menuitem"
                   onClick={() => handlePreference(item)}
                   className="w-full flex items-center justify-between px-3 py-2 border-b border-border-light last:border-b-0 text-text-secondary text-[11px] hover:bg-surface-hover cursor-pointer transition-all duration-200"
                 >
