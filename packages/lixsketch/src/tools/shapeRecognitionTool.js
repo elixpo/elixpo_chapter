@@ -1,10 +1,19 @@
 /* eslint-disable */
 import { pushCreateAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
+import {
+    MAX_GESTURE_POINTS,
+    distance,
+    predictDrawnShape,
+} from './shapeRecognition.js';
+
+export {
+    MAX_GESTURE_POINTS,
+    capGestureSample,
+    predictDrawnShape,
+} from './shapeRecognition.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const MAX_POINTS = 96;
 const MIN_SCREEN_SAMPLE_PX = 4;
-const MIN_SHAPE_SIZE = 8;
 
 let drawing = false;
 let points = [];
@@ -23,185 +32,6 @@ function getSVGPoint(event) {
         x: viewBox.x + ((event.clientX - rect.left) / rect.width) * viewBox.width,
         y: viewBox.y + ((event.clientY - rect.top) / rect.height) * viewBox.height,
         pressure: event.pressure || 0.5,
-    };
-}
-
-function distance(a, b) {
-    return Math.hypot(b.x - a.x, b.y - a.y);
-}
-
-function orientedBounds(sample, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    let minU = Infinity;
-    let maxU = -Infinity;
-    let minV = Infinity;
-    let maxV = -Infinity;
-    for (const point of sample) {
-        const u = point.x * cos + point.y * sin;
-        const v = -point.x * sin + point.y * cos;
-        minU = Math.min(minU, u);
-        maxU = Math.max(maxU, u);
-        minV = Math.min(minV, v);
-        maxV = Math.max(maxV, v);
-    }
-    const centerU = (minU + maxU) / 2;
-    const centerV = (minV + maxV) / 2;
-    return {
-        center: {
-            x: centerU * cos - centerV * sin,
-            y: centerU * sin + centerV * cos,
-        },
-        width: Math.max(MIN_SHAPE_SIZE, maxU - minU),
-        height: Math.max(MIN_SHAPE_SIZE, maxV - minV),
-        angle,
-        minU,
-        maxU,
-        minV,
-        maxV,
-    };
-}
-
-function principalAngle(sample) {
-    let meanX = 0;
-    let meanY = 0;
-    for (const point of sample) {
-        meanX += point.x;
-        meanY += point.y;
-    }
-    meanX /= sample.length;
-    meanY /= sample.length;
-    let xx = 0;
-    let yy = 0;
-    let xy = 0;
-    for (const point of sample) {
-        const dx = point.x - meanX;
-        const dy = point.y - meanY;
-        xx += dx * dx;
-        yy += dy * dy;
-        xy += dx * dy;
-    }
-    if (Math.abs(xx - yy) + Math.abs(xy) < 0.001) return 0;
-    return Math.atan2(2 * xy, xx - yy) / 2;
-}
-
-function rectangleAngle(sample) {
-    let x = 0;
-    let y = 0;
-    for (let index = 1; index < sample.length; index += 1) {
-        const dx = sample[index].x - sample[index - 1].x;
-        const dy = sample[index].y - sample[index - 1].y;
-        const length = Math.hypot(dx, dy);
-        if (length === 0) continue;
-        const angle = Math.atan2(dy, dx) * 4;
-        x += Math.cos(angle) * length;
-        y += Math.sin(angle) * length;
-    }
-    return Math.atan2(y, x) / 4;
-}
-
-function closedShapePrediction(sample, pathLength) {
-    const rectBounds = orientedBounds(sample, rectangleAngle(sample));
-    const ellipseBounds = orientedBounds(sample, principalAngle(sample));
-    let rectangleError = 0;
-    let ellipseError = 0;
-
-    const rectCos = Math.cos(rectBounds.angle);
-    const rectSin = Math.sin(rectBounds.angle);
-    const ellipseCos = Math.cos(ellipseBounds.angle);
-    const ellipseSin = Math.sin(ellipseBounds.angle);
-    const rectHalfW = rectBounds.width / 2;
-    const rectHalfH = rectBounds.height / 2;
-    const ellipseHalfW = ellipseBounds.width / 2;
-    const ellipseHalfH = ellipseBounds.height / 2;
-
-    for (const point of sample) {
-        const rectDx = point.x - rectBounds.center.x;
-        const rectDy = point.y - rectBounds.center.y;
-        const rectU = Math.abs(rectDx * rectCos + rectDy * rectSin) / rectHalfW;
-        const rectV = Math.abs(-rectDx * rectSin + rectDy * rectCos) / rectHalfH;
-        rectangleError += Math.min(Math.abs(1 - rectU), Math.abs(1 - rectV));
-
-        const ellipseDx = point.x - ellipseBounds.center.x;
-        const ellipseDy = point.y - ellipseBounds.center.y;
-        const ellipseU = (ellipseDx * ellipseCos + ellipseDy * ellipseSin) / ellipseHalfW;
-        const ellipseV = (-ellipseDx * ellipseSin + ellipseDy * ellipseCos) / ellipseHalfH;
-        ellipseError += Math.abs(1 - Math.hypot(ellipseU, ellipseV));
-    }
-
-    rectangleError /= sample.length;
-    ellipseError /= sample.length;
-    const rectangle = rectangleError <= ellipseError * 1.08;
-    const bestError = rectangle ? rectangleError : ellipseError;
-    if (bestError > 0.24) {
-        return { type: 'freehand', points: sample.map((point) => ({ ...point })), pathLength };
-    }
-    const bounds = rectangle ? rectBounds : ellipseBounds;
-    return {
-        type: rectangle ? 'rectangle' : 'circle',
-        ...bounds,
-        pathLength,
-    };
-}
-
-export function predictDrawnShape(sample) {
-    if (!Array.isArray(sample) || sample.length < 2) return null;
-    const start = sample[0];
-    let pathLength = 0;
-    let farthestIndex = 1;
-    let farthestDistance = 0;
-    let minX = start.x;
-    let maxX = start.x;
-    let minY = start.y;
-    let maxY = start.y;
-
-    for (let index = 1; index < sample.length; index += 1) {
-        pathLength += distance(sample[index - 1], sample[index]);
-        const fromStart = distance(start, sample[index]);
-        if (fromStart > farthestDistance) {
-            farthestDistance = fromStart;
-            farthestIndex = index;
-        }
-        minX = Math.min(minX, sample[index].x);
-        maxX = Math.max(maxX, sample[index].x);
-        minY = Math.min(minY, sample[index].y);
-        maxY = Math.max(maxY, sample[index].y);
-    }
-
-    const diagonal = Math.max(MIN_SHAPE_SIZE, Math.hypot(maxX - minX, maxY - minY));
-    const end = sample[sample.length - 1];
-    const closed = sample.length >= 8 && distance(start, end) <= diagonal * 0.28 && pathLength >= diagonal * 2.05;
-    if (closed) return closedShapePrediction(sample, pathLength);
-
-    const tip = sample[farthestIndex];
-    let afterTipLength = 0;
-    for (let index = farthestIndex + 1; index < sample.length; index += 1) {
-        afterTipLength += distance(sample[index - 1], sample[index]);
-    }
-    let shaftLength = 0;
-    for (let index = 1; index <= farthestIndex; index += 1) {
-        shaftLength += distance(sample[index - 1], sample[index]);
-    }
-    const arrow = farthestIndex >= Math.floor(sample.length * 0.45)
-        && farthestIndex < sample.length - 2
-        && afterTipLength >= diagonal * 0.18
-        && distance(end, tip) <= diagonal * 0.48
-        && farthestDistance / Math.max(shaftLength, 1) >= 0.86;
-
-    const directDistance = distance(start, end);
-    const line = !arrow && directDistance / Math.max(pathLength, 1) >= 0.92;
-
-    if (!arrow && !line) {
-        return { type: 'freehand', points: sample.map((point) => ({ ...point })), pathLength };
-    }
-
-    return {
-        type: arrow ? 'arrow' : 'line',
-        start: { ...start },
-        end: arrow ? { ...tip } : { ...end },
-        width: Math.max(MIN_SHAPE_SIZE, maxX - minX),
-        height: Math.max(MIN_SHAPE_SIZE, maxY - minY),
-        pathLength,
     };
 }
 
@@ -383,7 +213,7 @@ export function handleShapeRecognitionMove(event) {
     const last = points[points.length - 1];
     const threshold = MIN_SCREEN_SAMPLE_PX / (window.currentZoom || 1);
     if (distance(last, point) < threshold) return;
-    if (points.length < MAX_POINTS) {
+    if (points.length < MAX_GESTURE_POINTS) {
         points.push(point);
     } else {
         // Preserve the first point and evenly discard older detail. Memory and
