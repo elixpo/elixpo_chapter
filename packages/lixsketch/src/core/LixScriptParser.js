@@ -50,10 +50,16 @@ function tokenize(source) {
  * Returns { variables, shapes, errors }
  */
 export function parseLixScript(source) {
-  const tokens = tokenize(source)
   const variables = {}
   const shapes = []
   const errors = []
+
+  if (typeof source !== 'string') {
+    errors.push({ line: 0, message: 'LixScript source must be a string' })
+    return { variables, shapes, errors }
+  }
+
+  const tokens = tokenize(source)
 
   let i = 0
 
