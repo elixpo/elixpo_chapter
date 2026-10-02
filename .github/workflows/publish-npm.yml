@@ -100,6 +100,7 @@ jobs:
           fi
 
       - name: Publish to NPM
+        id: npm_publish
         # `actions/setup-node@v4` above wires `.npmrc` to use
         # ${NODE_AUTH_TOKEN}. The previous inline
         # `--//registry.npmjs.org/:_authToken=...` flag was producing
@@ -108,7 +109,29 @@ jobs:
         # there, applying the same fix here pre-emptively.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_LIXSKETCH_PUBLISH_TOKEN }}
-        run: npm publish --access public
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+        run: |
+          LOG="$RUNNER_TEMP/lixsketch-npm-publish.log"
+          for ATTEMPT in 1 2 3; do
+            if npm publish --access public > "$LOG" 2>&1; then
+              cat "$LOG"
+              VERSION=$(node -p "require('./package.json').version")
+              echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            cat "$LOG"
+            if ! grep -q 'Cannot publish over previously staged version' "$LOG"; then
+              exit 1
+            fi
+
+            npm version "$BUMP" --no-git-tag-version > /dev/null
+            VERSION=$(node -p "require('./package.json').version")
+            echo "::warning::Version is already staged on npm; retrying with $VERSION."
+          done
+
+          echo "::error::Could not find an unpublished version after 3 attempts."
+          exit 1
         working-directory: packages/lixsketch
 
       # ── Mirror to GitHub Packages ───────────────────────────────────
@@ -152,14 +175,14 @@ jobs:
       # protected main. Later runs continue from the npm registry version.
       - name: Tag the release
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.npm_publish.outputs.version }}"
           git tag -a "lixsketch-v${VERSION}" -m "lixsketch v${VERSION}"
           git push origin "lixsketch-v${VERSION}"
 
       - name: Summary
         run: |
-          echo "### Published @elixpo/lixsketch@${{ steps.version.outputs.version }} 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "### Published @elixpo/lixsketch@${{ steps.npm_publish.outputs.version }} 🎉" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- npm: https://www.npmjs.com/package/@elixpo/lixsketch/v/${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- npm: https://www.npmjs.com/package/@elixpo/lixsketch/v/${{ steps.npm_publish.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- GitHub Packages: https://github.com/${{ github.repository }}/pkgs/npm/lixsketch" >> $GITHUB_STEP_SUMMARY
           echo "- Auto-bumped: \`${{ steps.version.outputs.auto_bumped }}\`" >> $GITHUB_STEP_SUMMARY
