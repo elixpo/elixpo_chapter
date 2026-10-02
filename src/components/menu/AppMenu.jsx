@@ -9,24 +9,7 @@ import { useProfileStore } from '@/hooks/useGuestProfile'
 import { beginWorkspaceDeletion } from '@/hooks/useAutoSave'
 import { discardPendingDocChanges } from '@/hooks/useDocAutoSave'
 import { useTranslation } from '@/hooks/useTranslation'
-// Issue #38 follow-up: swatches are paired per theme. The light set
-// pairs with the soothing warm-off-white canvas; the dark set restores
-// the original night palette. The menu picks the matching list at render
-// time based on the active theme.
-const CANVAS_BACKGROUNDS_LIGHT = [
-  { color: '#ffffff', label: 'menu.canvasBg.white' },
-  { color: '#fbf9fd', label: 'menu.canvasBg.cream' },
-  { color: '#f5f3ed', label: 'menu.canvasBg.paper' },
-  { color: '#f0f5fb', label: 'menu.canvasBg.skyTint' },
-  { color: '#f0f5ef', label: 'menu.canvasBg.sageTint' },
-]
-const CANVAS_BACKGROUNDS_DARK = [
-  { color: '#000000', label: 'menu.canvasBg.black' },
-  { color: '#161718', label: 'menu.canvasBg.darkGray' },
-  { color: '#15111f', label: 'menu.canvasBg.blueBlack' },
-  { color: '#181605', label: 'menu.canvasBg.darkYellow' },
-  { color: '#1B1615', label: 'menu.canvasBg.darkBrown' },
-]
+import { CANVAS_BACKGROUNDS } from '@/utils/canvasBackgrounds'
 
 function DangerWarningDialog({ action, busy, error, workspaceName, onCancel, onConfirm }) {
   useEffect(() => {
@@ -579,11 +562,11 @@ export default function AppMenu() {
             {t('menu.canvasBackground')}
           </p>
           <div className="flex items-center gap-1.5">
-            {(resolvedTheme === 'dark' ? CANVAS_BACKGROUNDS_DARK : CANVAS_BACKGROUNDS_LIGHT).map((bg) => (
+            {CANVAS_BACKGROUNDS[resolvedTheme].map((bg) => (
               <button
                 key={bg.color}
                 type="button"
-                onClick={() => setCanvasBackground(bg.color)}
+                onClick={() => setCanvasBackground(bg.color, resolvedTheme)}
                 title={t(bg.label)}
                 aria-label={`Use ${t(bg.label)} canvas background`}
                 aria-pressed={canvasBackground === bg.color}

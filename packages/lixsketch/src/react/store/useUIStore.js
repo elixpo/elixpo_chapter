@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import useSketchStore from './useSketchStore'
 
 export const MAX_WORKSPACE_NAME_LENGTH = 20
 
@@ -236,6 +237,7 @@ const useUIStore = create((set, get) => ({
     invertShapeColors(resolve(prev), resolve(newTheme))
     applyTheme(newTheme)
     set({ theme: newTheme })
+    useSketchStore.getState().restoreCanvasBackground(resolve(newTheme))
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('theme', newTheme)

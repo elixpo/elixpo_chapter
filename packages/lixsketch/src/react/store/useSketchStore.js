@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { DEFAULT_CANVAS_BACKGROUNDS, canvasBackgroundStorageKey, readCanvasBackground } from '../utils/canvasBackgrounds'
 
 const GRID_STORAGE_KEY = 'lixsketch-grid-enabled'
 const RULER_STORAGE_KEY = 'lixsketch-rulers-enabled'
@@ -194,12 +195,21 @@ const useSketchStore = create((set, get) => ({
   setPanStart: (p) => set({ panStart: p }),
 
   // --- Canvas background ---
-  canvasBackground: 'var(--lixsketch-bg, #15111f)',
-  setCanvasBackground: (color) => {
-    set({ canvasBackground: color })
+  canvasBackground: DEFAULT_CANVAS_BACKGROUNDS.dark,
+  canvasBackgrounds: { ...DEFAULT_CANVAS_BACKGROUNDS },
+  setCanvasBackground: (color, theme = 'dark') => {
+    const resolved = theme === 'light' ? 'light' : 'dark'
+    set((state) => ({ canvasBackground: color, canvasBackgrounds: { ...state.canvasBackgrounds, [resolved]: color } }))
     if (typeof window !== 'undefined') {
+      try { localStorage.setItem(canvasBackgroundStorageKey(resolved), color) } catch {}
       requestAnimationFrame(() => window.__adaptCanvasContrast?.(color))
     }
+  },
+  restoreCanvasBackground: (theme) => {
+    const resolved = theme === 'light' ? 'light' : 'dark'
+    const color = readCanvasBackground(resolved, typeof window === 'undefined' ? null : localStorage)
+    set((state) => ({ canvasBackground: color, canvasBackgrounds: { ...state.canvasBackgrounds, [resolved]: color } }))
+    if (typeof window !== 'undefined') requestAnimationFrame(() => window.__adaptCanvasContrast?.(color))
   },
 
   // --- Grid ---

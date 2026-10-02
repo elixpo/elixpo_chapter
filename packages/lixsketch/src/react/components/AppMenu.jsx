@@ -7,23 +7,7 @@ import useSketchStore from '../store/useSketchStore'
 import { useAuthStore } from '../hooks/inertStores'
 import { triggerCloudSync } from '../hooks/inertStores'
 import { useTranslation } from '../hooks/useTranslation'
-
-// Issue #38 follow-up: theme-paired swatches. The menu picks the
-// matching list at render time based on the active theme.
-const CANVAS_BACKGROUNDS_LIGHT = [
-  { color: '#ffffff', label: 'menu.canvasBg.white' },
-  { color: '#fbf9fd', label: 'menu.canvasBg.cream' },
-  { color: '#f5f3ed', label: 'menu.canvasBg.paper' },
-  { color: '#f0f5fb', label: 'menu.canvasBg.skyTint' },
-  { color: '#f0f5ef', label: 'menu.canvasBg.sageTint' },
-]
-const CANVAS_BACKGROUNDS_DARK = [
-  { color: '#000000', label: 'menu.canvasBg.black' },
-  { color: '#161718', label: 'menu.canvasBg.darkGray' },
-  { color: '#15111f', label: 'menu.canvasBg.blueBlack' },
-  { color: '#181605', label: 'menu.canvasBg.darkYellow' },
-  { color: '#1B1615', label: 'menu.canvasBg.darkBrown' },
-]
+import { CANVAS_BACKGROUNDS } from '../utils/canvasBackgrounds'
 
 function DangerWarningDialog({ action, workspaceName, onCancel, onConfirm }) {
   useEffect(() => {
@@ -470,10 +454,10 @@ export default function AppMenu() {
             {t('menu.canvasBackground')}
           </p>
           <div className="flex items-center gap-1.5">
-            {(theme === 'dark' ? CANVAS_BACKGROUNDS_DARK : CANVAS_BACKGROUNDS_LIGHT).map((bg) => (
+            {CANVAS_BACKGROUNDS[theme === 'light' ? 'light' : 'dark'].map((bg) => (
               <button
                 key={bg.color}
-                onClick={() => setCanvasBackground(bg.color)}
+                onClick={() => setCanvasBackground(bg.color, theme === 'light' ? 'light' : 'dark')}
                 title={t(bg.label)}
                 className={`w-7 h-7 rounded-full border-2 cursor-pointer transition-all duration-200 ${
                   canvasBackground === bg.color
