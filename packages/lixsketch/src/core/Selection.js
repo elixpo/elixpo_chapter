@@ -1948,9 +1948,9 @@ function deleteSelectedShapes() {
         // snapshot so undo can re-attach them.
         try {
             if (childSnapshot) {
-                pushDeleteAction(shape, { childSnapshot });
+                pushDeleteAction(shape, { childSnapshot, shapeIndex: idx });
             } else {
-                pushDeleteAction(shape);
+                pushDeleteAction(shape, { shapeIndex: idx });
             }
         } catch (err) {
             console.warn('[deleteSelectedShapes] pushDeleteAction failed:', err);

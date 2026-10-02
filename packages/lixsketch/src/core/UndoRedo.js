@@ -58,6 +58,7 @@ export function pushDeleteAction(shape, meta = null) {
     // when the frame is restored, instead of leaving an empty box.
     const action = { type: 'delete', shape };
     if (meta && meta.childSnapshot) action.childSnapshot = meta.childSnapshot;
+    if (Number.isInteger(meta?.shapeIndex)) action.shapeIndex = meta.shapeIndex;
     undoStack.push(action);
 
     // Clear redo stack when new action is performed
@@ -692,7 +693,12 @@ export function undo() {
             action.shape.restore();
         } else {
             // Handle other shape deletion undo
-            shapes.push(action.shape);
+            if (shapes.indexOf(action.shape) === -1) {
+                const index = Number.isInteger(action.shapeIndex)
+                    ? Math.min(Math.max(action.shapeIndex, 0), shapes.length)
+                    : shapes.length;
+                shapes.splice(index, 0, action.shape);
+            }
             if (svg) {
                 svg.appendChild(action.shape.group);
             }
