@@ -28,6 +28,7 @@ const ARROW_TYPES = {
 const ARROW_PATTERNS = Object.keys(ARROW_TYPES).sort((a, b) => b.length - a.length);
 
 export function parseSequenceDiagram(src) {
+    if (typeof src !== 'string') return null;
     const lines = src.trim().split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('%%'));
     if (lines.length === 0) return null;
 
