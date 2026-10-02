@@ -15,6 +15,7 @@ import { showToast } from '@/utils/toast'
 function LayoutModeToggle() {
   const layoutMode = useSketchStore((s) => s.layoutMode)
   const setLayoutMode = useSketchStore((s) => s.setLayoutMode)
+  const tabRefs = useRef([])
 
   const modes = [
     { key: 'canvas', icon: 'bx-pen', label: 'Canvas', title: 'Canvas only' },
@@ -28,28 +29,46 @@ function LayoutModeToggle() {
     persistLayoutMode(key)
   }
 
+  const onTabKeyDown = (event, index) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    const nextIndex = event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? modes.length - 1
+        : event.key === 'ArrowRight'
+          ? (index + 1) % modes.length
+          : (index - 1 + modes.length) % modes.length
+    event.preventDefault()
+    onPick(modes[nextIndex].key)
+    tabRefs.current[nextIndex]?.focus()
+  }
+
   return (
     <div
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center bg-surface/80 backdrop-blur-md rounded-lg border border-border-light p-0.5"
       role="tablist"
       aria-label="Layout mode"
     >
-      {modes.map((m) => {
+      {modes.map((m, index) => {
         const active = layoutMode === m.key
         return (
           <button
             key={m.key}
+            ref={(element) => { tabRefs.current[index] = element }}
+            type="button"
             onClick={() => onPick(m.key)}
+            onKeyDown={(event) => onTabKeyDown(event, index)}
             title={m.title}
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             role="tab"
-            className={`group flex items-center gap-1.5 h-7 px-2.5 rounded-md transition-all duration-150 cursor-pointer ${
+            className={`group flex items-center gap-1.5 h-7 px-2.5 rounded-md transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               active
                 ? 'bg-accent-blue text-white'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
-            <i className={`bx ${m.icon} text-base leading-none`} />
+            <i className={`bx ${m.icon} text-base leading-none`} aria-hidden="true" />
             <span className="text-[11px] font-medium tracking-wide hidden md:inline">
               {m.label}
             </span>
@@ -89,7 +108,7 @@ function ProfileStatusAvatar({ avatar }) {
   return avatar ? (
     <img
       src={avatar}
-      alt=""
+      alt={statusTitle}
       title={statusTitle}
       className={`w-7 h-7 rounded-md border-[3px] ${statusBorder} transition-colors duration-300 ${pulsing ? 'animate-pulse' : ''}`}
       referrerPolicy="no-referrer"
@@ -97,6 +116,8 @@ function ProfileStatusAvatar({ avatar }) {
   ) : (
     <div
       title={statusTitle}
+      role="img"
+      aria-label={statusTitle}
       className={`w-7 h-7 rounded-md border-[3px] ${statusBorder} bg-accent-blue/20 flex items-center justify-center transition-colors duration-300 ${pulsing ? 'animate-pulse' : ''}`}
     >
       <i className="bx bx-user text-xs text-accent-blue" />
@@ -109,12 +130,19 @@ function ProfileControls({ activeMcpClients = 0 }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const authUser = useAuthStore((s) => s.user)
   const closeMenu = useUIStore((s) => s.closeMenu)
+  const saveStatus = useUIStore((s) => s.saveStatus)
   const [testingE2E, setTestingE2E] = useState(false)
   const [e2eResult, setE2EResult] = useState('idle')
 
   // Use auth user if signed in, otherwise guest profile
   const displayName = isAuthenticated ? (authUser?.displayName || authUser?.email) : profile?.displayName
   const avatar = isAuthenticated ? authUser?.avatar : profile?.avatar
+  const saveStatusLabel = {
+    cloud: 'synced to cloud',
+    local: 'saved locally',
+    failed: 'cloud sync failed; saved locally',
+    idle: 'not synced yet',
+  }[saveStatus] || 'not synced yet'
 
   if (!profile && !isAuthenticated) return null
 
@@ -190,9 +218,9 @@ function ProfileControls({ activeMcpClients = 0 }) {
       <Link
         href="/profile"
         onClick={closeMenu}
-        className="flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-l-lg hover:bg-surface-hover transition-all duration-200 cursor-pointer"
-        title={`Open ${displayName || 'profile'} profile`}
-        aria-label="Open profile"
+      className="flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-l-lg hover:bg-surface-hover transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      title={`Open ${displayName || 'profile'} profile`}
+      aria-label={`Open ${displayName || 'profile'} profile; workspace ${saveStatusLabel}`}
       >
         <ProfileStatusAvatar avatar={avatar} />
         <span className="e2e-badge flex items-center gap-0.5 px-1.5 py-0.5 rounded border select-none" title="End-to-end encryption enabled">
@@ -204,15 +232,16 @@ function ProfileControls({ activeMcpClients = 0 }) {
       <span className="w-px h-6 bg-border-light shrink-0" aria-hidden="true" />
 
       <button
+        type="button"
         onClick={testE2E}
         disabled={testingE2E}
-        className={`h-8 px-2 flex items-center justify-center gap-1 hover:bg-surface-hover transition-all cursor-pointer disabled:cursor-wait disabled:opacity-50 ${activeMcpClients > 0 ? '' : 'rounded-r-lg'} ${
+        className={`h-8 px-2 flex items-center justify-center gap-1 hover:bg-surface-hover transition-all cursor-pointer disabled:cursor-wait disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${activeMcpClients > 0 ? '' : 'rounded-r-lg'} ${
           e2eResult === 'passed' ? 'text-green-400' : e2eResult === 'failed' ? 'text-red-400' : 'text-text-muted hover:text-accent'
         }`}
         title={e2eResult === 'passed' ? 'E2E database round-trip verified' : 'Test E2E encryption and database round-trip'}
         aria-label="Test E2E encryption"
       >
-        <i className={`bx ${testingE2E ? 'bx-loader-alt animate-spin' : e2eResult === 'passed' ? 'bx-check-shield' : e2eResult === 'failed' ? 'bx-error-circle' : 'bx-lock-alt'} text-sm`} />
+        <i className={`bx ${testingE2E ? 'bx-loader-alt animate-spin' : e2eResult === 'passed' ? 'bx-check-shield' : e2eResult === 'failed' ? 'bx-error-circle' : 'bx-lock-alt'} text-sm`} aria-hidden="true" />
         <span className="text-[10px] hidden lg:inline">{e2eResult === 'passed' ? 'Verified' : e2eResult === 'failed' ? 'Retry' : 'Test'}</span>
       </button>
 
@@ -220,6 +249,7 @@ function ProfileControls({ activeMcpClients = 0 }) {
         <>
           <span className="h-6 w-px shrink-0 bg-border-light" aria-hidden="true" />
           <span
+            role="status"
             className="flex h-8 items-center justify-center gap-1 rounded-r-lg px-2 text-[#70DFB3]"
             title={`${activeMcpClients} active Remote MCP access grant${activeMcpClients === 1 ? '' : 's'}`}
             aria-label={`Remote MCP access active for ${activeMcpClients} client${activeMcpClients === 1 ? '' : 's'}`}
@@ -239,6 +269,7 @@ export default function Header() {
   const setWorkspaceName = useUIStore((s) => s.setWorkspaceName)
   const workspaceNameAtFocus = useRef(workspaceName)
   const toggleMenu = useUIStore((s) => s.toggleMenu)
+  const menuOpen = useUIStore((s) => s.menuOpen)
   const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
   const toggleSaveModal = useUIStore((s) => s.toggleSaveModal)
   const viewMode = useSketchStore((s) => s.viewMode)
@@ -292,10 +323,13 @@ export default function Header() {
     return (
       <div className="fixed top-3 right-4 z-[1001] flex items-center gap-2 font-[lixFont]">
         <button
+          type="button"
           onClick={toggleMenu}
-          className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200 cursor-pointer"
+          aria-label="Open application menu"
+          aria-expanded={menuOpen}
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <i className="bx bx-menu text-xl" />
+          <i className="bx bx-menu text-xl" aria-hidden="true" />
         </button>
       </div>
     )
@@ -308,11 +342,10 @@ export default function Header() {
       {/* Left side */}
       <div className="flex items-center gap-3">
         {/* Logo */}
-        <div
-          onClick={() => {
-            window.location.href = '/?noredirect=1'
-          }}
-          className="w-[26px] h-[26px] rounded-md bg-contain bg-no-repeat bg-center cursor-pointer"
+        <Link
+          href="/?noredirect=1"
+          aria-label="Go to the LixSketch landing page"
+          className="w-[26px] h-[26px] rounded-md bg-contain bg-no-repeat bg-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           style={{ backgroundImage: "url('/icon.png')" }}
         />
         {/* Divider */}
@@ -349,8 +382,9 @@ export default function Header() {
 
         {/* Command palette */}
         <button
+          type="button"
           onClick={toggleCommandPalette}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface hover:bg-surface-hover text-text-muted text-sm rounded-lg border border-border transition-all duration-200 font-[lixFont] cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface hover:bg-surface-hover text-text-muted text-sm rounded-lg border border-border transition-all duration-200 font-[lixFont] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           title="Open command center"
           aria-label="Open command center (Ctrl + /)"
         >
@@ -360,18 +394,22 @@ export default function Header() {
 
         {/* Share */}
         <button
+          type="button"
           onClick={toggleSaveModal}
-          className="px-3.5 py-1.5 bg-accent-blue hover:bg-accent-blue-hover text-white text-sm rounded-lg transition-all duration-200 font-[lixFont] cursor-pointer"
+          className="px-3.5 py-1.5 bg-accent-blue hover:bg-accent-blue-hover text-white text-sm rounded-lg transition-all duration-200 font-[lixFont] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           Share
         </button>
 
         {/* Hamburger is the far-right control. */}
         <button
+          type="button"
           onClick={toggleMenu}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200 cursor-pointer"
+          aria-label="Open application menu"
+          aria-expanded={menuOpen}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <i className="bx bx-menu text-xl" />
+          <i className="bx bx-menu text-xl" aria-hidden="true" />
         </button>
       </div>
     </header>

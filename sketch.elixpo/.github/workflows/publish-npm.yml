@@ -13,9 +13,8 @@ on:
         required: false
         default: 'patch'
 
-# elixpoo CI agent needs:
-#  - contents: write   → push the version-bump commit back to main
-#  - packages: write   → publish to GitHub Packages
+# The workflow tags the triggering commit but never pushes commits to protected
+# branches. The npm registry remains the source of truth for released versions.
 permissions:
   contents: write
   packages: write
@@ -24,14 +23,13 @@ jobs:
   publish:
     name: Publish to NPM + GitHub Packages
     runs-on: ubuntu-latest
-    # Skip when the triggering commit is the bot's own bump (loop guard).
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, 'chore(release): bump @elixpo/lixsketch')
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN || secrets.GITHUB_TOKEN }}
+          # Checkout only needs repository contents. Using the job token keeps
+          # this step independent from the optional bot PAT, which may expire
+          # or be unavailable to runs from protected environments.
+          token: ${{ github.token }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -41,11 +39,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Configure git as elixpoo bot
-        run: |
-          git config --global user.name "elixpoo"
-          git config --global user.email "269200728+elixpoo@users.noreply.github.com"
 
       - name: Compute next version
         id: version
@@ -64,10 +57,8 @@ jobs:
           echo "Remote version: $REMOTE"
           echo "Bump kind: $BUMP"
 
-          # Decide whether we need to bump. Three cases:
-          #   1. Versions match exactly                  → bump
-          #   2. LOCAL already exists in the npm registry → bump (publish would 409)
-          #   3. LOCAL is strictly ahead of REMOTE        → respect manual bump, use LOCAL
+          # If the repository version is already published, advance it before
+          # publishing. A manually bumped, unpublished version is used as-is.
           NEEDS_BUMP=false
           if [ "$LOCAL" = "$REMOTE" ]; then
             NEEDS_BUMP=true
@@ -91,6 +82,17 @@ jobs:
             echo "Bumped to $NEW"
             echo "version=$NEW" >> "$GITHUB_OUTPUT"
             echo "auto_bumped=true" >> "$GITHUB_OUTPUT"
+          elif npm view "@elixpo/lixsketch@${LOCAL}" version >/dev/null 2>&1; then
+            # Release-only version changes are not committed because main
+            # requires PRs. Continue from the registry when it is ahead.
+            if [ "$REMOTE" != "unknown" ] && [ "$LOCAL" != "$REMOTE" ]; then
+              npm version "$REMOTE" --no-git-tag-version --allow-same-version > /dev/null
+            fi
+            npm version "$BUMP" --no-git-tag-version > /dev/null
+            NEW=$(node -p "require('./package.json').version")
+            echo "Local version already published; bumped from registry state to $NEW"
+            echo "version=$NEW" >> "$GITHUB_OUTPUT"
+            echo "auto_bumped=true" >> "$GITHUB_OUTPUT"
           else
             echo "Local ($LOCAL) ahead of remote ($REMOTE) — using local as-is."
             echo "version=$LOCAL" >> "$GITHUB_OUTPUT"
@@ -98,6 +100,7 @@ jobs:
           fi
 
       - name: Publish to NPM
+        id: npm_publish
         # `actions/setup-node@v4` above wires `.npmrc` to use
         # ${NODE_AUTH_TOKEN}. The previous inline
         # `--//registry.npmjs.org/:_authToken=...` flag was producing
@@ -106,7 +109,29 @@ jobs:
         # there, applying the same fix here pre-emptively.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_LIXSKETCH_PUBLISH_TOKEN }}
-        run: npm publish --access public
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+        run: |
+          LOG="$RUNNER_TEMP/lixsketch-npm-publish.log"
+          for ATTEMPT in 1 2 3; do
+            if npm publish --access public > "$LOG" 2>&1; then
+              cat "$LOG"
+              VERSION=$(node -p "require('./package.json').version")
+              echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            cat "$LOG"
+            if ! grep -q 'Cannot publish over previously staged version' "$LOG"; then
+              exit 1
+            fi
+
+            npm version "$BUMP" --no-git-tag-version > /dev/null
+            VERSION=$(node -p "require('./package.json').version")
+            echo "::warning::Version is already staged on npm; retrying with $VERSION."
+          done
+
+          echo "::error::Could not find an unpublished version after 3 attempts."
+          exit 1
         working-directory: packages/lixsketch
 
       # ── Mirror to GitHub Packages ───────────────────────────────────
@@ -146,32 +171,20 @@ jobs:
             fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
-      # ── Commit the auto-bumped version back to main ─────────────────
-      - name: Commit and push version bump
-        if: steps.version.outputs.auto_bumped == 'true'
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          git add packages/lixsketch/package.json packages/lixsketch/package-lock.json 2>/dev/null || \
-            git add packages/lixsketch/package.json
-          git commit -m "chore(release): bump @elixpo/lixsketch to v${VERSION}
-
-          Auto-bumped by the publish workflow after a change under
-          packages/lixsketch/** was merged without a manual version bump.
-
-          [skip ci]"
-          git push origin HEAD:main
-
+      # Tag the triggering commit without creating a release-only commit on
+      # protected main. Later runs continue from the npm registry version.
       - name: Tag the release
-        if: steps.version.outputs.auto_bumped == 'true'
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.npm_publish.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "lixsketch-v${VERSION}" -m "lixsketch v${VERSION}"
           git push origin "lixsketch-v${VERSION}"
 
       - name: Summary
         run: |
-          echo "### Published @elixpo/lixsketch@${{ steps.version.outputs.version }} 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "### Published @elixpo/lixsketch@${{ steps.npm_publish.outputs.version }} 🎉" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- npm: https://www.npmjs.com/package/@elixpo/lixsketch/v/${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- npm: https://www.npmjs.com/package/@elixpo/lixsketch/v/${{ steps.npm_publish.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- GitHub Packages: https://github.com/${{ github.repository }}/pkgs/npm/lixsketch" >> $GITHUB_STEP_SUMMARY
           echo "- Auto-bumped: \`${{ steps.version.outputs.auto_bumped }}\`" >> $GITHUB_STEP_SUMMARY

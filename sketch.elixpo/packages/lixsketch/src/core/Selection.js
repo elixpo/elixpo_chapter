@@ -2,7 +2,7 @@
 // Multi-selection system - copied from selection.js
 
 import { cleanupAttachments } from '../tools/arrowTool.js';
-import { pushCreateAction, pushTransformAction, pushFrameAttachmentAction, pushDeleteAction } from './UndoRedo.js';
+import { beginUndoBatch, endUndoBatch, pushCreateAction, pushTransformAction, pushFrameAttachmentAction, pushDeleteAction } from './UndoRedo.js';
 import { calculateSnap, clearSnapGuides } from './SnapGuides.js';
 import { registerRotationAnchor } from './ScreenSpaceControls.js';
 
@@ -278,19 +278,21 @@ class MultiSelection {
                     endPoint: { ...shape.endPoint },
                     x: shape.x, y: shape.y,
                     width: shape.width || 0, height: shape.height || 0,
-                    rotation: shape.rotation || 0
+                    rotation: shape.rotation || 0,
+                    parentFrame: shape.parentFrame || null
                 };
             case 'circle':
-                return { x: shape.x, y: shape.y, rx: shape.rx, ry: shape.ry, rotation: shape.rotation || 0, width: shape.width, height: shape.height };
+                return { x: shape.x, y: shape.y, rx: shape.rx, ry: shape.ry, rotation: shape.rotation || 0, width: shape.width, height: shape.height, parentFrame: shape.parentFrame || null };
             case 'freehandStroke':
-                return { x: shape.x, y: shape.y, width: shape.width, height: shape.height, rotation: shape.rotation || 0, points: JSON.parse(JSON.stringify(shape.points)) };
+                return { x: shape.x, y: shape.y, width: shape.width, height: shape.height, rotation: shape.rotation || 0, points: JSON.parse(JSON.stringify(shape.points)), parentFrame: shape.parentFrame || null };
             default:
-                return { x: shape.x || 0, y: shape.y || 0, width: shape.width || 0, height: shape.height || 0, rotation: shape.rotation || 0 };
+                return { x: shape.x || 0, y: shape.y || 0, width: shape.width || 0, height: shape.height || 0, rotation: shape.rotation || 0, parentFrame: shape.parentFrame || null };
         }
     }
 
     // Push undo actions for all shapes that changed
-    _pushUndoForAll() {
+    _pushUndoForAll(existingBatch = null) {
+        const batch = existingBatch || beginUndoBatch();
         this.selectedShapes.forEach(shape => {
             const oldState = this._undoSnapshots.get(shape);
             if (!oldState) return;
@@ -305,6 +307,7 @@ class MultiSelection {
             }
         });
         this._undoSnapshots.clear();
+        if (!existingBatch) endUndoBatch(batch, 'multi-transform');
     }
 
     addShape(shape) {
@@ -1392,6 +1395,8 @@ createRotatedControls(angleDiff = 0) {
             shape.isSelected = true;
         });
 
+        const undoBatch = beginUndoBatch();
+
         // Re-parent any selected shape that now sits inside a different frame
         // (Issue #22, bug #9). The per-tool drag handlers (rectangleTool, etc.)
         // do this for single-shape drags, but a multi-selection drag bypassed
@@ -1418,11 +1423,6 @@ createRotatedControls(angleDiff = 0) {
                 }
                 if (target && typeof target.addShapeToFrame === 'function') {
                     target.addShapeToFrame(shape);
-                    if (typeof pushFrameAttachmentAction === 'function') {
-                        pushFrameAttachmentAction(target, shape, 'attach', current);
-                    }
-                } else if (current && typeof pushFrameAttachmentAction === 'function') {
-                    pushFrameAttachmentAction(current, shape, 'detach', current);
                 }
             });
         }
@@ -1430,7 +1430,8 @@ createRotatedControls(angleDiff = 0) {
         this.initialPositions.clear();
 
         // Push undo for all moved shapes
-        this._pushUndoForAll();
+        this._pushUndoForAll(undoBatch);
+        endUndoBatch(undoBatch, 'multi-move');
 
         // Refresh bounds and controls after finalizeMove may have changed positions
         this.updateControls();
@@ -1876,6 +1877,7 @@ function deleteSelectedShapes() {
 
     const shapesToDelete = Array.from(multiSelection.selectedShapes);
     multiSelection.clearSelection();
+    const undoBatch = beginUndoBatch();
 
     // Issue #24 bug #3: when deleting a (regular, non-diagram) frame, its
     // children are released back to the canvas — capture them here so we
@@ -1886,6 +1888,8 @@ function deleteSelectedShapes() {
     shapesToDelete.forEach(shape => {
         const isFrame = shape.shapeName === 'frame';
         const isDiagramFrame = isFrame && !!shape._diagramType;
+        const parentFrame = shape.parentFrame || null;
+        const frameIndex = parentFrame?.containedShapes?.indexOf(shape) ?? -1;
 
         // Issue #24 bug #7: for a regular (non-diagram) frame, we don't
         // want destroy() — it empties containedShapes and tears down the
@@ -1948,14 +1952,15 @@ function deleteSelectedShapes() {
         // snapshot so undo can re-attach them.
         try {
             if (childSnapshot) {
-                pushDeleteAction(shape, { childSnapshot });
+                pushDeleteAction(shape, { childSnapshot, shapeIndex: idx, parentFrame, frameIndex });
             } else {
-                pushDeleteAction(shape);
+                pushDeleteAction(shape, { shapeIndex: idx, parentFrame, frameIndex });
             }
         } catch (err) {
             console.warn('[deleteSelectedShapes] pushDeleteAction failed:', err);
         }
     });
+    endUndoBatch(undoBatch, 'multi-delete');
 
     // Bug #3 follow-through: auto-select the released children and switch
     // to the pointer tool so the user can immediately keep manipulating

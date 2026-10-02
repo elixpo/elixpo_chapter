@@ -38,6 +38,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "test": "npm test --workspace @elixpo/lixsketch",
     "predev": "npm run db:migrate:local",
     "dev": "concurrently -k -n next,worker -c blue,magenta \"npm run dev:next\" \"npm run dev:rooms\"",
     "dev:next": "next dev --turbo",

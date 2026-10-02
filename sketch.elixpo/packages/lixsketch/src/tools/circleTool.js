@@ -124,20 +124,8 @@ const handleMouseDown = (e) => {
                 else if(anchorInfo.type === 'rotate') 
                 {
                     isRotatingShapeCircle = true;
-                    const CTM = currentShape.group.getCTM();
-                    if(CTM)
-                    {
-                        const svgPoint = svg.createSVGPoint();
-                        svgPoint.x = currentShape.x;
-                        svgPoint.y = currentShape.y;
-                        const centerSVGPoint = svgPoint.matrixTransform(CTM);
-                        startRotationMouseAngleCircle = Math.atan2(svgMouseY - centerSVGPoint.y, svgMouseX - centerSVGPoint.x) * (180 / Math.PI);
-                        startShapeRotationCircle = currentShape.rotation;
-                    }
-                    else 
-                    {
-                        isRotatingShapeCircle = false;
-                    }
+                    startRotationMouseAngleCircle = Math.atan2(svgMouseY - currentShape.y, svgMouseX - currentShape.x) * (180 / Math.PI);
+                    startShapeRotationCircle = currentShape.rotation;
                 }
                 clickedOnShape = true;
             }
@@ -293,13 +281,7 @@ const handleMouseMove = (e) => {
     }
     else if (isRotatingShapeCircle && currentShape && currentShape.isSelected)
     {
-        const CTM = currentShape.group.getCTM();
-        if(CTM) {
-            const svgPoint = svg.createSVGPoint();
-            svgPoint.x = currentShape.x;
-            svgPoint.y = currentShape.y;
-            const centerSVGPoint = svgPoint.matrixTransform(CTM);
-            const currentMouseAngle = Math.atan2(svgMouseY - centerSVGPoint.y, svgMouseX - centerSVGPoint.x) * (180 / Math.PI);
+        const currentMouseAngle = Math.atan2(svgMouseY - currentShape.y, svgMouseX - currentShape.x) * (180 / Math.PI);
             const angleDiff = currentMouseAngle - startRotationMouseAngleCircle;
             let newRotation = startShapeRotationCircle + angleDiff;
             const snapAngle = 15;
@@ -311,12 +293,6 @@ const handleMouseMove = (e) => {
             currentShape.draw();
             currentShape._skipAnchors = false;
             svg.style.cursor = 'grabbing'; 
-        }
-        else 
-        {
-            isRotatingShapeCircle = false; 
-            svg.style.cursor = 'default';
-        }
     }
     else if (isSelectionToolActive && !isDrawingCircle && currentShape && currentShape.isSelected) 
     {

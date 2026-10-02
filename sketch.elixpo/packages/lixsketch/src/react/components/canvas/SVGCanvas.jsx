@@ -14,6 +14,7 @@ export default function SVGCanvas() {
   const gridEnabled = useSketchStore((s) => s.gridEnabled)
   const hydrateGrid = useSketchStore((s) => s.hydrateGrid)
   const rulersEnabled = useSketchStore((s) => s.rulersEnabled)
+  const rulerUnit = useSketchStore((s) => s.rulerUnit)
   const hydrateRulers = useSketchStore((s) => s.hydrateRulers)
   const getCursor = useSketchStore((s) => s.getCursor)
   const cursor = getCursor()
@@ -152,7 +153,7 @@ export default function SVGCanvas() {
         />
       )}
     </svg>
-    <CanvasRulers enabled={rulersEnabled} svgRef={svgRef} />
+    <CanvasRulers enabled={rulersEnabled} svgRef={svgRef} unit={rulerUnit} />
     </>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import useUIStore from '@/store/useUIStore'
+import useSketchStore from '@/store/useSketchStore'
 import {
   canvasToLosslessPNG,
   createExportSVG,
@@ -16,15 +17,20 @@ export default function ExportImageModal() {
   const open = useUIStore((s) => s.exportImageModalOpen)
   const toggleModal = useUIStore((s) => s.toggleExportImageModal)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
+  const canvasBackground = useSketchStore((s) => s.canvasBackground)
 
   const [scale, setScale] = useState(4)
-  const [bgMode, setBgMode] = useState('dark') // 'dark' | 'light' | 'none'
+  const [bgMode, setBgMode] = useState(resolvedTheme) // 'dark' | 'light' | 'none'
   const [previewUrl, setPreviewUrl] = useState(null)
   const previewRef = useRef(null)
 
   const getBgColor = useCallback(() => {
-    return getExportBackground(bgMode)
-  }, [bgMode])
+    return getExportBackground(bgMode, resolvedTheme, canvasBackground)
+  }, [bgMode, canvasBackground, resolvedTheme])
+
+  useEffect(() => {
+    if (open) setBgMode(resolvedTheme)
+  }, [open, resolvedTheme])
 
   // Generate preview whenever settings change
   useEffect(() => {
@@ -32,7 +38,7 @@ export default function ExportImageModal() {
     let cancelled = false
 
     const generate = async () => {
-      const clone = createExportSVG(bgMode, resolvedTheme)
+      const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
       if (!clone) return
       // Preview at 1x for speed
       const canvas = await renderExportCanvas(clone, 1)
@@ -42,12 +48,12 @@ export default function ExportImageModal() {
     generate()
 
     return () => { cancelled = true }
-  }, [open, bgMode, resolvedTheme])
+  }, [open, bgMode, resolvedTheme, canvasBackground])
 
   if (!open) return null
 
   const handleExportPNG = async () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const canvas = await renderExportCanvas(clone, scale)
     const blob = await canvasToLosslessPNG(canvas)
@@ -56,7 +62,7 @@ export default function ExportImageModal() {
   }
 
   const handleExportSVG = () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const svgData = new XMLSerializer().serializeToString(clone)
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
@@ -65,7 +71,7 @@ export default function ExportImageModal() {
   }
 
   const handleCopyPNG = async () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const canvas = await renderExportCanvas(clone, scale)
     const blob = await canvasToLosslessPNG(canvas)
@@ -76,7 +82,7 @@ export default function ExportImageModal() {
   }
 
   const handleCopySVG = () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const svgData = new XMLSerializer().serializeToString(clone)
     navigator.clipboard.writeText(svgData).catch((err) =>

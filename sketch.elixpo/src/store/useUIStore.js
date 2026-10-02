@@ -1,11 +1,6 @@
 import { create } from 'zustand'
 import useSketchStore from '@/store/useSketchStore'
 
-export const THEME_CANVAS_BACKGROUNDS = {
-  dark: '#15111f',
-  light: '#fbf9fd',
-}
-
 export const MAX_WORKSPACE_NAME_LENGTH = 20
 
 function limitWorkspaceName(name) {
@@ -210,7 +205,7 @@ function persistTheme(theme) {
 }
 
 function applyCanvasTheme(resolved) {
-  useSketchStore.getState().setCanvasBackground(THEME_CANVAS_BACKGROUNDS[resolved])
+  useSketchStore.getState().restoreCanvasBackground(resolved)
 }
 
 const useUIStore = create((set, get) => ({

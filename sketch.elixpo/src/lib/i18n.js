@@ -1,12 +1,14 @@
 import en from '../locales/en.json'
 import bg from '../locales/bg.json'
 import de from '../locales/de.json'
+import hi from '../locales/hi.json'
 import useUIStore from '../store/useUIStore'
 
 const locales = {
   en,
   bg,
-  de
+  de,
+  hi
 }
 
 /**

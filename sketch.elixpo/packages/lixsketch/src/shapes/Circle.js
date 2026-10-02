@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
+import { canvasToLocal, localToCanvas } from '../core/CanvasSpace.js';
 // Circle shape class - extracted from drawCircle.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom, rc
 
@@ -432,18 +433,17 @@ class Circle {
     }
     isNearAnchor(x, y) {
         if (!this.isSelected) return null;
-        const buffer = 10 / currentZoom; // Scale buffer by zoom level
-        const anchorSize = 10 / currentZoom; // Scale anchor size by zoom level
+        const zoom = window.currentZoom || 1;
+        const buffer = 10 / zoom; // Scale buffer by zoom level
+        const anchorSize = 10 / zoom; // Scale anchor size by zoom level
+        const transform = { x: this.x, y: this.y, rotation: this.rotation, centerX: 0, centerY: 0 };
 
         // Iterate through anchors
         for (let i = 0; i < this.anchors.length; i++) {
             const anchor = this.anchors[i];
             const anchorLocalX = parseFloat(anchor.getAttribute('x')) + anchorSize / 2;
             const anchorLocalY = parseFloat(anchor.getAttribute('y')) + anchorSize / 2;
-            const svgPoint = svg.createSVGPoint();
-            svgPoint.x = anchorLocalX;
-            svgPoint.y = anchorLocalY;
-            const transformedPoint = svgPoint.matrixTransform(this.group.getCTM());
+            const transformedPoint = localToCanvas({ x: anchorLocalX, y: anchorLocalY }, transform);
             
             const anchorLeft = transformedPoint.x - anchorSize/2 - buffer;
             const anchorRight = transformedPoint.x + anchorSize/2 + buffer;
@@ -459,12 +459,9 @@ class Circle {
         if (this.rotationAnchor) {
             const rotateAnchorLocalX = parseFloat(this.rotationAnchor.getAttribute('cx'));
             const rotateAnchorLocalY = parseFloat(this.rotationAnchor.getAttribute('cy'));
-            const svgPoint = svg.createSVGPoint();
-            svgPoint.x = rotateAnchorLocalX;
-            svgPoint.y = rotateAnchorLocalY;
-            const transformedPoint = svgPoint.matrixTransform(this.group.getCTM());
+            const transformedPoint = localToCanvas({ x: rotateAnchorLocalX, y: rotateAnchorLocalY }, transform);
             
-            const rotateAnchorRadius = parseFloat(this.rotationAnchor.getAttribute('r')) / currentZoom;
+            const rotateAnchorRadius = parseFloat(this.rotationAnchor.getAttribute('r'));
             const distSq = (x - transformedPoint.x)**2 + (y - transformedPoint.y)**2;
             if (distSq <= (rotateAnchorRadius + buffer)**2) {
                 return { type: 'rotate' };
@@ -475,14 +472,10 @@ class Circle {
     }
 
     updatePosition(anchorIndex, newMouseX, newMouseY) {
-        const CTM = this.group.getCTM();
-        if (!CTM) return;
-    
-        const inverseCTM = CTM.inverse();
-        const svgPoint = svg.createSVGPoint();
-        svgPoint.x = newMouseX;
-        svgPoint.y = newMouseY;
-        const transformedPoint = svgPoint.matrixTransform(inverseCTM);
+        const transformedPoint = canvasToLocal(
+            { x: newMouseX, y: newMouseY },
+            { x: this.x, y: this.y, rotation: this.rotation, centerX: 0, centerY: 0 },
+        );
     
         const dx = transformedPoint.x;
         const dy = transformedPoint.y;
