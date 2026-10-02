@@ -1,6 +1,8 @@
+import { headers } from 'next/headers';
 import App from '../src/index';
 import { getSession } from '../lib/auth';
-import { listPublicStories, publicStoryPath } from '../lib/publicDiscovery';
+import { publicStoryPath } from '../lib/publicDiscovery';
+import { GET as getFeed } from './api/feed/route';
 import { safeJsonLd } from '../src/utils/seoContent';
 
 export const runtime = 'edge';
@@ -36,14 +38,14 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const [discovery, session] = await Promise.all([
-    listPublicStories({ page: 1, pageSize: 12 }).catch(() => ({
-      stories: [],
-    })),
+  // Render the same feed the client would request, so hydration never swaps it.
+  const feedRequest = new Request('https://blogs.elixpo.com/api/feed?limit=20', { headers: await headers() });
+  const [feed, session] = await Promise.all([
+    getFeed(feedRequest).then((res) => res.json()).catch(() => ({ posts: [] })),
     getSession().catch(() => null),
   ]);
 
-  const stories = discovery.stories || [];
+  const stories = feed.posts || [];
 
   const itemList = {
     '@context': 'https://schema.org',

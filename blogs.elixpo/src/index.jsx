@@ -677,7 +677,11 @@ export default function App({ initialPosts = [], showBrandIntro = false }) {
       && hasServerStoriesRef.current
       && !tagFilter
       && activeTopic === 0;
-    if (!preserveServerStories) setLoading(true);
+    if (preserveServerStories) {
+      firstFeedLoadRef.current = false;
+      return undefined;
+    }
+    setLoading(true);
     let url = '/api/feed?limit=20';
     if (tagFilter) url += `&tag=${encodeURIComponent(tagFilter)}`;
     else if (topics[activeTopic]?.filter) url += `&filter=${topics[activeTopic].filter}`;
@@ -685,7 +689,7 @@ export default function App({ initialPosts = [], showBrandIntro = false }) {
     let active = true;
     fetchFeedOnce(url)
       .then(data => { if (active) setPosts(data.posts || []); })
-      .catch(() => { if (active && !preserveServerStories) setPosts([]); })
+      .catch(() => { if (active) setPosts([]); })
       .finally(() => {
         if (!active) return;
         firstFeedLoadRef.current = false;
