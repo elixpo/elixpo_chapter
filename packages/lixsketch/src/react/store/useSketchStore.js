@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 const GRID_STORAGE_KEY = 'lixsketch-grid-enabled'
 const RULER_STORAGE_KEY = 'lixsketch-rulers-enabled'
+const RULER_UNIT_STORAGE_KEY = 'lixsketch-ruler-unit'
 
 // Tool enum replaces 15 boolean flags
 export const TOOLS = {
@@ -222,6 +223,7 @@ const useSketchStore = create((set, get) => ({
 
   // --- Rulers ---
   rulersEnabled: false,
+  rulerUnit: 'px',
   toggleRulers: () => set((s) => {
     const rulersEnabled = !s.rulersEnabled
     if (typeof window !== 'undefined') {
@@ -229,6 +231,13 @@ const useSketchStore = create((set, get) => ({
     }
     return { rulersEnabled }
   }),
+  setRulerUnit: (unit) => {
+    const rulerUnit = ['px', 'cm', 'in'].includes(unit) ? unit : 'px'
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(RULER_UNIT_STORAGE_KEY, rulerUnit) } catch {}
+    }
+    set({ rulerUnit })
+  },
   hydrateRulers: () => {
     if (typeof window === 'undefined') return
     try {
@@ -236,6 +245,8 @@ const useSketchStore = create((set, get) => ({
       if (saved === 'true' || saved === 'false') {
         set({ rulersEnabled: saved === 'true' })
       }
+      const savedUnit = localStorage.getItem(RULER_UNIT_STORAGE_KEY)
+      if (['px', 'cm', 'in'].includes(savedUnit)) set({ rulerUnit: savedUnit })
     } catch {}
   },
 

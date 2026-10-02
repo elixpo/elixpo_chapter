@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import { formatRulerValue, normalizeRulerUnit } from './rulerUnits.js'
 
 const GRID_SIZE = 20
 const MIN_LABEL_GAP = 52
@@ -16,14 +17,6 @@ function getRulerStep(zoom) {
   return GRID_SIZE
 }
 
-function formatDimension(value) {
-  const rounded = Math.round(value)
-  const absolute = Math.abs(rounded)
-  if (absolute >= 1000000) return `${Number((rounded / 1000000).toFixed(1))}m`
-  if (absolute >= 10000) return `${Number((rounded / 1000).toFixed(1))}k`
-  return String(rounded)
-}
-
 function buildTicks(start, extent, zoom, step) {
   const first = Math.floor(start / step) * step
   const last = start + extent / zoom
@@ -34,7 +27,8 @@ function buildTicks(start, extent, zoom, step) {
   return ticks
 }
 
-export default function CanvasRulers({ enabled, svgRef }) {
+export default function CanvasRulers({ enabled, svgRef, unit = 'px' }) {
+  const rulerUnit = normalizeRulerUnit(unit)
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1, width: 0, height: 0, rulerLeft: 64, rulerTop: 48 })
   const [pointer, setPointer] = useState({ x: 0, y: 0, visible: false })
 
@@ -113,28 +107,29 @@ export default function CanvasRulers({ enabled, svgRef }) {
       <div className="absolute right-0 overflow-hidden border-b border-border-light bg-surface/95 shadow-sm backdrop-blur-sm" style={{ height: RULER_SIZE, left: horizontalStart, top: viewport.rulerTop }}>
         {horizontalTicks.map(({ value, position }) => (
           <div key={value} className="absolute bottom-0 h-2 border-l border-text-dim" style={{ left: position - horizontalStart }}>
-            <span className="absolute bottom-2 left-1 font-mono text-[9px] leading-none tabular-nums">{formatDimension(value)}</span>
+            <span className="absolute bottom-2 left-1 font-mono text-[9px] leading-none tabular-nums">{formatRulerValue(value, rulerUnit)}</span>
           </div>
         ))}
         {pointerInDrawingArea && (
           <div className="absolute inset-y-0 border-l border-accent" style={{ left: pointer.x - horizontalStart }}>
-            <span className="absolute left-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm">{formatDimension(pointerWorldX)}</span>
+            <span className="absolute left-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm">{formatRulerValue(pointerWorldX, rulerUnit, true)}</span>
           </div>
         )}
       </div>
       <div className="absolute bottom-0 overflow-hidden border-r border-border-light bg-surface/95 shadow-sm backdrop-blur-sm" style={{ width: RULER_SIZE, left: viewport.rulerLeft, top: verticalStart }}>
         {verticalTicks.map(({ value, position }) => (
           <div key={value} className="absolute right-0 w-2 border-t border-text-dim" style={{ top: position - verticalStart }}>
-            <span className="absolute right-2 top-1 font-mono text-[9px] leading-none tabular-nums" style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}>{formatDimension(value)}</span>
+            <span className="absolute right-2 top-1 font-mono text-[9px] leading-none tabular-nums" style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}>{formatRulerValue(value, rulerUnit)}</span>
           </div>
         ))}
         {pointerInDrawingArea && (
           <div className="absolute inset-x-0 border-t border-accent" style={{ top: pointer.y - verticalStart }}>
-            <span className="absolute right-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm" style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}>{formatDimension(pointerWorldY)}</span>
+            <span className="absolute right-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm" style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}>{formatRulerValue(pointerWorldY, rulerUnit, true)}</span>
           </div>
         )}
       </div>
       <div className="absolute border-b border-r border-border-light bg-accent/20" style={{ width: RULER_SIZE, height: RULER_SIZE, left: viewport.rulerLeft, top: viewport.rulerTop }}>
+        <span className="absolute bottom-0.5 left-1 font-mono text-[8px] uppercase text-accent">{rulerUnit}</span>
         <span className="absolute left-1/2 top-1/2 h-2.5 -translate-x-1/2 -translate-y-1/2 border-l border-accent" />
         <span className="absolute left-1/2 top-1/2 w-2.5 -translate-x-1/2 -translate-y-1/2 border-t border-accent" />
       </div>

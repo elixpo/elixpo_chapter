@@ -130,6 +130,8 @@ export default function AppMenu() {
   const toggleGrid = useSketchStore((s) => s.toggleGrid)
   const rulersEnabled = useSketchStore((s) => s.rulersEnabled)
   const toggleRulers = useSketchStore((s) => s.toggleRulers)
+  const rulerUnit = useSketchStore((s) => s.rulerUnit)
+  const setRulerUnit = useSketchStore((s) => s.setRulerUnit)
 
   const viewMode = useSketchStore((s) => s.viewMode)
   const zenMode = useSketchStore((s) => s.zenMode)
@@ -300,6 +302,20 @@ export default function AppMenu() {
                 <option value="en">English</option>
                 <option value="bg">Български</option>
                 <option value="de">Deutsch</option>
+              </select>
+            </div>
+
+            <div className="w-full flex items-center justify-between px-3 py-2 border-b border-border-light text-text-secondary text-[11px]">
+              <span>Ruler unit</span>
+              <select
+                aria-label="Ruler unit"
+                className="cursor-pointer rounded border border-border-light bg-surface-hover px-1 text-[10px] uppercase text-text-primary outline-none"
+                value={rulerUnit}
+                onChange={(event) => setRulerUnit(event.target.value)}
+              >
+                <option value="px">px</option>
+                <option value="cm">cm</option>
+                <option value="in">in</option>
               </select>
             </div>
             

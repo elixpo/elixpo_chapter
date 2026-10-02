@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import { formatRulerValue, normalizeRulerUnit } from '@/utils/rulerUnits'
 
 const GRID_SIZE = 20
 const MIN_LABEL_GAP = 52
@@ -16,14 +17,6 @@ function getRulerStep(zoom) {
   return GRID_SIZE
 }
 
-function formatDimension(value) {
-  const rounded = Math.round(value)
-  const absolute = Math.abs(rounded)
-  if (absolute >= 1000000) return `${Number((rounded / 1000000).toFixed(1))}m`
-  if (absolute >= 10000) return `${Number((rounded / 1000).toFixed(1))}k`
-  return String(rounded)
-}
-
 function buildTicks(start, extent, zoom, step) {
   const first = Math.floor(start / step) * step
   const last = start + extent / zoom
@@ -34,7 +27,8 @@ function buildTicks(start, extent, zoom, step) {
   return ticks
 }
 
-export default function CanvasRulers({ enabled, svgRef }) {
+export default function CanvasRulers({ enabled, svgRef, unit = 'px' }) {
+  const rulerUnit = normalizeRulerUnit(unit)
   const [viewport, setViewport] = useState({
     x: 0,
     y: 0,
@@ -140,14 +134,14 @@ export default function CanvasRulers({ enabled, svgRef }) {
         {horizontalTicks.map(({ value, position }) => (
           <div key={value} className="absolute bottom-0 h-2 border-l border-text-dim" style={{ left: position - horizontalStart }}>
             <span className="absolute bottom-2 left-1 font-mono text-[9px] leading-none tabular-nums">
-              {formatDimension(value)}
+              {formatRulerValue(value, rulerUnit)}
             </span>
           </div>
         ))}
         {pointerInDrawingArea && (
           <div className="absolute inset-y-0 border-l border-accent" style={{ left: pointer.x - horizontalStart }}>
             <span className="absolute left-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm">
-              {formatDimension(pointerWorldX)}
+              {formatRulerValue(pointerWorldX, rulerUnit, true)}
             </span>
           </div>
         )}
@@ -162,7 +156,7 @@ export default function CanvasRulers({ enabled, svgRef }) {
               className="absolute right-2 top-1 font-mono text-[9px] leading-none tabular-nums"
               style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}
             >
-              {formatDimension(value)}
+              {formatRulerValue(value, rulerUnit)}
             </span>
           </div>
         ))}
@@ -172,7 +166,7 @@ export default function CanvasRulers({ enabled, svgRef }) {
               className="absolute right-1 top-1 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-white shadow-sm"
               style={{ transform: 'rotate(-90deg)', transformOrigin: 'top right' }}
             >
-              {formatDimension(pointerWorldY)}
+              {formatRulerValue(pointerWorldY, rulerUnit, true)}
             </span>
           </div>
         )}
@@ -181,6 +175,7 @@ export default function CanvasRulers({ enabled, svgRef }) {
         className="absolute border-b border-r border-border-light bg-accent/20"
         style={{ width: RULER_SIZE, height: RULER_SIZE, left: viewport.rulerLeft, top: viewport.rulerTop }}
       >
+        <span className="absolute bottom-0.5 left-1 font-mono text-[8px] uppercase text-accent">{rulerUnit}</span>
         <span className="absolute left-1/2 top-1/2 h-2.5 -translate-x-1/2 -translate-y-1/2 border-l border-accent" />
         <span className="absolute left-1/2 top-1/2 w-2.5 -translate-x-1/2 -translate-y-1/2 border-t border-accent" />
       </div>
