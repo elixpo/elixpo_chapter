@@ -2,6 +2,7 @@
 
 import { getSession } from './auth';
 import { getLimits } from './tiers';
+import { claimAIQuota } from './aiQuota';
 
 /**
  * Validate session and enforce AI usage limits.
@@ -27,7 +28,7 @@ export async function enforceAILimits({ requireMember = false, request = null } 
   try {
     const { getDB } = await import('./cloudflare');
     const db = getDB();
-    const user = await db.prepare('SELECT tier, ai_usage_today, ai_usage_date FROM users WHERE id = ?')
+    const user = await db.prepare('SELECT tier FROM users WHERE id = ?')
       .bind(session.userId).first();
 
     if (!user) {
@@ -47,24 +48,20 @@ export async function enforceAILimits({ requireMember = false, request = null } 
       };
     }
 
-    if (user) {
-      const limits = getLimits(user.tier);
-      const today = new Date().toISOString().slice(0, 10);
-      const usageToday = user.ai_usage_date === today ? user.ai_usage_today : 0;
+    const limits = getLimits(user.tier);
 
-      if (usageToday >= limits.aiRequestsPerDay) {
-        return {
-          session,
-          error: new Response(JSON.stringify({
-            error: 'Daily AI limit reached',
-            limit: limits.aiRequestsPerDay,
-            tier: user.tier,
-          }), { status: 429 }),
-        };
-      }
-
-      await db.prepare('UPDATE users SET ai_usage_today = ?, ai_usage_date = ? WHERE id = ?')
-        .bind(usageToday + 1, today, session.userId).run();
+    // Check-and-increment in a single atomic statement. A read-then-write here
+    // lets parallel requests all observe the same count and exceed the cap.
+    const claimed = await claimAIQuota(db, session.userId, limits.aiRequestsPerDay);
+    if (!claimed) {
+      return {
+        session,
+        error: new Response(JSON.stringify({
+          error: 'Daily AI limit reached',
+          limit: limits.aiRequestsPerDay,
+          tier: user.tier,
+        }), { status: 429 }),
+      };
     }
   } catch (error) {
     if (requireMember) {
