@@ -101,6 +101,36 @@ class Frame {
         let fillValue = "transparent";
         if (this.fillStyle === 'solid') {
             fillValue = this.fillColor;
+        } else if (['hachure', 'cross-hatch', 'dots'].includes(this.fillStyle)) {
+            const patternId = `frame-fill-${this.shapeID}`;
+            let pattern = defs.querySelector(`#${patternId}`);
+            if (!pattern) {
+                pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+                pattern.setAttribute('id', patternId);
+                pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+                defs.appendChild(pattern);
+            }
+            pattern.setAttribute('width', 10);
+            pattern.setAttribute('height', 10);
+            while (pattern.firstChild) pattern.removeChild(pattern.firstChild);
+            if (this.fillStyle === 'dots') {
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', 5);
+                dot.setAttribute('cy', 5);
+                dot.setAttribute('r', 1.5);
+                dot.setAttribute('fill', this.fillColor);
+                pattern.appendChild(dot);
+            } else {
+                const hatch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                hatch.setAttribute('d', this.fillStyle === 'cross-hatch'
+                    ? 'M-2 2L2-2M0 10L10 0M8 12L12 8M-2 8L2 12M0 0L10 10M8-2L12 2'
+                    : 'M-2 2L2-2M0 10L10 0M8 12L12 8');
+                hatch.setAttribute('fill', 'none');
+                hatch.setAttribute('stroke', this.fillColor);
+                hatch.setAttribute('stroke-width', 1.5);
+                pattern.appendChild(hatch);
+            }
+            fillValue = `url(#${patternId})`;
         } else if (this.fillStyle === 'grid') {
             // Create or update a grid pattern unique to this frame
             const patternId = `frame-grid-${this.shapeID}`;

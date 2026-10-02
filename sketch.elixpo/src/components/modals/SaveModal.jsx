@@ -8,6 +8,7 @@ import { generateKey, encrypt } from '@/utils/encryption'
 import { WORKER_URL } from '@/lib/env'
 import usePlanEntitlements from '@/hooks/usePlanEntitlements'
 import useAuthStore from '@/store/useAuthStore'
+import useSketchStore from '@/store/useSketchStore'
 import { triggerCloudSync } from '@/hooks/useAutoSave'
 import {
   canvasToLosslessPNG,
@@ -61,6 +62,7 @@ export default function SaveModal() {
   const workspaceName = useUIStore((s) => s.workspaceName)
   const setWorkspaceName = useUIStore((s) => s.setWorkspaceName)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
+  const canvasBackground = useSketchStore((s) => s.canvasBackground)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const login = useAuthStore((s) => s.login)
   const saveStatus = useUIStore((s) => s.saveStatus)
@@ -103,20 +105,24 @@ export default function SaveModal() {
   }, [templateSlug])
 
   // Export state
-  const [bgMode, setBgMode] = useState('dark')
+  const [bgMode, setBgMode] = useState(resolvedTheme)
   const [exportScale, setExportScale] = useState(4)
   const [previewUrl, setPreviewUrl] = useState(null)
 
   const getBgColor = useCallback(() => {
-    return getExportBackground(bgMode)
-  }, [bgMode])
+    return getExportBackground(bgMode, resolvedTheme, canvasBackground)
+  }, [bgMode, canvasBackground, resolvedTheme])
+
+  useEffect(() => {
+    if (saveModalOpen) setBgMode(resolvedTheme)
+  }, [saveModalOpen, resolvedTheme])
 
   // Generate preview when modal opens or bg changes
   useEffect(() => {
     if (!saveModalOpen) return
     let cancelled = false
     const generate = async () => {
-      const clone = createExportSVG(bgMode, resolvedTheme)
+      const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
       if (!clone) return
       const canvas = await renderExportCanvas(clone, 1)
       if (cancelled || !canvas) return
@@ -124,7 +130,7 @@ export default function SaveModal() {
     }
     generate()
     return () => { cancelled = true }
-  }, [saveModalOpen, bgMode, resolvedTheme])
+  }, [saveModalOpen, bgMode, resolvedTheme, canvasBackground])
 
   useEffect(() => {
     if (saveModalOpen && !publishTitle) setPublishTitle(workspaceName || '')
@@ -319,7 +325,7 @@ export default function SaveModal() {
   }
 
   const handleExportPNG = async () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const canvas = await renderExportCanvas(clone, exportScale)
     const blob = await canvasToLosslessPNG(canvas)
@@ -328,7 +334,7 @@ export default function SaveModal() {
   }
 
   const handleExportSVG = () => {
-    const clone = createExportSVG(bgMode, resolvedTheme)
+    const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
     const svgData = new XMLSerializer().serializeToString(clone)
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })

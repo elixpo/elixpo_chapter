@@ -21,6 +21,10 @@ import { clearUndoHistory, pushCanvasResetAction } from './UndoRedo.js';
 
 const FORMAT_VERSION = 1;
 const GZIP_MAGIC = [0x1f, 0x8b];
+const SUPPORTED_SHAPE_TYPES = new Set([
+    'rectangle', 'circle', 'line', 'arrow', 'freehandStroke',
+    'frame', 'text', 'code', 'image', 'icon',
+]);
 
 // Generate a unique session ID for each scene
 let _sessionID = null;
@@ -415,8 +419,9 @@ export function saveScene(workspaceName = 'Untitled') {
 // LOAD: Deserialize .lixsketch JSON and recreate scene
 // ============================================================
 export function loadScene(sceneData) {
-    if (!sceneData || sceneData.format !== 'lixsketch') {
-        console.error('[SceneSerializer] Invalid scene format');
+    const validation = validateScene(sceneData);
+    if (!validation.valid) {
+        console.error('[SceneSerializer] Invalid scene:', validation.error);
         return false;
     }
 
@@ -526,6 +531,20 @@ export function loadScene(sceneData) {
             }
         }
     }
+
+    // Shape-array order is the scene's z-order. Frames are constructed first
+    // so their clip groups exist before children are attached, but that is an
+    // implementation detail and must not change the saved stacking order.
+    const restoredInSceneOrder = sceneData.shapes
+        .map(data => data.shapeID && idMap.get(data.shapeID))
+        .filter(Boolean);
+    const restoredSet = new Set(restoredInSceneOrder);
+    window.shapes.splice(
+        0,
+        window.shapes.length,
+        ...restoredInSceneOrder,
+        ...window.shapes.filter(shape => !restoredSet.has(shape)),
+    );
 
     // ── Fourth pass: frame containment reconciliation (issue #24 bug #10) ──
     //
@@ -677,6 +696,15 @@ export function validateScene(data) {
     if (data.format !== 'lixsketch') return { valid: false, error: 'Not a LixSketch scene file (missing format field)' };
     if (!data.version || data.version > FORMAT_VERSION) return { valid: false, error: `Unsupported version: ${data.version}` };
     if (!Array.isArray(data.shapes)) return { valid: false, error: 'Invalid scene: missing shapes array' };
+    for (let index = 0; index < data.shapes.length; index += 1) {
+        const shape = data.shapes[index];
+        if (!shape || typeof shape !== 'object' || Array.isArray(shape)) {
+            return { valid: false, error: `Invalid shape at index ${index}` };
+        }
+        if (!SUPPORTED_SHAPE_TYPES.has(shape.type)) {
+            return { valid: false, error: `Unsupported shape type at index ${index}: ${String(shape.type)}` };
+        }
+    }
     return {
         valid: true,
         name: data.name || 'Untitled',

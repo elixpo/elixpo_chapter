@@ -113,18 +113,10 @@ const handleMouseDownRect = (e) => {
                 } else if (anchorInfo.type === 'rotate') {
                     isRotatingShapeSquare = true;
 
-                    const CTM = currentShape.group.getCTM();
-                    if (CTM) {
-                        const svgPoint = svg.createSVGPoint();
-                        svgPoint.x = currentShape.width / 2;
-                        svgPoint.y = currentShape.height / 2;
-                        const centerSVG = svgPoint.matrixTransform(CTM);
-                        startRotationMouseAngleSquare = Math.atan2(mouseY - centerSVG.y, mouseX - centerSVG.x) * 180 / Math.PI;
-                        startShapeRotationSquare = currentShape.rotation;
-                    } else {
-                         isRotatingShapeSquare = false; 
-                         console.warn("Could not get CTM for rotation.");
-                    }
+                    const centerX = currentShape.x + currentShape.width / 2;
+                    const centerY = currentShape.y + currentShape.height / 2;
+                    startRotationMouseAngleSquare = Math.atan2(mouseY - centerY, mouseX - centerX) * 180 / Math.PI;
+                    startShapeRotationSquare = currentShape.rotation;
                 }
                 clickedOnShape = true;
             } else if (currentShape.contains(mouseX, mouseY)) {
@@ -278,13 +270,9 @@ const handleMouseMoveRect = (e) => {
         currentShape.draw();
         currentShape._skipAnchors = false;
     } else if (isRotatingShapeSquare && currentShape && currentShape.isSelected) {
-        const CTM = currentShape.group.getCTM();
-        if (CTM) {
-            const svgPoint = svg.createSVGPoint();
-            svgPoint.x = currentShape.width / 2;
-            svgPoint.y = currentShape.height / 2;
-            const centerSVG = svgPoint.matrixTransform(CTM);
-            const currentRotationMouseAngle = Math.atan2(mouseY - centerSVG.y, mouseX - centerSVG.x) * 180 / Math.PI;
+        const centerX = currentShape.x + currentShape.width / 2;
+        const centerY = currentShape.y + currentShape.height / 2;
+        const currentRotationMouseAngle = Math.atan2(mouseY - centerY, mouseX - centerX) * 180 / Math.PI;
             const angleDiff = currentRotationMouseAngle - startRotationMouseAngleSquare;
             let newRotation = startShapeRotationSquare + angleDiff;
              const snapAngle = 15;
@@ -296,10 +284,6 @@ const handleMouseMoveRect = (e) => {
             currentShape.draw();
             currentShape._skipAnchors = false;
             svg.style.cursor = 'grabbing'; 
-        } else {
-             isRotatingShapeSquare = false;
-             svg.style.cursor = 'default';
-        }
     } else if (isSelectionToolActive && !isDrawingSquare && currentShape && currentShape.isSelected) {
           const anchorInfo = currentShape.isNearAnchor(mouseX, mouseY);
            if (anchorInfo) {

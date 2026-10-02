@@ -1,7 +1,9 @@
 import { create } from 'zustand'
+import { DEFAULT_CANVAS_BACKGROUNDS, canvasBackgroundStorageKey, readCanvasBackground } from '../utils/canvasBackgrounds'
 
 const GRID_STORAGE_KEY = 'lixsketch-grid-enabled'
 const RULER_STORAGE_KEY = 'lixsketch-rulers-enabled'
+const RULER_UNIT_STORAGE_KEY = 'lixsketch-ruler-unit'
 
 // Tool enum replaces 15 boolean flags
 export const TOOLS = {
@@ -193,12 +195,21 @@ const useSketchStore = create((set, get) => ({
   setPanStart: (p) => set({ panStart: p }),
 
   // --- Canvas background ---
-  canvasBackground: 'var(--lixsketch-bg, #15111f)',
-  setCanvasBackground: (color) => {
-    set({ canvasBackground: color })
+  canvasBackground: DEFAULT_CANVAS_BACKGROUNDS.dark,
+  canvasBackgrounds: { ...DEFAULT_CANVAS_BACKGROUNDS },
+  setCanvasBackground: (color, theme = 'dark') => {
+    const resolved = theme === 'light' ? 'light' : 'dark'
+    set((state) => ({ canvasBackground: color, canvasBackgrounds: { ...state.canvasBackgrounds, [resolved]: color } }))
     if (typeof window !== 'undefined') {
+      try { localStorage.setItem(canvasBackgroundStorageKey(resolved), color) } catch {}
       requestAnimationFrame(() => window.__adaptCanvasContrast?.(color))
     }
+  },
+  restoreCanvasBackground: (theme) => {
+    const resolved = theme === 'light' ? 'light' : 'dark'
+    const color = readCanvasBackground(resolved, typeof window === 'undefined' ? null : localStorage)
+    set((state) => ({ canvasBackground: color, canvasBackgrounds: { ...state.canvasBackgrounds, [resolved]: color } }))
+    if (typeof window !== 'undefined') requestAnimationFrame(() => window.__adaptCanvasContrast?.(color))
   },
 
   // --- Grid ---
@@ -222,6 +233,7 @@ const useSketchStore = create((set, get) => ({
 
   // --- Rulers ---
   rulersEnabled: false,
+  rulerUnit: 'px',
   toggleRulers: () => set((s) => {
     const rulersEnabled = !s.rulersEnabled
     if (typeof window !== 'undefined') {
@@ -229,6 +241,13 @@ const useSketchStore = create((set, get) => ({
     }
     return { rulersEnabled }
   }),
+  setRulerUnit: (unit) => {
+    const rulerUnit = ['px', 'cm', 'in'].includes(unit) ? unit : 'px'
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(RULER_UNIT_STORAGE_KEY, rulerUnit) } catch {}
+    }
+    set({ rulerUnit })
+  },
   hydrateRulers: () => {
     if (typeof window === 'undefined') return
     try {
@@ -236,6 +255,8 @@ const useSketchStore = create((set, get) => ({
       if (saved === 'true' || saved === 'false') {
         set({ rulersEnabled: saved === 'true' })
       }
+      const savedUnit = localStorage.getItem(RULER_UNIT_STORAGE_KEY)
+      if (['px', 'cm', 'in'].includes(savedUnit)) set({ rulerUnit: savedUnit })
     } catch {}
   },
 

@@ -1,7 +1,4 @@
-const EXPORT_BACKGROUNDS = {
-  dark: '#15111f',
-  light: '#fbf9fd',
-}
+import { exportBackground } from '@/utils/canvasBackgrounds'
 
 const CLEANUP_SELECTOR = [
   '[data-selection]',
@@ -45,8 +42,8 @@ function adaptThemeDefaults(svg, currentTheme, targetTheme) {
   })
 }
 
-export function getExportBackground(bgMode) {
-  return EXPORT_BACKGROUNDS[bgMode] || null
+export function getExportBackground(bgMode, currentTheme, canvasBackground) {
+  return exportBackground(bgMode, currentTheme, canvasBackground)
 }
 
 /**
@@ -54,7 +51,7 @@ export function getExportBackground(bgMode) {
  * Dark/light exports adapt theme-owned black/white strokes. Transparent
  * exports deliberately retain the canvas' current shape colors.
  */
-export function createExportSVG(bgMode, currentTheme) {
+export function createExportSVG(bgMode, currentTheme, canvasBackground) {
   const source = window.svg
   if (!source) return null
 
@@ -72,7 +69,7 @@ export function createExportSVG(bgMode, currentTheme) {
   const targetTheme = bgMode === 'dark' || bgMode === 'light' ? bgMode : null
   adaptThemeDefaults(clone, currentTheme, targetTheme)
 
-  const background = getExportBackground(bgMode)
+  const background = getExportBackground(bgMode, currentTheme, canvasBackground)
   if (background) {
     const viewBox = source.viewBox.baseVal
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

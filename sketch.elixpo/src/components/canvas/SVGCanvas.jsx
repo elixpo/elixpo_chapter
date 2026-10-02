@@ -15,6 +15,7 @@ export default function SVGCanvas() {
   const gridEnabled = useSketchStore((s) => s.gridEnabled)
   const hydrateGrid = useSketchStore((s) => s.hydrateGrid)
   const rulersEnabled = useSketchStore((s) => s.rulersEnabled)
+  const rulerUnit = useSketchStore((s) => s.rulerUnit)
   const hydrateRulers = useSketchStore((s) => s.hydrateRulers)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
   // Issue #38 follow-up: grid strokes were hardcoded to white-on-dark
@@ -169,7 +170,7 @@ export default function SVGCanvas() {
         />
       )}
     </svg>
-    <CanvasRulers enabled={rulersEnabled} svgRef={svgRef} />
+    <CanvasRulers enabled={rulersEnabled} svgRef={svgRef} unit={rulerUnit} />
     </>
   )
 }
