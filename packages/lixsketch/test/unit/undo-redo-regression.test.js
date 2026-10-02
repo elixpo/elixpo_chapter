@@ -38,6 +38,8 @@ globalThis.currentShape = null
 
 const {
   clearUndoHistory,
+  beginUndoBatch,
+  endUndoBatch,
   pushCreateAction,
   pushDeleteAction,
   pushFrameAttachmentAction,
@@ -178,16 +180,18 @@ describe('UndoRedo regressions for recent tools', () => {
       [first, { x: 10, y: 15, width: 40, height: 30, rotation: 0 }, { x: 35, y: 55, width: 40, height: 30, rotation: 0 }],
       [second, { x: 80, y: 45, width: 40, height: 30, rotation: 0 }, { x: 105, y: 85, width: 40, height: 30, rotation: 0 }],
     ]
+    const batch = beginUndoBatch()
     for (const [shape, oldState, newState] of moves) {
       Object.assign(shape, newState)
       pushTransformAction(shape, oldState, newState)
     }
+    endUndoBatch(batch, 'lasso-move')
     const after = sceneState()
 
-    undo(); undo()
+    undo()
     expect(sceneState()).toEqual(before)
 
-    redo(); redo()
+    redo()
     expect(sceneState()).toEqual(after)
   })
 
@@ -196,18 +200,86 @@ describe('UndoRedo regressions for recent tools', () => {
     const second = rectangle('second', 80, 45)
     shapes.push(first, second)
     const before = sceneState()
+    const batch = beginUndoBatch()
     for (const target of [second, first]) {
       const index = shapes.indexOf(target)
       shapes.splice(index, 1)
       target.group.remove()
       pushDeleteAction(target, { shapeIndex: index })
     }
+    endUndoBatch(batch, 'lasso-delete')
     expect(shapes).toEqual([])
 
-    undo(); undo()
+    undo()
     expect(sceneState()).toEqual(before)
 
-    redo(); redo()
+    redo()
     expect(shapes).toEqual([])
+  })
+
+  it('restores frame membership and geometry for one batched lasso move', () => {
+    const child = rectangle('child', 20, 30)
+    const sibling = rectangle('sibling', 140, 60)
+    const targetFrame = frame('target-frame')
+    shapes.push(child, sibling, targetFrame)
+    const oldState = { x: 20, y: 30, width: 40, height: 30, rotation: 0, parentFrame: null }
+    const newState = { x: 90, y: 110, width: 40, height: 30, rotation: 0, parentFrame: targetFrame }
+    const siblingOldState = { x: 140, y: 60, width: 40, height: 30, rotation: 0, parentFrame: null }
+    const siblingNewState = { x: 170, y: 100, width: 40, height: 30, rotation: 0, parentFrame: null }
+
+    const batch = beginUndoBatch()
+    Object.assign(child, newState)
+    targetFrame.addShapeToFrame(child)
+    pushTransformAction(child, oldState, newState)
+    Object.assign(sibling, siblingNewState)
+    pushTransformAction(sibling, siblingOldState, siblingNewState)
+    const groupedAction = endUndoBatch(batch, 'lasso-move')
+    expect(groupedAction.actions.map(action => action.type)).toEqual(['transform', 'transform'])
+    expect(groupedAction.actions[0].oldPos).toMatchObject({ x: 20, y: 30 })
+
+    undo()
+    expect(child.x).toBe(20)
+    expect(child.y).toBe(30)
+    expect(child.parentFrame).toBeNull()
+    expect(child.group.parentNode).toBe(svgNode)
+    expect(sibling.x).toBe(140)
+    expect(sibling.y).toBe(60)
+
+    redo()
+    expect(child.x).toBe(90)
+    expect(child.y).toBe(110)
+    expect(child.parentFrame).toBe(targetFrame)
+    expect(child.group.parentNode).toBe(targetFrame.clipGroup)
+    expect(sibling.x).toBe(170)
+    expect(sibling.y).toBe(100)
+  })
+
+  it('restores a batched deleted child to its frame index', () => {
+    const first = rectangle('first', 10, 15)
+    const second = rectangle('second', 80, 45)
+    const targetFrame = frame('target-frame')
+    shapes.push(first, second, targetFrame)
+    targetFrame.addShapeToFrame(first)
+    targetFrame.addShapeToFrame(second)
+
+    const batch = beginUndoBatch()
+    for (const target of [second, first]) {
+      const shapeIndex = shapes.indexOf(target)
+      const frameIndex = targetFrame.containedShapes.indexOf(target)
+      targetFrame.removeShapeFromFrame(target)
+      shapes.splice(shapeIndex, 1)
+      target.group.remove()
+      pushDeleteAction(target, { shapeIndex, parentFrame: targetFrame, frameIndex })
+    }
+    endUndoBatch(batch, 'lasso-delete')
+
+    undo()
+    expect(targetFrame.containedShapes).toEqual([first, second])
+    expect(first.parentFrame).toBe(targetFrame)
+    expect(second.parentFrame).toBe(targetFrame)
+
+    redo()
+    expect(targetFrame.containedShapes).toEqual([])
+    expect(shapes).toEqual([targetFrame])
   })
 })

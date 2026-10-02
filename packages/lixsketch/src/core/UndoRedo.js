@@ -5,6 +5,22 @@
 const undoStack = [];
 const redoStack = [];
 
+export function beginUndoBatch() {
+    return { startIndex: undoStack.length };
+}
+
+export function endUndoBatch(batch, label = 'batch') {
+    if (!batch || !Number.isInteger(batch.startIndex)) return;
+    const startIndex = Math.min(Math.max(batch.startIndex, 0), undoStack.length);
+    let actions = undoStack.splice(startIndex);
+    if (actions.length === 0) return;
+    const groupedAction = actions.length === 1 ? actions[0] : { type: 'batch', label, actions };
+    undoStack.push(groupedAction);
+    redoStack.length = 0;
+    notifyCollaboration();
+    return groupedAction;
+}
+
 // Import references to text-related variables and functions
 let selectedElement = null;
 let updateSelectionFeedback = null;
@@ -59,6 +75,8 @@ export function pushDeleteAction(shape, meta = null) {
     const action = { type: 'delete', shape };
     if (meta && meta.childSnapshot) action.childSnapshot = meta.childSnapshot;
     if (Number.isInteger(meta?.shapeIndex)) action.shapeIndex = meta.shapeIndex;
+    if (meta?.parentFrame) action.parentFrame = meta.parentFrame;
+    if (Number.isInteger(meta?.frameIndex)) action.frameIndex = meta.frameIndex;
     undoStack.push(action);
 
     // Clear redo stack when new action is performed
@@ -488,10 +506,47 @@ function refreshSelectionAfterAction() {
     try { ms.updateControls(); } catch (err) { console.warn('[UndoRedo] selection refresh failed:', err); }
 }
 
+function restoreDeletedShapeFrame(action) {
+    const frame = action.parentFrame;
+    const shape = action.shape;
+    if (!frame || !shape || typeof frame.addShapeToFrame !== 'function') return;
+    frame.addShapeToFrame(shape);
+    if (Number.isInteger(action.frameIndex) && Array.isArray(frame.containedShapes)) {
+        const currentIndex = frame.containedShapes.indexOf(shape);
+        if (currentIndex >= 0) frame.containedShapes.splice(currentIndex, 1);
+        const targetIndex = Math.min(Math.max(action.frameIndex, 0), frame.containedShapes.length);
+        frame.containedShapes.splice(targetIndex, 0, shape);
+        const element = shape.group || shape.element;
+        const nextShape = frame.containedShapes[targetIndex + 1];
+        const nextElement = nextShape?.group || nextShape?.element;
+        if (element && frame.clipGroup && nextElement?.parentNode === frame.clipGroup) {
+            frame.clipGroup.insertBefore(element, nextElement);
+        }
+    }
+}
+
+function detachDeletedShapeFrame(action) {
+    const frame = action.parentFrame;
+    const shape = action.shape;
+    if (frame && shape && typeof frame.removeShapeFromFrame === 'function' && shape.parentFrame === frame) {
+        frame.removeShapeFromFrame(shape);
+    }
+}
+
 export function undo() {
     if (undoStack.length === 0) return;
     const action = undoStack.pop();
     try {
+    if (action.type === 'batch') {
+        for (let index = action.actions.length - 1; index >= 0; index -= 1) {
+            undoStack.push(action.actions[index]);
+            undo();
+            redoStack.pop();
+        }
+        redoStack.push(action);
+        return;
+    }
+
     if (action.type === 'canvasReset') {
         action.restore(action.snapshot);
         redoStack.push(action);
@@ -730,6 +785,7 @@ export function undo() {
                 }
             }
         }
+        restoreDeletedShapeFrame(action);
         redoStack.push(action);
         return;
     }
@@ -1020,6 +1076,16 @@ export function redo() {
     if (redoStack.length === 0) return;
     const action = redoStack.pop();
     try {
+    if (action.type === 'batch') {
+        for (const childAction of action.actions) {
+            redoStack.push(childAction);
+            redo();
+            undoStack.pop();
+        }
+        undoStack.push(action);
+        return;
+    }
+
     if (action.type === 'canvasReset') {
         action.reset();
         undoStack.push(action);
@@ -1189,6 +1255,7 @@ export function redo() {
 }
     
     if (action.type === 'delete') {
+        detachDeletedShapeFrame(action);
         if (action.shape.type === 'text') {
             // Handle text deletion redo
             if ((action.shape.element || action.shape).parentNode) {
