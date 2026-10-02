@@ -69,6 +69,8 @@ class FreehandStroke {
         this.selectionOutline = null;
         this.boundingBox = { x: 0, y: 0, width: 0, height: 0 };
         this.shapeName = "freehandStroke";
+        this.shapeID = `freehand-${String(Date.now()).slice(0, 8)}-${Math.floor(Math.random() * 10000)}`;
+        this.group.setAttribute('id', this.shapeID);
         this._moveOffsetX = 0;
         this._moveOffsetY = 0;
 
@@ -304,7 +306,16 @@ class FreehandStroke {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const pathData = this.getPathData();
         path.setAttribute('d', pathData);
-        path.setAttribute('fill', this.options.stroke);
+        const closedFillStyle = this.options.fillStyle || 'solid';
+        const closedFill = closedFillStyle === 'none'
+            ? 'transparent'
+            : (this.options.fill || this.options.stroke);
+        const patternedFill = this.options.closedFill
+            && !['none', 'solid'].includes(closedFillStyle)
+            && typeof rough !== 'undefined';
+        path.setAttribute('fill', this.options.closedFill
+            ? (patternedFill ? 'transparent' : closedFill)
+            : this.options.stroke);
         path.setAttribute('fill-opacity', this.options.strokeOpacity);
         path.setAttribute('stroke', this.options.closedFill ? (this.options.outlineStroke || 'none') : 'none');
         if (this.options.closedFill) {
@@ -328,6 +339,18 @@ class FreehandStroke {
             overlay.setAttribute('stroke-dasharray', dashArray);
             overlay.setAttribute('stroke-opacity', this.options.strokeOpacity);
             this.group.appendChild(overlay);
+        }
+
+        if (patternedFill) {
+            const fillGroup = rough.svg(svg).path(pathData, {
+                stroke: 'none',
+                fill: closedFill,
+                fillStyle: closedFillStyle,
+                fillWeight: Math.max(1, (this.options.strokeWidth || 2) / 2),
+                roughness: 0.8,
+            });
+            fillGroup.setAttribute('data-freehand-fill-pattern', closedFillStyle);
+            this.group.appendChild(fillGroup);
         }
 
         this.element = path;

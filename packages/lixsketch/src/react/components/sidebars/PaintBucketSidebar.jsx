@@ -43,7 +43,7 @@ export default function PaintBucketSidebar() {
           {FILLS.map((fill) => <button key={fill.value} type="button" onClick={() => setFillStyle(fill.value)} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition ${fillStyle === fill.value ? 'bg-accent text-white' : 'text-text-secondary hover:bg-surface-hover'}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{fill.label}</button>)}
         </div>
       </ToolbarButton>
-      <div className="max-w-[185px] px-2 text-[10px] leading-4 text-text-dim">Click a rectangle or circle to apply the selected fill.</div>
+      <div className="max-w-[185px] px-2 text-[10px] leading-4 text-text-dim">Fill rectangles, circles, frames, and closed freehand shapes. Lines and arrows are left unchanged.</div>
     </ShapeSidebar>
   )
 }

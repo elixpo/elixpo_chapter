@@ -466,6 +466,15 @@ export function pushOptionsChangeAction(shape, oldOptions, newOptions = null) {
     notifyCollaboration();
 }
 
+function applyOptionsSnapshot(shape, options) {
+    shape.options = { ...options };
+    if (shape.shapeName === 'frame') {
+        shape.fillColor = options.fillColor;
+        shape.fillStyle = options.fillStyle;
+    }
+    shape.draw();
+}
+
 // Issue #34 bug #4: refresh the multi-selection outline + handles so it
 // follows the reverted geometry. Without this the selection rect stays
 // pinned to the pre-undo coordinates and the user sees a ghost rect
@@ -990,8 +999,7 @@ export function undo() {
             action.shape.draw();
         } else {
             // Handle other shape options change undo
-            action.shape.options = action.oldOptions;
-            action.shape.draw();
+            applyOptionsSnapshot(action.shape, action.oldOptions);
         }
         redoStack.push(action);
         return;
@@ -1491,8 +1499,7 @@ export function redo() {
             action.shape.arrowCurveAmount = action.newOptions.arrowCurveAmount;
             action.shape.draw();
         } else {
-            action.shape.options = { ...action.newOptions };
-            action.shape.draw();
+            applyOptionsSnapshot(action.shape, action.newOptions);
         }
         undoStack.push(action);
         return;

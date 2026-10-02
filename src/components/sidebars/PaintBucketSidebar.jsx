@@ -27,9 +27,14 @@ export default function PaintBucketSidebar() {
 
   useEffect(() => sync(fillColor, fillStyle), [fillColor, fillStyle, sync])
   useEffect(() => {
-    const handleMiss = () => showToast('Paint bucket works on rectangles and circles', { tone: 'warn' })
+    const handleMiss = () => showToast('No fillable shape at this point', { tone: 'warn' })
+    const handleNotFillable = () => showToast('This shape cannot be filled', { tone: 'warn' })
     window.addEventListener('lixsketch:bucket-miss', handleMiss)
-    return () => window.removeEventListener('lixsketch:bucket-miss', handleMiss)
+    window.addEventListener('lixsketch:bucket-not-fillable', handleNotFillable)
+    return () => {
+      window.removeEventListener('lixsketch:bucket-miss', handleMiss)
+      window.removeEventListener('lixsketch:bucket-not-fillable', handleNotFillable)
+    }
   }, [])
 
   return (
@@ -77,7 +82,7 @@ export default function PaintBucketSidebar() {
       </ToolbarButton>
 
       <div className="max-w-[185px] px-2 text-[10px] leading-4 text-text-dim">
-        Click a rectangle or circle to apply the selected fill.
+        Fill rectangles, circles, frames, and closed freehand shapes. Lines and arrows are left unchanged.
       </div>
     </ShapeSidebar>
   )

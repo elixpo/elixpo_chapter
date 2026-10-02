@@ -263,6 +263,33 @@ describe('SceneSerializer', () => {
     expect(window.currentZoom).toBe(1.25)
   })
 
+  it('restores paint-bucket options on a closed freehand shape', () => {
+    const freehand = new BasicShape('freehandStroke', {
+      points: [[0, 0, 0.5], [80, 0, 0.5], [40, 60, 0.5], [0, 0, 0.5]],
+      options: {
+        stroke: '#302842',
+        outlineStroke: '#302842',
+        fill: '#a98deb',
+        fillStyle: 'cross-hatch',
+        closedFill: true,
+        strokeWidth: 2,
+      },
+    })
+    freehand.shapeID = 'closed-freehand-1'
+    window.shapes.push(freehand)
+
+    expect(serializer.loadScene(serializer.saveScene('Filled freehand'))).toBe(true)
+    expect(serializer.saveScene('Filled freehand').shapes[0]).toMatchObject({
+      type: 'freehandStroke',
+      options: {
+        outlineStroke: '#302842',
+        fill: '#a98deb',
+        fillStyle: 'cross-hatch',
+        closedFill: true,
+      },
+    })
+  })
+
   it('rejects invalid and corrupted scene data without changing the canvas', () => {
     const existing = new BasicShape('rectangle', { x: 1, y: 2, width: 3, height: 4 })
     window.shapes.push(existing)
