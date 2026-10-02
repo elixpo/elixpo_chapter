@@ -110,6 +110,8 @@ function invertShapeColors(prevResolved, nextResolved) {
       shape.draw()
     }
   }
+}
+
 function readStoredTheme() {
   if (typeof window === 'undefined') return 'dark'
   try {
