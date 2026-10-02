@@ -559,6 +559,7 @@ export default function AppMenu() {
                   <option value="en">English</option>
                   <option value="bg">Български</option>
                   <option value="de">Deutsch</option>
+                  <option value="hi">हिन्दी</option>
                 </select>
               </div>
 

@@ -48,6 +48,15 @@ npm run test:unit --workspace @elixpo/lixsketch
 
 Unit tests live in `packages/lixsketch/test/unit/` and use the `*.test.js` suffix. Keep DOM-independent logic in the default Node environment and stub only the browser globals a module directly requires.
 
+## Adding a UI or docs language
+
+The current interface and legacy docs viewer support English (`en`), Bulgarian (`bg`), German (`de`), and Hindi (`hi`). Add only one language per pull request.
+
+1. Copy `src/locales/en.json` to `src/locales/<code>.json` and translate every value without changing its key structure.
+2. Copy the completed file to `public/locales/<code>.json`. The static docs viewer loads this copy through `docs/JS/docsI18n.js`.
+3. Import the locale in `src/lib/i18n.js` and add the language to both Preferences selectors in `src/components/menu/AppMenu.jsx` and `packages/lixsketch/src/react/components/AppMenu.jsx`.
+4. Compare the flattened keys with English and run `npm test`. A translation must not rely on missing-key fallback.
+
 ## Commit & PR conventions
 
 - Write clear, present-tense commit messages (e.g. `fix: handle empty roster`).
