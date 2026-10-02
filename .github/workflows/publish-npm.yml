@@ -13,9 +13,8 @@ on:
         required: false
         default: 'patch'
 
-# elixpoo CI agent needs:
-#  - contents: write   → push the version-bump commit back to main
-#  - packages: write   → publish to GitHub Packages
+# The workflow tags the triggering commit but never pushes commits to protected
+# branches. The npm registry remains the source of truth for released versions.
 permissions:
   contents: write
   packages: write
@@ -24,10 +23,6 @@ jobs:
   publish:
     name: Publish to NPM + GitHub Packages
     runs-on: ubuntu-latest
-    # Skip when the triggering commit is the bot's own bump (loop guard).
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, 'chore(release): bump @elixpo/lixsketch')
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,11 +39,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Configure git as elixpoo bot
-        run: |
-          git config --global user.name "elixpoo"
-          git config --global user.email "269200728+elixpoo@users.noreply.github.com"
 
       - name: Compute next version
         id: version
@@ -67,10 +57,8 @@ jobs:
           echo "Remote version: $REMOTE"
           echo "Bump kind: $BUMP"
 
-          # Decide whether we need to bump. Three cases:
-          #   1. Versions match exactly                  → bump
-          #   2. LOCAL already exists in the npm registry → bump (publish would 409)
-          #   3. LOCAL is strictly ahead of REMOTE        → respect manual bump, use LOCAL
+          # If the repository version is already published, advance it before
+          # publishing. A manually bumped, unpublished version is used as-is.
           NEEDS_BUMP=false
           if [ "$LOCAL" = "$REMOTE" ]; then
             NEEDS_BUMP=true
@@ -92,6 +80,17 @@ jobs:
             npm version "$BUMP" --no-git-tag-version > /dev/null
             NEW=$(node -p "require('./package.json').version")
             echo "Bumped to $NEW"
+            echo "version=$NEW" >> "$GITHUB_OUTPUT"
+            echo "auto_bumped=true" >> "$GITHUB_OUTPUT"
+          elif npm view "@elixpo/lixsketch@${LOCAL}" version >/dev/null 2>&1; then
+            # Release-only version changes are not committed because main
+            # requires PRs. Continue from the registry when it is ahead.
+            if [ "$REMOTE" != "unknown" ] && [ "$LOCAL" != "$REMOTE" ]; then
+              npm version "$REMOTE" --no-git-tag-version --allow-same-version > /dev/null
+            fi
+            npm version "$BUMP" --no-git-tag-version > /dev/null
+            NEW=$(node -p "require('./package.json').version")
+            echo "Local version already published; bumped from registry state to $NEW"
             echo "version=$NEW" >> "$GITHUB_OUTPUT"
             echo "auto_bumped=true" >> "$GITHUB_OUTPUT"
           else
@@ -149,23 +148,9 @@ jobs:
             fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
-      # ── Commit the auto-bumped version back to main ─────────────────
-      - name: Commit and push version bump
-        if: steps.version.outputs.auto_bumped == 'true'
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          git add packages/lixsketch/package.json packages/lixsketch/package-lock.json 2>/dev/null || \
-            git add packages/lixsketch/package.json
-          git commit -m "chore(release): bump @elixpo/lixsketch to v${VERSION}
-
-          Auto-bumped by the publish workflow after a change under
-          packages/lixsketch/** was merged without a manual version bump.
-
-          [skip ci]"
-          git push origin HEAD:main
-
+      # Tag the triggering commit without creating a release-only commit on
+      # protected main. Later runs continue from the npm registry version.
       - name: Tag the release
-        if: steps.version.outputs.auto_bumped == 'true'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git tag -a "lixsketch-v${VERSION}" -m "lixsketch v${VERSION}"
