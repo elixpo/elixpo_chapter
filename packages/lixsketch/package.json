@@ -82,10 +82,13 @@
     }
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.0",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "build": "node build.mjs",
+    "test": "npm run test:unit && npm run test:mcp",
+    "test:unit": "vitest run",
     "test:mcp": "node --test test/mcp-*.test.js",
     "prepublishOnly": "npm run build"
   }

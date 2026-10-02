@@ -30,6 +30,24 @@ every Elixpo repository.
    and why. Link any related issue.
 5. A maintainer will review. Address feedback, and once approved we merge.
 
+## Tests
+
+Use Node.js 20 or newer and install dependencies from the repository root with `npm install`.
+
+Run the complete LixSketch package suite from the repository root:
+
+```sh
+npm test
+```
+
+This runs the Vitest unit suite and the existing Node.js MCP tests. To run only unit tests:
+
+```sh
+npm run test:unit --workspace @elixpo/lixsketch
+```
+
+Unit tests live in `packages/lixsketch/test/unit/` and use the `*.test.js` suffix. Keep DOM-independent logic in the default Node environment and stub only the browser globals a module directly requires.
+
 ## Commit & PR conventions
 
 - Write clear, present-tense commit messages (e.g. `fix: handle empty roster`).

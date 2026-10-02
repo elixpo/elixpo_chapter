@@ -6,7 +6,7 @@ project:
 
 ci:
   lint_cmd: ""
-  test_cmd: ""
+  test_cmd: "npm test"
   build_cmd: "npx --no-install @cloudflare/next-on-pages"
 
 maintainers:
