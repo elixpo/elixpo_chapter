@@ -31,7 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN || secrets.GITHUB_TOKEN }}
+          # Checkout only needs repository contents. Using the job token keeps
+          # this step independent from the optional bot PAT, which may expire
+          # or be unavailable to runs from protected environments.
+          token: ${{ github.token }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4

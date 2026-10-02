@@ -1,6 +1,6 @@
 {
   "name": "@elixpo/lixsketch",
-  "version": "5.6.5",
+  "version": "5.6.6",
   "description": "Open-source SVG whiteboard engine + React canvas component with hand-drawn aesthetics — the core of LixSketch",
   "type": "module",
   "main": "src/index.js",
