@@ -76,7 +76,83 @@ function rectangleAngle(sample) {
     return Math.atan2(y, x) / 4;
 }
 
+function pointToSegmentDistance(point, start, end) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    if (lengthSquared === 0) return distance(point, start);
+    const amount = Math.max(0, Math.min(1,
+        ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+    return Math.hypot(point.x - (start.x + dx * amount), point.y - (start.y + dy * amount));
+}
+
+function polygonError(sample, vertices, scale) {
+    let total = 0;
+    for (const point of sample) {
+        let nearest = Infinity;
+        for (let index = 0; index < vertices.length; index += 1) {
+            nearest = Math.min(nearest, pointToSegmentDistance(
+                point,
+                vertices[index],
+                vertices[(index + 1) % vertices.length],
+            ));
+        }
+        total += nearest;
+    }
+    return total / sample.length / Math.max(scale, MIN_SHAPE_SIZE);
+}
+
+function polygonVertices(bounds, kind) {
+    const cos = Math.cos(bounds.angle);
+    const sin = Math.sin(bounds.angle);
+    const toWorld = (u, v) => ({
+        x: u * cos - v * sin,
+        y: u * sin + v * cos,
+    });
+    const centerU = (bounds.minU + bounds.maxU) / 2;
+    const centerV = (bounds.minV + bounds.maxV) / 2;
+    const local = kind === 'triangle'
+        ? [[centerU, bounds.minV], [bounds.maxU, bounds.maxV], [bounds.minU, bounds.maxV]]
+        : kind === 'diamond'
+            ? [[centerU, bounds.minV], [bounds.maxU, centerV], [centerU, bounds.maxV], [bounds.minU, centerV]]
+            : [[bounds.minU, bounds.minV], [bounds.maxU, bounds.minV], [bounds.maxU, bounds.maxV], [bounds.minU, bounds.maxV]];
+    return local.map(([u, v]) => toWorld(u, v));
+}
+
+function trianglePrediction(sample, pathLength) {
+    const baseAngle = principalAngle(sample);
+    let best = null;
+    // Principal axes do not encode direction. Testing four quarter turns keeps
+    // the fit rotation-independent while retaining a constant number of O(N)
+    // passes over the capped gesture sample.
+    for (let turn = 0; turn < 4; turn += 1) {
+        const bounds = orientedBounds(sample, baseAngle + turn * Math.PI / 2);
+        const vertices = polygonVertices(bounds, 'triangle');
+        const error = polygonError(sample, vertices, Math.hypot(bounds.width, bounds.height));
+        if (!best || error < best.error) best = { bounds, vertices, error };
+    }
+    if (!best || best.error > 0.045) return null;
+    return {
+        type: 'triangle',
+        ...best.bounds,
+        vertices: best.vertices,
+        pathLength,
+    };
+}
+
+function diamondPrediction(sample, pathLength) {
+    const bounds = orientedBounds(sample, principalAngle(sample));
+    const vertices = polygonVertices(bounds, 'diamond');
+    const error = polygonError(sample, vertices, Math.hypot(bounds.width, bounds.height));
+    if (error > 0.035) return null;
+    return { type: 'diamond', ...bounds, vertices, pathLength };
+}
+
 function closedShapePrediction(sample, pathLength) {
+    const triangle = trianglePrediction(sample, pathLength);
+    if (triangle) return triangle;
+    const fittedDiamond = diamondPrediction(sample, pathLength);
+    if (fittedDiamond) return fittedDiamond;
     const rectBounds = orientedBounds(sample, rectangleAngle(sample));
     const ellipseBounds = orientedBounds(sample, principalAngle(sample));
     let rectangleError = 0;
@@ -111,9 +187,12 @@ function closedShapePrediction(sample, pathLength) {
         return { type: 'freehand', points: sample.map((point) => ({ ...point })), pathLength };
     }
     const bounds = rectangle ? rectBounds : ellipseBounds;
+    const normalizedAngle = Math.abs(Math.atan2(Math.sin(rectBounds.angle * 2), Math.cos(rectBounds.angle * 2)) / 2);
+    const diamond = rectangle && normalizedAngle >= Math.PI / 7;
     return {
-        type: rectangle ? 'rectangle' : 'circle',
+        type: diamond ? 'diamond' : (rectangle ? 'rectangle' : 'circle'),
         ...bounds,
+        ...(diamond ? { vertices: polygonVertices(rectBounds, 'rectangle') } : {}),
         pathLength,
     };
 }
@@ -157,7 +236,7 @@ export function predictDrawnShape(input) {
 
     const diagonal = Math.max(MIN_SHAPE_SIZE, Math.hypot(maxX - minX, maxY - minY));
     const end = sample[sample.length - 1];
-    const closed = sample.length >= 8 && distance(start, end) <= diagonal * 0.28 && pathLength >= diagonal * 2.05;
+    const closed = sample.length >= 8 && distance(start, end) <= diagonal * 0.28 && pathLength >= diagonal * 1.85;
     if (closed) return closedShapePrediction(sample, pathLength);
 
     const tip = sample[farthestIndex];

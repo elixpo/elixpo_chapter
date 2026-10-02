@@ -58,6 +58,42 @@ function arrow(noise = 0) {
   ]
 }
 
+function polygon(vertices, noise = 0) {
+  const points = []
+  for (let edgeIndex = 0; edgeIndex < vertices.length; edgeIndex += 1) {
+    const start = vertices[edgeIndex]
+    const end = vertices[(edgeIndex + 1) % vertices.length]
+    for (let index = 0; index < 12; index += 1) {
+      const progress = index / 12
+      const wobble = noise ? Math.sin(points.length * 1.73) * noise : 0
+      points.push({
+        x: start.x + (end.x - start.x) * progress + wobble,
+        y: start.y + (end.y - start.y) * progress - wobble,
+      })
+    }
+  }
+  points.push({ ...points[0] })
+  return points
+}
+
+function triangle(noise = 0) {
+  return polygon([{ x: 60, y: 0 }, { x: 120, y: 100 }, { x: 0, y: 100 }], noise)
+}
+
+function diamond(noise = 0) {
+  return polygon([{ x: 60, y: 0 }, { x: 120, y: 50 }, { x: 60, y: 100 }, { x: 0, y: 50 }], noise)
+}
+
+function rotate(points, angle, center = { x: 60, y: 50 }) {
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  return points.map((point) => {
+    const x = point.x - center.x
+    const y = point.y - center.y
+    return { ...point, x: center.x + x * cos - y * sin, y: center.y + x * sin + y * cos }
+  })
+}
+
 describe('predictDrawnShape', () => {
   it.each([
     ['clean rectangle', rectangle(), 'rectangle'],
@@ -68,6 +104,12 @@ describe('predictDrawnShape', () => {
     ['noisy line', line(0.35), 'line'],
     ['clean arrow', arrow(), 'arrow'],
     ['noisy arrow', arrow(0.5), 'arrow'],
+    ['clean triangle', triangle(), 'triangle'],
+    ['noisy triangle', triangle(0.7), 'triangle'],
+    ['clean diamond', diamond(), 'diamond'],
+    ['noisy diamond', diamond(0.7), 'diamond'],
+    ['rotated triangle', rotate(triangle(), Math.PI / 7), 'triangle'],
+    ['rotated diamond', rotate(diamond(), Math.PI / 7), 'diamond'],
   ])('recognizes a %s', (_label, points, expectedType) => {
     expect(predictDrawnShape(points)?.type).toBe(expectedType)
   })

@@ -62,6 +62,12 @@ function pathForPrediction(prediction) {
         const rotation = prediction.angle * 180 / Math.PI;
         return `M ${start.x} ${start.y} A ${rx} ${ry} ${rotation} 1 0 ${opposite.x} ${opposite.y} A ${rx} ${ry} ${rotation} 1 0 ${start.x} ${start.y}`;
     }
+    if (prediction.type === 'triangle' || prediction.type === 'diamond') {
+        return prediction.vertices.reduce(
+            (path, point, index) => `${path}${index === 0 ? 'M' : ' L'} ${point.x} ${point.y}`,
+            '',
+        ) + ' Z';
+    }
     if (prediction.type === 'freehand') {
         if (!prediction.points.length) return '';
         return prediction.points.reduce((path, point, index) => `${path}${index === 0 ? 'M' : ' L'} ${point.x} ${point.y}`, '');
@@ -99,7 +105,7 @@ function renderPreview() {
     latestPrediction = predictDrawnShape(points);
     ensurePreview();
     previewPath.setAttribute('d', pathForPrediction(latestPrediction));
-    previewPath.setAttribute('fill', latestPrediction?.type === 'rectangle' || latestPrediction?.type === 'circle'
+    previewPath.setAttribute('fill', ['rectangle', 'circle', 'triangle', 'diamond'].includes(latestPrediction?.type)
         ? 'rgba(148, 148, 158, 0.06)'
         : 'none');
 }
@@ -163,6 +169,23 @@ function createPredictedShape(prediction) {
         );
         shape.rotation = prediction.angle * 180 / Math.PI;
         shape.draw();
+    } else if (prediction.type === 'triangle' || prediction.type === 'diamond') {
+        const polygonPoints = [...prediction.vertices, prediction.vertices[0]];
+        shape = new window.FreehandStroke(
+            polygonPoints.map((point) => [point.x, point.y, 0.5]),
+            {
+                stroke: 'transparent',
+                fill: 'transparent',
+                fillStyle: 'none',
+                outlineStroke: style.stroke,
+                outlineWidth: style.strokeWidth,
+                closedFill: true,
+                strokeWidth: style.strokeWidth,
+                strokeStyle: style.outline,
+                roughness: 0,
+            },
+        );
+        shape.recognizedShapeType = prediction.type;
     } else if (prediction.type === 'freehand') {
         const brush = window.freehandToolSettings || {};
         shape = new window.FreehandStroke(
