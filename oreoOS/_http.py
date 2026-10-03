@@ -6,7 +6,8 @@ ship only covers the connect step — body read can hang forever on a
 slow / mis-behaving server, wedging the OS run loop for minutes.
 
 Public surface:
-    get_url(url, accept=None, timeout_s=4, auth=None) -> bytes | None
+    get_url(url, accept=None, timeout_s=4, auth=None,
+            on_progress=None) -> bytes | None
 
 `accept` overrides the Accept header (GitHub Contents API needs
 `application/vnd.github.raw` for raw file bodies, otherwise we get the
@@ -43,6 +44,16 @@ MAX_RESPONSE_BYTES = 1024 * 1024
 def _bc(msg):
     try:
         print("[http] " + msg)
+    except Exception:
+        pass
+
+
+def _progress(callback, phase, received=0):
+    """Best-effort network progress pulse for synchronous UI callers."""
+    if callback is None:
+        return
+    try:
+        callback(phase, received)
     except Exception:
         pass
 
@@ -94,7 +105,7 @@ def _redirect_url(current_url, location):
     return None
 
 
-def get_url(url, accept=None, timeout_s=4, auth=None):
+def get_url(url, accept=None, timeout_s=4, auth=None, on_progress=None):
     """GET a URL and follow at most MAX_REDIRECTS HTTPS redirects.
 
     Authorization is deliberately dropped after a cross-host redirect. GitHub
@@ -107,7 +118,7 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
     allow_auto_auth = True
     for redirect_count in range(MAX_REDIRECTS + 1):
         result = _get_once(current, accept, timeout_s,
-                           request_auth, allow_auto_auth)
+                           request_auth, allow_auto_auth, on_progress)
         if result is None:
             return None
         status, head, body = result
@@ -135,11 +146,13 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
             request_auth = None
             allow_auto_auth = False
         _bc("redirect " + next_host[0])
+        _progress(on_progress, "redirect")
         current = next_url
     return None
 
 
-def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True):
+def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True,
+              on_progress=None):
     if not _OK:
         return None
     parsed = _split_https_url(url)
@@ -170,12 +183,15 @@ def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True):
     raw = None
     try:
         _bc("dns " + host)
+        _progress(on_progress, "dns")
         addr = _socket.getaddrinfo(host, port)[0][-1]
         _bc("connect " + host + ":" + str(port))
+        _progress(on_progress, "connect")
         raw = _socket.socket()
         raw.settimeout(timeout_s)
         raw.connect(addr)
         _bc("ssl")
+        _progress(on_progress, "tls")
         s = _ssl.wrap_socket(raw, server_hostname=host)
         # SSLSocket wraps raw — settimeout on raw doesn't always
         # propagate. Set it again on the wrapper so .read() honours it.
@@ -193,6 +209,7 @@ def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True):
             "%s"
             "Connection: close\r\n\r\n"
         ) % (path, host, USER_AGENT, accept_hdr, auth_hdr)
+        _progress(on_progress, "request")
         s.write(req.encode())
 
         _bc("read")
@@ -211,6 +228,7 @@ def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True):
             if not chunk:
                 break
             buf.extend(chunk)
+            _progress(on_progress, "read", len(buf))
             if len(buf) > MAX_RESPONSE_BYTES:
                 _bc("response too large")
                 return None

@@ -327,9 +327,9 @@ def _compress_x(src, sw, sh, dst_w):
 def show_updating(os_obj, target_version, total_files):
     """Draw a system-update splash while OTA files are being copied.
 
-    Modelled on the app-loader slide: a pink panel fills the screen with
-    "UPDATING OREOOS" at the top + the target version + a progress bar
-    that the caller advances via update_progress(). Returns a callable
+    Modelled on the app-loader slide: a pink panel fills the screen with a
+    vertically centred title, progress bar, target version and safety copy.
+    The caller advances the bar via update_progress(). Returns a callable
     `(done_count, current_file) -> None` so the apply step can pump
     progress without re-doing all the panel rendering each call.
     """
@@ -337,23 +337,37 @@ def show_updating(os_obj, target_version, total_files):
     SW = api.SCREEN_W
     SH = api.SCREEN_H
 
-    # Static frame: pink fill, gold accent, title + sub-title text.
+    # Build the complete block around the screen centre instead of anchoring
+    # individual elements to unrelated offsets. This keeps the title, bar,
+    # version, warning and current filename visually balanced as one unit.
     d.rect(0, 0, SW, SH, theme.PRIMARY, fill=True)
-    d.rect(0, SH // 2 - 60, SW, 2, theme.GOLD, fill=True)
+    centre_y = SH // 2
+    title_y  = centre_y - 54
+    bar_y    = centre_y - 20
+    bar_h    = 10
+    version_y = bar_y + bar_h + 10
+    warning_y = version_y + 20
+    file_y    = warning_y + 18
+
     title = "UPDATING OREOOS"
     tw    = len(title) * 16
-    d.text(title, (SW - tw) // 2, SH // 2 - 90, api.WHITE, scale=2)
-    sub   = "to %s" % (target_version or "")
-    sw    = len(sub) * 8
-    d.text(sub, (SW - sw) // 2, SH // 2 - 64, theme.GOLD)
+    d.text(title, (SW - tw) // 2, title_y, api.WHITE, scale=2)
 
     bar_x = 30
-    bar_y = SH // 2 - 16
     bar_w = SW - 60
-    bar_h = 10
+    # Gold outer frame separates the progress track from the pink panel.
+    d.rect(bar_x - 2, bar_y - 2, bar_w + 4, bar_h + 4,
+           theme.GOLD, fill=True)
     d.rect(bar_x, bar_y, bar_w, bar_h, api.rgb(40, 40, 40), fill=True)
-    d.text("do not unplug", (SW - 13 * 8) // 2, bar_y + bar_h + 14,
-           theme.GOLD)
+
+    # The target version belongs to the progress operation, so keep it just
+    # below the bar rather than near the title. Scale 2 makes the destination
+    # unambiguous from normal status text.
+    version = target_version or "unknown"
+    vw = len(version) * 16
+    d.text(version, (SW - vw) // 2, version_y, theme.GOLD, scale=2)
+    d.text("do not unplug", (SW - 13 * 8) // 2, warning_y,
+           api.WHITE)
     d.present()
 
     def _advance(done, current_file=""):
@@ -362,12 +376,14 @@ def show_updating(os_obj, target_version, total_files):
         # add 30+ ms of GC pressure per file).
         pct = done / float(max(1, total_files))
         fill_w = int(bar_w * pct)
-        d.rect(bar_x, bar_y, fill_w, bar_h, theme.GOLD, fill=True)
+        d.rect(bar_x, bar_y, bar_w, bar_h, api.rgb(40, 40, 40), fill=True)
+        if fill_w:
+            d.rect(bar_x, bar_y, fill_w, bar_h, theme.GOLD, fill=True)
         # Clear + re-draw the file-name line under the bar.
-        d.rect(0, bar_y + bar_h + 26, SW, 14, theme.PRIMARY, fill=True)
+        d.rect(0, file_y, SW, 14, theme.PRIMARY, fill=True)
         name = (current_file or "")[:38]
         if name:
-            d.text(name, (SW - len(name) * 8) // 2, bar_y + bar_h + 26,
+            d.text(name, (SW - len(name) * 8) // 2, file_y,
                    api.WHITE)
         d.present()
 
