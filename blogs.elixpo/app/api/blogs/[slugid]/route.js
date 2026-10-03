@@ -14,10 +14,15 @@ export async function DELETE(request, { params }) {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
 
-    const blog = await db.prepare('SELECT id, author_id FROM blogs WHERE id = ?').bind(slugid).first();
+    const blog = await db.prepare('SELECT id, author_id, status FROM blogs WHERE id = ?').bind(slugid).first();
     if (!blog) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     if (blog.author_id !== session.userId) {
       return NextResponse.json({ error: 'Only the author can delete this blog' }, { status: 403 });
+    }
+    let publicUrl = null;
+    if (blog.status === 'published') {
+      const { getBlogCanonicalPath } = await import('../../../../lib/blogUrl');
+      publicUrl = `https://blogs.elixpo.com${await getBlogCanonicalPath(db, slugid)}`;
     }
 
     // Best-effort Cloudinary cleanup before the rows vanish.
@@ -54,6 +59,10 @@ export async function DELETE(request, { params }) {
       const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
       await invalidateBlogLifecycleCaches(slugid);
     } catch {}
+    if (publicUrl) {
+      const { notifySearchDiscovery } = await import('../../../../lib/searchDiscovery');
+      notifySearchDiscovery(publicUrl);
+    }
 
     return NextResponse.json({ ok: true, deleted: true });
   } catch (e) {

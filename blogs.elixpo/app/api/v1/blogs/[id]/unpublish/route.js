@@ -8,6 +8,8 @@ import { checkIfMatch } from '../../../../../../lib/api/v1/preconditions';
 import { apiError, apiSuccess, requestContext } from '../../../../../../lib/api/v1/responses';
 import { canEditBlog } from '../../../../../../lib/permissions';
 import { invalidateBlogLifecycleCaches } from '../../../../../../lib/api/v1/blogCache';
+import { getBlogCanonicalPath } from '../../../../../../lib/blogUrl';
+import { notifySearchDiscovery } from '../../../../../../lib/searchDiscovery';
 
 export async function POST(request, { params }) {
   const context = requestContext();
@@ -26,11 +28,13 @@ export async function POST(request, { params }) {
         details: { currentEtag: precondition.current }, headers: { ...rateHeaders, ETag: precondition.current },
       });
     }
+    const publicUrl = `https://blogs.elixpo.com${await getBlogCanonicalPath(db, id)}`;
     const now = Math.floor(Date.now() / 1000);
     await db.prepare("UPDATE blogs SET status = 'draft', updated_at = ? WHERE id = ?").bind(now, id).run();
     const updated = await db.prepare('SELECT * FROM blogs WHERE id = ?').bind(id).first();
     const etag = await blogEntityTag(updated);
     await invalidateBlogLifecycleCaches(id);
+    notifySearchDiscovery(publicUrl);
     await recordApiAudit(db, {
       requestId: context.requestId, userId: auth.userId, clientId: auth.clientId,
       action: 'blogs.unpublish', resourceType: 'blog', resourceId: id,

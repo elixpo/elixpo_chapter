@@ -438,6 +438,11 @@ function FeedCard({ post, onHide }) {
                 {post.is_staff && (
                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: '#9b7bf718', color: '#9b7bf7', border: '1px solid #9b7bf730' }}>Staff</span>
                 )}
+                {post.discovery_label && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: post.discovery_label === 'Rising' ? '#f59e0b18' : '#10b98118', color: post.discovery_label === 'Rising' ? '#d97706' : '#059669', border: `1px solid ${post.discovery_label === 'Rising' ? '#f59e0b35' : '#10b98135'}` }}>
+                    {post.discovery_label}
+                  </span>
+                )}
               </div>
             );
           })()}

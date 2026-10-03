@@ -104,6 +104,10 @@ export async function GET(request) {
     const author = await db.prepare('SELECT username, display_name, avatar_url, tier FROM users WHERE id = ?')
       .bind(blog.author_id).first();
     const { getLimits } = await import('../../../../lib/tiers');
+    const { getBlogCanonicalPath } = await import('../../../../lib/blogUrl');
+    const canonicalUrl = blog.status === 'published'
+      ? await getBlogCanonicalPath(db, blogId)
+      : null;
 
     return NextResponse.json({
       blog: {
@@ -116,6 +120,7 @@ export async function GET(request) {
         owner_avatar: author?.avatar_url || null,
         can_mark_member_only: getLimits(author?.tier).canMarkMemberOnly,
         member_only: !!blog.member_only,
+        canonical_url: canonicalUrl,
       },
       version,
     }, { headers: NO_STORE });

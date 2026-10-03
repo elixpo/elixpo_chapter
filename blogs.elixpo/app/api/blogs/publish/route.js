@@ -262,6 +262,11 @@ export async function POST(request) {
       url = `/${session.profile?.username || 'user'}/${slug}`;
     }
 
+    if (targetStatus === 'published' || existing?.status === 'published') {
+      const { notifySearchDiscovery } = await import('../../../../lib/searchDiscovery');
+      notifySearchDiscovery(`https://blogs.elixpo.com${url}`);
+    }
+
     // Collaboration invitations become actionable only when their reader URL
     // exists. The helper is status-gated and deduplicated, so ordinary updates
     // cannot create repeated notifications.

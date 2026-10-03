@@ -866,6 +866,7 @@ export default function WritePage({ slugid }) {
     const [orgCollections, setOrgCollections] = useState([]); // collections of the selected org
     const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
     const settingsSnapshotRef = useRef(""); // publish-settings as of load / last publish — for the no-change Update shortcut
+    const publishedLocationSnapshotRef = useRef(null); // canonical URL inputs as of load / last publish
     const titleTextareaRef = useRef(null);
     const loadedRef = useRef(false); // true once the initial cloud/local load has populated state
     const hadUserGestureRef = useRef(false);
@@ -1633,6 +1634,7 @@ export default function WritePage({ slugid }) {
             editorContent: null,
         };
         settingsSnapshotRef.current = "";
+        publishedLocationSnapshotRef.current = null;
         const timer = setTimeout(async () => {
             // Resolve the URL param (slug or id) against the server, which returns the
             // canonical blog id. localStorage is keyed by that id, so look it up after.
@@ -1677,6 +1679,7 @@ export default function WritePage({ slugid }) {
                 // Metadata + version always from the server (authoritative).
                 if (cloud.title) setTitle(cloud.title);
                 if (cloud.slug) {
+                    pendingSlugRef.current = cloud.slug;
                     setSlug(cloud.slug);
                     setSlugManual(true);
                 }
@@ -1694,6 +1697,14 @@ export default function WritePage({ slugid }) {
                 setMemberOnly(!!cloud.member_only);
                 setOwnerCanMarkMemberOnly(!!cloud.can_mark_member_only);
                 setCollectionId(cloud.collection_id || null);
+                if (cloud.status === "published") {
+                    publishedLocationSnapshotRef.current = {
+                        slug: cloud.slug || resolvedId,
+                        publishAs: cloud.published_as || "personal",
+                        collectionId: cloud.collection_id || null,
+                        url: cloud.canonical_url || "",
+                    };
+                }
                 setCoverPreview(persistableCover(cloud.cover_image_r2_key));
                 if (
                     Number.isFinite(cloud.cover_pos_x) &&
@@ -2511,7 +2522,7 @@ export default function WritePage({ slugid }) {
     }, [title, draftLoading, editorReady]);
 
     // Serialized publish-settings, used to detect "nothing changed" on Update.
-    const settingsKey = () =>
+    const settingsKey = (overrides = {}) =>
         JSON.stringify({
             title,
             subtitle,
@@ -2522,9 +2533,10 @@ export default function WritePage({ slugid }) {
             coverPreview,
             coverPos,
             coverZoom,
-            slug,
+            slug: pendingSlugRef.current || slug,
             secret,
             memberOnly,
+            ...overrides,
         });
     // Capture a baseline once the blog has finished loading.
     useEffect(() => {
@@ -2551,7 +2563,28 @@ export default function WritePage({ slugid }) {
             ? ownerInfo?.avatar_url || (isOwner ? user?.avatar_url : "")
             : ownerOrg?.logo_url || "";
     const ownerInitial = (ownerName || "?").charAt(0).toUpperCase();
-    const publishedUrl = `/${ownerSlug}/${slug || blogId}`;
+    const selectedCollectionSlug =
+        publishAs.startsWith("org:") && collectionId
+            ? orgCollections.find((collection) => collection.id === collectionId)
+                  ?.slug
+            : null;
+    const publishSlug = pendingSlugRef.current || slug || blogId;
+    const publishedUrl = secret
+        ? `/${blogId}`
+        : `/${[ownerSlug, selectedCollectionSlug, publishSlug]
+              .filter(Boolean)
+              .join("/")}`;
+    const originalPublishedLocation = publishedLocationSnapshotRef.current;
+    const publishUrlWillChange = Boolean(
+        isPublished &&
+        originalPublishedLocation &&
+        (originalPublishedLocation.slug !== publishSlug ||
+            originalPublishedLocation.publishAs !== publishAs ||
+            (originalPublishedLocation.collectionId || null) !==
+                (collectionId || null)),
+    );
+    const previousPublishedUrl =
+        originalPublishedLocation?.url || publishedUrl;
     // Nothing edited (content or settings) since load / last publish.
     const hasNoChanges = () =>
         !hasUnsavedEdits && settingsSnapshotRef.current === settingsKey();
@@ -2723,7 +2756,19 @@ export default function WritePage({ slugid }) {
                         : v,
                 );
                 setHasUnsavedEdits(false);
-                settingsSnapshotRef.current = settingsKey();
+                const finalSlug = data.slug || publishSlug;
+                pendingSlugRef.current = finalSlug;
+                setSlug(finalSlug);
+                settingsSnapshotRef.current = settingsKey({
+                    slug: finalSlug,
+                    tags: publishTags,
+                });
+                publishedLocationSnapshotRef.current = {
+                    slug: finalSlug,
+                    publishAs,
+                    collectionId: collectionId || null,
+                    url: data.url || publishedUrl,
+                };
                 if (selectedContest) {
                     const submitted = await submitBlogToContest();
                     if (!submitted) {
@@ -5377,6 +5422,31 @@ export default function WritePage({ slugid }) {
                         );
                     })()}
 
+                    {publishUrlWillChange && (
+                        <div
+                            role="alert"
+                            className="rounded-xl px-3.5 py-3 text-[12px] leading-5"
+                            style={{
+                                color: "#e8a840",
+                                backgroundColor: "rgba(232,168,64,0.08)",
+                                border: "1px solid rgba(232,168,64,0.35)",
+                            }}
+                        >
+                            <p className="font-semibold flex items-center gap-1.5">
+                                <ion-icon name="warning-outline" />
+                                This update changes the public URL
+                            </p>
+                            <p
+                                className="mt-1 break-all"
+                                style={{ color: "var(--text-muted)" }}
+                            >
+                                The old address{" "}
+                                <code>{previousPublishedUrl}</code> will become
+                                invalid after publishing this update.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Punchline (subtitle) — shown under the title on the published blog */}
                     <div>
                         <label
@@ -6246,7 +6316,9 @@ export default function WritePage({ slugid }) {
                     }
                     description={
                         isPublished
-                            ? "This will push your changes live. Readers will see the updated version immediately."
+                            ? publishUrlWillChange
+                                ? `This will push your changes live and invalidate the old public URL ${previousPublishedUrl}. Existing links to it will stop working.`
+                                : "This will push your changes live. Readers will see the updated version immediately."
                             : "Your blog will be visible to everyone. You can unpublish it later from the publish settings."
                     }
                     confirmLabel={isPublished ? "Update" : "Publish"}

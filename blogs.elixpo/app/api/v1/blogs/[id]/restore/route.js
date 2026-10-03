@@ -8,6 +8,8 @@ import { recordApiAudit } from '../../../../../../lib/api/v1/operations';
 import { checkIfMatch } from '../../../../../../lib/api/v1/preconditions';
 import { apiError, apiSuccess, requestContext } from '../../../../../../lib/api/v1/responses';
 import { invalidateBlogLifecycleCaches } from '../../../../../../lib/api/v1/blogCache';
+import { getBlogCanonicalPath } from '../../../../../../lib/blogUrl';
+import { notifySearchDiscovery } from '../../../../../../lib/searchDiscovery';
 
 const RESTORABLE = new Set(['draft', 'published', 'unlisted']);
 
@@ -36,6 +38,9 @@ export async function POST(request, { params }) {
     const updated = await db.prepare('SELECT * FROM blogs WHERE id = ?').bind(id).first();
     const etag = await blogEntityTag(updated);
     if (status !== 'draft') await invalidateBlogLifecycleCaches(id);
+    if (status === 'published') {
+      notifySearchDiscovery(`https://blogs.elixpo.com${await getBlogCanonicalPath(db, id)}`);
+    }
     await recordApiAudit(db, {
       requestId: context.requestId, userId: auth.userId, clientId: auth.clientId,
       action: 'blogs.restore', resourceType: 'blog', resourceId: id,

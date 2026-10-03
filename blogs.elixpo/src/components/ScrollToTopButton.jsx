@@ -29,7 +29,7 @@ export default function ScrollToTopButton() {
       type="button"
       onClick={scrollToTop}
       aria-label="Scroll to top"
-      className="fixed bottom-6 right-6 md:bottom-10 md:right-10 p-3 rounded-full shadow-xl transition-all duration-300 z-50 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#7ba8f0]"
+      className="global-scroll-to-top fixed bottom-6 right-6 md:bottom-10 md:right-10 p-3 rounded-full shadow-xl transition-all duration-300 z-50 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#7ba8f0]"
       style={{
         backgroundColor: 'var(--card-bg)',
         color: 'var(--text-primary)',

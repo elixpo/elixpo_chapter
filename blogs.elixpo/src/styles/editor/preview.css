@@ -183,6 +183,11 @@
   border-color: rgba(196, 181, 253, 0.25);
 }
 
+/* The story's own back-to-top (with reading progress) replaces the global one. */
+body:has(.preview-back-to-top) .global-scroll-to-top {
+  display: none;
+}
+
 /* ===== Full-width preview wrapper — breaks out of 720px parent ===== */
 
 .blog-preview-fullwidth {
