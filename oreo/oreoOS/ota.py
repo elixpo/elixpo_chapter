@@ -213,7 +213,7 @@ def compare_version(a, b):
     return 1 if pa > pb else -1
 
 
-def latest_version(channel=DEFAULT_CHANNEL):
+def latest_version(channel=DEFAULT_CHANNEL, on_progress=None):
     """Return (version_str, release_dict) for the most recent release
     on `channel`, regardless of whether it's newer than the device's
     current VERSION. (None, None) on network failure.
@@ -235,7 +235,8 @@ def latest_version(channel=DEFAULT_CHANNEL):
         return None, None
     body = _httpx.get_url(
         "https://api.github.com/repos/%s/tags?per_page=10" % OTA_REPO,
-        accept="application/vnd.github+json", timeout_s=T_GH_API)
+        accept="application/vnd.github+json", timeout_s=T_GH_API,
+        on_progress=on_progress)
     if body is None:
         return None, None
     try:
@@ -309,7 +310,7 @@ def check(channel=DEFAULT_CHANNEL):
     return rel
 
 
-def peek(release):
+def peek(release, on_progress=None):
     """Stage 2 — fetch the manifest and compute a SHA-based diff.
 
     For every file in the manifest, compare the published SHA-256 to the
@@ -337,7 +338,8 @@ def peek(release):
         from oreoOS import _http as _httpx
     except Exception:
         return None
-    body = _httpx.get_url(release["manifest_url"], timeout_s=T_MANIFEST)
+    body = _httpx.get_url(release["manifest_url"], timeout_s=T_MANIFEST,
+                          on_progress=on_progress)
     if body is None:
         return None
     try:
@@ -647,4 +649,3 @@ def has_attention():
     """Single-call helper for the launcher: True iff the user should see a
     notification dot on the Settings tile + a one-shot warn popup."""
     return False    # populated by the launcher via os.settings_get()
-
