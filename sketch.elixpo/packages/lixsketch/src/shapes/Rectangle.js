@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 import { canvasToLocal, localToCanvas } from '../core/CanvasSpace.js';
+import { resolveThemeLabelColor } from '../utils/themeColors.js';
 // Rectangle shape class - extracted from drawSquare.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom, rc
 
@@ -50,7 +51,7 @@ class Rectangle {
         // Embedded label support
         this.label = options.label || '';
         this.labelElement = null;
-        this.labelColor = options.labelColor || '#e0e0e0';
+        this.labelColor = resolveThemeLabelColor(options.labelColor);
         this.labelFontSize = options.labelFontSize || 14;
         this.labelBg = options.labelBg !== false; // set labelBg:false to render plain text with no pill backdrop
         this._isEditingLabel = false;
@@ -539,6 +540,7 @@ class Rectangle {
         const pointsAttr = outlinePoints.map(p => p.join(',')).join(' ');
         const outline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
         outline.setAttribute('points', pointsAttr);
+        outline.setAttribute('class', 'selection-outline');
         outline.setAttribute('fill', 'none');
         outline.setAttribute('stroke', '#5B57D1');
         outline.setAttribute('stroke-width', 1.5);

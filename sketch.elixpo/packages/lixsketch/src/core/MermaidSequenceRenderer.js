@@ -474,6 +474,7 @@ export function renderSequenceOnCanvas(diagram) {
     const PADDING = 60;
     const TK = themeColors();
     const frameTitle = diagram.title || 'Sequence diagram';
+    const undoBatch = window.beginUndoBatch?.();
     const frame = new window.Frame(
         ox - PADDING,
         oy - PADDING,
@@ -489,7 +490,7 @@ export function renderSequenceOnCanvas(diagram) {
     );
     frame._diagramType = 'mermaid-sequence';
     window.shapes.push(frame);
-    if (window.pushCreateAction) window.pushCreateAction(frame);
+    if (window.pushCreateAction) window.pushCreateAction(frame, { frameCreation: true, containedShapes: [] });
 
     const created = [];
 
@@ -513,8 +514,8 @@ export function renderSequenceOnCanvas(diagram) {
                 labelColor: TK.participantText,
             });
             window.shapes.push(topBox);
-            if (window.pushCreateAction) window.pushCreateAction(topBox);
             frame.addShapeToFrame(topBox);
+            if (window.pushCreateAction) window.pushCreateAction(topBox);
             created.push(topBox);
 
             // Lifeline (dashed vertical line spanning the diagram height)
@@ -529,8 +530,8 @@ export function renderSequenceOnCanvas(diagram) {
                 }
             );
             window.shapes.push(lifeline);
-            if (window.pushCreateAction) window.pushCreateAction(lifeline);
             frame.addShapeToFrame(lifeline);
+            if (window.pushCreateAction) window.pushCreateAction(lifeline);
             created.push(lifeline);
 
             // Bottom participant box (mirrors top — Mermaid convention)
@@ -544,8 +545,8 @@ export function renderSequenceOnCanvas(diagram) {
                 labelColor: TK.participantText,
             });
             window.shapes.push(bottomBox);
-            if (window.pushCreateAction) window.pushCreateAction(bottomBox);
             frame.addShapeToFrame(bottomBox);
+            if (window.pushCreateAction) window.pushCreateAction(bottomBox);
             created.push(bottomBox);
         } catch (err) {
             console.warn('[SequenceRenderer] Participant creation failed:', p.name, err);
@@ -575,8 +576,8 @@ export function renderSequenceOnCanvas(diagram) {
                 }
             );
             window.shapes.push(blockShape);
-            if (window.pushCreateAction) window.pushCreateAction(blockShape);
             frame.addShapeToFrame(blockShape);
+            if (window.pushCreateAction) window.pushCreateAction(blockShape);
             created.push(blockShape);
         } catch (err) {
             console.warn('[SequenceRenderer] Block creation failed:', block, err);
@@ -626,8 +627,8 @@ export function renderSequenceOnCanvas(diagram) {
                 ];
                 segments.forEach((segment) => {
                     window.shapes.push(segment);
-                    if (window.pushCreateAction) window.pushCreateAction(segment);
                     frame.addShapeToFrame(segment);
+                    if (window.pushCreateAction) window.pushCreateAction(segment);
                     created.push(segment);
                 });
                 continue;
@@ -636,8 +637,8 @@ export function renderSequenceOnCanvas(diagram) {
                 ? new window.Line(sp, ep, opts)
                 : new window.Arrow(sp, ep, opts);
             window.shapes.push(connector);
-            if (window.pushCreateAction) window.pushCreateAction(connector);
             frame.addShapeToFrame(connector);
+            if (window.pushCreateAction) window.pushCreateAction(connector);
             created.push(connector);
         } catch (err) {
             console.warn('[SequenceRenderer] Message creation failed:', m, err);
@@ -680,8 +681,8 @@ export function renderSequenceOnCanvas(diagram) {
                     }
                 );
                 window.shapes.push(noteShape);
-                if (window.pushCreateAction) window.pushCreateAction(noteShape);
                 frame.addShapeToFrame(noteShape);
+                if (window.pushCreateAction) window.pushCreateAction(noteShape);
                 created.push(noteShape);
             } catch (err) {
                 console.warn('[SequenceRenderer] Note creation failed:', note, err);
@@ -698,6 +699,7 @@ export function renderSequenceOnCanvas(diagram) {
         if (typeof first.selectShape === 'function') first.selectShape();
     }
 
+    window.endUndoBatch?.(undoBatch, 'mermaid-sequence-create');
     console.log(`[SequenceRenderer] Done: ${pCount} participants, ${messages.length} messages`);
     return true;
 }

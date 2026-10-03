@@ -184,15 +184,20 @@ export default function McpDocsPage() {
               LixSketch Docs
             </div>
             <h1 className="mt-3 text-3xl text-text-primary sm:text-4xl">MCP server</h1>
+            <div className="mt-4 flex max-w-3xl items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-4 text-sm text-amber-200">
+              <i className="bx bx-time-five mt-0.5 text-lg" aria-hidden="true" />
+              <div><p className="text-text-primary">Remote workspace connection is coming soon</p><p className="mt-1 text-xs leading-6 text-text-muted">The package-local scene server remains available for development. Production workspace grants and remote canvas edits are disabled while the connector completes validation.</p></div>
+            </div>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-text-muted sm:text-base">
               The LixSketch package includes a local MCP server that lets compatible tools inspect and edit structured canvas scenes, validate changes, render previews, and reuse published templates.
             </p>
             <div className="mt-5 rounded-xl border border-accent/20 bg-accent/5 p-4 text-sm leading-6 text-text-muted">
-              MCP can edit an atomic local scene file or an explicitly authorized encrypted cloud workspace. The workspace UI for LixScript remains separate; MCP exposes LixScript as an optional batch-input tool.
+              MCP can edit an atomic local scene file today. Encrypted cloud-workspace access and its LixScript batch-input connection remain a preview until the production connector is released.
             </div>
           </section>
 
-          <DocSection id="quick-start" title="Connect a workspace in three steps">
+          <DocSection id="quick-start" title="Remote workspace preview">
+            <p className="mb-4 rounded-lg border border-amber-400/20 bg-amber-400/[0.05] p-3 text-xs leading-6 text-text-muted">These steps are available in local development only. Production profiles show the connector as Coming soon.</p>
             <ol className="list-decimal space-y-3 pl-5">
               <li>Open <Link href="/profile?tab=workspaces" className="text-accent hover:underline">Profile → Workspaces</Link>, choose a workspace, and open <strong className="font-normal text-text-secondary">Remote MCP</strong>.</li>
               <li>Create access with only the permissions your agent needs. LixSketch generates the workspace ID, token, and E2E key for you.</li>

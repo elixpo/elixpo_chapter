@@ -5,12 +5,14 @@ import Link from 'next/link'
 import useUIStore, { MAX_WORKSPACE_NAME_LENGTH } from '@/store/useUIStore'
 import useSketchStore from '@/store/useSketchStore'
 import useAuthStore, { WORKER_URL } from '@/store/useAuthStore'
+import useCollabStore from '@/store/useCollabStore'
 import { useProfileStore } from '@/hooks/useGuestProfile'
 import { persistLayoutMode } from '@/hooks/useDocAutoSave'
 import { triggerCloudSync } from '@/hooks/useAutoSave'
 import { getSessionID } from '@/hooks/useSessionID'
 import { decrypt } from '@/utils/encryption'
 import { showToast } from '@/utils/toast'
+import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
 function LayoutModeToggle() {
   const layoutMode = useSketchStore((s) => s.layoutMode)
@@ -122,6 +124,48 @@ function ProfileStatusAvatar({ avatar }) {
     >
       <i className="bx bx-user text-xs text-accent-blue" />
     </div>
+  )
+}
+
+function CollaborationParticipants() {
+  const connected = useCollabStore((s) => s.connected)
+  const users = useCollabStore((s) => s.users)
+  const maxUsers = useCollabStore((s) => s.maxUsers)
+  const toggleCanvasProperties = useUIStore((s) => s.toggleCanvasProperties)
+
+  if (!connected || users.length === 0) return null
+
+  return (
+    <button
+      type="button"
+      onClick={toggleCanvasProperties}
+      className="flex h-8 items-center rounded-lg border border-border-light bg-surface/70 px-2 transition-colors hover:bg-surface-hover cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      title={`${users.length} of ${maxUsers} participants online — manage collaboration`}
+      aria-label={`${users.length} participants online. Open collaboration controls.`}
+    >
+      <span className="flex items-center -space-x-1.5" aria-hidden="true">
+        {users.slice(0, 5).map((user, index) => (
+          user.avatar ? (
+            <img
+              key={user.connectionId || `${user.userId}-${index}`}
+              src={user.avatar}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-5 w-5 rounded-full border-2 border-surface-dark object-cover"
+            />
+          ) : (
+            <span
+              key={user.connectionId || `${user.userId}-${index}`}
+              className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface-dark text-[8px] font-semibold text-[#171221]"
+              style={{ backgroundColor: user.color || '#b7a2ee' }}
+            >
+              {(user.displayName || 'U').trim().charAt(0).toUpperCase()}
+            </span>
+          )
+        ))}
+      </span>
+      <span className="ml-2 text-[10px] text-text-muted tabular-nums">{users.length}/{maxUsers}</span>
+    </button>
   )
 }
 
@@ -279,7 +323,7 @@ export default function Header() {
   const [activeMcpClients, setActiveMcpClients] = useState(0)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!REMOTE_MCP_ENABLED || !isAuthenticated) {
       setActiveMcpClients(0)
       return undefined
     }
@@ -377,6 +421,7 @@ export default function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        <CollaborationParticipants />
         {/* Profile pill owns identity, save state, and E2E status. */}
         <ProfileControls activeMcpClients={activeMcpClients} />
 

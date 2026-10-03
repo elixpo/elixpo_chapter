@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { resolveThemeLabelColor } from '../utils/themeColors.js';
 // Arrow shape class - extracted from drawArrow.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom
 
@@ -54,7 +55,7 @@ class Arrow {
         // Embedded label support
         this.label = options.label || '';
         this.labelElement = null;
-        this.labelColor = options.labelColor || '#e0e0e0';
+        this.labelColor = resolveThemeLabelColor(options.labelColor);
         this.labelFontSize = options.labelFontSize || 12;
         this.labelBg = options.labelBg !== false; // labelBg:false → no knockout rect behind label
         this.labelOffsetY = options.labelOffsetY || 0; // shift label along the perpendicular of the line, e.g. lift it clear of the stroke
@@ -784,7 +785,7 @@ class Arrow {
 
     addAnchors() {
         const anchorSize = 5 / currentZoom;
-        const anchorStrokeWidth = 2 / currentZoom;
+        const anchorStrokeWidth = 2;
 
         let anchorPositions = [this.startPoint, this.endPoint];
 

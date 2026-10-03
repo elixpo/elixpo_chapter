@@ -3,7 +3,7 @@
 // Supports single and multi-selection copy/paste
 // Pastes at mouse pointer position with offset to prevent stacking
 
-import { pushCreateAction } from './UndoRedo.js';
+import { beginUndoBatch, endUndoBatch, pushCreateAction } from './UndoRedo.js';
 import { Rectangle } from '../shapes/Rectangle.js';
 import { Circle } from '../shapes/Circle.js';
 import { Line } from '../shapes/Line.js';
@@ -41,13 +41,15 @@ function getSVGCoordsFromMouse(e) {
 }
 
 function cloneOptions(options) {
-    return JSON.parse(JSON.stringify(options));
+    return options ? JSON.parse(JSON.stringify(options)) : {};
 }
 
 // ============================================================
 // SERIALIZE: Extract copyable data from a shape
 // ============================================================
-function serializeShape(shape) {
+export function serializeShape(shape, visited = new Set()) {
+    if (!shape || visited.has(shape)) return null;
+    visited.add(shape);
     switch (shape.shapeName) {
         case 'rectangle':
             return {
@@ -112,7 +114,17 @@ function serializeShape(shape) {
                 height: shape.height,
                 rotation: shape.rotation,
                 frameName: shape.frameName,
-                options: cloneOptions(shape.options)
+                frameType: shape._frameType || null,
+                webEmbedURL: shape._webEmbedURL || null,
+                diagramType: shape._diagramType || null,
+                fillStyle: shape.fillStyle,
+                fillColor: shape.fillColor,
+                gridSize: shape.gridSize,
+                gridColor: shape.gridColor,
+                options: cloneOptions(shape.options),
+                children: (shape.containedShapes || [])
+                    .map(child => serializeShape(child, visited))
+                    .filter(Boolean),
             };
 
         case 'text': {
@@ -178,6 +190,18 @@ function serializeShape(shape) {
             console.warn('Copy not supported for shape type:', shape.shapeName);
             return null;
     }
+}
+
+export function getCopyRoots(selectedShapes) {
+    const selectedSet = new Set(selectedShapes);
+    return selectedShapes.filter(shape => {
+        let parent = shape?.parentFrame;
+        while (parent) {
+            if (selectedSet.has(parent)) return false;
+            parent = parent.parentFrame;
+        }
+        return true;
+    });
 }
 
 // ============================================================
@@ -306,9 +330,20 @@ function createShapeFromData(data, offsetX, offsetY) {
                 data.y + offsetY,
                 data.width,
                 data.height,
-                { ...cloneOptions(data.options), frameName: data.frameName, rotation: data.rotation }
+                {
+                    ...cloneOptions(data.options),
+                    frameName: data.frameName,
+                    rotation: data.rotation,
+                    frameType: data.frameType,
+                    webEmbedURL: data.webEmbedURL,
+                    fillStyle: data.fillStyle,
+                    fillColor: data.fillColor,
+                    gridSize: data.gridSize,
+                    gridColor: data.gridColor,
+                }
             );
             newFrame.rotation = data.rotation;
+            if (data.diagramType) newFrame._diagramType = data.diagramType;
             return newFrame;
         }
 
@@ -460,20 +495,22 @@ function createShapeFromData(data, offsetX, offsetY) {
 // COPY: Serialize currently selected shapes
 // ============================================================
 function copySelected() {
-    const shapesToCopy = [];
+    let selectedShapes = [];
 
     // Check multi-selection first
     if (window.multiSelection && window.multiSelection.selectedShapes && window.multiSelection.selectedShapes.size > 0) {
-        window.multiSelection.selectedShapes.forEach(shape => {
-            const data = serializeShape(shape);
-            if (data) shapesToCopy.push(data);
-        });
+        selectedShapes = [...window.multiSelection.selectedShapes];
     }
     // Fall back to single currentShape
     else if (typeof currentShape !== 'undefined' && currentShape && currentShape.isSelected) {
-        const data = serializeShape(currentShape);
-        if (data) shapesToCopy.push(data);
+        selectedShapes = [currentShape];
     }
+
+    // If both a frame and one of its children are selected, serialize the
+    // child only through the frame. This preserves ownership without creating
+    // a second loose duplicate beside the pasted frame.
+    const copyRoots = getCopyRoots(selectedShapes);
+    const shapesToCopy = copyRoots.map(shape => serializeShape(shape)).filter(Boolean);
 
     if (shapesToCopy.length === 0) return false;
 
@@ -532,17 +569,28 @@ function pasteClipboard() {
     }
 
     const pastedShapes = [];
+    const undoBatch = beginUndoBatch();
+
+    const pasteShapeTree = (data, parentFrame = null) => {
+        const newShape = createShapeFromData(data, groupOffsetX, groupOffsetY);
+        if (!newShape) return null;
+        if (typeof shapes !== 'undefined' && Array.isArray(shapes)) shapes.push(newShape);
+        if (parentFrame?.addShapeToFrame) parentFrame.addShapeToFrame(newShape);
+
+        if (data.type === 'frame') {
+            pushCreateAction(newShape, { frameCreation: true, containedShapes: [] });
+            for (const childData of data.children || []) pasteShapeTree(childData, newShape);
+        } else {
+            pushCreateAction(newShape);
+        }
+        return newShape;
+    };
 
     clipboard.shapes.forEach(data => {
-        const newShape = createShapeFromData(data, groupOffsetX, groupOffsetY);
-        if (newShape) {
-            if (typeof shapes !== 'undefined' && Array.isArray(shapes)) {
-                shapes.push(newShape);
-            }
-            pushCreateAction(newShape);
-            pastedShapes.push(newShape);
-        }
+        const newShape = pasteShapeTree(data);
+        if (newShape) pastedShapes.push(newShape);
     });
+    endUndoBatch(undoBatch, 'clipboard-paste');
 
     // Select the pasted shapes
     if (pastedShapes.length === 1) {

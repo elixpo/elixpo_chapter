@@ -138,3 +138,8 @@
 - [x] Ship a structured MCP server, stdio CLI, atomic scene patches, previews, and marketplace imports in `@elixpo/lixsketch`.
 - [x] Publish the MCP setup, tools, safety workflow, templates, package API, and limits under `/docs/mcp`.
 - [x] Add scoped remote MCP workspace grants, encrypted live edits, revision conflicts, and LixScript batch application.
+- [x] Enforce a five-person live-room ceiling with server-authorized editor and viewer access.
+- [x] Preserve each collaborator's local undo/redo history across remote scene materialization.
+- [x] Show low-latency multi-user cursors and stacked participant avatars in the workspace navbar.
+- [x] Let room admins pause sharing, change access, kick participants, and rotate invite links immediately.
+- [x] Mark Remote MCP workspace connections as Coming soon and disable grant access in production.

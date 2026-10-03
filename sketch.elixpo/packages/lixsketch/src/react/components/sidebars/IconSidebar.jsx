@@ -95,7 +95,10 @@ export default function IconSidebar() {
 
   useEffect(() => {
     if (!visible) return
-    const frame = requestAnimationFrame(() => searchInputRef.current?.focus())
+    // Focusing a transformed, previously off-screen input can make the
+    // browser scroll its nearest canvas pane horizontally. Keep focus for
+    // keyboard search without allowing it to move the viewport.
+    const frame = requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
     return () => cancelAnimationFrame(frame)
   }, [visible])
 
@@ -181,11 +184,14 @@ export default function IconSidebar() {
     }
   }, [])
 
+  // Keep the closed picker out of the DOM instead of translating it beyond
+  // the canvas bounds. This guarantees it cannot affect host layout or focus
+  // scrolling in embedded/package consumers.
+  if (!visible) return null
+
   return (
     <div
-      className={`absolute top-[60px] right-2 bottom-[112px] w-[300px] bg-surface border border-border-light rounded-2xl z-[999] font-[lixFont] flex flex-col transition-transform duration-200 ${
-        visible ? 'translate-x-0' : 'translate-x-full'
-      }`}
+      className="absolute top-[60px] right-2 bottom-[112px] w-[300px] bg-surface border border-border-light rounded-2xl z-[999] font-[lixFont] flex flex-col"
     >
       {/* Header */}
       <div className="px-3.5 pt-3.5 pb-2 shrink-0">

@@ -22,11 +22,11 @@
 }
 
 body.canvas-mode.theme-light {
-  --color-surface: #f4f0fa;
-  --color-surface-hover: #ebe3f5;
-  --color-surface-active: #ddd0ed;
-  --color-surface-dark: #f1ecf7;
-  --color-surface-card: #fdfaff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f4effa;
+  --color-surface-active: #e9def5;
+  --color-surface-dark: #ffffff;
+  --color-surface-card: #ffffff;
   --color-accent: #8964bd;
   --color-accent-dim: #e8dcf5;
   --color-accent-blue: #7c59c3;
@@ -139,6 +139,20 @@ body.canvas-mode #freehand-canvas text,
 body.canvas-mode #freehand-canvas tspan {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Light canvases use white control interiors so resize and rotation handles
+ * read as outlined controls instead of dark blocks over the artwork. */
+body.canvas-mode.theme-light #freehand-canvas :is(
+  .anchor,
+  .resize-anchor,
+  .resize-handle,
+  .rotate-anchor,
+  .rotation-anchor,
+  .multi-selection-anchor,
+  .multi-selection-rotation-anchor
+) {
+  fill: #ffffff !important;
 }
 
 /* Solid primary controls keep consistent contrast in the light canvas.

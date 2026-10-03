@@ -23,7 +23,7 @@ let startX, startY;
 // from the sidebar this var holds that value verbatim.
 function getThemeStroke() {
     if (typeof document === 'undefined') return '#fff';
-    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#1a1a2e';
+    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#000000';
 }
 let squareStrokecolor = null;
 let squareBackgroundColor = "transparent";

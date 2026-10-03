@@ -2,7 +2,7 @@
 // Multi-selection system - copied from selection.js
 
 import { cleanupAttachments } from '../tools/arrowTool.js';
-import { beginUndoBatch, endUndoBatch, pushCreateAction, pushTransformAction, pushFrameAttachmentAction, pushDeleteAction } from './UndoRedo.js';
+import { beginUndoBatch, captureFrameChildStates, endUndoBatch, pushCreateAction, pushTransformAction, pushFrameAttachmentAction, pushDeleteAction } from './UndoRedo.js';
 import { calculateSnap, clearSnapGuides } from './SnapGuides.js';
 import { registerRotationAnchor } from './ScreenSpaceControls.js';
 
@@ -270,6 +270,15 @@ class MultiSelection {
     }
 
     _captureShapeState(shape) {
+        if (shape.shapeName === 'frame') {
+            return {
+                x: shape.x, y: shape.y,
+                width: shape.width || 0, height: shape.height || 0,
+                rotation: shape.rotation || 0,
+                parentFrame: shape.parentFrame || null,
+                containedShapes: captureFrameChildStates(shape),
+            };
+        }
         switch (shape.shapeName) {
             case 'line':
             case 'arrow':
@@ -300,6 +309,13 @@ class MultiSelection {
             // Check if anything actually changed
             const changed = Object.keys(oldState).some(key => {
                 if (key === 'points' || key === 'startPoint' || key === 'endPoint') return JSON.stringify(oldState[key]) !== JSON.stringify(newState[key]);
+                if (key === 'containedShapes') {
+                    const compact = entries => (entries || []).map(entry => ({
+                        shapeID: entry.shape?.shapeID,
+                        state: entry.state,
+                    }));
+                    return JSON.stringify(compact(oldState[key])) !== JSON.stringify(compact(newState[key]));
+                }
                 return oldState[key] !== newState[key];
             });
             if (changed) {
@@ -475,7 +491,6 @@ class MultiSelection {
     }
 
     createOutline(x, y, width, height) {
-        const zoom = window.currentZoom || 1;
         const outlinePoints = [
             [x, y],
             [x + width, y],
@@ -485,11 +500,12 @@ class MultiSelection {
         ];
 
         this.outline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        this.outline.setAttribute('class', 'multi-selection-outline');
         this.outline.setAttribute('points', outlinePoints.map(p => p.join(',')).join(' '));
         this.outline.setAttribute('fill', 'none');
         this.outline.setAttribute('stroke', '#5B57D1');
-        this.outline.setAttribute('stroke-width', 2);
-        this.outline.setAttribute('stroke-dasharray', `${8 / zoom} ${4 / zoom}`);
+        this.outline.setAttribute('stroke-width', 1.5);
+        this.outline.setAttribute('stroke-dasharray', '4 2');
         this.outline.setAttribute('vector-effect', 'non-scaling-stroke');
         this.outline.setAttribute('style', 'pointer-events: none;');
         this.group.appendChild(this.outline);
@@ -497,7 +513,7 @@ class MultiSelection {
 
     createResizeAnchors(x, y, width, height) {
         const zoom = window.currentZoom || 1;
-        const anchorSize = 12 / zoom;
+        const anchorSize = 10 / zoom;
         const anchorPositions = [
             { x: x, y: y, index: 0 },
             { x: x + width, y: y, index: 1 },
@@ -558,7 +574,7 @@ class MultiSelection {
         this.rotationLine.setAttribute('y2', y);
         this.rotationLine.setAttribute('stroke', '#5B57D1');
         this.rotationLine.setAttribute('stroke-width', 1);
-        this.rotationLine.setAttribute('stroke-dasharray', `${3 / zoom} ${3 / zoom}`);
+        this.rotationLine.setAttribute('stroke-dasharray', '4 2');
         this.rotationLine.setAttribute('vector-effect', 'non-scaling-stroke');
         this.rotationLine.setAttribute('style', 'pointer-events: none;');
 
@@ -1036,10 +1052,12 @@ createRotatedControls(angleDiff = 0) {
             rect.setAttribute('width', b.width + 6);
             rect.setAttribute('height', b.height + 6);
             rect.setAttribute('fill', 'none');
+            rect.setAttribute('class', 'selection-sub-outline');
             rect.setAttribute('stroke', '#5B57D1');
             rect.setAttribute('stroke-width', 1);
             rect.setAttribute('stroke-opacity', 0.35);
-            rect.setAttribute('stroke-dasharray', '4 3');
+            rect.setAttribute('stroke-dasharray', '4 2');
+            rect.setAttribute('vector-effect', 'non-scaling-stroke');
             rect.setAttribute('rx', 3);
             rect.setAttribute('style', 'pointer-events: none;');
             this.group.appendChild(rect);
@@ -1292,6 +1310,7 @@ createRotatedControls(angleDiff = 0) {
         this.selectedShapes.forEach(shape => {
             let shapeData;
             shape.removeSelection();
+            if (shape.shapeName === 'line') shape.scheduleDragRender?.();
             switch (shape.shapeName) {
                 case 'rectangle':
                 case 'icon':

@@ -7,7 +7,7 @@ import useSketchStore from '@/store/useSketchStore'
  * A toolbar button that opens a popover panel above it on click.
  * Shows an icon (or custom preview) in the bar, popover shows full options.
  */
-export function ToolbarButton({ icon, preview, children, tooltip }) {
+export function ToolbarButton({ icon, preview, children, tooltip, label = tooltip }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -24,15 +24,19 @@ export function ToolbarButton({ icon, preview, children, tooltip }) {
   return (
     <div ref={ref} className="relative flex items-center">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         title={tooltip}
-        className={`h-9 flex items-center gap-1.5 px-3 rounded-lg transition-all duration-100 ${
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className={`h-9 flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 transition-all duration-100 ${
           open
-            ? 'bg-surface-active/40 text-text-primary'
-            : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+            ? 'border-border-accent bg-surface-active/40 text-text-primary'
+            : 'border-transparent text-text-muted hover:border-border-light hover:bg-surface-hover hover:text-text-primary'
         }`}
       >
         {preview || (icon && <i className={`bx ${icon} text-base`} />)}
+        {label && <span className="whitespace-nowrap text-[11px] font-medium">{label}</span>}
         <svg className={`w-2 h-2 opacity-40 transition-transform duration-100 ${open ? 'rotate-180' : ''}`} viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M1 1l3 3 3-3" />
         </svg>
@@ -55,7 +59,7 @@ export function ToolbarButton({ icon, preview, children, tooltip }) {
  * Simple toolbar divider
  */
 function Divider() {
-  return <div className="w-px h-5 bg-border-light mx-0.5 shrink-0" />
+  return <div className="mx-0.5 h-6 w-px shrink-0 bg-border-light" aria-hidden="true" />
 }
 
 /**
@@ -67,13 +71,13 @@ export default function ShapeSidebar({ visible, children }) {
 
   return (
     <div
-      className={`absolute bottom-14 left-1/2 -translate-x-1/2 bg-surface-card border border-border-light rounded-xl px-2 py-1.5 z-[999] font-[lixFont] shadow-lg shadow-black/20 transition-all duration-200 ${
+      className={`no-scrollbar absolute bottom-14 left-1/2 z-[999] max-w-[calc(100vw-24px)] -translate-x-1/2 overflow-x-auto rounded-xl border border-border-light bg-surface-card px-1.5 py-1.5 font-[lixFont] shadow-lg shadow-black/20 transition-all duration-200 ${
         show
           ? 'opacity-100 pointer-events-auto translate-y-0'
           : 'opacity-0 pointer-events-none translate-y-2'
       }`}
     >
-      <div className="flex items-center gap-0.5">
+      <div className="flex min-w-max items-center gap-1">
         {children}
       </div>
     </div>
@@ -93,37 +97,25 @@ function LayerControls() {
     window.__layerOrder[method](shape)
   }
 
+  const actions = [
+    ['sendToBack', 'bx-chevrons-down', t('sidebar.sendToBack', { defaultValue: 'Send to back' })],
+    ['sendBackward', 'bx-chevron-down', t('sidebar.sendBackward')],
+    ['bringForward', 'bx-chevron-up', t('sidebar.bringForward')],
+    ['bringToFront', 'bx-chevrons-up', t('sidebar.bringToFront', { defaultValue: 'Bring to front' })],
+  ]
+
   return (
-    <div className="flex items-center gap-0.5">
-      <button
-        onClick={() => doLayer('sendToBack')}
-        title={t('sidebar.sendToBack', { defaultValue: 'Send to back' })}
-        className="h-9 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-100"
-      >
-        <i className="bx bx-chevrons-down text-base" />
-      </button>
-      <button
-        onClick={() => doLayer('sendBackward')}
-        title={t('sidebar.sendBackward')}
-        className="h-9 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-100"
-      >
-        <i className="bx bx-chevron-down text-base" />
-      </button>
-      <button
-        onClick={() => doLayer('bringForward')}
-        title={t('sidebar.bringForward')}
-        className="h-9 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-100"
-      >
-        <i className="bx bx-chevron-up text-base" />
-      </button>
-      <button
-        onClick={() => doLayer('bringToFront')}
-        title={t('sidebar.bringToFront', { defaultValue: 'Bring to front' })}
-        className="h-9 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-100"
-      >
-        <i className="bx bx-chevrons-up text-base" />
-      </button>
-    </div>
+    <ToolbarButton icon="bx-layer" tooltip="Arrange" label="Arrange">
+      <p className="mb-2 text-xs uppercase tracking-wider text-text-muted">Layer order</p>
+      <div className="grid grid-cols-2 gap-1">
+        {actions.map(([method, icon, label]) => (
+          <button key={method} type="button" onClick={() => doLayer(method)} className="flex min-w-32 cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-text-secondary transition hover:bg-surface-hover hover:text-text-primary">
+            <i className={`bx ${icon} text-base`} aria-hidden="true" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+    </ToolbarButton>
   )
 }
 
