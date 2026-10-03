@@ -105,6 +105,13 @@ function invertShapeColors(prevResolved, nextResolved) {
         shape.strokeColor = to
         changed = true
       }
+      if (shape.labelColor !== undefined) {
+        const labelColor = normalize(shape.labelColor)
+        if (labelColor === from || labelColor === '#e0e0e0' || labelColor === '#e8e3f3') {
+          shape.labelColor = to
+          changed = true
+        }
+      }
     }
     if (changed && typeof shape.draw === 'function') {
       shape.draw()

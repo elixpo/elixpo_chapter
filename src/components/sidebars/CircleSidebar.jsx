@@ -4,8 +4,9 @@ import useSketchStore, { TOOLS } from '@/store/useSketchStore'
 import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
 import { useState, useCallback } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
+import useUIStore from '@/store/useUIStore'
 
-const STROKE_COLORS = ['#1a1a20', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
+const STROKE_COLORS = ['#000000', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
 const BG_COLORS = ['transparent', '#f0f0f0', '#ffcccb', '#90ee90', '#add8e6', '#FFE4B5', '#DDA0DD', '#2d2d2d']
 
 const FILLS = [
@@ -46,7 +47,9 @@ export default function CircleSidebar() {
   const { t } = useTranslation()
   const activeTool = useSketchStore((s) => s.activeTool)
   const selectedShapeSidebar = useSketchStore((s) => s.selectedShapeSidebar)
-  const [strokeColor, setStrokeColor] = useState('#fff')
+  const resolvedTheme = useUIStore((s) => s.resolvedTheme)
+  const [strokeColor, setStrokeColor] = useState(null)
+  const displayedStrokeColor = strokeColor ?? (resolvedTheme === 'light' ? '#000000' : '#ffffff')
   const [bgColor, setBgColor] = useState('transparent')
   const [thickness, setThickness] = useState(2)
   const [lineStyle, setLineStyle] = useState('solid')
@@ -62,10 +65,10 @@ export default function CircleSidebar() {
     <ShapeSidebar visible={activeTool === TOOLS.CIRCLE || selectedShapeSidebar === 'circle'}>
       <ToolbarButton
         tooltip={t('sidebar.strokeColor')}
-        preview={<span className="w-4 h-4 rounded-md border border-border-light" style={{ backgroundColor: strokeColor }} />}
+        preview={<span className="w-4 h-4 rounded-md border border-border-light" style={{ backgroundColor: displayedStrokeColor }} />}
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.stroke')}</p>
-        <ColorGrid colors={STROKE_COLORS} selected={strokeColor} onSelect={updateStroke} />
+        <ColorGrid colors={STROKE_COLORS} selected={displayedStrokeColor} onSelect={updateStroke} />
       </ToolbarButton>
 
       <Divider />
@@ -106,7 +109,7 @@ export default function CircleSidebar() {
             <button key={s.v} onClick={() => updateStyle(s.v)}
               className={`w-11 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${lineStyle === s.v ? 'bg-[#7667a8]/20' : 'hover:bg-surface-hover'}`}
             >
-              <svg width="28" height="4" viewBox="0 0 28 4"><line x1="0" y1="2" x2="28" y2="2" stroke="#fff" strokeWidth="2" strokeDasharray={s.d} strokeLinecap="round" /></svg>
+              <svg width="28" height="4" viewBox="0 0 28 4"><line x1="0" y1="2" x2="28" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray={s.d} strokeLinecap="round" /></svg>
             </button>
           ))}
         </div>

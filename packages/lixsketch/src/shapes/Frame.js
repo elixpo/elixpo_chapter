@@ -4,6 +4,7 @@
 
 import { cleanupAttachments } from '../tools/arrowTool.js';
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
+import { captureFrameChildStates } from '../core/UndoRedo.js';
 
 function getSVGCoordsFromMouse(e) {
     const viewBox = svg.viewBox.baseVal;
@@ -434,8 +435,9 @@ move(dx, dy) {
                 shape.y += dy;
             }
 
-            // Force redraw for shapes whose move() doesn't auto-redraw
-            if (typeof shape.draw === 'function') {
+            // Line.move() batches its own render to one animation frame.
+            // Calling draw() here would regenerate it immediately as well.
+            if (shape.shapeName !== 'line' && typeof shape.draw === 'function') {
                 shape.draw();
             }
 
@@ -768,6 +770,7 @@ startLabelEdit(labelElement) {
 
         const padding = 20;
         const oldState = { x: this.x, y: this.y, width: this.width, height: this.height, rotation: this.rotation };
+        oldState.containedShapes = captureFrameChildStates(this);
 
         this.x = minX - padding;
         this.y = minY - padding;
@@ -795,7 +798,7 @@ startLabelEdit(labelElement) {
 
     addAnchors() {
     const anchorSize = 8 / currentZoom;
-    const anchorStrokeWidth = 2 / currentZoom;
+    const anchorStrokeWidth = 2;
 
     // Calculate anchor positions (corners + midpoints + rotation handle)
     const anchorPositions = [
@@ -821,6 +824,7 @@ startLabelEdit(labelElement) {
 
     // Create selection outline first (behind anchors)
     const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    outline.setAttribute('class', 'selection-outline');
     outline.setAttribute('x', this.x);
     outline.setAttribute('y', this.y);
     outline.setAttribute('width', this.width);
@@ -855,6 +859,7 @@ startLabelEdit(labelElement) {
             anchor.setAttribute("stroke", "#5B57D1"); 
             anchor.setAttribute("stroke-width", anchorStrokeWidth);
             anchor.setAttribute("vector-effect", "non-scaling-stroke");
+            anchor.setAttribute("class", "rotate-anchor");
 
             // Add rotation line
             const rotationLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -891,6 +896,7 @@ startLabelEdit(labelElement) {
             anchor.setAttribute("stroke", "#5B57D1"); 
             anchor.setAttribute("stroke-width", anchorStrokeWidth);
             anchor.setAttribute("vector-effect", "non-scaling-stroke");
+            anchor.setAttribute("class", "anchor");
         }
 
         // Apply rotation to anchor if needed
@@ -918,7 +924,8 @@ startLabelEdit(labelElement) {
             y: this.y,
             width: this.width,
             height: this.height,
-            rotation: this.rotation
+            rotation: this.rotation,
+            containedShapes: captureFrameChildStates(this),
         };
 
         const startMousePos = getSVGCoordsFromMouse(e);

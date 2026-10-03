@@ -11,7 +11,8 @@ import { COLLAB_URL } from '@/lib/env'
 const PING_INTERVAL = 25000
 const RECONNECT_BASE = 1000
 const RECONNECT_MAX = 30000
-const SCENE_SYNC_DEBOUNCE = 120
+const SCENE_SYNC_DEBOUNCE = 80
+const PRESENCE_BUFFER_LIMIT = 64 * 1024
 
 export default function useCollaboration(roomId) {
   const wsRef = useRef(null)
@@ -20,14 +21,22 @@ export default function useCollaboration(roomId) {
   const reconnectDelay = useRef(RECONNECT_BASE)
   const intentionalClose = useRef(false)
   const syncTimerRef = useRef(null)
+  const snapshotInFlightRef = useRef(false)
+  const snapshotQueuedRef = useRef(false)
   const applyingRemoteRef = useRef(false)
   const clientSeqRef = useRef(0)
   const lastServerSeqRef = useRef(0)
   const messageChainRef = useRef(Promise.resolve())
   const anonymousIdRef = useRef(null)
+  const clientIdRef = useRef(null)
 
   if (!anonymousIdRef.current && typeof crypto !== 'undefined') {
     anonymousIdRef.current = `anon-${crypto.randomUUID().slice(0, 12)}`
+  }
+  if (!clientIdRef.current && typeof window !== 'undefined') {
+    // Stable for reconnects in this tab, unique across tabs so one browser can
+    // join twice without one socket replacing the other.
+    clientIdRef.current = crypto.randomUUID()
   }
 
   useEffect(() => {
@@ -82,11 +91,16 @@ export default function useCollaboration(roomId) {
 
       const params = new URLSearchParams({
         userId,
+        clientId: clientIdRef.current,
         displayName: btoa(encodeURIComponent(displayName)),
         avatar: avatar || '',
         workspaceName: btoa(encodeURIComponent(workspaceName)),
       })
       if (authToken) params.set('authToken', authToken)
+      const invite = new URLSearchParams(window.location.search).get('invite')
+      const adminToken = sessionStorage.getItem(`lixsketch-collab-admin:${roomId}`)
+      if (invite) params.set('invite', invite)
+      if (adminToken) params.set('adminToken', adminToken)
 
       const wsUrl = `${COLLAB_URL.replace(/\/$/, '')}/room/${encodeURIComponent(roomId)}?${params}`
       console.log('[Collab] Connecting to room', roomId)
@@ -153,6 +167,9 @@ export default function useCollaboration(roomId) {
       switch (msg.type) {
         case 'room-info':
           store.setRoomInfo(msg)
+          if (msg.adminToken) {
+            sessionStorage.setItem(`lixsketch-collab-admin:${roomId}`, msg.adminToken)
+          }
           // Store session ID for the room
           window.__sessionID = roomId
           // If we're not the first user, request a sync
@@ -167,21 +184,24 @@ export default function useCollaboration(roomId) {
         case 'join':
           store.addUser({
             userId: msg.from,
+            connectionId: msg.connectionId,
             displayName: msg.displayName,
             avatar: msg.avatar,
             color: msg.color,
+            role: msg.role || 'editor',
+            isAdmin: !!msg.isAdmin,
           })
           break
 
         case 'leave':
-          store.removeUser(msg.from)
+          store.removeUser(msg.connectionId || msg.from)
           // Remove cursor
-          removeCursor(msg.from)
+          removeCursor(msg.connectionId || msg.from)
           break
 
         case 'presence':
-          store.updatePresence(msg.from, msg.cursor)
-          renderCursor(msg.from, msg.cursor, msg.displayName, msg.color)
+          store.updatePresence(msg.connectionId || msg.from, msg.cursor)
+          renderCursor(msg.connectionId || msg.from, msg.cursor, msg.displayName, msg.color)
           break
 
         case 'op':
@@ -210,7 +230,7 @@ export default function useCollaboration(roomId) {
             const payload = await encrypt(JSON.stringify(sceneData), getRoomKey())
             ws.send(JSON.stringify({
               type: 'sync-response',
-              targetUserId: msg.requestedBy,
+              targetConnectionId: msg.requestedBy,
               payload,
             }))
           }
@@ -248,6 +268,29 @@ export default function useCollaboration(roomId) {
           }
           break
 
+        case 'access-updated':
+          store.updateUserAccess(msg.userId, msg.role)
+          break
+
+        case 'room-settings':
+          store.setRoomSettings(msg)
+          break
+
+        case 'invite-rotated':
+          store.setInviteToken(msg.inviteToken, msg.inviteVersion)
+          break
+
+        case 'invite-invalidated':
+          store.setRoomSettings({ inviteVersion: msg.inviteVersion })
+          break
+
+        case 'sharing-disabled':
+          intentionalClose.current = true
+          store.setRoomSettings({ sharingEnabled: false })
+          store.setError('The workspace owner stopped live sharing.')
+          ws.close(1000, 'sharing-disabled')
+          break
+
         case 'room-expired':
         case 'room-closed':
           console.warn('[Collab] Room closed:', msg.type)
@@ -276,6 +319,7 @@ export default function useCollaboration(roomId) {
       applyingRemoteRef.current = true
       try {
         window.__sceneSerializer.load(sceneData)
+        window.rebindUndoHistory?.(window.shapes || [])
       } finally {
         applyingRemoteRef.current = false
       }
@@ -285,6 +329,12 @@ export default function useCollaboration(roomId) {
       const ws = wsRef.current
       const serializer = window.__sceneSerializer
       if (!ws || ws.readyState !== WebSocket.OPEN || !serializer || applyingRemoteRef.current) return
+      if (useCollabStore.getState().myRole !== 'editor') return
+      if (snapshotInFlightRef.current) {
+        snapshotQueuedRef.current = true
+        return
+      }
+      snapshotInFlightRef.current = true
       try {
         const sceneData = serializer.save(useUIStore.getState().workspaceName || 'Untitled')
         const payload = await encrypt(JSON.stringify(sceneData), getRoomKey())
@@ -296,6 +346,12 @@ export default function useCollaboration(roomId) {
       } catch (error) {
         console.error('[Collab] Failed to publish scene update:', error)
         useCollabStore.getState().setError('Could not publish the latest canvas update.')
+      } finally {
+        snapshotInFlightRef.current = false
+        if (snapshotQueuedRef.current) {
+          snapshotQueuedRef.current = false
+          queueMicrotask(sendSceneSnapshot)
+        }
       }
     }
 
@@ -312,7 +368,10 @@ export default function useCollaboration(roomId) {
     window.__applyRemoteOp = (sceneData) => {
       if (!sceneData || !window.__sceneSerializer) return
       applyingRemoteRef.current = true
-      try { window.__sceneSerializer.load(sceneData) }
+      try {
+        window.__sceneSerializer.load(sceneData)
+        window.rebindUndoHistory?.(window.shapes || [])
+      }
       finally { applyingRemoteRef.current = false }
     }
 
@@ -368,7 +427,8 @@ export default function useCollaboration(roomId) {
         cursors.set(userId, el)
       }
 
-      el.setAttribute('transform', `translate(${cursor.x}, ${cursor.y})`)
+      const zoom = Math.max(0.05, Number(window.currentZoom) || 1)
+      el.setAttribute('transform', `translate(${cursor.x}, ${cursor.y}) scale(${1 / zoom})`)
     }
 
     function removeCursor(userId) {
@@ -381,14 +441,15 @@ export default function useCollaboration(roomId) {
 
     // --- Presence broadcasting ---
 
-    let lastPresenceTime = 0
-    function onMouseMove(e) {
-      const now = Date.now()
-      if (now - lastPresenceTime < 50) return // Throttle to 20fps
-      lastPresenceTime = now
-
+    let pendingPointer = null
+    let presenceFrame = 0
+    function flushPresence() {
+      presenceFrame = 0
+      const e = pendingPointer
+      pendingPointer = null
+      if (!e) return
       const ws = wsRef.current
-      if (!ws || ws.readyState !== WebSocket.OPEN) return
+      if (!ws || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > PRESENCE_BUFFER_LIMIT) return
 
       // Convert screen coords to SVG viewBox coords
       const svg = window.svg
@@ -404,7 +465,12 @@ export default function useCollaboration(roomId) {
       }))
     }
 
-    document.addEventListener('mousemove', onMouseMove)
+    function onPointerMove(e) {
+      pendingPointer = { clientX: e.clientX, clientY: e.clientY }
+      if (!presenceFrame) presenceFrame = requestAnimationFrame(flushPresence)
+    }
+
+    document.addEventListener('pointermove', onPointerMove, { passive: true })
 
     // --- Reconnection ---
 
@@ -438,7 +504,8 @@ export default function useCollaboration(roomId) {
     return () => {
       disposed = true
       intentionalClose.current = true
-      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('pointermove', onPointerMove)
+      if (presenceFrame) cancelAnimationFrame(presenceFrame)
       cleanup()
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
       if (reconnectRef.current) clearTimeout(reconnectRef.current)
@@ -474,6 +541,9 @@ function humanizeServerError(code) {
     case 'ROOM_FULL': return 'This collaboration room is full.'
     case 'NOT_AUTHORIZED': return 'You are not allowed to perform that action.'
     case 'INVALID_OPERATION': return 'A collaboration update was rejected.'
+    case 'READ_ONLY': return 'You have view-only access to this workspace.'
+    case 'ROOM_SHARING_DISABLED': return 'Live sharing is disabled for this workspace.'
+    case 'INVALID_INVITE': return 'This collaboration invite is no longer valid.'
     default: return 'The collaboration server reported an error.'
   }
 }

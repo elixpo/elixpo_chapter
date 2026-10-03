@@ -92,6 +92,7 @@ const handleMouseDown = (e) => {
             
             if (anchorInfo && anchorInfo.type === 'anchor') {
                 clickedOnShape = true;
+                currentShape.scheduleDragRender?.();
                 // Start anchor drag
                 dragOldPosLine = {
                     startPoint: { x: currentShape.startPoint.x, y: currentShape.startPoint.y },
@@ -109,6 +110,7 @@ const handleMouseDown = (e) => {
                 };
                 
                 const onPointerUp = () => {
+                    currentShape.finalizeMove?.();
                     if (dragOldPosLine) {
                         const newPos = {
                             startPoint: { x: currentShape.startPoint.x, y: currentShape.startPoint.y },
@@ -134,6 +136,7 @@ const handleMouseDown = (e) => {
             } else if (currentShape.contains(x, y)) {
                 // Dragging the line itself (not anchors)
                 isDraggingLine = true;
+                currentShape.scheduleDragRender?.();
                 dragOldPosLine = {
                     startPoint: { x: currentShape.startPoint.x, y: currentShape.startPoint.y },
                     endPoint: { x: currentShape.endPoint.x, y: currentShape.endPoint.y },
@@ -321,6 +324,7 @@ const handleMouseUp = (e) => {
     }
     
     if (isDraggingLine && dragOldPosLine && currentShape) {
+        currentShape.finalizeMove?.();
         // Issue #34 bug #2: use hoveredFrameLine (actual destination) instead
         // of the stale parentFrame — containment transfer hasn't happened yet.
         const newPos = {

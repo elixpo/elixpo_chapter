@@ -100,6 +100,7 @@ const handleMouseDown = (e) => {
         }
 
         currentShape = new Circle(startX, startY, 0, 0, initialOptions);
+        currentShape.isBeingDrawn = true;
     }
 
     else if(isSelectionToolActive) 
@@ -220,7 +221,7 @@ const handleMouseMove = (e) => {
         currentShape.y = (startY + svgMouseY) / 2;
         currentShape.rx = Math.abs(svgMouseX - startX) / 2;
         currentShape.ry = Math.abs(svgMouseY - startY) / 2;
-        currentShape.draw();
+        currentShape.scheduleDrawingRender();
         
         // Check for frame containment while drawing (but don't apply clipping yet)
         shapes.forEach(frame => {
@@ -337,11 +338,13 @@ const handleMouseMove = (e) => {
 const handleMouseUp = (e) => {
     if (isDrawingCircle && currentShape) {
         if(currentShape.rx === 0 && currentShape.ry === 0) {
+            currentShape.cancelDrawingRender();
             if (currentShape.group.parentNode) {
                 currentShape.group.parentNode.removeChild(currentShape.group);
             }
             currentShape = null;
         } else {
+            currentShape.finalizeDrawing();
             shapes.push(currentShape);
             pushCreateAction(currentShape);
 

@@ -13,6 +13,7 @@ import PollinationsIntegrationCard from '@/components/profile/PollinationsIntegr
 import PersonalDetailsCard from '@/components/profile/PersonalDetailsCard'
 import LandingNav from '@/components/landing/LandingNav'
 import McpWorkspaceAccessModal from '@/components/profile/McpWorkspaceAccessModal'
+import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
 function reconcileActiveWorkspaceName(workspaces) {
   if (typeof window === 'undefined' || !Array.isArray(workspaces)) return workspaces || []
@@ -187,7 +188,7 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
   const accessLabel = workspace.permission === 'edit'
     ? 'Editable link'
     : workspace.permission === 'view' ? 'View link' : 'Private'
-  const hasActiveMcp = Number(workspace.active_mcp_grants || 0) > 0
+  const hasActiveMcp = REMOTE_MCP_ENABLED && Number(workspace.active_mcp_grants || 0) > 0
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -249,12 +250,13 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
         {onMcpAccess && (
           <button
             type="button"
-            onClick={() => onMcpAccess(workspace)}
-            className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#8B88E8]/30 px-2.5 py-1.5 text-[10px] text-[#B6ACF4] transition-colors hover:bg-[#8B88E8]/10"
-            title="Manage Remote MCP access"
+            onClick={() => { if (REMOTE_MCP_ENABLED) onMcpAccess(workspace) }}
+            disabled={!REMOTE_MCP_ENABLED}
+            className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#8B88E8]/30 px-2.5 py-1.5 text-[10px] text-[#B6ACF4] transition-colors hover:bg-[#8B88E8]/10 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+            title={REMOTE_MCP_ENABLED ? 'Manage Remote MCP access' : 'Remote MCP is coming soon'}
           >
             <i className="bx bx-plug text-xs" />
-            Remote MCP
+            {REMOTE_MCP_ENABLED ? 'Remote MCP' : 'MCP · Coming soon'}
           </button>
         )}
         <button
@@ -821,7 +823,7 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-      {mcpWorkspace && <McpWorkspaceAccessModal workspace={mcpWorkspace} onClose={() => setMcpWorkspace(null)} onGrantCountChange={handleMcpGrantCountChange} />}
+      {REMOTE_MCP_ENABLED && mcpWorkspace && <McpWorkspaceAccessModal workspace={mcpWorkspace} onClose={() => setMcpWorkspace(null)} onGrantCountChange={handleMcpGrantCountChange} />}
     </div>
   )
 }

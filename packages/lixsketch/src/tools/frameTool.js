@@ -1,6 +1,6 @@
 /* eslint-disable */
 // Frame tool event handlers - extracted from frameHolder.js
-import { pushCreateAction, pushDeleteAction, pushTransformAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
+import { captureFrameChildStates, pushCreateAction, pushDeleteAction, pushTransformAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
 import { updateAttachedArrows, cleanupAttachments } from './arrowTool.js';
 
 let currentFrame = null;
@@ -97,7 +97,8 @@ const handleMouseDown = (e) => {
                         y: currentShape.y,
                         width: currentShape.width,
                         height: currentShape.height,
-                        rotation: currentShape.rotation
+                        rotation: currentShape.rotation,
+                        containedShapes: captureFrameChildStates(currentShape),
                     };
                 }
                 return;

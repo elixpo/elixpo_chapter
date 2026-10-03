@@ -348,6 +348,29 @@ function getEdgePoint(node, target) {
     return { x: node.x, y: node.cy };
 }
 
+/**
+ * Resolve canvas connector endpoints on the sides facing the other node.
+ * Passing node centres to autoAttach leaves short rectangles outside its
+ * boundary tolerance, so the connector starts under the label instead.
+ */
+export function getCanvasFlowchartEdgePoints(fromNode, toNode) {
+    const normalize = node => ({
+        x: node.x,
+        y: node.y,
+        w: node.width,
+        h: node.height,
+        cx: node.centerX,
+        cy: node.centerY,
+        type: node.type,
+    });
+    const from = normalize(fromNode);
+    const to = normalize(toNode);
+    return {
+        start: getEdgePoint(from, to),
+        end: getEdgePoint(to, from),
+    };
+}
+
 function parseColor(hex) {
     if (!hex || hex === 'transparent' || hex === 'none') return null;
     let c = hex.replace('#', '');
@@ -432,6 +455,7 @@ export function renderFlowchartOnCanvas(diagram) {
     // instead of getting clipped at the corners.
     const PADDING = 90;
     const frameTitle = diagram.title || 'Mermaid diagram';
+    const undoBatch = window.beginUndoBatch?.();
     const frame = new window.Frame(
         vcx - dw / 2 - PADDING,
         vcy - dh / 2 - PADDING,
@@ -447,7 +471,7 @@ export function renderFlowchartOnCanvas(diagram) {
     );
     frame._diagramType = 'mermaid-flowchart';
     window.shapes.push(frame);
-    if (window.pushCreateAction) window.pushCreateAction(frame);
+    if (window.pushCreateAction) window.pushCreateAction(frame, { frameCreation: true, containedShapes: [] });
 
     const nodeMap = new Map(); // id → shape
 
@@ -491,10 +515,10 @@ export function renderFlowchartOnCanvas(diagram) {
         if (!shape) continue;
 
         window.shapes.push(shape);
-        if (window.pushCreateAction) window.pushCreateAction(shape);
         frame.addShapeToFrame(shape);
+        if (window.pushCreateAction) window.pushCreateAction(shape);
 
-        nodeMap.set(n.id, { shape, x: nx, y: ny, width: nw, height: nh, centerX: cx, centerY: cy });
+        nodeMap.set(n.id, { shape, type: n.type, x: nx, y: ny, width: nw, height: nh, centerX: cx, centerY: cy });
     }
 
     // ── Edges ──────────────────────────────────────────────────────────
@@ -503,10 +527,10 @@ export function renderFlowchartOnCanvas(diagram) {
         const toNode = nodeMap.get(e.to);
         if (!fromNode || !toNode) continue;
 
-        // Connect from the source center to the target center — autoAttach
-        // will snap each endpoint to the appropriate edge of the shape.
-        const sp = { x: fromNode.centerX, y: fromNode.centerY };
-        const ep = { x: toNode.centerX, y: toNode.centerY };
+        // Start on the source side facing the target and finish on the
+        // reciprocal target side. For top-to-bottom diagrams this is the
+        // source's south centre and the target's north centre.
+        const { start: sp, end: ep } = getCanvasFlowchartEdgePoints(fromNode, toNode);
 
         const directed = e.directed !== false;
         const style = e.style || 'normal';
@@ -538,8 +562,8 @@ export function renderFlowchartOnCanvas(diagram) {
         if (!connector) continue;
 
         window.shapes.push(connector);
-        if (window.pushCreateAction) window.pushCreateAction(connector);
         frame.addShapeToFrame(connector);
+        if (window.pushCreateAction) window.pushCreateAction(connector);
 
         // Wire arrow endpoints into the source/target shapes so moving a
         // node drags its connections along. window.__autoAttach is set up
@@ -562,6 +586,8 @@ export function renderFlowchartOnCanvas(diagram) {
         window.currentShape = first.shape;
         if (typeof first.shape.selectShape === 'function') first.shape.selectShape();
     }
+
+    window.endUndoBatch?.(undoBatch, 'mermaid-flowchart-create');
 
     return true;
 }
