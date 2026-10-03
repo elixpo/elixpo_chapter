@@ -1,6 +1,6 @@
 const DAY = 86400;
 
-export const RECOMMENDATION_VERSION = '2026-09-01';
+export const RECOMMENDATION_VERSION = '2026-10-03';
 
 export function normalizeLanguage(value, fallback = 'und') {
   const language = String(value || '').trim().replace(/_/g, '-').toLowerCase().split('-')[0];
@@ -74,6 +74,29 @@ function qualityScore(item) {
   return Math.min(14, Math.log1p(Math.max(0, value)) * 2.5);
 }
 
+// Give a newly published story enough exposure to collect real reader signals.
+// The boost decays over 72 hours and also falls as views arrive, so it cannot
+// become permanent manufactured social proof. "Rising" is based only on real
+// engagement accumulated during the first week.
+function coldStartScore(item, now) {
+  const publishedAt = Number(item.published_at || 0);
+  if (!publishedAt) return { score: 0, label: null };
+  const ageHours = Math.max(0, (now - publishedAt) / 3600);
+  const views = Math.max(0, Number(item.view_count || 0));
+  const engagement = Math.max(0,
+    Number(item.like_count || 0)
+      + Number(item.comment_count || 0) * 2
+      + Number(item.clap_total || 0) * 0.1,
+  );
+  const rising = ageHours <= 168 && engagement >= 4;
+  if (ageHours > 72) return { score: rising ? 5 : 0, label: rising ? 'Rising' : null };
+
+  const freshness = 1 - ageHours / 72;
+  const exposure = Math.min(1, views / 40);
+  const score = 12 * freshness * (1 - exposure * 0.65) + (rising ? 5 : 0);
+  return { score, label: rising ? 'Rising' : 'New' };
+}
+
 function affinityScore(item, context) {
   let score = 0;
   let strongestTopic = null;
@@ -112,13 +135,14 @@ export function rankBlogs(items, context, { now = Math.floor(Date.now() / 1000) 
   return items.map((item) => {
     const affinity = affinityScore(item, context);
     const locality = localityScore(item, context);
+    const coldStart = coldStartScore(item, rankingNow);
     const reasons = [];
     if (item._reshared) reasons.push('reshared by someone you follow');
     else if (item._followed) reasons.push('from someone you follow');
     if (affinity.strongestTopic) reasons.push(`because you follow #${affinity.strongestTopic}`);
     if (locality.languageMatch) reasons.push(`in ${context.language}`);
     if (locality.regionMatch) reasons.push(`popular in ${context.region}`);
-    if (!reasons.length) reasons.push('recent on LixBlogs');
+    if (!reasons.length) reasons.push(coldStart.label === 'New' ? 'new on LixBlogs' : 'recent on LixBlogs');
     return {
       ...item,
       recommendation_score: Number((
@@ -127,8 +151,10 @@ export function rankBlogs(items, context, { now = Math.floor(Date.now() / 1000) 
         + affinity.score
         + locality.score
         + recencyScore(item.reshared_at || item.published_at, rankingNow, 30, 20)
+        + coldStart.score
         + qualityScore(item)
       ).toFixed(4)),
+      discovery_label: coldStart.label,
       recommendation_reason: reasons.slice(0, 2),
       recommendation_version: RECOMMENDATION_VERSION,
     };

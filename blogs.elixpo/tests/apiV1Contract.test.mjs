@@ -37,6 +37,60 @@ test('blog entity tags are stable and change with writable content', async () =>
   assert.notEqual(await blogEntityTag(blog), await blogEntityTag({ ...blog, content: 'two' }));
 });
 
+test('blog entity tags change with publication settings', async () => {
+  const blog = {
+    id: 'blog-1',
+    slug: 'first-slug',
+    status: 'published',
+    updated_at: 1,
+    title: 'Title',
+    subtitle: 'Punchline',
+    content: 'one',
+    excerpt: 'Excerpt',
+    cover_image_r2_key: 'covers/first.webp',
+    cover_pos_x: 50,
+    cover_pos_y: 50,
+    cover_zoom: 1,
+    page_emoji: '📝',
+    published_as: 'personal',
+    collection_id: null,
+    secret: 0,
+    member_only: 0,
+    license: 'all-rights-reserved',
+    language: 'en',
+    region: 'global',
+    allow_comments: 1,
+  };
+  const original = await blogEntityTag(blog);
+  const changes = {
+    title: 'Updated title',
+    subtitle: 'Updated punchline',
+    slug: 'second-slug',
+    excerpt: 'Updated excerpt',
+    cover_image_r2_key: 'covers/second.webp',
+    cover_pos_x: 25,
+    cover_pos_y: 75,
+    cover_zoom: 1.25,
+    page_emoji: '🚀',
+    published_as: 'org:org-1',
+    collection_id: 'collection-1',
+    secret: 1,
+    member_only: 1,
+    license: 'cc-by-4.0',
+    language: 'bn',
+    region: 'in',
+    allow_comments: 0,
+  };
+
+  for (const [field, value] of Object.entries(changes)) {
+    assert.notEqual(
+      await blogEntityTag({ ...blog, [field]: value }),
+      original,
+      `${field} must affect the blog entity tag`,
+    );
+  }
+});
+
 test('blog input is bounded and normalized for API writes', () => {
   assert.deepEqual(normalizeTags([' Tech ', 'tech', 'Web']), ['tech', 'web']);
   assert.equal(slugify(' A Better CLI! '), 'a-better-cli');

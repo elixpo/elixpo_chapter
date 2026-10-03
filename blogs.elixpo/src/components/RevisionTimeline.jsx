@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { diffRevisionBlocks } from '../../lib/revisionDiff';
 
 function formatRevisionDate(timestamp) {
@@ -10,42 +11,71 @@ function formatRevisionDate(timestamp) {
   }).format(new Date(timestamp * 1000));
 }
 
-export default function RevisionTimeline({ blogId }) {
+// The selected revision lives in `?rev=` so it survives refresh and Back/Forward.
+// Native history calls keep Next's searchParams in sync without a server round trip.
+function setRevisionParam(id, replace = false) {
+  const url = new URL(window.location.href);
+  if (id) url.searchParams.set('rev', id);
+  else url.searchParams.delete('rev');
+  window.history[replace ? 'replaceState' : 'pushState'](null, '', url);
+}
+
+export default function RevisionTimeline({ blogId, onRevision }) {
+  const revId = useSearchParams().get('rev');
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingRevision, setLoadingRevision] = useState(false);
   const [versions, setVersions] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [revisionData, setRevisionData] = useState(null);
   const [error, setError] = useState('');
   const cache = useRef(new Map());
+  const listRequested = useRef(false);
+  const revIndex = revId ? versions.findIndex((version) => version.id === revId) : -1;
+  const selectedIndex = revIndex >= 0 ? revIndex : Math.max(0, versions.length - 1);
   const selectedId = versions[selectedIndex]?.id;
+  const isHistorical = revIndex >= 0 && revIndex < versions.length - 1;
+  const historical = isHistorical && revisionData?.revision?.id === revId ? revisionData.revision : null;
 
-  async function toggleTimeline() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-
+  async function openTimeline() {
     setOpen(true);
-    if (loaded) return;
+    if (listRequested.current) return;
+    listRequested.current = true;
     setLoadingList(true);
     setError('');
     try {
       const response = await fetch(`/api/blogs/${encodeURIComponent(blogId)}/timeline`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Revision history is unavailable');
-      const savedVersions = data.versions || [];
-      setVersions(savedVersions);
-      setSelectedIndex(Math.max(0, savedVersions.length - 1));
+      setVersions(data.versions || []);
       setLoaded(true);
     } catch (loadError) {
+      listRequested.current = false;
       setError(loadError.message || 'Revision history is unavailable');
     } finally {
       setLoadingList(false);
     }
   }
+
+  function toggleTimeline() {
+    if (open) setOpen(false);
+    else openTimeline();
+  }
+
+  useEffect(() => {
+    if (revId) openTimeline();
+  }, [revId]);
+
+  // An unknown or inaccessible revision falls back to the latest article.
+  useEffect(() => {
+    if (loaded && revId && revIndex === -1) setRevisionParam(null, true);
+  }, [loaded, revId, revIndex]);
+
+  // Keep showing the previous article until the next revision has loaded, so it never flashes.
+  useEffect(() => {
+    if (!isHistorical) onRevision?.(null);
+    else if (historical) onRevision?.(historical);
+  }, [isHistorical, historical, onRevision]);
 
   useEffect(() => {
     if (!open || !selectedId) return undefined;
@@ -91,6 +121,7 @@ export default function RevisionTimeline({ blogId }) {
     : 0;
 
   return (
+    <>
     <section className="mb-8 rounded-xl border p-4 sm:p-5" style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--bg-surface)' }}>
       <button
         type="button"
@@ -132,7 +163,10 @@ export default function RevisionTimeline({ blogId }) {
                 max={versions.length - 1}
                 step="1"
                 value={selectedIndex}
-                onChange={(event) => setSelectedIndex(Number(event.currentTarget.value))}
+                onChange={(event) => {
+                  const index = Number(event.currentTarget.value);
+                  setRevisionParam(index < versions.length - 1 ? versions[index].id : null);
+                }}
                 className="w-full accent-[var(--accent)]"
               />
               <div className="mb-4 flex justify-between text-[11px]" style={{ color: 'var(--text-faint)' }}>
@@ -159,5 +193,16 @@ export default function RevisionTimeline({ blogId }) {
         </div>
       )}
     </section>
+    {historical && (
+      <div role="status" className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-4 py-2.5 text-sm" style={{ borderColor: 'var(--accent)', backgroundColor: 'var(--accent-subtle)', color: 'var(--text-primary)' }}>
+        <ion-icon name="time-outline" aria-hidden="true" />
+        <span className="font-semibold">Viewing an older revision</span>
+        <span style={{ color: 'var(--text-muted)' }}>· Revision <code>{historical.id.slice(0, 7)}</code> · {formatRevisionDate(historical.created_at)} ·</span>
+        <button type="button" onClick={() => setRevisionParam(null)} className="font-medium underline" style={{ color: 'var(--accent)' }}>
+          Return to latest
+        </button>
+      </div>
+    )}
+    </>
   );
 }

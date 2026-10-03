@@ -31,7 +31,10 @@ export async function GET() {
       ORDER BY b.published_at DESC LIMIT 100
     `).all();
     const blogs = result?.results || [];
-    const latest = blogs[0]?.updated_at || blogs[0]?.published_at || Math.floor(Date.now() / 1000);
+    const latest = blogs.reduce(
+      (value, blog) => Math.max(value, Number(blog.updated_at || blog.published_at || 0)),
+      0,
+    ) || Math.floor(Date.now() / 1000);
     const items = blogs.map((blog) => {
       const url = blogUrl(blog);
       return `<item>
@@ -52,13 +55,16 @@ export async function GET() {
   <language>en</language>
   <lastBuildDate>${new Date(latest * 1000).toUTCString()}</lastBuildDate>
   <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
+  <atom:link href="https://pubsubhubbub.appspot.com/" rel="hub" />
 ${items}
 </channel>
 </rss>`;
     return new Response(body, {
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=300, s-maxage=900, stale-while-revalidate=3600',
+        // WebSub hubs fetch immediately after a publish notification. Revalidation
+        // prevents the edge from handing the hub a feed that predates the post.
+        'Cache-Control': 'public, max-age=0, s-maxage=0, must-revalidate',
       },
     });
   } catch {

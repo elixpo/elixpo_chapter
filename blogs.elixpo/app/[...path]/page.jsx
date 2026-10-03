@@ -212,7 +212,8 @@ export async function generateMetadata({ params, searchParams }) {
                 alternates: { canonical: url },
                 // Keep secret blogs out of search engines: an indexed anonymous post is a
                 // permanent, crawlable artifact its author can never fully retract.
-                ...(secret || b.status !== "published"
+                // Historical revision views (?rev=) are never indexed on their own.
+                ...(secret || b.status !== "published" || sp.rev
                     ? { robots: { index: false, follow: false } }
                     : {}),
                 openGraph: {

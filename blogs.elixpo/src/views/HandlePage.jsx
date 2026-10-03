@@ -810,6 +810,7 @@ function HandlePageInner({ path, initialData = null }) {
     const [followModal, setFollowModal] = useState(null); // 'followers' | 'following'
     const [hideHighlights, setHideHighlights] = useState(false); // strip text colors/highlights
     const [InteractiveBlogPreview, setInteractiveBlogPreview] = useState(null);
+    const [revision, setRevision] = useState(null); // historical revision shown in place of the article body
 
     // Mermaid and Shiki stay browser-only to protect the Edge bundle. Keep the
     // crawlable article mounted until this chunk has actually loaded; switching
@@ -1050,7 +1051,7 @@ function HandlePageInner({ path, initialData = null }) {
                     )}
                     <ReadingResumePrompt blogId={blog.id} />
                     {!blog.secret && !blog.member_only && !blog.paywalled && (
-                        <RevisionTimeline blogId={blog.id} />
+                        <RevisionTimeline blogId={blog.id} onRevision={setRevision} />
                     )}
                     {canEdit && (
                         <div className="flex items-center justify-end mb-4">
@@ -1077,7 +1078,7 @@ function HandlePageInner({ path, initialData = null }) {
                             subtitle={blog.subtitle}
                             pageEmoji={blog.page_emoji}
                             tags={blog.tags || []}
-                            blocks={blocks}
+                            blocks={revision?.content || blocks}
                             coverPreview={
                                 blog.cover_image_r2_key ||
                                 generateBlogBanner(blog.id || blog.slug)

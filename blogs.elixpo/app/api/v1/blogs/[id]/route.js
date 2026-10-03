@@ -24,6 +24,7 @@ import { canEditBlog } from '../../../../../lib/permissions';
 import { readTimeFromWords } from '../../../../../lib/readTime';
 import { credentialAllowsPublishedAs } from '../../../../../lib/api/v1/personalAccessTokens';
 import { contentDiscoveryMetadata } from '../../../../../lib/recommendations';
+import { notifySearchDiscovery } from '../../../../../lib/searchDiscovery';
 
 const READ_SCOPE = 'lixblogs:blog:read';
 
@@ -198,6 +199,9 @@ export async function PATCH(request, { params }) {
       } catch {}
     }
     if (updated.status !== 'draft') await invalidateBlogLifecycleCaches(id);
+    if (updated.status === 'published') {
+      notifySearchDiscovery(`https://blogs.elixpo.com${await getBlogCanonicalPath(db, id)}`);
+    }
     await recordApiAudit(db, {
       requestId: context.requestId, userId: auth.userId, clientId: auth.clientId,
       action: 'blogs.update', resourceType: 'blog', resourceId: id,
@@ -235,6 +239,9 @@ export async function DELETE(request, { params }) {
         details: { currentEtag: precondition.current }, headers: { ...rateHeaders, ETag: precondition.current },
       });
     }
+    const publicUrl = blog.status === 'published'
+      ? `https://blogs.elixpo.com${await getBlogCanonicalPath(db, id)}`
+      : null;
     if (permanent) {
       if (request.headers.get('x-confirm-permanent-delete') !== id) {
         return apiError(context, 'confirmation_required', 'Permanent deletion requires X-Confirm-Permanent-Delete with the blog ID.', 400, { headers: rateHeaders });
@@ -265,6 +272,7 @@ export async function DELETE(request, { params }) {
       `).bind(now, now, id).run();
     }
     await invalidateBlogLifecycleCaches(id);
+    if (publicUrl) notifySearchDiscovery(publicUrl);
     await recordApiAudit(db, {
       requestId: context.requestId, userId: auth.userId, clientId: auth.clientId,
       action: permanent ? 'blogs.delete.permanent' : 'blogs.delete', resourceType: 'blog', resourceId: id,

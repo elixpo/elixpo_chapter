@@ -88,11 +88,15 @@ export async function POST(request, { params }) {
       'SELECT COUNT(DISTINCT reporter_id) AS n FROM reports WHERE blog_id = ?'
     ).bind(slugid).first();
     if ((countRow?.n || 0) >= MODERATION_AUTOHIDE_THRESHOLD && blog.status === 'published') {
+      const { getBlogCanonicalPath } = await import('../../../../../lib/blogUrl');
+      const publicUrl = `https://blogs.elixpo.com${await getBlogCanonicalPath(db, slugid)}`;
       await db.prepare("UPDATE blogs SET status = 'under_review', updated_at = unixepoch() WHERE id = ?").bind(slugid).run();
       try {
         const { invalidateBlogLifecycleCaches } = await import('../../../../../lib/api/v1/blogCache');
         await invalidateBlogLifecycleCaches(slugid);
       } catch {}
+      const { notifySearchDiscovery } = await import('../../../../../lib/searchDiscovery');
+      notifySearchDiscovery(publicUrl);
       try {
         const issueNo = prior?.gh_issue_number;
         if (issueNo) {

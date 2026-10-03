@@ -19,6 +19,7 @@ import { canEditBlog } from '../../../../../../lib/permissions';
 import { findProfanity } from '../../../../../../lib/validate';
 import { readTimeFromWords } from '../../../../../../lib/readTime';
 import { invalidateBlogLifecycleCaches } from '../../../../../../lib/api/v1/blogCache';
+import { notifySearchDiscovery } from '../../../../../../lib/searchDiscovery';
 
 export async function POST(request, { params }) {
   const context = requestContext();
@@ -85,6 +86,7 @@ export async function POST(request, { params }) {
       await notifyPendingBlogCollaborators(db, id, updated.author_id);
     } catch {}
     await invalidateBlogLifecycleCaches(id);
+    if (targetStatus === 'published') notifySearchDiscovery(result.url);
     await recordApiAudit(db, {
       requestId: context.requestId, userId: auth.userId, clientId: auth.clientId,
       action: 'blogs.publish', resourceType: 'blog', resourceId: id,
