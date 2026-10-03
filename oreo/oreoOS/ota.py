@@ -133,22 +133,28 @@ def _ensure_dir(path):
 
 
 def _rm_tree(path):
-    """rm -rf for a directory tree, swallowing errors silently."""
+    """Best-effort ``rm -rf`` for a file or directory tree.
+
+    MicroPython raises ``OSError`` when ``listdir`` receives a regular file.
+    The old implementation swallowed that exception inside the recursive
+    call, so the parent never reached its file-removal fallback.  As a
+    result, no staged OTA file was deleted and ``manifest.json`` caused the
+    same update to run after every reboot.
+    """
     try:
-        for f in _os.listdir(path):
-            child = path + "/" + f
-            try:
-                _rm_tree(child)
-            except Exception:
-                try:
-                    _os.remove(child)
-                except Exception:
-                    pass
+        entries = _os.listdir(path)
+    except OSError:
         try:
-            _os.rmdir(path)
+            _os.remove(path)
         except OSError:
             pass
-    except Exception:
+        return
+
+    for name in entries:
+        _rm_tree(path + "/" + name)
+    try:
+        _os.rmdir(path)
+    except OSError:
         pass
 
 
@@ -456,7 +462,7 @@ def is_pending():
         return False
 
 
-def apply_pending():
+def apply_pending(on_progress=None):
     """Promote files from /_ota into their real locations. Returns the
     applied version string, or None if nothing was applied.
 
@@ -472,7 +478,9 @@ def apply_pending():
     except Exception:
         return None
 
-    for entry in manifest.get("files", ()):
+    files = manifest.get("files", ())
+    total = len(files)
+    for index, entry in enumerate(files):
         path = entry.get("path", "")
         if not path:
             continue
@@ -492,8 +500,28 @@ def apply_pending():
             # Half-applied state is the worst case; the manifest still
             # exists so apply_pending() will retry on the next boot.
             return None
+        if on_progress:
+            try:
+                on_progress(index + 1, path)
+            except Exception:
+                pass
 
-    # All files in place. Tear down the staging area + manifest.
+    # All files are in place. Retire the ready marker first so even an
+    # unexpected failure while removing the remaining staging tree cannot
+    # make the next boot apply this release again.
+    retired_path = STAGE_DIR + "/manifest.applied"
+    try:
+        _os.rename(manifest_path, retired_path)
+    except OSError:
+        try:
+            _os.remove(manifest_path)
+        except OSError:
+            # Do not report success (and therefore do not reboot) while the
+            # ready marker can still trigger another apply cycle.
+            return None
+
+    # The marker is gone; removing the payload is now best-effort and cannot
+    # cause an update loop.
     _rm_tree(STAGE_DIR)
     gc.collect()
     return manifest.get("version", None)
