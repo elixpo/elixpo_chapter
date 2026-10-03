@@ -14,7 +14,11 @@ base64-wrapped JSON envelope).
 
 `auth` is an optional ("Bearer <token>") header value.
 
-Returns the response body as bytes on HTTP 200, or None on any other
+Follows a small, bounded number of HTTPS redirects. This is required for
+GitHub Release assets: their public download URL responds with HTTP 302 and
+points at a short-lived release-assets.githubusercontent.com URL.
+
+Returns the response body as bytes on HTTP 200, or None on any unsupported
 status / timeout / DNS failure / SSL error. Caller logs / surfaces.
 """
 
@@ -29,6 +33,11 @@ except ImportError:
 
 
 USER_AGENT = "OreoBadge"
+MAX_REDIRECTS = 3
+# The largest current OTA asset is ~490 KiB. Keep a hard ceiling so a bad or
+# hostile endpoint cannot consume the whole heap, while leaving useful room
+# for future generated assets on the 8 MiB-PSRAM target.
+MAX_RESPONSE_BYTES = 1024 * 1024
 
 
 def _bc(msg):
@@ -38,12 +47,10 @@ def _bc(msg):
         pass
 
 
-def get_url(url, accept=None, timeout_s=4, auth=None):
-    if not _OK:
-        return None
+def _split_https_url(url):
+    """Return (host, port, path) for an HTTPS URL, or None."""
     if not url.startswith("https://"):
         return None
-
     rest = url[len("https://"):]
     slash = rest.find("/")
     if slash < 0:
@@ -53,8 +60,92 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
     port = 443
     if ":" in host:
         host, p = host.split(":", 1)
-        try: port = int(p)
-        except ValueError: port = 443
+        try:
+            port = int(p)
+        except ValueError:
+            return None
+    if not host:
+        return None
+    return host, port, path
+
+
+def _header_value(head, name):
+    """Case-insensitive header lookup on the raw response-header bytes."""
+    prefix = name.lower().encode() + b":"
+    for line in head.split(b"\r\n")[1:]:
+        if line.lower().startswith(prefix):
+            try:
+                return line[len(prefix):].strip().decode()
+            except Exception:
+                return None
+    return None
+
+
+def _redirect_url(current_url, location):
+    """Resolve the HTTPS absolute/root-relative redirects GitHub emits."""
+    if not location:
+        return None
+    if location.startswith("https://"):
+        return location
+    if location.startswith("/"):
+        parsed = _split_https_url(current_url)
+        if parsed is not None:
+            return "https://" + parsed[0] + location
+    return None
+
+
+def get_url(url, accept=None, timeout_s=4, auth=None):
+    """GET a URL and follow at most MAX_REDIRECTS HTTPS redirects.
+
+    Authorization is deliberately dropped after a cross-host redirect. GitHub
+    Release assets use signed CDN URLs and do not need the API token; keeping
+    the token on the original host prevents credentials from being forwarded
+    to an unrelated redirect target.
+    """
+    current = url
+    request_auth = auth
+    allow_auto_auth = True
+    for redirect_count in range(MAX_REDIRECTS + 1):
+        result = _get_once(current, accept, timeout_s,
+                           request_auth, allow_auto_auth)
+        if result is None:
+            return None
+        status, head, body = result
+        if status == 200:
+            if b"\r\ntransfer-encoding: chunked" in (b"\r\n" + head.lower()):
+                body = _dechunk(body)
+            return body
+        if status not in (301, 302, 303, 307, 308):
+            parsed = _split_https_url(current)
+            _bc("HTTP %d %s" % (status, parsed[0] if parsed else "?"))
+            return None
+        if redirect_count >= MAX_REDIRECTS:
+            _bc("too many redirects")
+            return None
+        location = _header_value(head, "location")
+        next_url = _redirect_url(current, location)
+        if next_url is None:
+            _bc("invalid redirect")
+            return None
+        current_host = _split_https_url(current)
+        next_host = _split_https_url(next_url)
+        if current_host is None or next_host is None:
+            return None
+        if current_host[0] != next_host[0]:
+            request_auth = None
+            allow_auto_auth = False
+        _bc("redirect " + next_host[0])
+        current = next_url
+    return None
+
+
+def _get_once(url, accept, timeout_s, auth, allow_auto_auth=True):
+    if not _OK:
+        return None
+    parsed = _split_https_url(url)
+    if parsed is None:
+        return None
+    host, port, path = parsed
 
     accept_hdr = accept or "*/*"
 
@@ -62,7 +153,10 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
     # present in oreoOS.config. Bumps anonymous limit (60 / hr / IP)
     # to 5000 / hr — relevant only for sustained Store / OTA polling.
     # `auth` arg overrides if the caller wants something custom.
-    if auth is None and ("github.com" in host or "githubusercontent.com" in host):
+    github_host = (host == "github.com" or host == "api.github.com" or
+                   host == "raw.githubusercontent.com" or
+                   host.endswith(".githubusercontent.com"))
+    if allow_auto_auth and auth is None and github_host:
         try:
             from oreoOS.config import GH_TOKEN as _TOK
             if _TOK:
@@ -117,8 +211,9 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
             if not chunk:
                 break
             buf.extend(chunk)
-            if len(buf) > 256 * 1024:
-                break
+            if len(buf) > MAX_RESPONSE_BYTES:
+                _bc("response too large")
+                return None
     except Exception as e:
         _bc("FAIL " + host + ": " + str(e))
         return None
@@ -130,7 +225,8 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
             except Exception:
                 pass
 
-    # Slice headers / body, check status.
+    # Slice headers / body. Status handling (including redirects) belongs to
+    # get_url(), which may need to issue another request.
     head_end = buf.find(b"\r\n\r\n")
     if head_end < 0:
         return None
@@ -143,16 +239,7 @@ def get_url(url, accept=None, timeout_s=4, auth=None):
     if len(parts) >= 2:
         try: status = int(parts[1])
         except ValueError: status = 0
-    if status != 200:
-        _bc("HTTP %d %s" % (status, host))
-        return None
-
-    # Chunked-transfer dechunk (defensive — rare on github but the
-    # raw-file CDN occasionally uses it).
-    if b"\r\ntransfer-encoding: chunked" in (b"\r\n" + head.lower()):
-        body = _dechunk(body)
-
-    return body
+    return status, head, body
 
 
 def _dechunk(body):
