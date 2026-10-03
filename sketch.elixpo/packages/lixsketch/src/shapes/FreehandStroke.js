@@ -573,7 +573,7 @@ class FreehandStroke {
 
     addAnchors() {
     const anchorSize = 10 / currentZoom;
-    const anchorStrokeWidth = 2 / currentZoom;
+    const anchorStrokeWidth = 2;
     
     const expandedX = this.boundingBox.x - this.selectionPadding;
     const expandedY = this.boundingBox.y - this.selectionPadding;
@@ -645,6 +645,7 @@ class FreehandStroke {
     ];
     
     const outline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    outline.setAttribute('class', 'selection-outline');
     outline.setAttribute('points', outlinePoints.map(p => p.join(',')).join(' '));
     outline.setAttribute('fill', 'none');
     outline.setAttribute('stroke', '#5B57D1');

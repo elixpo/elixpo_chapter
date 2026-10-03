@@ -301,8 +301,8 @@ export function renderChartPreviewSVG(chart) {
 function push(shape, frame) {
     if (!shape) return null;
     window.shapes.push(shape);
-    if (window.pushCreateAction) window.pushCreateAction(shape);
     if (frame?.addShapeToFrame) frame.addShapeToFrame(shape);
+    if (window.pushCreateAction) window.pushCreateAction(shape);
     return shape;
 }
 
@@ -343,7 +343,8 @@ function createFrame(x, y, width, height, name, type) {
         frameName: name, labelColor: TK.text,
     });
     frame._diagramType = type;
-    push(frame);
+    window.shapes.push(frame);
+    if (window.pushCreateAction) window.pushCreateAction(frame, { frameCreation: true, containedShapes: [] });
     return frame;
 }
 
@@ -360,6 +361,7 @@ function selectOnlyFrame(frame) {
 
 export function renderEROnCanvas(diagram) {
     if (!diagram?.entities?.length || !window.Rectangle || !window.Arrow || !window.Frame) return false;
+    const undoBatch = window.beginUndoBatch?.();
     const TK = theme();
     const entities = layoutER(diagram);
     const width = Math.max(...entities.map(entity => entity.x + entity.width)) + 40;
@@ -411,6 +413,7 @@ export function renderEROnCanvas(diagram) {
         }
     }
     if (first?.selectShape) { window.currentShape = first; first.selectShape(); }
+    window.endUndoBatch?.(undoBatch, 'mermaid-er-create');
     return true;
 }
 
@@ -432,6 +435,7 @@ function rectBoundaryPoint(box, target) {
 export function renderChartOnCanvas(chart) {
     if (!chart?.series?.length || !window.Rectangle || !window.Circle || !window.Line || !window.FreehandStroke || !window.Frame) return false;
     if (chart.kind === 'pie') return renderPieOnCanvas(chart);
+    const undoBatch = window.beginUndoBatch?.();
     const TK = theme();
     const width = 720;
     const height = 450;
@@ -497,18 +501,20 @@ export function renderChartOnCanvas(chart) {
         }
     });
     selectOnlyFrame(frame);
+    window.endUndoBatch?.(undoBatch, 'mermaid-chart-create');
     return true;
 }
 
 function renderPieOnCanvas(chart) {
     if (!window.FreehandStroke || !window.TextShape) return false;
+    const values = chart.series[0].values.map(value => Math.max(0, value));
+    const total = values.reduce((sum, value) => sum + value, 0);
+    if (total <= 0) return false;
+    const undoBatch = window.beginUndoBatch?.();
     const width = 720;
     const height = 450;
     const origin = canvasOrigin(width, height);
     const frame = createFrame(origin.x, origin.y, width, height, chart.title, 'mermaid-pie');
-    const values = chart.series[0].values.map(value => Math.max(0, value));
-    const total = values.reduce((sum, value) => sum + value, 0);
-    if (total <= 0) return false;
 
     const cx = origin.x + 255;
     const cy = origin.y + 235;
@@ -559,5 +565,6 @@ function renderPieOnCanvas(chart) {
     });
 
     selectOnlyFrame(frame);
+    window.endUndoBatch?.(undoBatch, 'mermaid-pie-create');
     return true;
 }

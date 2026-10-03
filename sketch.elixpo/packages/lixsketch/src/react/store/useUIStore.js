@@ -105,6 +105,13 @@ function invertShapeColors(prevResolved, nextResolved) {
         shape.strokeColor = to
         changed = true
       }
+      if (shape.labelColor !== undefined) {
+        const labelColor = normalize(shape.labelColor)
+        if (labelColor === from || labelColor === '#e0e0e0' || labelColor === '#e8e3f3') {
+          shape.labelColor = to
+          changed = true
+        }
+      }
     }
     if (changed && typeof shape.draw === 'function') {
       shape.draw()
@@ -140,7 +147,7 @@ function applyTheme(theme) {
   body.classList.add(`theme-${resolved}`)
 
   const svgEl = window.svg
-  if (svgEl) svgEl.style.background = resolved === 'light' ? '#fbf9fd' : '#15111f'
+  if (svgEl) svgEl.style.background = resolved === 'light' ? '#ffffff' : '#15111f'
 }
 
 const useUIStore = create((set, get) => ({

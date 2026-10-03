@@ -8,6 +8,7 @@ import useCollabStore from '@/store/useCollabStore'
 import { useProfileStore } from '@/hooks/useGuestProfile'
 import { getSessionID } from '@/hooks/useSessionID'
 import { triggerDocCloudSync, persistLayoutMode } from '@/hooks/useDocAutoSave'
+import { showToast } from '@/utils/toast'
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B'
@@ -41,7 +42,11 @@ export default function CanvasPropertiesModal() {
 
   const collabConnected = useCollabStore((s) => s.connected)
   const collabUsers = useCollabStore((s) => s.users)
-  const adminUserId = useCollabStore((s) => s.adminUserId)
+  const collabIsAdmin = useCollabStore((s) => s.isAdmin)
+  const collabConnectionId = useCollabStore((s) => s.connectionId)
+  const sharingEnabled = useCollabStore((s) => s.sharingEnabled)
+  const inviteToken = useCollabStore((s) => s.inviteToken)
+  const maxUsers = useCollabStore((s) => s.maxUsers)
   const ws = useCollabStore((s) => s.ws)
 
   const layoutMode = useSketchStore((s) => s.layoutMode)
@@ -52,13 +57,21 @@ export default function CanvasPropertiesModal() {
     persistLayoutMode(mode)
   }
 
-  // Determine if current user is admin
   const myUserId = isAuthenticated ? authUser?.id : guestProfile?.id
-  const isAdmin = myUserId && adminUserId && myUserId === adminUserId
 
-  const handleKickUser = (userId) => {
+  const sendCollabControl = (message) => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return
-    ws.send(JSON.stringify({ type: 'kick', userId }))
+    ws.send(JSON.stringify(message))
+  }
+
+  const handleCopyInvite = async () => {
+    const roomId = useCollabStore.getState().roomId
+    const key = useUIStore.getState().sessionEncryptionKey
+      || useUIStore.getState().loadEncryptionKeyForSession(roomId)
+    if (!roomId || !inviteToken || !key) return
+    const link = `${window.location.origin}/room/${encodeURIComponent(roomId)}?invite=${encodeURIComponent(inviteToken)}#key=${encodeURIComponent(key)}`
+    await navigator.clipboard.writeText(link)
+    showToast('Live collaboration invite copied', { tone: 'success', duration: 1800 })
   }
 
   const [stats, setStats] = useState({
@@ -295,7 +308,7 @@ export default function CanvasPropertiesModal() {
               <p className="text-text-dim text-[10px] uppercase tracking-wider">Collaboration</p>
               {collabConnected && collabUsers && (
                 <span className="text-text-dim text-[10px]">
-                  {collabUsers.length} participant{collabUsers.length !== 1 ? 's' : ''}
+                  {collabUsers.length}/{maxUsers} participant{collabUsers.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
@@ -304,18 +317,47 @@ export default function CanvasPropertiesModal() {
                 <div className="flex items-center gap-2 py-1.5">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   <span className="text-green-400 text-xs">Live session active</span>
-                  {isAdmin && (
+                  {collabIsAdmin && (
                     <span className="ml-auto px-1.5 py-0.5 rounded bg-accent-blue/15 text-accent-blue text-[9px]">Admin</span>
                   )}
                 </div>
+                {collabIsAdmin && (
+                  <div className="mb-2 grid grid-cols-3 gap-1.5 border-y border-border-light py-2">
+                    <button
+                      type="button"
+                      onClick={() => sendCollabControl({ type: 'sharing-update', enabled: !sharingEnabled })}
+                      className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] cursor-pointer transition-colors ${sharingEnabled ? 'border-green-500/30 text-green-400 hover:bg-green-500/10' : 'border-border-light text-text-muted hover:bg-surface-hover'}`}
+                    >
+                      <i className={`bx ${sharingEnabled ? 'bx-broadcast' : 'bx-block'}`} />
+                      {sharingEnabled ? 'Sharing on' : 'Sharing off'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyInvite}
+                      disabled={!inviteToken || !sharingEnabled}
+                      className="flex items-center justify-center gap-1 rounded-lg border border-border-light px-2 py-1.5 text-[10px] text-text-secondary hover:bg-surface-hover cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <i className="bx bx-copy" /> Copy invite
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => sendCollabControl({ type: 'rotate-invite' })}
+                      className="flex items-center justify-center gap-1 rounded-lg border border-border-light px-2 py-1.5 text-[10px] text-text-secondary hover:bg-surface-hover cursor-pointer"
+                      title="Invalidate the old invite immediately"
+                    >
+                      <i className="bx bx-refresh" /> Rotate link
+                    </button>
+                  </div>
+                )}
                 {collabUsers && collabUsers.length > 0 && (
                   <div className="mt-2 flex flex-col gap-1">
                     {collabUsers.map((user, i) => {
-                      const isMe = user.userId === myUserId
-                      const isUserAdmin = user.userId === adminUserId
+                      const isMe = (user.connectionId || user.userId) === collabConnectionId
+                        || (!collabConnectionId && user.userId === myUserId)
+                      const isUserAdmin = !!user.isAdmin
                       return (
                         <div
-                          key={user.userId || i}
+                          key={user.connectionId || user.userId || i}
                           className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-surface/80 border border-border-light"
                         >
                           <span
@@ -329,14 +371,25 @@ export default function CanvasPropertiesModal() {
                           {isUserAdmin && (
                             <span className="text-[9px] text-accent-blue px-1 py-0.5 rounded bg-accent-blue/10">admin</span>
                           )}
-                          {isAdmin && !isMe && (
-                            <button
-                              onClick={() => handleKickUser(user.userId)}
-                              className="text-red-400/60 hover:text-red-400 text-[10px] px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
-                              title={`Remove ${user.displayName || 'user'} from session`}
-                            >
-                              <i className="bx bx-x text-sm" />
-                            </button>
+                          {collabIsAdmin && !isMe && !isUserAdmin && (
+                            <>
+                              <select
+                                value={user.role || 'editor'}
+                                onChange={(event) => sendCollabControl({ type: 'access-update', connectionId: user.connectionId, userId: user.userId, role: event.target.value })}
+                                className="rounded border border-border-light bg-surface px-1 py-0.5 text-[9px] text-text-secondary outline-none cursor-pointer"
+                                aria-label={`Access for ${user.displayName || 'participant'}`}
+                              >
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Viewer</option>
+                              </select>
+                              <button
+                                onClick={() => sendCollabControl({ type: 'kick', connectionId: user.connectionId, userId: user.userId })}
+                                className="text-red-400/60 hover:text-red-400 text-[10px] px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+                                title={`Remove ${user.displayName || 'user'} from session`}
+                              >
+                                <i className="bx bx-user-x text-sm" />
+                              </button>
+                            </>
                           )}
                         </div>
                       )

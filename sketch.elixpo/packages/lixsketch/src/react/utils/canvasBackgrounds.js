@@ -1,6 +1,6 @@
 export const CANVAS_BACKGROUNDS = {
   light: [
-    { color: '#FBE4DB', label: 'menu.canvasBg.white' },
+    { color: '#FFFFFF', label: 'menu.canvasBg.white' },
     { color: '#F6DBC0', label: 'menu.canvasBg.cream' },
     { color: '#F5EED2', label: 'menu.canvasBg.paper' },
     { color: '#F5F2ED', label: 'menu.canvasBg.skyTint' },
@@ -15,13 +15,22 @@ export const CANVAS_BACKGROUNDS = {
   ],
 }
 
-export const DEFAULT_CANVAS_BACKGROUNDS = { dark: '#15111f', light: '#F5F2ED' }
+export const DEFAULT_CANVAS_BACKGROUNDS = { dark: '#15111f', light: '#FFFFFF' }
+const LEGACY_LIGHT_DEFAULT = '#F5F2ED'
+const LIGHT_DEFAULT_MIGRATION_KEY = 'lixsketch-canvas-light-default-v2'
 export const canvasBackgroundStorageKey = (theme) => `lixsketch-canvas-background-${theme}`
 
 export function readCanvasBackground(theme, storage) {
   const resolved = theme === 'light' ? 'light' : 'dark'
   try {
     const stored = storage?.getItem(canvasBackgroundStorageKey(resolved))
+    if (resolved === 'light' && storage?.getItem(LIGHT_DEFAULT_MIGRATION_KEY) !== '1') {
+      storage?.setItem?.(LIGHT_DEFAULT_MIGRATION_KEY, '1')
+      if (stored?.toLowerCase() === LEGACY_LIGHT_DEFAULT.toLowerCase()) {
+        storage?.setItem?.(canvasBackgroundStorageKey(resolved), DEFAULT_CANVAS_BACKGROUNDS.light)
+        return DEFAULT_CANVAS_BACKGROUNDS.light
+      }
+    }
     const match = CANVAS_BACKGROUNDS[resolved].find(({ color }) => color.toLowerCase() === stored?.toLowerCase())
     if (match) return match.color
   } catch {}

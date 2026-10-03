@@ -81,7 +81,10 @@ export default function IconSidebar() {
 
   useEffect(() => {
     if (!visible) return
-    const frame = requestAnimationFrame(() => searchInputRef.current?.focus())
+    // Focusing a transformed, previously off-screen input can make the
+    // browser scroll its nearest canvas pane horizontally. Keep focus for
+    // keyboard search without allowing it to move the viewport.
+    const frame = requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
     return () => cancelAnimationFrame(frame)
   }, [visible])
 
@@ -167,14 +170,17 @@ export default function IconSidebar() {
     }
   }, [])
 
+  // Do not keep a translated panel outside the canvas bounds. Even though it
+  // is absolutely positioned, browsers may include transformed descendants
+  // in scroll/focus calculations, producing a one-frame canvas jump.
+  if (!visible) return null
+
   // Issue #38 follow-up: every hardcoded `bg-[#18181c]` / `text-white/…`
   // / `bg-white/…` swapped for the engine theme tokens so the icon
   // picker follows the canvas theme (light by default, dark on toggle).
   return (
     <div
-      className={`absolute top-[60px] right-2 bottom-[112px] w-[300px] bg-surface-card border border-border-light rounded-2xl z-[999] font-[lixFont] flex flex-col transition-transform duration-200 ${
-        visible ? 'translate-x-0' : 'translate-x-full'
-      }`}
+      className="absolute top-[60px] right-2 bottom-[112px] w-[300px] bg-surface-card border border-border-light rounded-2xl z-[999] font-[lixFont] flex flex-col"
     >
       {/* Header */}
       <div className="px-3.5 pt-3.5 pb-2 shrink-0">

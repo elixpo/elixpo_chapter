@@ -78,6 +78,20 @@ export default function SaveModal() {
   const [collabError, setCollabError] = useState('')
   const collabConnected = useCollabStore((s) => s.connected)
   const collabRuntimeError = useCollabStore((s) => s.error)
+  const collabRoomId = useCollabStore((s) => s.roomId)
+  const collabInviteToken = useCollabStore((s) => s.inviteToken)
+  const collabSharingEnabled = useCollabStore((s) => s.sharingEnabled)
+  const collabIsAdmin = useCollabStore((s) => s.isAdmin)
+  const collabWs = useCollabStore((s) => s.ws)
+
+  useEffect(() => {
+    if (!collabRoomId || !collabInviteToken) return
+    const key = useUIStore.getState().sessionEncryptionKey
+      || useUIStore.getState().loadEncryptionKeyForSession(collabRoomId)
+    if (!key) return
+    setCollabLink(`${window.location.origin}/room/${encodeURIComponent(collabRoomId)}?invite=${encodeURIComponent(collabInviteToken)}#key=${encodeURIComponent(key)}`)
+    setCollabCopied(false)
+  }, [collabRoomId, collabInviteToken])
 
   // Issue #24 bug #9: one-time view-only share link. Creates a separate
   // read-only snapshot of the current scene that anyone with the link can
@@ -156,11 +170,8 @@ export default function SaveModal() {
       }
       useUIStore.getState().setSessionEncryptionKey(key, sessionId)
       const roomId = sessionId
-      const origin = window.location.origin
-      const link = `${origin}/room/${roomId}#key=${key}`
-
       useCollabStore.getState().startRoom(roomId)
-      setCollabLink(link)
+      setCollabLink('')
       setCollabCopied(false)
     } catch (err) {
       console.error('[SaveModal] Failed to start collab:', err)
@@ -293,10 +304,17 @@ export default function SaveModal() {
   }
 
   const handleEndSession = () => {
-    window.__disconnectCollaboration?.()
-    useCollabStore.getState().stopRoom()
-    setCollabLink('')
-    setCollabCopied(false)
+    if (collabIsAdmin && collabWs?.readyState === WebSocket.OPEN) {
+      collabWs.send(JSON.stringify({ type: 'sharing-update', enabled: false }))
+    }
+    // Let the ordered WebSocket control frame leave the browser before the
+    // owner closes their connection.
+    setTimeout(() => {
+      window.__disconnectCollaboration?.()
+      useCollabStore.getState().stopRoom()
+      setCollabLink('')
+      setCollabCopied(false)
+    }, collabIsAdmin ? 60 : 0)
   }
 
   const handleSaveNow = async () => {
@@ -576,7 +594,7 @@ export default function SaveModal() {
                 {collabConnected && (
                   <div className="flex items-center gap-1.5 mt-2 text-[10px] text-green-400/80">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    Live — connected to room
+                    Live — {collabSharingEnabled ? 'invite access enabled' : 'invite access paused'}
                   </div>
                 )}
                 <button

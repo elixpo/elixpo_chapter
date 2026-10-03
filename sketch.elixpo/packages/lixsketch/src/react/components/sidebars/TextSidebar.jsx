@@ -4,8 +4,9 @@ import useSketchStore, { TOOLS } from '../../store/useSketchStore'
 import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
 import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
+import useUIStore from '../../store/useUIStore'
 
-const TEXT_COLORS = ['#1a1a20', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
+const TEXT_COLORS = ['#000000', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
 
 const FONTS = [
   { value: 'lixFont', label: 'Lix' },
@@ -26,7 +27,12 @@ export default function TextSidebar() {
   const { t } = useTranslation()
   const activeTool = useSketchStore((s) => s.activeTool)
   const selectedShapeSidebar = useSketchStore((s) => s.selectedShapeSidebar)
-  const [textColor, setTextColor] = useState('#fff')
+  const theme = useUIStore((s) => s.theme)
+  const resolvedTheme = theme === 'system' && typeof window !== 'undefined'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme
+  const [textColor, setTextColor] = useState(null)
+  const displayedTextColor = textColor ?? (resolvedTheme === 'light' ? '#000000' : '#ffffff')
   const [fontSize, setFontSize] = useState('S')
   const [font, setFont] = useState('lixFont')
   const [codeMode, setCodeMode] = useState(false)
@@ -81,13 +87,13 @@ export default function TextSidebar() {
     <ShapeSidebar visible={visible}>
       {/* Color */}
       <ToolbarButton tooltip={t('sidebar.textColor')}
-        preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: textColor }} />}
+        preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: displayedTextColor }} />}
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.color')}</p>
         <div className="grid grid-cols-4 gap-1.5">
           {TEXT_COLORS.map((c) => (
             <button key={c} onClick={() => updateColor(c)}
-              className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${textColor === c ? 'border-[#7667a8] scale-110' : 'border-white/[0.08] hover:border-white/20'}`}
+              className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${displayedTextColor.toLowerCase() === c.toLowerCase() ? 'border-[#7667a8] scale-110' : 'border-white/[0.08] hover:border-white/20'}`}
               style={{ backgroundColor: c }}
             />
           ))}

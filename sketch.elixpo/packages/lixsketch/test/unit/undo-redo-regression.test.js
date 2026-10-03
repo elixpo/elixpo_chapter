@@ -39,11 +39,13 @@ globalThis.currentShape = null
 const {
   clearUndoHistory,
   beginUndoBatch,
+  captureFrameChildStates,
   endUndoBatch,
   pushCreateAction,
   pushDeleteAction,
   pushFrameAttachmentAction,
   pushTransformAction,
+  rebindUndoHistory,
   redo,
   setTextReferences,
   undo,
@@ -78,6 +80,11 @@ function frame(id) {
   return {
     shapeID: id,
     shapeName: 'frame',
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 200,
+    rotation: 0,
     group,
     clipGroup,
     clipPath,
@@ -195,6 +202,25 @@ describe('UndoRedo regressions for recent tools', () => {
     expect(sceneState()).toEqual(after)
   })
 
+  it('keeps local undo attached after a collaboration scene reload', () => {
+    const original = rectangle('shared-shape', 10, 15)
+    shapes.push(original)
+    original.x = 80
+    pushTransformAction(
+      original,
+      { x: 10, y: 15, width: 40, height: 30, rotation: 0 },
+      { x: 80, y: 15, width: 40, height: 30, rotation: 0 },
+    )
+
+    const reloaded = rectangle('shared-shape', 80, 15)
+    shapes.splice(0, 1, reloaded)
+    rebindUndoHistory(shapes)
+    undo()
+
+    expect(reloaded.x).toBe(10)
+    expect(original.x).toBe(80)
+  })
+
   it('restores lasso-deleted shapes in their exact z-order and redoes deletion', () => {
     const first = rectangle('first', 10, 15)
     const second = rectangle('second', 80, 45)
@@ -281,5 +307,79 @@ describe('UndoRedo regressions for recent tools', () => {
     redo()
     expect(targetFrame.containedShapes).toEqual([])
     expect(shapes).toEqual([targetFrame])
+  })
+
+  it('restores exact child geometry when a Mermaid frame is transformed', () => {
+    const child = rectangle('child', 20, 30)
+    const connector = {
+      shapeID: 'connector',
+      shapeName: 'arrow',
+      startPoint: { x: 40, y: 60 },
+      endPoint: { x: 180, y: 140 },
+      controlPoint1: { x: 80, y: 70 },
+      controlPoint2: { x: 140, y: 130 },
+      rotation: 0,
+      group: node('connector-group'),
+      draw: vi.fn(),
+    }
+    svgNode.appendChild(connector.group)
+    const targetFrame = frame('mermaid-frame')
+    targetFrame.addShapeToFrame(child)
+    targetFrame.addShapeToFrame(connector)
+    shapes.push(targetFrame, child, connector)
+
+    const oldFrame = {
+      x: targetFrame.x,
+      y: targetFrame.y,
+      width: targetFrame.width,
+      height: targetFrame.height,
+      rotation: targetFrame.rotation,
+      containedShapes: captureFrameChildStates(targetFrame),
+    }
+
+    Object.assign(targetFrame, { x: 50, y: 40, width: 500, height: 360, rotation: 18 })
+    Object.assign(child, { x: 85, y: 95, width: 75, height: 54, rotation: 18 })
+    connector.startPoint = { x: 110, y: 150 }
+    connector.endPoint = { x: 360, y: 280 }
+    connector.controlPoint1 = { x: 180, y: 170 }
+    connector.controlPoint2 = { x: 300, y: 250 }
+    const newFrame = { x: 50, y: 40, width: 500, height: 360, rotation: 18 }
+    pushTransformAction(targetFrame, oldFrame, newFrame)
+
+    undo()
+    expect(child).toMatchObject({ x: 20, y: 30, width: 40, height: 30, rotation: 0 })
+    expect(connector.startPoint).toEqual({ x: 40, y: 60 })
+    expect(connector.endPoint).toEqual({ x: 180, y: 140 })
+    expect(connector.controlPoint1).toEqual({ x: 80, y: 70 })
+    expect(connector.controlPoint2).toEqual({ x: 140, y: 130 })
+
+    redo()
+    expect(child).toMatchObject({ x: 85, y: 95, width: 75, height: 54, rotation: 18 })
+    expect(connector.startPoint).toEqual({ x: 110, y: 150 })
+    expect(connector.endPoint).toEqual({ x: 360, y: 280 })
+  })
+
+  it('undoes and redoes a Mermaid placement as one frame-owned batch', () => {
+    const targetFrame = frame('mermaid-frame')
+    const first = rectangle('first', 20, 30)
+    const second = rectangle('second', 120, 130)
+    shapes.push(targetFrame)
+    const batch = beginUndoBatch()
+    pushCreateAction(targetFrame, { frameCreation: true, containedShapes: [] })
+    for (const child of [first, second]) {
+      shapes.push(child)
+      targetFrame.addShapeToFrame(child)
+      pushCreateAction(child)
+    }
+    endUndoBatch(batch, 'mermaid-flowchart-create')
+
+    undo()
+    expect(shapes).toEqual([])
+
+    redo()
+    expect(shapes).toEqual([targetFrame, first, second])
+    expect(targetFrame.containedShapes).toEqual([first, second])
+    expect(first.group.parentNode).toBe(targetFrame.clipGroup)
+    expect(second.group.parentNode).toBe(targetFrame.clipGroup)
   })
 })

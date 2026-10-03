@@ -55,6 +55,14 @@ export function pushCreateAction(shape, meta = null) {
         type: 'create',
         shape: shape
     };
+    const parentFrame = meta?.parentFrame || shape?.parentFrame || null;
+    if (parentFrame) {
+        action.parentFrame = parentFrame;
+        const frameIndex = Number.isInteger(meta?.frameIndex)
+            ? meta.frameIndex
+            : parentFrame.containedShapes?.indexOf(shape);
+        if (Number.isInteger(frameIndex) && frameIndex >= 0) action.frameIndex = frameIndex;
+    }
     if (meta?.frameCreation && shape?.shapeName === 'frame') {
         action.frameCreation = true;
         action.containedShapes = [...(meta.containedShapes || shape.containedShapes || [])];
@@ -106,6 +114,35 @@ export function invalidateCanvasResetUndo() {
 export function clearUndoHistory() {
     undoStack.length = 0;
     redoStack.length = 0;
+}
+
+// Collaboration scene loads rebuild shape instances. Keep this client's
+// history private, but point its actions at the newly materialized objects so
+// Ctrl+Z never mutates detached SVG nodes after a peer update.
+export function rebindUndoHistory(currentShapes = []) {
+    const shapeById = new Map(currentShapes
+        .filter(shape => shape?.shapeID)
+        .map(shape => [shape.shapeID, shape]));
+    const visited = new WeakSet();
+
+    const rebind = (value) => {
+        if (!value || typeof value !== 'object') return value;
+        if (value.shapeID) return shapeById.get(value.shapeID) || value;
+        if (visited.has(value)) return value;
+        visited.add(value);
+        if (Array.isArray(value)) {
+            for (let index = 0; index < value.length; index += 1) value[index] = rebind(value[index]);
+            return value;
+        }
+        for (const key of Object.keys(value)) {
+            const child = value[key];
+            if (child && typeof child === 'object') value[key] = rebind(child);
+        }
+        return value;
+    };
+
+    undoStack.forEach(rebind);
+    redoStack.forEach(rebind);
 }
 
 // Enhanced delete action to clean up attached arrows
@@ -174,23 +211,20 @@ export function pushCreateActionWithAttachments(shape) {
 
 export function pushTransformAction(shape, oldPos, newPos) {
     if (shape.shapeName === 'frame') {
-        // Handle frame transformation with contained shapes
+        // Frame transforms can resize and rotate heterogeneous children.
+        // Reconstructing their old geometry from the frame delta loses arrow
+        // endpoints, circle radii and freehand points. Prefer the snapshot
+        // captured at pointer-down, with a translation-only fallback for old
+        // callers that have not supplied one yet.
+        const oldSnapshots = new Map((oldPos.containedShapes || []).map(entry => [entry.shape, entry.state]));
         const containedShapesStates = shape.containedShapes.map(containedShape => ({
             shape: containedShape,
-            oldState: {
-                x: containedShape.x - (newPos.x - oldPos.x),
-                y: containedShape.y - (newPos.y - oldPos.y),
-                width: containedShape.width || 0,
-                height: containedShape.height || 0,
-                rotation: containedShape.rotation || 0
+            oldState: oldSnapshots.get(containedShape) || {
+                ...captureShapeGeometry(containedShape),
+                x: typeof containedShape.x === 'number' ? containedShape.x - (newPos.x - oldPos.x) : containedShape.x,
+                y: typeof containedShape.y === 'number' ? containedShape.y - (newPos.y - oldPos.y) : containedShape.y,
             },
-            newState: {
-                x: containedShape.x,
-                y: containedShape.y,
-                width: containedShape.width || 0,
-                height: containedShape.height || 0,
-                rotation: containedShape.rotation || 0
-            }
+            newState: captureShapeGeometry(containedShape),
         }));
 
         undoStack.push({
@@ -451,6 +485,7 @@ export function pushTransformAction(shape, oldPos, newPos) {
             }))
     });
 }
+
     else if (shape.shapeName === 'freehandStroke') {
         // Handle freehand stroke transform
         undoStack.push({
@@ -470,6 +505,47 @@ export function pushTransformAction(shape, oldPos, newPos) {
     // Clear redo stack when new action is performed
     redoStack.length = 0;
     notifyCollaboration();
+}
+
+function clonePoint(point) {
+    return point ? { ...point } : point;
+}
+
+export function captureShapeGeometry(shape) {
+    const state = {
+        x: shape.x,
+        y: shape.y,
+        width: shape.width,
+        height: shape.height,
+        rotation: shape.rotation || 0,
+    };
+    if (typeof shape.rx === 'number') state.rx = shape.rx;
+    if (typeof shape.ry === 'number') state.ry = shape.ry;
+    if (shape.startPoint) state.startPoint = clonePoint(shape.startPoint);
+    if (shape.endPoint) state.endPoint = clonePoint(shape.endPoint);
+    if (shape.controlPoint1) state.controlPoint1 = clonePoint(shape.controlPoint1);
+    if (shape.controlPoint2) state.controlPoint2 = clonePoint(shape.controlPoint2);
+    if (Array.isArray(shape.points)) state.points = shape.points.map(point => Array.isArray(point) ? [...point] : point);
+    if (typeof shape._moveOffsetX === 'number') state._moveOffsetX = shape._moveOffsetX;
+    if (typeof shape._moveOffsetY === 'number') state._moveOffsetY = shape._moveOffsetY;
+    return state;
+}
+
+export function captureFrameChildStates(frame) {
+    return (frame?.containedShapes || []).map(shape => ({ shape, state: captureShapeGeometry(shape) }));
+}
+
+function restoreShapeGeometry(shape, state) {
+    if (!shape || !state) return;
+    for (const key of ['x', 'y', 'width', 'height', 'rotation', 'rx', 'ry', '_moveOffsetX', '_moveOffsetY']) {
+        if (state[key] !== undefined) shape[key] = state[key];
+    }
+    for (const key of ['startPoint', 'endPoint', 'controlPoint1', 'controlPoint2']) {
+        if (state[key] !== undefined) shape[key] = clonePoint(state[key]);
+    }
+    if (state.points) shape.points = state.points.map(point => Array.isArray(point) ? [...point] : point);
+    if (typeof shape.updateBoundingBox === 'function') shape.updateBoundingBox();
+    if (typeof shape.draw === 'function') shape.draw();
 }
 
 export function pushOptionsChangeAction(shape, oldOptions, newOptions = null) {
@@ -533,6 +609,16 @@ function detachDeletedShapeFrame(action) {
     }
 }
 
+function restoreCreatedShapeFrame(action) {
+    if (!action.parentFrame) return;
+    restoreDeletedShapeFrame(action);
+}
+
+function detachCreatedShapeFrame(action) {
+    if (!action.parentFrame) return;
+    detachDeletedShapeFrame(action);
+}
+
 export function undo() {
     if (undoStack.length === 0) return;
     const action = undoStack.pop();
@@ -565,16 +651,7 @@ export function undo() {
         
         // Restore contained shapes to their old positions
         action.containedShapes.forEach(shapeData => {
-            const shape = shapeData.shape;
-            shape.x = shapeData.oldState.x;
-            shape.y = shapeData.oldState.y;
-            shape.width = shapeData.oldState.width;
-            shape.height = shapeData.oldState.height;
-            shape.rotation = shapeData.oldState.rotation;
-            
-            if (typeof shape.draw === 'function') {
-                shape.draw();
-            }
+            restoreShapeGeometry(shapeData.shape, shapeData.oldState);
         });
         
         action.shape.isSelected = false;
@@ -670,6 +747,7 @@ export function undo() {
     }
 
     if (action.type === 'create') {
+    detachCreatedShapeFrame(action);
     if (action.frameCreation && action.shape.shapeName === 'frame') {
         // Treat a manually-created frame and its initial membership as one
         // atomic action. Children remain on the canvas when the frame is
@@ -1104,16 +1182,7 @@ export function redo() {
         
         // Restore contained shapes to their new positions
         action.containedShapes.forEach(shapeData => {
-            const shape = shapeData.shape;
-            shape.x = shapeData.newState.x;
-            shape.y = shapeData.newState.y;
-            shape.width = shapeData.newState.width;
-            shape.height = shapeData.newState.height;
-            shape.rotation = shapeData.newState.rotation;
-            
-            if (typeof shape.draw === 'function') {
-                shape.draw();
-            }
+            restoreShapeGeometry(shapeData.shape, shapeData.newState);
         });
         
         action.shape.isSelected = false;
@@ -1245,11 +1314,12 @@ export function redo() {
         }
     } else {
         // Handle other shape creation redo
-        shapes.push(action.shape);
+        if (!shapes.includes(action.shape)) shapes.push(action.shape);
         if (svg) {
             svg.appendChild(action.shape.group);
         }
     }
+    restoreCreatedShapeFrame(action);
     undoStack.push(action);
     return;
 }
@@ -1601,10 +1671,13 @@ document.getElementById('redo')?.addEventListener('click', redo);
 
 // Expose globally for plain scripts
 window.pushCreateAction = pushCreateAction;
+window.beginUndoBatch = beginUndoBatch;
+window.endUndoBatch = endUndoBatch;
 window.pushDeleteAction = pushDeleteAction;
 window.pushCanvasResetAction = pushCanvasResetAction;
 window.invalidateCanvasResetUndo = invalidateCanvasResetUndo;
 window.clearUndoHistory = clearUndoHistory;
+window.rebindUndoHistory = rebindUndoHistory;
 window.pushDeleteActionWithAttachments = pushDeleteActionWithAttachments;
 window.pushTransformAction = pushTransformAction;
 window.pushOptionsChangeAction = pushOptionsChangeAction;

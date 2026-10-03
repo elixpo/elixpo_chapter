@@ -17,6 +17,37 @@ import { handleShapeRecognitionDown, handleShapeRecognitionMove, handleShapeReco
 import { handlePaintBucketDown } from '../tools/paintBucketTool.js';
 import { handleLassoDown, handleLassoMove, handleLassoUp } from '../tools/lassoTool.js';
 import { handleWebEmbedDown, handleWebEmbedMove, handleWebEmbedUp } from '../tools/webEmbedTool.js';
+import { createSelectionGestureOwner } from './SelectionGesture.js';
+
+const selectionGestureOwner = createSelectionGestureOwner();
+
+const shapePointerHandlers = {
+    rectangle: { down: handleMouseDownRect, move: handleMouseMoveRect, up: handleMouseUpRect },
+    arrow: { down: handleMouseDownArrow, move: handleMouseMoveArrow, up: handleMouseUpArrow },
+    circle: { down: handleMouseDownCircle, move: handleMouseMoveCircle, up: handleMouseUpCircle },
+    image: { down: handleMouseDownImage, move: handleMouseMoveImage, up: handleMouseUpImage },
+    line: { down: handleMouseDownLine, move: handleMouseMoveLine, up: handleMouseUpLine },
+    freehandStroke: { down: handleFreehandMouseDown, move: handleFreehandMouseMove, up: handleFreehandMouseUp },
+    text: { down: handleTextMouseDown, move: handleTextMouseMove, up: handleTextMouseUp },
+    frame: { down: handleMouseDownFrame, move: handleMouseMoveFrame, up: handleMouseUpFrame },
+    icon: { down: handleMouseDownIcon, move: handleMouseMoveIcon, up: handleMouseUpIcon },
+    code: { down: handleCodeMouseDown, move: handleCodeMouseMove, up: handleCodeMouseUp },
+};
+
+function routeShapePointer(phase, event, shape = currentShape) {
+    const handler = shapePointerHandlers[shape?.shapeName]?.[phase];
+    if (!handler) return false;
+    handler(event);
+    return true;
+}
+
+function captureSelectionGesture(event) {
+    if (isMultiSelecting || multiSelection.isDragging || multiSelection.isResizing || multiSelection.isRotating) {
+        selectionGestureOwner.captureMulti(event.pointerId);
+    } else if (currentShape?.isSelected) {
+        selectionGestureOwner.captureShape(currentShape, event.pointerId);
+    }
+}
 
 // === Auto-scroll when dragging near viewport edges ===
 const EDGE_THRESHOLD = 40; // px from edge to start scrolling
@@ -85,6 +116,7 @@ function _onDocumentDragMove(e) {
     const clampedX = Math.max(rect.left, Math.min(rect.right, e.clientX));
     const clampedY = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
     const clampedEvent = new PointerEvent(e.type, {
+        pointerId: e.pointerId,
         clientX: clampedX,
         clientY: clampedY,
         buttons: e.buttons,
@@ -114,6 +146,7 @@ const handleMainMouseDown = (e) => {
     // simultaneously pans (handled in ZoomPan) and starts a selection
     // marquee.
     if (e.button === 1 || e.button === 2 || window.__spacePanActive) return;
+    selectionGestureOwner.clearAll();
     // Safety: remove any stray selection rectangle from a previous interrupted drag
     removeMultiSelectionRect();
 
@@ -178,6 +211,7 @@ const handleMainMouseDown = (e) => {
     else if (isSelectionToolActive) {
         // Try multi-selection first when selection tool is active
         if (handleMultiSelectionMouseDown(e)) {
+            captureSelectionGesture(e);
             return; // Multi-selection handled the event
         }
 
@@ -186,43 +220,7 @@ const handleMainMouseDown = (e) => {
         let handled = false;
 
         // If multi-selection didn't handle it, proceed with shape-specific selection
-        if (currentShape?.shapeName === 'rectangle') {
-            handleMouseDownRect(e);
-            handled = true;
-        } else if (currentShape?.shapeName === 'arrow') {
-            handleMouseDownArrow(e);
-            handled = true;
-        } else if (currentShape?.shapeName === 'circle') {
-            handleMouseDownCircle(e);
-            handled = true;
-        } else if (currentShape?.shapeName === 'image') {
-            handleMouseDownImage(e);
-            handled = true;
-        }
-        else if (currentShape?.shapeName === 'line') {
-            handleMouseDownLine(e);
-            handled = true;
-        }
-        else if (currentShape?.shapeName === 'freehandStroke') {
-            handleFreehandMouseDown(e);
-            handled = true;
-        }
-        else if (currentShape?.shapeName === 'text') {
-            handleTextMouseDown(e);
-            handled = true;
-        }
-        else if (currentShape?.shapeName === 'frame') {
-            handleMouseDownFrame(e);
-            handled = true;
-        }
-        else if (currentShape?.shapeName === 'icon') {
-            handleMouseDownIcon(e);
-            handled = true;
-        }
-        else if( currentShape?.shapeName === 'code') {
-            handleCodeMouseDown(e);
-            handled = true;
-        }
+        handled = routeShapePointer('down', e);
 
         // If the handler deselected (currentShape cleared) but didn't select something new,
         // fall through to try all handlers so clicking another shape type works
@@ -233,25 +231,25 @@ const handleMainMouseDown = (e) => {
         if (!handled) {
             const originalCurrentShape = currentShape;
             handleMouseDownRect(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownCircle(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownArrow(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownImage(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownLine(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleFreehandMouseDown(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleTextMouseDown(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownFrame(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleMouseDownIcon(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             handleCodeMouseDown(e);
-            if (currentShape && currentShape !== originalCurrentShape) return;
+            if (currentShape && currentShape !== originalCurrentShape) { captureSelectionGesture(e); return; }
             if (currentShape === originalCurrentShape) {
                 if (currentShape) {
                     currentShape.removeSelection();
@@ -259,6 +257,7 @@ const handleMainMouseDown = (e) => {
                 }
             }
         }
+        captureSelectionGesture(e);
     }
 };
 
@@ -306,6 +305,16 @@ const handleMainMouseMove = (e) => {
         handleMouseMoveIcon(e);
     }
     else if (isSelectionToolActive) {
+        const activeGesture = selectionGestureOwner.get(e.pointerId);
+        if (activeGesture) {
+            if (activeGesture.kind === 'multi') {
+                handleMultiSelectionMouseMove(e);
+            } else if (currentShape === activeGesture.shape && currentShape?.isSelected) {
+                routeShapePointer('move', e, activeGesture.shape);
+            }
+            return;
+        }
+
         // Handle multi-selection operations first - these take priority
         if (isMultiSelecting || multiSelection.isDragging || multiSelection.isResizing || multiSelection.isRotating) {
             if (handleMultiSelectionMouseMove(e)) {
@@ -400,6 +409,20 @@ const handleMainMouseUp = (e) => {
     }
 
     else if (isSelectionToolActive) {
+        const activeGesture = selectionGestureOwner.get(e.pointerId);
+        if (activeGesture) {
+            try {
+                if (activeGesture.kind === 'multi') {
+                    handleMultiSelectionMouseUp(e);
+                } else if (currentShape === activeGesture.shape) {
+                    routeShapePointer('up', e, activeGesture.shape);
+                }
+            } finally {
+                selectionGestureOwner.clear(e.pointerId);
+            }
+            return;
+        }
+
         // Always try multi-selection cleanup first
         if (isMultiSelecting || multiSelection.isDragging || multiSelection.isResizing || multiSelection.isRotating) {
             handleMultiSelectionMouseUp(e);
@@ -526,6 +549,7 @@ function initEventDispatcher(svgEl) {
 
 function cleanupEventDispatcher() {
     _stopAutoScroll();
+    selectionGestureOwner.clearAll();
     if (_documentDragActive) {
         document.removeEventListener('pointermove', _onDocumentDragMove);
         document.removeEventListener('pointerup', _onDocumentDragUp);

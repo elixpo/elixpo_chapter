@@ -16,11 +16,14 @@ export function resolveTheme(theme) {
 function themeColor(value, resolved) {
   if (!value || typeof value !== 'string') return value
   const normalized = value.toLowerCase().trim()
+  if (['#e0e0e0', '#e8e3f3'].includes(normalized)) {
+    return resolved === 'light' ? '#000000' : '#ffffff'
+  }
   if (resolved === 'dark' && ['#000', '#000000', 'black', '#1a1a2e'].includes(normalized)) {
     return '#ffffff'
   }
   if (resolved === 'light' && ['#fff', '#ffffff', 'white'].includes(normalized)) {
-    return '#1a1a2e'
+    return '#000000'
   }
   return value
 }
@@ -29,9 +32,11 @@ function themeColor(value, resolved) {
 export function normalizeSceneColorsForTheme(sceneData, resolved) {
   if (!Array.isArray(sceneData?.shapes)) return sceneData
   for (const shape of sceneData.shapes) {
+    shape.labelColor = themeColor(shape.labelColor, resolved)
     if (shape.options) {
       shape.options.stroke = themeColor(shape.options.stroke, resolved)
       shape.options.fill = themeColor(shape.options.fill, resolved)
+      shape.options.labelColor = themeColor(shape.options.labelColor, resolved)
     }
     for (const htmlKey of ['groupHTML', 'elementHTML']) {
       if (typeof shape[htmlKey] !== 'string') continue
@@ -53,13 +58,13 @@ function invertShapeColors(prevResolved, nextResolved) {
   const shapes = window.shapes
   if (!shapes || shapes.length === 0) return
 
-  // The light tools use a near-black default, while older scenes may use
-  // pure black. Treat both as theme-owned colors so existing strokes do not
+  // Light tools now use pure black, while older scenes may use near-black.
+  // Treat both as theme-owned colors so existing strokes do not
   // disappear when the canvas changes underneath them.
   const fromColors = nextResolved === 'light'
     ? new Set(['#ffffff'])
     : new Set(['#000000', '#1a1a2e'])
-  const to = nextResolved === 'light' ? '#1a1a2e' : '#ffffff'
+  const to = nextResolved === 'light' ? '#000000' : '#ffffff'
 
   const normalize = (c) => {
     if (!c || c === 'transparent' || c === 'none') return c
@@ -145,6 +150,13 @@ function invertShapeColors(prevResolved, nextResolved) {
       if (shape.strokeColor !== undefined && fromColors.has(normalize(shape.strokeColor))) {
         shape.strokeColor = to
         changed = true
+      }
+      if (shape.labelColor !== undefined) {
+        const labelColor = normalize(shape.labelColor)
+        if (fromColors.has(labelColor) || ['#e0e0e0', '#e8e3f3'].includes(labelColor)) {
+          shape.labelColor = to
+          changed = true
+        }
       }
       // Text shapes keep their color in the restored SVG rather than on the
       // shape object. Update only theme-default fills; explicit user colors

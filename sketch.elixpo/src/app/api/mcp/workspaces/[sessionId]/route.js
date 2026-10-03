@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCloudflareBindings } from '@/lib/cloudflare'
 import { authorizeMcpWorkspace } from '@/lib/mcpGrants'
+import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
 export const runtime = 'edge'
 
@@ -11,7 +12,12 @@ function authError(result) {
   return NextResponse.json({ error: 'Invalid, expired, or revoked workspace grant' }, { status: 401 })
 }
 
+function comingSoon() {
+  return NextResponse.json({ error: 'Remote MCP workspace access is coming soon.' }, { status: 503 })
+}
+
 export async function GET(request, { params }) {
+  if (!REMOTE_MCP_ENABLED) return comingSoon()
   try {
     const { sessionId } = await params
     const { DB } = getCloudflareBindings()
@@ -33,6 +39,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  if (!REMOTE_MCP_ENABLED) return comingSoon()
   try {
     const { sessionId } = await params
     const cloudflare = getCloudflareBindings()

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCloudflareBindings } from '@/lib/cloudflare'
 import { getAuthenticatedUser } from '@/lib/serverAuth'
 import { createMcpGrantToken, hashMcpGrantToken, normalizeMcpGrantScopes, sanitizeGrant } from '@/lib/mcpGrants'
+import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
 export const runtime = 'edge'
 
@@ -9,11 +10,16 @@ function unavailable() {
   return NextResponse.json({ error: 'MCP workspace access is unavailable in local development until D1 is configured.' }, { status: 503 })
 }
 
+function comingSoon() {
+  return NextResponse.json({ error: 'Remote MCP workspace access is coming soon.' }, { status: 503 })
+}
+
 async function bindings() {
   try { return getCloudflareBindings() } catch { return null }
 }
 
 export async function GET(request) {
+  if (!REMOTE_MCP_ENABLED) return comingSoon()
   const user = await getAuthenticatedUser(request)
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   const cloudflare = await bindings()
@@ -31,6 +37,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (!REMOTE_MCP_ENABLED) return comingSoon()
   const user = await getAuthenticatedUser(request)
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   const cloudflare = await bindings()
@@ -68,6 +75,7 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
+  if (!REMOTE_MCP_ENABLED) return comingSoon()
   const user = await getAuthenticatedUser(request)
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 })
   const cloudflare = await bindings()

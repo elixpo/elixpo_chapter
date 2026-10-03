@@ -13,7 +13,7 @@ import {
 import { cleanupAttachments, updateAttachedArrows } from './arrowTool.js';
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 
-function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#1a1a2e"; }
+function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#000000"; }
 import {
     addCodeBlock,
     wrapCodeElement,
@@ -469,7 +469,7 @@ function createSelectionFeedback(groupElement) {
     selectionBox.setAttribute("fill", "none");
     selectionBox.setAttribute("stroke", "#5B57D1");
     selectionBox.setAttribute("stroke-width", "1.5");
-    selectionBox.setAttribute("stroke-dasharray", `${4 / zoom} ${2 / zoom}`);
+    selectionBox.setAttribute("stroke-dasharray", "4 2");
     selectionBox.setAttribute("vector-effect", "non-scaling-stroke");
     selectionBox.setAttribute("pointer-events", "none");
     groupElement.appendChild(selectionBox);

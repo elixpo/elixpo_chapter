@@ -491,7 +491,8 @@ function addSelectionOutline() {
     outline.setAttribute("fill", "none");
     outline.setAttribute("stroke", "#5B57D1");
     outline.setAttribute("stroke-width", 1.5);
-    outline.setAttribute("stroke-dasharray", "4 3");
+    outline.setAttribute("stroke-dasharray", "4 2");
+    outline.setAttribute("vector-effect", "non-scaling-stroke");
     outline.setAttribute("style", "pointer-events: none;");
     outline.setAttribute("class", "selection-outline");
     if (rotation !== 0) {
@@ -625,7 +626,7 @@ function addResizeAnchors(x, y, width, height, centerX, centerY, iconWidth, rota
 
     const zoom = window.currentZoom || 1;
     const anchorSize = 10 / zoom;
-    const anchorStrokeWidth = 2 / zoom;
+    const anchorStrokeWidth = 2;
 
     const positions = [
         { x: x, y: y, cursor: "nw-resize" },
@@ -661,7 +662,7 @@ function addRotationAnchor(x, y, width, height, centerX, centerY, iconWidth, rot
 
     const zoom = window.currentZoom || 1;
     const anchorRadius = 5 / zoom;
-    const anchorStrokeWidth = 2 / zoom;
+    const anchorStrokeWidth = 2;
     const rotationDistance = 30 / zoom;
 
     const rotationAnchorX = x + width / 2;

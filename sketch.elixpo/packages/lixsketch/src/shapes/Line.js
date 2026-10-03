@@ -2,14 +2,15 @@
 // Line shape class - extracted from lineTool.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom
 import { updateAttachedArrows as updateArrowsForShape } from '../tools/arrowTool.js';
+import { resolveThemeLabelColor } from '../utils/themeColors.js';
 
 const rc = rough.svg(svg);
 // Issue #38 follow-up: read the default stroke from the active theme
 // instead of pinning to a single colour. White was invisible on the new
-// light canvas, near-black is invisible if the user toggles dark.
+// light canvas, black is invisible if the user toggles dark.
 function getThemeStroke() {
     if (typeof document === 'undefined') return '#fff';
-    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#1a1a2e';
+    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#000000';
 }
 const lineStrokeWidth = 2;
 let hoveredFrameLine = null;
@@ -19,6 +20,12 @@ class Line {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.options = { ...options };
+        // RoughJS otherwise chooses a fresh random stroke on every redraw.
+        // A stable per-line seed keeps the hand-drawn contour visually fixed
+        // while its endpoints move.
+        if (!Number.isInteger(this.options.seed) || this.options.seed <= 0) {
+            this.options.seed = Math.floor(Math.random() * 0x7fffffff) + 1;
+        }
         this.group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         this.isSelected = false;
         this.anchors = [];
@@ -37,11 +44,12 @@ class Line {
         // Embedded label support
         this.label = options.label || '';
         this.labelElement = null;
-        this.labelColor = options.labelColor || '#e0e0e0';
+        this.labelColor = resolveThemeLabelColor(options.labelColor);
         this.labelFontSize = options.labelFontSize || 12;
         this._isEditingLabel = false;
         this._hitArea = null;
         this._labelBg = null;
+        this._dragRenderFrame = null;
 
         svg.appendChild(this.group);
         this._setupLabelDblClick();
@@ -431,7 +439,7 @@ removeSelection() {
     this.anchors = [];
     
     const anchorSize = 10 / (currentZoom || 1);
-    const anchorStrokeWidth = 2 / (currentZoom || 1);
+    const anchorStrokeWidth = 2;
     
     // Start point anchor
     const startAnchor = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -537,7 +545,38 @@ removeSelection() {
             };
         }
 
-        // Full redraw to keep anchors, hit area, and label in sync
+        this.scheduleDragRender();
+    }
+
+    scheduleDragRender() {
+        if (this._dragRenderFrame !== null) return;
+        if (typeof requestAnimationFrame !== 'function') {
+            this.renderDragGeometry();
+            return;
+        }
+        this._dragRenderFrame = requestAnimationFrame(() => {
+            this._dragRenderFrame = null;
+            this.renderDragGeometry();
+        });
+    }
+
+    renderDragGeometry() {
+        this.updateLineElement();
+        this.updateAnchorPositions();
+        if (this._hitArea) {
+            const path = this.isCurved && this.controlPoint
+                ? `M ${this.startPoint.x} ${this.startPoint.y} Q ${this.controlPoint.x} ${this.controlPoint.y} ${this.endPoint.x} ${this.endPoint.y}`
+                : `M ${this.startPoint.x} ${this.startPoint.y} L ${this.endPoint.x} ${this.endPoint.y}`;
+            this._hitArea.setAttribute('d', path);
+        }
+        this._updateLabelElement();
+    }
+
+    finalizeMove() {
+        if (this._dragRenderFrame !== null && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._dragRenderFrame);
+        }
+        this._dragRenderFrame = null;
         this.draw();
     }
 
@@ -620,21 +659,9 @@ removeSelection() {
             this.controlPoint.y += dy;
         }
 
-        // Update without full redraw to prevent jitter
-        this.updateLineElement();
-        this.updateAnchorPositions();
-
-        // Update hit area path
-        if (this._hitArea) {
-            if (this.isCurved && this.controlPoint) {
-                this._hitArea.setAttribute('d', `M ${this.startPoint.x} ${this.startPoint.y} Q ${this.controlPoint.x} ${this.controlPoint.y} ${this.endPoint.x} ${this.endPoint.y}`);
-            } else {
-                this._hitArea.setAttribute('d', `M ${this.startPoint.x} ${this.startPoint.y} L ${this.endPoint.x} ${this.endPoint.y}`);
-            }
-        }
-
-        // Update label position
-        this._updateLabelElement();
+        // Multiple pointer/snap updates in one browser frame collapse into a
+        // single DOM + RoughJS update.
+        this.scheduleDragRender();
 
         // Only update frame containment if not being moved by a parent frame
         if (!this.isBeingMovedByFrame) {

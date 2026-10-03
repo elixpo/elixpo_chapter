@@ -22,7 +22,7 @@ let previewFrame = 0;
 let latestPrediction = null;
 
 function getThemeStroke() {
-    return document.body?.classList.contains('theme-dark') ? '#f7f4ff' : '#211a33';
+    return document.body?.classList.contains('theme-dark') ? '#f7f4ff' : '#000000';
 }
 
 function getSVGPoint(event) {
