@@ -13,7 +13,7 @@ import {
 import { cleanupAttachments, updateAttachedArrows } from './arrowTool.js';
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 
-function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#1a1a2e"; }
+function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#000000"; }
 import {
     addCodeBlock,
     wrapCodeElement,

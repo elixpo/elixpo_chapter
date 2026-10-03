@@ -4,7 +4,7 @@ import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransf
 import { updateAttachedArrows as updateArrowsForShape, cleanupAttachments } from './arrowTool.js';
 import { calculateSnap, clearSnapGuides } from '../core/SnapGuides.js';
 
-function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#1a1a2e"; }
+function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#000000"; }
 
 let isDrawingLine = false;
 let currentLine = null;

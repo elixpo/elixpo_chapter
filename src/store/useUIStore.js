@@ -20,7 +20,7 @@ function themeColor(value, resolved) {
     return '#ffffff'
   }
   if (resolved === 'light' && ['#fff', '#ffffff', 'white'].includes(normalized)) {
-    return '#1a1a2e'
+    return '#000000'
   }
   return value
 }
@@ -53,13 +53,13 @@ function invertShapeColors(prevResolved, nextResolved) {
   const shapes = window.shapes
   if (!shapes || shapes.length === 0) return
 
-  // The light tools use a near-black default, while older scenes may use
-  // pure black. Treat both as theme-owned colors so existing strokes do not
+  // Light tools now use pure black, while older scenes may use near-black.
+  // Treat both as theme-owned colors so existing strokes do not
   // disappear when the canvas changes underneath them.
   const fromColors = nextResolved === 'light'
     ? new Set(['#ffffff'])
     : new Set(['#000000', '#1a1a2e'])
-  const to = nextResolved === 'light' ? '#1a1a2e' : '#ffffff'
+  const to = nextResolved === 'light' ? '#000000' : '#ffffff'
 
   const normalize = (c) => {
     if (!c || c === 'transparent' || c === 'none') return c

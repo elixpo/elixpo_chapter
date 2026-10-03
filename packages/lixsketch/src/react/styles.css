@@ -35,6 +35,19 @@
 
 .theme-light .lixsketch-canvas-root {
   --lix-icon-filter: none;
+  --lixsketch-bg: #ffffff;
+}
+
+.theme-light .lixsketch-canvas-root :is(
+  .anchor,
+  .resize-anchor,
+  .resize-handle,
+  .rotate-anchor,
+  .rotation-anchor,
+  .multi-selection-anchor,
+  .multi-selection-rotation-anchor
+) {
+  fill: #ffffff !important;
 }
 
 .theme-dark .lixsketch-canvas-root {

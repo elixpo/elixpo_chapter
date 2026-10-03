@@ -140,7 +140,7 @@ function applyTheme(theme) {
   body.classList.add(`theme-${resolved}`)
 
   const svgEl = window.svg
-  if (svgEl) svgEl.style.background = resolved === 'light' ? '#fbf9fd' : '#15111f'
+  if (svgEl) svgEl.style.background = resolved === 'light' ? '#ffffff' : '#15111f'
 }
 
 const useUIStore = create((set, get) => ({

@@ -6,10 +6,10 @@ import { updateAttachedArrows as updateArrowsForShape } from '../tools/arrowTool
 const rc = rough.svg(svg);
 // Issue #38 follow-up: read the default stroke from the active theme
 // instead of pinning to a single colour. White was invisible on the new
-// light canvas, near-black is invisible if the user toggles dark.
+// light canvas, black is invisible if the user toggles dark.
 function getThemeStroke() {
     if (typeof document === 'undefined') return '#fff';
-    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#1a1a2e';
+    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#000000';
 }
 const lineStrokeWidth = 2;
 let hoveredFrameLine = null;
