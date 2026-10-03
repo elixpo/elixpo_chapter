@@ -563,34 +563,12 @@ def _maybe_apply_ota(os_obj=None):
                 advance = None
         else:
             advance = None
-        # Monkey-patch a per-file progress hook into apply_pending. The
-        # OTA module does the heavy lifting; we just count files and tick
-        # the bar. (apply_pending walks the manifest, so we replicate
-        # that walk here in order to call advance() between files.)
         if advance is None:
             return ota.apply_pending()
-        # Custom apply loop with progress callbacks.
-        try:
-            import json as _j
-            with open(ota.STAGE_DIR + "/" + ota.MANIFEST_NAME) as f:
-                manifest = _j.load(f)
-        except Exception:
-            return ota.apply_pending()
-        files = manifest.get("files", ())
-        for i, entry in enumerate(files):
-            path = entry.get("path", "")
-            if not path:
-                continue
-            try:
-                ota._copy_file(ota.STAGE_DIR + "/" + path, path)
-            except Exception:
-                pass
-            try:
-                advance(i + 1, path)
-            except Exception:
-                pass
-        ota._rm_tree(ota.STAGE_DIR)
-        return manifest.get("version", None)
+        # Keep promotion and cleanup inside ota.apply_pending().  Its return
+        # value remains false on a copy failure, leaving staging intact for a
+        # controlled retry rather than rebooting a partially applied system.
+        return ota.apply_pending(on_progress=advance)
     except Exception:
         return None
 
