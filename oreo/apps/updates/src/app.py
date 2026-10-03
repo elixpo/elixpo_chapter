@@ -23,6 +23,7 @@ Modes (a sub-page system inside this app):
 """
 
 import oreoOS
+import time
 from oreoOS import api, theme, widgets
 
 
@@ -64,8 +65,10 @@ class App(oreoOS.App):
         self._peeked  = None
         self._notes   = ""             # release-body for the changelog page
         self._scroll  = 0              # changelog scroll offset (px)
-        self._tick    = 0              # animation tick for the loading dots
+        self._tick    = 0              # animation tick for the loader sweep
         self._tick_t  = 0.0
+        self._loader_phase = "STARTING"
+        self._loader_paint_ms = 0
         self._error   = ""
         self._dirty   = True
         # Auto-run a check on entry so the page is meaningful without
@@ -74,14 +77,15 @@ class App(oreoOS.App):
 
     # ── update / animation ─────────────────────────────────────────────
     def update(self, dt):
-        # Cycle the loading dots while we're mid-network. Caps at 3 Hz
-        # so the dot phase is readable.
+        # Continue the sweep during any non-blocking time between network
+        # operations. The HTTP helper also pulses it while its synchronous
+        # socket call owns the main loop.
         if (self._mode == "main"
                 and self._state in (S_CHECKING, S_DOWNLOADING)):
             self._tick_t += dt
-            if self._tick_t >= 0.35:
+            if self._tick_t >= 0.12:
                 self._tick_t = 0.0
-                self._tick   = (self._tick + 1) % 4
+                self._tick   = (self._tick + 1) % 24
                 self._dirty  = True
 
     # ── input ──────────────────────────────────────────────────────────
@@ -134,6 +138,8 @@ class App(oreoOS.App):
             return
         self._state = S_CHECKING
         self._tick  = 0
+        self._loader_phase = "STARTING"
+        self._loader_paint_ms = 0
         self._dirty = True
         try:
             self.draw(self._os.display); self._os.display.present()
@@ -143,7 +149,9 @@ class App(oreoOS.App):
         # Always fetch the latest tag — we need to compare against the
         # device's current VERSION to pick the right state, not just
         # "is there a newer one?".
-        latest_ver, rel = self._safe(lambda: ota.latest_version()) or (None, None)
+        latest_ver, rel = self._safe(
+            lambda: ota.latest_version(on_progress=self._network_pulse)
+        ) or (None, None)
         if not latest_ver:
             self._state = S_FAILED
             self._error = "no network"
@@ -177,7 +185,9 @@ class App(oreoOS.App):
         try: ota.push_update_notification(latest_ver)
         except Exception: pass
 
-        peeked = self._safe(lambda: ota.peek(rel))
+        peeked = self._safe(
+            lambda: ota.peek(rel, on_progress=self._network_pulse)
+        )
         if not peeked:
             self._state = S_FAILED
             self._error = "manifest fetch failed"
@@ -195,6 +205,37 @@ class App(oreoOS.App):
         self._state = S_AVAILABLE
         self._sel   = self.BTN_INSTALL
         self._dirty = True
+
+    def _network_pulse(self, phase, received=0):
+        """Repaint the loader while a synchronous HTTPS request is active."""
+        labels = {
+            "dns":      "FINDING GITHUB",
+            "connect":  "CONNECTING",
+            "tls":      "SECURE LINK",
+            "request":  "REQUESTING RELEASE",
+            "read":     "READING UPDATE DATA",
+            "redirect": "OPENING RELEASE",
+        }
+        self._loader_phase = labels.get(phase, "CHECKING")
+
+        # Full LCD presentation costs about 31 ms. Throttle body-read pulses
+        # so animation does not become the dominant network workload.
+        try:
+            now = time.ticks_ms()
+            if (phase == "read" and self._loader_paint_ms and
+                    time.ticks_diff(now, self._loader_paint_ms) < 90):
+                return
+            self._loader_paint_ms = now
+        except Exception:
+            pass
+
+        self._tick = (self._tick + 1) % 24
+        self._dirty = True
+        try:
+            self.draw(self._os.display)
+            self._os.display.present()
+        except Exception:
+            pass
 
     def _run_install(self):
         try:
@@ -269,7 +310,7 @@ class App(oreoOS.App):
 
     def _draw_main(self, d):
         if self._state in (S_AVAILABLE, S_READY):
-            widgets.draw_hint(d, "L/R=pick  A=do  HOME=back")
+            widgets.draw_hint(d, "L/R=select  A=confirm  HOME=back")
         elif self._state == S_CHECKING:
             widgets.draw_hint(d, "HOME=back")
         else:
@@ -307,11 +348,43 @@ class App(oreoOS.App):
         self._draw_loader(d, "CHECKING FOR UPDATES")
 
     def _draw_loader(self, d, label):
-        # Centered "<LABEL>" + an ellipsis that grows then resets.
-        dots = "." * (self._tick + 1)
-        line = label + " " + dots
-        d.text(line, (SW - len(line) * 8) // 2,
-               LOAD_Y + 6, theme.MUTED, scale=1)
+        # Fixed text avoids the old growing-ellipsis jitter. A bouncing colour
+        # segment and five-step activity row provide motion that remains clear
+        # on the small panel and under glare.
+        d.text(label, (SW - len(label) * 8) // 2,
+               LOAD_Y - 2, theme.TEXT_BRIGHT, scale=1)
+
+        track_w = 152
+        track_h = 8
+        track_x = (SW - track_w) // 2
+        track_y = LOAD_Y + 16
+        d.rect(track_x, track_y, track_w, track_h, theme.MUTED2, fill=True)
+        d.rect(track_x + 2, track_y + 2, track_w - 4, track_h - 4,
+               theme.CARD, fill=True)
+
+        travel = track_w - 4 - 30
+        step = self._tick % 24
+        sweep = step if step <= 12 else 24 - step
+        sweep_x = track_x + 2 + (travel * sweep // 12)
+        d.rect(sweep_x, track_y + 2, 30, track_h - 4,
+               theme.PRIMARY, fill=True)
+
+        dots = 5
+        dot_w = 7
+        dot_gap = 7
+        dots_w = dots * dot_w + (dots - 1) * dot_gap
+        dots_x = (SW - dots_w) // 2
+        dots_y = LOAD_Y + 34
+        active = (self._tick // 2) % dots
+        palette = (theme.PRIMARY, theme.GOLD, theme.TEAL)
+        for i in range(dots):
+            color = palette[i % len(palette)] if i == active else theme.MUTED2
+            d.rect(dots_x + i * (dot_w + dot_gap), dots_y,
+                   dot_w, dot_w, color, fill=True)
+
+        phase = self._loader_phase[:24]
+        d.text(phase, (SW - len(phase) * 8) // 2,
+               LOAD_Y + 48, theme.MUTED, scale=1)
 
     def _draw_lts(self, d):
         # LTS-only compact render. The OREO OS <version> headline above
@@ -353,9 +426,9 @@ class App(oreoOS.App):
         # Two side-by-side buttons.
         total_w = BTN_W * 2 + BTN_GAP
         start_x = (SW - total_w) // 2
-        self._draw_btn(d, start_x, self._install_label(),
+        self._draw_btn(d, start_x, self._install_label(), "L",
                        sel=(self._sel == self.BTN_INSTALL), primary=True)
-        self._draw_btn(d, start_x + BTN_W + BTN_GAP, "CHANGELOG",
+        self._draw_btn(d, start_x + BTN_W + BTN_GAP, "CHANGELOG", "R",
                        sel=(self._sel == self.BTN_CHANGELOG), primary=False)
 
     def _install_label(self):
@@ -365,21 +438,44 @@ class App(oreoOS.App):
             return "REBOOT"
         return "INSTALL"
 
-    def _draw_btn(self, d, x, label, sel, primary):
-        if primary:
-            fill, ink = theme.PRIMARY, api.WHITE
-        else:
-            fill, ink = theme.CARD,    theme.PRIMARY
-        d.rect(x, BTN_Y, BTN_W, BTN_H, fill, fill=True)
-        border = theme.SEL_BORDER if sel else theme.PRIMARY
-        d.rect(x,             BTN_Y,             BTN_W, 1, border, fill=True)
-        d.rect(x,             BTN_Y + BTN_H - 1, BTN_W, 1, border, fill=True)
-        d.rect(x,             BTN_Y,             1, BTN_H, border, fill=True)
-        d.rect(x + BTN_W - 1, BTN_Y,             1, BTN_H, border, fill=True)
+    def _draw_btn(self, d, x, label, key, sel, primary):
+        """Draw one L/R action with an unmistakable keyboard-focus state.
+
+        Previously INSTALL stayed pink even while CHANGELOG had focus, so the
+        semantic action colour contradicted the thin selection ring. Now fill,
+        text, frame and key badge all agree on exactly one selected action.
+        """
         if sel:
-            # Inset emphasis ring on the focused button.
-            d.rect(x + 2,             BTN_Y + 2,             BTN_W - 4, 1, border, fill=True)
-            d.rect(x + 2,             BTN_Y + BTN_H - 3,     BTN_W - 4, 1, border, fill=True)
+            fill  = theme.PRIMARY
+            ink   = api.WHITE
+            border = theme.GOLD
+        else:
+            fill  = theme.CARD
+            ink   = theme.PRIMARY if primary else theme.TEXT_DIM
+            border = theme.MUTED2
+
+        # A two-pixel frame remains readable on the physical 320x240 panel.
+        d.rect(x, BTN_Y, BTN_W, BTN_H, border, fill=True)
+        d.rect(x + 2, BTN_Y + 2, BTN_W - 4, BTN_H - 4, fill, fill=True)
+
+        # Small physical-key badge above each action. Its fill mirrors focus,
+        # so the relationship between LEFT/RIGHT and the selected action is
+        # visible before the user reads the bottom hint.
+        key_w = 18
+        key_h = 11
+        key_x = x + (BTN_W - key_w) // 2
+        key_y = BTN_Y - key_h - 2
+        key_fill = theme.PRIMARY if sel else theme.CARD
+        key_ink  = api.WHITE if sel else theme.MUTED
+        d.rect(key_x, key_y, key_w, key_h, border, fill=True)
+        d.rect(key_x + 1, key_y + 1, key_w - 2, key_h - 2,
+               key_fill, fill=True)
+        d.text(key, key_x + (key_w - 8) // 2, key_y + 1, key_ink)
+
+        if sel:
+            # Gold underline makes focus survive glare and colour wash-out.
+            d.rect(x + 8, BTN_Y + BTN_H - 5, BTN_W - 16, 3,
+                   theme.GOLD, fill=True)
         d.text(label,
                x + (BTN_W - len(label) * 16) // 2,
                BTN_Y + (BTN_H - 16) // 2,
