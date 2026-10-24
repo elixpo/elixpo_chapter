@@ -36,6 +36,9 @@ def workspace_config() -> dict:
     """The built-in default config with full tool access, safe only because
     every scenario runs in a throwaway folder."""
     config = json.loads(DEFAULT_CONFIG.read_text())
+    # Crumb defines the built-in packs only when no config file exists, so a
+    # written config names no pack and routes through `models` directly.
+    config.pop("active_model_pack", None)
     config["permissions"] = {"mode": "full-access"}
     return config
 
@@ -129,7 +132,9 @@ def grade(scenario: dict, folder: Path, result: dict | None) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--crumb", default=shutil.which("crumb") or str(REPO / "target/release/crumb"))
+    # The repo's own build first: an installed `crumb` may be an older release.
+    built = REPO / "target/release/crumb"
+    parser.add_argument("--crumb", default=str(built) if built.exists() else shutil.which("crumb"))
     parser.add_argument("--only", nargs="*", default=[])
     parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--keep", action="store_true", help="keep workspaces for inspection")

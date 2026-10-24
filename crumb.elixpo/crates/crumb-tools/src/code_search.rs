@@ -344,14 +344,14 @@ fn matching_lines(text: &str, pattern: &Regex, context: usize) -> Vec<(usize, St
 fn descriptor() -> ToolDescriptor {
     ToolDescriptor {
         name: SEARCH_CODE.to_owned(),
-        description: "Search the workspace: lines matching a regex (or literal text) as path:line, or with only a glob, the matching file paths. Skips dependency and build folders, binaries, and gitignored top-level folders. Prefer it to shell grep or find.".to_owned(),
+        description: "Search the workspace for lines matching a regex (as path:line) or, with only a glob, list matching files. Skips dependency and build folders. Prefer it to grep or find.".to_owned(),
         input_schema: json!({
             "type": "object",
             "properties": {
-                "pattern": {"type": "string", "description": "Rust regex; case-insensitive unless it has an uppercase letter."},
-                "literal": {"type": "boolean", "description": "Match pattern as plain text."},
-                "glob": {"type": "string", "description": "File filter such as *.rs or src/**/*.ts."},
-                "path": {"type": "string", "description": "Folder to search, relative to the workspace."},
+                "pattern": {"type": "string", "description": "Regex; case-insensitive unless it has uppercase."},
+                "literal": {"type": "boolean"},
+                "glob": {"type": "string", "description": "e.g. *.rs or src/**/*.ts"},
+                "path": {"type": "string"},
                 "context_lines": {"type": "integer", "minimum": 0, "maximum": MAX_CONTEXT_LINES},
                 "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS}
             },

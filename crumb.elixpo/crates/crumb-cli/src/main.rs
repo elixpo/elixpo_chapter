@@ -274,8 +274,11 @@ fn parse_exec_request(arguments: &[OsString]) -> Result<Option<(bool, String)>> 
     }
     let mut request = &arguments[1..];
     let json = request.first().is_some_and(|argument| argument == "--json");
-    let separator = request.first().is_some_and(|argument| argument == "--");
-    if json || separator {
+    if json {
+        request = &request[1..];
+    }
+    // `--` ends the options, after `--json` too, and is not part of the request.
+    if request.first().is_some_and(|argument| argument == "--") {
         request = &request[1..];
     }
     if request.is_empty() {
@@ -14234,6 +14237,15 @@ mod tests {
             escaped,
             (false, "--json is part of this request".to_owned())
         );
+        let json_then_separator = parse_exec_request(&[
+            OsString::from("exec"),
+            OsString::from("--json"),
+            OsString::from("--"),
+            OsString::from("count the lines"),
+        ])
+        .expect("json then separator")
+        .expect("exec action");
+        assert_eq!(json_then_separator, (true, "count the lines".to_owned()));
 
         assert!(parse_exec_request(&[OsString::from("exec")]).is_err());
         assert!(

@@ -175,7 +175,7 @@ pub fn register_update_tasks_tool(host: &mut ToolHost, board: TaskBoard) -> Resu
     host.register(
         ToolDescriptor {
             name: UPDATE_TASKS.to_owned(),
-            description: "Keep a task list for work with three or more steps. Send the whole list each time: mark one task in_progress before starting it and completed as soon as it is verified done. Use blocked with a note only when a task truly cannot be finished. Open tasks must be finished or reported before you answer.".to_owned(),
+            description: "Task list for work with three or more steps; send the whole list each call. One task in_progress at a time; mark completed once verified, blocked (with a note) only if impossible. Finish or report open tasks before answering.".to_owned(),
             input_schema: json!({
                 "type": "object",
                 "properties": {

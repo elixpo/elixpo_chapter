@@ -184,7 +184,16 @@ fn read_file(
         ""
     };
     Ok(ToolOutput::text(bounded_text(
-        format!("path: {path}\noffset_bytes: {offset}\n{content}{suffix}"),
+        // A stated line count spares the model from counting lines by eye.
+        format!(
+            "path: {path}\noffset_bytes: {offset}\nlines: {}{}\n{content}{suffix}",
+            content.lines().count(),
+            if truncated || offset > 0 {
+                " (this range only)"
+            } else {
+                ""
+            }
+        ),
         boundary.limits.max_output_bytes,
     )))
 }
@@ -848,6 +857,52 @@ mod tests {
         assert!(output.text.contains("beta"));
         assert!(output.text.contains("[output truncated]"));
         assert!(output.text.len() <= 128);
+    }
+
+    #[test]
+    fn whole_file_reads_state_their_line_count() {
+        let workspace = TempWorkspace::new();
+        let lines = (0..25)
+            .map(|index| format!("b{index}"))
+            .collect::<Vec<_>>()
+            .join(
+                "
+",
+            )
+            + "
+";
+        fs::write(workspace.path().join("b.txt"), lines).expect("fixture is written");
+        let output = host(workspace.path(), 4096, 8)
+            .call(
+                "read_file",
+                &json!({"path":"b.txt"}),
+                AgentMode::Auto,
+                &DenyAllApprovals,
+                &CancellationToken::default(),
+            )
+            .expect("read-only call is authorized");
+        assert!(
+            output
+                .text
+                .starts_with("path: b.txt\noffset_bytes: 0\nlines: 25\nb0\n"),
+            "{}",
+            output.text
+        );
+
+        let partial = host(workspace.path(), 4096, 8)
+            .call(
+                "read_file",
+                &json!({"path":"b.txt", "offset_bytes": 3}),
+                AgentMode::Auto,
+                &DenyAllApprovals,
+                &CancellationToken::default(),
+            )
+            .expect("read-only call is authorized");
+        assert!(
+            partial.text.contains("(this range only)"),
+            "{}",
+            partial.text
+        );
     }
 
     #[test]
