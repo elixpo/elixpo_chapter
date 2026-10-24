@@ -5,7 +5,11 @@
     "givenName": "Ayushman",
     "familyName": "Bhattacharya",
     "jobTitle": "Open-Source Maintainer and DevRel Engineer",
-    "aliases": ["Ayushman", "Circuit-Overtime", "elixpo"],
+    "aliases": [
+      "Ayushman",
+      "Circuit-Overtime",
+      "elixpo"
+    ],
     "keywords": [
       "open source maintainer",
       "developer relations",
@@ -27,7 +31,11 @@
       "CI/CD",
       "Developer Tooling"
     ],
-    "affiliations": ["Elixpo", "Pollinations AI", "Myceli AI"]
+    "affiliations": [
+      "Elixpo",
+      "Pollinations AI",
+      "Myceli AI"
+    ]
   },
   "anwesha": {
     "title": "Anwesha Chakraborty — System Design & ML | Elixpo",
@@ -35,7 +43,10 @@
     "givenName": "Anwesha",
     "familyName": "Chakraborty",
     "jobTitle": "System Design Engineer and ML Developer",
-    "aliases": ["Anwesha", "CSE-Anwesha"],
+    "aliases": [
+      "Anwesha",
+      "CSE-Anwesha"
+    ],
     "keywords": [
       "system design",
       "machine learning",
@@ -57,7 +68,11 @@
       "MLOps",
       "Open Source"
     ],
-    "affiliations": ["Elixpo", "GDG JIS University", "GSSoC"]
+    "affiliations": [
+      "Elixpo",
+      "GDG JIS University",
+      "GSSoC"
+    ]
   },
   "vivek": {
     "title": "Vivek Yadav — Frontend & AI Developer | Elixpo",
@@ -65,7 +80,11 @@
     "givenName": "Vivek",
     "familyName": "Yadav",
     "jobTitle": "Frontend Developer and AI Integrator",
-    "aliases": ["Vivek", "ez-vivek", "ezmkdir"],
+    "aliases": [
+      "Vivek",
+      "ez-vivek",
+      "ezmkdir"
+    ],
     "keywords": [
       "frontend developer",
       "AI integrator",
@@ -86,7 +105,12 @@
       "Retrieval-Augmented Generation",
       "LangChain"
     ],
-    "affiliations": ["Elixpo", "Pollinations AI", "OWASP JIS University", "GDG on Campus"]
+    "affiliations": [
+      "Elixpo",
+      "Pollinations AI",
+      "OWASP JIS University",
+      "GDG on Campus"
+    ]
   },
   "karan": {
     "title": "Karan Ray — Full-Stack & AI Developer | Elixpo",
@@ -94,7 +118,10 @@
     "givenName": "Karan",
     "familyName": "Ray",
     "jobTitle": "Full-Stack and AI Developer",
-    "aliases": ["Karan", "karanray06"],
+    "aliases": [
+      "Karan",
+      "karanray06"
+    ],
     "keywords": [
       "full-stack developer",
       "AI developer",
@@ -116,7 +143,10 @@
       "Automation",
       "Open Source"
     ],
-    "affiliations": ["Elixpo", "FlyRank AI"]
+    "affiliations": [
+      "Elixpo",
+      "FlyRank AI"
+    ]
   },
   "bhumika": {
     "title": "Bhumika Sudarshani — Full-Stack Developer | Elixpo",
@@ -126,7 +156,10 @@
     "imageWidth": 693,
     "imageHeight": 693,
     "jobTitle": "Open-Source Contributor and Full-Stack Developer",
-    "aliases": ["Bhumika", "bhumikasudarshani-cmd"],
+    "aliases": [
+      "Bhumika",
+      "bhumikasudarshani-cmd"
+    ],
     "keywords": [
       "full-stack developer",
       "open source contributor",
@@ -149,7 +182,10 @@
       "React",
       "Python"
     ],
-    "affiliations": ["Elixpo", "GSSoC"]
+    "affiliations": [
+      "Elixpo",
+      "GSSoC"
+    ]
   },
   "divyanshu": {
     "title": "Divyanshu Jha — Open Source & Full-Stack Developer | Elixpo",
@@ -157,7 +193,10 @@
     "givenName": "Divyanshu",
     "familyName": "Jha",
     "jobTitle": "Open-Source Contributor and Full-Stack Developer",
-    "aliases": ["Divyanshu", "divyanshuj91"],
+    "aliases": [
+      "Divyanshu",
+      "divyanshuj91"
+    ],
     "keywords": [
       "full-stack developer",
       "open source contributor",
@@ -178,6 +217,51 @@
       "Next.js",
       "Node.js"
     ],
-    "affiliations": ["Elixpo", "OWASP JIS University"]
+    "affiliations": [
+      "Elixpo",
+      "OWASP JIS University"
+    ]
+  },
+  "nihal": {
+    "title": "Nihal Gazi — AI Researcher & Systems Architect | Elixpo",
+    "description": "Nihal Gazi is an AI researcher, systems architect, founder of KindSynapse AI, and Elixpo core maintainer specializing in 1-bit neural quantization, linear vision transformers, and low-latency edge inference.",
+    "givenName": "Nihal",
+    "familyName": "Gazi",
+    "jobTitle": "AI Researcher and Systems Architect",
+    "aliases": [
+      "Nihal",
+      "NihalGazi",
+      "Nihal-Gazi"
+    ],
+    "keywords": [
+      "AI researcher",
+      "systems architect",
+      "neural quantization",
+      "vision transformers",
+      "KindSynapse",
+      "Pollinations AI",
+      "Elixpo",
+      "edge inference",
+      "CERN LHC",
+      "machine learning",
+      "OreoLook"
+    ],
+    "knowsAbout": [
+      "Artificial Intelligence",
+      "Neural Quantization",
+      "Linear Vision Transformers",
+      "Low-Latency Systems",
+      "Edge Computing",
+      "Open Source",
+      "Distributed Caching",
+      "Computational Physics"
+    ],
+    "affiliations": [
+      "Elixpo",
+      "KindSynapse AI",
+      "Pollinations.ai",
+      "IEM Kolkata",
+      "IEEE EMBS"
+    ]
   }
 }

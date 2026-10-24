@@ -75,16 +75,16 @@ use crumb_profile::{ProfileDocument, ProfileSelectionStore, ProfileStore};
 use crumb_pty::{PtyInput, PtyResizer, SystemPty, TerminalSize};
 use crumb_repl::{ReplOutcome, read_classified_line};
 use crumb_tools::{
-    AgentShellConfig, CheckpointDecision, CheckpointStatus, CheckpointStore, DisposableToolConfig,
-    GitHubIssueLimits, StackDetectionLimits, WaitToolLimits, WebFetchLimits, WorkspaceToolLimits,
-    WorkspaceWriteLimits, register_a2a_tools, register_current_time_tool, register_disposable_tool,
-    register_github_issue_tool, register_shell_tool_with_optimizer, register_stack_detection_tool,
-    register_wait_tool, register_web_fetch_tool, register_workspace_read_tools,
-    register_workspace_write_tool,
+    AgentShellConfig, CheckpointDecision, CheckpointStatus, CheckpointStore, CodeSearchLimits,
+    DisposableToolConfig, GitHubIssueLimits, StackDetectionLimits, WaitToolLimits, WebFetchLimits,
+    WorkspaceToolLimits, WorkspaceWriteLimits, register_a2a_tools, register_code_search_tool,
+    register_current_time_tool, register_disposable_tool, register_github_issue_tool,
+    register_shell_tool_with_optimizer, register_stack_detection_tool, register_wait_tool,
+    register_web_fetch_tool, register_workspace_read_tools, register_workspace_write_tool,
 };
 use crumb_ui::{
-    GitSegment, PeerActivity, PeerActivityState, PromptContext, Renderer, StartupContext,
-    StatusTone, UiSettings,
+    FooterItem, GitSegment, PeerActivity, PeerActivityState, PromptContext, Renderer,
+    StartupContext, StatusTone, UiSettings, display_path, footer_item_at, footer_items,
 };
 use directories::BaseDirs;
 use nu_ansi_term::{Color, Style};
@@ -106,8 +106,10 @@ mod context;
 mod device_auth;
 mod provider_discovery;
 mod provider_projection;
+mod session_resume;
 mod sessions_view;
 mod shell_completion;
+mod terminal_setup;
 
 use agent_runtime::{
     AgentRuntime, PeerDeliveryInspection, PeerDiscardedFile, PeerImportedFile, PeerInspectionKind,
@@ -877,6 +879,7 @@ fn workspace_read_host(
         workspace,
         StackDetectionLimits { max_output_bytes },
     )?;
+    register_code_search_tool(&mut host, workspace, CodeSearchLimits { max_output_bytes })?;
     register_disposable_tool(
         &mut host,
         workspace,
@@ -1001,8 +1004,8 @@ fn run_managed_repl(resume_session: Option<&str>) -> Result<ReplOutcome> {
     loop {
         transcript.capture_cursor();
         let cwd = active_cwd(session.as_ref())?;
-        let status = prompt_model_status(&cwd);
-        let prompt = render_repl_prompt(renderer, &cwd, platform, last_exit_code);
+        let status = repl_prompt_status(&cwd, fullscreen);
+        let prompt = render_repl_prompt(renderer, &cwd, platform, last_exit_code, fullscreen);
         transcript.position_composer()?;
         let submission = read_repl_submission(
             line_editor.as_mut(),
@@ -1068,6 +1071,7 @@ fn render_repl_prompt(
     cwd: &Path,
     platform: Platform,
     last_exit_code: Option<i32>,
+    fullscreen: bool,
 ) -> String {
     render_prompt(
         renderer,
@@ -1075,6 +1079,7 @@ fn render_repl_prompt(
         platform,
         last_exit_code,
         size().map_or(80, |(columns, _)| columns),
+        !fullscreen,
     )
 }
 
@@ -1157,6 +1162,17 @@ fn handle_repl_event(
             run_interactive_skill(&command, context)?;
             Ok(None)
         }
+        InputEvent::BuiltIn(BuiltInCommand::Reserved(command)) if command == "/terminal-setup" => {
+            terminal_setup::run(context.writer)?;
+            Ok(None)
+        }
+        InputEvent::BuiltIn(BuiltInCommand::Reserved(command))
+            if command == "/agents" || command.starts_with("/agents ") =>
+        {
+            let text = agents_command_text(&command, context);
+            writeln!(context.writer, "{text}")?;
+            Ok(None)
+        }
         InputEvent::BuiltIn(BuiltInCommand::Reserved(command))
             if command == "/sessions" || command == "/sessions all" =>
         {
@@ -1189,6 +1205,46 @@ fn handle_repl_event(
         }
         InputEvent::NativeInput(command) if command.trim().is_empty() => Ok(None),
         InputEvent::NativeInput(command) => handle_input(&command, context),
+    }
+}
+
+/// The main agent's line on the agent map: folder, model pack, context use.
+fn agent_map_main_label(workspace: &Path, config: &AgentConfig, context_tokens: u64) -> String {
+    let folder = workspace.file_name().map_or_else(
+        || workspace.display().to_string(),
+        |name| name.to_string_lossy().into_owned(),
+    );
+    format!(
+        "{folder} · {} · {} context",
+        active_pack_label(config),
+        compact_token_count(context_tokens)
+    )
+}
+
+/// `/agents` draws the agent map; `/agents N` and `/agents job N` show one entry.
+fn agents_command_text(command: &str, context: &InputContext<'_>) -> String {
+    let Some(runtime) = context.agent_runtime.as_ref() else {
+        return "◆ No agents have run in this session yet.".to_owned();
+    };
+    let config = read_agent_config(context.cwd).unwrap_or_default();
+    let map = runtime.agent_map(agent_map_main_label(
+        context.cwd,
+        &config,
+        runtime.token_usage().0,
+    ));
+    agent_map_text(&map, command, context.renderer)
+}
+
+fn agent_map_text(
+    map: &agent_runtime::AgentMapSource,
+    command: &str,
+    renderer: Renderer,
+) -> String {
+    let argument = command.strip_prefix("/agents").unwrap_or_default().trim();
+    if argument.is_empty() {
+        renderer.agent_map(&map.view(), size().map_or(100, |(columns, _)| columns))
+    } else {
+        map.detail(argument)
     }
 }
 
@@ -1526,6 +1582,8 @@ struct TranscriptState {
     scroll_offset: usize,
     unseen_lines: usize,
     footer_context: String,
+    /// What the footer shows, item by item, so a click can be explained.
+    footer_items: Vec<(FooterItem, String)>,
     /// Trailing lines that belong to the response block still streaming.
     live_lines: usize,
 }
@@ -1878,6 +1936,7 @@ fn read_repl_submission(
             }));
     };
     editor.workspace.set(cwd);
+    set_composer_folder(cwd);
     editor.composer_input_rows.store(1, Ordering::Relaxed);
     let signal = editor.editor.read_line(&CrumbPrompt::new(
         prompt.to_owned(),
@@ -2056,8 +2115,11 @@ fn initialize_transcript(
             None,
         )
     };
+    let (footer_context, footer_items) =
+        context_footer_status(renderer, platform, cwd, context_tokens);
     let mut state = TranscriptState {
-        footer_context: context_footer_status(renderer, platform, cwd, context_tokens),
+        footer_context,
+        footer_items,
         ..TranscriptState::default()
     };
     if let Some(startup) = startup_transcript {
@@ -2079,11 +2141,12 @@ fn refresh_context_footer(
     if !fullscreen {
         return Ok(());
     }
-    let footer = context_footer_status(renderer, platform, cwd, context_tokens);
+    let (footer, items) = context_footer_status(renderer, platform, cwd, context_tokens);
     let mut state = transcript
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     state.footer_context = footer;
+    state.footer_items = items;
     render_transcript_footer(&state, renderer, header_rows)?;
     Ok(())
 }
@@ -2093,7 +2156,7 @@ fn context_footer_status(
     platform: Platform,
     cwd: &Path,
     context_tokens: u64,
-) -> String {
+) -> (String, Vec<(FooterItem, String)>) {
     let config = read_agent_config(cwd).unwrap_or_default();
     let instance = instance_store(cwd).load().ok();
     let text_route = selected_text_route(&config);
@@ -2118,7 +2181,9 @@ fn context_footer_status(
         agent_configured: config.harness.is_some()
             && selected_route_is_connected(&config, text_route),
     };
-    renderer.context_footer(&startup, size().map_or(100, |(columns, _)| columns))
+    let width = size().map_or(100, |(columns, _)| columns);
+    let items = footer_items(&startup, GitSegment::discover(cwd).as_ref(), width);
+    (renderer.render_footer_items(&items, width), items)
 }
 
 fn runtime_context_tokens(runtime: Option<&AgentRuntime>) -> u64 {
@@ -2712,7 +2777,11 @@ fn load_effective_agent_config(cwd: &Path, writer: &mut dyn Write) -> Result<Age
 
 fn read_agent_config(cwd: &Path) -> Result<AgentConfig> {
     let (path, config_root) = agent_config_location(cwd);
-    let mut config = LiveConfig::new(path).load_or_default()?;
+    let mut config = if path.exists() {
+        LiveConfig::new(path).load()?
+    } else {
+        builtin_agent_config()
+    };
     bundled_skills::apply_defaults(&mut config);
     apply_builtin_model_packs(&mut config);
     if let Some(HarnessConfig::Process {
@@ -4257,10 +4326,17 @@ fn persist_tool_permission(workspace: &Path, request: &crumb_agent::ApprovalRequ
 }
 
 fn trusted_tool_detail(name: &str, arguments: &serde_json::Value) -> Option<String> {
+    if name == crumb_agent::UPDATE_TASKS {
+        let tasks =
+            serde_json::from_value::<Vec<crumb_agent::Task>>(arguments.get("tasks")?.clone())
+                .ok()?;
+        return Some(crumb_agent::task_summary(&tasks));
+    }
     let field = match name {
-        "run_shell" => "command",
+        "run_shell" | "start_background" => "command",
         "web_search" => "query",
         "web_fetch" => "url",
+        "search_code" => "pattern",
         "github_issue" => "target",
         _ => return None,
     };
@@ -4504,6 +4580,17 @@ impl SteeringInput {
             writeln!(writer, "◇ Cancelling active agent turn")?;
             return Ok(SteeringInputAction::Continue);
         }
+        if input == "/agents" || input.starts_with("/agents ") {
+            self.buffer.clear();
+            self.clear_line(writer)?;
+            writeln!(
+                writer,
+                "{}",
+                agent_map_text(task.agent_map(), &input, self.renderer)
+            )?;
+            writer.flush()?;
+            return Ok(SteeringInputAction::Continue);
+        }
         if input == "/background" {
             self.buffer.clear();
             self.clear_line(writer)?;
@@ -4583,10 +4670,11 @@ impl SteeringInput {
         if self.visible {
             if self.fullscreen {
                 let (columns, rows) = size()?;
-                let composer_row = follow_up_composer_row(rows);
-                let available_width = columns.saturating_sub(7);
+                let input_row = follow_up_input_row(rows);
+                let column = follow_up_input_column();
+                let available_width = columns.saturating_sub(column + 3);
                 let mut frame = Vec::new();
-                crossterm::execute!(frame, MoveTo(4, composer_row))?;
+                crossterm::execute!(frame, MoveTo(column, input_row))?;
                 write!(frame, "{}", " ".repeat(usize::from(available_width)))?;
                 write!(frame, "\x1b8")?;
                 let mut terminal = io::stderr();
@@ -4624,17 +4712,18 @@ impl SteeringInput {
 
     fn redraw_composer(&self, input: &str, writer: &mut dyn Write) -> Result<()> {
         let (columns, rows) = size()?;
-        let available_width = columns.saturating_sub(7);
+        let column = follow_up_input_column();
+        let available_width = columns.saturating_sub(column + 3);
         let rendered = self.renderer.composer_follow_up(input, available_width);
         if self.fullscreen {
-            let composer_row = follow_up_composer_row(rows);
+            let input_row = follow_up_input_row(rows);
             let mut frame = Vec::new();
             if !self.visible {
                 write!(frame, "\x1b7")?;
             }
-            crossterm::execute!(frame, MoveTo(4, composer_row))?;
+            crossterm::execute!(frame, MoveTo(column, input_row))?;
             write!(frame, "{}", " ".repeat(usize::from(available_width)))?;
-            crossterm::execute!(frame, MoveTo(4, composer_row))?;
+            crossterm::execute!(frame, MoveTo(column, input_row))?;
             write!(frame, "{rendered}")?;
             let mut terminal = io::stderr();
             terminal.write_all(&frame)?;
@@ -5417,6 +5506,7 @@ fn render_prompt(
     platform: Platform,
     last_exit_code: Option<i32>,
     terminal_width: u16,
+    show_location: bool,
 ) -> String {
     let git = GitSegment::discover(cwd);
     renderer.prompt(&PromptContext {
@@ -5425,6 +5515,7 @@ fn render_prompt(
         git: git.as_ref(),
         last_exit_code,
         terminal_width,
+        show_location,
     })
 }
 
@@ -7127,9 +7218,13 @@ fn show_agent_tools(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
         ("read_file", "workspace read", true),
         ("list_directory", "workspace read", true),
         ("detect_stack", "workspace read", true),
+        ("search_code", "workspace read", true),
+        ("update_tasks", "task list", true),
         ("write_file", "workspace write", true),
         ("run_disposable", "one-shot process", true),
         ("run_shell", "workspace process", true),
+        ("start_background", "background process", true),
+        ("stop_background", "background process", true),
         ("spawn_agents", "parallel analysis", true),
         ("web_fetch", "network", true),
         ("github_issue", "network", true),
@@ -7150,7 +7245,14 @@ fn show_agent_tools(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
     ] {
         let explicitly_granted = matches!(
             name,
-            "current_time" | "read_file" | "list_directory" | "detect_stack" | "ask_user"
+            "current_time"
+                | "read_file"
+                | "list_directory"
+                | "detect_stack"
+                | "search_code"
+                | "update_tasks"
+                | "check_background"
+                | "ask_user"
         ) || config.permissions.allow_network_tools.contains(name)
             || config.permissions.allow_workspace_tools.contains(name)
             || config.permissions.allow_execution_tools.contains(name);
@@ -7754,7 +7856,7 @@ fn configure_provider(command: &str, cwd: &Path, writer: &mut dyn Write) -> Resu
 }
 
 fn discover_provider_models(cwd: &Path, provider_id: &str, writer: &mut dyn Write) -> Result<()> {
-    let config = raw_agent_config(cwd).load_or_default()?;
+    let config = load_raw_agent_config(cwd)?;
     let provider = config
         .providers
         .get(provider_id)
@@ -7827,7 +7929,7 @@ fn configure_provider_model(arguments: &[&str], cwd: &Path, writer: &mut dyn Wri
 }
 
 fn show_providers(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
-    let config = raw_agent_config(cwd).load_or_default()?;
+    let config = load_raw_agent_config(cwd)?;
     writeln!(writer, "◆ Harness providers")?;
     if config.providers.is_empty() {
         writeln!(writer, "  No configurable providers")?;
@@ -7845,7 +7947,7 @@ fn show_providers(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
 }
 
 fn show_provider(cwd: &Path, id: &str, writer: &mut dyn Write) -> Result<()> {
-    let config = raw_agent_config(cwd).load_or_default()?;
+    let config = load_raw_agent_config(cwd)?;
     let provider = config
         .providers
         .get(id)
@@ -8612,11 +8714,35 @@ fn raw_agent_config(cwd: &Path) -> LiveConfig {
     LiveConfig::new(path)
 }
 
+/// Settings used where no `.crumb/agent.json` exists: Pollinations with the
+/// Balanced pack, so Crumb works in any folder without a setup step. The
+/// provider names no credential; the key comes from the environment or from
+/// `/auth login`.
+fn builtin_agent_config() -> AgentConfig {
+    serde_json::from_str(include_str!("../assets/default-agent.json"))
+        .expect("the bundled default agent config is valid")
+}
+
+/// The project's agent config, or the built-in default when there is none.
+fn load_raw_agent_config(cwd: &Path) -> Result<AgentConfig> {
+    let config = raw_agent_config(cwd);
+    if config.path().exists() {
+        config.load()
+    } else {
+        Ok(builtin_agent_config())
+    }
+}
+
 fn update_agent_config<F>(cwd: &Path, mutate: F) -> Result<AgentConfig>
 where
     F: FnOnce(&mut AgentConfig) -> Result<()>,
 {
-    raw_agent_config(cwd).update(|config| {
+    let live = raw_agent_config(cwd);
+    let seed = (!live.path().exists()).then(builtin_agent_config);
+    live.update(|config| {
+        if let Some(seed) = seed {
+            *config = seed;
+        }
         bundled_skills::apply_defaults(config);
         apply_builtin_model_packs(config);
         mutate(config)
@@ -9079,12 +9205,15 @@ fn show_sessions(
                 ResumeContinuity::AlreadyActive => {
                     writeln!(writer, "◆ Session {id} is already active")?;
                 }
-                ResumeContinuity::Warm | ResumeContinuity::MetadataOnly => {
+                ResumeContinuity::Warm
+                | ResumeContinuity::Restored
+                | ResumeContinuity::MetadataOnly => {
                     writeln!(
                         writer,
                         "◆ Resumed session {id}{}",
                         resume_continuity_suffix(continuity)
                     )?;
+                    write_interrupted_note(runtime.as_ref(), cwd, writer)?;
                 }
             }
         }
@@ -9125,10 +9254,30 @@ fn show_sessions(
     Ok(())
 }
 
+/// After a resume, names the request that was cut off and how to continue it.
+fn write_interrupted_note(
+    runtime: Option<&AgentRuntime>,
+    cwd: &Path,
+    writer: &mut dyn Write,
+) -> Result<()> {
+    if let Some(recap) = runtime.and_then(|runtime| runtime.resume_recap(cwd)) {
+        writeln!(writer, "  {recap}")?;
+    }
+    if let Some(request) = runtime.and_then(|runtime| runtime.interrupted_request(cwd)) {
+        let request = request.lines().next().unwrap_or_default();
+        writeln!(
+            writer,
+            "  Interrupted while working on: {request}\n  Say \"continue\" to pick it up where it stopped."
+        )?;
+    }
+    Ok(())
+}
+
 const fn resume_continuity_suffix(continuity: ResumeContinuity) -> &'static str {
     match continuity {
         ResumeContinuity::AlreadyActive => " · already active",
         ResumeContinuity::Warm => " · warm conversation restored",
+        ResumeContinuity::Restored => " · conversation restored from disk",
         ResumeContinuity::MetadataOnly => " · metadata only; transcript was not persisted",
     }
 }
@@ -11998,32 +12147,6 @@ impl CompletionOverlay {
         (columns, top, composer_row)
     }
 
-    fn paint_overlay(&self, body: &str) -> String {
-        let (columns, top, composer_row) = self.overlay_rows();
-        let terminal_rows = size().map_or(24, |(_, rows)| rows);
-        let transcript = self
-            .transcript
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut frame = String::new();
-        let mut lines = body.lines();
-        for row in top..composer_row {
-            let _ = write!(frame, "\x1b[{};1H\x1b[2K", row.saturating_add(1));
-            if let Some(line) = lines.next() {
-                frame.push_str(line);
-            }
-        }
-        frame.push_str(&completion_footer_frame(
-            &transcript,
-            self.renderer,
-            columns,
-            composer_row,
-            terminal_rows,
-        ));
-        self.paint_composer(&mut frame, columns, terminal_rows);
-        frame
-    }
-
     fn clear_overlay(&self) {
         let transcript = self
             .transcript
@@ -12032,30 +12155,16 @@ impl CompletionOverlay {
         let _ = render_transcript_view(&transcript, self.renderer, self.header_rows);
     }
 
-    fn restore_overlay_frame(&self) -> String {
+    /// Paints the menu (empty to restore the transcript) above the composer.
+    fn overlay_frame(&self, body: &str) -> String {
         let (columns, top, composer_row) = self.overlay_rows();
         let terminal_rows = size().map_or(24, |(_, rows)| rows);
         let transcript = self
             .transcript
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let transcript_top = self.header_rows.min(composer_row.saturating_sub(1));
-        let viewport_height = composer_row.saturating_sub(transcript_top) as usize;
-        let end = transcript
-            .lines
-            .len()
-            .saturating_sub(transcript.scroll_offset);
-        let start = end.saturating_sub(viewport_height);
-        let mut frame = String::new();
-        for row in top..composer_row {
-            let _ = write!(frame, "\x1b[{};1H\x1b[2K", row.saturating_add(1));
-            let index = start.saturating_add(row.saturating_sub(transcript_top) as usize);
-            if index < end
-                && let Some(line) = transcript.lines.get(index)
-            {
-                frame.push_str(&line.text);
-            }
-        }
+        let mut frame =
+            completion_overlay_rows(&transcript, body, self.header_rows, top, composer_row);
         frame.push_str(&completion_footer_frame(
             &transcript,
             self.renderer,
@@ -12066,6 +12175,46 @@ impl CompletionOverlay {
         self.paint_composer(&mut frame, columns, terminal_rows);
         frame
     }
+}
+
+/// Rows `top..composer_row` with the menu sitting directly above the composer
+/// and the transcript still visible above a short menu, so a few suggestions
+/// never float in the middle of the screen.
+fn completion_overlay_rows(
+    transcript: &TranscriptState,
+    body: &str,
+    header_rows: u16,
+    top: u16,
+    composer_row: u16,
+) -> String {
+    let mut menu = body.lines().collect::<Vec<_>>();
+    while menu.last().is_some_and(|line| line.trim().is_empty()) {
+        menu.pop();
+    }
+    menu.truncate(usize::from(composer_row.saturating_sub(top)));
+    let menu_top = composer_row.saturating_sub(u16::try_from(menu.len()).unwrap_or(u16::MAX));
+    let transcript_top = header_rows.min(composer_row.saturating_sub(1));
+    let viewport_height = composer_row.saturating_sub(transcript_top) as usize;
+    let end = transcript
+        .lines
+        .len()
+        .saturating_sub(transcript.scroll_offset);
+    let start = end.saturating_sub(viewport_height);
+    let mut frame = String::new();
+    for row in top..composer_row {
+        let _ = write!(frame, "\x1b[{};1H\x1b[2K", row.saturating_add(1));
+        if row >= menu_top {
+            frame.push_str(menu[usize::from(row - menu_top)]);
+            continue;
+        }
+        let index = start.saturating_add(row.saturating_sub(transcript_top) as usize);
+        if index < end
+            && let Some(line) = transcript.lines.get(index)
+        {
+            frame.push_str(&line.text);
+        }
+    }
+    frame
 }
 
 fn completion_footer_frame(
@@ -12226,13 +12375,13 @@ impl Menu for CompletionOverlay {
 
     fn menu_string(&self, _available_lines: u16, use_ansi_coloring: bool) -> String {
         if self.menu.get_values().is_empty() {
-            return self.restore_overlay_frame();
+            return self.overlay_frame("");
         }
         let menu = self
             .menu
             .menu_string(COMPLETION_PALETTE_ROWS, use_ansi_coloring);
         let body = sanitize_completion_menu_body(&menu);
-        self.paint_overlay(&body)
+        self.overlay_frame(&body)
     }
 
     fn min_rows(&self) -> u16 {
@@ -12339,6 +12488,8 @@ fn create_line_editor(
         Arc::clone(&paste_artifacts),
     );
     let editor = Reedline::create()
+        // Lets supporting terminals report Shift+Enter apart from Enter.
+        .use_kitty_keyboard_enhancement(true)
         .with_history(Box::new(interactive_history))
         .with_highlighter(Box::new(CrumbHighlighter))
         .with_hinter(Box::new(CrumbHinter::new(
@@ -12385,6 +12536,13 @@ fn crumb_keybindings() -> reedline::Keybindings {
             ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );
     }
+    // Terminals without the enhanced keyboard protocol send Shift+Enter as a
+    // plain Enter; Ctrl+J is a line feed every terminal can still send.
+    keybindings.add_binding(
+        KeyModifiers::CONTROL,
+        KeyCode::Char('j'),
+        ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+    );
     keybindings.add_binding(
         KeyModifiers::CONTROL,
         KeyCode::Char('o'),
@@ -12423,6 +12581,7 @@ struct CrumbEditMode {
     dock: Option<ComposerDock>,
     paste_artifacts: Arc<Mutex<PendingComposerArtifacts>>,
     preview_modal: Option<ArtifactPreviewModal>,
+    footer_tip_open: bool,
 }
 
 #[derive(Clone)]
@@ -12466,6 +12625,56 @@ impl CrumbEditMode {
             dock,
             paste_artifacts,
             preview_modal: None,
+            footer_tip_open: false,
+        }
+    }
+
+    /// Shows what the clicked footer item is and how to change it. Returns
+    /// whether the click landed on a footer item.
+    fn show_footer_tip(&mut self, row: u16, column: u16) -> bool {
+        let Some(dock) = &self.dock else {
+            return false;
+        };
+        let Ok((columns, rows)) = size() else {
+            return false;
+        };
+        let (_, _, composer_row, _) = fullscreen_rows_for_height(dock.header_rows, rows);
+        if row != composer_context_row(composer_row) {
+            return false;
+        }
+        let frame = {
+            let transcript = dock
+                .transcript
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let Some((item, value)) = footer_item_at(&transcript.footer_items, column) else {
+                return false;
+            };
+            let tip = dock.renderer.footer_tip(item, value, columns);
+            let tip_rows = u16::try_from(tip.lines().count()).unwrap_or(u16::MAX);
+            let top = composer_row
+                .saturating_sub(tip_rows)
+                .max(dock.header_rows.min(composer_row));
+            completion_overlay_rows(&transcript, &tip, dock.header_rows, top, composer_row)
+        };
+        let _frame = crumb_ui::lock_terminal_output();
+        let mut stdout = io::stdout();
+        let _ = write!(stdout, "\x1b7{frame}\x1b8");
+        let _ = stdout.flush();
+        self.footer_tip_open = true;
+        true
+    }
+
+    fn close_footer_tip(&mut self) {
+        if !std::mem::take(&mut self.footer_tip_open) {
+            return;
+        }
+        if let Some(dock) = &self.dock {
+            let transcript = dock
+                .transcript
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let _ = render_transcript_view(&transcript, dock.renderer, dock.header_rows);
         }
     }
 
@@ -12486,6 +12695,12 @@ impl EditMode for CrumbEditMode {
         let event = TerminalEvent::from(event);
         if self.preview_modal.is_some() {
             return self.handle_preview_modal_event(&event);
+        }
+        // A footer tip closes on the next key press or click.
+        if matches!(&event, TerminalEvent::Key(_))
+            || matches!(&event, TerminalEvent::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down(_)))
+        {
+            self.close_footer_tip();
         }
         match event {
             TerminalEvent::Paste(paste) => self.capture_text_paste(&paste),
@@ -12519,6 +12734,12 @@ impl EditMode for CrumbEditMode {
             }
             TerminalEvent::Mouse(mouse) if mouse.kind == MouseEventKind::ScrollDown => {
                 ReedlineEvent::ExecuteHostCommand("crumb:transcript-down".to_owned())
+            }
+            TerminalEvent::Mouse(mouse)
+                if mouse.kind == MouseEventKind::Down(MouseButton::Left)
+                    && self.show_footer_tip(mouse.row, mouse.column) =>
+            {
+                ReedlineEvent::None
             }
             TerminalEvent::Mouse(mouse)
                 if mouse.kind == MouseEventKind::Down(MouseButton::Left)
@@ -12931,16 +13152,73 @@ fn composer_visual_rows(line: &str, artifact_width: usize, terminal_columns: u16
 const COMPOSER_PLACEHOLDER: &str =
     "Ask Crumb anything or type a command · @ context · / commands · Tab complete";
 
-fn composer_placeholder_hint(line: &str, has_artifacts: bool) -> Option<&'static str> {
+/// The folder shown in the empty composer, like a shell prompt.
+static COMPOSER_FOLDER: std::sync::RwLock<String> = std::sync::RwLock::new(String::new());
+
+fn set_composer_folder(cwd: &Path) {
+    if let Ok(mut folder) = COMPOSER_FOLDER.write() {
+        *folder = display_path(cwd);
+    }
+}
+
+fn composer_folder() -> String {
+    COMPOSER_FOLDER
+        .read()
+        .map(|folder| folder.clone())
+        .unwrap_or_default()
+}
+
+fn composer_placeholder_hint(
+    line: &str,
+    has_artifacts: bool,
+    prefix_width: usize,
+    columns: u16,
+) -> Option<String> {
+    // The hint follows the prompt prefix and must not wrap onto the status row.
+    let available = usize::from(columns.saturating_sub(6))
+        .saturating_sub(prefix_width + usize::from(prefix_width > 0));
+    composer_placeholder_for(line, has_artifacts)
+        .map(|placeholder| truncate_chars(&placeholder, available))
+}
+
+/// The shell-style prompt that opens the composer line: `~/project $`.
+fn composer_prompt() -> String {
+    let folder = composer_folder();
+    if folder.is_empty() {
+        return String::new();
+    }
+    let columns = size().map_or(80, |(columns, _)| columns);
+    format!("{} $", compact_folder(&folder, usize::from(columns / 3)))
+}
+
+/// Keeps the trailing folders of `folder` that fit in `width`: `…/e2e/ws`.
+fn compact_folder(folder: &str, width: usize) -> String {
+    if folder.chars().count() <= width {
+        return folder.to_owned();
+    }
+    let mut kept = String::new();
+    for part in folder.rsplit('/').filter(|part| !part.is_empty()) {
+        let candidate = if kept.is_empty() {
+            part.to_owned()
+        } else {
+            format!("{part}/{kept}")
+        };
+        if candidate.chars().count() + 2 > width && !kept.is_empty() {
+            break;
+        }
+        kept = candidate;
+    }
+    format!("…/{kept}")
+}
+
+fn composer_placeholder_for(line: &str, has_artifacts: bool) -> Option<String> {
     match (line, has_artifacts) {
-        ("", false) => Some(COMPOSER_PLACEHOLDER),
-        ("", true) => Some("Ask Crumb anything…"),
+        ("", false) => Some(COMPOSER_PLACEHOLDER.to_owned()),
+        ("", true) => Some("Ask Crumb anything…".to_owned()),
         // `?` opens the help palette, but it is also inserted into Reedline's
         // buffer. Keep the composer guidance visible until the user narrows a
         // help query or accepts a suggestion.
-        ("?", _) => {
-            Some(" Ask Crumb anything or type a command · @ context · / commands · Tab complete")
-        }
+        ("?", _) => Some(format!(" {COMPOSER_PLACEHOLDER}")),
         _ => None,
     }
 }
@@ -12971,9 +13249,10 @@ fn completion_menu_composer_frame(
     } else {
         line.clone()
     };
-    let placeholder = composer_placeholder_hint(&line, artifact_width > 0).unwrap_or_default();
+    let placeholder = composer_placeholder_hint(&line, false, artifact_width, terminal_columns)
+        .unwrap_or_default();
     let placeholder = truncate_chars(
-        placeholder,
+        &placeholder,
         available_width.saturating_sub(line.chars().count()),
     );
     let rendered_placeholder = if color {
@@ -13069,16 +13348,18 @@ impl Hinter for CrumbHinter {
             input_rows.min(FULLSCREEN_COMPOSER_ROWS.saturating_sub(5).max(1)),
             Ordering::Relaxed,
         );
-        if let Some(placeholder) = composer_placeholder_hint(line, has_artifacts) {
+        if let Some(placeholder) =
+            composer_placeholder_hint(line, has_artifacts, artifact_width, columns)
+        {
             self.placeholder_visible = true;
             let hint = if use_ansi_coloring {
                 Style::new()
                     .fg(Color::DarkGray)
                     .bold()
-                    .paint(placeholder)
+                    .paint(&placeholder)
                     .to_string()
             } else {
-                placeholder.to_owned()
+                placeholder
             };
             return hint;
         }
@@ -13202,7 +13483,12 @@ impl Prompt for CrumbPrompt {
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
-        Cow::Borrowed("::: ")
+        if self.anchor_to_composer {
+            // Continuation lines start at the composer's left edge, inside its border.
+            Cow::Borrowed("  │ ")
+        } else {
+            Cow::Borrowed("::: ")
+        }
     }
 
     fn render_prompt_history_search_indicator(
@@ -13228,7 +13514,7 @@ fn prompt_model_status(cwd: &Path) -> String {
                 .reasoning_effort_for(route)
                 .map_or("default", effort_display_name);
             format!(
-                "pack {} · {} · effort {effort}",
+                "pack {} · {} · {effort}",
                 active_pack_label(&config),
                 agent_mode_name(config.mode)
             )
@@ -13239,6 +13525,16 @@ fn prompt_model_status(cwd: &Path) -> String {
         status.push_str(&profile);
     }
     status
+}
+
+/// Fullscreen shows the pack, mode, and effort in the footer, so the line
+/// above the composer keeps only an active profile.
+fn repl_prompt_status(cwd: &Path, fullscreen: bool) -> String {
+    if fullscreen {
+        selected_profile_id(cwd).map_or_else(String::new, |profile| format!("profile {profile}"))
+    } else {
+        prompt_model_status(cwd)
+    }
 }
 
 fn active_pack_label(config: &AgentConfig) -> &str {
@@ -13420,8 +13716,23 @@ fn composer_anchor_row(terminal_rows: u16, input_rows: u16) -> u16 {
 }
 
 fn follow_up_cursor_sequence(terminal_rows: u16) -> String {
-    let composer_row = follow_up_composer_row(terminal_rows);
-    format!("\x1b[{};5H", composer_row.saturating_add(1))
+    format!(
+        "\x1b[{};{}H",
+        follow_up_input_row(terminal_rows).saturating_add(1),
+        follow_up_input_column().saturating_add(1)
+    )
+}
+
+/// The composer's input line during a turn: two rows below the anchor, past
+/// the context line and the border.
+fn follow_up_input_row(terminal_rows: u16) -> u16 {
+    follow_up_composer_row(terminal_rows).saturating_add(2)
+}
+
+/// Where typed follow-ups start: after the border and the folder prompt.
+fn follow_up_input_column() -> u16 {
+    let prompt = composer_prompt().chars().count();
+    u16::try_from(4 + prompt + usize::from(prompt > 0)).unwrap_or(4)
 }
 
 fn follow_up_composer_row(terminal_rows: u16) -> u16 {
@@ -13445,7 +13756,10 @@ fn render_idle_composer(
     write!(
         writer,
         "{prompt}{}",
-        renderer.composer_placeholder(columns.saturating_sub(7))
+        renderer.composer_placeholder(
+            &compact_folder(&composer_folder(), usize::from(columns / 3)),
+            columns.saturating_sub(7)
+        )
     )?;
     let status_width = u16::try_from(status.chars().count()).unwrap_or(u16::MAX);
     let status_column = columns.saturating_sub(status_width.saturating_add(2));
@@ -13857,20 +14171,20 @@ mod tests {
         ComposerDock, CrumbEditMode, CrumbHighlighter, CrumbPrompt, DiscoverySource, ExitGesture,
         MarketplaceContent, PausedSubmission, PendingComposerArtifacts, Renderer,
         SessionCommandContext, SteeringAction, TerminalModeTracker, TranscriptCapture,
-        TranscriptScroll, TranscriptState, UiSettings, active_scroll_direction,
+        TranscriptLine, TranscriptScroll, TranscriptState, UiSettings, active_scroll_direction,
         agent_config_location, aligned_composer_prompt, apply_builtin_model_packs,
-        artifact_modal_action, bundled_catalog, completion_footer_frame,
-        completion_menu_composer_frame, composer_anchor_row, composer_anchor_sequence,
-        composer_placeholder_hint, composer_visual_rows, configure_permissions, configure_plugin,
-        crumb_keybindings, effort_display_name, effort_wire_name,
-        ensure_single_release_skill_install, exact_skill_manifest_url, exact_skill_run_config,
-        failed_command_recovery, finished_tool_activity, fixed_footer_frame,
-        follow_up_composer_row, follow_up_cursor_sequence, format_peer_discarded_file,
-        format_peer_imported_file, format_peer_inbox, format_peer_inspection,
-        format_peer_quarantined_file, format_peer_task, handle_skill_command,
-        initial_agent_activity, install_marketplace_package, load_exact_skill_manifest,
-        marketplace_update_blocker, normalize_bundled_skill_install, openrouter_preset,
-        parse_cli_skill_run, parse_credential_reference, parse_exec_request,
+        artifact_modal_action, bundled_catalog, compact_folder, completion_footer_frame,
+        completion_menu_composer_frame, completion_overlay_rows, composer_anchor_row,
+        composer_anchor_sequence, composer_placeholder_for, composer_visual_rows,
+        configure_permissions, configure_plugin, crumb_keybindings, effort_display_name,
+        effort_wire_name, ensure_single_release_skill_install, exact_skill_manifest_url,
+        exact_skill_run_config, failed_command_recovery, finished_tool_activity,
+        fixed_footer_frame, follow_up_composer_row, follow_up_cursor_sequence,
+        format_peer_discarded_file, format_peer_imported_file, format_peer_inbox,
+        format_peer_inspection, format_peer_quarantined_file, format_peer_task,
+        handle_skill_command, initial_agent_activity, install_marketplace_package,
+        load_exact_skill_manifest, marketplace_update_blocker, normalize_bundled_skill_install,
+        openrouter_preset, parse_cli_skill_run, parse_credential_reference, parse_exec_request,
         parse_interactive_skill_run, parse_paused_submission, parse_provider_header,
         parse_resume_session_argument, read_agent_config, read_bounded_response,
         register_local_skill, render_skill_discovery_search, resolve_memory_keep,
@@ -14624,6 +14938,7 @@ mod tests {
             ("read_file", RiskClass::ReadOnly),
             ("run_disposable", RiskClass::ProcessExecution),
             ("run_shell", RiskClass::ProcessExecution),
+            ("search_code", RiskClass::ReadOnly),
             ("wait", RiskClass::ReadOnly),
             ("web_fetch", RiskClass::NetworkAccess),
             ("write_file", RiskClass::WriteWorkspace),
@@ -14964,6 +15279,27 @@ mod tests {
         ] {
             assert!(!composition.contains(forbidden));
         }
+    }
+
+    #[test]
+    fn folders_without_agent_config_use_the_balanced_pollinations_default() {
+        let workspace = tempfile::tempdir().expect("workspace");
+
+        let config = read_agent_config(workspace.path()).expect("default config loads");
+
+        config.validate().expect("default config is valid");
+        assert!(matches!(config.harness, Some(HarnessConfig::Native)));
+        assert_eq!(config.active_model_pack.as_deref(), Some("balanced"));
+        assert!(config.model_packs.contains_key("balanced"));
+        let pollinations = &config.providers["pollinations"];
+        assert!(pollinations.credential.is_none());
+        assert!(
+            config
+                .models
+                .get(&Modality::Text)
+                .is_some_and(|routes| !routes.is_empty())
+        );
+        assert!(!workspace.path().join(".crumb/agent.json").exists());
     }
 
     #[test]
@@ -15562,8 +15898,9 @@ mod tests {
 
     #[test]
     fn active_follow_up_cursor_is_placed_inside_the_composer() {
-        assert_eq!(follow_up_cursor_sequence(40), "\x1b[35;5H");
-        assert_eq!(follow_up_cursor_sequence(4), "\x1b[1;5H");
+        // The input line sits two rows below the anchor (context line, border).
+        assert_eq!(follow_up_cursor_sequence(40), "\x1b[37;5H");
+        assert_eq!(follow_up_cursor_sequence(4), "\x1b[3;5H");
         assert_eq!(follow_up_composer_row(40), composer_anchor_row(40, 1));
     }
 
@@ -15578,19 +15915,25 @@ mod tests {
     #[test]
     fn help_trigger_keeps_composer_guidance_visible() {
         assert_eq!(
-            composer_placeholder_hint("", false),
+            composer_placeholder_for("", false).as_deref(),
             Some(COMPOSER_PLACEHOLDER)
         );
         assert_eq!(
-            composer_placeholder_hint("", true),
+            composer_placeholder_for("", true).as_deref(),
             Some("Ask Crumb anything…")
         );
         assert_eq!(
-            composer_placeholder_hint("?", false),
+            composer_placeholder_for("?", false).as_deref(),
             Some(" Ask Crumb anything or type a command · @ context · / commands · Tab complete")
         );
-        assert_eq!(composer_placeholder_hint("? config", false), None);
-        assert_eq!(composer_placeholder_hint("hello?", false), None);
+        assert_eq!(composer_placeholder_for("? config", false), None);
+        assert_eq!(composer_placeholder_for("hello?", false), None);
+        assert_eq!(compact_folder("~/crumb", 20), "~/crumb");
+        assert_eq!(compact_folder("/tmp/a/scratchpad/e2e/ws", 12), "…/e2e/ws");
+        assert_eq!(
+            compact_folder("/tmp/averyveryverylongname", 8),
+            "…/averyveryverylongname"
+        );
     }
 
     #[test]
@@ -15648,6 +15991,25 @@ mod tests {
         let body = sanitize_completion_menu_body("\0? help\0\r\n\0? skills\0");
         assert_eq!(body, "? help\r\n? skills");
         assert!(!body.as_bytes().contains(&0));
+    }
+
+    #[test]
+    fn short_completion_menu_sits_directly_above_the_composer() {
+        let state = TranscriptState {
+            lines: (0..17)
+                .map(|index| TranscriptLine::plain(format!("line {index}")))
+                .collect(),
+            ..TranscriptState::default()
+        };
+
+        let frame = completion_overlay_rows(&state, "/auth login\n/auth status\n\n\n", 2, 10, 19);
+
+        // The last two rows hold the menu; the rows above it keep showing the
+        // transcript instead of an empty gap.
+        assert!(frame.contains("\x1b[18;1H\x1b[2K/auth login"));
+        assert!(frame.contains("\x1b[19;1H\x1b[2K/auth status"));
+        assert!(frame.contains("\x1b[17;1H\x1b[2Kline 14"));
+        assert!(frame.contains("\x1b[11;1H\x1b[2Kline 8"));
     }
 
     #[test]

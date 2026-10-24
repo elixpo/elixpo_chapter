@@ -12,6 +12,15 @@ export async function GET(request) {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
 
+    const org = await db.prepare('SELECT id, owner_id, visibility FROM orgs WHERE id = ?').bind(orgId).first();
+    if (!org) return NextResponse.json({ error: 'Org not found' }, { status: 404 });
+
+    const session = await getSession().catch(() => null);
+    const { canViewOrg } = await import('../../../../lib/orgAccess');
+    if (!(await canViewOrg(db, org, session?.userId))) {
+      return NextResponse.json({ error: 'Org not found' }, { status: 404 });
+    }
+
     const members = await db.prepare(`
       SELECT u.id, u.username, u.display_name, u.avatar_url, om.role, om.joined_at,
         CASE WHEN o.owner_id = u.id THEN 1 ELSE 0 END as is_owner

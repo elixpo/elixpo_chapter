@@ -25,6 +25,7 @@ export async function GET(request) {
     const rows = await db.prepare(`${CURATED_ENTRY_SELECT}
       WHERE ce.collection_id = ? AND b.status = 'published' AND b.secret = 0
         AND b.deleted_at IS NULL
+        AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
       ORDER BY ce.position ASC, ce.added_at ASC
     `).bind(list.id).all();
 

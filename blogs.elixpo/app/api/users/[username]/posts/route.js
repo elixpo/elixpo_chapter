@@ -1,6 +1,8 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
+import { buildPostsCursor, parsePostsCursor } from "../../../../../lib/postsCursor";
+import { escapeLikePattern } from "../../../../../lib/searchQuery";
 
 /**
  * GET /api/users/[username]/posts
@@ -51,15 +53,9 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Parse cursor
-        let cursorAt = null;
-        let cursorId = null;
-        if (cursor) {
-            const parts = cursor.split(":");
-            if (parts.length === 2) {
-                cursorAt = Number(parts[0]);
-                cursorId = parts[1];
-            }
+        const parsedCursor = parsePostsCursor(cursor, filter);
+        if (parsedCursor?.error) {
+            return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
         }
 
         // Build query based on filter
@@ -71,7 +67,7 @@ export async function GET(request, { params }) {
             orderBy = "b.published_at ASC, b.id ASC";
         } else if (filter === "popular") {
             orderBy =
-                "(COALESCE(b.like_count, 0) + COALESCE(b.comment_count, 0)) DESC, b.published_at DESC";
+                "(COALESCE(b.like_count, 0) + COALESCE(b.comment_count, 0)) DESC, b.published_at DESC, b.id DESC";
         }
 
         // Base conditions: visible public posts
@@ -105,26 +101,33 @@ export async function GET(request, { params }) {
 
         // Text search
         if (query) {
-            baseWhere += " AND (b.title LIKE ? OR b.subtitle LIKE ?)";
-            const like = `%${query}%`;
+            baseWhere += " AND (LOWER(b.title) LIKE ? ESCAPE '\\' OR LOWER(b.subtitle) LIKE ? ESCAPE '\\')";
+            const like = `%${escapeLikePattern(query)}%`;
             binds.push(like, like);
         }
 
-        // Cursor pagination
-        if (cursorAt !== null && cursorId) {
+        // Cursor pagination. Popular pages must advance by the same score the
+        // ORDER BY uses; a published_at cursor skipped high-engagement posts.
+        if (parsedCursor && !parsedCursor.error) {
             if (filter === "oldest") {
                 cursorCond =
                     " AND (b.published_at > ? OR (b.published_at = ? AND b.id > ?))";
-            } else if (filter === "popular") {
-                // For popular, cursor is by score:id — but simpler to use offset for now
-                // Popular sort doesn't work well with keyset pagination, use published_at as tiebreaker
-                cursorCond =
-                    " AND (b.published_at < ? OR (b.published_at = ? AND b.id < ?))";
+                binds.push(parsedCursor.at, parsedCursor.at, parsedCursor.id);
+            } else if (filter === "popular" && !parsedCursor.legacy) {
+                const score = "(COALESCE(b.like_count, 0) + COALESCE(b.comment_count, 0))";
+                cursorCond = ` AND (${score} < ? OR (${score} = ? AND (b.published_at < ? OR (b.published_at = ? AND b.id < ?))))`;
+                binds.push(
+                    parsedCursor.score,
+                    parsedCursor.score,
+                    parsedCursor.at,
+                    parsedCursor.at,
+                    parsedCursor.id,
+                );
             } else {
                 cursorCond =
                     " AND (b.published_at < ? OR (b.published_at = ? AND b.id < ?))";
+                binds.push(parsedCursor.at, parsedCursor.at, parsedCursor.id);
             }
-            binds.push(cursorAt, cursorAt, cursorId);
         }
 
         const sql = `
@@ -155,8 +158,7 @@ export async function GET(request, { params }) {
         // Build next cursor
         let nextCursor = null;
         if (hasMore && posts.length > 0) {
-            const last = posts[posts.length - 1];
-            nextCursor = `${last.published_at}:${last.id}`;
+            nextCursor = buildPostsCursor(posts[posts.length - 1], filter);
         }
 
         // Fetch tags for returned posts

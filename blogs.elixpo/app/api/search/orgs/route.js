@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { parseLimit } from '../../../../lib/pagination';
 import { getSession } from '../../../../lib/auth';
+import { escapeLikePattern } from '../../../../lib/searchQuery';
 
 // Granular org search with selectable fields
 // ?q=query&fields=id,slug,name,tagline,logo_url,description,members,blogs,collections
@@ -21,7 +22,7 @@ export async function GET(request) {
   try {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
-    const pattern = `%${q}%`;
+    const pattern = `%${escapeLikePattern(q)}%`;
 
     const session = await getSession().catch(() => null);
     const viewerId = session?.userId || null;
@@ -31,7 +32,7 @@ export async function GET(request) {
     const base = await db.prepare(`
       SELECT id, slug, name, tagline, description, logo_url, bio, website, visibility, owner_id, created_at
       FROM orgs
-      WHERE (LOWER(slug) LIKE ? OR LOWER(name) LIKE ? OR LOWER(tagline) LIKE ?)
+      WHERE (LOWER(slug) LIKE ? ESCAPE '\\' OR LOWER(name) LIKE ? ESCAPE '\\' OR LOWER(tagline) LIKE ? ESCAPE '\\')
         AND (
           visibility != 'private'
           OR owner_id = ?

@@ -12,6 +12,20 @@ export async function GET(request) {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
 
+    const org = await db.prepare('SELECT id, owner_id, visibility FROM orgs WHERE id = ?').bind(orgId).first();
+    if (!org) return NextResponse.json({ error: 'Org not found' }, { status: 404 });
+
+    if (String(org.visibility || '').toLowerCase() === 'private') {
+      const session = await getSession().catch(() => null);
+      let allowed = session?.userId && org.owner_id === session.userId;
+      if (!allowed && session?.userId) {
+        const member = await db.prepare('SELECT 1 FROM org_members WHERE org_id = ? AND user_id = ?')
+          .bind(orgId, session.userId).first();
+        allowed = !!member;
+      }
+      if (!allowed) return NextResponse.json({ error: 'Org not found' }, { status: 404 });
+    }
+
     const collections = await db.prepare(`
       SELECT c.*, u.username as created_by_name,
         (SELECT COUNT(*) FROM blogs WHERE collection_id = c.id) as blog_count

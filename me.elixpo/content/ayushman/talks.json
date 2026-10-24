@@ -3,6 +3,14 @@
   "description": "Selected talks and workshops on open-source maintainership, contributor systems, platform engineering, web development, and developer communities.",
   "sessions": [
     {
+      "title": "Why Hacktoberfest Stopped Counting Pull Requests in the Age of AI Agents: A Maintainer's View",
+      "venue": "React Kolkata Meetup: Oct '26 Edition",
+      "date": "24 October 2026",
+      "location": "Remote",
+      "status": "past",
+      "link": "https://github.com/Circuit-Overtime/react-kolkata-pr-ownership-demo"
+    },
+    {
       "title": "The Client Boundary - What 'use client' Really Does in Modern React.",
       "venue": "Techno India University",
       "date": "23rd August 2026",

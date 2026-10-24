@@ -1,4 +1,9 @@
-//! Bounded read-only parallel analysis exposed as one native tool.
+//! Bounded parallel agents exposed as one native tool.
+//!
+//! Agents are read-only by default. With `access: "write"` each one may edit
+//! files and run commands in its own scope; every such action goes through
+//! the parent's approval broker, so the user approves helpers the same way
+//! they approve the main agent.
 
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -10,19 +15,32 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result, bail};
 use crumb_agent::{
-    AgentMode, AgentSession, CancellationToken, DenyAllApprovals, RiskClass, SessionId,
-    SessionJournal, ToolDescriptor, ToolHandler, ToolHost, ToolOutput, ToolTransport,
+    AgentMode, AgentSession, ApprovalBroker, CancellationToken, DenyAllApprovals, RiskClass,
+    SessionId, SessionJournal, ToolDescriptor, ToolHandler, ToolHost, ToolOutput, ToolTransport,
     tool_activity_label,
 };
 use crumb_llm::LlmProvider;
 use serde_json::{Value, json};
 
-use crate::{EventSink, HarnessEvent, HarnessLimits, HarnessTurn, NativeHarness};
+use crate::{EventSink, HarnessEvent, HarnessLimits, HarnessTurn, NativeHarness, TeamRegistry};
 
 const SPAWN_AGENTS: &str = "spawn_agents";
 const NAMES: [&str; 8] = ["Koi", "Nyx", "Rune", "Echo", "Lux", "Mica", "Rook", "Zed"];
 const LOGOS: [&str; 4] = ["◆", "●", "▲", "■"];
 const HARD_MAX_AGENTS: usize = 4;
+/// Tools that stay with the parent: helpers cannot spawn helpers, ask the
+/// user directly, edit the parent's task list, or own background jobs.
+const PARENT_ONLY_TOOLS: [&str; 9] = [
+    SPAWN_AGENTS,
+    "ask_user",
+    "update_tasks",
+    "start_background",
+    "check_background",
+    "stop_background",
+    "send_peer_message",
+    "share_peer_file",
+    "list_peer_agents",
+];
 const MAX_AGENT_NAME_BYTES: usize = 32;
 const MAX_AGENT_LOGO_BYTES: usize = 16;
 static NEXT_TEAM: AtomicU64 = AtomicU64::new(1);
@@ -54,6 +72,10 @@ pub struct ParallelAgentConfig {
     pub max_output_tokens: Option<u32>,
     pub harness_limits: HarnessLimits,
     pub team_limits: ParallelAgentLimits,
+    /// The parent's approval broker. Without one, only read-only teams run.
+    pub approvals: Option<Arc<dyn ApprovalBroker>>,
+    /// Live helper status for the agent map.
+    pub registry: Option<TeamRegistry>,
 }
 
 /// Adds a non-recursive `spawn_agents` tool backed by independent native Harness turns.
@@ -91,11 +113,13 @@ pub fn register_parallel_agent_tool(
         )
     })?;
     let child_tools = host.read_only();
+    let write_tools = host.without(&PARENT_ONLY_TOOLS);
     host.register(
         descriptor(config.team_limits),
         Arc::new(ParallelAgentTool {
             provider,
             child_tools,
+            write_tools,
             config: ParallelAgentConfig {
                 workspace,
                 ..config
@@ -107,6 +131,7 @@ pub fn register_parallel_agent_tool(
 struct ParallelAgentTool {
     provider: Arc<dyn LlmProvider>,
     child_tools: ToolHost,
+    write_tools: ToolHost,
     config: ParallelAgentConfig,
 }
 
@@ -137,14 +162,35 @@ fn run_team(
 ) -> Result<ToolOutput> {
     ensure_active(cancellation)?;
     let request = parse_request(arguments, tool.config.team_limits)?;
+    let approvals: Arc<dyn ApprovalBroker> = if request.write {
+        tool.config
+            .approvals
+            .clone()
+            .context("write access needs an approval channel; run a read-only team instead")?
+    } else {
+        Arc::new(DenyAllApprovals)
+    };
     let team = team_id();
     let assignments = request.assignments;
     let (activity_tx, activity_rx) = mpsc::sync_channel(64);
     let mut workers = Vec::with_capacity(assignments.len());
     for (index, assignment) in assignments.iter().cloned().enumerate() {
         let provider = Arc::clone(&tool.provider);
-        let child_tools = tool.child_tools.clone();
+        let child_tools = if request.write {
+            tool.write_tools.clone()
+        } else {
+            tool.child_tools.clone()
+        };
         let config = tool.config.clone();
+        let helper = config.registry.clone().map(|registry| {
+            let id = registry.begin(
+                &assignment.name,
+                &assignment.logo,
+                &assignment.task,
+                request.write,
+            );
+            (registry, id)
+        });
         let worker = WorkerSpec {
             team: team.clone(),
             objective: request.objective.clone(),
@@ -155,6 +201,9 @@ fn run_team(
             task: assignment.task,
             provider,
             tools: child_tools,
+            approvals: Arc::clone(&approvals),
+            write: request.write,
+            helper,
             config,
             cancellation: cancellation.clone(),
             activity: activity_tx.clone(),
@@ -200,11 +249,27 @@ fn run_team(
         );
     }
     ensure_active(cancellation)?;
+    Ok(team_report(
+        &team,
+        &request.objective,
+        &findings,
+        tool.config.harness_limits.max_output_bytes.get(),
+    ))
+}
+
+/// The bounded report the parent reconciles: each agent's finding and the
+/// files it changed.
+fn team_report(team: &str, objective: &str, findings: &[Finding], limit: usize) -> ToolOutput {
     let reports = findings
         .iter()
         .map(|finding| {
+            let changed = if finding.changed_files.is_empty() {
+                String::new()
+            } else {
+                format!("\nchanged files: {}", finding.changed_files.join(", "))
+            };
             format!(
-                "{} {} [{}]:\n{}",
+                "{} {} [{}]:\n{}{changed}",
                 finding.logo,
                 finding.name,
                 if finding.failed { "failed" } else { "complete" },
@@ -215,16 +280,15 @@ fn run_team(
         .join("\n\n");
     let text = bounded_text(
         format!(
-            "Team {team} report\nObjective: {}\n\n{reports}\n\nParent action: reconcile agreements, conflicts, and evidence into one final response.",
-            request.objective
+            "Team {team} report\nObjective: {objective}\n\n{reports}\n\nParent action: reconcile agreements, conflicts, and evidence into one final response."
         ),
-        tool.config.harness_limits.max_output_bytes.get(),
+        limit,
     );
-    Ok(ToolOutput {
+    ToolOutput {
         text,
         structured: Some(json!({
             "team_id": team,
-            "objective": request.objective,
+            "objective": objective,
             "status": if findings.iter().any(|finding| finding.failed) { "partial" } else { "complete" },
             "agents": findings.iter().map(|finding| json!({
                 "name": finding.name,
@@ -232,10 +296,11 @@ fn run_team(
                 "session_id": finding.session_id,
                 "status": if finding.failed { "failed" } else { "complete" },
                 "finding": finding.text,
+                "changed_files": finding.changed_files,
             })).collect::<Vec<_>>()
         })),
         is_error: findings.iter().any(|finding| finding.failed),
-    })
+    }
 }
 
 struct Finding {
@@ -244,6 +309,7 @@ struct Finding {
     session_id: String,
     text: String,
     failed: bool,
+    changed_files: Vec<String>,
 }
 
 struct WorkerSpec {
@@ -256,6 +322,9 @@ struct WorkerSpec {
     task: String,
     provider: Arc<dyn LlmProvider>,
     tools: ToolHost,
+    approvals: Arc<dyn ApprovalBroker>,
+    write: bool,
+    helper: Option<(TeamRegistry, u64)>,
     config: ParallelAgentConfig,
     cancellation: CancellationToken,
     activity: SyncSender<String>,
@@ -272,6 +341,9 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         task,
         provider,
         tools,
+        approvals,
+        write,
+        helper,
         config,
         cancellation,
         activity,
@@ -288,14 +360,10 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         config.workspace,
         journal,
     )?;
-    let harness = NativeHarness::new(
-        provider,
-        tools,
-        Arc::new(DenyAllApprovals),
-        config.harness_limits,
-    );
+    let harness = NativeHarness::new(provider, tools, approvals, config.harness_limits);
     let mut conversation = harness.conversation();
     let mut events = TeamEvents::new(name.clone(), activity.clone());
+    events.helper.clone_from(&helper);
     let roster = assignments
         .iter()
         .map(|assignment| {
@@ -306,10 +374,15 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         })
         .collect::<Vec<_>>()
         .join("\n");
+    let role = if write {
+        "a member of a Crumb agent team supervised by the parent Harness. You may edit files and run commands, but only inside your assignment's scope: never touch files a sibling owns, and verify your changes (build or test) before reporting. The user approves each action. Report what you changed and how you verified it."
+    } else {
+        "one read-only member of a Crumb agent team supervised by the parent Harness. Do not request mutations."
+    };
     let turn = HarnessTurn {
         model: config.model,
         user_message: format!(
-            "You are {logo} {name}, one read-only member of a Crumb agent team supervised by the parent Harness. Work only on your assignment, avoid duplicating sibling scopes, cite concrete paths or evidence, and flag dependencies, disagreements, or uncertainty for parent synthesis. Do not request mutations or claim to be the final answer.\n\nShared objective:\n{objective}\n\nTeam assignments:\n{roster}\n\nYour assignment:\n{task}"
+            "You are {logo} {name}, {role} Work only on your assignment, avoid duplicating sibling scopes, cite concrete paths or evidence, and flag dependencies, disagreements, or uncertainty for parent synthesis. Do not claim to be the final answer.\n\nShared objective:\n{objective}\n\nTeam assignments:\n{roster}\n\nYour assignment:\n{task}"
         ),
         images: Vec::new(),
         persona: None,
@@ -342,12 +415,16 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
             (format!("analysis failed: {error}"), true)
         }
     };
+    if let Some((registry, id)) = &helper {
+        registry.finish(*id, failed);
+    }
     Ok(Finding {
         name,
         logo,
         session_id: session_id.as_str().to_owned(),
         text,
         failed,
+        changed_files: events.changed_files,
     })
 }
 
@@ -362,6 +439,7 @@ fn team_id() -> String {
 struct TeamRequest {
     objective: String,
     assignments: Vec<AgentAssignment>,
+    write: bool,
 }
 
 #[derive(Clone)]
@@ -436,9 +514,15 @@ fn parse_request(arguments: &Value, limits: ParallelAgentLimits) -> Result<TeamR
     {
         bail!("parallel agent names must be unique");
     }
+    let write = match arguments.get("access").and_then(Value::as_str) {
+        None | Some("read") => false,
+        Some("write") => true,
+        Some(_) => bail!("access must be read or write"),
+    };
     Ok(TeamRequest {
         objective: objective.to_owned(),
         assignments,
+        write,
     })
 }
 
@@ -484,6 +568,8 @@ struct TeamEvents {
     name: String,
     activity: SyncSender<String>,
     reporting: bool,
+    changed_files: Vec<String>,
+    helper: Option<(TeamRegistry, u64)>,
 }
 
 impl TeamEvents {
@@ -492,12 +578,20 @@ impl TeamEvents {
             name,
             activity,
             reporting: false,
+            changed_files: Vec::new(),
+            helper: None,
         }
     }
 }
 
 impl EventSink for TeamEvents {
     fn emit(&mut self, event: HarnessEvent) {
+        if let (HarnessEvent::Usage(usage), Some((registry, id))) = (&event, &self.helper) {
+            let tokens = usage.input_tokens.saturating_add(usage.output_tokens);
+            registry.update(*id, |helper| {
+                helper.tokens = helper.tokens.saturating_add(tokens);
+            });
+        }
         let label = match event {
             HarnessEvent::TurnStarted => Some("Thinking".to_owned()),
             HarnessEvent::ToolRequested { name, detail, .. } => Some(detail.map_or_else(
@@ -514,8 +608,13 @@ impl EventSink for TeamEvents {
                 self.reporting = true;
                 Some("Reporting findings".to_owned())
             }
+            HarnessEvent::FileChanged { path, .. } => {
+                if !self.changed_files.contains(&path) {
+                    self.changed_files.push(path.clone());
+                }
+                Some(format!("Edited {path}"))
+            }
             HarnessEvent::ToolOutput { .. }
-            | HarnessEvent::FileChanged { .. }
             | HarnessEvent::TextDelta(_)
             | HarnessEvent::ReasoningDelta(_)
             | HarnessEvent::ResponseRevised
@@ -524,6 +623,9 @@ impl EventSink for TeamEvents {
             | HarnessEvent::TurnFinished => None,
         };
         if let Some(label) = label {
+            if let Some((registry, id)) = &self.helper {
+                registry.update(*id, |helper| helper.activity.clone_from(&label));
+            }
             publish_activity(&self.activity, format!("{} · {label}", self.name));
         }
     }
@@ -553,10 +655,15 @@ fn publish_activity(activity: &SyncSender<String>, label: String) {
 fn descriptor(limits: ParallelAgentLimits) -> ToolDescriptor {
     ToolDescriptor {
         name: SPAWN_AGENTS.to_owned(),
-        description: "Supervise two or more named read-only agents working concurrently toward one shared objective, then return a bounded team report for parent synthesis.".to_owned(),
+        description: "Run two to four named agents concurrently toward one objective and get a bounded team report. access read (default) is for parallel investigation; write lets each agent edit files and run commands in its own non-overlapping scope, with every action approved by the user.".to_owned(),
         input_schema: json!({
             "type": "object",
             "properties": {
+                "access": {
+                    "type": "string",
+                    "enum": ["read", "write"],
+                    "description": "read (default) or write; give write agents non-overlapping files or folders."
+                },
                 "objective": {
                     "type": "string",
                     "minLength": 1,
@@ -621,6 +728,195 @@ mod tests {
         register_parallel_agent_tool,
     };
     use crate::HarnessLimits;
+
+    /// Calls `note_write` until a tool result is in the conversation, then answers.
+    struct ToolThenAnswer;
+
+    struct Events(std::collections::VecDeque<ChatEvent>);
+
+    impl crumb_llm::ChatStream for Events {
+        fn next(&mut self) -> crumb_llm::ProviderFuture<'_, Option<ChatEvent>> {
+            Box::pin(std::future::ready(Ok(self.0.pop_front())))
+        }
+    }
+
+    impl crumb_llm::LlmProvider for ToolThenAnswer {
+        fn name(&self) -> &'static str {
+            "tool-then-answer"
+        }
+
+        fn list_models(&self) -> crumb_llm::ProviderFuture<'_, Vec<crumb_llm::ModelInfo>> {
+            Box::pin(std::future::ready(Ok(Vec::new())))
+        }
+
+        fn chat_stream(
+            &self,
+            request: crumb_llm::ChatRequest,
+        ) -> crumb_llm::ProviderFuture<'_, Box<dyn crumb_llm::ChatStream>> {
+            let answered = request
+                .messages
+                .iter()
+                .any(|message| message.role == crumb_llm::ChatRole::Tool);
+            let events = if answered {
+                vec![
+                    ChatEvent::TextDelta("Wrote the note and checked it.".to_owned()),
+                    ChatEvent::Finished(FinishReason::Stop),
+                ]
+            } else {
+                vec![
+                    ChatEvent::ToolCall(crumb_llm::ToolCall {
+                        id: "call_1".to_owned(),
+                        name: "note_write".to_owned(),
+                        arguments: json!({}),
+                    }),
+                    ChatEvent::Finished(FinishReason::ToolCall),
+                ]
+            };
+            Box::pin(std::future::ready(Ok(
+                Box::new(Events(events.into())) as Box<dyn crumb_llm::ChatStream>
+            )))
+        }
+
+        fn embeddings(
+            &self,
+            _request: crumb_llm::EmbeddingRequest,
+        ) -> crumb_llm::ProviderFuture<'_, EmbeddingResponse> {
+            Box::pin(std::future::ready(Err(crumb_llm::ProviderError::new(
+                crumb_llm::ProviderErrorKind::Other,
+                "unused",
+                false,
+            ))))
+        }
+    }
+
+    struct NoteWrite(Arc<std::sync::atomic::AtomicUsize>);
+
+    impl crumb_agent::ToolHandler for NoteWrite {
+        fn call(
+            &self,
+            _arguments: &serde_json::Value,
+            _cancellation: &CancellationToken,
+        ) -> anyhow::Result<crumb_agent::ToolOutput> {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            Ok(crumb_agent::ToolOutput::text("note written"))
+        }
+    }
+
+    struct CountingApprovals(Arc<std::sync::atomic::AtomicUsize>);
+
+    impl crumb_agent::ApprovalBroker for CountingApprovals {
+        fn decide(
+            &self,
+            _request: &crumb_agent::ApprovalRequest,
+            _arguments: &serde_json::Value,
+            _cancellation: &CancellationToken,
+        ) -> crumb_agent::ApprovalDecision {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            crumb_agent::ApprovalDecision::AllowOnce
+        }
+    }
+
+    fn write_team(
+        approvals: Option<Arc<dyn crumb_agent::ApprovalBroker>>,
+    ) -> (TempDir, ToolHost, Arc<std::sync::atomic::AtomicUsize>) {
+        let workspace = TempDir::new().expect("workspace");
+        let writes = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let mut host = ToolHost::default();
+        host.register(
+            crumb_agent::ToolDescriptor {
+                name: "note_write".to_owned(),
+                description: "write a note".to_owned(),
+                input_schema: json!({"type": "object"}),
+                risk: crumb_agent::RiskClass::WriteWorkspace,
+                transport: crumb_agent::ToolTransport::Native,
+            },
+            Arc::new(NoteWrite(Arc::clone(&writes))),
+        )
+        .expect("note tool");
+        register_parallel_agent_tool(
+            &mut host,
+            Arc::new(ToolThenAnswer),
+            ParallelAgentConfig {
+                workspace: workspace.path().to_path_buf(),
+                journal_root: workspace.path().join("agents"),
+                model: "fixture".to_owned(),
+                max_output_tokens: Some(128),
+                harness_limits: HarnessLimits {
+                    turn_timeout: Duration::from_secs(5),
+                    ..HarnessLimits::default()
+                },
+                team_limits: ParallelAgentLimits::default(),
+                approvals,
+                registry: None,
+            },
+        )
+        .expect("parallel tool registers");
+        (workspace, host, writes)
+    }
+
+    #[test]
+    fn write_teams_act_through_the_parent_approvals_and_report_it() {
+        let approved = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let broker: Arc<dyn crumb_agent::ApprovalBroker> =
+            Arc::new(CountingApprovals(Arc::clone(&approved)));
+        let (_workspace, host, writes) = write_team(Some(Arc::clone(&broker)));
+        let parent_approvals =
+            ConfiguredApprovals::new(BTreeSet::from(["spawn_agents".to_owned()]));
+
+        let output = host
+            .call(
+                "spawn_agents",
+                &json!({"access": "write", "objective": "write notes", "tasks": ["note a", "note b"]}),
+                AgentMode::Auto,
+                &parent_approvals,
+                &CancellationToken::default(),
+            )
+            .expect("write team runs");
+
+        assert!(!output.is_error, "{}", output.text);
+        assert_eq!(writes.load(std::sync::atomic::Ordering::Relaxed), 2);
+        assert_eq!(
+            approved.load(std::sync::atomic::Ordering::Relaxed),
+            2,
+            "each write is approved"
+        );
+        assert!(output.text.contains("[complete]:"), "{}", output.text);
+        assert!(output.text.contains("note written"), "{}", output.text);
+    }
+
+    #[test]
+    fn read_teams_never_write_and_write_teams_need_an_approval_channel() {
+        let (_workspace, host, writes) = write_team(None);
+        let parent_approvals =
+            ConfiguredApprovals::new(BTreeSet::from(["spawn_agents".to_owned()]));
+        let refused = host
+            .call(
+                "spawn_agents",
+                &json!({"access": "write", "tasks": ["a", "b"]}),
+                AgentMode::Auto,
+                &parent_approvals,
+                &CancellationToken::default(),
+            )
+            .expect("tool answers");
+        assert!(refused.is_error);
+        assert!(refused.text.contains("approval channel"));
+
+        let read = host
+            .call(
+                "spawn_agents",
+                &json!({"tasks": ["a", "b"]}),
+                AgentMode::Auto,
+                &parent_approvals,
+                &CancellationToken::default(),
+            )
+            .expect("read team runs");
+        assert_eq!(
+            writes.load(std::sync::atomic::Ordering::Relaxed),
+            0,
+            "{}",
+            read.text
+        );
+    }
 
     #[test]
     fn short_names_are_unique_and_terminal_friendly() {
@@ -726,6 +1022,8 @@ mod tests {
                     ..HarnessLimits::default()
                 },
                 team_limits: ParallelAgentLimits::default(),
+                approvals: None,
+                registry: None,
             },
         )
         .expect("parallel tool registers");

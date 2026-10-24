@@ -5,6 +5,7 @@ import { requestTooLarge, byteLength, MAX_BLOG_CONTENT_BYTES, MAX_TITLE_LEN, MAX
 import { readTimeFromWords } from '../../../../lib/readTime';
 import { BLOG_LICENSES } from '../../../../lib/curatedCollections';
 import { contentDiscoveryMetadata } from '../../../../lib/recommendations';
+import { countBlockWords } from '../../../../lib/api/v1/blogInput';
 
 export async function POST(request) {
   const session = await getSession();
@@ -17,7 +18,11 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { slugid, title, subtitle, tags, publishAs, editorContent, pageEmoji, coverUrl, coverPos, coverZoom, status, lastKnownUpdatedAt, slug: requestedSlug, collectionId, secret, member_only, license: requestedLicense, language, region } = body;
+  const { slugid, title, subtitle, tags, publishAs, editorContent: rawEditorContent, pageEmoji, coverUrl, coverPos, coverZoom, status, lastKnownUpdatedAt, slug: requestedSlug, collectionId, secret, member_only, license: requestedLicense, language, region } = body;
+  // The editor sends its loaded content as a JSON string until the text is
+  // edited. A cover- or icon-only update then counted 0 words and was rejected
+  // as too short, and its excerpt came out empty. Accept both shapes.
+  const editorContent = parseEditorContent(rawEditorContent);
   if (requestedLicense !== undefined && !BLOG_LICENSES.has(requestedLicense)) {
     return NextResponse.json({ error: 'Unsupported content license' }, { status: 400 });
   }
@@ -51,7 +56,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Content too large' }, { status: 413 });
   }
   // Require real content before going public (drafts may be short/empty).
-  if (targetStatus !== 'draft' && countWords(editorContent) < 20) {
+  if (targetStatus !== 'draft' && countBlockWords(editorContent) < 20) {
     return NextResponse.json({ error: 'A post needs at least 20 words before publishing.' }, { status: 400 });
   }
 
@@ -62,7 +67,7 @@ export async function POST(request) {
     const { checkPublishSafety } = await import('../../../../lib/blog-version');
     const db = getDB();
     const now = Math.floor(Date.now() / 1000);
-    const readTime = readTimeFromWords(countWords(editorContent));
+    const readTime = readTimeFromWords(countBlockWords(editorContent));
     const compressedContent = editorContent ? compressBlogContent(editorContent) : '';
     const { excerptFromBlocks } = await import('../../../../lib/excerpt');
     const excerpt = editorContent ? excerptFromBlocks(editorContent) : '';
@@ -122,12 +127,33 @@ export async function POST(request) {
       }
     }
 
+    // The browser may only publish under an org the caller belongs to. A target
+    // that matches the stored row is allowed for existing collaborators.
+    const storedPublishAs = existing?.published_as || 'personal';
+    const effectivePublishAs = publishAs || storedPublishAs;
+    if (!existing || effectivePublishAs !== storedPublishAs) {
+      const { isBlogOwner, requirePublishTarget } = await import('../../../../lib/api/v1/blogInput');
+      if (existing && !(await isBlogOwner(db, existing, session.userId))) {
+        return NextResponse.json(
+          { error: 'Only the post owner can change the publication target' },
+          { status: 403 },
+        );
+      }
+      try {
+        await requirePublishTarget(db, session.userId, effectivePublishAs, null);
+      } catch (e) {
+        if (e?.name === 'BlogInputError') {
+          return NextResponse.json({ error: e.message }, { status: e.status || 400 });
+        }
+        throw e;
+      }
+    }
+
     // A collection belongs to exactly one org, so it's only valid when the blog
     // is published under that org. Publishing personally — or naming a collection
     // from a different org — clears it. (Co-author access stays blog-scoped either
     // way; filing under a collection never grants org/collection-level rights.)
     let finalCollectionId = null;
-    const effectivePublishAs = publishAs || existing?.published_as || 'personal';
     if (collectionId && effectivePublishAs.startsWith('org:')) {
       const orgId = effectivePublishAs.slice(4);
       const col = await db.prepare('SELECT id FROM collections WHERE id = ? AND org_id = ?')
@@ -138,7 +164,7 @@ export async function POST(request) {
     // Slugs are unique per owner (the URL is /owner/slug), not globally.
     const slugScope = {
       authorId: session.userId,
-      publishAs: existing?.published_as || publishAs || 'personal',
+      publishAs: effectivePublishAs,
     };
     const wantsSlugChange = !!(requestedSlug && requestedSlug.trim());
 
@@ -183,7 +209,7 @@ export async function POST(request) {
           collection_id = ?, status = ?, page_emoji = ?, cover_image_r2_key = ?, cover_pos_x = ?, cover_pos_y = ?, cover_zoom = ?,
           read_time_minutes = ?, secret = ?, member_only = ?, license = ?, language = ?, region = ?, updated_at = ?
       `;
-      const params = [title, subtitle || '', slug, compressedContent, excerpt, publishAs || 'personal',
+      const params = [title, subtitle || '', slug, compressedContent, excerpt, effectivePublishAs,
         finalCollectionId, targetStatus, pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, finalLicense, discovery.language, discovery.region, now];
 
       if (publishedAt) {
@@ -213,7 +239,7 @@ export async function POST(request) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         slugid, slug, title, subtitle || '', compressedContent, excerpt,
-        session.userId, publishAs || 'personal', finalCollectionId, targetStatus,
+        session.userId, effectivePublishAs, finalCollectionId, targetStatus,
         pageEmoji || '', storedCover, posX, posY, zoom, readTime, finalSecret, finalMemberOnly, finalLicense, discovery.language, discovery.region, now, now,
         (targetStatus === 'published' || targetStatus === 'unlisted') ? now : null
       )];
@@ -315,13 +341,11 @@ function generateSlug(title) {
     .replace(/^-|-$/g, '');
 }
 
-function countWords(blocks) {
-  if (!blocks || !Array.isArray(blocks)) return 0;
-  return blocks
-    .map(b => (b.content && Array.isArray(b.content)) ? b.content.map(c => c.text || '').join('') : '')
-    .join(' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .length;
+function parseEditorContent(content) {
+  if (typeof content !== 'string') return content;
+  try {
+    return JSON.parse(content);
+  } catch {
+    return content;
+  }
 }

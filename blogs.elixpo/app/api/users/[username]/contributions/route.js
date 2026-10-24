@@ -12,32 +12,7 @@ import { NextResponse } from "next/server";
  * No blog IDs, titles, or slugs are exposed — aggregate counts only.
  */
 
-// Compute the UTC offset in seconds for a given IANA timezone at a reference date.
-// Falls back to 0 (UTC) for invalid timezone names.
-function timezoneOffsetSeconds(tz) {
-    if (!tz || tz === "UTC") return 0;
-    try {
-        // Get the offset by comparing a formatted date in the target timezone vs UTC.
-        const now = new Date();
-        const utcStr = now.toLocaleString("en-US", { timeZone: "UTC" });
-        const tzStr = now.toLocaleString("en-US", { timeZone: tz });
-        const utcDate = new Date(utcStr);
-        const tzDate = new Date(tzStr);
-        return Math.round((tzDate - utcDate) / 1000);
-    } catch {
-        return 0;
-    }
-}
-
-// Format a unix epoch (seconds) as YYYY-MM-DD in the given timezone offset.
-function epochToDateString(epoch, offsetSeconds) {
-    const adjusted = (epoch + offsetSeconds) * 1000;
-    const d = new Date(adjusted);
-    const y = d.getUTCFullYear();
-    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(d.getUTCDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-}
+import { contributionDateKey } from "../../../../../lib/contributions";
 
 export async function GET(request, { params }) {
     const { username } = await params;
@@ -71,7 +46,6 @@ export async function GET(request, { params }) {
         // Use the creator's configured timezone if not explicitly provided
         const effectiveTz =
             timezone !== "UTC" ? timezone : user.timezone || "UTC";
-        const offsetSec = timezoneOffsetSeconds(effectiveTz);
 
         // 12 months ago from now
         const now = Math.floor(Date.now() / 1000);
@@ -102,7 +76,8 @@ export async function GET(request, { params }) {
         let total = 0;
         for (const row of rows) {
             if (!row.published_at) continue;
-            const dateStr = epochToDateString(row.published_at, offsetSec);
+            const dateStr = contributionDateKey(row.published_at, effectiveTz);
+            if (!dateStr) continue;
             days[dateStr] = (days[dateStr] || 0) + 1;
             total++;
         }
@@ -110,7 +85,7 @@ export async function GET(request, { params }) {
         // Cache via KV (1 hour TTL)
         try {
             const { kvPut } = await import("../../../../../lib/cache");
-            const cacheKey = `v1:contributions:${username.toLowerCase()}`;
+            const cacheKey = `v1:contributions:${username.toLowerCase()}:${effectiveTz}`;
             // Fire-and-forget cache write
             kvPut(cacheKey, { days, total }, 3600).catch(() => {});
         } catch {

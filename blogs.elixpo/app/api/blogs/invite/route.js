@@ -16,7 +16,7 @@ async function canManage(db, blogId, userId) {
   if (!blog) return { allowed: false, blog: null };
   if (blog.author_id === userId) return { allowed: true, blog };
   const coauthor = await db.prepare(
-    "SELECT role FROM blog_co_authors WHERE blog_id = ? AND user_id = ? AND role = 'admin'"
+    "SELECT role FROM blog_co_authors WHERE blog_id = ? AND user_id = ? AND role = 'admin' AND status = 'accepted'"
   ).bind(blogId, userId).first();
   return { allowed: !!coauthor, blog };
 }
@@ -39,6 +39,24 @@ export async function GET(request) {
       SELECT b.author_id, u.username as author_username, u.display_name as author_name, u.avatar_url as author_avatar
       FROM blogs b JOIN users u ON u.id = b.author_id WHERE b.id = ?
     `).bind(slugid).first();
+
+    // The collaborator list is part of the private workspace. Editors and
+    // accepted viewers may see it; everyone else gets no team metadata.
+    const { canEditBlog } = await import('../../../../lib/permissions');
+    const permission = await canEditBlog(db, slugid, session.userId);
+    let canViewTeam = permission.ok;
+    if (!canViewTeam && !permission.notFound) {
+      const viewer = await db.prepare(
+        "SELECT 1 FROM blog_co_authors WHERE blog_id = ? AND user_id = ? AND status = 'accepted'"
+      ).bind(slugid, session.userId).first();
+      canViewTeam = !!viewer;
+    }
+    if (!canViewTeam) {
+      return NextResponse.json(
+        { error: permission.notFound ? 'Blog not found' : 'Not authorized' },
+        { status: permission.notFound ? 404 : 403 },
+      );
+    }
 
     const collabs = await db.prepare(`
       SELECT u.id, u.username, u.display_name, u.avatar_url, bc.role, bc.status, bc.added_at, bc.show_on_profile

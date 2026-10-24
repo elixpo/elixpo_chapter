@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
+import { getSession } from '../../../../../lib/auth';
 
 // GET /api/users/<username>/follow-list?type=followers|following
 // Returns the people/orgs in the follower or following list (max 100).
@@ -29,7 +30,10 @@ export async function GET(request, { params }) {
       return NextResponse.json({ items });
     }
 
-    // Following — can be users or orgs.
+    // Following — can be users or orgs. A private org should not be disclosed
+    // through someone else's public following list.
+    const session = await getSession().catch(() => null);
+    const viewerId = session?.userId || null;
     const [users, orgs] = await Promise.all([
       db.prepare(`
         SELECT u.username, u.display_name, u.avatar_url, f.created_at
@@ -41,8 +45,13 @@ export async function GET(request, { params }) {
         SELECT o.slug, o.name, o.logo_url, o.logo_r2_key, f.created_at
         FROM follows f JOIN orgs o ON o.id = f.following_id
         WHERE f.follower_id = ? AND f.following_type = 'org'
+          AND (
+            LOWER(COALESCE(o.visibility, 'public')) != 'private'
+            OR o.owner_id = ?
+            OR o.id IN (SELECT org_id FROM org_members WHERE user_id = ?)
+          )
         ORDER BY f.created_at DESC LIMIT 100
-      `).bind(user.id).all(),
+      `).bind(user.id, viewerId, viewerId).all(),
     ]);
     const items = [
       ...(users?.results || []).map((u) => ({ type: 'user', name: u.display_name || u.username, handle: u.username, avatar: u.avatar_url, _t: u.created_at })),

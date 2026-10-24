@@ -300,12 +300,19 @@ impl PendingComposerArtifacts {
         composer_input_row: Option<u16>,
     ) -> String {
         self.chip_layout.clear();
-        if self.artifacts.is_empty() && self.notice.is_none() {
+        // The folder reads like a shell prompt; the cursor always starts after it.
+        let folder = crate::composer_prompt();
+        if self.artifacts.is_empty() && self.notice.is_none() && folder.is_empty() {
             return String::new();
         }
-        let mut plain = String::new();
-        let mut styled = String::new();
-        let mut visible_column = COMPOSER_INPUT_COLUMN;
+        let mut plain = folder.clone();
+        let mut styled = if folder.is_empty() {
+            String::new()
+        } else {
+            format!("\x1b[38;5;110;1m{folder}\x1b[0m")
+        };
+        let mut visible_column = COMPOSER_INPUT_COLUMN
+            .saturating_add(u16::try_from(folder.chars().count()).unwrap_or(u16::MAX));
         for artifact in &self.artifacts {
             let chip = artifact.chip();
             let prefix = if plain.is_empty() { "" } else { " " };
@@ -350,15 +357,13 @@ impl PendingComposerArtifacts {
     }
 
     pub(crate) fn composer_prefix_width(&self) -> usize {
-        let artifact_width = self
-            .artifacts
-            .iter()
-            .enumerate()
-            .map(|(index, artifact)| artifact.chip().chars().count() + 2 + usize::from(index > 0))
-            .sum::<usize>();
-        self.notice.as_ref().map_or(artifact_width, |notice| {
-            let prefix = if self.artifacts.is_empty() { 2 } else { 1 };
-            artifact_width + prefix + truncate_label(notice, 48).chars().count() + 4
+        let mut width = crate::composer_prompt().chars().count();
+        for artifact in &self.artifacts {
+            width += artifact.chip().chars().count() + 2 + usize::from(width > 0);
+        }
+        self.notice.as_ref().map_or(width, |notice| {
+            let prefix = if width == 0 { 2 } else { 1 };
+            width + prefix + truncate_label(notice, 48).chars().count() + 4
         })
     }
 

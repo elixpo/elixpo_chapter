@@ -442,6 +442,24 @@ pub struct AgentConfig {
     pub mcp_servers: Vec<crate::tools::McpServer>,
     pub optimizers: Vec<OptimizerConfig>,
     pub permissions: ToolPermissions,
+    pub sessions: SessionSettings,
+}
+
+/// How sessions are kept between Crumb runs.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct SessionSettings {
+    /// Save each session's conversation (secrets redacted, owner-only file)
+    /// so an interrupted session resumes where it stopped.
+    pub save_conversation: bool,
+}
+
+impl Default for SessionSettings {
+    fn default() -> Self {
+        Self {
+            save_conversation: true,
+        }
+    }
 }
 
 impl AgentConfig {

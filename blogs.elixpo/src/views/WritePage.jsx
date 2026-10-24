@@ -1858,6 +1858,8 @@ export default function WritePage({ slugid }) {
         localStorage.removeItem(`lixblogs:cover-upload:${blogId}`);
         draftDataRef.current = { ...draftDataRef.current, coverPreview: null };
         setCoverPreview(null);
+        dirtyRef.current = true;
+        void syncToCloud({ silent: true });
     };
 
     const addTag = useCallback(
@@ -2116,6 +2118,11 @@ export default function WritePage({ slugid }) {
                     coverPreview: data.url,
                 };
                 setCoverPreview(data.url);
+                // Save now instead of on the next 15s autosave: a published post's
+                // og:image is versioned by updated_at, so links shared right after
+                // a cover change should already preview the new cover.
+                dirtyRef.current = true;
+                void syncToCloud({ silent: true });
                 return data.url;
             })();
             coverUploadRef.current = task;
@@ -2133,7 +2140,7 @@ export default function WritePage({ slugid }) {
                     coverUploadRef.current = null;
             }
         },
-        [blogId],
+        [blogId, syncToCloud],
     );
 
     // IndexedDB retains the compressed upload body across navigation/reload.

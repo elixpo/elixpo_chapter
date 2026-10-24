@@ -16,6 +16,17 @@ export async function GET(request) {
     const db = getDB();
     const now = Math.floor(Date.now() / 1000);
 
+    // Lock state and collaborator presence describe a private workspace, so
+    // only people who can edit the post may read them.
+    const { canEditBlog } = await import('../../../../lib/permissions');
+    const permission = await canEditBlog(db, blogId, session.userId);
+    if (!permission.ok) {
+      return NextResponse.json(
+        { error: permission.notFound ? 'Blog not found' : 'Not authorized' },
+        { status: permission.notFound ? 404 : 403 },
+      );
+    }
+
     // Get blog lock state + co-author count
     const blog = await db.prepare(
       'SELECT editing_by, editing_since, author_id FROM blogs WHERE id = ?'

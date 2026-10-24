@@ -49,6 +49,7 @@ async function queryPublicStories(page, pageSize, recommendationContext = null) 
         AND b.secret = 0
         AND COALESCE(b.member_only, 0) = 0
         AND LOWER(u.username) != 'selenium-cutlet'
+        AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
       ORDER BY
         ROW_NUMBER() OVER (PARTITION BY b.author_id ORDER BY b.published_at DESC, b.id DESC),
         b.published_at DESC,
@@ -58,10 +59,12 @@ async function queryPublicStories(page, pageSize, recommendationContext = null) 
     db.prepare(`
       SELECT COUNT(*) AS total
       FROM blogs b JOIN users u ON u.id = b.author_id
+      LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
       WHERE b.status = 'published'
         AND b.secret = 0
         AND COALESCE(b.member_only, 0) = 0
         AND LOWER(u.username) != 'selenium-cutlet'
+        AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
     `).first(),
   ]);
 

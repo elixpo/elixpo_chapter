@@ -3,8 +3,8 @@ export async function invalidateBlogLifecycleCaches(blogId) {
     const { kvInvalidate, PUBLIC_SITEMAP_CACHE_KEY } = await import('../../cache');
     await kvInvalidate(
       PUBLIC_SITEMAP_CACHE_KEY,
-      'v1:tags:popular:30',
-      'v1:tags:popular:12',
+      'v1:tags:popular:v2:30',
+      'v1:tags:popular:v2:12',
       'v1:trending:3',
       'v1:trending:5',
       'v1:trending:10',

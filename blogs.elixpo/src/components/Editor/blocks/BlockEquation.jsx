@@ -36,6 +36,7 @@ export const BlockEquation = createReactBlockSpec(
       const [value, setValue] = useState(block.props.latex || '');
       const [livePreview, setLivePreview] = useState(block.props.latex || '');
       const inputRef = useRef(null);
+      const lineGutterRef = useRef(null);
       const debounceRef = useRef(null);
 
       useEffect(() => {
@@ -58,28 +59,75 @@ export const BlockEquation = createReactBlockSpec(
         setEditing(false);
       };
 
+      const cancel = () => {
+        setEditing(false);
+        setValue(block.props.latex || '');
+        setLivePreview(block.props.latex || '');
+      };
+
       if (editing) {
+        // Same code editor as the Mermaid block: line numbers, Tab indents,
+        // Shift+Enter renders, and keys stay out of the surrounding editor.
         return (
-          <div className="mermaid-block mermaid-block--editing">
+          <div
+            className="mermaid-block mermaid-block--editing"
+            contentEditable={false}
+            suppressContentEditableWarning
+          >
             <div className="mermaid-block-header">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>
               </svg>
               <span>LaTeX Equation</span>
-              <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-faint)' }}>Shift+Enter to save</span>
+              <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-faint)' }}>Shift+Enter to render</span>
             </div>
-            <textarea
-              ref={inputRef}
-              value={value}
-              onChange={handleCodeChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); save(); }
-                if (e.key === 'Escape') { setEditing(false); setValue(block.props.latex || ''); setLivePreview(block.props.latex || ''); }
-              }}
-              placeholder="E = mc^2"
-              rows={4}
-              className="mermaid-block-textarea"
-            />
+            <div className="mermaid-code-editor">
+              <div
+                ref={lineGutterRef}
+                className="mermaid-line-numbers"
+                aria-hidden="true"
+              >
+                {Array.from({ length: Math.max(1, value.split('\n').length) }, (_, index) => (
+                  <span key={index}>{index + 1}</span>
+                ))}
+              </div>
+              <textarea
+                ref={inputRef}
+                draggable={false}
+                value={value}
+                onChange={handleCodeChange}
+                onScroll={(event) => {
+                  if (lineGutterRef.current) {
+                    lineGutterRef.current.scrollTop = event.currentTarget.scrollTop;
+                  }
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.currentTarget.focus();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); save(); }
+                  if (e.key === 'Escape') cancel();
+                  if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = e.target.selectionStart;
+                    const end = e.target.selectionEnd;
+                    const next = value.substring(0, start) + '    ' + value.substring(end);
+                    setValue(next);
+                    setLivePreview(next);
+                    requestAnimationFrame(() => {
+                      e.target.selectionStart = e.target.selectionEnd = start + 4;
+                    });
+                  }
+                }}
+                placeholder={'E = mc^2'}
+                rows={4}
+                className="mermaid-block-textarea"
+              />
+            </div>
             {/* Live KaTeX preview */}
             {livePreview.trim() && (
               <div className="latex-live-preview">
@@ -88,7 +136,7 @@ export const BlockEquation = createReactBlockSpec(
               </div>
             )}
             <div className="mermaid-block-actions">
-              <button onClick={() => { setEditing(false); setValue(block.props.latex || ''); setLivePreview(block.props.latex || ''); }} className="mermaid-btn-cancel">Cancel</button>
+              <button onClick={cancel} className="mermaid-btn-cancel">Cancel</button>
               <button onClick={save} className="mermaid-btn-save" disabled={!value.trim()}>Done</button>
             </div>
           </div>

@@ -71,6 +71,7 @@ nu-ansi-term = "0.50.3"
 portable-pty = "0.9.0"
 reqwest = { version = "0.13.4", features = ["blocking", "form", "json", "stream"] }
 reedline = { version = "0.52.1", default-features = false }
+regex = "1.10"
 rusqlite = "0.40.2"
 rustix = { version = "1.1.4", features = ["event", "process"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -84,3 +85,4 @@ tempfile = "3.27.0"
 tokio = { version = "1.53.1", features = ["time"] }
 zeroize = "1.9"
 url = "2.5.8"
+walkdir = "2.5"

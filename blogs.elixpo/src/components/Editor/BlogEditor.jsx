@@ -663,12 +663,25 @@ function getCustomSlashMenuItems(editor, callbacks = {}) {
             group: "Custom Blocks",
             aliases: ["latex", "math", "equation", "formula", "katex"],
             icon: <Icon d="M4 4l4 16M12 4l4 16M7 8h10M6 16h10" />,
-            onItemClick: () =>
+            onItemClick: () => {
+                const anchor = editor.getTextCursorPosition().block;
                 editor.insertBlocks(
                     [{ type: "blockEquation" }],
-                    editor.getTextCursorPosition().block,
+                    anchor,
                     "after",
-                ),
+                );
+                // The equation editor uses the Mermaid textarea class, so the same
+                // focus helper puts the caret straight into the LaTeX source.
+                const documentBlocks = editor.document;
+                const anchorIndex = documentBlocks.findIndex(
+                    (block) => block.id === anchor.id,
+                );
+                if (anchorIndex >= 0) {
+                    requestMermaidEditorFocus(
+                        documentBlocks[anchorIndex + 1]?.id,
+                    );
+                }
+            },
         },
         {
             title: "Button",
@@ -2215,6 +2228,39 @@ const BlogEditor = forwardRef(function BlogEditor(
                 editorEl === document.activeElement;
             if (!isEditorFocused) return;
 
+            // Shift+Up/Down (with or without Ctrl/Cmd) only extends the selection.
+            // BlockNote binds Shift-Mod-Arrow to "move blocks", which hijacked the
+            // browser's paragraph-select shortcut and moved the selected text.
+            // Stop ProseMirror seeing the key but keep the browser default.
+            const isVerticalArrow =
+                e.key === "ArrowUp" || e.key === "ArrowDown";
+            if (
+                isVerticalArrow &&
+                e.shiftKey &&
+                !e.altKey &&
+                e.target === editorEl
+            ) {
+                e.stopImmediatePropagation();
+                return;
+            }
+            // Moving blocks stays available on Alt+Up/Down.
+            if (
+                isVerticalArrow &&
+                e.altKey &&
+                !e.shiftKey &&
+                !e.ctrlKey &&
+                !e.metaKey &&
+                e.target === editorEl
+            ) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                try {
+                    if (e.key === "ArrowUp") editor.moveBlocksUp();
+                    else editor.moveBlocksDown();
+                } catch {}
+                return;
+            }
+
             // Do not ask BlockNote for its cursor during ordinary navigation.
             // This listener runs in capture phase, before ProseMirror processes the
             // key; reading the editor cursor here can restore the previous selection
@@ -2282,6 +2328,39 @@ const BlogEditor = forwardRef(function BlogEditor(
                 selection?.removeAllRanges();
                 selection?.addRange(range);
                 return;
+            }
+
+            // Ctrl+A inside a table cell → select that cell's text. A second
+            // press (cell already fully selected) or an empty cell falls through
+            // to selecting the whole document. Inputs inside custom blocks
+            // (Mermaid, equations) keep their own select-all.
+            if (handlesCtrlA && block?.type === "table" && e.target === editorEl) {
+                const tiptap = editor._tiptapEditor;
+                const { $from, $to, from, to } = tiptap.state.selection;
+                let depth = $from.depth;
+                while (
+                    depth > 0 &&
+                    !["tableCell", "tableHeader"].includes(
+                        $from.node(depth).type.name,
+                    )
+                )
+                    depth--;
+                if (depth > 0) {
+                    const cellFrom = $from.start(depth) + 1;
+                    const cellTo = $from.end(depth) - 1;
+                    const inSameCell =
+                        $to.depth >= depth && $to.start(depth) === $from.start(depth);
+                    const alreadySelected = from <= cellFrom && to >= cellTo;
+                    if (inSameCell && cellTo > cellFrom && !alreadySelected) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        tiptap.commands.setTextSelection({
+                            from: cellFrom,
+                            to: cellTo,
+                        });
+                        return;
+                    }
+                }
             }
 
             // Ctrl+Enter inside a code block → exit to a new paragraph below

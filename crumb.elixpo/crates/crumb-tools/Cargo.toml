@@ -17,9 +17,11 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 reqwest.workspace = true
+regex.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tempfile.workspace = true
 url.workspace = true
+walkdir.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 rustix.workspace = true

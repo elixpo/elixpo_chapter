@@ -23,7 +23,8 @@ export async function POST(request, { params }) {
 
     const blog = await db.prepare(
       `SELECT b.id, b.title, b.slug, b.status, b.secret, b.author_id, u.username AS author_username
-       FROM blogs b JOIN users u ON u.id = b.author_id WHERE b.id = ?`
+       FROM blogs b JOIN users u ON u.id = b.author_id
+       WHERE b.id = ? AND b.status IN ('published','unlisted') AND b.deleted_at IS NULL`
     ).bind(slugid).first();
     if (!blog) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     const { canEditBlog } = await import('../../../../../lib/permissions');

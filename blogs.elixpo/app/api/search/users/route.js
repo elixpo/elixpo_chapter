@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { parseLimit } from '../../../../lib/pagination';
+import { escapeLikePattern } from '../../../../lib/searchQuery';
 
 // Granular user search with selectable fields
 // ?q=query&fields=id,username,display_name,avatar_url,bio,followers,blogs
@@ -17,12 +18,12 @@ export async function GET(request) {
   try {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
-    const pattern = `%${q}%`;
+    const pattern = `%${escapeLikePattern(q)}%`;
 
     // Base columns always fetched (cheap)
     const baseUsers = await db.prepare(`
       SELECT id, username, display_name, avatar_url, bio, created_at
-      FROM users WHERE LOWER(username) LIKE ? OR LOWER(display_name) LIKE ?
+      FROM users WHERE LOWER(username) LIKE ? ESCAPE '\\' OR LOWER(display_name) LIKE ? ESCAPE '\\'
       LIMIT ?
     `).bind(pattern, pattern, limit).all();
 

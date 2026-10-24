@@ -1,7 +1,8 @@
 //! Read-only manifest scanner exposed as the `detect_stack` agent tool.
 //!
 //! Detects project language(s), package manager, and build/test tooling
-//! from repo manifests. Detection and its process-local cache never write to
+//! from repo manifests, plus the infrastructure and data stores the project
+//! already uses (Cloudflare bindings, compose services, ORMs, migrations). Detection and its process-local cache never write to
 //! the scanned workspace.
 
 use std::fs;
@@ -66,6 +67,9 @@ pub struct LanguageDetection {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct DetectedStack {
     pub languages: Vec<LanguageDetection>,
+    /// Hosting, data stores, and ORMs the project already uses.
+    #[serde(default)]
+    pub infrastructure: Vec<String>,
     pub scanned_at_unix: u64,
     pub cache_hit: bool,
 }
@@ -141,10 +145,12 @@ fn detect_stack(
     }
 
     let languages = scan(&tool.root);
+    let infrastructure = scan_infrastructure(&tool.root);
     ensure_active(cancellation)?;
 
     let result = DetectedStack {
         languages,
+        infrastructure,
         scanned_at_unix: now_unix(),
         cache_hit: false,
     };
@@ -178,6 +184,10 @@ fn tool_output(result: &DetectedStack, max_output_bytes: usize) -> ToolOutput {
         lines.sort();
         lines.join("\n")
     };
+    for fact in &result.infrastructure {
+        summary.push_str("\ninfrastructure: ");
+        summary.push_str(fact);
+    }
     if result.cache_hit {
         summary.push_str("\n(from cache)");
     }
@@ -220,6 +230,171 @@ fn scan(root: &Path) -> Vec<LanguageDetection> {
         }
     }
 
+    found
+}
+
+/// Infrastructure facts from the root and its first-level folders.
+fn scan_infrastructure(root: &Path) -> Vec<String> {
+    let mut facts = Vec::new();
+    infrastructure_in(root, "", &mut facts);
+    if let Ok(read) = fs::read_dir(root) {
+        for entry in read.flatten().take(MAX_SCANNED_SUBDIRECTORIES) {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if path.is_dir() && !IGNORED_SUBDIRS.contains(&name.as_str()) {
+                infrastructure_in(&path, &name, &mut facts);
+            }
+        }
+    }
+    facts.dedup();
+    facts
+}
+
+fn infrastructure_in(dir: &Path, label: &str, facts: &mut Vec<String>) {
+    for name in ["wrangler.toml", "wrangler.json", "wrangler.jsonc"] {
+        if let Ok(config) = fs::read_to_string(dir.join(name)) {
+            facts.push(format!("Cloudflare Workers ({})", labeled(label, name)));
+            facts.extend(cloudflare_bindings(&config, &labeled(label, name)));
+        }
+    }
+    for (file, fact) in [
+        ("open-next.config.ts", "OpenNext (Next.js on Cloudflare)"),
+        ("vercel.json", "Vercel"),
+        ("netlify.toml", "Netlify"),
+        ("fly.toml", "Fly.io"),
+        ("Dockerfile", "Docker image"),
+        ("serverless.yml", "Serverless Framework"),
+        ("drizzle.config.ts", "Drizzle ORM"),
+        ("drizzle.config.js", "Drizzle ORM"),
+    ] {
+        if exists(dir, file) {
+            facts.push(format!("{fact} ({})", labeled(label, file)));
+        }
+    }
+    for file in [
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "compose.yml",
+        "compose.yaml",
+    ] {
+        if let Ok(compose) = fs::read_to_string(dir.join(file)) {
+            for store in data_store_mentions(&compose) {
+                facts.push(format!(
+                    "compose service: {store} ({})",
+                    labeled(label, file)
+                ));
+            }
+        }
+    }
+    if let Ok(schema) = fs::read_to_string(dir.join("prisma/schema.prisma")) {
+        let provider = schema
+            .lines()
+            .find_map(|line| line.trim().strip_prefix("provider"))
+            .and_then(|value| value.split('"').nth(1))
+            .unwrap_or("unknown provider");
+        facts.push(format!("Prisma ({provider})"));
+    }
+    if dir.join("migrations").is_dir() {
+        facts.push(format!(
+            "database migrations ({})",
+            labeled(label, "migrations")
+        ));
+    }
+    facts.extend(dependency_data_stores(dir, label));
+}
+
+/// D1, KV, R2, Durable Object, and Queue bindings in a Wrangler config.
+fn cloudflare_bindings(config: &str, file: &str) -> Vec<String> {
+    let mut bindings = Vec::new();
+    for (marker, kind) in [
+        ("d1_databases", "Cloudflare D1 database"),
+        ("kv_namespaces", "Cloudflare KV namespace"),
+        ("r2_buckets", "Cloudflare R2 bucket"),
+        ("durable_objects", "Cloudflare Durable Objects"),
+        ("queues", "Cloudflare Queues"),
+    ] {
+        if config.contains(marker) {
+            let name = (marker == "d1_databases")
+                .then(|| quoted_value(config, "database_name"))
+                .flatten()
+                .map(|name| format!(" `{name}`"))
+                .unwrap_or_default();
+            bindings.push(format!("{kind}{name} bound in {file}"));
+        }
+    }
+    bindings
+}
+
+fn quoted_value(config: &str, key: &str) -> Option<String> {
+    config.lines().find_map(|line| {
+        let line = line.trim().trim_start_matches('"');
+        line.strip_prefix(key)?
+            .split('"')
+            .find(|part| !part.trim().is_empty() && !part.contains(['=', ':']))
+            .map(str::to_owned)
+    })
+}
+
+const DATA_STORES: [&str; 7] = [
+    "postgres",
+    "mysql",
+    "mariadb",
+    "mongo",
+    "redis",
+    "clickhouse",
+    "elasticsearch",
+];
+
+fn data_store_mentions(text: &str) -> Vec<&'static str> {
+    let lower = text.to_ascii_lowercase();
+    DATA_STORES
+        .into_iter()
+        .filter(|store| {
+            lower.contains(&format!("image: {store}"))
+                || lower.contains(&format!("image: \"{store}"))
+        })
+        .collect()
+}
+
+/// Database clients declared as Node or Rust dependencies.
+fn dependency_data_stores(dir: &Path, label: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    if let Ok(manifest) = fs::read_to_string(dir.join("package.json")) {
+        for (dependency, store) in [
+            ("\"pg\"", "PostgreSQL client (pg)"),
+            ("\"mysql2\"", "MySQL client (mysql2)"),
+            ("\"mongodb\"", "MongoDB client"),
+            ("\"mongoose\"", "MongoDB (mongoose)"),
+            ("\"redis\"", "Redis client"),
+            ("\"ioredis\"", "Redis client (ioredis)"),
+            ("\"better-sqlite3\"", "SQLite (better-sqlite3)"),
+            ("\"@prisma/client\"", "Prisma client"),
+            ("\"drizzle-orm\"", "Drizzle ORM"),
+            ("\"@supabase/supabase-js\"", "Supabase"),
+            ("\"firebase\"", "Firebase"),
+        ] {
+            if manifest.contains(dependency) {
+                found.push(format!("{store} in {}", labeled(label, "package.json")));
+            }
+        }
+    }
+    if let Ok(manifest) = fs::read_to_string(dir.join("Cargo.toml")) {
+        for (dependency, store) in [
+            ("sqlx", "sqlx"),
+            ("diesel", "Diesel"),
+            ("rusqlite", "SQLite (rusqlite)"),
+            ("tokio-postgres", "PostgreSQL client (tokio-postgres)"),
+            ("sea-orm", "SeaORM"),
+            ("mongodb", "MongoDB client"),
+        ] {
+            if manifest.lines().any(|line| {
+                line.trim_start().starts_with(&format!("{dependency} "))
+                    || line.trim_start().starts_with(&format!("{dependency}="))
+            }) {
+                found.push(format!("{store} in {}", labeled(label, "Cargo.toml")));
+            }
+        }
+    }
     found
 }
 
@@ -484,6 +659,18 @@ fn all_manifest_candidates() -> &'static [&'static str] {
         "Gemfile.lock",
         "composer.json",
         "composer.lock",
+        "wrangler.toml",
+        "wrangler.json",
+        "wrangler.jsonc",
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "compose.yml",
+        "compose.yaml",
+        "Dockerfile",
+        "fly.toml",
+        "vercel.json",
+        "netlify.toml",
+        "open-next.config.ts",
     ]
 }
 
@@ -560,7 +747,7 @@ fn optional_bool(arguments: &Value, name: &str) -> Result<Option<bool>> {
 fn descriptor() -> ToolDescriptor {
     ToolDescriptor {
         name: DETECT_STACK.to_owned(),
-        description: "Detect project language(s), package manager, and build/test tooling from repo manifests. Read-only; cached only for this process.".to_owned(),
+        description: "Detect the project's languages, package managers, build/test tooling, and the infrastructure and data stores it already uses (Cloudflare bindings, compose services, ORMs, migrations). Read-only; cached only for this process.".to_owned(),
         input_schema: json!({
             "type": "object",
             "properties": {
@@ -672,6 +859,54 @@ mod tests {
             .find(|entry| entry["language"] == "Python")
             .expect("python detection present");
         assert_eq!(python["confidence"], "medium");
+    }
+
+    #[test]
+    fn reports_the_infrastructure_and_data_stores_already_in_use() {
+        let workspace = TempWorkspace::new();
+        let site = workspace.path().join("site");
+        fs::create_dir(&site).expect("subdir is created");
+        fs::write(
+            site.join("wrangler.toml"),
+            "name = \"site\"\n\n[[d1_databases]]\nbinding = \"DB\"\ndatabase_name = \"site-db\"\n\n[[kv_namespaces]]\nbinding = \"KV\"\n",
+        )
+        .expect("fixture is written");
+        fs::create_dir(site.join("migrations")).expect("migrations dir is created");
+        fs::write(
+            site.join("package.json"),
+            r#"{"dependencies":{"next":"16"}}"#,
+        )
+        .expect("fixture is written");
+        fs::write(
+            workspace.path().join("docker-compose.yml"),
+            "services:\n  db:\n    image: postgres:16\n",
+        )
+        .expect("fixture is written");
+
+        let output = call(&host(workspace.path()), &json!({}));
+        assert!(
+            output
+                .text
+                .contains("Cloudflare Workers (site/wrangler.toml)"),
+            "{}",
+            output.text
+        );
+        assert!(
+            output
+                .text
+                .contains("Cloudflare D1 database `site-db` bound in site/wrangler.toml")
+        );
+        assert!(output.text.contains("Cloudflare KV namespace"));
+        assert!(
+            output
+                .text
+                .contains("database migrations (site/migrations)")
+        );
+        assert!(
+            output
+                .text
+                .contains("compose service: postgres (docker-compose.yml)")
+        );
     }
 
     #[test]

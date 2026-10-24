@@ -333,6 +333,7 @@ pub struct AgentTurnTask {
     questions: crumb_agent::QuestionInbox,
     cancellation: CancellationToken,
     worker: JoinHandle<TurnThreadResult>,
+    map: Arc<AgentMapSource>,
 }
 
 /// Background, explicitly accepted inbound A2A turn.
@@ -395,6 +396,12 @@ impl PeerTurnTask {
 }
 
 impl AgentTurnTask {
+    /// The agent map's live state for this turn.
+    #[must_use]
+    pub fn agent_map(&self) -> &AgentMapSource {
+        &self.map
+    }
+
     /// Waits for one redacted activity state without blocking indefinitely.
     ///
     /// # Errors
@@ -473,6 +480,137 @@ pub struct AgentRuntime {
     review_notes: Vec<ReviewNote>,
     review_note_bytes: usize,
     peer: Option<PeerRuntimeState>,
+    /// Background jobs of the active session, kept across its turns.
+    background: Option<(SessionId, crumb_tools::BackgroundJobs)>,
+    /// Interrupted request, open tasks, and jobs for the first turn after a resume.
+    resume_brief: Option<String>,
+    /// Helper agents of this runtime, for the agent map.
+    team: crumb_harness::TeamRegistry,
+    /// The active session's background jobs, readable while a turn runs.
+    jobs_slot: Arc<Mutex<Option<crumb_tools::BackgroundJobs>>>,
+}
+
+/// Live state behind the agent map, safe to read from the terminal thread
+/// while a turn runs.
+#[derive(Clone)]
+pub struct AgentMapSource {
+    main: String,
+    team: crumb_harness::TeamRegistry,
+    jobs: Arc<Mutex<Option<crumb_tools::BackgroundJobs>>>,
+}
+
+impl AgentMapSource {
+    fn jobs(&self) -> Option<crumb_tools::BackgroundJobs> {
+        self.jobs
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
+    #[must_use]
+    pub fn view(&self) -> crumb_ui::AgentMapView {
+        let helpers = self
+            .team
+            .snapshot()
+            .into_iter()
+            .map(|helper| crumb_ui::AgentMapHelper {
+                elapsed: helper.elapsed(),
+                name: format!("{} {}", helper.logo, helper.name),
+                task: helper.task,
+                write: helper.write,
+                state: match helper.state {
+                    crumb_harness::HelperState::Working => crumb_ui::AgentMapState::Working,
+                    crumb_harness::HelperState::Done => crumb_ui::AgentMapState::Done,
+                    crumb_harness::HelperState::Failed => crumb_ui::AgentMapState::Failed,
+                },
+                tokens: helper.tokens,
+                activity: helper.activity,
+            })
+            .collect();
+        let jobs = self
+            .jobs()
+            .map(|jobs| jobs.records())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|record| {
+                let finished = record.finished_unix.unwrap_or_else(|| {
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_or(record.started_unix, |now| now.as_secs())
+                });
+                crumb_ui::AgentMapJob {
+                    id: record.id,
+                    running: record.status == crumb_tools::JobStatus::Running,
+                    failed: matches!(
+                        record.status,
+                        crumb_tools::JobStatus::Exited { code: Some(code) } if code != 0
+                    ),
+                    status: match record.status {
+                        crumb_tools::JobStatus::Running => "running".to_owned(),
+                        crumb_tools::JobStatus::Exited { code: Some(0) } => "succeeded".to_owned(),
+                        crumb_tools::JobStatus::Exited { code: Some(code) } => {
+                            format!("failed ({code})")
+                        }
+                        crumb_tools::JobStatus::Exited { code: None } => "ended".to_owned(),
+                        crumb_tools::JobStatus::Stopped { reason } => format!("stopped: {reason}"),
+                        crumb_tools::JobStatus::Interrupted => "interrupted".to_owned(),
+                    },
+                    label: record.label,
+                    elapsed: Duration::from_secs(finished.saturating_sub(record.started_unix)),
+                }
+            })
+            .collect();
+        crumb_ui::AgentMapView {
+            main: self.main.clone(),
+            helpers,
+            jobs,
+        }
+    }
+
+    /// Details for `/agents N` (a helper) or `/agents job N` (a job's output).
+    #[must_use]
+    pub fn detail(&self, argument: &str) -> String {
+        let argument = argument.trim();
+        if let Some(id) = argument
+            .strip_prefix("job")
+            .and_then(|id| id.trim().parse::<u32>().ok())
+        {
+            return self
+                .jobs()
+                .and_then(|jobs| jobs.output_tail(id, 30))
+                .map_or_else(
+                    || format!("No background job {id} in this session."),
+                    |tail| {
+                        if tail.trim().is_empty() {
+                            format!("job {id} has no output yet.")
+                        } else {
+                            format!("job {id} · latest output:\n{tail}")
+                        }
+                    },
+                );
+        }
+        let Some(helper) = argument
+            .parse::<usize>()
+            .ok()
+            .and_then(|index| index.checked_sub(1))
+            .and_then(|index| self.team.snapshot().into_iter().nth(index))
+        else {
+            return "Use /agents N for a helper or /agents job N for a background job.".to_owned();
+        };
+        format!(
+            "{} {} · {}\ntask: {}\nlatest: {}\n{} tokens",
+            helper.logo,
+            helper.name,
+            match helper.state {
+                crumb_harness::HelperState::Working => "working",
+                crumb_harness::HelperState::Done => "done",
+                crumb_harness::HelperState::Failed => "failed",
+            },
+            helper.task,
+            helper.activity,
+            helper.tokens
+        )
+    }
 }
 
 struct PeerRuntimeState {
@@ -611,13 +749,16 @@ struct WarmSessionState {
 
 /// Describes how much live context was available when selecting a session.
 ///
-/// Session journals intentionally contain no raw transcript, so a session
-/// selected after a process restart can restore metadata but not conversation
-/// text. Warm state never leaves the current Crumb process.
+/// Journals contain no raw transcript. A session resumed after a restart gets
+/// its conversation back only from the redacted `conversation.json` saved
+/// beside the journal (see `session_resume`); warm state never leaves the
+/// current Crumb process.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ResumeContinuity {
     AlreadyActive,
     Warm,
+    /// The saved conversation was loaded from the session folder.
+    Restored,
     MetadataOnly,
 }
 
@@ -801,6 +942,10 @@ impl AgentRuntime {
             review_notes: Vec::new(),
             review_note_bytes: 0,
             peer: None,
+            background: None,
+            resume_brief: None,
+            team: crumb_harness::TeamRegistry::default(),
+            jobs_slot: std::sync::Arc::default(),
         })
     }
 
@@ -1315,12 +1460,50 @@ impl AgentRuntime {
             workspace,
             journal,
         ));
+        let folder = root.join(&target_key.session_id);
+        let saved = crate::session_resume::load_conversation(&folder);
+        // The agent always starts a resumed session knowing what happened in it.
+        let brief = [
+            crate::session_resume::session_recap(&root, &target_key.session_id, saved.as_ref()),
+            crate::session_resume::resume_brief(&folder),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+        self.resume_brief = (!brief.is_empty()).then(|| brief.join("\n\n"));
         if self.restore_warm_session_state(&target_key) {
-            Ok(ResumeContinuity::Warm)
-        } else {
-            self.restore_active_state(SessionRuntimeState::default());
-            Ok(ResumeContinuity::MetadataOnly)
+            return Ok(ResumeContinuity::Warm);
         }
+        self.restore_active_state(SessionRuntimeState::default());
+        Ok(match saved {
+            Some(snapshot) => {
+                self.native_conversation = Some(Conversation::restore(
+                    HarnessLimits::default().max_history_turns,
+                    snapshot,
+                ));
+                ResumeContinuity::Restored
+            }
+            None => ResumeContinuity::MetadataOnly,
+        })
+    }
+
+    /// A line for the user about the resumed session's latest exchange.
+    #[must_use]
+    pub fn resume_recap(&self, workspace: &Path) -> Option<String> {
+        let session = self.active_session_id()?;
+        let workspace = std::fs::canonicalize(workspace).ok()?;
+        let saved =
+            crate::session_resume::load_conversation(&session_root(&workspace).join(session));
+        crate::session_resume::user_recap(saved.as_ref())
+    }
+
+    /// The request that was running when this session last stopped.
+    #[must_use]
+    pub fn interrupted_request(&self, workspace: &Path) -> Option<String> {
+        let session = self.active_session_id()?;
+        let workspace = std::fs::canonicalize(workspace).ok()?;
+        crate::session_resume::interrupted_turn(&session_root(&workspace).join(session))
+            .map(|turn| turn.request)
     }
 
     #[must_use]
@@ -1458,6 +1641,16 @@ impl AgentRuntime {
         )
     }
 
+    /// The agent map's live state; `main` describes the main agent.
+    #[must_use]
+    pub fn agent_map(&self, main: String) -> AgentMapSource {
+        AgentMapSource {
+            main,
+            team: self.team.clone(),
+            jobs: Arc::clone(&self.jobs_slot),
+        }
+    }
+
     /// Runs a turn off the terminal input thread and emits only bounded,
     /// redacted activity states.
     ///
@@ -1475,6 +1668,11 @@ impl AgentRuntime {
             bail!("agent activity channel capacity must be positive");
         }
         let request = self.attach_review_notes(request);
+        let map = self.agent_map(crate::agent_map_main_label(
+            &workspace,
+            &config,
+            self.token_usage().0,
+        ));
         let (activity_sender, activities) = sync_channel(activity_capacity);
         let (interactive, approval_inbox) = approval_channel(NonZeroUsize::MIN);
         let (questions, question_inbox) = crumb_agent::question_channel();
@@ -1509,6 +1707,7 @@ impl AgentRuntime {
             questions: question_inbox,
             cancellation,
             worker,
+            map: Arc::new(map),
         })
     }
 
@@ -1574,6 +1773,41 @@ impl AgentRuntime {
         Ok(tools)
     }
 
+    /// The active session's background jobs, created on first use. Switching
+    /// sessions drops the previous registry, which stops its running jobs.
+    fn background_jobs(
+        &mut self,
+        workspace: &Path,
+        config: &AgentConfig,
+    ) -> Result<crumb_tools::BackgroundJobs> {
+        let session_id = self
+            .session
+            .as_ref()
+            .context("agent session is unavailable")?
+            .id()
+            .clone();
+        if let Some((id, jobs)) = &self.background
+            && *id == session_id
+        {
+            return Ok(jobs.clone());
+        }
+        let max_output_bytes =
+            usize::try_from(config.limits.max_output_bytes).unwrap_or(usize::MAX);
+        let jobs = crumb_tools::BackgroundJobs::new(
+            workspace,
+            crate::shell_tool_config(config, max_output_bytes),
+            session_root(workspace)
+                .join(session_id.as_str())
+                .join("jobs"),
+        )?;
+        self.background = Some((session_id, jobs.clone()));
+        *self
+            .jobs_slot
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(jobs.clone());
+        Ok(jobs)
+    }
+
     pub fn prepare_local_job(&mut self, mode: AgentMode, workspace: &Path) -> Result<SessionId> {
         let workspace = std::fs::canonicalize(workspace)
             .with_context(|| format!("failed to resolve workspace `{}`", workspace.display()))?;
@@ -1617,9 +1851,11 @@ impl AgentRuntime {
             .context("selected persona profile could not be applied")?;
         let config = &application.config;
         config.validate()?;
-        let tools = self.turn_tool_host(&workspace, config, interaction.questions)?;
+        let mut tools = self.turn_tool_host(&workspace, config, interaction.questions)?;
         let approvals = turn_approvals(config, interaction.interactive);
         self.ensure_session(&workspace, config.mode)?;
+        let background = self.background_jobs(&workspace, config)?;
+        crumb_tools::register_background_tools(&mut tools, background.clone())?;
         let route = select_request_route(config, request)
             .context("agent config has no text model route")?;
         let effort = config.reasoning_effort_for(route).map(str::to_owned);
@@ -1658,6 +1894,9 @@ impl AgentRuntime {
             context_token_budget(config, route),
             &workspace,
         );
+        let mut trusted_context = trusted_context;
+        trusted_context.extend(background.context_summary());
+        trusted_context.extend(self.resume_brief.take());
         let dispatched_request = if native {
             request
         } else {
@@ -1885,12 +2124,18 @@ impl AgentRuntime {
         let child_output_tokens = max_output_tokens.map(|tokens| {
             tokens.div_ceil(u32::try_from(team_limits.max_agents.get()).unwrap_or(u32::MAX))
         });
-        let workspace = self
+        let session = self
             .session
             .as_ref()
-            .context("agent session is unavailable")?
-            .workspace()
-            .to_path_buf();
+            .context("agent session is unavailable")?;
+        let workspace = session.workspace().to_path_buf();
+        // The task list lives with the session so a resumed session keeps it.
+        let tasks = crumb_agent::TaskBoard::persisted(
+            session_root(&workspace)
+                .join(session.id().as_str())
+                .join("tasks.json"),
+        );
+        crumb_agent::register_update_tasks_tool(&mut tools, tasks.clone())?;
         let harness_limits = native_harness_limits(config)?;
         register_parallel_agent_tool(
             &mut tools,
@@ -1902,9 +2147,12 @@ impl AgentRuntime {
                 max_output_tokens: child_output_tokens,
                 harness_limits: parallel_harness_limits(harness_limits),
                 team_limits,
+                approvals: Some(Arc::clone(&approvals)),
+                registry: Some(self.team.clone()),
             },
         )?;
-        let harness = NativeHarness::new(provider, tools, approvals, harness_limits);
+        let harness =
+            NativeHarness::new(provider, tools, approvals, harness_limits).with_task_board(tasks);
         let conversation = self
             .native_conversation
             .get_or_insert_with(|| harness.conversation());
@@ -1927,6 +2175,12 @@ impl AgentRuntime {
             .enable_all()
             .build()
             .context("failed to start native Harness runtime")?;
+        // Saved state lets an interrupted session resume where it stopped.
+        let save = config.sessions.save_conversation;
+        let folder = session_root(&workspace).join(session_id);
+        if save {
+            crate::session_resume::mark_turn_started(&folder, request)?;
+        }
         let outcome = runtime.block_on(
             harness.run_turn(
                 self.session
@@ -1938,6 +2192,10 @@ impl AgentRuntime {
                 &mut events,
             ),
         );
+        crate::session_resume::mark_turn_finished(&folder);
+        if save && outcome.is_ok() {
+            crate::session_resume::save_conversation(&folder, &conversation.snapshot())?;
+        }
         events.finish()?;
         let outcome = outcome.map_err(anyhow::Error::new)?;
         Ok(RunResult {
@@ -3477,6 +3735,10 @@ mod tests {
             review_notes: Vec::new(),
             review_note_bytes: 0,
             peer: None,
+            background: None,
+            resume_brief: None,
+            team: crumb_harness::TeamRegistry::default(),
+            jobs_slot: std::sync::Arc::default(),
         }
     }
 
@@ -4153,6 +4415,56 @@ mod tests {
 
         assert_eq!(runtime.token_usage().0, 5_700);
         assert_eq!(runtime.last_response(), Some("done"));
+    }
+
+    #[test]
+    fn resume_after_a_restart_restores_the_saved_conversation_and_interrupted_work() {
+        let directory = tempfile::tempdir().expect("workspace");
+        let workspace = directory
+            .path()
+            .canonicalize()
+            .expect("canonical workspace");
+        drop(persisted_session(&workspace, "session-saved"));
+        let folder = super::session_root(&workspace).join("session-saved");
+        crate::session_resume::save_conversation(
+            &folder,
+            &crumb_harness::ConversationSnapshot {
+                turns: vec![crumb_harness::SavedTurn {
+                    user: "add a health endpoint".to_owned(),
+                    assistant: "Added /health and a test.".to_owned(),
+                }],
+                ..crumb_harness::ConversationSnapshot::default()
+            },
+        )
+        .expect("conversation saved");
+        crate::session_resume::mark_turn_started(&folder, "now deploy it").expect("marked");
+
+        // A fresh runtime, as after Crumb restarts.
+        let mut runtime = isolated_runtime();
+        assert_eq!(
+            runtime.resume(&workspace, "session-saved").expect("resume"),
+            ResumeContinuity::Restored
+        );
+        let conversation = runtime.native_conversation.as_ref().expect("restored");
+        assert_eq!(
+            conversation.snapshot().turns[0].assistant,
+            "Added /health and a test."
+        );
+        assert_eq!(
+            runtime.interrupted_request(&workspace).as_deref(),
+            Some("now deploy it")
+        );
+        let brief = runtime.resume_brief.as_deref().expect("brief");
+        assert!(brief.contains("now deploy it"), "{brief}");
+        assert!(brief.contains("Recap of this session so far"), "{brief}");
+        assert!(
+            brief.contains("- User: add a health endpoint\n  Crumb: Added /health and a test."),
+            "{brief}"
+        );
+        assert_eq!(
+            runtime.resume_recap(&workspace).as_deref(),
+            Some("Last: add a health endpoint → Added /health and a test.")
+        );
     }
 
     #[test]

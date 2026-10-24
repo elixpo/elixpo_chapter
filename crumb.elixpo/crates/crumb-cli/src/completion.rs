@@ -111,10 +111,7 @@ fn help_suggestions(line: &str, pos: usize, workspace: &Path) -> Vec<Suggestion>
 }
 
 fn configured_runtime_actions(workspace: &Path) -> Vec<(String, String, String)> {
-    let Some(path) = config_path(workspace) else {
-        return Vec::new();
-    };
-    let Ok(config) = LiveConfig::new(path).load() else {
+    let Some(config) = workspace_config(workspace) else {
         return Vec::new();
     };
     let mut actions = mode_actions(config.mode);
@@ -258,9 +255,7 @@ fn slash_suggestions(prefix: &str, pos: usize, workspace: &Path) -> Vec<Suggesti
 }
 
 fn configured_pack_actions(workspace: &Path) -> Vec<(String, String)> {
-    let config = config_path(workspace)
-        .and_then(|path| LiveConfig::new(path).load().ok())
-        .unwrap_or_default();
+    let config = workspace_config(workspace).unwrap_or_default();
     let mut packs = config
         .model_packs
         .iter()
@@ -324,9 +319,7 @@ fn is_setting_command(usage: &str) -> bool {
 }
 
 fn configured_skill_actions(workspace: &Path) -> Vec<(String, String)> {
-    let config = config_path(workspace)
-        .and_then(|path| LiveConfig::new(path).load().ok())
-        .unwrap_or_default();
+    let config = workspace_config(workspace).unwrap_or_default();
     let configured_ids = config
         .skills
         .iter()
@@ -451,6 +444,15 @@ fn native_path_suggestions(line: &str, pos: usize, workspace: &Path) -> Vec<Sugg
         .collect::<Vec<_>>();
     suggestions.sort_by(|left, right| left.value.cmp(&right.value));
     suggestions
+}
+
+/// The workspace's agent config, or the built-in default when there is none;
+/// `None` only when an existing config cannot be read.
+fn workspace_config(workspace: &Path) -> Option<AgentConfig> {
+    match config_path(workspace) {
+        Some(path) => LiveConfig::new(path).load().ok(),
+        None => Some(crate::builtin_agent_config()),
+    }
 }
 
 fn config_path(workspace: &Path) -> Option<PathBuf> {

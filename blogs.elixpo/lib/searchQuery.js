@@ -159,6 +159,14 @@ export function parseSearchQuery(raw = '') {
   return out;
 }
 
+/**
+ * Escape LIKE metacharacters so a literal `%` or `_` in user input does not
+ * turn into a wildcard. Callers must add `ESCAPE '\\'` to the SQL clause.
+ */
+export function escapeLikePattern(value) {
+  return String(value ?? '').toLowerCase().replace(/[\\%_]/g, (match) => `\\${match}`);
+}
+
 /** True when the query asks for nothing at all (no text, no qualifiers). */
 export function isEmptyQuery(p) {
   return !p.text.length && !p.phrases.length && !p.notText.length && !p.tags.length && !p.notTags.length &&
@@ -187,18 +195,17 @@ export function buildBlogSearch(parsed, { defaultStatus = ['published', 'unliste
   // Each term must match somewhere (AND across terms, OR across fields), so
   // `rookie hacktoberfest` narrows rather than widens.
   const fields = (parsed.in.length ? parsed.in : DEFAULT_IN).map((f) => IN_FIELDS[f]);
-  const escapeLike = (s) => s.toLowerCase().replace(/[\\%_]/g, (m) => `\\${m}`);
   for (const term of [...parsed.text, ...parsed.phrases]) {
     const ors = fields.map((col) => `LOWER(${col}) LIKE ? ESCAPE '\\'`);
     where.push(`(${ors.join(' OR ')})`);
-    for (const _ of fields) binds.push(`%${escapeLike(term)}%`);
+    for (const _ of fields) binds.push(`%${escapeLikePattern(term)}%`);
   }
   // Excluded terms must not appear in any searched field. COALESCE keeps a NULL
   // subtitle from turning the whole NOT (...) into NULL and hiding the post.
   for (const term of parsed.notText) {
     const ors = fields.map((col) => `LOWER(COALESCE(${col}, '')) LIKE ? ESCAPE '\\'`);
     where.push(`NOT (${ors.join(' OR ')})`);
-    for (const _ of fields) binds.push(`%${escapeLike(term)}%`);
+    for (const _ of fields) binds.push(`%${escapeLikePattern(term)}%`);
   }
 
   // ── tags ─────────────────────────────────────────────────────────────────

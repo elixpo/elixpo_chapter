@@ -743,6 +743,7 @@ dependencies = [
  "anyhow",
  "crumb-agent",
  "crumb-llm",
+ "serde",
  "serde_json",
  "tempfile",
  "tokio",
@@ -916,6 +917,7 @@ dependencies = [
  "crumb-instance",
  "crumb-optimize",
  "getrandom 0.4.3",
+ "regex",
  "reqwest",
  "rustix",
  "serde",
@@ -924,6 +926,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "url",
+ "walkdir",
 ]
 
 [[package]]

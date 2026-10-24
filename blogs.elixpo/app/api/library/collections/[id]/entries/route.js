@@ -24,9 +24,13 @@ export async function GET(_request, { params }) {
     const collection = await getVisibleCollection(db, { id, viewerId: session?.userId });
     if (!collection) return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
 
+    const ownerView = session?.userId === collection.user_id;
+    const orgVisibility = ownerView || collection.visibility === 'private'
+      ? ''
+      : " AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')";
     const rows = await db.prepare(`${CURATED_ENTRY_SELECT}
       WHERE ce.collection_id = ? AND b.status = 'published' AND b.secret = 0
-        AND b.deleted_at IS NULL
+        AND b.deleted_at IS NULL${orgVisibility}
       ORDER BY ce.position ASC, ce.added_at ASC
     `).bind(collection.id).all();
     return NextResponse.json({ entries: (rows?.results || []).map(serializeCuratedEntry) });

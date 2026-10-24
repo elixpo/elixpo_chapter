@@ -54,6 +54,22 @@ Crumb owns the session identifier, workspace, mode, limits, cancellation token,
 and append-only journal. Journals store event metadata and content digests, not
 raw prompts, raw tool arguments, credentials, or unfiltered command output.
 
+So an interrupted session can continue where it stopped, its folder
+(`.crumb/sessions/crumb/<id>/`) also keeps:
+
+- `conversation.json`: completed turns and action records, saved after each
+  successful native turn with secret-looking lines redacted and owner-only
+  (`0600`) permissions. Set `"sessions": {"save_conversation": false}` in
+  `.crumb/agent.json` to keep nothing but the journal.
+- `interrupted.json`: the (redacted) request of a turn that started but never
+  finished; it is removed when the turn ends.
+- `tasks.json` and `jobs/jobs.json`: the task list and background jobs.
+
+Resuming after a restart restores the conversation, tells the user what was
+interrupted, and gives the next turn a brief of the interrupted request, open
+tasks, and earlier jobs. Project memory and the code graph are read again each
+turn.
+
 Ctrl+C sets the shared cancellation token. Native tools must stop their child
 processes. The current DeepSeek Harness JSON-RPC SDK has no turn-cancellation
 method, so its adapter must terminate and restart the harness subprocess.

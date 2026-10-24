@@ -272,11 +272,11 @@ fn resume(
         .resume(cwd, session.id.as_str())?;
     let note = match continuity {
         ResumeContinuity::AlreadyActive => " · already active",
-        ResumeContinuity::Warm => " · conversation restored",
+        ResumeContinuity::Warm | ResumeContinuity::Restored => " · conversation restored",
         ResumeContinuity::MetadataOnly => " · earlier conversation was not saved",
     };
     writeln!(writer, "◆ Resumed {label}{note}")?;
-    Ok(())
+    crate::write_interrupted_note(runtime.as_ref(), cwd, writer)
 }
 
 #[cfg(test)]

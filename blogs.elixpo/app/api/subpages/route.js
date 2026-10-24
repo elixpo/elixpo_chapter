@@ -121,9 +121,23 @@ export async function GET(request) {
     // Accept id or slug (edit URLs use the slug in prod) — sub-pages are keyed
     // by the canonical blog id.
     let canonicalBlogId = blogId;
-    const parentRow = await db.prepare('SELECT id FROM blogs WHERE id = ? OR LOWER(slug) = LOWER(?) ORDER BY (id = ?) DESC LIMIT 1')
+    const parentRow = await db.prepare('SELECT id, status FROM blogs WHERE id = ? OR LOWER(slug) = LOWER(?) ORDER BY (id = ?) DESC LIMIT 1')
       .bind(blogId, blogId, blogId).first();
     if (parentRow?.id) canonicalBlogId = parentRow.id;
+
+    // Draft subpage titles are private. Published and unlisted parents stay
+    // readable to signed-in users; everything else requires edit access.
+    const isPublic = parentRow && (parentRow.status === 'published' || parentRow.status === 'unlisted');
+    if (!isPublic) {
+      const { canEditBlog } = await import('../../../lib/permissions');
+      const permission = await canEditBlog(db, canonicalBlogId, session.userId);
+      if (!permission.ok) {
+        return NextResponse.json(
+          { error: permission.notFound ? 'Blog not found' : 'Forbidden' },
+          { status: permission.notFound ? 404 : 403 },
+        );
+      }
+    }
 
     const { results } = await db.prepare(
       'SELECT id, blog_id, title, kind, created_at, updated_at FROM subpages WHERE blog_id = ? ORDER BY created_at ASC'

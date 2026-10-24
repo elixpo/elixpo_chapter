@@ -609,17 +609,17 @@ fn modified_since(workspace: &Path, since: std::time::SystemTime) -> Result<Vec<
 }
 
 #[cfg(unix)]
-fn configure_process_group(command: &mut Command) {
+pub(crate) fn configure_process_group(command: &mut Command) {
     use std::os::unix::process::CommandExt;
 
     command.process_group(0);
 }
 
 #[cfg(not(unix))]
-fn configure_process_group(_command: &mut Command) {}
+pub(crate) fn configure_process_group(_command: &mut Command) {}
 
 #[cfg(unix)]
-fn terminate(child: &mut Child) {
+pub(crate) fn terminate(child: &mut Child) {
     use rustix::process::{Pid, Signal, kill_process_group};
 
     let pid = i32::try_from(child.id()).ok().and_then(Pid::from_raw);
@@ -633,7 +633,7 @@ fn terminate(child: &mut Child) {
 }
 
 #[cfg(not(unix))]
-fn terminate(child: &mut Child) {
+pub(crate) fn terminate(child: &mut Child) {
     let _ = child.kill();
 }
 

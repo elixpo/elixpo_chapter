@@ -8,7 +8,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSearchQuery, buildBlogSearch, isEmptyQuery, SORTS } from '../lib/searchQuery.js';
+import { parseSearchQuery, buildBlogSearch, isEmptyQuery, SORTS, escapeLikePattern } from '../lib/searchQuery.js';
 
 // ── parsing ─────────────────────────────────────────────────────────────────
 test('parses bare free text', () => {
@@ -212,4 +212,12 @@ test('negated dates are reported, not applied as the positive filter', () => {
   const p = parseSearchQuery('-created:2025-10-01');
   assert.deepEqual(p.dates, []);
   assert.deepEqual(p.unknown, ['-created:2025-10-01']);
+});
+
+test('escapeLikePattern neutralises percent, underscore and backslash', () => {
+  assert.equal(escapeLikePattern('100%'), '100\\%');
+  assert.equal(escapeLikePattern('a_b'), 'a\\_b');
+  assert.equal(escapeLikePattern('a\\b'), 'a\\\\b');
+  assert.equal(escapeLikePattern('%_%'), '\\%\\_\\%');
+  assert.equal(escapeLikePattern('Rookie'), 'rookie');
 });

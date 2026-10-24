@@ -166,7 +166,7 @@ export async function POST(request) {
     const excerpt = editorContent ? excerptFromBlocks(editorContent) : '';
 
     // Check if blog exists
-    const existing = await db.prepare('SELECT id, author_id, status, secret, member_only, language, region FROM blogs WHERE id = ?').bind(slugid).first();
+    const existing = await db.prepare('SELECT id, author_id, status, secret, member_only, language, region, published_as FROM blogs WHERE id = ?').bind(slugid).first();
     const profile = await db.prepare('SELECT locale FROM users WHERE id = ?').bind(existing?.author_id || session.userId).first();
     const discovery = contentDiscoveryMetadata({
       language: language ?? existing?.language,
@@ -181,6 +181,28 @@ export async function POST(request) {
     const finalSecret = existing
       ? (existing.status === 'draft' ? requestedSecret : (existing.secret ? 1 : 0))
       : requestedSecret;
+
+    // The browser may only name a publication target the caller belongs to.
+    // Unchanged targets are left alone so accepted co-authors can keep editing.
+    const storedTarget = existing?.published_as || 'personal';
+    const requestedTarget = publishAs || storedTarget;
+    if (!existing || requestedTarget !== storedTarget) {
+      const { isBlogOwner, requirePublishTarget } = await import('../../../../lib/api/v1/blogInput');
+      if (existing && !(await isBlogOwner(db, existing, session.userId))) {
+        return NextResponse.json(
+          { error: 'Only the post owner can change the publication target' },
+          { status: 403 },
+        );
+      }
+      try {
+        await requirePublishTarget(db, session.userId, requestedTarget, null);
+      } catch (e) {
+        if (e?.name === 'BlogInputError') {
+          return NextResponse.json({ error: e.message }, { status: e.status || 400 });
+        }
+        throw e;
+      }
+    }
 
     const tierOwnerId = existing?.author_id || session.userId;
     const owner = await db.prepare('SELECT tier FROM users WHERE id = ?').bind(tierOwnerId).first();
@@ -204,7 +226,7 @@ export async function POST(request) {
           page_emoji = ?, cover_image_r2_key = ?, cover_pos_x = ?, cover_pos_y = ?, cover_zoom = ?, secret = ?, member_only = ?, language = ?, region = ?, updated_at = ?
         WHERE id = ?
       `).bind(
-        title || '', subtitle || '', compressedContent, excerpt, publishAs || 'personal',
+        title || '', subtitle || '', compressedContent, excerpt, requestedTarget,
         pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, slugid
       ).run();
       // Throttled version snapshot (≤ 1 / 5 min) so history accrues as people edit (#11 E).
@@ -216,14 +238,14 @@ export async function POST(request) {
       const baseSlug = generateSlug(title);
       const slug = await ensureUniqueBlogSlug(db, baseSlug, slugid, {
         authorId: session.userId,
-        publishAs: publishAs || 'personal',
+        publishAs: requestedTarget,
       });
       await db.prepare(`
         INSERT INTO blogs (id, slug, title, subtitle, content, excerpt, author_id, published_as, status, page_emoji, cover_image_r2_key, cover_pos_x, cover_pos_y, cover_zoom, secret, member_only, language, region, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         slugid, slug, title || '', subtitle || '', compressedContent, excerpt,
-        session.userId, publishAs || 'personal', pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, now
+        session.userId, requestedTarget, pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, now
       ).run();
       if (compressedContent) {
         try {

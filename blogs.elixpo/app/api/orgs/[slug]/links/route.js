@@ -3,7 +3,16 @@ import { NextResponse } from 'next/server';
 import { getSession } from '../../../../../lib/auth';
 
 async function getOrg(db, slug) {
-  return db.prepare('SELECT id, owner_id FROM orgs WHERE LOWER(slug) = LOWER(?)').bind(slug).first();
+  return db.prepare('SELECT id, owner_id, visibility FROM orgs WHERE LOWER(slug) = LOWER(?)').bind(slug).first();
+}
+
+async function canView(db, org, userId) {
+  if (String(org.visibility || '').toLowerCase() !== 'private') return true;
+  if (!userId) return false;
+  if (org.owner_id === userId) return true;
+  const member = await db.prepare('SELECT 1 FROM org_members WHERE org_id = ? AND user_id = ?')
+    .bind(org.id, userId).first();
+  return !!member;
 }
 
 async function canManage(db, orgId, userId) {
@@ -22,7 +31,13 @@ export async function GET(request, { params }) {
     const { getDB } = await import('../../../../../lib/cloudflare');
     const db = getDB();
     const org = await getOrg(db, slug);
-    if (!org) return NextResponse.json({ links: [] });
+    if (!org) return NextResponse.json({ links: [] }, { status: 404 });
+
+    const session = await getSession().catch(() => null);
+    if (!(await canView(db, org, session?.userId))) {
+      return NextResponse.json({ links: [] }, { status: 404 });
+    }
+
     const rows = await db.prepare('SELECT name, url FROM org_links WHERE org_id = ? ORDER BY position').bind(org.id).all();
     return NextResponse.json({ links: rows?.results || [] });
   } catch {

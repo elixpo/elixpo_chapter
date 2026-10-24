@@ -15,6 +15,13 @@ export async function GET(request, { params }) {
     const { getDB } = await import('../../../../../lib/cloudflare');
     const db = getDB();
 
+    // Comments only exist for publicly readable posts. Drafts and trashed posts
+    // answer 404 so a comment id cannot be used to confirm a private post exists.
+    const blog = await db.prepare(
+      "SELECT author_id, secret FROM blogs WHERE id = ? AND status IN ('published','unlisted') AND deleted_at IS NULL"
+    ).bind(slugid).first();
+    if (!blog) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+
     // Get top-level comments
     const topLevel = await db.prepare(`
       SELECT c.id, c.content, c.parent_id, c.created_at, c.updated_at,
@@ -85,8 +92,7 @@ export async function GET(request, { params }) {
     //      receives the text at all — the client's blurred div is a placeholder for
     //      content that was never transmitted. Blurring in CSS would be theatre: the
     //      text would still be sitting in the network response.
-    const blog = await db.prepare('SELECT author_id, secret FROM blogs WHERE id = ?').bind(slugid).first();
-    if (blog?.secret) {
+    if (blog.secret) {
       const session = await getSession().catch(() => null);
       const viewerId = session?.userId || null;
 
@@ -154,7 +160,7 @@ export async function POST(request, { params }) {
     // Only live posts take comments (same rule as POST /api/v1/blogs/[id]/comments):
     // drafts and trashed posts answer 404 like a missing blog.
     const blog = await db.prepare(
-      "SELECT id, author_id, title, allow_comments, secret FROM blogs WHERE id = ? AND status IN ('published', 'unlisted')"
+      "SELECT id, author_id, title, allow_comments, secret FROM blogs WHERE id = ? AND status IN ('published', 'unlisted') AND deleted_at IS NULL"
     ).bind(slugid).first();
     if (!blog) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     if (!blog.allow_comments) return NextResponse.json({ error: 'Comments are disabled' }, { status: 403 });

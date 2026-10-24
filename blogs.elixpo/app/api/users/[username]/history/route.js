@@ -31,6 +31,7 @@ export async function GET(request, { params }) {
       JOIN blogs b ON b.id = rh.blog_id
       JOIN users u ON u.id = b.author_id
       WHERE rh.user_id = ?
+        AND b.status IN ('published', 'unlisted') AND b.deleted_at IS NULL
       ORDER BY rh.read_at DESC
       LIMIT ? OFFSET ?
     `).bind(session.userId, limit, offset).all();

@@ -135,7 +135,11 @@ export async function sendMail(opts) {
                 `! platform dkim skipped: d=${opts.env.DKIM_DOMAIN} does not align with From`,
             );
         }
-        await writer.write(enc.encode(`${message}\r\n.\r\n`));
+        // Dot-stuff the final bytes, after signing. The receiver strips the
+        // stuffing before verifying, so DKIM must hash the unstuffed message:
+        // stuffing first broke the body hash for any line starting with "."
+        // (every HTML mail with CSS), and Gmail rejected them (550 5.7.30).
+        await writer.write(enc.encode(`${dotStuff(message)}\r\n.\r\n`));
         transcript.push("C: <message body> + .");
         const queued = await read();
         expect(queued, 250);
@@ -214,12 +218,12 @@ function buildMessage({ from, fromName, to, subject, html, text, attachments, li
                     "Content-Type: text/plain; charset=utf-8",
                     "Content-Transfer-Encoding: quoted-printable",
                     "",
-                    dotStuff(quotedPrintable(text)),
+                    quotedPrintable(text),
                     `--${b}`,
                     "Content-Type: text/html; charset=utf-8",
                     "Content-Transfer-Encoding: quoted-printable",
                     "",
-                    dotStuff(quotedPrintable(html)),
+                    quotedPrintable(html),
                     `--${b}--`,
                 ].join("\r\n"),
             };
@@ -227,11 +231,11 @@ function buildMessage({ from, fromName, to, subject, html, text, attachments, li
         if (html)
             return {
                 header: "Content-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: quoted-printable",
-                body: dotStuff(quotedPrintable(html)),
+                body: quotedPrintable(html),
             };
         return {
             header: "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: quoted-printable",
-            body: dotStuff(quotedPrintable(text || "")),
+            body: quotedPrintable(text || ""),
         };
     }
 
@@ -268,6 +272,7 @@ function wrap76(b64) {
 }
 
 // RFC 5321 dot-stuffing: a line starting with "." must be escaped to "..".
+// Transport-only: apply to the whole message after DKIM signing, never before.
 function dotStuff(s) {
     return s
         .replace(/\r?\n/g, "\r\n")

@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '../../../lib/auth';
+import { escapeLikePattern } from '../../../lib/searchQuery';
 
 // Lightweight combined search — returns minimal fields only
 // For detailed data, use /api/search/users, /api/search/orgs, /api/search/blogs
@@ -16,14 +17,14 @@ export async function GET(request) {
   try {
     const { getDB } = await import('../../../lib/cloudflare');
     const db = getDB();
-    const pattern = `%${q}%`;
+    const pattern = `%${escapeLikePattern(q)}%`;
 
     const results = { users: [], orgs: [], blogs: [] };
 
     if (scope === 'all' || scope === 'users') {
       const users = await db.prepare(`
         SELECT id, username, display_name, avatar_url
-        FROM users WHERE LOWER(username) LIKE ? OR LOWER(display_name) LIKE ?
+        FROM users WHERE LOWER(username) LIKE ? ESCAPE '\\' OR LOWER(display_name) LIKE ? ESCAPE '\\'
         LIMIT 5
       `).bind(pattern, pattern).all();
       results.users = users?.results || [];
@@ -38,7 +39,7 @@ export async function GET(request) {
       const orgs = await db.prepare(`
         SELECT id, slug, name, tagline, logo_url
         FROM orgs
-        WHERE (LOWER(slug) LIKE ? OR LOWER(name) LIKE ? OR LOWER(tagline) LIKE ?)
+        WHERE (LOWER(slug) LIKE ? ESCAPE '\\' OR LOWER(name) LIKE ? ESCAPE '\\' OR LOWER(tagline) LIKE ? ESCAPE '\\')
           AND (
             visibility != 'private'
             OR owner_id = ?
@@ -53,7 +54,7 @@ export async function GET(request) {
       const blogs = await db.prepare(`
         SELECT b.id as slugid, b.slug, b.secret, b.title, u.username AS author_username
         FROM blogs b JOIN users u ON u.id = b.author_id
-        WHERE (LOWER(b.title) LIKE ? OR LOWER(b.slug) LIKE ?) AND b.status IN ('published', 'unlisted')
+        WHERE (LOWER(b.title) LIKE ? ESCAPE '\\' OR LOWER(b.slug) LIKE ? ESCAPE '\\') AND b.status IN ('published', 'unlisted')
         LIMIT 5
       `).bind(pattern, pattern).all();
       // A secret blog stays findable by title, but its author must never ride along:

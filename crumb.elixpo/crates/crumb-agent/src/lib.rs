@@ -13,6 +13,7 @@ pub mod questions;
 pub mod routing;
 pub mod session;
 pub mod steering;
+pub mod tasks;
 pub mod tools;
 
 pub use approvals::{ApprovalInbox, InteractiveApprovalBroker, PendingApproval, approval_channel};
@@ -21,8 +22,8 @@ pub use config::{
     AgentConfig, AgentLimits, AgentMode, ApprovalMode, CacheRetention, CompatibilityFlag,
     CredentialReference, HarnessConfig, LiveConfig, MistakePolicy, Modality, ModelPack, ModelRoute,
     OptimizerConfig, ProviderCompatibility, ProviderConfig, ProviderHeader, ProviderModel,
-    ProviderProtocol, ProviderRetryPolicy, ProviderTransport, SkillConfig, StructuredEncoding,
-    ToolPermissions,
+    ProviderProtocol, ProviderRetryPolicy, ProviderTransport, SessionSettings, SkillConfig,
+    StructuredEncoding, ToolPermissions,
 };
 pub use harness::{HarnessTurnRequest, ModelCapabilities};
 pub use jobs::{
@@ -42,6 +43,10 @@ pub use session::{
     set_session_archived, set_session_label, trash_session,
 };
 pub use steering::{SteeringAction, SteeringQueue};
+pub use tasks::{
+    Task, TaskBoard, TaskStatus, UPDATE_TASKS, register_update_tasks_tool, render_tasks,
+    task_summary,
+};
 pub use tools::{
     ApprovalBroker, ApprovalDecision, ApprovalRequest, ConfiguredApprovals, DenyAllApprovals,
     McpServer, McpTransport, OutputKind, RiskClass, TokenOptimizer, ToolCallError,

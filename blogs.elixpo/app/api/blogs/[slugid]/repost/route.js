@@ -4,7 +4,9 @@ import { getSession } from '../../../../../lib/auth';
 
 // Author + accepted co-authors can't repost their own blog.
 async function isOwnBlog(db, blogId, userId) {
-  const blog = await db.prepare('SELECT author_id FROM blogs WHERE id = ?').bind(blogId).first();
+  const blog = await db.prepare(
+    "SELECT author_id FROM blogs WHERE id = ? AND status IN ('published','unlisted') AND deleted_at IS NULL"
+  ).bind(blogId).first();
   if (!blog) return { notFound: true };
   if (blog.author_id === userId) return { own: true };
   const co = await db.prepare(
@@ -20,10 +22,16 @@ export async function GET(request, { params }) {
   try {
     const { getDB } = await import('../../../../../lib/cloudflare');
     const db = getDB();
-    const countRow = await db.prepare('SELECT COUNT(*) AS c FROM reposts WHERE blog_id = ?').bind(slugid).first();
+    const countRow = await db.prepare(
+      `SELECT COUNT(*) AS c FROM reposts r JOIN blogs b ON b.id = r.blog_id
+       WHERE r.blog_id = ? AND b.status IN ('published','unlisted') AND b.deleted_at IS NULL`
+    ).bind(slugid).first();
     let reposted = false;
     if (session?.userId) {
-      const row = await db.prepare('SELECT 1 FROM reposts WHERE blog_id = ? AND user_id = ?').bind(slugid, session.userId).first();
+      const row = await db.prepare(
+        `SELECT 1 FROM reposts r JOIN blogs b ON b.id = r.blog_id
+         WHERE r.blog_id = ? AND r.user_id = ? AND b.status IN ('published','unlisted') AND b.deleted_at IS NULL`
+      ).bind(slugid, session.userId).first();
       reposted = !!row;
     }
     return NextResponse.json({ count: countRow?.c || 0, reposted });

@@ -30,6 +30,7 @@ export async function GET(request) {
       JOIN blogs b ON b.id = bk.blog_id
       JOIN users u ON u.id = b.author_id
       WHERE bk.user_id = ?
+        AND b.status IN ('published', 'unlisted') AND b.deleted_at IS NULL
     `;
     const binds = [session.userId];
 

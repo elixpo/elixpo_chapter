@@ -207,6 +207,9 @@ pub struct PromptContext<'a> {
     pub git: Option<&'a GitSegment>,
     pub last_exit_code: Option<i32>,
     pub terminal_width: u16,
+    /// Show the folder and git branch above the composer. Fullscreen keeps
+    /// them in the composer placeholder and the footer instead.
+    pub show_location: bool,
 }
 
 /// Non-secret state rendered once when the standalone terminal starts.
@@ -267,37 +270,23 @@ impl Renderer {
     #[must_use]
     pub fn welcome(&self, context: &StartupContext<'_>, terminal_width: u16) -> String {
         let panda = panda_art(panda_mood(Some(context.agent_configured)));
-        let wordmark = if terminal_width < 60 {
+        // The header is the logo and the wordmark; live state is in the footer.
+        let copy = if terminal_width < 60 {
             "CRUMB"
         } else {
             WORDMARK
         };
-        let pack = context.model.unwrap_or("not configured");
-        let instance = context
-            .instance_name
-            .map_or(String::new(), |name| format!(" · {name}"));
-        let state = if context.agent_configured {
-            format!("Ready{instance} · pack {pack} · {}", context.mode)
-        } else {
-            format!("Native shell ready{instance} · run /auth login to connect")
-        };
-        let copy = format!(
-            "{wordmark}\nCrumb CLI v{} · Native commands stay native.\n{} · effort {}\nTry: explain this workspace · /help shows commands",
-            context.version,
-            state,
-            context.effort.unwrap_or("default"),
-        );
         if terminal_width < 96 {
             let panda = format!("  {}", trim_art(panda).replace('\n', "\n  "));
             let copy = paint_welcome_copy(
                 *self,
-                &copy,
+                copy,
                 "  ",
                 usize::from(terminal_width.saturating_sub(2)),
             );
             return format!("{}\n\n{}", self.paint_panda(&panda), copy);
         }
-        compose_welcome(*self, trim_art(panda), &copy)
+        compose_welcome(*self, trim_art(panda), copy)
     }
 
     /// Renders the interactive workspace trust boundary.
@@ -342,6 +331,103 @@ impl Renderer {
             self.paint(&format!("╰{}╯", "─".repeat(width - 2)), "2"),
         ]
         .join("\n")
+    }
+
+    /// Renders the agent map: the main agent, its helpers with time and
+    /// tokens, and the session's background jobs.
+    #[must_use]
+    pub fn agent_map(&self, view: &AgentMapView, terminal_width: u16) -> String {
+        let width = usize::from(terminal_width.saturating_sub(4)).max(20);
+        let working = view
+            .helpers
+            .iter()
+            .filter(|helper| helper.state == AgentMapState::Working)
+            .count();
+        let mut lines = vec![self.paint(
+            &fit_terminal_text(
+                &format!(
+                    "◆ Agent map · {} helper{} ({working} working) · {} background job{}",
+                    view.helpers.len(),
+                    if view.helpers.len() == 1 { "" } else { "s" },
+                    view.jobs.len(),
+                    if view.jobs.len() == 1 { "" } else { "s" },
+                ),
+                width,
+            ),
+            "1",
+        )];
+        lines.push(format!(
+            "  {} {}",
+            self.paint("●", "36;1"),
+            fit_terminal_text(&view.main, width.saturating_sub(4))
+        ));
+        for (index, helper) in view.helpers.iter().enumerate() {
+            let branch = if index + 1 == view.helpers.len() {
+                "└─"
+            } else {
+                "├─"
+            };
+            let (marker, color) = match helper.state {
+                AgentMapState::Working => ("●", "35;1"),
+                AgentMapState::Done => ("✓", "32"),
+                AgentMapState::Failed => ("✗", "31"),
+            };
+            let access = if helper.write { " · edits" } else { "" };
+            let head = format!(
+                "{} {} {}{access} · {} · {} tokens",
+                index + 1,
+                helper.name,
+                helper.task,
+                duration_text(helper.elapsed),
+                compact_tokens(helper.tokens)
+            );
+            lines.push(format!(
+                "  {branch} {} {}",
+                self.paint(marker, color),
+                fit_terminal_text(&head, width.saturating_sub(8))
+            ));
+            let rail = if index + 1 == view.helpers.len() {
+                " "
+            } else {
+                "│"
+            };
+            lines.push(self.paint(
+                &format!(
+                    "  {rail}     {}",
+                    fit_terminal_text(&helper.activity, width.saturating_sub(10))
+                ),
+                "2",
+            ));
+        }
+        if !view.jobs.is_empty() {
+            lines.push(self.paint("  Background jobs", "1"));
+            for job in &view.jobs {
+                let (marker, color) = if job.running {
+                    ("●", "32;1")
+                } else if job.failed {
+                    ("✗", "31")
+                } else {
+                    ("✓", "32")
+                };
+                let text = format!(
+                    "job {} · {} · {} · {}",
+                    job.id,
+                    job.label,
+                    job.status,
+                    duration_text(job.elapsed)
+                );
+                lines.push(format!(
+                    "  {} {}",
+                    self.paint(marker, color),
+                    fit_terminal_text(&text, width.saturating_sub(4))
+                ));
+            }
+        }
+        lines.push(self.paint(
+            "  /agents N for a helper's details · /agents job N for a job's output",
+            "2",
+        ));
+        lines.join("\n")
     }
 
     /// Renders a boxed list the user moves through with the arrow keys.
@@ -430,7 +516,7 @@ impl Renderer {
         } else if terminal_width < 80 {
             "Enter send · Tab complete · PgUp/PgDn · / commands"
         } else {
-            "Enter send · Ctrl+Enter queue · PgUp/PgDn scroll · Tab · @ · / · ?"
+            "Enter send · Shift+Enter newline · Ctrl+Enter queue · PgUp/PgDn · Tab · @ · / · ?"
         };
         let guide = fit_terminal_text(guide, usize::from(terminal_width.saturating_sub(2)));
         self.paint(&format!("  {guide}"), "2")
@@ -473,7 +559,7 @@ impl Renderer {
             return self.paint(&format!("  {}", fit_terminal_text(guide, available)), "2");
         }
         let count = format!(
-            "◆ {agents} agent{} working",
+            "◆ {agents} agent{} working · /agents",
             if agents == 1 { "" } else { "s" }
         );
         let guide = fit_terminal_text(guide, available.saturating_sub(count.chars().count() + 3));
@@ -493,28 +579,51 @@ impl Renderer {
     /// Renders compact, non-secret model and context state for the fixed footer.
     #[must_use]
     pub fn context_footer(&self, context: &StartupContext<'_>, terminal_width: u16) -> String {
-        let pack = context.model.unwrap_or("native");
-        let instance = context
-            .instance_name
-            .map_or(String::new(), |name| format!(" · {name}"));
-        let effort = context.effort.unwrap_or("default");
-        let text = if terminal_width < 60 {
-            format!(
-                "{}/{} · effort {effort} · {}",
-                compact_tokens(context.context_tokens),
-                compact_tokens(context.session_budget_tokens),
-                context.mode
-            )
-        } else {
-            format!(
-                "{}{} · effort {effort} · {pack} · {}",
-                context_meter(context),
-                instance,
-                context.mode
-            )
-        };
+        self.render_footer_items(&footer_items(context, None, terminal_width), terminal_width)
+    }
+
+    /// Renders footer items produced by [`footer_items`].
+    #[must_use]
+    pub fn render_footer_items(
+        &self,
+        items: &[(FooterItem, String)],
+        terminal_width: u16,
+    ) -> String {
+        let text = items
+            .iter()
+            .map(|(_, text)| text.as_str())
+            .collect::<Vec<_>>()
+            .join(FOOTER_SEPARATOR);
         let text = fit_terminal_text(&text, usize::from(terminal_width.saturating_sub(2)));
         self.paint(&format!("  {text}"), "2")
+    }
+
+    /// Renders the tip shown when a footer item is clicked: what it is and
+    /// how to change it.
+    #[must_use]
+    pub fn footer_tip(&self, item: FooterItem, value: &str, terminal_width: u16) -> String {
+        let (title, body) = item.help();
+        let value = value.strip_prefix(title).map_or(value, str::trim_start);
+        let width = usize::from(terminal_width.saturating_sub(4).clamp(24, 76));
+        let inner = width.saturating_sub(4);
+        let row = |text: &str| format!("│ {:<inner$} │", fit_terminal_text(text, inner));
+        let mut lines = vec![
+            self.paint(&format!("╭{}╮", "─".repeat(width - 2)), "35"),
+            self.paint(&row(&format!("{title} · {value}")), "1"),
+        ];
+        let mut pending = body.to_owned();
+        while !pending.is_empty() {
+            let (line, remainder) = split_terminal_words(&pending, inner);
+            lines.push(row(&line));
+            pending = remainder;
+        }
+        lines.push(self.paint(&row("Press any key to close"), "2"));
+        lines.push(self.paint(&format!("╰{}╯", "─".repeat(width - 2)), "35"));
+        lines
+            .into_iter()
+            .map(|line| format!("  {line}"))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     /// Renders the bottom edge of the full-width composer.
@@ -538,9 +647,9 @@ impl Renderer {
 
     /// Renders the inactive prompt hint while a submitted turn is running.
     #[must_use]
-    pub fn composer_placeholder(&self, available_width: u16) -> String {
+    pub fn composer_placeholder(&self, folder: &str, available_width: u16) -> String {
         let placeholder = fit_terminal_text(
-            "Ask Crumb anything or type a command · @ context · / commands · Tab complete",
+            &format!("{folder} $ Ask Crumb anything or type a command · @ context · / commands"),
             usize::from(available_width),
         );
         self.paint(&placeholder, "2;1")
@@ -580,16 +689,16 @@ impl Renderer {
         let card_width = usize::from(terminal_width.saturating_sub(4));
         let content_width = card_width.saturating_sub(2);
         let timestamp = timestamp.unwrap_or_default();
-        let mut body = vec![String::new()];
+        let mut body = Vec::new();
         let mut pending = input.lines().map(str::to_owned).collect::<VecDeque<_>>();
         if pending.is_empty() {
             pending.push_back(String::new());
         }
-        while body.len() <= TRANSCRIPT_INPUT_MAX_ROWS
+        while body.len() < TRANSCRIPT_INPUT_MAX_ROWS
             && let Some(line) = pending.pop_front()
         {
-            let first = body.len() == 1;
-            let marker = if first { "◆ >" } else { "  │" };
+            let first = body.is_empty();
+            let marker = if first { "$" } else { " " };
             let timestamp_width = if first && !timestamp.is_empty() {
                 timestamp.chars().count().saturating_add(1)
             } else {
@@ -623,11 +732,13 @@ impl Renderer {
                 *last = fit_terminal_text(&format!("{last} …"), content_width);
             }
         }
-        body.push(String::new());
-        body.into_iter()
+        // One thin row per line, like a shell prompt, after a plain spacer.
+        let card = body
+            .into_iter()
             .map(|line| self.transcript_card_line(&line, card_width, "1"))
             .collect::<Vec<_>>()
-            .join("\n")
+            .join("\n");
+        format!("\n{card}")
     }
 
     fn transcript_card_line(self, line: &str, width: usize, style: &str) -> String {
@@ -1270,8 +1381,14 @@ impl Renderer {
             return format!("{}\n> ", segments.join(" | "));
         }
 
-        let mut context_line = self.paint(&format!("  {cwd}"), "34;1");
-        if let Some(git) = context.git {
+        let mut context_line = if context.show_location {
+            self.paint(&format!("  {cwd}"), "34;1")
+        } else {
+            String::from("  ")
+        };
+        if context.show_location
+            && let Some(git) = context.git
+        {
             let dirty = if git.dirty { " *" } else { "" };
             context_line.push_str(&self.paint(&format!("  git:{}{dirty}", git.branch), "2"));
         }
@@ -1366,6 +1483,53 @@ fn trim_art(art: &str) -> &str {
     art.trim()
 }
 
+/// What the agent map shows; built by the CLI from live session state.
+#[derive(Clone, Debug, Default)]
+pub struct AgentMapView {
+    /// The main agent: folder, model pack, and context use.
+    pub main: String,
+    pub helpers: Vec<AgentMapHelper>,
+    pub jobs: Vec<AgentMapJob>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AgentMapState {
+    Working,
+    Done,
+    Failed,
+}
+
+#[derive(Clone, Debug)]
+pub struct AgentMapHelper {
+    pub name: String,
+    pub task: String,
+    pub write: bool,
+    pub state: AgentMapState,
+    pub elapsed: Duration,
+    pub tokens: u64,
+    pub activity: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct AgentMapJob {
+    pub id: u32,
+    pub label: String,
+    pub status: String,
+    pub running: bool,
+    pub failed: bool,
+    pub elapsed: Duration,
+}
+
+/// `41s`, `3m 50s`, `1h 02m`.
+fn duration_text(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    match seconds {
+        0..=59 => format!("{seconds}s"),
+        60..=3_599 => format!("{}m {:02}s", seconds / 60, seconds % 60),
+        _ => format!("{}h {:02}m", seconds / 3_600, seconds % 3_600 / 60),
+    }
+}
+
 fn compact_tokens(tokens: u64) -> String {
     if tokens >= 1_000_000 {
         format!("{}.{}m", tokens / 1_000_000, tokens % 1_000_000 / 100_000)
@@ -1374,6 +1538,117 @@ fn compact_tokens(tokens: u64) -> String {
     } else {
         tokens.to_string()
     }
+}
+
+const FOOTER_SEPARATOR: &str = " · ";
+
+/// A clickable item in the fullscreen footer.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FooterItem {
+    Context,
+    Git,
+    Pack,
+    Mode,
+    Effort,
+}
+
+impl FooterItem {
+    /// The item's name and a short explanation of how to change it.
+    #[must_use]
+    pub const fn help(self) -> (&'static str, &'static str) {
+        match self {
+            Self::Context => (
+                "Model context",
+                "How much of the model's context window this conversation uses. Older tool output is shortened automatically as it fills.",
+            ),
+            Self::Git => (
+                "Git branch",
+                "The branch of this folder's repository; * means uncommitted changes. Switch with git switch <branch>.",
+            ),
+            Self::Pack => (
+                "Model pack",
+                "The models Crumb uses for chat, images, and code. Change it with /pack use quick, balanced, or deep.",
+            ),
+            Self::Mode => (
+                "Agent mode",
+                "How the agent works: auto, negotiate, or plan. Change it with /mode use <mode>.",
+            ),
+            Self::Effort => (
+                "Reasoning effort",
+                "How hard the model thinks before answering. Change it with /effort use light, medium, high, extra high, or default.",
+            ),
+        }
+    }
+}
+
+/// The footer's items, left to right, sized for the terminal width.
+#[must_use]
+pub fn footer_items(
+    context: &StartupContext<'_>,
+    git: Option<&GitSegment>,
+    terminal_width: u16,
+) -> Vec<(FooterItem, String)> {
+    let effort = context.effort.unwrap_or("default").to_owned();
+    let mode = context.mode.to_owned();
+    if terminal_width < 60 {
+        return vec![
+            (
+                FooterItem::Context,
+                format!(
+                    "{}/{}",
+                    compact_tokens(context.context_tokens),
+                    compact_tokens(context.session_budget_tokens)
+                ),
+            ),
+            (FooterItem::Mode, mode),
+            (FooterItem::Effort, effort),
+        ];
+    }
+    let mut items = vec![(FooterItem::Context, context_meter(context))];
+    if let Some(git) = git {
+        let dirty = if git.dirty { " *" } else { "" };
+        items.push((FooterItem::Git, format!("git:{}{dirty}", git.branch)));
+    }
+    items.push((
+        FooterItem::Pack,
+        context.model.unwrap_or("native").to_owned(),
+    ));
+    items.push((FooterItem::Mode, mode));
+    items.push((FooterItem::Effort, effort));
+    items
+}
+
+/// The footer item under a zero-based terminal `column`, with its text.
+#[must_use]
+pub fn footer_item_at(items: &[(FooterItem, String)], column: u16) -> Option<(FooterItem, &str)> {
+    let column = usize::from(column);
+    // The rendered footer starts with a two-column gutter.
+    let mut start = 2;
+    for (item, text) in items {
+        let end = start + text.chars().count();
+        if (start..end).contains(&column) {
+            return Some((*item, text.as_str()));
+        }
+        start = end + FOOTER_SEPARATOR.chars().count();
+    }
+    None
+}
+
+/// Splits `text` at the last space that keeps the first part within `width`.
+fn split_terminal_words(text: &str, width: usize) -> (String, String) {
+    if text.chars().count() <= width {
+        return (text.to_owned(), String::new());
+    }
+    let head = text.chars().take(width + 1).collect::<String>();
+    let cut = head.rfind(' ').filter(|&cut| cut > 0).unwrap_or_else(|| {
+        head.char_indices()
+            .nth(width)
+            .map_or(head.len(), |(index, _)| index)
+    });
+    (
+        text[..cut].trim_end().to_owned(),
+        text[cut..].trim_start().to_owned(),
+    )
 }
 
 fn context_meter(context: &StartupContext<'_>) -> String {
@@ -1494,14 +1769,8 @@ fn paint_welcome_copy(renderer: Renderer, copy: &str, gutter: &str, width: usize
         .join("\n")
 }
 
-const fn welcome_copy_style(row: usize) -> &'static str {
-    match row {
-        0..=5 => "38;2;255;255;204;1",
-        6 => "97;1",
-        7 => "36;1",
-        9 => "35",
-        _ => "2",
-    }
+const fn welcome_copy_style(_row: usize) -> &'static str {
+    "38;2;255;255;204;1"
 }
 
 fn startup_punchline() -> &'static str {
@@ -2149,7 +2418,9 @@ fn append_optional_segments(segments: &mut Vec<String>, context: &PromptContext<
     }
 }
 
-fn display_path(path: &Path) -> String {
+/// `path` with the home directory shortened to `~`.
+#[must_use]
+pub fn display_path(path: &Path) -> String {
     let home = env::var_os(home_variable());
     if let Some(home) = home.map(PathBuf::from)
         && let Ok(relative) = path.strip_prefix(&home)
@@ -2194,8 +2465,9 @@ mod tests {
     use crumb_platform::Platform;
 
     use super::{
-        BrandingMode, COOKIE_SPINNER, GitSegment, MotionMode, OutputMode, PUNCHLINES, PeerActivity,
-        PeerActivityState, PromptContext, Renderer, StartupContext, StatusTone, UiSettings,
+        BrandingMode, COOKIE_SPINNER, FooterItem, GitSegment, MotionMode, OutputMode, PUNCHLINES,
+        PeerActivity, PeerActivityState, PromptContext, Renderer, StartupContext, StatusTone,
+        UiSettings, footer_item_at, footer_items,
     };
 
     #[test]
@@ -2217,6 +2489,7 @@ mod tests {
             git: Some(&git),
             last_exit_code: Some(2),
             terminal_width: 80,
+            show_location: true,
         });
 
         assert_eq!(
@@ -2240,6 +2513,7 @@ mod tests {
             git: None,
             last_exit_code: Some(0),
             terminal_width: 80,
+            show_location: true,
         });
 
         assert!(prompt.starts_with("  /workspace\n  ╭"));
@@ -2297,7 +2571,7 @@ mod tests {
         );
         assert_eq!(
             renderer.transcript_input("elixpo", "fix this"),
-            "  \n  ◆ > fix this\n  "
+            "\n  $ fix this"
         );
         assert_eq!(renderer.native_output_prefix(), "  ╰──▶ ");
         let handoff =
@@ -2514,8 +2788,9 @@ mod tests {
 
         assert!(footer.contains("Model context"));
         assert!(footer.contains("12.8k / 64.0k"));
-        assert!(footer.contains("effort high"));
-        assert!(footer.contains("· Oreo ·"));
+        assert!(footer.contains("· high"));
+        // The folder now shows in the composer, so the footer drops it.
+        assert!(!footer.contains("Oreo"));
         assert!(footer.contains("Quick Crumb"));
         assert!(footer.contains("auto"));
         assert!(footer.chars().count() <= 100);
@@ -2545,7 +2820,8 @@ mod tests {
             100,
         );
 
-        assert!(footer.contains("effort default"));
+        assert!(footer.ends_with("Quick Crumb · auto · default"));
+        assert!(!footer.contains("effort"));
         let narrow = renderer.context_footer(
             &StartupContext {
                 version: "0.1.0",
@@ -2561,7 +2837,118 @@ mod tests {
             },
             38,
         );
-        assert!(narrow.contains("effort extra high"));
+        assert!(narrow.contains("extra high"));
+    }
+
+    #[test]
+    fn agent_map_shows_the_main_agent_helpers_and_jobs() {
+        let renderer = Renderer::new(UiSettings {
+            color: false,
+            output: OutputMode::Rich,
+            motion: MotionMode::Reduced,
+            branding: BrandingMode::Disabled,
+        });
+        let view = super::AgentMapView {
+            main: "crumb.elipxo · Balanced Crumb · 18.6k context".to_owned(),
+            helpers: vec![
+                super::AgentMapHelper {
+                    name: "Koi".to_owned(),
+                    task: "Review PRs 530-534".to_owned(),
+                    write: false,
+                    state: super::AgentMapState::Working,
+                    elapsed: Duration::from_secs(230),
+                    tokens: 83_200,
+                    activity: "Searching · search_code".to_owned(),
+                },
+                super::AgentMapHelper {
+                    name: "Nyx".to_owned(),
+                    task: "Fix the parser".to_owned(),
+                    write: true,
+                    state: super::AgentMapState::Done,
+                    elapsed: Duration::from_secs(41),
+                    tokens: 12_000,
+                    activity: "Reported findings".to_owned(),
+                },
+            ],
+            jobs: vec![super::AgentMapJob {
+                id: 1,
+                label: "Merge remaining PRs".to_owned(),
+                status: "running".to_owned(),
+                running: true,
+                failed: false,
+                elapsed: Duration::from_secs(749),
+            }],
+        };
+        let map = renderer.agent_map(&view, 120);
+        assert!(
+            map.starts_with("◆ Agent map · 2 helpers (1 working) · 1 background job"),
+            "{map}"
+        );
+        assert!(map.contains("● crumb.elipxo · Balanced Crumb · 18.6k context"));
+        assert!(
+            map.contains("├─ ● 1 Koi Review PRs 530-534 · 3m 50s · 83.2k tokens"),
+            "{map}"
+        );
+        assert!(map.contains("│     Searching · search_code"));
+        assert!(
+            map.contains("└─ ✓ 2 Nyx Fix the parser · edits · 41s · 12.0k tokens"),
+            "{map}"
+        );
+        assert!(map.contains("● job 1 · Merge remaining PRs · running · 12m 29s"));
+        assert!(map.lines().all(|line| line.chars().count() <= 120));
+    }
+
+    #[test]
+    fn footer_clicks_find_the_item_and_explain_it() {
+        let context = StartupContext {
+            version: "0.1.0",
+            platform: Platform::Linux,
+            instance_name: None,
+            model: Some("Balanced Crumb"),
+            mode: "auto",
+            effort: None,
+            session_budget_tokens: 64_000,
+            context_tokens: 0,
+            auto_compaction: false,
+            agent_configured: true,
+        };
+        let git = GitSegment {
+            branch: "main".to_owned(),
+            dirty: true,
+        };
+        let items = footer_items(&context, Some(&git), 120);
+        let renderer = Renderer::new(UiSettings {
+            color: false,
+            output: OutputMode::Rich,
+            motion: MotionMode::Reduced,
+            branding: BrandingMode::Disabled,
+        });
+        let footer = renderer.render_footer_items(&items, 120);
+        let column = |needle: &str| {
+            let byte = footer.find(needle).expect("item is shown");
+            u16::try_from(footer[..byte].chars().count()).expect("fits")
+        };
+
+        assert_eq!(
+            footer_item_at(&items, column("git:main *")),
+            Some((FooterItem::Git, "git:main *"))
+        );
+        assert_eq!(
+            footer_item_at(&items, column("Balanced")).map(|(item, _)| item),
+            Some(FooterItem::Pack)
+        );
+        assert_eq!(
+            footer_item_at(&items, column("default")).map(|(item, _)| item),
+            Some(FooterItem::Effort)
+        );
+        assert_eq!(footer_item_at(&items, 0), None);
+
+        let tip = renderer.footer_tip(FooterItem::Effort, "default", 60);
+        assert!(tip.contains("Reasoning effort · default"));
+        assert!(tip.contains("/effort use"));
+        assert!(tip.lines().all(|line| line.chars().count() <= 60));
+        let context_tip = renderer.footer_tip(FooterItem::Context, "Model context [──] 0%", 80);
+        assert!(context_tip.contains("Model context · [──] 0%"));
     }
 
     #[test]
@@ -2817,8 +3204,9 @@ mod tests {
             },
             120,
         );
-        assert!(welcome.contains("Crumb CLI v0.1.0 · Native commands stay native."));
-        assert!(welcome.contains("Ready · Oreo · pack Balanced Crumb · auto"));
+        // The header is only the logo and the wordmark.
+        assert!(!welcome.contains("Crumb CLI v0.1.0"));
+        assert!(!welcome.contains("Balanced Crumb"));
         assert!(!welcome.contains("Model context"));
         assert!(!welcome.contains("compact"));
         assert!(welcome.contains("╭▄█▄╮"));
@@ -2869,8 +3257,19 @@ mod tests {
                 "welcome exceeded {width} columns:\n{welcome}"
             );
         }
+        let wide = renderer.welcome(&context, 120);
+        assert!(wide.contains("╭▄█▄╮   ╭▄█▄╮"), "the panda logo stays");
+        assert!(wide.contains("░█████╗░██████╗░"), "the wordmark stays");
+        assert!(
+            !wide.contains("Crumb CLI v"),
+            "nothing else is in the header"
+        );
+        assert_eq!(
+            wide.lines().count(),
+            7,
+            "the header is as tall as the panda"
+        );
         assert!(renderer.welcome(&context, 40).contains("CRUMB"));
-        assert!(renderer.welcome(&context, 60).contains("░█████╗░██████╗░"));
     }
 
     #[test]

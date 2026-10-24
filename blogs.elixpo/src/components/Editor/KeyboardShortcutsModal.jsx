@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 const modifier = isMac ? '⌘' : 'Ctrl';
+const alt = isMac ? '⌥' : 'Alt';
 
 const SHORTCUT_GROUPS = [
   {
@@ -16,7 +17,7 @@ const SHORTCUT_GROUPS = [
       { keys: [modifier, 'Shift', 'P'], desc: 'Toggle editor / preview' },
       { keys: [modifier, 'Z'], desc: 'Undo' },
       { keys: [modifier, 'Shift', 'Z'], desc: 'Redo' },
-      { keys: [modifier, 'A'], desc: 'Select all' },
+      { keys: [modifier, 'A'], desc: 'Select all (cell first, in tables)' },
       { keys: ['?'], desc: 'Show this help' },
     ],
   },
@@ -41,6 +42,8 @@ const SHORTCUT_GROUPS = [
       { keys: ['Shift', 'Tab'], desc: 'Outdent block' },
       { keys: ['Enter'], desc: 'New block' },
       { keys: ['Backspace'], desc: 'Delete block (when empty)' },
+      { keys: ['Shift', '↑ / ↓'], desc: 'Extend selection' },
+      { keys: [alt, '↑ / ↓'], desc: 'Move block up / down' },
     ],
   },
   {

@@ -517,6 +517,20 @@ export async function GET(request) {
                     { status: 404 },
                 );
 
+            // The org profile (no slug or collection) is members-only when the
+            // org is private. Direct links to published posts and collections
+            // remain readable; only the profile and its listings are gated.
+            if (!slug && !collection) {
+                const session = await getSession().catch(() => null);
+                const { canViewOrg } = await import("../../../lib/orgAccess");
+                if (!(await canViewOrg(db, org, session?.userId))) {
+                    return NextResponse.json(
+                        { error: "Org not found" },
+                        { status: 404 },
+                    );
+                }
+            }
+
             // Custom links from the dedicated table (name + url), newest schema wins
             // over the legacy JSON `links` column when present.
             try {

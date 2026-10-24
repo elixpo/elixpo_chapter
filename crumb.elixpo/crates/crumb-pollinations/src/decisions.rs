@@ -158,10 +158,8 @@ impl JevDecision {
         };
         let status = response.status();
         if !status.is_success() {
-            return Ok(ToolOutput::error(format!(
-                "Jev rejected the decision request with HTTP {}",
-                status.as_u16()
-            )));
+            let body = response.text().await.unwrap_or_default();
+            return Ok(ToolOutput::error(rejection_message(status.as_u16(), &body)));
         }
         let payload = response
             .json::<Value>()
@@ -181,6 +179,35 @@ impl JevDecision {
             is_error: false,
         })
     }
+}
+
+/// Explains a rejected decision so the agent can tell the user what to do.
+///
+/// A key whose model allowlist lacks Jev gets a 403 with a `fixUrl` that
+/// grants it; that link is the actionable part, so it is passed through.
+fn rejection_message(status: u16, body: &str) -> String {
+    let error = serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|payload| payload.get("error").cloned());
+    let fix_url = error
+        .as_ref()
+        .and_then(|error| error.get("fixUrl"))
+        .and_then(Value::as_str)
+        .filter(|url| url.starts_with("https://enter.pollinations.ai/"));
+    if let Some(url) = fix_url {
+        return format!(
+            "Jev is not enabled for this Pollinations key (HTTP {status}). The user can allow it at {url} and retry. Until then, decide from the evidence you gathered and tell the user Jev was unavailable."
+        );
+    }
+    let detail = error
+        .as_ref()
+        .and_then(|error| error.get("message"))
+        .and_then(Value::as_str)
+        .map(|message| format!(": {}", truncate_utf8(message, 300)))
+        .unwrap_or_default();
+    format!(
+        "Jev rejected the decision request with HTTP {status}{detail}. Decide from the evidence you gathered and tell the user Jev was unavailable."
+    )
 }
 
 /// Validates tool arguments and builds the `/alpha/decisions` body.
@@ -301,6 +328,21 @@ mod tests {
     use serde_json::json;
 
     use super::{decision_request, summarize_answers};
+
+    #[test]
+    fn blocked_keys_get_the_grant_link_and_other_failures_their_reason() {
+        let blocked = r#"{"success":false,"error":{"message":"Model 'typesafe/jev-1.13' is not allowed for this API key","code":"FORBIDDEN","fixUrl":"https://enter.pollinations.ai/grant?id=abc&model=typesafe%2Fjev-1.13"},"status":403}"#;
+        let message = super::rejection_message(403, blocked);
+        assert!(message.contains("https://enter.pollinations.ai/grant?id=abc"));
+        assert!(message.contains("not enabled"));
+
+        let foreign = r#"{"error":{"message":"nope","fixUrl":"https://evil.example/grant"}}"#;
+        let message = super::rejection_message(403, foreign);
+        assert!(!message.contains("evil.example"));
+        assert!(message.contains("HTTP 403: nope"));
+
+        assert!(super::rejection_message(502, "<html>").contains("HTTP 502."));
+    }
 
     #[test]
     fn requests_are_validated_and_pinned_to_jev() {

@@ -2,6 +2,7 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getSession } from '../../../lib/auth';
 import { getLimits } from '../../../lib/tiers';
+import { normalizeOrgVisibility } from '../../../lib/orgVisibility';
 
 // List user's orgs
 export async function GET() {
@@ -44,6 +45,11 @@ export async function POST(request) {
   }
 
   const { name, slug, tagline, description, bio, website, visibility } = await request.json();
+
+  const normalizedVisibility = normalizeOrgVisibility(visibility);
+  if (!normalizedVisibility) {
+    return NextResponse.json({ error: 'Visibility must be public or private' }, { status: 400 });
+  }
 
   if (!name?.trim() || !slug?.trim()) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -93,7 +99,7 @@ export async function POST(request) {
     await db.prepare(`
       INSERT INTO orgs (id, slug, name, tagline, description, bio, website, visibility, owner_id, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(orgId, cleanSlug, name.trim(), cleanTagline, description || '', bio || '', normWebsite || '', visibility || 'public', session.userId, now, now).run();
+    `).bind(orgId, cleanSlug, name.trim(), cleanTagline, description || '', bio || '', normWebsite || '', normalizedVisibility, session.userId, now, now).run();
 
     // Owner is also a member with admin role
     await db.prepare(`
@@ -130,6 +136,14 @@ export async function PUT(request) {
     normWebsite = normalizeHttpsUrl(website);
     if (normWebsite == null) return NextResponse.json({ error: 'Website must be a valid https:// URL' }, { status: 400 });
   }
+  let finalVisibility = null;
+  if (visibility !== undefined && visibility !== null && visibility !== '') {
+    finalVisibility = normalizeOrgVisibility(visibility, null);
+    if (!finalVisibility) {
+      return NextResponse.json({ error: 'Visibility must be public or private' }, { status: 400 });
+    }
+  }
+
   let normLinks = links;
   if (Array.isArray(links)) {
     normLinks = [];
@@ -187,7 +201,7 @@ export async function PUT(request) {
       WHERE id = ?
     `).bind(
       name || null, cleanTagline ?? null, description || null, bio || null, normWebsite ?? null,
-      normLinks ? JSON.stringify(normLinks) : null, visibility || null,
+      normLinks ? JSON.stringify(normLinks) : null, finalVisibility,
       featured_blog_ids ? JSON.stringify(featured_blog_ids) : null,
       timezone || null, location || null, contact_email || null, now, orgId
     ).run();
