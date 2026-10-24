@@ -225,6 +225,8 @@ pub struct StartupContext<'a> {
     pub context_tokens: u64,
     pub auto_compaction: bool,
     pub agent_configured: bool,
+    /// Share of the session's prompt tokens the provider served from cache.
+    pub cached_percent: Option<u8>,
 }
 
 /// Stateless terminal renderer.
@@ -1559,7 +1561,7 @@ impl FooterItem {
         match self {
             Self::Context => (
                 "Model context",
-                "How much of the model's context window this conversation uses. Older tool output is shortened automatically as it fills.",
+                "How much of the model's context window this conversation uses; the cached share was served from the provider's prompt cache and costs less. Older tool output is shortened automatically as it fills.",
             ),
             Self::Git => (
                 "Git branch",
@@ -1604,7 +1606,11 @@ pub fn footer_items(
             (FooterItem::Effort, effort),
         ];
     }
-    let mut items = vec![(FooterItem::Context, context_meter(context))];
+    let mut meter = context_meter(context);
+    if let Some(percent) = context.cached_percent {
+        let _ = write!(meter, " · {percent}% cached");
+    }
+    let mut items = vec![(FooterItem::Context, meter)];
     if let Some(git) = git {
         let dirty = if git.dirty { " *" } else { "" };
         items.push((FooterItem::Git, format!("git:{}{dirty}", git.branch)));
@@ -2782,6 +2788,7 @@ mod tests {
                 context_tokens: 12_800,
                 auto_compaction: true,
                 agent_configured: true,
+                cached_percent: None,
             },
             100,
         );
@@ -2816,6 +2823,7 @@ mod tests {
                 context_tokens: 0,
                 auto_compaction: false,
                 agent_configured: true,
+                cached_percent: None,
             },
             100,
         );
@@ -2834,6 +2842,7 @@ mod tests {
                 context_tokens: 0,
                 auto_compaction: false,
                 agent_configured: true,
+                cached_percent: None,
             },
             38,
         );
@@ -2899,6 +2908,36 @@ mod tests {
     }
 
     #[test]
+    fn footer_shows_the_cached_share_when_known() {
+        let renderer = Renderer::new(UiSettings {
+            color: false,
+            output: OutputMode::Rich,
+            motion: MotionMode::Reduced,
+            branding: BrandingMode::Disabled,
+        });
+        let mut context = StartupContext {
+            version: "1.1.0",
+            platform: Platform::Linux,
+            instance_name: None,
+            model: Some("Balanced Crumb"),
+            mode: "auto",
+            effort: None,
+            session_budget_tokens: 256_000,
+            context_tokens: 18_600,
+            auto_compaction: true,
+            agent_configured: true,
+            cached_percent: Some(87),
+        };
+        let footer = renderer.context_footer(&context, 120);
+        assert!(
+            footer.contains("18.6k / 256.0k · 87% cached · Balanced Crumb"),
+            "{footer}"
+        );
+        context.cached_percent = None;
+        assert!(!renderer.context_footer(&context, 120).contains("cached"));
+    }
+
+    #[test]
     fn footer_clicks_find_the_item_and_explain_it() {
         let context = StartupContext {
             version: "0.1.0",
@@ -2911,6 +2950,7 @@ mod tests {
             context_tokens: 0,
             auto_compaction: false,
             agent_configured: true,
+            cached_percent: None,
         };
         let git = GitSegment {
             branch: "main".to_owned(),
@@ -3183,6 +3223,7 @@ mod tests {
             context_tokens: 0,
             auto_compaction: true,
             agent_configured: true,
+            cached_percent: None,
         });
 
         assert_eq!(
@@ -3201,6 +3242,7 @@ mod tests {
                 context_tokens: 0,
                 auto_compaction: true,
                 agent_configured: true,
+                cached_percent: None,
             },
             120,
         );
@@ -3222,6 +3264,7 @@ mod tests {
             context_tokens: 0,
             auto_compaction: true,
             agent_configured: false,
+            cached_percent: None,
         });
         assert!(disconnected.contains("AI disconnected"));
         assert!(disconnected.contains("run /auth login to connect"));
@@ -3246,6 +3289,7 @@ mod tests {
             context_tokens: 48_000,
             auto_compaction: true,
             agent_configured: true,
+            cached_percent: None,
         };
 
         for width in [40_u16, 60, 80, 96, 120] {

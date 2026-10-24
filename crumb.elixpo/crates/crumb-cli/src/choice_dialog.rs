@@ -5,7 +5,9 @@ use std::io::{self, Write};
 
 use anyhow::Result;
 use crossterm::cursor::{MoveTo, MoveToColumn, MoveUp};
-use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, read};
+use crossterm::event::{
+    Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind, read,
+};
 use crossterm::terminal::{Clear, ClearType, size};
 use crumb_ui::{ChoiceDialogView, ChoiceRow, Renderer};
 
@@ -71,8 +73,16 @@ pub(crate) fn run_choice_dialog(
             hint: dialog.hint,
         };
         painter.paint(&renderer.choice_dialog(&view, dialog_width()?))?;
-        let Event::Key(key) = read()? else {
-            continue;
+        let key = match read()? {
+            Event::Key(key) => key,
+            Event::Mouse(mouse) if mouse.kind == MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(index) = painter.clicked_row(mouse.row, dialog, rows.len(), selected) {
+                    painter.clear()?;
+                    return Ok(DialogOutcome::Chosen(index));
+                }
+                continue;
+            }
+            _ => continue,
         };
         if !matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
             continue;
@@ -164,6 +174,15 @@ pub(crate) fn run_text_prompt(
     }
 }
 
+/// The choice under line `line` of a painted dialog with `notes` note lines.
+fn row_at_line(line: usize, notes: usize, rows: usize, selected: usize) -> Option<usize> {
+    let visible = VISIBLE_ROWS.min(rows);
+    let first = (selected + 1).saturating_sub(visible).min(rows - visible);
+    let first_row_line = 3 + notes + usize::from(first > 0);
+    let offset = line.checked_sub(first_row_line)?;
+    (offset < visible).then_some(first + offset)
+}
+
 fn dialog_width() -> io::Result<u16> {
     Ok(size()?.0.saturating_sub(FULLSCREEN_SIDE_GUTTER * 2))
 }
@@ -199,6 +218,29 @@ impl BlockPainter {
         Ok(())
     }
 
+    /// The dialog row under a click at terminal `row`, in fullscreen, where
+    /// the block's position is known. Mirrors `Renderer::choice_dialog`'s
+    /// layout: border, title, notes, a blank line, then the visible rows.
+    fn clicked_row(
+        &self,
+        row: u16,
+        dialog: &ChoiceDialog<'_>,
+        rows: usize,
+        selected: usize,
+    ) -> Option<usize> {
+        if !self.fullscreen || rows == 0 {
+            return None;
+        }
+        let (_, height) = size().ok()?;
+        let block_top = height.saturating_sub(self.painted_rows);
+        row_at_line(
+            usize::from(row.checked_sub(block_top)?),
+            dialog.notes.len(),
+            rows,
+            selected,
+        )
+    }
+
     fn clear(&mut self) -> io::Result<()> {
         let mut terminal = io::stdout();
         self.move_to_block_start(&mut terminal, self.painted_rows)?;
@@ -217,5 +259,21 @@ impl BlockPainter {
             }
             crossterm::queue!(terminal, MoveToColumn(0))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::row_at_line;
+
+    #[test]
+    fn clicks_map_to_the_rows_under_them() {
+        // Border, title, one note, blank, then rows from line 4.
+        assert_eq!(row_at_line(4, 1, 3, 0), Some(0));
+        assert_eq!(row_at_line(6, 1, 3, 0), Some(2));
+        assert_eq!(row_at_line(3, 1, 3, 0), None, "the blank line");
+        assert_eq!(row_at_line(7, 1, 3, 0), None, "past the last row");
+        // Scrolled: selecting row 14 of 20 shows rows 5..15 below an "↑ more" line.
+        assert_eq!(row_at_line(5, 1, 20, 14), Some(5));
     }
 }

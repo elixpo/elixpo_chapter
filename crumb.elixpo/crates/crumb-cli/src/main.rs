@@ -1172,8 +1172,12 @@ fn handle_repl_event(
         InputEvent::BuiltIn(BuiltInCommand::Reserved(command))
             if command == "/agents" || command.starts_with("/agents ") =>
         {
-            let text = agents_command_text(&command, context);
-            writeln!(context.writer, "{text}")?;
+            if command == "/agents" && context.interactive {
+                show_agent_map_panel(context)?;
+            } else {
+                let text = agents_command_text(&command, context);
+                writeln!(context.writer, "{text}")?;
+            }
             Ok(None)
         }
         InputEvent::BuiltIn(BuiltInCommand::Reserved(command))
@@ -1236,6 +1240,119 @@ fn agents_command_text(command: &str, context: &InputContext<'_>) -> String {
         runtime.token_usage().0,
     ));
     agent_map_text(&map, command, context.renderer)
+}
+
+/// The agent map as a panel: helpers and jobs as rows; Enter or a click
+/// opens one entry's details, and Esc closes.
+fn show_agent_map_panel(context: &mut InputContext<'_>) -> Result<()> {
+    let Some(runtime) = context.agent_runtime.as_ref() else {
+        writeln!(context.writer, "◆ No agents have run in this session yet.")?;
+        return Ok(());
+    };
+    let config = read_agent_config(context.cwd).unwrap_or_default();
+    let map = runtime.agent_map(agent_map_main_label(
+        context.cwd,
+        &config,
+        runtime.token_usage().0,
+    ));
+    loop {
+        let view = map.view();
+        let mut entries = Vec::new();
+        let mut rows = Vec::new();
+        for (index, helper) in view.helpers.iter().enumerate() {
+            let state = match helper.state {
+                crumb_ui::AgentMapState::Working => "working",
+                crumb_ui::AgentMapState::Done => "done",
+                crumb_ui::AgentMapState::Failed => "failed",
+            };
+            rows.push(choice_dialog::DialogRow {
+                label: format!("{} · {state}", helper.name),
+                detail: format!(
+                    "{} · {} · {} tokens · {}",
+                    helper.task,
+                    elapsed_label(helper.elapsed),
+                    compact_token_count(helper.tokens),
+                    helper.activity
+                ),
+                checked: None,
+            });
+            entries.push((index + 1).to_string());
+        }
+        for job in &view.jobs {
+            rows.push(choice_dialog::DialogRow {
+                label: format!("job {} · {}", job.id, job.status),
+                detail: format!("{} · {}", job.label, elapsed_label(job.elapsed)),
+                checked: None,
+            });
+            entries.push(format!("job {}", job.id));
+        }
+        if rows.is_empty() {
+            writeln!(
+                context.writer,
+                "◆ Agent map · {} · no helpers or background jobs yet",
+                view.main
+            )?;
+            return Ok(());
+        }
+        let notes = vec![view.main.clone()];
+        let dialog = choice_dialog::ChoiceDialog {
+            title: "Agent map",
+            notes: &notes,
+            hint: "↑/↓ choose · Enter or click for details · Esc close",
+            actions: &[],
+        };
+        let outcome = choice_dialog::run_choice_dialog(
+            context.renderer,
+            &dialog,
+            &mut rows,
+            context.fullscreen,
+        )?;
+        let choice_dialog::DialogOutcome::Chosen(index) = outcome else {
+            break;
+        };
+        let detail = map.detail(&entries[index]);
+        let lines = detail
+            .lines()
+            .take(16)
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        let mut back = vec![choice_dialog::DialogRow {
+            label: "Back to the agent map".to_owned(),
+            detail: String::new(),
+            checked: None,
+        }];
+        let detail_dialog = choice_dialog::ChoiceDialog {
+            title: &rows[index].label,
+            notes: &lines,
+            hint: "Enter or Esc to go back",
+            actions: &[],
+        };
+        choice_dialog::run_choice_dialog(
+            context.renderer,
+            &detail_dialog,
+            &mut back,
+            context.fullscreen,
+        )?;
+    }
+    if context.fullscreen {
+        // The panel drew over the bottom of the screen.
+        let state = context
+            .transcript
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        render_transcript_view(&state, context.renderer, context.header_rows)?;
+    }
+    Ok(())
+}
+
+/// `41s` or `3m 50s`.
+fn elapsed_label(elapsed: Duration) -> String {
+    let seconds = elapsed.as_secs();
+    if seconds >= 60 {
+        format!("{}m {:02}s", seconds / 60, seconds % 60)
+    } else {
+        format!("{seconds}s")
+    }
 }
 
 fn agent_map_text(
@@ -1569,7 +1686,7 @@ impl FullscreenTranscript {
             self.renderer,
             platform,
             cwd,
-            runtime_context_tokens(runtime),
+            FooterUsage::of(runtime),
             self.enabled,
             &self.state,
             self.header_rows,
@@ -2046,6 +2163,7 @@ fn render_startup(
         ),
         agent_configured: config.harness.is_some()
             && selected_route_is_connected(&config, text_route),
+        cached_percent: None,
     };
     let terminal_width = if interactive {
         size().map_or(100, |(columns, _)| columns)
@@ -2118,8 +2236,12 @@ fn initialize_transcript(
             None,
         )
     };
-    let (footer_context, footer_items) =
-        context_footer_status(renderer, platform, cwd, context_tokens);
+    let (footer_context, footer_items) = context_footer_status(
+        renderer,
+        platform,
+        cwd,
+        FooterUsage::context_only(context_tokens),
+    );
     let mut state = TranscriptState {
         footer_context,
         footer_items,
@@ -2136,7 +2258,7 @@ fn refresh_context_footer(
     renderer: Renderer,
     platform: Platform,
     cwd: &Path,
-    context_tokens: u64,
+    usage: FooterUsage,
     fullscreen: bool,
     transcript: &Arc<Mutex<TranscriptState>>,
     header_rows: u16,
@@ -2144,7 +2266,7 @@ fn refresh_context_footer(
     if !fullscreen {
         return Ok(());
     }
-    let (footer, items) = context_footer_status(renderer, platform, cwd, context_tokens);
+    let (footer, items) = context_footer_status(renderer, platform, cwd, usage);
     let mut state = transcript
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -2158,7 +2280,7 @@ fn context_footer_status(
     renderer: Renderer,
     platform: Platform,
     cwd: &Path,
-    context_tokens: u64,
+    usage: FooterUsage,
 ) -> (String, Vec<(FooterItem, String)>) {
     let config = read_agent_config(cwd).unwrap_or_default();
     let instance = instance_store(cwd).load().ok();
@@ -2176,13 +2298,14 @@ fn context_footer_status(
                 .map_or("default", effort_display_name),
         ),
         session_budget_tokens: context_token_budget(&config, text_route),
-        context_tokens,
+        context_tokens: usage.context_tokens,
         auto_compaction: matches!(
             config.harness.as_ref(),
             Some(HarnessConfig::Native | HarnessConfig::Process { .. })
         ),
         agent_configured: config.harness.is_some()
             && selected_route_is_connected(&config, text_route),
+        cached_percent: usage.cached_percent,
     };
     let width = size().map_or(100, |(columns, _)| columns);
     let items = footer_items(&startup, GitSegment::discover(cwd).as_ref(), width);
@@ -2191,6 +2314,36 @@ fn context_footer_status(
 
 fn runtime_context_tokens(runtime: Option<&AgentRuntime>) -> u64 {
     runtime.map_or(0, |runtime| runtime.token_usage().0)
+}
+
+/// What the footer's context item shows.
+#[derive(Clone, Copy, Default)]
+struct FooterUsage {
+    context_tokens: u64,
+    /// Share of the session's prompt tokens served from the provider's cache.
+    cached_percent: Option<u8>,
+}
+
+impl FooterUsage {
+    const fn context_only(context_tokens: u64) -> Self {
+        Self {
+            context_tokens,
+            cached_percent: None,
+        }
+    }
+
+    fn of(runtime: Option<&AgentRuntime>) -> Self {
+        let Some(runtime) = runtime else {
+            return Self::default();
+        };
+        let (input, cached, _) = runtime.provider_token_usage();
+        Self {
+            context_tokens: runtime.token_usage().0,
+            cached_percent: (input > 0).then(|| {
+                u8::try_from(cached.min(input).saturating_mul(100) / input).unwrap_or(100)
+            }),
+        }
+    }
 }
 
 fn confirm_folder_trust(renderer: Renderer, workspace: &Path, fullscreen: bool) -> Result<bool> {
@@ -3799,7 +3952,7 @@ fn render_observed_activity(
             renderer,
             Platform::current(),
             workspace,
-            *live_context_tokens,
+            FooterUsage::context_only(*live_context_tokens),
             terminal.fullscreen,
             &terminal.transcript,
             terminal.header_rows,
