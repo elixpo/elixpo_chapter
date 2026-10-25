@@ -1,6 +1,6 @@
 From: Ayushman Bhattacharya <ayushman.elixpo@gmail.com>
 To: submit@bugs.debian.org
-Subject: RFS: crumb/1.0.4-1 [ITP] -- self-hosted agent harness and natural-language terminal
+Subject: RFS: crumb/1.1.0-1 [ITP] -- self-hosted agent harness and natural-language terminal
 
 Package: sponsorship-requests
 Severity: wishlist
@@ -10,7 +10,7 @@ Dear mentors,
 I am looking for a sponsor for my package "crumb":
 
  * Package name     : crumb
-   Version          : 1.0.4-1
+   Version          : 1.1.0-1
    Upstream contact : Ayushman Bhattacharya <ayushman.elixpo@gmail.com>
  * URL              : https://crumb.elixpo.com
  * License          : MIT and CC-BY-4.0
@@ -22,7 +22,8 @@ The source builds the following binary package:
   crumb - self-hosted agent harness and natural-language terminal
 
 The package uses Debian-provided Rust crates and the system SQLite library.
-The sole Rust dependency that had to be introduced first was reedline 0.52.1.
+The sole Rust dependency that had to be introduced first, reedline 0.52.1,
+is now in unstable (rust-reedline 0.52.1-1).
 The build and tests run without network access.
 
 The ITP is Debian bug #1151280.
@@ -37,7 +38,7 @@ The package can be downloaded with:
 
 Changes for the initial upload:
 
-  * Initial Debian release. (Closes: #1151280)
+  * Initial Debian packaging. (Closes: #1151280)
 
 Regards,
 --

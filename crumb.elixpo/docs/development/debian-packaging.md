@@ -70,9 +70,8 @@ source package to bypass Debian review.
 `reedline` is packaged by the Debian Rust Team in `debcargo-conf`. The
 existing unreleased 0.48.0 overlay was updated to 0.52.1 in
 [merge request !1493](https://salsa.debian.org/rust-team/debcargo-conf/-/merge_requests/1493),
-with Ayushman Bhattacharya added to its uploaders. The clean unstable build,
-autopkgtest, and lintian checks passed, and the RFS marker is in place. A Rust
-Team sponsor runs `release.sh` and uploads it; it then passes through NEW.
+with Ayushman Bhattacharya added to its uploaders. It was merged on 24 October
+2026 and `rust-reedline 0.52.1-1` was accepted into unstable.
 
 ## ITP status
 
@@ -84,8 +83,10 @@ request is in `docs/development/debian-rfs.txt`.
 
 ## Archive submission sequence
 
-1. Land `rust-reedline` through the Debian Rust Team.
-2. Import the 1.0.4 release into the Salsa repository.
+1. Land `rust-reedline` through the Debian Rust Team (done: 0.52.1-1 is in
+   unstable).
+2. Import the release into the Salsa repository (1.1.0 is imported as
+   `upstream/1.1.0`; 1.1.0 adds the `regex` and `walkdir` build dependencies).
 3. Build the signed source package in a clean, network-isolated unstable
    environment.
 4. Run `lintian`, `autopkgtest`, `piuparts`, and `sbuild`.
