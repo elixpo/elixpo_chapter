@@ -1,0 +1,62 @@
+name: Agent evals
+
+# Runs evals/run.py against the real model provider. It spends tokens on the
+# CRUMB_EVAL_POLLINATIONS_KEY credential, so it runs weekly and on demand,
+# never on pull requests.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: Scenario names to run, separated by spaces (empty runs all)
+        required: false
+        type: string
+
+concurrency:
+  group: agent-evals
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    name: Run agent evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      POLLINATIONS_API_KEY: ${{ secrets.CRUMB_EVAL_POLLINATIONS_KEY }}
+    steps:
+      - name: Require the eval credential
+        if: env.POLLINATIONS_API_KEY == ''
+        run: |
+          echo "::error::Set the CRUMB_EVAL_POLLINATIONS_KEY secret to run agent evals."
+          exit 1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked -p crumb-cli
+      - name: Run evals
+        # bash here runs with pipefail, so a failing eval fails the job.
+        shell: bash
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          # shellcheck disable=SC2086
+          python3 evals/run.py --crumb target/release/crumb ${ONLY:+--only $ONLY} | tee evals/summary.txt
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### Agent evals'
+            echo '```'
+            cat evals/summary.txt 2>/dev/null || echo "no results"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: agent-eval-results
+          path: evals/results/
+          if-no-files-found: ignore
