@@ -904,8 +904,13 @@ mod tests {
 
     #[test]
     fn file_references_complete_inside_plain_language() {
-        let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let mut completer = CrumbCompleter::new(CompletionWorkspace::new(workspace));
+        // A fixture folder, not the source tree: distribution builds (Debian)
+        // drop Cargo.lock, which changed the first suggestion.
+        let workspace = tempfile::tempdir().expect("workspace");
+        std::fs::write(workspace.path().join("Cargo.lock"), "").expect("fixture");
+        std::fs::write(workspace.path().join("Cargo.toml"), "").expect("fixture");
+        let mut completer =
+            CrumbCompleter::new(CompletionWorkspace::new(workspace.path().to_path_buf()));
         let result = completer.complete("explain @Car", 12);
         assert_eq!(result.suggestions()[0].value, "@file:Cargo.lock");
         assert_eq!(result.suggestions()[0].span.start, 8);

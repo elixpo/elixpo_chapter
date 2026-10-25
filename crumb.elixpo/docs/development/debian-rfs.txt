@@ -34,7 +34,7 @@ Further information is available at:
 
 The package can be downloaded with:
 
-  dget -x <MENTORS_DSC_URL>
+  dget -x https://mentors.debian.net/debian/pool/main/c/crumb/crumb_1.1.0-1.dsc
 
 Changes for the initial upload:
 
@@ -43,7 +43,3 @@ Changes for the initial upload:
 Regards,
 --
   Ayushman Bhattacharya
-
-This is a prepared draft. Replace the remaining angle-bracket placeholder
-with the actual mentors.debian.net value after the signed source
-package has been uploaded. Do not submit this RFS before those URLs work.
