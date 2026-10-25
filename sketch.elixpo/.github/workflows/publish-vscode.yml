@@ -49,7 +49,9 @@ jobs:
 
       # ── Decide the next version ─────────────────────────────────────
       # Compare local package.json version against what the VS Code
-      # Marketplace currently has. If equal, bump (patch by default).
+      # Marketplace currently has. If local is not ahead (equal, or behind
+      # because an earlier auto-bump never made it back to main), bump from
+      # the Marketplace version (patch by default).
       - name: Compute next version
         id: version
         working-directory: packages/vscode
@@ -64,11 +66,16 @@ jobs:
           echo "Remote version: $REMOTE"
           echo "Bump kind: $BUMP"
 
-          if [ "$LOCAL" = "$REMOTE" ]; then
-            echo "Versions match — auto-bumping ($BUMP)."
+          AHEAD=$(node -e "const [a,b]=process.argv.slice(1).map(v=>v.split('.').map(Number));let d=0;for(let i=0;i<3&&!d;i++)d=(a[i]||0)-(b[i]||0);console.log(d>0?'yes':'no')" "$LOCAL" "$REMOTE")
+
+          if [ "$AHEAD" != "yes" ]; then
+            echo "Local is not ahead of the Marketplace — auto-bumping ($BUMP) from $REMOTE."
             # See publish-npm.yml for why we don't capture `npm version`
             # stdout: workspaces emit a 2-line string that breaks
             # $GITHUB_OUTPUT parsing.
+            if [ "$LOCAL" != "$REMOTE" ]; then
+              npm version "$REMOTE" --no-git-tag-version --allow-same-version > /dev/null
+            fi
             npm version "$BUMP" --no-git-tag-version > /dev/null
             NEW=$(node -p "require('./package.json').version")
             echo "Bumped to $NEW"

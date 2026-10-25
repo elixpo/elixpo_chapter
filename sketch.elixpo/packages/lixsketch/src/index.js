@@ -78,6 +78,21 @@ export {
     isAllowedImageDataUrl,
 } from './utils/allowedImageTypes.js';
 
+// `.lixsketch` text format — pure (no DOM / engine globals), safe to import
+// anywhere: parse/compile DSL text to a v1 scene and serialize scenes back.
+export {
+    LIXSKETCH_EXTENSION,
+    LIXSKETCH_FORMAT_VERSION,
+    LIXSKETCH_MIME_TYPE,
+    LixSketchError,
+    compileLixSketch,
+    formatDiagnostic,
+    lixSketchToScene,
+    parseLixSketch,
+    sceneFromFileText,
+    sceneToLixSketch,
+} from './core/LixSketchFormat.js';
+
 // Engine-local keyboard shortcuts (tool switching, delete, group/ungroup,
 // space-to-pan, escape-deselect). App-level shortcuts (cloud save, modal
 // toggles) are intentionally NOT included — those belong to the consumer.

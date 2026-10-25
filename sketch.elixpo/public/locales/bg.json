@@ -2,6 +2,7 @@
   "menu": {
     "open": "Отвори",
     "quickSave": "Бързо запазване",
+    "saveLixSketch": "Запази .lixsketch",
     "saveShare": "Запази и сподели",
     "exportImage": "Експортирай изображение",
     "commands": "Команди",
@@ -14,6 +15,8 @@
     "signIn": "Вход",
     "signOut": "Изход",
     "theme": "Тема",
+    "canvasTheme": "Тема на платното",
+    "interfaceTheme": "Тема на интерфейса",
     "canvasBackground": "Фон на платното",
     "canvasBg": {
       "black": "Черно",
@@ -102,7 +105,6 @@
     "pan": "Плъзгане",
     "selection": "Избор",
     "rectangle": "Правоъгълник",
-    "diamond": "Ромб",
     "circle": "Кръг",
     "arrow": "Стрелка",
     "line": "Линия",

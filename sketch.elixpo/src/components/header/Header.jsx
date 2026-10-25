@@ -47,7 +47,7 @@ function LayoutModeToggle() {
 
   return (
     <div
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center bg-surface/80 backdrop-blur-md rounded-lg border border-border-light p-0.5"
+      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center lix-island bg-surface/80 backdrop-blur-md rounded-lg border border-border-light p-0.5"
       role="tablist"
       aria-label="Layout mode"
     >
@@ -380,7 +380,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-12 bg-surface-dark border-b border-border-light z-[1001] flex items-center justify-between px-3 font-[lixFont]">
+    <header className="fixed top-0 left-0 right-0 h-12 bg-surface-dark border-b border-border z-[1001] flex items-center justify-between px-3 font-[lixFont]">
       {/* Centered layout-mode toggle (canvas / split / docs) */}
       <LayoutModeToggle />
       {/* Left side */}

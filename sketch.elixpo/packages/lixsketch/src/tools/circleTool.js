@@ -1,10 +1,12 @@
 /* eslint-disable */
+import { getThemeForeground as getThemeStroke } from '../utils/themeColors.js';
 // Circle tool event handlers - extracted from drawCircle.js
 import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransformAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
 import { cleanupAttachments } from './arrowTool.js';
 import { calculateSnap, clearSnapGuides } from '../core/SnapGuides.js';
+import { constrainToSquare } from '../core/DrawConstraints.js';
 
-function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#000000"; }
+
 
 let isDrawingCircle = false;
 let isDraggingShapeCircle = false;
@@ -23,6 +25,7 @@ let circleBackgroundColor = "transparent";
 let circleFillStyleValue = "none";
 let circleStrokeThicknes = 2;
 let circleOutlineStyle = "solid";
+let circleRoughness = 1.5; // sloppiness: 0 architect, 1.5 artist, 3 cartoonist
 
 let dragOldPosCircle = null;
 let draggedShapeInitialFrameCircle = null;
@@ -89,6 +92,7 @@ const handleMouseDown = (e) => {
             fill: circleBackgroundColor,
             fillStyle: circleFillStyleValue,
             strokeWidth: circleStrokeThicknes,
+            roughness: circleRoughness,
         };
         if(circleOutlineStyle === "dashed") {
             initialOptions.strokeDasharray = "5,5";
@@ -115,6 +119,8 @@ const handleMouseDown = (e) => {
                     y: currentShape.y, 
                     rx: currentShape.rx, 
                     ry: currentShape.ry, 
+                    userRx: currentShape.userRx,
+                    userRy: currentShape.userRy,
                     rotation: currentShape.rotation 
                 };
                 if(anchorInfo.type === 'resize') 
@@ -138,6 +144,8 @@ const handleMouseDown = (e) => {
                     y: currentShape.y, 
                     rx: currentShape.rx, 
                     ry: currentShape.ry, 
+                    userRx: currentShape.userRx,
+                    userRy: currentShape.userRy,
                     rotation: currentShape.rotation 
                 };
                 
@@ -180,6 +188,8 @@ const handleMouseDown = (e) => {
                     y: currentShape.y, 
                     rx: currentShape.rx, 
                     ry: currentShape.ry, 
+                    userRx: currentShape.userRx,
+                    userRy: currentShape.userRy,
                     rotation: currentShape.rotation 
                 };
                 
@@ -217,10 +227,12 @@ const handleMouseMove = (e) => {
 
     if(isDrawingCircle && isCircleToolActive && currentShape)   
     {
-        currentShape.x = (startX + svgMouseX) / 2;
-        currentShape.y = (startY + svgMouseY) / 2;
-        currentShape.rx = Math.abs(svgMouseX - startX) / 2;
-        currentShape.ry = Math.abs(svgMouseY - startY) / 2;
+        // Shift draws a circle
+        const end = constrainToSquare({ x: startX, y: startY }, { x: svgMouseX, y: svgMouseY }, e.shiftKey);
+        currentShape.x = (startX + end.x) / 2;
+        currentShape.y = (startY + end.y) / 2;
+        currentShape.rx = Math.abs(end.x - startX) / 2;
+        currentShape.ry = Math.abs(end.y - startY) / 2;
         currentShape.scheduleDrawingRender();
         
         // Check for frame containment while drawing (but don't apply clipping yet)
@@ -402,6 +414,8 @@ const handleMouseUp = (e) => {
                 y: oldPos.y,
                 rx: oldPos.rx,
                 ry: oldPos.ry,
+                userRx: oldPos.userRx,
+                userRy: oldPos.userRy,
                 rotation: oldPos.rotation,
                 parentFrame: oldPos.parentFrame
             };
@@ -599,6 +613,7 @@ window.updateSelectedCircleStyle = function(changes) {
         if (changes.fill !== undefined) { circleBackgroundColor = changes.fill; currentShape.options.fill = changes.fill; }
         if (changes.fillStyle !== undefined) { circleFillStyleValue = changes.fillStyle; currentShape.options.fillStyle = changes.fillStyle; }
         if (changes.strokeWidth !== undefined) { circleStrokeThicknes = changes.strokeWidth; currentShape.options.strokeWidth = changes.strokeWidth; }
+        if (changes.roughness !== undefined) { circleRoughness = changes.roughness; currentShape.options.roughness = changes.roughness; }
         if (changes.outlineStyle !== undefined) {
             circleOutlineStyle = changes.outlineStyle;
             if (changes.outlineStyle === "dashed") currentShape.options.strokeDasharray = "5,5";
@@ -611,6 +626,7 @@ window.updateSelectedCircleStyle = function(changes) {
         if (changes.fill !== undefined) circleBackgroundColor = changes.fill;
         if (changes.fillStyle !== undefined) circleFillStyleValue = changes.fillStyle;
         if (changes.strokeWidth !== undefined) circleStrokeThicknes = changes.strokeWidth;
+        if (changes.roughness !== undefined) circleRoughness = changes.roughness;
         if (changes.outlineStyle !== undefined) circleOutlineStyle = changes.outlineStyle;
     }
 };

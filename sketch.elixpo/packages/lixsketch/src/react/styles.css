@@ -35,7 +35,9 @@
 
 .theme-light .lixsketch-canvas-root {
   --lix-icon-filter: none;
-  --lixsketch-bg: #ffffff;
+  /* Soft off-white rather than pure white: easier on the eyes. */
+  --lixsketch-bg: #fafaf9;
+  --lixsketch-fg: #1e1e1e;
 }
 
 .theme-light .lixsketch-canvas-root :is(

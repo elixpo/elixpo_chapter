@@ -3,16 +3,14 @@
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom
 import { updateAttachedArrows as updateArrowsForShape } from '../tools/arrowTool.js';
 import { DEFAULT_SHAPE_LABEL_FONT_SIZE } from '../core/ShapeLabelLayout.js';
-import { resolveThemeLabelColor } from '../utils/themeColors.js';
+import { getThemeForeground, resolveThemeLabelColor } from '../utils/themeColors.js';
+import { layoutArrowheads, normalizeArrowhead, renderArrowhead, shaftPathData } from '../core/ArrowHeads.js';
 
 const rc = rough.svg(svg);
 // Issue #38 follow-up: read the default stroke from the active theme
 // instead of pinning to a single colour. White was invisible on the new
 // light canvas, black is invisible if the user toggles dark.
-function getThemeStroke() {
-    if (typeof document === 'undefined') return '#fff';
-    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#000000';
-}
+const getThemeStroke = getThemeForeground;
 const lineStrokeWidth = 2;
 let hoveredFrameLine = null;
 
@@ -21,6 +19,11 @@ class Line {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.options = { ...options };
+        // Optional arrowheads (Excalidraw lines can carry them); none by default.
+        this.startArrowhead = normalizeArrowhead(options.startArrowhead, 'none');
+        this.endArrowhead = normalizeArrowhead(options.endArrowhead, 'none');
+        delete this.options.startArrowhead;
+        delete this.options.endArrowhead;
         // RoughJS otherwise chooses a fresh random stroke on every redraw.
         // A stable per-line seed keeps the hand-drawn contour visually fixed
         // while its endpoints move.
@@ -131,6 +134,107 @@ class Line {
         };
     }
 
+    hasArrowheads() {
+        return (this.startArrowhead && this.startArrowhead !== 'none') || (this.endArrowhead && this.endArrowhead !== 'none');
+    }
+
+    /** Shaft as an ArrowHeads description; the quadratic curve is lifted to a cubic. */
+    _shaftDescription() {
+        const start = { x: this.startPoint.x, y: this.startPoint.y };
+        const end = { x: this.endPoint.x, y: this.endPoint.y };
+        if (this.isCurved && this.controlPoint) {
+            const q = this.controlPoint;
+            return {
+                kind: 'curved',
+                start,
+                end,
+                c1: { x: start.x + (2 / 3) * (q.x - start.x), y: start.y + (2 / 3) * (q.y - start.y) },
+                c2: { x: end.x + (2 / 3) * (q.x - end.x), y: end.y + (2 / 3) * (q.y - end.y) },
+            };
+        }
+        return { kind: 'straight', start, end };
+    }
+
+    /**
+     * Build the shaft element. Without heads this is exactly the previous
+     * rendering; with heads the shaft is trimmed behind closed heads.
+     */
+    _buildShaftElement(layout) {
+        const stroke = this.options.stroke || getThemeStroke();
+        const strokeWidth = this.options.strokeWidth || lineStrokeWidth;
+        const shaft = layout ? layout.shaft : null;
+        const start = shaft ? shaft.start : this.startPoint;
+        const end = shaft ? shaft.end : this.endPoint;
+        let lineElement;
+
+        if (this.isCurved && this.controlPoint) {
+            const pathData = shaft
+                ? shaftPathData(shaft)
+                : `M ${this.startPoint.x} ${this.startPoint.y} Q ${this.controlPoint.x} ${this.controlPoint.y} ${this.endPoint.x} ${this.endPoint.y}`;
+            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            lineElement.setAttribute('d', pathData);
+            lineElement.setAttribute('stroke', stroke);
+            lineElement.setAttribute('stroke-width', strokeWidth);
+            lineElement.setAttribute('fill', 'none');
+            lineElement.setAttribute('stroke-linecap', 'round');
+            if (this.options.strokeDasharray) {
+                lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
+            }
+        } else if (this.isBeingDrawn || this.options.strokeDasharray) {
+            // Use plain SVG for lines being drawn OR dashed/dotted lines
+            // (RoughJS ignores strokeDasharray, so dashed styles must bypass it)
+            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            lineElement.setAttribute('x1', start.x);
+            lineElement.setAttribute('y1', start.y);
+            lineElement.setAttribute('x2', end.x);
+            lineElement.setAttribute('y2', end.y);
+            lineElement.setAttribute('stroke', stroke);
+            lineElement.setAttribute('stroke-width', strokeWidth);
+            lineElement.setAttribute('stroke-linecap', 'round');
+            if (this.options.strokeDasharray) {
+                lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
+            }
+        } else {
+            lineElement = rc.line(start.x, start.y, end.x, end.y, this.options);
+        }
+        return lineElement;
+    }
+
+    /**
+     * Arrowheads as one group: RoughJS with the line's seed and roughness,
+     * always a solid stroke, filled with the stroke colour when solid.
+     */
+    _renderHeads(layout) {
+        if (this._headsGroup && this._headsGroup.parentNode) this._headsGroup.parentNode.removeChild(this._headsGroup);
+        this._headsGroup = null;
+        if (!layout) return;
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'line-heads');
+        const opts = {
+            stroke: this.options.stroke || getThemeStroke(),
+            strokeWidth: Number(this.options.strokeWidth) || lineStrokeWidth,
+            roughness: Number.isFinite(Number(this.options.roughness)) ? Number(this.options.roughness) : 1,
+            seed: this.options.seed,
+        };
+        for (const end of ['start', 'end']) {
+            for (const node of renderArrowhead(rc, layout[end], opts)) {
+                node.setAttribute?.('class', `arrow-head arrow-head-${end}`);
+                group.appendChild(node);
+            }
+        }
+        this._headsGroup = group;
+        this.group.appendChild(group);
+    }
+
+    _headLayout() {
+        if (!this.hasArrowheads()) return null;
+        return layoutArrowheads(this._shaftDescription(), {
+            startArrowhead: this.startArrowhead,
+            endArrowhead: this.endArrowhead,
+            strokeWidth: Number(this.options.strokeWidth) || lineStrokeWidth,
+        });
+    }
+
     draw() {
         // Clear existing elements but preserve label, hit area, and anchors during active resize
         const childrenToRemove = [];
@@ -144,44 +248,11 @@ class Line {
         }
         childrenToRemove.forEach(child => this.group.removeChild(child));
 
-        const rc = rough.svg(svg);
-        let lineElement;
-
-        if (this.isCurved && this.controlPoint) {
-            const pathData = `M ${this.startPoint.x} ${this.startPoint.y} Q ${this.controlPoint.x} ${this.controlPoint.y} ${this.endPoint.x} ${this.endPoint.y}`;
-            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            lineElement.setAttribute('d', pathData);
-            lineElement.setAttribute('stroke', this.options.stroke || getThemeStroke());
-            lineElement.setAttribute('stroke-width', this.options.strokeWidth || lineStrokeWidth);
-            lineElement.setAttribute('fill', 'none');
-            lineElement.setAttribute('stroke-linecap', 'round');
-            if (this.options.strokeDasharray) {
-                lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
-            }
-        } else if (this.isBeingDrawn || this.options.strokeDasharray) {
-            // Use plain SVG for lines being drawn OR dashed/dotted lines
-            // (RoughJS ignores strokeDasharray, so dashed styles must bypass it)
-            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            lineElement.setAttribute('x1', this.startPoint.x);
-            lineElement.setAttribute('y1', this.startPoint.y);
-            lineElement.setAttribute('x2', this.endPoint.x);
-            lineElement.setAttribute('y2', this.endPoint.y);
-            lineElement.setAttribute('stroke', this.options.stroke || getThemeStroke());
-            lineElement.setAttribute('stroke-width', this.options.strokeWidth || lineStrokeWidth);
-            lineElement.setAttribute('stroke-linecap', 'round');
-            if (this.options.strokeDasharray) {
-                lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
-            }
-        } else {
-            lineElement = rc.line(
-                this.startPoint.x, this.startPoint.y,
-                this.endPoint.x, this.endPoint.y,
-                this.options
-            );
-        }
-
+        const layout = this._headLayout();
+        const lineElement = this._buildShaftElement(layout);
         this.element = lineElement;
         this.group.appendChild(lineElement);
+        this._renderHeads(layout);
 
         // Hit area - thicker invisible path for dblclick detection
         if (!this._hitArea) {
@@ -587,41 +658,11 @@ removeSelection() {
             this.element.parentNode.removeChild(this.element);
         }
 
-        const rc = rough.svg(svg);
-        let lineElement;
-
-        if (this.isCurved && this.controlPoint) {
-            const pathData = `M ${this.startPoint.x} ${this.startPoint.y} Q ${this.controlPoint.x} ${this.controlPoint.y} ${this.endPoint.x} ${this.endPoint.y}`;
-            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            lineElement.setAttribute('d', pathData);
-            lineElement.setAttribute('stroke', this.options.stroke || getThemeStroke());
-            lineElement.setAttribute('stroke-width', this.options.strokeWidth || lineStrokeWidth);
-            lineElement.setAttribute('fill', 'none');
-            lineElement.setAttribute('stroke-linecap', 'round');
-            if (this.options.strokeDasharray) {
-                lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
-            }
-        } else if (this.options.strokeDasharray) {
-            // Dashed/dotted lines must use plain SVG (RoughJS ignores strokeDasharray)
-            lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            lineElement.setAttribute('x1', this.startPoint.x);
-            lineElement.setAttribute('y1', this.startPoint.y);
-            lineElement.setAttribute('x2', this.endPoint.x);
-            lineElement.setAttribute('y2', this.endPoint.y);
-            lineElement.setAttribute('stroke', this.options.stroke || getThemeStroke());
-            lineElement.setAttribute('stroke-width', this.options.strokeWidth || lineStrokeWidth);
-            lineElement.setAttribute('stroke-linecap', 'round');
-            lineElement.setAttribute('stroke-dasharray', this.options.strokeDasharray);
-        } else {
-            lineElement = rc.line(
-                this.startPoint.x, this.startPoint.y,
-                this.endPoint.x, this.endPoint.y,
-                this.options
-            );
-        }
-
+        const layout = this._headLayout();
+        const lineElement = this._buildShaftElement(layout);
         this.element = lineElement;
         this.group.insertBefore(lineElement, this.group.firstChild);
+        this._renderHeads(layout);
     }
 
     updateAnchorPositions() {

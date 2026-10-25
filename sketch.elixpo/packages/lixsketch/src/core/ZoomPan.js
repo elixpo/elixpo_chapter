@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { installScreenSpaceControlSync } from './ScreenSpaceControls.js';
+import { clampZoom, fitBoundsToViewport, unionBounds, wheelPanDelta, wheelZoomFactor, zoomViewBoxAroundPoint } from './ViewportMath.js';
 // Zoom and Pan controls - combined from zoomFunction.js + panCanvas.js
 // Depends on globals: svg, freehandCanvas, currentZoom, currentViewBox, isPanningToolActive, isPanning
 // Depends on globals: minScale, maxScale, zoomInBtn, zoomOutBtn, zoomPercentSpan, panStart, startCanvasX, startCanvasY
@@ -8,7 +9,6 @@ installScreenSpaceControlSync(freehandCanvas);
 
 // === Zoom Functions ===
 let currentY = 0;
-const scrollRate = 50;
 
 function updateZoomDisplay() {
   zoomPercentSpan.innerText = Math.round(currentZoom * 100) + "%";
@@ -126,148 +126,60 @@ function getShapeBoundsForFit(shape) {
   return Object.values(bounds).every(Number.isFinite) ? bounds : null;
 }
 
-window.zoomFit = function() {
-  if (!window.shapes || window.shapes.length === 0) {
-    if (window.zoomReset) window.zoomReset();
-    return;
-  }
-
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  window.shapes.forEach(shape => {
-    const bounds = getShapeBoundsForFit(shape);
-    if (!bounds) return;
-    
-    // Normalize coordinates just in case width/height is negative
-    const x1 = Math.min(bounds.x, bounds.x + bounds.width);
-    const x2 = Math.max(bounds.x, bounds.x + bounds.width);
-    const y1 = Math.min(bounds.y, bounds.y + bounds.height);
-    const y2 = Math.max(bounds.y, bounds.y + bounds.height);
-
-    minX = Math.min(minX, x1);
-    minY = Math.min(minY, y1);
-    maxX = Math.max(maxX, x2);
-    maxY = Math.max(maxY, y2);
-  });
-
-  if (minX === Infinity) {
-    if (window.zoomReset) window.zoomReset();
-    return;
-  }
-
-  const rect = freehandCanvas.getBoundingClientRect();
-  const screenW = rect.width || window.innerWidth;
-  const screenH = rect.height || window.innerHeight;
-
-  const contentW = maxX - minX;
-  const contentH = maxY - minY;
-  
-  // Add 10% padding
-  const paddingX = Math.max(50, contentW * 0.1);
-  const paddingY = Math.max(50, contentH * 0.1);
-
-  const paddedW = contentW + paddingX * 2;
-  const paddedH = contentH + paddingY * 2;
-
-  // Calculate required zoom to fit the padded content in the screen
-  const zoomX = screenW / paddedW;
-  const zoomY = screenH / paddedH;
-  
-  let newZoom = Math.min(zoomX, zoomY);
-  newZoom = Math.max(minScale, Math.min(newZoom, maxScale));
-
-  // Center coordinate of the content
-  const cx = minX + contentW / 2;
-  const cy = minY + contentH / 2;
-
-  // Set the new viewBox and zoom
-  currentZoom = newZoom;
-  const vbW = screenW / currentZoom;
-  const vbH = screenH / currentZoom;
-
-  currentViewBox.x = cx - vbW / 2;
-  currentViewBox.y = cy - vbH / 2;
-  currentViewBox.width = vbW;
-  currentViewBox.height = vbH;
-
+function applyViewport(zoom, viewBox) {
+  currentZoom = zoom;
+  currentViewBox.x = viewBox.x;
+  currentViewBox.y = viewBox.y;
+  currentViewBox.width = viewBox.width;
+  currentViewBox.height = viewBox.height;
   freehandCanvas.setAttribute(
     "viewBox",
-    `${currentViewBox.x} ${currentViewBox.y} ${vbW} ${vbH}`
+    `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
   );
-  
   updateZoomDisplay();
   if (window.__sketchStoreApi && window.__sketchStoreApi.setZoom) {
     window.__sketchStoreApi.setZoom(currentZoom);
   }
+}
+
+function zoomToShapes(shapeList) {
+  const bounds = unionBounds((shapeList || []).map(getShapeBoundsForFit));
+  if (!bounds) return false;
+  const rect = freehandCanvas.getBoundingClientRect();
+  const screen = { width: rect.width || window.innerWidth, height: rect.height || window.innerHeight };
+  const { zoom, viewBox } = fitBoundsToViewport(bounds, screen, minScale, maxScale);
+  applyViewport(zoom, viewBox);
+  return true;
+}
+
+// Shift+1: frame every shape on the canvas.
+window.zoomFit = function() {
+  if (!zoomToShapes(window.shapes) && window.zoomReset) window.zoomReset();
+};
+
+// Shift+2: frame the current selection (falls back to fit-all).
+window.zoomToSelection = function() {
+  const selected = window.multiSelection?.selectedShapes;
+  const targets = selected && selected.size > 0
+    ? Array.from(selected)
+    : (window.currentShape ? [window.currentShape] : []);
+  if (!zoomToShapes(targets)) window.zoomFit();
 };
 
 freehandCanvas.addEventListener("wheel", function(e) {
-  if (!e.ctrlKey) return;
+  // Ctrl/Cmd+wheel and trackpad pinch (which browsers report as ctrl+wheel)
+  // zoom around the cursor.
+  if (!e.ctrlKey && !e.metaKey) return;
   e.preventDefault();
 
-  // Determine the zoom delta
-  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-  let newZoom = currentZoom + delta;
-  if (newZoom < minScale) newZoom = minScale;
-  if (newZoom > maxScale) newZoom = maxScale;
+  const newZoom = clampZoom(currentZoom * wheelZoomFactor(e.deltaY, e.deltaMode), minScale, maxScale);
+  if (newZoom === currentZoom) return;
 
-  // Get canvas bounding rect — this MUST be the SVG element's actual
-  // size, not the window's. In split mode the canvas pane is narrower
-  // than the viewport; using window.innerWidth here would produce a
-  // viewBox aspect that doesn't match the element, and (with
-  // preserveAspectRatio="none" on the host) the content gets stretched
-  // / squeezed on every zoom step.
+  // Use the SVG element's rect, not the window: in split mode the canvas
+  // pane is narrower and a window-sized viewBox would distort shapes.
   const rect = freehandCanvas.getBoundingClientRect();
-
-  // Calculate mouse position relative to the canvas in pixels
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  // Determine what fraction of the canvas the mouse is at
-  const mouseFracX = mouseX / rect.width;
-  const mouseFracY = mouseY / rect.height;
-
-  // Compute the current viewBox coordinate under the mouse.
-  // currentViewBox.width and .height represent the current viewBox dimensions.
-  const anchorViewBoxX = currentViewBox.x + mouseFracX * currentViewBox.width;
-  const anchorViewBoxY = currentViewBox.y + mouseFracY * currentViewBox.height;
-
-  // New viewBox dimensions sized to the *element*, scaled by the new
-  // zoom. This keeps the viewBox aspect ratio matching the element so
-  // shapes stay undistorted.
-  const newViewBoxWidth = rect.width / newZoom;
-  const newViewBoxHeight = rect.height / newZoom;
-  
-  // Compute the new viewBox's x and y so that the anchor remains at the same screen fraction.
-  // That means:
-  //   newViewBox.x + mouseFracX * newViewBoxWidth === anchorViewBoxX
-  // Solve for newViewBox.x:
-  const newViewBoxX = anchorViewBoxX - mouseFracX * newViewBoxWidth;
-  const newViewBoxY = anchorViewBoxY - mouseFracY * newViewBoxHeight;
-  
-  // Update the viewBox attribute with the new values.
-  freehandCanvas.setAttribute(
-    "viewBox",
-    `${newViewBoxX} ${newViewBoxY} ${newViewBoxWidth} ${newViewBoxHeight}`
-  );
-  
-  // Update our state
-  currentZoom = newZoom;
-  currentViewBox = {
-    x: newViewBoxX,
-    y: newViewBoxY,
-    width: newViewBoxWidth,
-    height: newViewBoxHeight
-  };
-
-  updateZoomDisplay();
-  // Sync React zoom state
-  if (window.__sketchStoreApi && window.__sketchStoreApi.setZoom) {
-    window.__sketchStoreApi.setZoom(currentZoom);
-  }
+  const next = zoomViewBoxAroundPoint(currentViewBox, rect, { x: e.clientX, y: e.clientY }, newZoom);
+  applyViewport(newZoom, next);
 });
 
 // Function to resize the canvas to fill the screen (initial setup)
@@ -398,15 +310,13 @@ freehandCanvas.addEventListener("auxclick", (e) => {
 
 svg.addEventListener("wheel", (e) => {
   e.preventDefault();
-  if (e.ctrlKey) return; // Ignore zoom gestures
+  if (e.ctrlKey || e.metaKey) return; // Zoom gestures are handled above
 
-  if (e.shiftKey) {
-      // Pan sideways when Shift is held
-      currentViewBox.x += e.deltaY > 0 ? scrollRate : -scrollRate;
-  } else {
-      // Pan vertically
-      currentViewBox.y += e.deltaY > 0 ? scrollRate : -scrollRate;
-  }
+  // Plain wheel / two-finger trackpad scroll pans in both axes; Shift turns
+  // a vertical wheel into a horizontal pan.
+  const { dx, dy } = wheelPanDelta(e, currentZoom);
+  currentViewBox.x += dx;
+  currentViewBox.y += dy;
 
   svg.setAttribute(
       "viewBox",

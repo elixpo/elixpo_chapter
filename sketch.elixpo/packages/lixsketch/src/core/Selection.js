@@ -291,7 +291,9 @@ class MultiSelection {
                     parentFrame: shape.parentFrame || null
                 };
             case 'circle':
-                return { x: shape.x, y: shape.y, rx: shape.rx, ry: shape.ry, rotation: shape.rotation || 0, width: shape.width, height: shape.height, parentFrame: shape.parentFrame || null };
+                return { x: shape.x, y: shape.y, rx: shape.rx, ry: shape.ry, userRx: shape.userRx, userRy: shape.userRy, rotation: shape.rotation || 0, width: shape.width, height: shape.height, parentFrame: shape.parentFrame || null };
+            case 'rectangle':
+                return { x: shape.x, y: shape.y, width: shape.width || 0, height: shape.height || 0, userWidth: shape.userWidth, userHeight: shape.userHeight, rotation: shape.rotation || 0, parentFrame: shape.parentFrame || null };
             case 'freehandStroke':
                 return { x: shape.x, y: shape.y, width: shape.width, height: shape.height, rotation: shape.rotation || 0, points: JSON.parse(JSON.stringify(shape.points)), parentFrame: shape.parentFrame || null };
             default:

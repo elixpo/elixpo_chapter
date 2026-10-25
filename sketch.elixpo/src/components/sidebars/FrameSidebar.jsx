@@ -3,6 +3,7 @@
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
 import useUIStore from '@/store/useUIStore'
 import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
+import { EdgesControl, OpacityControl } from './AppearanceControls'
 import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { compressImage } from '@/utils/imageCompressor'
@@ -107,7 +108,7 @@ export default function FrameSidebar() {
           type="text"
           value={frameName}
           onChange={updateName}
-          className="w-32 px-2.5 py-1.5 bg-surface-hover border border-border-light rounded-lg text-text-primary text-xs outline-none focus:border-[#7667a8]/50 transition-all duration-150 font-[lixFont]"
+          className="w-32 px-2.5 py-1.5 bg-surface-hover border border-border-light rounded-lg text-text-primary text-xs outline-none focus:border-accent/50 transition-all duration-150 font-[lixFont]"
           spellCheck={false}
         />
       </ToolbarButton>
@@ -262,6 +263,10 @@ export default function FrameSidebar() {
 
       {/* AI Edit / Graph Edit removed while AI is coming-soon. Restore the
           button + handleAIEdit wiring when the assistant ships. */}
+      <Divider />
+      <EdgesControl />
+      <Divider />
+      <OpacityControl />
       <Divider />
       <LayerControls />
     </ShapeSidebar>

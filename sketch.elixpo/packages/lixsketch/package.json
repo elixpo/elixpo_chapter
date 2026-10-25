@@ -83,6 +83,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
+    "lz-string": "^1.5.0",
     "vitest": "^3.2.4"
   },
   "scripts": {
@@ -90,6 +91,7 @@
     "test": "npm run test:unit && npm run test:mcp",
     "test:unit": "vitest run",
     "test:mcp": "node --test test/mcp-*.test.js",
+    "bench": "vitest run --config vitest.bench.config.js",
     "prepublishOnly": "npm run build"
   }
 }

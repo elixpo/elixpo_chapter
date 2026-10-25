@@ -1,11 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useState } from 'react'
+import { BACKGROUND_SWATCHES } from '@elixpo/lixsketch/src/utils/themeColors.js'
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
 import ShapeSidebar, { Divider, ToolbarButton } from './ShapeSidebar'
 import { showToast } from '@/utils/toast'
 
-const COLORS = ['#f0f0f0', '#ffcccb', '#90ee90', '#add8e6', '#FFE4B5', '#DDA0DD', '#A98DEB', '#2d2d2d']
+const COLORS = BACKGROUND_SWATCHES.filter((color) => color !== 'transparent')
 const FILLS = [
   { value: 'solid', label: 'Solid' },
   { value: 'hachure', label: 'Hachure' },
@@ -16,7 +17,7 @@ const FILLS = [
 
 export default function PaintBucketSidebar() {
   const activeTool = useSketchStore((state) => state.activeTool)
-  const [fillColor, setFillColor] = useState('#A98DEB')
+  const [fillColor, setFillColor] = useState('#d0bfff')
   const [fillStyle, setFillStyle] = useState('solid')
 
   const sync = useCallback((color, style) => {

@@ -876,7 +876,9 @@ function createArrow(def, from, to, createdShapes, errors) {
       stroke: def.props.stroke || '#fff',
       strokeWidth: def.props.strokeWidth || 2,
       arrowOutlineStyle: def.props.style || 'solid',
-      arrowHeadStyle: def.props.head || 'default',
+      // `head` (legacy, end only) or independent startHead / endHead.
+      arrowHeadStyle: def.props.endHead || def.props.head || 'arrow',
+      startArrowhead: def.props.startHead || 'none',
       arrowHeadLength: def.props.headLength || 15,
       arrowCurved: curveMode,
       arrowCurveAmount: def.props.curveAmount || 50,

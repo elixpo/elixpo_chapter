@@ -9,40 +9,31 @@ import useAuthStore from '@/store/useAuthStore'
 import { getSessionID } from '@/hooks/useSessionID'
 import { encrypt, generateKey } from '@/utils/encryption'
 import { useProfileStore } from '@/hooks/useGuestProfile'
+import {
+  gcLocalScenes,
+  readSceneLocal,
+  saveSceneLocal,
+  saveSceneLocalSync,
+} from '@/utils/sceneLocalStore'
+import {
+  createDirtyTracker,
+  createSaveScheduler,
+  sceneFingerprint,
+} from '@elixpo/lixsketch/src/core/ScenePersistence.js'
 
 const LOCAL_SAVE_KEY_PREFIX = 'lixsketch-autosave'
 const LOCAL_SAVE_META_KEY_PREFIX = 'lixsketch-autosave-meta'
 
-// Issue #24 bug #8: localStorage acts as a buffer between the user and
-// the cloud. Compress the JSON payload before writing — image data URLs
-// and large scenes can blow past the ~5–10 MB localStorage quota fast.
-// LZString.compressToUTF16 keeps the result as a valid UTF-16 string
-// that localStorage can store as-is. The prefix lets the reader detect
-// the format and fall back to plain JSON for any legacy entries.
+// Legacy synchronous localStorage codec (`lzs:` + LZ, or raw JSON). Kept
+// exported for callers that still need a sync write; the autosave path
+// uses src/utils/sceneLocalStore.js (IndexedDB first, see there).
 const COMPRESSED_PREFIX = 'lzs:'
 
 export function writeLocalScene(key, sceneData) {
-  const json = JSON.stringify(sceneData)
-  const compressed = COMPRESSED_PREFIX + LZString.compressToUTF16(json)
   try {
-    localStorage.setItem(key, compressed)
+    saveSceneLocalSync(key, sceneData)
     return true
   } catch (err) {
-    if (err && (err.name === 'QuotaExceededError' || err.code === 22)) {
-      // Last-resort: drop any other sessions' caches and retry once.
-      try {
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const k = localStorage.key(i)
-          if (k && k.startsWith(LOCAL_SAVE_KEY_PREFIX) && k !== key) localStorage.removeItem(k)
-        }
-        localStorage.setItem(key, compressed)
-        console.warn('[AutoSave] Quota exceeded — purged stale autosave entries to make room')
-        return true
-      } catch {
-        console.error('[AutoSave] Quota exceeded and could not free space — local save dropped')
-        return false
-      }
-    }
     console.warn('[AutoSave] Local write failed:', err)
     return false
   }
@@ -57,13 +48,43 @@ export function readLocalScene(key) {
       if (!decompressed) return null
       return JSON.parse(decompressed)
     }
-    // Legacy uncompressed entry — keep readable so existing users don't
-    // lose their scene on first load after the upgrade.
     return JSON.parse(raw)
   } catch (err) {
     console.warn('[AutoSave] Local read parse failed:', err)
     return null
   }
+}
+
+// ── Change tracking ──
+// Every canvas mutation bumps the tracker; saves run only when dirty, and
+// the scheduler coalesces bursts into one idle-time save.
+const _tracker = createDirtyTracker()
+let _lastSnapshot = null          // { json, version } of the last local save
+let _localWriteInFlight = false
+let _canvasObserver = null
+const _lastCloudFingerprint = new Map() // sessionId -> fingerprint of last uploaded JSON
+
+/** Call right after serializer.load(): the load itself is not an edit. */
+export function markSceneLoaded() {
+  _canvasObserver?.takeRecords()
+  _tracker.markClean()
+  _lastSnapshot = null
+  // The loaded scene may differ from what this tab last uploaded (remote
+  // agent edit, cloud reconcile), so the next cloud save must not be skipped.
+  _lastCloudFingerprint.clear()
+}
+
+function markCanvasDirty() {
+  _tracker.markDirty()
+}
+
+function takeSnapshot() {
+  const serializer = window.__sceneSerializer
+  if (!serializer || !Array.isArray(window.shapes)) return null
+  const version = _tracker.version
+  const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
+  const scene = serializer.save(workspaceName)
+  return { scene, json: JSON.stringify(scene), version, workspaceName }
 }
 
 function getLocalSaveKey() {
@@ -91,7 +112,10 @@ function setCloudSceneRevision(sessionId, revision) {
 }
 
 // ── Intervals ──
-const LOCAL_BUFFER_INTERVAL = 3_000    // localStorage buffer: every 3 seconds
+const LOCAL_BUFFER_INTERVAL = 3_000    // safety net: save if still dirty every 3 seconds
+const LOCAL_SAVE_DEBOUNCE = 400        // quiet period before an idle-time save
+const LOCAL_SAVE_MAX_WAIT = 2_000      // never delay a save longer than this during continuous edits
+const KEEPALIVE_MAX_BYTES = 60_000
 const CLOUD_SYNC_INTERVAL = 5 * 60_000 // DB sync: every 5 minutes
 
 // ── Rate limiting: max 2 DB saves per minute ──
@@ -135,36 +159,55 @@ async function getOrCreateSessionEncryptionKey(sessionId) {
   return key
 }
 
-// ── Save to localStorage (the buffer) ──
-function saveToLocalStorage() {
-  if (_workspaceDeletionInProgress) return false
-  const serializer = window.__sceneSerializer
-  const shapes = window.shapes
-  if (!serializer || !Array.isArray(shapes)) return false
+// ── Save to the local buffer (IndexedDB, localStorage fallback) ──
+// `sync: true` is the unload path: IndexedDB writes may not commit during
+// pagehide, so write a localStorage body synchronously instead.
+function writeLocalMeta(metaKey, snapshot) {
+  try {
+    localStorage.setItem(metaKey, JSON.stringify({
+      workspaceName: snapshot.workspaceName,
+      savedAt: Date.now(),
+      shapeCount: snapshot.scene.shapes.length,
+    }))
+  } catch {}
+}
 
-  // Wait for sessionID — without it we have no stable key to write to.
+function afterLocalSave(snapshot) {
+  _tracker.markClean(snapshot.version)
+  _lastSnapshot = { json: snapshot.json, version: snapshot.version }
+  if (typeof window.__onLocalSave === 'function') window.__onLocalSave()
+  const status = useUIStore.getState().saveStatus
+  if (status !== 'local' && status !== 'cloud') {
+    useUIStore.getState().setSaveStatus('local')
+  }
+}
+
+function saveToLocalStorage({ sync = false, force = false } = {}) {
+  if (_workspaceDeletionInProgress) return false
   const key = getLocalSaveKey()
   const metaKey = getLocalSaveMetaKey()
   if (!key || !metaKey) return false
+  // Nothing changed since the last save: skip serialization entirely.
+  if (!force && !_tracker.isDirty() && !(sync && _localWriteInFlight)) return true
 
+  const snapshot = takeSnapshot()
+  if (!snapshot) return false
   try {
-    const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
-    const sceneData = serializer.save(workspaceName)
-    const ok = writeLocalScene(key, sceneData)
-    if (!ok) return false
-    localStorage.setItem(metaKey, JSON.stringify({
-      workspaceName,
-      savedAt: Date.now(),
-      shapeCount: shapes.length,
-    }))
-
-    // Signal the UI that a local save just happened
-    if (typeof window.__onLocalSave === 'function') window.__onLocalSave()
-    const status = useUIStore.getState().saveStatus
-    if (status !== 'local' && status !== 'cloud') {
-      useUIStore.getState().setSaveStatus('local')
+    if (sync) {
+      const result = saveSceneLocalSync(key, snapshot.scene, snapshot.json)
+      if (!result.skipped) writeLocalMeta(metaKey, snapshot)
+      afterLocalSave(snapshot)
+      return true
     }
-    return true
+    _localWriteInFlight = true
+    return saveSceneLocal(key, snapshot.scene, snapshot.json).then((result) => {
+      if (!result.skipped) writeLocalMeta(metaKey, snapshot)
+      afterLocalSave(snapshot)
+      return true
+    }).catch((err) => {
+      console.warn('[AutoSave] Local buffer save failed:', err)
+      return false
+    }).finally(() => { _localWriteInFlight = false })
   } catch (err) {
     console.warn('[AutoSave] Local buffer save failed:', err)
     return false
@@ -181,7 +224,7 @@ function showSaveToast() {
 }
 
 // ── Save to DB (from localStorage buffer) ──
-async function saveToDb({ force = false } = {}) {
+async function saveToDb({ force = false, keepalive = false } = {}) {
   if (_workspaceDeletionInProgress) return false
   if (!WORKER_URL) return false
 
@@ -201,18 +244,24 @@ async function saveToDb({ force = false } = {}) {
     const authState = useAuthStore.getState()
     const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
 
-    // Read from localStorage buffer (single source of truth). The buffer
-    // stores compressed payload now (issue #24 bug #8) — decompress before
-    // handing the JSON to the cloud encryption step.
+    // Use the in-memory JSON of the last local save when the canvas has
+    // not changed since; previously this re-read and LZ-decompressed the
+    // whole localStorage buffer on every cloud sync.
     let sceneJSON
-    const bufferKey = getLocalSaveKey()
-    const localScene = bufferKey ? readLocalScene(bufferKey) : null
-    if (localScene) {
-      sceneJSON = JSON.stringify(localScene)
+    if (_lastSnapshot && !_tracker.isDirty()) {
+      sceneJSON = _lastSnapshot.json
     } else {
-      // Fallback: serialize current state
-      const sceneData = serializer.save(workspaceName)
-      sceneJSON = JSON.stringify(sceneData)
+      const snapshot = takeSnapshot()
+      if (!snapshot) return false
+      sceneJSON = snapshot.json
+    }
+
+    // Skip the encrypt + upload when the cloud already has this exact scene.
+    const fingerprint = sceneFingerprint(sceneJSON)
+    if (_lastCloudFingerprint.get(sessionId) === fingerprint
+      && Number.isInteger(getCloudSceneRevision(sessionId))) {
+      useUIStore.getState().setSaveStatus('cloud')
+      return true
     }
 
     // Reuse the session key so existing encrypted canvas links remain valid
@@ -224,23 +273,28 @@ async function saveToDb({ force = false } = {}) {
       ? (authState.user?.id || 'anonymous')
       : (useProfileStore.getState().profile?.id || localStorage.getItem('lixsketch-guest-session') || 'anonymous')
 
+    const body = JSON.stringify({
+      sessionId,
+      encryptedData,
+      permission: 'edit',
+      workspaceName,
+      createdBy,
+      ownerType: authState.isAuthenticated ? 'user' : 'guest',
+      expectedRevision: getCloudSceneRevision(sessionId),
+    })
     const res = await fetch(`${WORKER_URL}/api/scenes/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        encryptedData,
-        permission: 'edit',
-        workspaceName,
-        createdBy,
-        ownerType: authState.isAuthenticated ? 'user' : 'guest',
-        expectedRevision: getCloudSceneRevision(sessionId),
-      }),
+      body,
+      // keepalive lets the request outlive a closing tab; browsers cap
+      // keepalive bodies at 64 KiB, so only use it for small scenes.
+      keepalive: keepalive && body.length < KEEPALIVE_MAX_BYTES,
     })
 
     if (res.ok) {
       const saved = await res.json().catch(() => ({}))
       setCloudSceneRevision(sessionId, saved.revision)
+      _lastCloudFingerprint.set(sessionId, fingerprint)
       _automaticCloudSyncBlocked.delete(sessionId)
       recordDbSave()
       useUIStore.getState().setSaveStatus('cloud')
@@ -280,7 +334,7 @@ async function saveToDb({ force = false } = {}) {
  * Saves to localStorage first, then pushes to DB.
  */
 export async function triggerCloudSync() {
-  saveToLocalStorage()
+  await saveToLocalStorage()
   const ok = await saveToDb({ force: true })
   if (ok) showSaveToast()
   return ok
@@ -364,6 +418,8 @@ export default function useAutoSave() {
         }
         keysToRemove.forEach((key) => localStorage.removeItem(key))
       } catch {}
+      // IndexedDB bodies/assets whose pointer was just removed.
+      void gcLocalScenes()
     }
 
     const parseCloudTimestamp = (value) => {
@@ -411,8 +467,9 @@ export default function useAutoSave() {
     const restoreFromCloud = async (serializer, currentKey) => {
       const cloud = await fetchCloudScene(true)
       if (cloud.status !== 'found' || cancelled) return false
-      if (currentKey) writeLocalScene(currentKey, cloud.sceneData)
       serializer.load(cloud.sceneData)
+      markSceneLoaded()
+      if (currentKey) void saveSceneLocal(currentKey, cloud.sceneData).catch(() => {})
       if (cloud.metadata.workspaceName) {
         useUIStore.getState().setWorkspaceName(cloud.metadata.workspaceName)
       }
@@ -456,13 +513,16 @@ export default function useAutoSave() {
       // continuously updated save buffer, so render it before any network
       // request and reconcile it back to the cloud in the background.
       if (currentKey) {
-        const sceneData = readLocalScene(currentKey)
+        const local = await readSceneLocal(currentKey)
+        if (cancelled) return
+        const sceneData = local?.scene
         if (sceneData?.format === 'lixsketch' && Array.isArray(sceneData.shapes)) {
           try {
             normalizeSceneColorsForTheme(sceneData, useUIStore.getState().resolvedTheme)
             serializer.load(sceneData)
+            markSceneLoaded()
             const meta = currentMetaKey ? localStorage.getItem(currentMetaKey) : null
-            let localSavedAt = Date.parse(sceneData.createdAt) || 0
+            let localSavedAt = local.savedAt || Date.parse(sceneData.createdAt) || 0
             if (meta) {
               try {
                 const { workspaceName, savedAt } = JSON.parse(meta)
@@ -481,9 +541,11 @@ export default function useAutoSave() {
               if (cancelled) return
               if (cloud.status !== 'found') return
               const cloudUpdatedAt = parseCloudTimestamp(cloud.metadata.updatedAt)
-              if (cloudUpdatedAt > localSavedAt) {
-                writeLocalScene(currentKey, cloud.sceneData)
+              // Never clobber edits made since the instant local render.
+              if (cloudUpdatedAt > localSavedAt && !_tracker.isDirty()) {
                 serializer.load(cloud.sceneData)
+                markSceneLoaded()
+                void saveSceneLocal(currentKey, cloud.sceneData).catch(() => {})
                 makeRestoredSceneInteractive()
                 if (cloud.metadata.workspaceName) {
                   useUIStore.getState().setWorkspaceName(cloud.metadata.workspaceName)
@@ -528,51 +590,64 @@ export default function useAutoSave() {
     if (isInRoom) return
 
     let hasWarnedAboutEditingPublished = false
-    let debounceTimer = null
-    const debouncedSave = () => {
-      if (window.__applyingAgentScene) return
-      clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(() => {
-        const ui = useUIStore.getState()
-        if (ui.templateSlug && !hasWarnedAboutEditingPublished) {
-          hasWarnedAboutEditingPublished = true
-          const proceed = window.confirm(
-            "This workspace is published as a public template. Any edits you make will update the source template, but existing forks and clones of this template will not receive these updates. Do you want to proceed?"
-          )
-          if (!proceed) {
-            window.location.reload()
-            return
-          }
+    const runSave = () => {
+      const ui = useUIStore.getState()
+      if (ui.templateSlug && !hasWarnedAboutEditingPublished) {
+        hasWarnedAboutEditingPublished = true
+        const proceed = window.confirm(
+          "This workspace is published as a public template. Any edits you make will update the source template, but existing forks and clones of this template will not receive these updates. Do you want to proceed?"
+        )
+        if (!proceed) {
+          window.location.reload()
+          return
         }
+      }
 
-        saveToLocalStorage()
-        // Mark dirty relative to cloud
-        const status = useUIStore.getState().saveStatus
-        if (status === 'cloud') {
-          useUIStore.getState().setSaveStatus('local')
-        }
-      }, 400) // 400ms debounce — fast enough to feel instant, avoids thrashing
+      saveToLocalStorage()
+      // Mark dirty relative to cloud
+      if (useUIStore.getState().saveStatus === 'cloud') {
+        useUIStore.getState().setSaveStatus('local')
+      }
+    }
+    // Debounced + idle-scheduled: a burst of mutations (drag, draw,
+    // load) becomes one save in the next idle period.
+    const scheduler = createSaveScheduler({
+      run: runSave,
+      delay: LOCAL_SAVE_DEBOUNCE,
+      maxWait: LOCAL_SAVE_MAX_WAIT,
+    })
+    window.__flushLocalSave = () => scheduler.flush()
+
+    const onMutations = () => {
+      if (window.__applyingAgentScene) return
+      markCanvasDirty()
+      scheduler.schedule()
     }
 
+    let waitTimer = null
+    const observerRef = { current: null }
     const waitForSvg = () => {
       const svg = window.svg
-      if (!svg) { setTimeout(waitForSvg, 500); return }
+      if (!svg) { waitTimer = setTimeout(waitForSvg, 500); return }
 
-      const observer = new MutationObserver(debouncedSave)
+      const observer = new MutationObserver(onMutations)
       observer.observe(svg, { childList: true, subtree: true, attributes: true })
-      svg.addEventListener('mouseup', debouncedSave)
+      _canvasObserver = observer
+      svg.addEventListener('mouseup', onMutations)
 
       observerRef.current = { observer, svg }
     }
 
-    const observerRef = { current: null }
     waitForSvg()
 
     return () => {
-      clearTimeout(debounceTimer)
+      clearTimeout(waitTimer)
+      scheduler.flush()
+      if (window.__flushLocalSave) delete window.__flushLocalSave
       if (observerRef.current) {
         observerRef.current.observer.disconnect()
-        observerRef.current.svg.removeEventListener('mouseup', debouncedSave)
+        observerRef.current.svg.removeEventListener('mouseup', onMutations)
+        if (_canvasObserver === observerRef.current.observer) _canvasObserver = null
       }
     }
   }, [isInRoom])
@@ -584,15 +659,21 @@ export default function useAutoSave() {
   useEffect(() => {
     if (isInRoom) return
 
-    const interval = setInterval(saveToLocalStorage, LOCAL_BUFFER_INTERVAL)
+    // Safety net only: saveToLocalStorage() returns immediately when the
+    // canvas is clean, so an idle canvas costs nothing here.
+    const interval = setInterval(() => saveToLocalStorage(), LOCAL_BUFFER_INTERVAL)
 
-    const handleUnload = () => saveToLocalStorage()
+    // pagehide fires on tab close, navigation and bfcache entry; unlike
+    // beforeunload it also fires on mobile. Both use the sync path.
+    const handleUnload = () => saveToLocalStorage({ sync: true })
     window.addEventListener('beforeunload', handleUnload)
+    window.addEventListener('pagehide', handleUnload)
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('beforeunload', handleUnload)
-      saveToLocalStorage() // final save on cleanup
+      window.removeEventListener('pagehide', handleUnload)
+      saveToLocalStorage({ sync: true }) // final save on cleanup (SPA navigation)
     }
   }, [isInRoom])
 
@@ -611,43 +692,29 @@ export default function useAutoSave() {
       saveToDb()
     }, CLOUD_SYNC_INTERVAL)
 
-    // Save to DB on page close / back button / navigation away
-    const handleBeforeUnload = () => {
-      saveToLocalStorage()
-      // Use sendBeacon for reliable save on page close
-      const serializer = window.__sceneSerializer
-      if (!serializer) return
-
-      try {
-        const localData = localStorage.getItem(getLocalSaveKey())
-        if (localData) {
-          // Best-effort beacon (can't encrypt here synchronously, so just save to localStorage)
-          // The next load will push localStorage → DB
-          console.log('[AutoSave] Page closing — localStorage buffer is up to date')
-        }
-      } catch {}
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload)
+    // Page close: encryption is async, so the cloud copy is pushed on
+    // `visibilitychange -> hidden` (which precedes unload and still lets
+    // async work run) with a keepalive request. The local buffer is
+    // flushed synchronously by the pagehide handler above.
 
     // Save on back/forward navigation (popstate)
     const handlePopState = () => {
-      saveToLocalStorage()
+      saveToLocalStorage({ sync: true })
       saveToDb()
     }
     window.addEventListener('popstate', handlePopState)
 
-    // Save on visibility change (user switches tab/minimizes)
+    // Save on visibility change (user switches tab/minimizes/closes)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         saveToLocalStorage()
-        saveToDb()
+        saveToDb({ keepalive: true })
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       clearInterval(interval)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('popstate', handlePopState)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
@@ -697,6 +764,7 @@ export default function useAutoSave() {
         if (res.ok) {
           const saved = await res.json().catch(() => ({}))
           setCloudSceneRevision(sessionId, saved.revision)
+          _lastCloudFingerprint.set(sessionId, sceneFingerprint(sceneJSON))
           useUIStore.getState().setSaveStatus('cloud')
           useUIStore.getState().setSessionEncryptionKey?.(key, sessionId)
           console.log('[AutoSave] New workspace saved to cloud')
@@ -761,8 +829,9 @@ export default function useAutoSave() {
         normalizeSceneColorsForTheme(sceneData, useUIStore.getState().resolvedTheme)
         window.__applyingAgentScene = true
         serializer.load(sceneData)
+        markSceneLoaded()
         const localKey = getLocalSaveKey()
-        if (localKey) writeLocalScene(localKey, sceneData)
+        if (localKey) void saveSceneLocal(localKey, sceneData).catch(() => {})
         if (scenePayload.workspaceName) useUIStore.getState().setWorkspaceName(scenePayload.workspaceName)
         setCloudSceneRevision(sessionId, revision)
         useUIStore.getState().setSaveStatus('cloud')

@@ -1,41 +1,55 @@
 import './globals.css'
+import './site.css'
 import 'highlight.js/styles/github-dark-dimmed.css'
 import InitHljs from '@/components/InitHljs'
 const SITE_URL = 'https://sketch.elixpo.com'
 const SITE_NAME = 'Elixpo Sketch'
 const SITE_TAGLINE = 'Open Source Infinite Canvas, Hand Drawn Aesthetics, Built In Docs Editor'
 const SITE_DESCRIPTION =
-  'LixSketch is a free, open-source collaborative whiteboard for technical diagrams, wireframes, flowcharts, architecture drawings, and presentations. No login required — start drawing instantly as a guest. Features AI-powered smart editing (Beta), end-to-end encrypted sharing, real-time collaboration with live cursors, a Notion-style docs editor, LixScript DSL for scripted diagrams, 250K+ icons, and a VS Code extension. Runs entirely in the browser. Forever free.'
+  'LixSketch is a free, open-source collaborative whiteboard for technical diagrams, wireframes, flowcharts, architecture drawings, and presentations. No login required — start drawing instantly as a guest. Features AI-powered smart editing (Beta), end-to-end encrypted sharing, real-time collaboration with live cursors, a Notion-style docs editor, LixScript DSL for scripted diagrams, 5,000+ icons, and a VS Code extension. Runs entirely in the browser. Forever free.'
 
-// Canvas routes need their persisted theme before React hydrates. Keeping this
-// tiny bootstrap before the application markup prevents a dark-to-light (or
-// light-to-dark) frame while the client stores restore local preferences.
+// Site routes always render light. Only the workspace routes (/c, /room, /s)
+// restore persisted themes, and they restore two independent values before
+// React hydrates so neither flashes:
+//   - canvas theme  -> localStorage 'lixsketch-canvas-theme' (legacy 'theme'
+//                      is read as a fallback; useUIStore migrates it)
+//   - UI theme      -> localStorage 'lix_ui_prefs'.uiTheme
+// Both default to light. Keep the keys in sync with src/utils/themePreferences.js.
 const canvasThemeBootstrap = `
   (() => {
     try {
-      if (!/^\\/(c|room)\\//.test(location.pathname)) return;
-      const allowedThemes = new Set(['dark', 'light', 'system']);
-      let theme = localStorage.getItem('theme');
-      if (!allowedThemes.has(theme)) {
-        const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}');
-        theme = allowedThemes.has(prefs.theme) ? prefs.theme : 'dark';
+      if (!/^\\/(c|room|s)\\//.test(location.pathname)) return;
+      const themes = ['light', 'dark', 'system'];
+      let prefs = {};
+      try { prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}') || {}; } catch (_) {}
+      let canvasTheme = localStorage.getItem('lixsketch-canvas-theme');
+      if (!themes.includes(canvasTheme)) {
+        const legacy = localStorage.getItem('theme');
+        canvasTheme = themes.includes(legacy) ? legacy : (themes.includes(prefs.theme) ? prefs.theme : 'light');
       }
-      const resolved = theme === 'system'
-        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : theme;
-      const defaults = { dark: '#15111f', light: '#FFFFFF' };
+      const uiTheme = themes.includes(prefs.uiTheme) ? prefs.uiTheme : 'light';
+      const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+      const resolve = (theme) => theme === 'system' ? (prefersDark ? 'dark' : 'light') : (theme === 'dark' ? 'dark' : 'light');
+      const canvas = resolve(canvasTheme);
+      const ui = resolve(uiTheme);
+      const defaults = { dark: '#15111f', light: '#FAFAF9' };
       const palettes = {
         dark: ['#000000', '#161718', '#15111f', '#181605', '#1b1615'],
-        light: ['#ffffff', '#f6dbc0', '#f5eed2', '#f5f2ed', '#f5dabf'],
+        light: ['#fafaf9', '#ffffff', '#f6dbc0', '#f5eed2', '#f5f2ed', '#f5dabf'],
       };
-      const stored = localStorage.getItem('lixsketch-canvas-background-' + resolved);
-      const background = stored && palettes[resolved].includes(stored.toLowerCase())
+      let stored = localStorage.getItem('lixsketch-canvas-background-' + canvas);
+      // Mirror readCanvasBackground's one-time move off the old white default
+      // so the first frame already uses the soft off-white canvas.
+      if (canvas === 'light' && stored && stored.toLowerCase() === '#ffffff'
+        && localStorage.getItem('lixsketch-canvas-light-default-v3') !== '1') stored = null;
+      const background = stored && palettes[canvas].includes(stored.toLowerCase())
         ? stored
-        : defaults[resolved];
-      document.documentElement.dataset.canvasTheme = resolved;
-      document.documentElement.style.colorScheme = resolved;
-      document.documentElement.style.setProperty('--lixsketch-canvas-background', background);
-      document.body.classList.add('canvas-mode', 'theme-' + resolved);
+        : defaults[canvas];
+      const root = document.documentElement;
+      root.dataset.canvasTheme = canvas;
+      root.style.colorScheme = ui;
+      root.style.setProperty('--lixsketch-canvas-background', background);
+      document.body.classList.add('canvas-mode', 'theme-' + canvas, 'ui-' + ui);
     } catch (_) {}
   })();
 `
@@ -150,10 +164,10 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: '#120e1a',
+  themeColor: '#fbfbf8',
   width: 'device-width',
   initialScale: 1,
-  colorScheme: 'dark',
+  colorScheme: 'light',
 }
 
 const jsonLd = {
@@ -183,14 +197,14 @@ const jsonLd = {
     'E2E encryption for shared canvases',
     'LixScript diagram DSL',
     'Notion-like docs editor',
-    'Icon library with 250K+ icons',
+    'Icon library with 5,000+ icons',
     'PNG and SVG export',
   ],
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="light">
       <head>
         <link rel="stylesheet" href="/boxicons/css/boxicons.min.css" />
         <script

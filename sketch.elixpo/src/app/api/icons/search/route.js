@@ -1,6 +1,7 @@
 export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
+import { buildIconIndex, searchIconIndex } from '@elixpo/lixsketch/src/core/IconLibrary.js'
 
 let dataArray = null
 const svgCache = new Map()
@@ -11,17 +12,9 @@ async function loadData(origin) {
   const res = await fetch(`${origin}/icons/info/icons.json`)
   if (!res.ok) return
 
-  const metadata = await res.json()
-  dataArray = Object.keys(metadata).map((filename) => {
-    const item = metadata[filename]
-    const keywords = Array.isArray(item.keywords) ? item.keywords.join(' ') : (item.keywords || '')
-    return {
-      filename,
-      ...item,
-      normalizedCategory: String(item.category || '').toLowerCase(),
-      searchText: `${filename.replace(/[_-]/g, ' ')} ${keywords} ${item.description || ''} ${item.category || ''}`.toLowerCase(),
-    }
-  })
+  // Same index and matching as the client-side library, so server fallback
+  // results are identical to in-browser search.
+  dataArray = buildIconIndex(await res.json())
 }
 
 async function fetchSvg(origin, filename) {
@@ -46,18 +39,7 @@ export async function GET(request) {
   await loadData(origin)
   if (!dataArray) return NextResponse.json({ results: [] })
 
-  // One bounded pass over the metadata. Avoid fuzzy indexes, result sorting,
-  // and multiple filter passes so every query is O(N) and can return as soon
-  // as the 60 visible results are found.
-  const terms = q ? q.split(/\s+/).filter(Boolean) : []
-  const results = []
-  for (const item of dataArray) {
-    if (category && item.normalizedCategory !== category) continue
-    if (terms.length && !terms.every((term) => item.searchText.includes(term))) continue
-    const { searchText, normalizedCategory, ...publicItem } = item
-    results.push(publicItem)
-    if (results.length === 60) break
-  }
+  const results = searchIconIndex(dataArray, { q, category })
 
   // CORS — the icons API is intentionally public so any client (the
   // npm package, third-party embeds, etc.) can search and load icons

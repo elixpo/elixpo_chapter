@@ -1,10 +1,33 @@
 /* eslint-disable */
 import { resolveThemeLabelColor } from '../utils/themeColors.js';
+import { cornerRadiusFor, rectOutlinePoint } from '../core/ShapeAppearance.js';
 // Arrow shape class - extracted from drawArrow.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom
 import { DEFAULT_SHAPE_LABEL_FONT_SIZE } from '../core/ShapeLabelLayout.js';
+import {
+    arrowEndAngles,
+    layoutArrowheads,
+    normalizeArrowhead,
+    readArrowheads,
+    renderArrowhead,
+    shaftPathData,
+} from '../core/ArrowHeads.js';
+
+// Instance-level arrow state that must never leak into the RoughJS options.
+// Read by the constructor into instance fields; never kept in `options`.
+const ARROW_INSTANCE_KEYS = [
+    'startArrowhead', 'endArrowhead', 'arrowHeadStyle',
+    'arrowOutlineStyle', 'arrowCurved', 'arrowCurveAmount', 'controlPoint1', 'controlPoint2',
+];
+
+function dashArray(value) {
+    if (!value) return undefined;
+    const parts = String(value).split(/[ ,]+/).map(Number).filter((n) => Number.isFinite(n) && n >= 0);
+    return parts.length ? parts : undefined;
+}
 
 let isDragging = false;
+const rc = rough.svg(svg);
 let hoveredFrameArrow = null;
 let dragOldPosArrow = null;
 
@@ -27,10 +50,21 @@ class Arrow {
             strokeWidth: options.strokeWidth || 2,
             strokeDasharray: options.arrowOutlineStyle === "dashed" ? "10,10" : (options.arrowOutlineStyle === "dotted" ? "2,8" : ""),
             fill: 'none',
+            roughness: 1,
             ...options
         };
+        // Stable per-arrow seed: shaft and heads keep the same hand-drawn
+        // wobble on every redraw (persisted with the options).
+        if (!Number.isInteger(this.options.seed) || this.options.seed <= 0) {
+            this.options.seed = Math.floor(Math.random() * 0x7fffffff) + 1;
+        }
+        for (const key of ARROW_INSTANCE_KEYS) delete this.options[key];
         this.arrowOutlineStyle = options.arrowOutlineStyle || "solid";
-        this.arrowHeadStyle = options.arrowHeadStyle || "default";
+        // Independent start / end heads (Excalidraw); a legacy single
+        // `arrowHeadStyle` maps onto the end head.
+        const heads = readArrowheads(options);
+        this.startArrowhead = heads.startArrowhead;
+        this.endArrowhead = heads.endArrowhead;
         this.arrowHeadLength = parseFloat(options.arrowHeadLength || 15);
         this.arrowHeadAngleDeg = parseFloat(options.arrowHeadAngleDeg || 30);
         this.arrowCurved = options.arrowCurved !== undefined ? options.arrowCurved : "straight";
@@ -73,6 +107,10 @@ class Arrow {
         this._setupLabelDblClick();
         this.draw();
     }
+
+    /** Legacy alias for the end head (pre start/end heads API). */
+    get arrowHeadStyle() { return this.endArrowhead; }
+    set arrowHeadStyle(value) { this.endArrowhead = normalizeArrowhead(value); }
 
     get x() {
     return Math.min(this.startPoint.x, this.endPoint.x);
@@ -154,33 +192,6 @@ class Arrow {
         };
     }
 
-    _buildElbowPath(elbowX, shortenEnd) {
-        const x1 = this.startPoint.x, y1 = this.startPoint.y;
-        const x2 = this.endPoint.x,   y2 = this.endPoint.y;
-        const r = Math.min(
-            Math.abs(this.arrowCurveAmount),
-            Math.abs(elbowX - x1) / 2,
-            Math.abs(x2 - elbowX) / 2,
-            Math.abs(y2 - y1) / 2
-        );
-        const dx = elbowX >= x1 ? 1 : -1;
-        const ex = x2 >= elbowX ? 1 : -1;
-        const dy = y2 >= y1 ? 1 : -1;
-        let endX = x2;
-        if (shortenEnd) {
-            endX = x2 - ex * (this.arrowHeadLength * 0.3);
-        }
-        if (r > 2 && Math.abs(elbowX - x1) > r * 2 && Math.abs(x2 - elbowX) > r * 2 && Math.abs(y2 - y1) > r * 2) {
-            return `M ${x1} ${y1}` +
-                   ` H ${elbowX - dx * r}` +
-                   ` Q ${elbowX} ${y1} ${elbowX} ${y1 + dy * r}` +
-                   ` V ${y2 - dy * r}` +
-                   ` Q ${elbowX} ${y2} ${elbowX + ex * r} ${y2}` +
-                   ` H ${endX}`;
-        }
-        return `M ${x1} ${y1} H ${elbowX} V ${y2} H ${endX}`;
-    }
-
     selectArrow() {
         this.isSelected = true;
         disableAllSideBars();
@@ -226,12 +237,6 @@ class Arrow {
     }
 
     draw() {
-        // Clean up existing arrowhead element before redraw
-        if (this._arrowHeadEl) {
-            this._arrowHeadEl.remove();
-            this._arrowHeadEl = null;
-        }
-
         const childrenToRemove = [];
         const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
         for (let i = 0; i < this.group.children.length; i++) {
@@ -244,71 +249,7 @@ class Arrow {
         childrenToRemove.forEach(child => this.group.removeChild(child));
         if (!this._skipAnchors) this.anchors = [];
 
-        let pathData;
-        let arrowEndPoint = this.endPoint;
-
-        const elbowX = this.elbowX !== null ? this.elbowX : (this.startPoint.x + this.endPoint.x) / 2;
-
-        if (this.arrowCurved === "curved" && this.controlPoint1 && this.controlPoint2) {
-            if (isNaN(this.controlPoint1.x) || isNaN(this.controlPoint1.y) ||
-                isNaN(this.controlPoint2.x) || isNaN(this.controlPoint2.y)) {
-                this.initializeCurveControlPoints();
-            }
-
-            pathData = `M ${this.startPoint.x} ${this.startPoint.y} ` +
-                      `C ${this.controlPoint1.x} ${this.controlPoint1.y}, ` +
-                      `${this.controlPoint2.x} ${this.controlPoint2.y}, ` +
-                      `${this.endPoint.x} ${this.endPoint.y}`;
-
-            // Shorten curve endpoint so arrowhead sits cleanly at the tip
-            const t = 0.95;
-            const tangent = this.getCubicBezierTangent(t);
-            const curveAngle = Math.atan2(tangent.y, tangent.x);
-
-            if (this.arrowHeadStyle && this.arrowHeadStyle !== 'none') {
-                arrowEndPoint = {
-                    x: this.endPoint.x - (this.arrowHeadLength * 0.3) * Math.cos(curveAngle),
-                    y: this.endPoint.y - (this.arrowHeadLength * 0.3) * Math.sin(curveAngle)
-                };
-
-                pathData = `M ${this.startPoint.x} ${this.startPoint.y} ` +
-                          `C ${this.controlPoint1.x} ${this.controlPoint1.y}, ` +
-                          `${this.controlPoint2.x} ${this.controlPoint2.y}, ` +
-                          `${arrowEndPoint.x} ${arrowEndPoint.y}`;
-            }
-        } else if (this.arrowCurved === "elbow") {
-            pathData = this._buildElbowPath(elbowX, false);
-        } else {
-            pathData = `M ${this.startPoint.x} ${this.startPoint.y} L ${this.endPoint.x} ${this.endPoint.y}`;
-        }
-
-        // Render arrowhead
-        const headAngle = this._getArrowAngle(elbowX);
-        if (this.arrowHeadStyle === "default") {
-            const pts = this._getArrowHeadPoints(headAngle);
-            pathData += ` M ${pts.x3} ${pts.y3} L ${this.endPoint.x} ${this.endPoint.y} L ${pts.x4} ${pts.y4}`;
-        } else {
-            this._renderArrowHead(headAngle);
-        }
-
-        const arrowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        arrowPath.setAttribute("d", pathData);
-        arrowPath.setAttribute("stroke", this.options.stroke);
-        arrowPath.setAttribute("stroke-width", this.options.strokeWidth);
-        arrowPath.setAttribute("fill", this.options.fill);
-
-        if (this.options.strokeDasharray) {
-             arrowPath.setAttribute("stroke-dasharray", this.options.strokeDasharray);
-        } else {
-             arrowPath.removeAttribute("stroke-dasharray");
-        }
-
-        arrowPath.setAttribute("stroke-linecap", "round");
-        arrowPath.setAttribute("stroke-linejoin", "round");
-        arrowPath.classList.add("arrow-path");
-
-        this.element = arrowPath;
-        this.group.appendChild(this.element);
+        this._renderBody();
 
         // Hit area - thicker invisible path for dblclick detection
         {
@@ -345,52 +286,88 @@ class Arrow {
         }
     }
 
-    _buildFullPathData() {
-        let pathData;
-        const elbowX = this.elbowX !== null ? this.elbowX : (this.startPoint.x + this.endPoint.x) / 2;
-
+    /** Shaft geometry as a plain description (see core/ArrowHeads.js). */
+    _shaftDescription() {
+        const start = { x: this.startPoint.x, y: this.startPoint.y };
+        const end = { x: this.endPoint.x, y: this.endPoint.y };
         if (this.arrowCurved === "curved" && this.controlPoint1 && this.controlPoint2) {
             if (isNaN(this.controlPoint1.x) || isNaN(this.controlPoint1.y) ||
                 isNaN(this.controlPoint2.x) || isNaN(this.controlPoint2.y)) {
                 this.initializeCurveControlPoints();
             }
-            pathData = `M ${this.startPoint.x} ${this.startPoint.y} ` +
-                      `C ${this.controlPoint1.x} ${this.controlPoint1.y}, ` +
-                      `${this.controlPoint2.x} ${this.controlPoint2.y}, ` +
-                      `${this.endPoint.x} ${this.endPoint.y}`;
+            return { kind: 'curved', start, end, c1: { ...this.controlPoint1 }, c2: { ...this.controlPoint2 } };
+        }
+        if (this.arrowCurved === "elbow") {
+            const elbowX = this.elbowX !== null ? this.elbowX : (start.x + end.x) / 2;
+            return { kind: 'elbow', start, end, elbowX };
+        }
+        return { kind: 'straight', start, end };
+    }
 
-            if (this.arrowHeadStyle && this.arrowHeadStyle !== 'none') {
-                const t = 0.95;
-                const tangent = this.getCubicBezierTangent(t);
-                const angle = Math.atan2(tangent.y, tangent.x);
-                const arrowEndPoint = {
-                    x: this.endPoint.x - (this.arrowHeadLength * 0.3) * Math.cos(angle),
-                    y: this.endPoint.y - (this.arrowHeadLength * 0.3) * Math.sin(angle)
-                };
-                pathData = `M ${this.startPoint.x} ${this.startPoint.y} ` +
-                          `C ${this.controlPoint1.x} ${this.controlPoint1.y}, ` +
-                          `${this.controlPoint2.x} ${this.controlPoint2.y}, ` +
-                          `${arrowEndPoint.x} ${arrowEndPoint.y}`;
+    /** Heads + trimmed shaft for the current geometry and style. */
+    _headLayout() {
+        return layoutArrowheads(this._shaftDescription(), {
+            startArrowhead: this.startArrowhead,
+            endArrowhead: this.endArrowhead,
+            strokeWidth: Number(this.options.strokeWidth) || 2,
+        });
+    }
+
+    /**
+     * Render shaft + heads with RoughJS into one group (this.element).
+     * The shaft carries the dash pattern; heads are always solid and share
+     * the shaft's seed and roughness so nothing jitters between redraws.
+     */
+    _renderBody() {
+        const layout = this._headLayout();
+        const roughness = Number.isFinite(Number(this.options.roughness)) ? Number(this.options.roughness) : 1;
+        const strokeWidth = Number(this.options.strokeWidth) || 2;
+        const seed = this.options.seed;
+        const body = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        body.setAttribute("class", "arrow-body");
+        body.setAttribute("stroke-linecap", "round");
+        body.setAttribute("stroke-linejoin", "round");
+
+        const shaft = rc.path(shaftPathData(layout.shaft, this.arrowCurveAmount), {
+            stroke: this.options.stroke,
+            strokeWidth,
+            roughness,
+            seed,
+            fill: undefined,
+            preserveVertices: true,
+            strokeLineDash: dashArray(this.options.strokeDasharray),
+            disableMultiStroke: !!this.options.strokeDasharray,
+        });
+        if (shaft) {
+            shaft.setAttribute?.("class", "arrow-path");
+            body.appendChild(shaft);
+        }
+        for (const end of ['start', 'end']) {
+            const nodes = renderArrowhead(rc, layout[end], {
+                stroke: this.options.stroke,
+                strokeWidth,
+                roughness,
+                seed,
+            });
+            for (const node of nodes) {
+                node.setAttribute?.("class", `arrow-head arrow-head-${end}`);
+                body.appendChild(node);
             }
-        } else if (this.arrowCurved === "elbow") {
-            pathData = this._buildElbowPath(elbowX, false);
-        } else {
-            pathData = `M ${this.startPoint.x} ${this.startPoint.y} L ${this.endPoint.x} ${this.endPoint.y}`;
         }
 
-        // Only include arrowhead in path string for default style
-        if (this.arrowHeadStyle === "default") {
-            const angle = this._getArrowAngle(elbowX);
-            const pts = this._getArrowHeadPoints(angle);
-            pathData += ` M ${pts.x3} ${pts.y3} L ${this.endPoint.x} ${this.endPoint.y} L ${pts.x4} ${pts.y4}`;
+        if (this.element && this.element.parentNode === this.group) {
+            this.group.replaceChild ? this.group.replaceChild(body, this.element) : (this.group.removeChild(this.element), this.group.appendChild(body));
+        } else {
+            this.group.appendChild(body);
         }
-        return pathData;
+        this.element = body;
+        this._headLayoutCache = layout;
+        return layout;
     }
 
     _updatePathElement() {
         if (!this.element) return;
-        this.element.setAttribute("d", this._buildFullPathData());
-        this._updateArrowHead();
+        this._renderBody();
     }
 
     _updateHitArea() {
@@ -664,91 +641,9 @@ class Arrow {
         };
     }
 
-    _getArrowAngle(elbowX) {
-        if (this.arrowCurved === "curved" && this.controlPoint1 && this.controlPoint2) {
-            const tangent = this.getCubicBezierTangent(1.0);
-            return Math.atan2(tangent.y, tangent.x);
-        } else if (this.arrowCurved === "elbow") {
-            const ex = elbowX !== undefined ? elbowX : (this.elbowX !== null ? this.elbowX : (this.startPoint.x + this.endPoint.x) / 2);
-            return Math.atan2(0, this.endPoint.x - ex);
-        } else {
-            const dx = this.endPoint.x - this.startPoint.x;
-            const dy = this.endPoint.y - this.startPoint.y;
-            return Math.atan2(dy, dx);
-        }
-    }
-
-    _getArrowHeadPoints(angle) {
-        const rad = (this.arrowHeadAngleDeg * Math.PI) / 180;
-        return {
-            x3: this.endPoint.x - this.arrowHeadLength * Math.cos(angle - rad),
-            y3: this.endPoint.y - this.arrowHeadLength * Math.sin(angle - rad),
-            x4: this.endPoint.x - this.arrowHeadLength * Math.cos(angle + rad),
-            y4: this.endPoint.y - this.arrowHeadLength * Math.sin(angle + rad)
-        };
-    }
-
-    _renderArrowHead(angle) {
-        if (this._arrowHeadEl) {
-            this._arrowHeadEl.remove();
-            this._arrowHeadEl = null;
-        }
-
-        const style = this.arrowHeadStyle;
-        if (!style || style === 'default') return; // default is handled inline in pathData
-
-        const pts = this._getArrowHeadPoints(angle);
-        const tip = this.endPoint;
-        let el;
-
-        if (style === 'square') {
-            const size = this.arrowHeadLength * 0.7;
-            const perpX = -Math.sin(angle), perpY = Math.cos(angle);
-            const backX = -Math.cos(angle), backY = -Math.sin(angle);
-            const p1x = tip.x + perpX * size / 2, p1y = tip.y + perpY * size / 2;
-            const p2x = tip.x - perpX * size / 2, p2y = tip.y - perpY * size / 2;
-            const p3x = p2x + backX * size, p3y = p2y + backY * size;
-            const p4x = p1x + backX * size, p4y = p1y + backY * size;
-            el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            el.setAttribute("points", `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}`);
-            el.setAttribute("fill", "none");
-        } else {
-            // outline or solid - triangle
-            el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            el.setAttribute("points", `${pts.x3},${pts.y3} ${tip.x},${tip.y} ${pts.x4},${pts.y4}`);
-            el.setAttribute("fill", style === 'solid' ? this.options.stroke : "none");
-        }
-
-        el.setAttribute("stroke", this.options.stroke);
-        el.setAttribute("stroke-width", this.options.strokeWidth);
-        el.setAttribute("stroke-linejoin", "round");
-        el.classList.add("arrow-head");
-        this._arrowHeadEl = el;
-        this.group.appendChild(el);
-    }
-
-    _updateArrowHead() {
-        if (!this._arrowHeadEl) return;
-        const style = this.arrowHeadStyle;
-        if (style === 'default' || !style) return;
-
-        const elbowX = this.elbowX !== null ? this.elbowX : (this.startPoint.x + this.endPoint.x) / 2;
-        const angle = this._getArrowAngle(elbowX);
-        const pts = this._getArrowHeadPoints(angle);
-        const tip = this.endPoint;
-
-        if (style === 'square') {
-            const size = this.arrowHeadLength * 0.7;
-            const perpX = -Math.sin(angle), perpY = Math.cos(angle);
-            const backX = -Math.cos(angle), backY = -Math.sin(angle);
-            const p1x = tip.x + perpX * size / 2, p1y = tip.y + perpY * size / 2;
-            const p2x = tip.x - perpX * size / 2, p2y = tip.y - perpY * size / 2;
-            const p3x = p2x + backX * size, p3y = p2y + backY * size;
-            const p4x = p1x + backX * size, p4y = p1y + backY * size;
-            this._arrowHeadEl.setAttribute("points", `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}`);
-        } else {
-            this._arrowHeadEl.setAttribute("points", `${pts.x3},${pts.y3} ${tip.x},${tip.y} ${pts.x4},${pts.y4}`);
-        }
+    /** Outward direction (radians) of the end head; kept for callers. */
+    _getArrowAngle() {
+        return arrowEndAngles(this._shaftDescription()).endAngle;
     }
 
     updateSelectionControls() {
@@ -1540,7 +1435,7 @@ static getFrameAttachmentPoint(point, frame, tolerance = 20) {
     const offset = attachment.offset;
 
     if (shape.shapeName === 'rectangle') {
-        return Arrow._calcRectAttachedPoint(shape.x, shape.y, shape.width, shape.height, shape.rotation, side, offset);
+        return Arrow._calcRectAttachedPoint(shape.x, shape.y, shape.width, shape.height, shape.rotation, side, offset, cornerRadiusFor(shape));
     }
 
     if (shape.shapeName === 'circle') {
@@ -1576,7 +1471,7 @@ static getFrameAttachmentPoint(point, frame, tolerance = 20) {
     }
 
     if (shape.shapeName === 'frame') {
-        return Arrow._calcRectAttachedPoint(shape.x, shape.y, shape.width, shape.height, 0, side, offset);
+        return Arrow._calcRectAttachedPoint(shape.x, shape.y, shape.width, shape.height, 0, side, offset, cornerRadiusFor(shape));
     }
 
     if (shape.shapeName === 'freehandStroke') {
@@ -1597,9 +1492,14 @@ static getFrameAttachmentPoint(point, frame, tolerance = 20) {
     return { x: shape.x || 0, y: shape.y || 0 };
 }
 
-    static _calcRectAttachedPoint(rx, ry, rw, rh, rotation, side, offset) {
+    static _calcRectAttachedPoint(rx, ry, rw, rh, rotation, side, offset, cornerRadius = 0) {
         let localPoint;
-        switch (side) {
+        // Round edges: keep points that fall inside a corner on the curve.
+        const along = side === 'left' || side === 'right' ? offset?.y : offset?.x;
+        const onOutline = cornerRadius > 0 ? rectOutlinePoint(rw, rh, cornerRadius, side, along) : null;
+        if (onOutline) {
+            localPoint = { x: rx + onOutline.x, y: ry + onOutline.y };
+        } else switch (side) {
             case 'top':
                 localPoint = { x: rx + offset.x, y: ry };
                 break;
@@ -1972,7 +1872,13 @@ updateFrameContainment() {
             this.options.strokeDasharray = style === "dashed" ? "10,10" : (style === "dotted" ? "2,8" : "");
         }
         if (newOptions.arrowHeadStyle !== undefined) {
-            this.arrowHeadStyle = newOptions.arrowHeadStyle;
+            this.endArrowhead = normalizeArrowhead(newOptions.arrowHeadStyle);
+        }
+        if (newOptions.startArrowhead !== undefined) {
+            this.startArrowhead = normalizeArrowhead(newOptions.startArrowhead, 'none');
+        }
+        if (newOptions.endArrowhead !== undefined) {
+            this.endArrowhead = normalizeArrowhead(newOptions.endArrowhead);
         }
         if (newOptions.arrowCurved !== undefined) {
             const wasCurved = this.arrowCurved;
@@ -2006,6 +1912,7 @@ updateFrameContainment() {
 
         Object.keys(newOptions).forEach(key => newOptions[key] === undefined && delete newOptions[key]);
         this.options = { ...this.options, ...newOptions };
+        for (const key of ARROW_INSTANCE_KEYS) delete this.options[key];
 
         if (this.arrowOutlineStyle === 'solid' && this.options.strokeDasharray) {
              delete this.options.strokeDasharray;

@@ -2,6 +2,13 @@
 
 LixScript is a declarative DSL for programmatically creating diagrams in LixSketch. Write code to define shapes, connections, and layouts with full control over every property.
 
+> **Full reference:** LixScript is the headerless form of the [`.lixsketch` file format](src/content/docs/lixsketch-dsl.md)
+> (also published at [sketch.elixpo.com/docs/lixsketch-dsl](https://sketch.elixpo.com/docs/lixsketch-dsl)).
+> That reference covers every shape and property, bindings, groups, assets, error messages and the EBNF grammar.
+> Mermaid import is documented in [src/content/docs/mermaid.md](src/content/docs/mermaid.md)
+> ([sketch.elixpo.com/docs/mermaid](https://sketch.elixpo.com/docs/mermaid)).
+> This page is the short LixScript tour.
+
 ## Quick Start
 
 ```lixscript
@@ -53,7 +60,7 @@ Variables are resolved at parse time. Use them anywhere a value is expected.
 
 ### `rect` — Rectangle
 
-```lixscript
+```text
 rect <id> at <x>, <y> size <width>x<height> {
   stroke: <color>          // border color (default: #fff)
   strokeWidth: <number>    // border thickness (default: 2)
@@ -70,7 +77,7 @@ rect <id> at <x>, <y> size <width>x<height> {
 
 ### `circle` / `ellipse` — Circle or Ellipse
 
-```lixscript
+```text
 circle <id> at <x>, <y> size <width>x<height> {
   // Same properties as rect
   stroke: <color>
@@ -85,7 +92,7 @@ Position (`at`) defines the top-left of the bounding box; the center is calculat
 
 ### `text` — Text Label
 
-```lixscript
+```text
 text <id> at <x>, <y> {
   content: "<text>"         // the text content (required)
   color: <color>            // text color (default: #fff)
@@ -99,13 +106,14 @@ text <id> at <x>, <y> {
 
 Arrows connect two points or two shapes.
 
-```lixscript
+```text
 arrow <id> from <source> to <target> {
   stroke: <color>           // line color (default: #fff)
   strokeWidth: <number>     // line thickness (default: 2)
   style: <lineStyle>        // solid | dashed | dotted
-  head: <headStyle>         // default (more styles coming)
-  headLength: <number>      // arrowhead size in px (default: 15)
+  startHead: <head>         // none (default) | arrow | bar | dot | circle | triangle | triangle_outline
+                            // | diamond | diamond_outline | crowfoot_one | crowfoot_many | crowfoot_one_or_many | cross
+  endHead: <head>           // same values (default: arrow); `head:` is the legacy name for endHead
   curve: <curveMode>        // straight | curved | elbow
   curveAmount: <number>     // curve intensity (default: 50)
   label: "<text>"           // label on the arrow
@@ -118,7 +126,7 @@ arrow <id> from <source> to <target> {
 
 Arrows can connect to **absolute coordinates** or **shape references**:
 
-```lixscript
+```text
 // Absolute coordinates
 arrow a1 from 100, 200 to 300, 400 { ... }
 
@@ -138,7 +146,7 @@ When using shape references, arrows are **auto-attached** — they'll update pos
 
 ### `line` — Undirected Line
 
-```lixscript
+```text
 line <id> from <source> to <target> {
   stroke: <color>           // line color (default: #fff)
   strokeWidth: <number>     // line thickness (default: 2)
@@ -153,7 +161,7 @@ Lines use the same `from ... to ...` syntax as arrows. Supports both absolute co
 
 ### `frame` — Frame / Group Container
 
-```lixscript
+```text
 frame <id> at <x>, <y> size <width>x<height> {
   name: "<display name>"    // frame label (default: the id)
   stroke: <color>           // border color (default: #555)
@@ -169,7 +177,7 @@ If `contains` is omitted, **all shapes** are added to the frame. Specify shape I
 
 ### `freehand` — Freehand Stroke
 
-```lixscript
+```text
 freehand <id> at 0, 0 {
   points: "x1,y1;x2,y2;x3,y3"  // semicolon-separated point list
   stroke: <color>                // stroke color (default: #fff)
@@ -234,11 +242,13 @@ rect box at 100, 100 size 200x80 {
 }
 
 // Inline (comma or semicolon separated)
-rect box at 100, 100 size 200x80 { stroke: #4A90D9, label: "My Box" }
+rect box2 at 100, 220 size 200x80 { stroke: #4A90D9, label: "My Box" }
 
 // No properties (uses defaults)
-rect box at 100, 100 size 200x80
+rect box3 at 100, 340 size 200x80
 ```
+
+Shape ids must be unique within a document.
 
 ---
 
@@ -338,7 +348,7 @@ const result = window.__lixscriptRender(parsed)
 
 Use hex colors (`#RGB` or `#RRGGBB`) or CSS color names:
 
-```lixscript
+```text
 stroke: #4A90D9        // hex
 fill: #fff             // short hex
 stroke: transparent    // keyword

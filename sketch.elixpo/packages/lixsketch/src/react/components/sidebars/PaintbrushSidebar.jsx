@@ -2,10 +2,10 @@
 
 import useSketchStore, { TOOLS } from '../../store/useSketchStore'
 import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
+import { OpacityControl } from './AppearanceControls'
 import { useState, useCallback } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
-
-const STROKE_COLORS = ['#1a1a20', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
+import { getStrokeSwatches, getThemeInk } from '../../../utils/themeColors.js'
 
 // Map taper UI values to perfect-freehand thinning values
 const TAPER_MAP = { uniform: 0, pen: 0.5, brush: 0.8 }
@@ -15,7 +15,7 @@ function ColorGrid({ colors, selected, onSelect }) {
     <div className="grid grid-cols-4 gap-1.5">
       {colors.map((c) => (
         <button key={c} onClick={() => onSelect(c)}
-          className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${selected === c ? 'border-[#7667a8] scale-110' : 'border-white/[0.08] hover:border-white/20'}`}
+          className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${selected === c ? 'border-accent scale-110' : 'border-white/[0.08] hover:border-white/20'}`}
           style={{ backgroundColor: c }}
         />
       ))}
@@ -27,7 +27,9 @@ export default function PaintbrushSidebar() {
   const { t } = useTranslation()
   const activeTool = useSketchStore((s) => s.activeTool)
   const selectedShapeSidebar = useSketchStore((s) => s.selectedShapeSidebar)
-  const [strokeColor, setStrokeColor] = useState('#fff')
+  const resolvedTheme = 'dark'
+  const [strokeColor, setStrokeColor] = useState(null)
+  const displayedStrokeColor = strokeColor ?? getThemeInk(resolvedTheme)
   const [thickness, setThickness] = useState(2)
   const [lineStyle, setLineStyle] = useState('solid')
   const [taper, setTaper] = useState('uniform')
@@ -43,10 +45,10 @@ export default function PaintbrushSidebar() {
   return (
     <ShapeSidebar visible={activeTool === TOOLS.FREEHAND || activeTool === TOOLS.DRAW_SHAPE || selectedShapeSidebar === 'paintbrush'}>
       <ToolbarButton tooltip={t('sidebar.strokeColor')}
-        preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: strokeColor }} />}
+        preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: displayedStrokeColor }} />}
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.stroke')}</p>
-        <ColorGrid colors={STROKE_COLORS} selected={strokeColor} onSelect={updateStroke} />
+        <ColorGrid colors={getStrokeSwatches(resolvedTheme)} selected={displayedStrokeColor} onSelect={updateStroke} />
       </ToolbarButton>
 
       <Divider />
@@ -56,7 +58,7 @@ export default function PaintbrushSidebar() {
         <div className="flex items-center gap-1">
           {[1, 2, 4, 7].map((w) => (
             <button key={w} onClick={() => updateThickness(w)}
-              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${thickness === w ? 'bg-[#7667a8]/20 text-[#7667a8]' : 'text-text-muted hover:bg-white/[0.06]'}`}
+              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${thickness === w ? 'bg-accent/15 text-accent' : 'text-text-muted hover:bg-white/[0.06]'}`}
             >
               <div className="w-5 rounded-full bg-current" style={{ height: Math.max(1, w) }} />
             </button>
@@ -75,7 +77,7 @@ export default function PaintbrushSidebar() {
             { v: 'brush', i: 'bxs-brush', l: 'Brush' },
           ].map((t) => (
             <button key={t.v} onClick={() => updateTaper(t.v)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${taper === t.v ? 'bg-[#7667a8] text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${taper === t.v ? 'bg-accent text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
             >
               <i className={`bx ${t.i} text-sm`} /> {t.l}
             </button>
@@ -94,7 +96,7 @@ export default function PaintbrushSidebar() {
             { v: 'rough', i: 'bxs-bolt', l: 'Rough' },
           ].map((r) => (
             <button key={r.v} onClick={() => updateRoughness(r.v)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${roughness === r.v ? 'bg-[#7667a8] text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${roughness === r.v ? 'bg-accent text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
             >
               <i className={`bx ${r.i} text-sm`} /> {r.l}
             </button>
@@ -112,6 +114,8 @@ export default function PaintbrushSidebar() {
           className="w-28 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#7667a8]"
         />
       </ToolbarButton>
+      <Divider />
+      <OpacityControl />
       <Divider />
       <LayerControls />
     </ShapeSidebar>

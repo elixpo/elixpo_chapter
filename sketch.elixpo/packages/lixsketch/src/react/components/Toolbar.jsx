@@ -55,8 +55,12 @@ function ToolIcon({ item, className = 'h-5 w-5' }) {
       </svg>
     )
   }
-  return <i className={`bx ${item.icon} text-xl`} />
+  return <i className={`bx ${item.icon} text-[18px] leading-none`} />
 }
+
+// Shortcut hint in the button's bottom-right corner; icons are nudged left so
+// the hint has its own gutter instead of clipping the glyph.
+const KEY_HINT_CLASS = 'pointer-events-none absolute bottom-[2px] right-[3px] text-[8.5px] font-medium leading-none tabular-nums'
 
 export default function Toolbar() {
   const activeTool = useSketchStore((s) => s.activeTool)
@@ -94,21 +98,21 @@ export default function Toolbar() {
 
   return (
     <>
-    <div data-canvas-toolbar className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-[46px] rounded-xl bg-surface z-[1000] flex flex-col items-center py-1.5 gap-0.5 font-[lixFont] max-h-[calc(100vh-120px)] overflow-visible`}>
+    <div data-canvas-toolbar className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-[48px] rounded-xl bg-surface z-[1000] flex flex-col items-center py-1.5 gap-0.5 font-[lixFont] max-h-[calc(100vh-120px)] overflow-visible`}>
       {/* Tool lock button at the top */}
       {!viewMode && (
         <>
           <button
             title="Tool Lock (Q)"
             onClick={toggleToolLock}
-            className={`relative w-[33px] h-[30px] flex items-center justify-center rounded-lg transition-all duration-200 ${
+            className={`relative w-[38px] h-[32px] flex items-center justify-center rounded-lg transition-all duration-200 ${
               toolLock
                 ? 'bg-accent-blue/20 text-accent-blue'
                 : 'text-text-dim hover:text-text-muted hover:bg-surface-hover'
             }`}
           >
-            <i className={`bx ${toolLock ? 'bxs-lock-alt' : 'bx-lock-alt'} text-lg`} />
-            <span className="absolute bottom-0.5 right-[-1px] text-[10px] leading-none opacity-50">Q</span>
+            <i className={`bx ${toolLock ? 'bxs-lock-alt' : 'bx-lock-alt'} -translate-x-[3px] text-[17px] leading-none`} />
+            <span className={`${KEY_HINT_CLASS} opacity-45`} aria-hidden="true">Q</span>
           </button>
           <div className="w-6 h-px bg-border-light my-0.5" />
         </>
@@ -133,7 +137,7 @@ export default function Toolbar() {
                 aria-label="More tools"
                 aria-expanded={moreOpen}
                 onClick={() => setMoreOpen((open) => !open)}
-                className={`relative flex h-[31px] w-[33px] cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${moreOpen || moreActive ? 'bg-accent/20 text-accent' : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}`}
+                className={`relative flex h-[32px] w-[38px] cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${moreOpen || moreActive ? 'bg-accent/20 text-accent' : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}`}
               >
                 {shownMoreItem ? <ToolIcon item={shownMoreItem} className="h-[18px] w-[18px]" /> : <i className="bx bx-dots-horizontal-rounded text-xl" />}
               </button>
@@ -164,7 +168,7 @@ export default function Toolbar() {
               key="ai"
               title={item.title}
               onClick={toggleAIModal}
-              className="w-[33px] h-[31px] flex items-center justify-center rounded-lg text-text-muted hover:text-accent hover:bg-surface-hover transition-all duration-200"
+              className="w-[38px] h-[32px] flex items-center justify-center rounded-lg text-text-muted hover:text-accent hover:bg-surface-hover transition-all duration-200"
             >
               <svg
                 width="20"
@@ -188,15 +192,15 @@ export default function Toolbar() {
             key={item.tool}
             title={item.title}
             onClick={() => setActiveTool(item.tool)}
-            className={`relative w-[33px] h-[31px] flex items-center justify-center rounded-lg transition-all duration-200 ${
+            className={`relative w-[38px] h-[32px] flex items-center justify-center rounded-lg transition-all duration-200 ${
               isActive
                 ? 'bg-accent-blue/20 text-accent-blue'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
-            <span style={item.rotate ? { transform: 'rotate(-45deg)' } : undefined}><ToolIcon item={item} /></span>
+            <span className="flex -translate-x-[3px]" style={item.rotate ? { transform: 'rotate(-45deg)' } : undefined}><ToolIcon item={item} className="h-[18px] w-[18px]" /></span>
             {item.key && (
-              <span className={`absolute bottom-0.5 right-[-1px] text-[10px] leading-none ${isActive ? 'opacity-60' : 'opacity-35'}`}>
+              <span className={`${KEY_HINT_CLASS} ${isActive ? 'opacity-70' : 'opacity-45'}`} aria-hidden="true">
                 {item.key}
               </span>
             )}

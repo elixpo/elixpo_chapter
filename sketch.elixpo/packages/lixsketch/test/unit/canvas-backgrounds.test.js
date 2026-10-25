@@ -8,10 +8,11 @@ import {
 import { exportBackground } from '../../../../src/utils/canvasBackgrounds.js'
 
 describe('canvas background palettes', () => {
-  it('starts the light palette with a true white canvas', () => {
+  it('starts the light palette with a soft off-white canvas', () => {
     expect(CANVAS_BACKGROUNDS.light.map(({ color }) => color)).toEqual([
-      '#FFFFFF', '#F6DBC0', '#F5EED2', '#F5F2ED', '#F5DABF',
+      '#FAFAF9', '#FFFFFF', '#F6DBC0', '#F5EED2', '#F5F2ED', '#F5DABF',
     ])
+    expect(DEFAULT_CANVAS_BACKGROUNDS.light).toBe('#FAFAF9')
   })
 
   it('keeps the established dark palette unchanged', () => {
@@ -22,11 +23,11 @@ describe('canvas background palettes', () => {
 
   it('restores independent valid choices for light and dark themes', () => {
     const values = new Map([
-      [canvasBackgroundStorageKey('light'), '#FFFFFF'],
+      [canvasBackgroundStorageKey('light'), '#F5EED2'],
       [canvasBackgroundStorageKey('dark'), '#181605'],
     ])
     const storage = { getItem: (key) => values.get(key) ?? null }
-    expect(readCanvasBackground('light', storage)).toBe('#FFFFFF')
+    expect(readCanvasBackground('light', storage)).toBe('#F5EED2')
     expect(readCanvasBackground('dark', storage)).toBe('#181605')
   })
 
@@ -36,20 +37,36 @@ describe('canvas background palettes', () => {
     expect(readCanvasBackground('dark', storage)).toBe(DEFAULT_CANVAS_BACKGROUNDS.dark)
   })
 
-  it('migrates the former warm light default to white', () => {
+  it('migrates the former warm light default to the soft default', () => {
     const values = new Map([[canvasBackgroundStorageKey('light'), '#F5F2ED']])
     const storage = {
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
     }
-    expect(readCanvasBackground('light', storage)).toBe('#FFFFFF')
+    expect(readCanvasBackground('light', storage)).toBe('#FAFAF9')
+    expect(readCanvasBackground('light', storage)).toBe('#FAFAF9')
+  })
+
+  it('migrates the former pure-white default once', () => {
+    const values = new Map([
+      [canvasBackgroundStorageKey('light'), '#FFFFFF'],
+      ['lixsketch-canvas-light-default-v2', '1'],
+    ])
+    const storage = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    }
+    expect(readCanvasBackground('light', storage)).toBe('#FAFAF9')
+    // Picking pure white afterwards is respected.
+    values.set(canvasBackgroundStorageKey('light'), '#FFFFFF')
     expect(readCanvasBackground('light', storage)).toBe('#FFFFFF')
   })
 
-  it('allows the former default to be selected after migration', () => {
+  it('allows the former defaults to be selected after migration', () => {
     const values = new Map([
       [canvasBackgroundStorageKey('light'), '#F5F2ED'],
       ['lixsketch-canvas-light-default-v2', '1'],
+      ['lixsketch-canvas-light-default-v3', '1'],
     ])
     const storage = { getItem: (key) => values.get(key) ?? null }
     expect(readCanvasBackground('light', storage)).toBe('#F5F2ED')

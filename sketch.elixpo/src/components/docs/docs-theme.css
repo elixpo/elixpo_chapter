@@ -29,7 +29,8 @@
  * Copied from blogs.elixpo/app/globals.css `:root`. Scoped to
  * `body.canvas-mode` so they only apply inside the canvas page and
  * don't leak to landing / blog / pricing on the sketch site. */
-body.canvas-mode.theme-light {
+body.canvas-mode,
+body.canvas-mode.ui-light {
   --bg-base: #f5f1fa;
   --bg-app: #fdfaff;
   --bg-surface: #f8f4fc;
@@ -59,8 +60,7 @@ body.canvas-mode.theme-light {
   --code-lang-text: #594768;
 }
 
-body.canvas-mode,
-body.canvas-mode.theme-dark {
+body.canvas-mode.ui-dark {
   --bg-base: #100c18;
   --bg-app: #171120;
   --bg-surface: #1d1628;
@@ -189,7 +189,7 @@ body.canvas-mode.theme-dark {
   text-underline-position: under;
 }
 
-body.canvas-mode.theme-dark .lix-sketch-theme code {
+body.canvas-mode.ui-dark .lix-sketch-theme code {
   color: #c4b5fd;
   background: rgba(196, 181, 253, 0.1);
 }

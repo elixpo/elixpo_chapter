@@ -26,6 +26,7 @@ const CANVAS_COMMANDS = [
   { label: 'Zoom out', icon: 'bx-minus', section: 'Editor', shortcut: 'Ctrl+-' },
   { label: 'Reset zoom', icon: 'bx-reset', section: 'Editor', shortcut: 'Ctrl+0' },
   { label: 'Zoom to fit all elements', icon: 'bx-fullscreen', section: 'Editor', shortcut: 'Shift+1' },
+  { label: 'Zoom to selection', icon: 'bx-zoom-in', section: 'Editor', shortcut: 'Shift+2', action: 'zoomToSelection' },
   { label: 'Toggle grid', icon: 'bx-grid-alt', section: 'Editor', shortcut: "Ctrl+'", action: 'toggleGrid' },
   { label: 'Toggle rulers', icon: 'bx-ruler', section: 'Editor', shortcut: 'Shift+R', action: 'toggleRulers' },
   { label: 'Select all', icon: 'bx-select-multiple', section: 'Editor', shortcut: 'Ctrl+A', action: 'selectAll' },
@@ -36,7 +37,6 @@ const CANVAS_COMMANDS = [
   { label: 'Hand (panning tool)', icon: 'bx-hand', section: 'Tools', shortcut: 'H', action: 'tool:pan' },
   { label: 'Selection', icon: 'bx-pointer', section: 'Tools', shortcut: 'V / 1', action: 'tool:select' },
   { label: 'Rectangle', icon: 'bx-rectangle', section: 'Tools', shortcut: 'R / 2', action: 'tool:rectangle' },
-  { label: 'Diamond', icon: 'bx-diamond', section: 'Tools', shortcut: '3', action: 'tool:diamond' },
   { label: 'Circle', icon: 'bx-circle', section: 'Tools', shortcut: 'O / 4', action: 'tool:circle' },
   { label: 'Arrow', icon: 'bx-right-arrow-alt', section: 'Tools', shortcut: 'A / 5', action: 'tool:arrow' },
   { label: 'Line', icon: 'bx-minus', section: 'Tools', shortcut: 'L / 6', action: 'tool:line' },
@@ -65,6 +65,18 @@ const CANVAS_COMMANDS = [
   { label: 'Copy selection', icon: 'bx-copy-alt', section: 'Selection shortcuts', shortcut: 'Ctrl+C' },
   { label: 'Paste selection', icon: 'bx-paste', section: 'Selection shortcuts', shortcut: 'Ctrl+V' },
   { label: 'Deselect', icon: 'bx-x', section: 'Selection shortcuts', shortcut: 'Esc' },
+  { label: 'Duplicate while dragging', icon: 'bx-copy', section: 'Selection shortcuts', shortcut: 'Alt+Drag' },
+  { label: 'Nudge selection', icon: 'bx-move', section: 'Selection shortcuts', shortcut: 'Arrows / Shift+Arrows' },
+  { label: 'Edit label', icon: 'bx-edit', section: 'Selection shortcuts', shortcut: 'Enter / Double-click' },
+  { label: 'Bring forward', icon: 'bx-layer-plus', section: 'Selection shortcuts', shortcut: 'Ctrl+]' },
+  { label: 'Send backward', icon: 'bx-layer-minus', section: 'Selection shortcuts', shortcut: 'Ctrl+[' },
+  { label: 'Bring to front', icon: 'bx-layer-plus', section: 'Selection shortcuts', shortcut: 'Ctrl+Shift+]' },
+  { label: 'Send to back', icon: 'bx-layer-minus', section: 'Selection shortcuts', shortcut: 'Ctrl+Shift+[' },
+  { label: 'Copy styles', icon: 'bx-palette', section: 'Selection shortcuts', shortcut: 'Ctrl+Alt+C' },
+  { label: 'Paste styles', icon: 'bx-palette', section: 'Selection shortcuts', shortcut: 'Ctrl+Alt+V' },
+  { label: 'New text', icon: 'bx-text', section: 'Drawing shortcuts', shortcut: 'Double-click canvas' },
+  { label: 'Keep tool after drawing', icon: 'bx-lock-alt', section: 'Drawing shortcuts', shortcut: 'Q' },
+  { label: 'Show shortcuts', icon: 'bx-help-circle', section: 'View shortcuts', shortcut: '?' },
   { label: 'Delete selection', icon: 'bx-trash', section: 'Selection shortcuts', shortcut: 'Del / Backspace' },
   { label: 'Pan canvas (hold)', icon: 'bx-hand', section: 'Drawing shortcuts', shortcut: 'Space' },
   { label: 'Draw straight (hold)', icon: 'bx-line-chart', section: 'Drawing shortcuts', shortcut: 'Shift' },
@@ -102,7 +114,6 @@ const TOOL_ACTION_MAP = {
   'tool:pan': TOOLS.PAN,
   'tool:select': TOOLS.SELECT,
   'tool:rectangle': TOOLS.RECTANGLE,
-  'tool:diamond': TOOLS.RECTANGLE, // diamond is a rectangle variant
   'tool:circle': TOOLS.CIRCLE,
   'tool:arrow': TOOLS.ARROW,
   'tool:line': TOOLS.LINE,
@@ -227,6 +238,9 @@ export default function CommandPalette() {
         break
       case 'redo':
         if (typeof window.redo === 'function') window.redo()
+        break
+      case 'zoomToSelection':
+        if (typeof window.zoomToSelection === 'function') window.zoomToSelection()
         break
       case 'selectAll':
         useSketchStore.getState().setActiveTool(TOOLS.SELECT)

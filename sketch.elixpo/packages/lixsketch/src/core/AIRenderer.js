@@ -1,4 +1,7 @@
 /* eslint-disable */
+
+import { parseMermaidFlowchart } from './MermaidFlowchartParser.js';
+
 /**
  * AIRenderer - Converts diagram JSON into shapes on the canvas.
  *
@@ -15,6 +18,8 @@
  * moving nodes keeps edges connected.
  */
 
+import { getSharedIconLibrary } from './IconLibrary.js';
+
 const PADDING = 80;
 const NODE_W = 160;
 const NODE_H = 60;
@@ -30,314 +35,33 @@ const ALIGN_THRESHOLD = 30;
 // MERMAID PARSER
 // ============================================================
 
+// Mermaid diagram types LixSketch does not render. Without this check their
+// source was parsed as flowchart text and produced boxes containing raw
+// syntax; now the parser reports them as unsupported (null).
+export const UNSUPPORTED_MERMAID_TYPES = [
+    'classDiagram', 'classDiagram-v2', 'stateDiagram', 'stateDiagram-v2', 'gantt', 'journey',
+    'gitGraph', 'mindmap', 'timeline', 'quadrantChart', 'requirementDiagram', 'C4Context',
+    'C4Container', 'C4Component', 'C4Dynamic', 'C4Deployment', 'sankey-beta', 'block-beta',
+    'packet-beta', 'architecture-beta', 'kanban', 'radar-beta', 'treemap-beta', 'zenuml',
+];
+
+export function unsupportedMermaidType(src) {
+    const first = String(src || '').split('\n').map(l => l.trim()).find(l => l && !l.startsWith('%%')) || '';
+    const keyword = first.split(/\s+/)[0].toLowerCase();
+    return UNSUPPORTED_MERMAID_TYPES.find(type => type.toLowerCase() === keyword) || null;
+}
+
+/**
+ * Parse + lay out a Mermaid flowchart (`graph` / `flowchart`). Returns the
+ * positioned diagram, or null when the source is not a flowchart or has
+ * syntax errors (use parseMermaidFlowchart for the error list).
+ */
 export function parseMermaid(src) {
-    const lines = src.trim().split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('%%'));
-    if (lines.length === 0) return null;
-
-    const headerMatch = lines[0].match(/^(graph|flowchart)\s+(TD|TB|LR|RL|BT)/i);
-    const direction = headerMatch ? headerMatch[2].toUpperCase() : 'TD';
-    const isHorizontal = direction === 'LR' || direction === 'RL';
-    const startIdx = headerMatch ? 1 : 0;
-
-    const nodesMap = new Map();
-    const edges = [];
-    const classDefs = new Map();   // classDef name -> { fill, stroke, strokeWidth }
-    const classAssigns = [];        // { nodeIds: [...], className }
-    const nodeStyles = new Map();   // Mermaid `style A fill:...,stroke:...`
-    const darkTheme = (() => {
-        if (typeof document === 'undefined') return true;
-        if (document.body) {
-            if (document.body.classList.contains('theme-dark')) return true;
-            if (document.body.classList.contains('theme-light')) return false;
-        }
-        return !document.documentElement || document.documentElement.classList.contains('dark');
-    })();
-    const palette = darkTheme
-        ? [
-            { fill: '#352b52', stroke: '#9d86df' },
-            { fill: '#403260', stroke: '#ad92ed' },
-            { fill: '#2f2948', stroke: '#927fd1' },
-            { fill: '#493568', stroke: '#b195e8' },
-            { fill: '#322747', stroke: '#9b83d7' },
-            { fill: '#3d2e58', stroke: '#a88add' },
-        ]
-        : [
-            { fill: '#eee9f7', stroke: '#7667a8' },
-            { fill: '#e6def2', stroke: '#8875b5' },
-            { fill: '#ddd2eb', stroke: '#6f5f9c' },
-            { fill: '#f2edf8', stroke: '#9a88bf' },
-            { fill: '#e2daf0', stroke: '#806cab' },
-            { fill: '#ebe4f5', stroke: '#705d9c' },
-        ];
-
-    function parseStyleProps(value) {
-        const props = {};
-        for (const part of value.split(',')) {
-            const separator = part.indexOf(':');
-            if (separator < 0) continue;
-            const key = part.slice(0, separator).trim().toLowerCase();
-            const val = part.slice(separator + 1).trim();
-            if (key === 'fill') props.fill = val;
-            else if (key === 'stroke') props.stroke = val;
-            else if (key === 'stroke-width') props.strokeWidth = parseFloat(val);
-            else if (key === 'color') props.labelColor = val;
-        }
-        return props;
-    }
-
-    // Clean <br/> and <br> tags in labels → newline marker
-    function cleanLabel(label) {
-        return label.replace(/<br\s*\/?>/gi, '\n').replace(/"/g, '');
-    }
-
-    function parseNodeRef(raw) {
-        raw = raw.trim();
-        if (!raw) return null;
-        let id, label, type;
-
-        // Circle: id((label))
-        let m = raw.match(/^(\w+)\(\((.+?)\)\)$/);
-        if (m) { id = m[1]; label = m[2]; type = 'circle'; }
-        // Diamond: id{label}
-        if (!m) { m = raw.match(/^(\w+)\{(.+?)\}$/); if (m) { id = m[1]; label = m[2]; type = 'diamond'; } }
-        // Asymmetric/flag: id>label]
-        if (!m) { m = raw.match(/^(\w+)>(.+?)\]$/); if (m) { id = m[1]; label = m[2]; type = 'asymmetric'; } }
-        // Rounded rect: id(label)
-        if (!m) { m = raw.match(/^(\w+)\((.+?)\)$/); if (m) { id = m[1]; label = m[2]; type = 'roundrect'; } }
-        // Rectangle: id[label]
-        if (!m) { m = raw.match(/^(\w+)\[(.+?)\]$/); if (m) { id = m[1]; label = m[2]; type = 'rectangle'; } }
-        // Plain id
-        if (!m) { id = raw; label = raw; type = 'rectangle'; }
-
-        label = cleanLabel(label);
-
-        if (!nodesMap.has(id)) {
-            nodesMap.set(id, { id, type, label });
-        } else if (label !== id) {
-            nodesMap.get(id).label = label;
-            nodesMap.get(id).type = type;
-        }
-        return id;
-    }
-
-    // Parse subgraphs
-    const subgraphs = [];
-    let currentSubgraph = null;
-
-    for (let i = startIdx; i < lines.length; i++) {
-        const line = lines[i].replace(/;$/, '').trim();
-        if (!line) continue;
-
-        // classDef: classDef green fill:#9f6,stroke:#333,stroke-width:2px;
-        const classDefMatch = line.match(/^classDef\s+(\w+)\s+(.+)$/i);
-        if (classDefMatch) {
-            const name = classDefMatch[1];
-            classDefs.set(name, parseStyleProps(classDefMatch[2].replace(/;$/, '')));
-            continue;
-        }
-
-        // Direct node styling must be consumed before node/edge parsing.
-        // Previously these lines fell through to `parseNodeRef`, producing
-        // visible boxes containing the raw `style A fill:...` source.
-        const styleMatch = line.match(/^style\s+([\w,-]+)\s+(.+)$/i);
-        if (styleMatch) {
-            const props = parseStyleProps(styleMatch[2].replace(/;$/, ''));
-            styleMatch[1].split(',').map(id => id.trim()).filter(Boolean)
-                .forEach(id => nodeStyles.set(id, props));
-            continue;
-        }
-
-        // Presentation-only directives do not represent diagram nodes.
-        if (/^(linkStyle|click)\b/i.test(line)) continue;
-
-        // class assignment: class sq,e green
-        const classMatch = line.match(/^class\s+(.+?)\s+(\w+)$/i);
-        if (classMatch) {
-            const nodeIds = classMatch[1].split(',').map(s => s.trim());
-            classAssigns.push({ nodeIds, className: classMatch[2] });
-            continue;
-        }
-
-        // Subgraph start: subgraph ID ["Label"]
-        const sgMatch = line.match(/^subgraph\s+(\w+)(?:\s*\[?"?(.+?)"?\]?)?$/i);
-        if (sgMatch) {
-            currentSubgraph = {
-                id: sgMatch[1],
-                label: sgMatch[2] || sgMatch[1],
-                nodeIds: [],
-            };
-            continue;
-        }
-
-        // Subgraph end
-        if (line.toLowerCase() === 'end' && currentSubgraph) {
-            subgraphs.push(currentSubgraph);
-            currentSubgraph = null;
-            continue;
-        }
-
-        // Helper to add edge nodes to current subgraph
-        function addToSubgraph(fromId, toId) {
-            if (currentSubgraph) {
-                if (fromId && !currentSubgraph.nodeIds.includes(fromId)) currentSubgraph.nodeIds.push(fromId);
-                if (toId && !currentSubgraph.nodeIds.includes(toId)) currentSubgraph.nodeIds.push(toId);
-            }
-        }
-
-        // Labeled edge: A -- text --> B
-        let match = line.match(/^(.+?)\s*--\s*(.+?)\s*-->\s*(.+)$/);
-        if (match) {
-            const fromId = parseNodeRef(match[1].trim());
-            const toId = parseNodeRef(match[3].trim());
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: cleanLabel(match[2].trim()), directed: true, style: 'normal' });
-            addToSubgraph(fromId, toId);
-            continue;
-        }
-
-        // Dotted arrow: A -.-> B (with optional |label|)
-        match = line.match(/^(.+?)\s*-\.->?\s*(?:\|([^|]*)\|)?\s*(.+)$/);
-        if (match) {
-            const fromId = parseNodeRef(match[1].trim());
-            const toId = parseNodeRef(match[3].trim());
-            const edgeLabel = match[2] ? cleanLabel(match[2].trim()) : undefined;
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: true, style: 'dotted' });
-            addToSubgraph(fromId, toId);
-            continue;
-        }
-
-        // Thick arrow: A ==> B (with optional |label|)
-        match = line.match(/^(.+?)\s*==>\s*(?:\|([^|]*)\|)?\s*(.+)$/);
-        if (match) {
-            const fromId = parseNodeRef(match[1].trim());
-            const toId = parseNodeRef(match[3].trim());
-            const edgeLabel = match[2] ? cleanLabel(match[2].trim()) : undefined;
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: true, style: 'thick' });
-            addToSubgraph(fromId, toId);
-            continue;
-        }
-
-        // Undirected line: A --- B
-        match = line.match(/^(.+?)\s*(-{3,})\s*(?:\|([^|]*)\|)?\s*(.+)$/);
-        if (match && !match[2].includes('>')) {
-            const fromId = parseNodeRef(match[1].trim());
-            const toId = parseNodeRef(match[4].trim());
-            const edgeLabel = match[3] ? cleanLabel(match[3].trim()) : undefined;
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: false, style: 'normal' });
-            addToSubgraph(fromId, toId);
-            continue;
-        }
-
-        // Directed edge: A --> B (with optional |label|)
-        match = line.match(/^(.+?)\s*(-{1,2}>|-->)\s*(?:\|([^|]*)\|)?\s*(.+)$/);
-        if (match) {
-            const fromId = parseNodeRef(match[1].trim());
-            const toId = parseNodeRef(match[4].trim());
-            const edgeLabel = match[3] ? cleanLabel(match[3].trim()) : undefined;
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: true, style: 'normal' });
-            addToSubgraph(fromId, toId);
-            continue;
-        }
-
-        // Plain node reference
-        const nodeId = parseNodeRef(line);
-        if (nodeId && currentSubgraph) {
-            if (!currentSubgraph.nodeIds.includes(nodeId)) currentSubgraph.nodeIds.push(nodeId);
-        }
-    }
-
-    if (nodesMap.size === 0) return null;
-
-    // Apply classDef styles to nodes
-    for (const assign of classAssigns) {
-        const style = classDefs.get(assign.className);
-        if (!style) continue;
-        for (const nid of assign.nodeIds) {
-            const node = nodesMap.get(nid);
-            if (node) {
-                if (style.fill) node.fill = style.fill;
-                if (style.stroke) node.stroke = style.stroke;
-                if (style.strokeWidth) node.strokeWidth = style.strokeWidth;
-            }
-        }
-    }
-
-
-    for (const [nid, style] of nodeStyles) {
-        const node = nodesMap.get(nid);
-        if (node) Object.assign(node, style);
-    }
-
-    // Topological BFS layering
-    const nodeIds = Array.from(nodesMap.keys());
-    const children = new Map();
-    const parents = new Map();
-    nodeIds.forEach(id => { children.set(id, []); parents.set(id, []); });
-    edges.forEach(e => {
-        if (children.has(e.from)) children.get(e.from).push(e.to);
-        if (parents.has(e.to)) parents.get(e.to).push(e.from);
-    });
-
-    const layers = new Map();
-    const roots = nodeIds.filter(id => parents.get(id).length === 0);
-    if (roots.length === 0) roots.push(nodeIds[0]);
-
-    const queue = roots.map(id => ({ id, layer: 0 }));
-    const visited = new Set();
-    while (queue.length > 0) {
-        const { id, layer } = queue.shift();
-        if (visited.has(id)) { if (layer > (layers.get(id) || 0)) layers.set(id, layer); continue; }
-        visited.add(id);
-        layers.set(id, Math.max(layer, layers.get(id) || 0));
-        for (const child of children.get(id) || []) queue.push({ id: child, layer: layer + 1 });
-    }
-    nodeIds.forEach(id => { if (!visited.has(id)) layers.set(id, 0); });
-
-    const layerGroups = new Map();
-    layers.forEach((layer, id) => {
-        if (!layerGroups.has(layer)) layerGroups.set(layer, []);
-        layerGroups.get(layer).push(id);
-    });
-
-    // Compute dynamic node sizes based on label length
-    const nodes = [];
-    let paletteIndex = 0;
-    Array.from(layerGroups.keys()).sort((a, b) => a - b).forEach((layerIdx, li) => {
-        const group = layerGroups.get(layerIdx);
-        const startOffset = -(group.length * H_SPACING) / 2 + H_SPACING / 2;
-        group.forEach((id, gi) => {
-            const nd = nodesMap.get(id);
-            const x = isHorizontal ? li * H_SPACING : startOffset + gi * H_SPACING;
-            const y = isHorizontal ? startOffset + gi * V_SPACING : li * V_SPACING;
-            // Compute node size based on label lines
-            const labelLines = (nd.label || '').split('\n');
-            const maxLineLen = Math.max(...labelLines.map(l => l.length));
-            const nw = Math.max(NODE_W, maxLineLen * 10 + 40);
-            const nh = Math.max(NODE_H, labelLines.length * 20 + 20);
-            nodes.push({
-                id: nd.id, type: nd.type, label: nd.label,
-                x, y, width: nw, height: nh,
-                fill: nd.fill || palette[paletteIndex % palette.length].fill,
-                stroke: nd.stroke || palette[paletteIndex % palette.length].stroke,
-                strokeWidth: nd.strokeWidth,
-                labelColor: nd.labelColor,
-            });
-            paletteIndex += 1;
-        });
-    });
-
-    return {
-        title: 'Mermaid Diagram',
-        direction,
-        nodes,
-        edges: edges.map(e => ({
-            from: e.from, to: e.to, label: e.label,
-            directed: e.directed !== false,
-            style: e.style || 'normal',
-        })),
-        subgraphs: subgraphs.length > 0 ? subgraphs.map(sg => ({
-            id: sg.id, label: sg.label, nodes: sg.nodeIds,
-        })) : undefined,
-    };
+    if (typeof src !== 'string' || !src.trim()) return null;
+    if (unsupportedMermaidType(src)) return null;
+    const diagram = parseMermaidFlowchart(src);
+    if (diagram.errors.length || !diagram.nodes.length) return null;
+    return diagram;
 }
 
 // ============================================================
@@ -434,7 +158,7 @@ export function renderAIDiagram(diagram) {
                 shape.rotation = 45;
                 shape.draw();
             } else if (node.type === 'roundrect' && window.Rectangle) {
-                shape = new window.Rectangle(nx, ny, nw, nh, { ...nodeOpts, cornerRadius: Math.min(nw, nh) * 0.2 });
+                shape = new window.Rectangle(nx, ny, nw, nh, { ...nodeOpts, edges: 'round' });
             } else if (window.Rectangle) {
                 shape = new window.Rectangle(nx, ny, nw, nh, nodeOpts);
             }
@@ -532,7 +256,10 @@ export function renderAIDiagram(diagram) {
                 const opts = {
                     stroke: edgeStroke, strokeWidth: edgeStrokeWidth, roughness: 1,
                     arrowOutlineStyle: edgeLineStyle,
-                    arrowHeadStyle: edge.arrowHeadStyle || 'default',
+                    // Independent heads; the legacy single arrowHeadStyle
+                    // (default/outline/solid/square) still maps to the end.
+                    startArrowhead: edge.startArrowhead || (edge.bidirectional ? 'arrow' : 'none'),
+                    endArrowhead: edge.endArrowhead || edge.arrowHeadStyle || 'arrow',
                 };
 
                 if (edgeStyle.type === 'curved') {
@@ -866,13 +593,12 @@ export function autoAttach(arrow, shape, isStart, contactPoint) {
  */
 async function fetchAndPlaceIcon(keyword, x, y, w, h, placeholderShape, frame) {
     try {
-        const res = await fetch(`/api/icons/search?q=${encodeURIComponent(keyword)}&inline=1`);
-        if (!res.ok) return;
-        const data = await res.json();
-        const results = data.results;
-        if (!results || results.length === 0 || !results[0].svg) return;
-
-        const svgContent = results[0].svg;
+        // Client-side index (shared with the icon sidebar); no server round trip.
+        const library = getSharedIconLibrary();
+        const results = await library.search({ q: keyword, limit: 1 });
+        if (!results || results.length === 0) return;
+        const svgContent = results[0].svg || await library.getSvg(results[0].filename);
+        if (!svgContent) return;
 
         // Use the engine's icon placement bridge if available
         if (window.svg && window.IconShape) {
@@ -1594,6 +1320,17 @@ export function initAIRenderer() {
         if (!diagram) { console.error('[AIRenderer] Mermaid parse failed'); return false; }
         return _fcCanvas(diagram);
     };
+
+    // Unified Mermaid import (native shapes or mermaid-rendered image,
+    // with mermaid's own syntax errors) — see MermaidRouter.js. The router
+    // is loaded lazily; the legacy bridges above stay as fallbacks.
+    const router = () => import('./MermaidRouter.js');
+    window.__setMermaidLoader = (loader) => router().then(r => r.setMermaidLoader(loader));
+    window.__mermaidCheck = async (src) => (await router()).planMermaid(src);
+    window.__mermaidPreviewDetailed = async (src) => (await router()).previewMermaid(src);
+    window.__mermaidRenderDetailed = async (src) => (await router()).renderMermaidOnCanvas(src);
+    window.__mermaidPreview = async (src) => (await (await router()).previewMermaid(src)).svg;
+    window.__mermaidRenderer = async (src) => (await (await router()).renderMermaidOnCanvas(src)).ok;
 
     // Pre-load renderers so they're ready
     loadSequenceRenderer();

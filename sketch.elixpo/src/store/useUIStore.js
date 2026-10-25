@@ -1,5 +1,19 @@
 import { create } from 'zustand'
 import useSketchStore from '@/store/useSketchStore'
+import {
+  isTheme,
+  readCanvasTheme,
+  readUITheme,
+  resolveThemeValue,
+  writeCanvasTheme,
+  writeUITheme,
+} from '@/utils/themePreferences'
+import {
+  getThemeInk,
+  isThemeOwnedColor,
+  normalizeColor,
+  normalizeSceneColorsForTheme,
+} from '@elixpo/lixsketch/src/utils/themeColors.js'
 
 export const MAX_WORKSPACE_NAME_LENGTH = 20
 
@@ -7,47 +21,22 @@ function limitWorkspaceName(name) {
   return String(name ?? '').slice(0, MAX_WORKSPACE_NAME_LENGTH)
 }
 
+function prefersDark() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+/** Resolve a stored theme ('light' | 'dark' | 'system') to 'light' | 'dark'. */
 export function resolveTheme(theme) {
-  if (theme !== 'system') return theme === 'light' ? 'light' : 'dark'
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'dark'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return resolveThemeValue(theme, theme === 'system' && prefersDark())
 }
 
-function themeColor(value, resolved) {
-  if (!value || typeof value !== 'string') return value
-  const normalized = value.toLowerCase().trim()
-  if (['#e0e0e0', '#e8e3f3'].includes(normalized)) {
-    return resolved === 'light' ? '#000000' : '#ffffff'
-  }
-  if (resolved === 'dark' && ['#000', '#000000', 'black', '#1a1a2e'].includes(normalized)) {
-    return '#ffffff'
-  }
-  if (resolved === 'light' && ['#fff', '#ffffff', 'white'].includes(normalized)) {
-    return '#000000'
-  }
-  return value
+function browserStorage() {
+  if (typeof window === 'undefined') return null
+  try { return window.localStorage } catch { return null }
 }
 
-/** Normalize serialized theme-default colors before constructors draw them. */
-export function normalizeSceneColorsForTheme(sceneData, resolved) {
-  if (!Array.isArray(sceneData?.shapes)) return sceneData
-  for (const shape of sceneData.shapes) {
-    shape.labelColor = themeColor(shape.labelColor, resolved)
-    if (shape.options) {
-      shape.options.stroke = themeColor(shape.options.stroke, resolved)
-      shape.options.fill = themeColor(shape.options.fill, resolved)
-      shape.options.labelColor = themeColor(shape.options.labelColor, resolved)
-    }
-    for (const htmlKey of ['groupHTML', 'elementHTML']) {
-      if (typeof shape[htmlKey] !== 'string') continue
-      shape[htmlKey] = shape[htmlKey].replace(
-        /\b(fill|stroke)=(['"])(#fff(?:fff)?|white|#000(?:000)?|black|#1a1a2e)\2/gi,
-        (match, attribute, quote, color) => `${attribute}=${quote}${themeColor(color, resolved)}${quote}`,
-      )
-    }
-  }
-  return sceneData
-}
+export { normalizeSceneColorsForTheme }
 
 /**
  * Swap black↔white colors on all shapes when theme changes.
@@ -58,21 +47,10 @@ function invertShapeColors(prevResolved, nextResolved) {
   const shapes = window.shapes
   if (!shapes || shapes.length === 0) return
 
-  // Light tools now use pure black, while older scenes may use near-black.
-  // Treat both as theme-owned colors so existing strokes do not
-  // disappear when the canvas changes underneath them.
-  const fromColors = nextResolved === 'light'
-    ? new Set(['#ffffff'])
-    : new Set(['#000000', '#1a1a2e'])
-  const to = nextResolved === 'light' ? '#000000' : '#ffffff'
-
-  const normalize = (c) => {
-    if (!c || c === 'transparent' || c === 'none') return c
-    const lower = c.toLowerCase().trim()
-    if (lower === '#fff' || lower === '#ffffff' || lower === 'white') return '#ffffff'
-    if (lower === '#000' || lower === '#000000' || lower === 'black') return '#000000'
-    return lower
-  }
+  // Every theme default (soft ink, plus legacy #000/#fff/near-black and
+  // lavender label greys) follows the theme; explicit user colors stay put.
+  const to = getThemeInk(nextResolved)
+  const isOwned = (c) => isThemeOwnedColor(c) && normalizeColor(c) !== to
 
   for (const shape of shapes) {
     let changed = false
@@ -133,37 +111,34 @@ function invertShapeColors(prevResolved, nextResolved) {
       }
     } else {
       if (shape.options) {
-        if (fromColors.has(normalize(shape.options.stroke))) {
+        if (isOwned(shape.options.stroke)) {
           shape.options.stroke = to
           changed = true
         }
-        if (fromColors.has(normalize(shape.options.fill))) {
+        if (isOwned(shape.options.fill)) {
           shape.options.fill = to
           changed = true
         }
       }
       // Text shapes store color directly
-      if (shape.color !== undefined && fromColors.has(normalize(shape.color))) {
+      if (shape.color !== undefined && isOwned(shape.color)) {
         shape.color = to
         changed = true
       }
-      if (shape.strokeColor !== undefined && fromColors.has(normalize(shape.strokeColor))) {
+      if (shape.strokeColor !== undefined && isOwned(shape.strokeColor)) {
         shape.strokeColor = to
         changed = true
       }
-      if (shape.labelColor !== undefined) {
-        const labelColor = normalize(shape.labelColor)
-        if (fromColors.has(labelColor) || ['#e0e0e0', '#e8e3f3'].includes(labelColor)) {
-          shape.labelColor = to
-          changed = true
-        }
+      if (shape.labelColor !== undefined && isOwned(shape.labelColor)) {
+        shape.labelColor = to
+        changed = true
       }
       // Text shapes keep their color in the restored SVG rather than on the
       // shape object. Update only theme-default fills; explicit user colors
       // remain untouched.
       if (shape.group) {
         shape.group.querySelectorAll('[fill]').forEach((element) => {
-          if (fromColors.has(normalize(element.getAttribute('fill')))) {
+          if (isOwned(element.getAttribute('fill'))) {
             element.setAttribute('fill', to)
             changed = true
           }
@@ -176,45 +151,50 @@ function invertShapeColors(prevResolved, nextResolved) {
   }
 }
 
+/**
+ * Apply the CANVAS theme. The engine reads `body.theme-light|dark` for
+ * theme-default stroke colours and `html[data-canvas-theme]` for the canvas
+ * background; nothing else on the page depends on it.
+ */
 export function applyTheme(theme) {
-  // Apply one resolved theme class to the complete canvas shell. Global
-  // tokens already default to light, so hydration no longer flashes dark.
-  const body = document.body
-  if (!body) return
+  const body = typeof document !== 'undefined' ? document.body : null
+  if (!body) return resolveTheme(theme)
   const resolved = resolveTheme(theme)
   body.classList.remove('theme-dark', 'theme-light')
   body.classList.add(`theme-${resolved}`)
   body.dataset.resolvedTheme = resolved
   document.documentElement.dataset.canvasTheme = resolved
+  return resolved
+}
+
+/** Apply the workspace chrome (UI) theme. Independent from the canvas. */
+export function applyUITheme(theme) {
+  const body = typeof document !== 'undefined' ? document.body : null
+  if (!body) return resolveTheme(theme)
+  const resolved = resolveTheme(theme)
+  body.classList.remove('ui-dark', 'ui-light')
+  body.classList.add(`ui-${resolved}`)
+  body.dataset.uiTheme = resolved
   document.documentElement.style.colorScheme = resolved
   return resolved
 }
 
-function readStoredTheme() {
-  if (typeof window === 'undefined') return 'dark'
-  try {
-    const theme = localStorage.getItem('theme')
-    if (theme && ['dark', 'light', 'system'].includes(theme)) return theme
-  } catch {}
-  try {
-    const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}')
-    return ['dark', 'light', 'system'].includes(prefs.theme) ? prefs.theme : 'dark'
-  } catch {
-    return 'dark'
+/**
+ * Undo everything the workspace applied to <html>/<body> so site routes
+ * reached by client navigation render with their own light defaults.
+ */
+export function clearWorkspaceTheme() {
+  if (typeof document === 'undefined') return
+  const body = document.body
+  const root = document.documentElement
+  body?.classList.remove('canvas-mode', 'theme-dark', 'theme-light', 'ui-dark', 'ui-light')
+  if (body) {
+    delete body.dataset.resolvedTheme
+    delete body.dataset.uiTheme
   }
-}
-
-function persistTheme(theme) {
-  if (typeof window === 'undefined') return
-  try {
-    const prefs = JSON.parse(localStorage.getItem('lix_ui_prefs') || '{}')
-    localStorage.setItem('lix_ui_prefs', JSON.stringify({ ...prefs, theme }))
-  } catch {
-    localStorage.setItem('lix_ui_prefs', JSON.stringify({ theme }))
-  }
-  try {
-    localStorage.setItem('theme', theme)
-  } catch {}
+  delete root.dataset.canvasTheme
+  root.style.removeProperty('color-scheme')
+  root.style.removeProperty('--lixsketch-canvas-background')
 }
 
 function applyCanvasTheme(resolved) {
@@ -308,30 +288,49 @@ const useUIStore = create((set, get) => ({
   setCanvasLoading: (loading, message) => set({ canvasLoading: loading, canvasLoadingMessage: message || 'Loading canvas...' }),
 
   // --- Theme ---
-  theme: 'dark',
-  resolvedTheme: 'dark',
+  // `theme` / `resolvedTheme` are the CANVAS theme (kept under these names
+  // for existing consumers: sidebars, exports, docs, autosave).
+  // `uiTheme` / `resolvedUITheme` are the workspace chrome theme.
+  // Both default to light and are persisted separately.
+  theme: 'light',
+  resolvedTheme: 'light',
+  uiTheme: 'light',
+  resolvedUITheme: 'light',
   hydrateTheme: () => {
-    const theme = readStoredTheme()
+    const storage = browserStorage()
+    const theme = readCanvasTheme(storage)
+    const uiTheme = readUITheme(storage)
     const resolvedTheme = applyTheme(theme)
-    set({ theme, resolvedTheme })
+    const resolvedUITheme = applyUITheme(uiTheme)
+    set({ theme, resolvedTheme, uiTheme, resolvedUITheme })
     applyCanvasTheme(resolvedTheme)
   },
   syncSystemTheme: () => {
-    if (get().theme !== 'system') return
-    const previous = get().resolvedTheme
+    const { theme, uiTheme, resolvedTheme: previous } = get()
+    if (uiTheme === 'system') set({ resolvedUITheme: applyUITheme('system') })
+    if (theme !== 'system') return
     const resolvedTheme = applyTheme('system')
     invertShapeColors(previous, resolvedTheme)
     set({ resolvedTheme })
     applyCanvasTheme(resolvedTheme)
   },
+  /** Change the canvas theme only. */
   setTheme: (newTheme) => {
-    if (!['dark', 'light', 'system'].includes(newTheme)) return
+    if (!isTheme(newTheme)) return
     const previous = get().resolvedTheme
     const resolvedTheme = applyTheme(newTheme)
     invertShapeColors(previous, resolvedTheme)
     set({ theme: newTheme, resolvedTheme })
     applyCanvasTheme(resolvedTheme)
-    persistTheme(newTheme)
+    writeCanvasTheme(browserStorage(), newTheme)
+  },
+  setCanvasTheme: (newTheme) => get().setTheme(newTheme),
+  /** Change the workspace chrome theme only; the canvas is untouched. */
+  setUITheme: (newTheme) => {
+    if (!isTheme(newTheme)) return
+    const resolvedUITheme = applyUITheme(newTheme)
+    set({ uiTheme: newTheme, resolvedUITheme })
+    writeUITheme(browserStorage(), newTheme)
   },
 
   // --- Language / i18n ---

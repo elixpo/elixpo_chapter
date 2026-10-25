@@ -18,6 +18,17 @@
  * specific contexts (e.g. when the host's overlay is focused).
  */
 
+import {
+    applyLayerAction,
+    clearSelection,
+    copyStyles,
+    editSelectedLabel,
+    layerActionForShortcut,
+    nudgeDeltaForKey,
+    nudgeSelection,
+    pasteStyles,
+} from './core/CanvasCommands.js';
+
 // NB: tool names are inlined as string literals below (rather than imported
 // from `./index.js`) to avoid a module-init cycle. EngineShortcuts.js and
 // index.js import each other; if SHORTCUT_MAP read TOOLS.PAN at the top
@@ -205,16 +216,49 @@ export function installEngineShortcuts(engine, options = {}) {
                 } catch (err) { console.warn('[EngineShortcuts] ungroup failed:', err); }
                 return;
             }
-            // Ctrl+D = duplicate (engine-handled elsewhere — just preventDefault to
-            // stop the browser's bookmark dialog).
-            if (key === 'd') { e.preventDefault(); return; }
+            // Ctrl+D = duplicate with a small offset (also blocks the bookmark dialog).
+            if (key === 'd' && !e.shiftKey && !e.altKey) {
+                e.preventDefault();
+                if (typeof window.duplicateSelected === 'function') window.duplicateSelected();
+                return;
+            }
+            const layerAction = layerActionForShortcut(e);
+            if (layerAction) {
+                e.preventDefault();
+                applyLayerAction(layerAction, window);
+                return;
+            }
+            // Ctrl+Alt+C / Ctrl+Alt+V = copy / paste styles.
+            if (e.altKey && e.code === 'KeyC') { e.preventDefault(); copyStyles(window); return; }
+            if (e.altKey && e.code === 'KeyV') { e.preventDefault(); pasteStyles(window); return; }
             return; // Other Ctrl combos are app-level; let the consumer handle them.
         }
 
-        // Shift+1 = Fit to content
-        if (e.shiftKey && (key === '1' || key === '!')) {
+        // Shift+1 = Fit to content, Shift+2 = zoom to selection
+        if (e.shiftKey && !e.altKey && (key === '1' || key === '!' || e.code === 'Digit1')) {
             e.preventDefault();
             if (typeof window.zoomFit === 'function') window.zoomFit();
+            return;
+        }
+        if (e.shiftKey && !e.altKey && (key === '2' || key === '@' || e.code === 'Digit2')) {
+            e.preventDefault();
+            if (typeof window.zoomToSelection === 'function') window.zoomToSelection();
+            return;
+        }
+
+        const onControl = typeof e.target?.closest === 'function'
+            && e.target.closest('button, a, select, [role="menu"], [role="menuitem"], [role="tablist"], [role="tab"]');
+
+        // Arrow keys nudge the selection (Shift = 10px).
+        const nudge = !e.altKey && !onControl ? nudgeDeltaForKey(e.key, e.shiftKey) : null;
+        if (nudge) {
+            if (nudgeSelection(nudge.dx, nudge.dy, window)) e.preventDefault();
+            return;
+        }
+
+        // Enter edits the selected shape's label / text.
+        if (e.key === 'Enter' && !e.shiftKey && !e.altKey && !onControl) {
+            if (editSelectedLabel(window)) e.preventDefault();
             return;
         }
 
@@ -298,10 +342,8 @@ export function installEngineShortcuts(engine, options = {}) {
 
             if (e.key === 'Escape') {
                 // Engine-level deselect; consumer handles modal-close ordering.
-                window.currentShape = null;
-                if (typeof window.disableAllSideBars === 'function') {
-                    window.disableAllSideBars();
-                }
+                clearSelection(window);
+                if (getActiveTool() && getActiveTool() !== TOOLS.SELECT) setTool(TOOLS.SELECT);
                 return;
             }
         }

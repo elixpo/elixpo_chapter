@@ -22,7 +22,7 @@ The toolbar sits on the left side of the canvas. Here are the tools available:
 - **Text** (T) — click to place text on the canvas
 - **Code** — insert syntax-highlighted code blocks
 - **Image** — drag an image onto the canvas or click to upload
-- **Icon** — search and insert from 250K+ icons
+- **Icon** — search and insert from 5,000+ icons
 - **Frame** — group elements into named artboards
 - **Eraser** (E) — brush over elements to delete them
 - **Laser** — temporary highlight for presentations

@@ -5,6 +5,7 @@
 import { cleanupAttachments } from '../tools/arrowTool.js';
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 import { captureFrameChildStates } from '../core/UndoRedo.js';
+import { cornerRadiusFor, normalizeEdges } from '../core/ShapeAppearance.js';
 
 function getSVGCoordsFromMouse(e) {
     const viewBox = svg.viewBox.baseVal;
@@ -47,6 +48,9 @@ class Frame {
             opacity: options.opacity || 1,
             ...options
         };
+        // Sharp / round border (core/ShapeAppearance.js); not a RoughJS option.
+        this.edges = normalizeEdges(options.edges);
+        delete this.options.edges;
 
         this.element = null;
         this.group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -176,6 +180,9 @@ class Frame {
         frameRect.setAttribute("fill", fillValue);
         frameRect.setAttribute("opacity", this.options.opacity);
         frameRect.setAttribute("stroke-dasharray", "5,5");
+        const cornerRadius = cornerRadiusFor(this);
+        frameRect.setAttribute("rx", cornerRadius);
+        frameRect.setAttribute("ry", cornerRadius);
         frameRect.classList.add("frame-rect");
 
         // Apply rotation
@@ -239,6 +246,10 @@ class Frame {
         this.clipRect.setAttribute("y", this.y);
         this.clipRect.setAttribute("width", this.width);
         this.clipRect.setAttribute("height", this.height);
+        // Children are clipped to the same (possibly rounded) outline.
+        const cornerRadius = cornerRadiusFor(this);
+        this.clipRect.setAttribute("rx", cornerRadius);
+        this.clipRect.setAttribute("ry", cornerRadius);
         
         if (this.rotation !== 0) {
             const centerX = this.x + this.width / 2;

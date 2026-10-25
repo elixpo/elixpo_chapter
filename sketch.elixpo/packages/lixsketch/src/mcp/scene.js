@@ -1,3 +1,5 @@
+import { readArrowheads } from '../core/ArrowHeads.js';
+
 const FORMAT = 'lixsketch';
 const VERSION = 1;
 const MAX_SHAPES = 5000;
@@ -82,7 +84,7 @@ export function normalizeShape(input, existingIds = new Set()) {
     case 'rectangle': return { ...base, x: finite(input.x), y: finite(input.y), width: positive(input.width, 160), height: positive(input.height, 90) };
     case 'circle': return { ...base, x: finite(input.x), y: finite(input.y), rx: positive(input.rx, 60), ry: positive(input.ry, 60) };
     case 'line': return { ...base, startPoint: point(input.startPoint), endPoint: point(input.endPoint, 120), isCurved: Boolean(input.isCurved), controlPoint: input.controlPoint ? point(input.controlPoint) : null };
-    case 'arrow': return { ...base, startPoint: point(input.startPoint), endPoint: point(input.endPoint, 120), arrowHeadStyle: input.arrowHeadStyle || 'triangle', arrowOutlineStyle: input.arrowOutlineStyle || 'solid', arrowCurved: Boolean(input.arrowCurved), arrowCurveAmount: finite(input.arrowCurveAmount, 0.2) };
+    case 'arrow': return { ...base, startPoint: point(input.startPoint), endPoint: point(input.endPoint, 120), ...readArrowheads({ startArrowhead: input.startArrowhead, endArrowhead: input.endArrowhead, arrowHeadStyle: input.arrowHeadStyle || 'triangle' }), arrowOutlineStyle: input.arrowOutlineStyle || 'solid', arrowCurved: Boolean(input.arrowCurved), arrowCurveAmount: finite(input.arrowCurveAmount, 0.2) };
     case 'freehandStroke': {
       const points = (Array.isArray(input.points) ? input.points : []).slice(0, 4096).map((entry) => [finite(entry?.[0]), finite(entry?.[1]), finite(entry?.[2], 0.5)]);
       if (points.length < 2) throw new Error('freehandStroke requires at least two points');
@@ -193,7 +195,7 @@ function applyShapeChanges(shape, changes) {
     rectangle: ['x', 'y', 'width', 'height', 'rotation', 'options', 'groupId', 'parentFrame'],
     circle: ['x', 'y', 'rx', 'ry', 'rotation', 'options', 'groupId', 'parentFrame'],
     line: ['startPoint', 'endPoint', 'controlPoint', 'isCurved', 'options', 'groupId', 'parentFrame'],
-    arrow: ['startPoint', 'endPoint', 'controlPoint1', 'controlPoint2', 'arrowHeadStyle', 'arrowOutlineStyle', 'arrowCurved', 'arrowCurveAmount', 'options', 'groupId', 'parentFrame'],
+    arrow: ['startPoint', 'endPoint', 'controlPoint1', 'controlPoint2', 'startArrowhead', 'endArrowhead', 'arrowOutlineStyle', 'arrowCurved', 'arrowCurveAmount', 'options', 'groupId', 'parentFrame'],
     freehandStroke: ['points', 'rotation', 'options', 'groupId', 'parentFrame'],
     frame: ['x', 'y', 'width', 'height', 'rotation', 'frameName', 'fillStyle', 'fillColor', 'gridSize', 'options', 'groupId', 'parentFrame'],
     text: ['x', 'y', 'rotation', 'text', 'fontSize', 'color', 'fontFamily', 'groupId', 'parentFrame'],

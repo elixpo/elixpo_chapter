@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { getThemeForeground as getThemeStroke } from '../utils/themeColors.js';
 // Rectangle tool event handlers - extracted from drawSquare.js
 // Depends on globals: svg, shapes, currentShape, rough, currentZoom, lastMousePos
 // Depends on globals: isSquareToolActive, isSelectionToolActive
@@ -6,6 +7,8 @@
 import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransformAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
 import { cleanupAttachments } from './arrowTool.js';
 import { calculateSnap, clearSnapGuides } from '../core/SnapGuides.js';
+import { constrainToSquare } from '../core/DrawConstraints.js';
+import { roughRectangle, normalizeEdges } from '../core/ShapeAppearance.js';
 
 let isDrawingSquare = false;
 let isDraggingShapeSquare = false;
@@ -21,15 +24,13 @@ let startX, startY;
 // reading the body's `theme-dark` class lets the same code produce a
 // readable stroke in either mode. As soon as the user picks a colour
 // from the sidebar this var holds that value verbatim.
-function getThemeStroke() {
-    if (typeof document === 'undefined') return '#fff';
-    return document.body && document.body.classList.contains('theme-dark') ? '#fff' : '#000000';
-}
 let squareStrokecolor = null;
 let squareBackgroundColor = "transparent";
 let squareFillStyleValue = "none";
 let squareStrokeThicknes = 2;
 let squareOutlineStyle = "solid";
+let squareRoughness = 1.5; // sloppiness: 0 architect, 1.5 artist, 3 cartoonist
+let squareEdges = 'sharp'; // Excalidraw defaults new rectangles to sharp edges
 let dragOldPosSquare = null;
 let draggedShapeInitialFrame = null;
 let hoveredFrame = null;
@@ -89,6 +90,7 @@ const handleMouseDownRect = (e) => {
             fill: squareBackgroundColor,
             fillStyle: squareFillStyleValue,
             strokeWidth: squareStrokeThicknes,
+            roughness: squareRoughness,
         };
         if (squareOutlineStyle === "dashed") {
             initialOptions.strokeDasharray = "10,10";
@@ -98,7 +100,7 @@ const handleMouseDownRect = (e) => {
             initialOptions.strokeDasharray = "";
         }
 
-        currentShape = new Rectangle(startX, startY, 0, 0, initialOptions);
+        currentShape = new Rectangle(startX, startY, 0, 0, { ...initialOptions, edges: squareEdges });
         currentShape.setDrawingState(true);
 
     } else if (isSelectionToolActive) {
@@ -106,7 +108,7 @@ const handleMouseDownRect = (e) => {
         if (currentShape && currentShape.shapeName === 'rectangle' && currentShape.isSelected) {
             const anchorInfo = currentShape.isNearAnchor(mouseX, mouseY);
             if (anchorInfo) {
-                 dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, rotation: currentShape.rotation };
+                 dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, userWidth: currentShape.userWidth, userHeight: currentShape.userHeight, rotation: currentShape.rotation };
                 if (anchorInfo.type === 'resize') {
                     isResizingShapeSquare = true;
                     resizingAnchorIndexSquare = anchorInfo.index;
@@ -121,7 +123,7 @@ const handleMouseDownRect = (e) => {
                 clickedOnShape = true;
             } else if (currentShape.contains(mouseX, mouseY)) {
                  isDraggingShapeSquare = true;
-                 dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, rotation: currentShape.rotation };
+                 dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, userWidth: currentShape.userWidth, userHeight: currentShape.userHeight, rotation: currentShape.rotation };
                  
                  // Store initial frame state
                  draggedShapeInitialFrame = currentShape.parentFrame || null;
@@ -156,7 +158,7 @@ const handleMouseDownRect = (e) => {
                 currentShape.isSelected = true;
                 currentShape.draw(); 
                 isDraggingShapeSquare = true; 
-                dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, rotation: currentShape.rotation };
+                dragOldPosSquare = { x: currentShape.x, y: currentShape.y, width: currentShape.width, height: currentShape.height, userWidth: currentShape.userWidth, userHeight: currentShape.userHeight, rotation: currentShape.rotation };
                 
                 // Store initial frame state
                 draggedShapeInitialFrame = currentShape.parentFrame || null;
@@ -189,8 +191,10 @@ const handleMouseMoveRect = (e) => {
     };
 
     if (isDrawingSquare && isSquareToolActive && currentShape) {
-        let width = mouseX - startX;
-        let height = mouseY - startY;
+        // Shift draws a square
+        const end = constrainToSquare({ x: startX, y: startY }, { x: mouseX, y: mouseY }, e.shiftKey);
+        let width = end.x - startX;
+        let height = end.y - startY;
         currentShape.x = width < 0 ? startX + width : startX;
         currentShape.y = height < 0 ? startY + height : startY;
         currentShape.width = Math.abs(width);
@@ -204,7 +208,7 @@ const handleMouseMoveRect = (e) => {
             }
             
             // Create new rough element with current size
-            const roughRect = rc.rectangle(0, 0, currentShape.width, currentShape.height, currentShape.options);
+            const roughRect = roughRectangle(rc, currentShape.width, currentShape.height, currentShape.options, currentShape.edges);
             currentShape.element = roughRect;
             currentShape.group.appendChild(roughRect);
         }
@@ -546,6 +550,8 @@ window.updateSelectedRectStyle = function(changes) {
         if (changes.fill !== undefined) { squareBackgroundColor = changes.fill; currentShape.options.fill = changes.fill; }
         if (changes.fillStyle !== undefined) { squareFillStyleValue = changes.fillStyle; currentShape.options.fillStyle = changes.fillStyle; }
         if (changes.strokeWidth !== undefined) { squareStrokeThicknes = changes.strokeWidth; currentShape.options.strokeWidth = changes.strokeWidth; }
+        if (changes.roughness !== undefined) { squareRoughness = changes.roughness; currentShape.options.roughness = changes.roughness; }
+        if (changes.edges !== undefined) squareEdges = normalizeEdges(changes.edges);
         if (changes.outlineStyle !== undefined) {
             squareOutlineStyle = changes.outlineStyle;
             if (changes.outlineStyle === "dashed") currentShape.options.strokeDasharray = "10,10";
@@ -558,6 +564,8 @@ window.updateSelectedRectStyle = function(changes) {
         if (changes.fill !== undefined) squareBackgroundColor = changes.fill;
         if (changes.fillStyle !== undefined) squareFillStyleValue = changes.fillStyle;
         if (changes.strokeWidth !== undefined) squareStrokeThicknes = changes.strokeWidth;
+        if (changes.roughness !== undefined) squareRoughness = changes.roughness;
+        if (changes.edges !== undefined) squareEdges = normalizeEdges(changes.edges);
         if (changes.outlineStyle !== undefined) squareOutlineStyle = changes.outlineStyle;
     }
 };

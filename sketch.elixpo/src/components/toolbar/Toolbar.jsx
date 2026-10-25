@@ -19,18 +19,18 @@ const MORE_TOOL_ITEMS = [
 
 const TOOL_ITEMS = [
   { tool: TOOLS.PAN, icon: 'bxs-hand', title: 'Pan (H)', key: 'H' },
-  { tool: TOOLS.SELECT, icon: 'bxs-pointer', title: 'Select (V)', key: 'V' },
+  { tool: TOOLS.SELECT, icon: 'bxs-pointer', title: 'Select (V or 1)', key: 'V' },
   'spacer',
-  { tool: TOOLS.RECTANGLE, icon: 'bx-square', title: 'Rectangle (R)', key: 'R' },
-  { tool: TOOLS.CIRCLE, icon: 'bx-circle', title: 'Circle (O)', key: 'O' },
-  { tool: TOOLS.LINE, icon: 'bx-minus', title: 'Line (L)', key: 'L' },
-  { tool: TOOLS.ARROW, icon: 'bx-right-arrow-alt', title: 'Arrow (A)', rotate: true, key: 'A' },
-  { tool: TOOLS.TEXT, icon: 'bx-text', title: 'Text (T)', key: 'T' },
-  { tool: TOOLS.FREEHAND, icon: 'bx-pen', title: 'Freehand (P)', key: 'P' },
+  { tool: TOOLS.RECTANGLE, icon: 'bx-square', title: 'Rectangle (R or 2)', key: 'R' },
+  { tool: TOOLS.CIRCLE, icon: 'bx-circle', title: 'Circle (O or 4)', key: 'O' },
+  { tool: TOOLS.LINE, icon: 'bx-minus', title: 'Line (L or 6)', key: 'L' },
+  { tool: TOOLS.ARROW, icon: 'bx-right-arrow-alt', title: 'Arrow (A or 5)', rotate: true, key: 'A' },
+  { tool: TOOLS.TEXT, icon: 'bx-text', title: 'Text (T or 8)', key: 'T' },
+  { tool: TOOLS.FREEHAND, icon: 'bx-pen', title: 'Freehand (P or 7)', key: 'P' },
   { tool: TOOLS.IMAGE, icon: 'bx-image-alt', title: 'Image (9)', key: '9' },
   { tool: TOOLS.ICON, icon: 'bx-wink-smile', title: 'Icon (I)', key: 'I' },
   'spacer',
-  { tool: TOOLS.ERASER, icon: 'bxs-eraser', title: 'Eraser (E)', key: 'E' },
+  { tool: TOOLS.ERASER, icon: 'bxs-eraser', title: 'Eraser (E or 0)', key: 'E' },
   'more',
   'spacer',
   // Violet star → opens the DSL Studio modal (LixScript / Mermaid / Graph).
@@ -48,8 +48,12 @@ function ToolIcon({ item, className = 'h-5 w-5' }) {
       </svg>
     )
   }
-  return <i className={`bx ${item.icon} text-xl`} aria-hidden="true" />
+  return <i className={`bx ${item.icon} text-[18px] leading-none`} aria-hidden="true" />
 }
+
+// Shortcut hint in the button's bottom-right corner. The icon is nudged left
+// (see below) so the hint sits in its own gutter instead of clipping the glyph.
+const KEY_HINT_CLASS = 'pointer-events-none absolute bottom-[2px] right-[3px] text-[8.5px] font-medium leading-none tabular-nums'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
 
@@ -111,7 +115,7 @@ export default function Toolbar() {
 
   return (
     <>
-    <div data-canvas-toolbar className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-[46px] rounded-xl bg-surface border border-border-light shadow-sm z-[1000] flex flex-col items-center py-1.5 gap-0.5 font-[lixFont] max-h-[calc(100vh-120px)] overflow-visible`}>
+    <div data-canvas-toolbar className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-[48px] lix-island rounded-xl bg-surface border border-border-light z-[1000] flex flex-col items-center py-1.5 gap-0.5 font-[lixFont] max-h-[calc(100vh-120px)] overflow-visible`}>
       {/* Tool lock button at the top */}
       {!viewMode && (
         <>
@@ -121,14 +125,14 @@ export default function Toolbar() {
             aria-label={`Tool lock (${toolLock ? 'on' : 'off'})`}
             aria-pressed={toolLock}
             onClick={toggleToolLock}
-            className={`relative w-[33px] h-[30px] flex items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${
+            className={`relative w-[38px] h-[32px] flex items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${
               toolLock
                 ? 'bg-accent-blue/20 text-accent-blue'
                 : 'text-text-dim hover:text-text-muted hover:bg-surface-hover'
             }`}
           >
-            <i className={`bx ${toolLock ? 'bxs-lock-alt' : 'bx-lock-alt'} text-lg`} aria-hidden="true" />
-            <span className="absolute bottom-0.5 right-[-1px] text-[10px] leading-none opacity-50">Q</span>
+            <i className={`bx ${toolLock ? 'bxs-lock-alt' : 'bx-lock-alt'} -translate-x-[3px] text-[17px] leading-none`} aria-hidden="true" />
+            <span className={`${KEY_HINT_CLASS} opacity-45`} aria-hidden="true">Q</span>
           </button>
           <div className="w-6 h-px bg-border-light my-0.5" aria-hidden="true" />
         </>
@@ -157,7 +161,7 @@ export default function Toolbar() {
                 aria-haspopup="menu"
                 aria-controls="more-tools-menu"
                 onClick={() => setMoreOpen((open) => !open)}
-                className={`relative flex h-[31px] w-[33px] cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${moreOpen || moreActive ? 'bg-accent/20 text-accent' : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}`}
+                className={`relative flex h-[32px] w-[38px] cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${moreOpen || moreActive ? 'bg-accent/20 text-accent' : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}`}
               >
                 {shownMoreItem ? <ToolIcon item={shownMoreItem} className="h-[18px] w-[18px]" /> : <i className="bx bx-dots-horizontal-rounded text-xl" aria-hidden="true" />}
               </button>
@@ -200,7 +204,7 @@ export default function Toolbar() {
               title={item.title}
               aria-label={item.title}
               onClick={toggleAIModal}
-              className={`w-[33px] h-[31px] flex items-center justify-center rounded-lg text-accent hover:bg-accent/15 transition-all duration-200 ${focusRing}`}
+              className={`w-[38px] h-[32px] flex items-center justify-center rounded-lg text-accent hover:bg-accent/15 transition-all duration-200 ${focusRing}`}
             >
               <svg
                 width="20"
@@ -228,15 +232,15 @@ export default function Toolbar() {
             aria-label={item.title}
             aria-pressed={isActive}
             onClick={() => setActiveTool(item.tool)}
-            className={`relative w-[33px] h-[31px] flex items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${
+            className={`relative w-[38px] h-[32px] flex items-center justify-center rounded-lg transition-all duration-200 ${focusRing} ${
               isActive
                 ? 'bg-accent-blue/20 text-accent-blue'
                 : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
-            <span style={item.rotate ? { transform: 'rotate(-45deg)' } : undefined}><ToolIcon item={item} /></span>
+            <span className="flex -translate-x-[3px]" style={item.rotate ? { transform: 'rotate(-45deg)' } : undefined}><ToolIcon item={item} className="h-[18px] w-[18px]" /></span>
             {item.key && (
-              <span className={`absolute bottom-0.5 right-[-1px] text-[10px] leading-none ${isActive ? 'opacity-60' : 'opacity-35'}`}>
+              <span className={`${KEY_HINT_CLASS} ${isActive ? 'opacity-70' : 'opacity-45'}`} aria-hidden="true">
                 {item.key}
               </span>
             )}

@@ -1,5 +1,7 @@
 /* eslint-disable */
 // Undo/Redo system - copied from undoAndRedo.js
+import { appearanceEquals, applyAppearance, captureAppearance, initNewShapeAppearance } from './ShapeAppearance.js';
+import { normalizeArrowhead, readArrowheads } from './ArrowHeads.js';
 
 // Stacks for undo/redo
 const undoStack = [];
@@ -51,6 +53,10 @@ export function updateSelectedElement(element) {
 
 // Call this after creating a new shape (e.g., Rectangle)
 export function pushCreateAction(shape, meta = null) {
+    // New shapes take the panel's current opacity (text tool passes a
+    // { type: 'text', element } wrapper).
+    const created = shape && shape.type === 'text' && shape.element ? shape.element : shape;
+    if (created && created.group) initNewShapeAppearance(created);
     const action = {
         type: 'create',
         shape: shape
@@ -334,14 +340,16 @@ export function pushTransformAction(shape, oldPos, newPos) {
                 y: oldPos.y,
                 rx: oldPos.rx,
                 ry: oldPos.ry,
-                rotation: oldPos.rotation
+                rotation: oldPos.rotation,
+                ...pickUserSize(oldPos),
             },
             newPos: {
                 x: newPos.x,
                 y: newPos.y,
                 rx: newPos.rx,
                 ry: newPos.ry,
-                rotation: newPos.rotation
+                rotation: newPos.rotation,
+                ...pickUserSize(newPos, shape),
             },
             // Track frame attachment state
             frameAttachment: {
@@ -372,14 +380,16 @@ export function pushTransformAction(shape, oldPos, newPos) {
                 y: oldPos.y, 
                 width: oldPos.width, 
                 height: oldPos.height, 
-                rotation: oldPos.rotation
+                rotation: oldPos.rotation,
+                ...pickUserSize(oldPos),
             },
             newPos: { 
                 x: newPos.x, 
                 y: newPos.y, 
                 width: newPos.width, 
                 height: newPos.height, 
-                rotation: newPos.rotation
+                rotation: newPos.rotation,
+                ...pickUserSize(newPos, shape),
             },
             // Track frame attachment state
             frameAttachment: {
@@ -507,6 +517,76 @@ export function pushTransformAction(shape, oldPos, newPos) {
     notifyCollaboration();
 }
 
+// Shapes with bound labels (rectangle, circle) keep an explicit user size
+// separate from the label-grown rendered size. Carry it through undo so
+// undoing a resize restores the size the label can shrink back to.
+const USER_SIZE_KEYS = ['userWidth', 'userHeight', 'userRx', 'userRy'];
+
+function pickUserSize(pos, shape = null) {
+    const picked = {};
+    for (const key of USER_SIZE_KEYS) {
+        const value = pos && Number.isFinite(pos[key]) ? pos[key] : shape?.[key];
+        if (Number.isFinite(value)) picked[key] = value;
+    }
+    return picked;
+}
+
+function restoreUserSize(shape, pos) {
+    if (!shape || !pos) return;
+    if (Number.isFinite(pos.userRx) && Number.isFinite(pos.userRy) && typeof shape.setUserRadii === 'function') {
+        shape.setUserRadii(pos.userRx, pos.userRy);
+    } else if (Number.isFinite(pos.userWidth) && Number.isFinite(pos.userHeight) && typeof shape.setUserSize === 'function') {
+        shape.setUserSize(pos.userWidth, pos.userHeight);
+    }
+}
+
+const LABEL_KEYS = ['label', 'labelColor', 'labelFontSize', 'labelWrap'];
+
+export function captureLabelState(shape) {
+    const state = {};
+    for (const key of LABEL_KEYS) {
+        if (shape && shape[key] !== undefined) state[key] = shape[key];
+    }
+    return state;
+}
+
+/** Record a bound-label edit (text, color, font size, wrap). */
+/** One undo step for an opacity / edges change on a shape. */
+export function pushAppearanceChangeAction(shape, oldState, newState = null) {
+    if (!shape) return;
+    const next = newState || captureAppearance(shape);
+    if (appearanceEquals(oldState, next)) return;
+    undoStack.push({
+        type: 'appearanceChange',
+        shape,
+        oldState: { ...oldState },
+        newState: { ...next },
+    });
+    redoStack.length = 0;
+    notifyCollaboration();
+}
+
+export function pushLabelChangeAction(shape, oldState, newState = null) {
+    if (!shape) return;
+    undoStack.push({
+        type: 'labelChange',
+        shape,
+        oldState: { ...oldState },
+        newState: { ...(newState || captureLabelState(shape)) },
+    });
+    redoStack.length = 0;
+    notifyCollaboration();
+}
+
+function applyLabelSnapshot(shape, state) {
+    if (!shape || !state) return;
+    for (const key of LABEL_KEYS) {
+        if (state[key] !== undefined) shape[key] = state[key];
+    }
+    // draw() re-fits the container to the restored label and updates arrows.
+    if (typeof shape.draw === 'function') shape.draw();
+}
+
 function clonePoint(point) {
     return point ? { ...point } : point;
 }
@@ -521,6 +601,7 @@ export function captureShapeGeometry(shape) {
     };
     if (typeof shape.rx === 'number') state.rx = shape.rx;
     if (typeof shape.ry === 'number') state.ry = shape.ry;
+    Object.assign(state, pickUserSize({}, shape));
     if (shape.startPoint) state.startPoint = clonePoint(shape.startPoint);
     if (shape.endPoint) state.endPoint = clonePoint(shape.endPoint);
     if (shape.controlPoint1) state.controlPoint1 = clonePoint(shape.controlPoint1);
@@ -540,6 +621,7 @@ function restoreShapeGeometry(shape, state) {
     for (const key of ['x', 'y', 'width', 'height', 'rotation', 'rx', 'ry', '_moveOffsetX', '_moveOffsetY']) {
         if (state[key] !== undefined) shape[key] = state[key];
     }
+    restoreUserSize(shape, state);
     for (const key of ['startPoint', 'endPoint', 'controlPoint1', 'controlPoint2']) {
         if (state[key] !== undefined) shape[key] = clonePoint(state[key]);
     }
@@ -561,7 +643,31 @@ export function pushOptionsChangeAction(shape, oldOptions, newOptions = null) {
     notifyCollaboration();
 }
 
+// Arrow option snapshots carry instance state (heads, outline, curve) next
+// to the RoughJS options; older snapshots used the end-only arrowHeadStyle.
+function applyArrowSnapshot(shape, snapshot) {
+    const { startArrowhead, endArrowhead, arrowHeadStyle, ...options } = snapshot || {};
+    const heads = readArrowheads(snapshot || {});
+    shape.options = { ...options };
+    shape.startArrowhead = heads.startArrowhead;
+    shape.endArrowhead = heads.endArrowhead;
+    shape.arrowOutlineStyle = snapshot.arrowOutlineStyle;
+    shape.arrowCurved = snapshot.arrowCurved;
+    shape.arrowCurveAmount = snapshot.arrowCurveAmount;
+    shape.draw();
+}
+
 function applyOptionsSnapshot(shape, options) {
+    if (shape.shapeName === 'line') {
+        // Line snapshots carry the instance-level arrowheads next to options;
+        // snapshots without them (older) mean no heads.
+        const { startArrowhead, endArrowhead, ...rest } = options || {};
+        shape.startArrowhead = normalizeArrowhead(startArrowhead, 'none');
+        shape.endArrowhead = normalizeArrowhead(endArrowhead, 'none');
+        shape.options = { ...rest };
+        shape.draw();
+        return;
+    }
     shape.options = { ...options };
     if (shape.shapeName === 'frame') {
         shape.fillColor = options.fillColor;
@@ -619,7 +725,17 @@ function detachCreatedShapeFrame(action) {
     detachDeletedShapeFrame(action);
 }
 
+// In a live room the collaboration layer owns history: each client undoes
+// only its own ops, transformed against concurrent peer ops (see
+// core/collab/CollabClient.js). The hook returns true when it handled the
+// request; single-user mode never installs it.
+function collabHistory(kind) {
+    if (typeof window === 'undefined' || typeof window.__collabHistory !== 'function') return false;
+    return window.__collabHistory(kind) === true;
+}
+
 export function undo() {
+    if (collabHistory('undo')) return;
     if (undoStack.length === 0) return;
     const action = undoStack.pop();
     try {
@@ -635,6 +751,20 @@ export function undo() {
 
     if (action.type === 'canvasReset') {
         action.restore(action.snapshot);
+        redoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
+    if (action.type === 'labelChange') {
+        applyLabelSnapshot(action.shape, action.oldState);
+        redoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
+    if (action.type === 'appearanceChange') {
+        applyAppearance(action.shape, action.oldState);
         redoStack.push(action);
         notifyCollaboration();
         return;
@@ -959,6 +1089,7 @@ export function undo() {
             action.shape.y = action.oldPos.y;
             action.shape.rx = action.oldPos.rx;
             action.shape.ry = action.oldPos.ry;
+            restoreUserSize(action.shape, action.oldPos);
             action.shape.rotation = action.oldPos.rotation;
             action.shape.isSelected = false;
             if (typeof action.shape.removeSelection === 'function') action.shape.removeSelection();
@@ -1081,6 +1212,7 @@ export function undo() {
             action.shape.y = action.oldPos.y;
             action.shape.height = action.oldPos.height;
             action.shape.width = action.oldPos.width;
+            restoreUserSize(action.shape, action.oldPos);
             action.shape.rotation = action.oldPos.rotation;
             action.shape.isSelected = false;
             if (typeof action.shape.removeSelection === 'function') action.shape.removeSelection();
@@ -1109,11 +1241,14 @@ export function undo() {
                 ? {
                     ...action.shape.options,
                     arrowOutlineStyle: action.shape.arrowOutlineStyle,
-                    arrowHeadStyle: action.shape.arrowHeadStyle,
+                    startArrowhead: action.shape.startArrowhead,
+                    endArrowhead: action.shape.endArrowhead,
                     arrowCurved: action.shape.arrowCurved,
                     arrowCurveAmount: action.shape.arrowCurveAmount,
                 }
-                : { ...action.shape.options };
+                : action.shape.shapeName === 'line'
+                    ? { ...action.shape.options, startArrowhead: action.shape.startArrowhead, endArrowhead: action.shape.endArrowhead }
+                    : { ...action.shape.options };
         }
         if (action.shape.type === 'text') {
             // Handle text options change undo
@@ -1131,12 +1266,7 @@ export function undo() {
             }
         } else if (action.shape.shapeName === 'arrow') {
             // Handle arrow options change undo
-            action.shape.options = { ...action.oldOptions };
-            action.shape.arrowOutlineStyle = action.oldOptions.arrowOutlineStyle;
-            action.shape.arrowHeadStyle = action.oldOptions.arrowHeadStyle;
-            action.shape.arrowCurved = action.oldOptions.arrowCurved;
-            action.shape.arrowCurveAmount = action.oldOptions.arrowCurveAmount;
-            action.shape.draw();
+            applyArrowSnapshot(action.shape, action.oldOptions);
         } else {
             // Handle other shape options change undo
             applyOptionsSnapshot(action.shape, action.oldOptions);
@@ -1151,6 +1281,7 @@ export function undo() {
 }
 
 export function redo() {
+    if (collabHistory('redo')) return;
     if (redoStack.length === 0) return;
     const action = redoStack.pop();
     try {
@@ -1166,6 +1297,20 @@ export function redo() {
 
     if (action.type === 'canvasReset') {
         action.reset();
+        undoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
+    if (action.type === 'labelChange') {
+        applyLabelSnapshot(action.shape, action.newState);
+        undoStack.push(action);
+        notifyCollaboration();
+        return;
+    }
+
+    if (action.type === 'appearanceChange') {
+        applyAppearance(action.shape, action.newState);
         undoStack.push(action);
         notifyCollaboration();
         return;
@@ -1480,6 +1625,7 @@ export function redo() {
             action.shape.y = action.newPos.y;
             action.shape.rx = action.newPos.rx;
             action.shape.ry = action.newPos.ry;
+            restoreUserSize(action.shape, action.newPos);
             action.shape.rotation = action.newPos.rotation;
             action.shape.isSelected = false;
             if (typeof action.shape.removeSelection === 'function') action.shape.removeSelection();
@@ -1596,6 +1742,7 @@ export function redo() {
             action.shape.y = action.newPos.y;
             action.shape.height = action.newPos.height;
             action.shape.width = action.newPos.width;
+            restoreUserSize(action.shape, action.newPos);
             action.shape.rotation = action.newPos.rotation;
             action.shape.isSelected = false;
             if (typeof action.shape.removeSelection === 'function') action.shape.removeSelection();
@@ -1635,12 +1782,7 @@ export function redo() {
                 }
             }
         } else if (action.shape.shapeName === 'arrow') {
-            action.shape.options = { ...action.newOptions };
-            action.shape.arrowOutlineStyle = action.newOptions.arrowOutlineStyle;
-            action.shape.arrowHeadStyle = action.newOptions.arrowHeadStyle;
-            action.shape.arrowCurved = action.newOptions.arrowCurved;
-            action.shape.arrowCurveAmount = action.newOptions.arrowCurveAmount;
-            action.shape.draw();
+            applyArrowSnapshot(action.shape, action.newOptions);
         } else {
             applyOptionsSnapshot(action.shape, action.newOptions);
         }
@@ -1681,6 +1823,7 @@ window.rebindUndoHistory = rebindUndoHistory;
 window.pushDeleteActionWithAttachments = pushDeleteActionWithAttachments;
 window.pushTransformAction = pushTransformAction;
 window.pushOptionsChangeAction = pushOptionsChangeAction;
+window.pushAppearanceChangeAction = pushAppearanceChangeAction;
 window.pushCreateActionWithAttachments = pushCreateActionWithAttachments;
 window.undo = undo;
 window.redo = redo;

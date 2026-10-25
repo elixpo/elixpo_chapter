@@ -1,8 +1,10 @@
 /* eslint-disable */
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 import { canvasToLocal, localToCanvas } from '../core/CanvasSpace.js';
-import { DEFAULT_SHAPE_LABEL_FONT_SIZE, measureShapeLabel } from '../core/ShapeLabelLayout.js';
+import { DEFAULT_SHAPE_LABEL_FONT_SIZE, fitShapeToLabel, measureShapeLabel } from '../core/ShapeLabelLayout.js';
+import { openShapeLabelEditor } from '../core/ShapeLabelEditor.js';
 import { resolveThemeLabelColor } from '../utils/themeColors.js';
+import { cornerRadiusFor, normalizeEdges, normalizeOpacity, roughRectangle } from '../core/ShapeAppearance.js';
 // Rectangle shape class - extracted from drawSquare.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom, rc
 
@@ -24,10 +26,18 @@ const squareOutlineStyleValue = document.querySelectorAll(".squareOutlineStyle")
 
 class Rectangle {
     constructor(x, y, width, height, options = {}) {
+        // Bound label state is set first: the width/height setters fit the
+        // container to the label. `_userWidth`/`_userHeight` hold the size the
+        // user (or a caller) set explicitly; `width`/`height` return the
+        // rendered size, which may be grown to fit the label.
+        this.label = options.label || '';
+        this.labelFontSize = options.labelFontSize || DEFAULT_SHAPE_LABEL_FONT_SIZE;
+        this.labelBg = options.labelBg !== false; // set labelBg:false to render plain text with no pill backdrop
+        this.labelWrap = options.labelWrap !== false;
+        this.isBeingDrawn = false;
         this.x = x;
         this.y = y;
-        this.width = width;
-        this.height = height;
+        this.setUserSize(width, height);
         this.options = {
             roughness: 1.5,
             stroke: "#fff",
@@ -37,6 +47,14 @@ class Rectangle {
             strokeDasharray: "",
             ...options
         };
+        // Appearance lives on the instance (see core/ShapeAppearance.js), not
+        // in the RoughJS options. Constructors still accept it via options.
+        this.edges = normalizeEdges(options.edges);
+        // Left undefined unless given so new shapes pick up the panel's
+        // default opacity when they are committed (UndoRedo.pushCreateAction).
+        if (options.opacity !== undefined) this.opacity = normalizeOpacity(options.opacity);
+        delete this.options.edges;
+        delete this.options.opacity;
         this.element = null;
         this.isSelected = false;
         this.rotation = 0;
@@ -50,11 +68,8 @@ class Rectangle {
         this.group.setAttribute('id', this.shapeID);
 
         // Embedded label support
-        this.label = options.label || '';
         this.labelElement = null;
         this.labelColor = resolveThemeLabelColor(options.labelColor);
-        this.labelFontSize = options.labelFontSize || DEFAULT_SHAPE_LABEL_FONT_SIZE;
-        this.labelBg = options.labelBg !== false; // set labelBg:false to render plain text with no pill backdrop
         this._isEditingLabel = false;
         this._hitArea = null;
         this._labelBg = null;
@@ -74,12 +89,65 @@ class Rectangle {
             height: null,
             options: null
         };
-        this.isBeingDrawn = false;
         this._setupLabelDblClick();
         this.draw();
     }
+    get width() { return this._width; }
+    set width(value) { this.setUserSize(value, this._userHeight); }
+    get height() { return this._height; }
+    set height(value) { this.setUserSize(this._userWidth, value); }
+    get userWidth() { return this._userWidth; }
+    set userWidth(value) { this.setUserSize(value, this._userHeight); }
+    get userHeight() { return this._userHeight; }
+    set userHeight(value) { this.setUserSize(this._userWidth, value); }
+
+    /**
+     * Set the explicit (user) size. The rendered size is the user size grown
+     * to fit the bound label, so it never drops below what the label needs.
+     */
+    setUserSize(width, height) {
+        this._userWidth = Number(width) || 0;
+        this._userHeight = Number(height) || 0;
+        this._syncLabelLayout();
+    }
+
+    _labelAutoFits() {
+        // Dense diagram renderers opt out of the label backdrop and own their
+        // geometry (labelBg:false). Auto-fit is for interactive labels.
+        return !!this.label && !this.isBeingDrawn && this.labelBg !== false;
+    }
+
+    /** Recompute rendered size + label layout from user size and label. */
+    _syncLabelLayout() {
+        if (this._userWidth === undefined || this._userHeight === undefined) return null;
+        if (!this._labelAutoFits()) {
+            this._width = this._userWidth;
+            this._height = this._userHeight;
+            this._labelLayout = this.label ? measureShapeLabel(this.label, this.labelFontSize) : null;
+            return this._labelLayout;
+        }
+        const fit = fitShapeToLabel({
+            label: this.label,
+            fontSize: this.labelFontSize,
+            wrap: this.labelWrap !== false,
+            userWidth: this._userWidth,
+            userHeight: this._userHeight,
+        });
+        this._width = fit.width;
+        this._height = fit.height;
+        this._labelLayout = fit.layout;
+        return fit.layout;
+    }
+
     draw() {
-        const labelLayout = this._ensureLabelFits();
+        const labelLayout = this._syncLabelLayout();
+        // Label-driven growth (typing, font change, undo, remote load) moves
+        // the edges; keep attached arrows glued to them.
+        const sizeKey = `${this._width}x${this._height}`;
+        if (this._arrowSizeKey !== undefined && this._arrowSizeKey !== sizeKey && !this.isBeingDrawn) {
+            this.updateAttachedArrows();
+        }
+        this._arrowSizeKey = sizeKey;
         const childrenToRemove = [];
         const preserveSet = this._skipAnchors ? new Set([...this.anchors, this.selectionOutline, this.rotationAnchor].filter(Boolean)) : null;
         for (let i = 0; i < this.group.children.length; i++) {
@@ -91,7 +159,7 @@ class Rectangle {
         }
         childrenToRemove.forEach(child => this.group.removeChild(child));
 
-        const optionsString = JSON.stringify(this.options);
+        const optionsString = `${JSON.stringify(this.options)}|${this.edges}`;
         const isInitialDraw = this.element === null;
         const optionsChanged = optionsString !== this._lastDrawn.options;
         const sizeChanged = this.width !== this._lastDrawn.width || this.height !== this._lastDrawn.height;
@@ -101,7 +169,7 @@ class Rectangle {
             if (this.element && this.element.parentNode === this.group) {
                 this.group.removeChild(this.element);
             }
-            const roughRect = rc.rectangle(0, 0, this.width, this.height, this.options);
+            const roughRect = roughRectangle(rc, this.width, this.height, this.options, this.edges);
             this.element = roughRect;
             this.group.appendChild(roughRect);
 
@@ -123,6 +191,7 @@ class Rectangle {
         this._hitArea.setAttribute('y', 0);
         this._hitArea.setAttribute('width', this.width);
         this._hitArea.setAttribute('height', this.height);
+        this._hitArea.setAttribute('rx', cornerRadiusFor(this));
 
         // Shading / gradient overlay
         this._updateShade();
@@ -210,7 +279,7 @@ class Rectangle {
         this._shadeRect.setAttribute('width', this.width);
         this._shadeRect.setAttribute('height', this.height);
         this._shadeRect.setAttribute('fill', `url(#${gradId})`);
-        this._shadeRect.setAttribute('rx', 2);
+        this._shadeRect.setAttribute('rx', Math.max(2, cornerRadiusFor(this)));
 
         // Insert after rough element
         if (this._shadeRect.parentNode === this.group) this.group.removeChild(this._shadeRect);
@@ -219,17 +288,6 @@ class Rectangle {
         } else {
             this.group.appendChild(this._shadeRect);
         }
-    }
-
-    _ensureLabelFits() {
-        if (!this.label) return null;
-        const layout = measureShapeLabel(this.label, this.labelFontSize);
-        // Dense diagram renderers opt out of the label backdrop and own their
-        // geometry. Auto-fit is for interactive rectangle labels.
-        if (this.isBeingDrawn || !this.labelBg) return layout;
-        this.width = Math.max(this.width, layout.requiredWidth);
-        this.height = Math.max(this.height, layout.requiredHeight);
-        return layout;
     }
 
     _updateLabelElement(layout = null) {
@@ -252,7 +310,10 @@ class Rectangle {
             this.labelElement.setAttribute('pointer-events', 'none');
         }
 
-        const labelLayout = layout || measureShapeLabel(this.label, this.labelFontSize);
+        const labelLayout = layout || this._labelLayout || measureShapeLabel(this.label, this.labelFontSize);
+        // While the HTML editor overlay is open it shows the text; keep the
+        // SVG label hidden even when it is rebuilt by a live redraw.
+        this.labelElement.setAttribute('visibility', this._isEditingLabel ? 'hidden' : 'visible');
         const startY = (this.height - labelLayout.contentHeight) / 2;
 
         while (this.labelElement.firstChild) this.labelElement.removeChild(this.labelElement.firstChild);
@@ -272,39 +333,11 @@ class Rectangle {
         this.labelElement.setAttribute('font-size', this.labelFontSize);
         this.labelElement.setAttribute('font-family', 'lixFont, sans-serif');
 
-        // Background padding rect behind text (like arrows have) — skippable
-        // via labelBg:false for dense multi-row content (e.g. mermaid ER
-        // attribute rows) where a pill backdrop looks out of place and
-        // doesn't match the SVG preview.
-        if (!this.labelBg) {
-            if (this._labelBg && this._labelBg.parentNode === this.group) {
-                this.group.removeChild(this._labelBg);
-                this._labelBg = null;
-            }
-            if (this.labelElement.parentNode === this.group) this.group.removeChild(this.labelElement);
-            this.group.appendChild(this.labelElement);
-            return;
-        }
-        const canvasBg = window.getComputedStyle(svg).backgroundColor || '#000';
-        if (!this._labelBg) {
-            this._labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            this._labelBg.setAttribute('pointer-events', 'none');
-        }
-        this._labelBg.setAttribute('fill', canvasBg);
-        const hPadding = 6;
-        const vPadding = 2;
-        const bgW = labelLayout.contentWidth + hPadding * 2;
-        const bgH = labelLayout.contentHeight + vPadding * 2;
-        this._labelBg.setAttribute('x', this.width / 2 - bgW / 2);
-        this._labelBg.setAttribute('y', this.height / 2 - bgH / 2);
-        this._labelBg.setAttribute('width', bgW);
-        this._labelBg.setAttribute('height', bgH);
-        this._labelBg.setAttribute('rx', 3);
-
-        // Re-append bg then text on top
-        if (this._labelBg.parentNode === this.group) this.group.removeChild(this._labelBg);
+        // Text sits directly on the shape (transparent background, like
+        // Excalidraw); only arrow/line labels keep a cut-out over the stroke.
+        if (this._labelBg && this._labelBg.parentNode === this.group) this.group.removeChild(this._labelBg);
+        this._labelBg = null;
         if (this.labelElement.parentNode === this.group) this.group.removeChild(this.labelElement);
-        this.group.appendChild(this._labelBg);
         this.group.appendChild(this.labelElement);
     }
 
@@ -317,98 +350,29 @@ class Rectangle {
     }
 
     startLabelEdit() {
-        if (this._isEditingLabel) return;
-        this._isEditingLabel = true;
-
-        // Hide label element during editing
-        if (this.labelElement) {
-            this.labelElement.setAttribute('visibility', 'hidden');
-        }
-
-        // Get shape's screen position via CTM
-        const ctm = this.group.getScreenCTM();
-        if (!ctm) { this._isEditingLabel = false; return; }
-
-        // Map the shape corners to screen coords
-        const pt1 = svg.createSVGPoint();
-        pt1.x = 0; pt1.y = 0;
-        const screenTL = pt1.matrixTransform(ctm);
-        const pt2 = svg.createSVGPoint();
-        pt2.x = this.width; pt2.y = this.height;
-        const screenBR = pt2.matrixTransform(ctm);
-
-        const screenW = Math.abs(screenBR.x - screenTL.x);
-        const screenH = Math.abs(screenBR.y - screenTL.y);
-        const screenX = Math.min(screenTL.x, screenBR.x);
-        const screenY = Math.min(screenTL.y, screenBR.y);
-
-        // Create HTML overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'shape-label-editor';
-        overlay.style.cssText = `
-            position: fixed; z-index: 10000;
-            left: ${screenX}px; top: ${screenY}px;
-            width: ${screenW}px; height: ${screenH}px;
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: auto;
-        `;
-
-        const canvasBg = window.getComputedStyle(svg).backgroundColor || '#000';
-        const input = document.createElement('div');
-        input.setAttribute('contenteditable', 'true');
-        input.style.cssText = `
-            max-width: ${screenW - 8}px; min-width: 30px; min-height: 20px;
-            background: ${canvasBg}; border: none;
-            outline: none; padding: 2px 6px;
-            color: ${this.labelColor}; font-size: ${Math.max(12, this.labelFontSize * (screenW / Math.max(this.width, 1)))}px;
-            font-family: lixFont, sans-serif; text-align: center;
-            white-space: pre-wrap; word-break: break-word;
-            cursor: text;
-        `;
-        if (this.label) {
-            input.textContent = this.label;
-        } else {
-            input.innerHTML = '&nbsp;';
-        }
-
-        overlay.appendChild(input);
-        document.body.appendChild(overlay);
-
-        // Focus and select all text
-        setTimeout(() => {
-            input.focus();
-            const sel = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(input);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }, 10);
-
-        const finishEdit = () => {
-            const newText = input.innerText.trim().replace(/\u00A0/g, '');
-            this.label = newText;
-            this._isEditingLabel = false;
-
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-            if (this.labelElement) this.labelElement.setAttribute('visibility', 'visible');
-            this.draw();
-        };
-
-        input.addEventListener('blur', finishEdit);
-        input.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
-            if (e.key === 'Escape') { input.textContent = this.label; input.blur(); }
-        });
-        input.addEventListener('pointerdown', (e) => e.stopPropagation());
-        input.addEventListener('pointermove', (e) => e.stopPropagation());
-        input.addEventListener('pointerup', (e) => e.stopPropagation());
+        openShapeLabelEditor(this, () => ({ x0: 0, y0: 0, x1: this.width, y1: this.height }));
     }
 
     setLabel(text, color, fontSize) {
         this.label = text || '';
         if (color) this.labelColor = color;
         if (fontSize) this.labelFontSize = fontSize;
+        this.draw();
+    }
+
+    /**
+     * Apply serialized/remote label state in one pass. Missing fields keep
+     * their current values; `userWidth`/`userHeight` default to the current
+     * explicit size.
+     */
+    applyLabelState(state = {}) {
+        if (state.label !== undefined) this.label = state.label || '';
+        if (state.labelColor) this.labelColor = state.labelColor;
+        if (state.labelFontSize) this.labelFontSize = state.labelFontSize;
+        if (state.labelWrap !== undefined) this.labelWrap = state.labelWrap !== false;
+        const userWidth = Number.isFinite(state.userWidth) ? state.userWidth : this._userWidth;
+        const userHeight = Number.isFinite(state.userHeight) ? state.userHeight : this._userHeight;
+        this.setUserSize(userWidth, userHeight);
         this.draw();
     }
 
@@ -772,8 +736,11 @@ updateFrameContainment() {
         const fixedWorld = localToCanvas({ x: fixedOldX, y: fixedOldY }, transform);
 
         // Handle negative dimensions (dragged past opposite edge)
-        const newW = Math.abs(rawW);
-        const newH = Math.abs(rawH);
+        // The explicit size follows the pointer; the rendered size is clamped
+        // so the bound label still fits (it re-wraps at the new width).
+        this.setUserSize(Math.abs(rawW), Math.abs(rawH));
+        const newW = this.width;
+        const newH = this.height;
 
         // Fixed point in new local coords (flips if dimension went negative)
         const fixedNewX = fixedOldX === 0 ? (rawW >= 0 ? 0 : newW) : (rawW >= 0 ? newW : 0);
@@ -793,8 +760,6 @@ updateFrameContainment() {
 
         this.x = fixedWorld.x - rotX;
         this.y = fixedWorld.y - rotY;
-        this.width = newW;
-        this.height = newH;
 
         this.updateAttachedArrows();
     }

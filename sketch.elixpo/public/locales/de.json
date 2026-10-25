@@ -2,6 +2,7 @@
   "menu": {
     "open": "Öffnen",
     "quickSave": "Schnellspeichern",
+    "saveLixSketch": "Als .lixsketch speichern",
     "saveShare": "Speichern & Teilen",
     "exportImage": "Bild exportieren",
     "commands": "Befehle",
@@ -14,6 +15,8 @@
     "signIn": "Anmelden",
     "signOut": "Abmelden",
     "theme": "Design",
+    "canvasTheme": "Leinwand-Design",
+    "interfaceTheme": "Oberflächen-Design",
     "canvasBackground": "Leinwand-Hintergrund",
     "canvasBg": {
       "black": "Schwarz",
@@ -102,7 +105,6 @@
     "pan": "Verschieben",
     "selection": "Auswahl",
     "rectangle": "Rechteck",
-    "diamond": "Raute",
     "circle": "Kreis",
     "arrow": "Pfeil",
     "line": "Linie",

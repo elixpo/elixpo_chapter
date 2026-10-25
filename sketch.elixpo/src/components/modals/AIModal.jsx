@@ -5,6 +5,22 @@ import useUIStore from '@/store/useUIStore'
 import useAuthStore from '@/store/useAuthStore'
 import { WORKER_URL } from '@/lib/env'
 
+// The real mermaid library renders the diagram types LixSketch has no
+// native shapes for (and reports Mermaid's own syntax errors). It is only
+// fetched when the Mermaid tab is used, so it never weighs on page load.
+function registerMermaidLoader() {
+  if (typeof window === 'undefined' || window.__lixsketchMermaidLoader) return
+  window.__lixsketchMermaidLoader = () => import('mermaid').then((m) => m.default || m)
+}
+
+export function formatMermaidErrors(errors) {
+  if (!errors?.length) return 'Invalid Mermaid syntax'
+  const first = errors[0]
+  const message = String(first.message || 'Invalid Mermaid syntax').trim()
+  if (first.line && !/line \d+/i.test(message)) return `Line ${first.line}: ${message}`
+  return message
+}
+
 function DiagramLoadingAnimation({ color = '#4A90D9' }) {
   const c2 = color === '#4A90D9' ? '#9B59B6' : '#4A90D9'
   const c3 = '#2ECC71'
@@ -252,6 +268,7 @@ export default function AIModal() {
   const [mermaidCode, setMermaidCode] = useState('')
   const [mermaidPreviewSVG, setMermaidPreviewSVG] = useState('')
   const [mermaidError, setMermaidError] = useState('')
+  const [mermaidPath, setMermaidPath] = useState(null) // { path: 'native'|'image', type, fallback }
   const mermaidDebounceRef = useRef(null)
 
   // LixScript code mode state
@@ -345,14 +362,33 @@ export default function AIModal() {
   // Live mermaid preview (debounced)
   useEffect(() => {
     if (mode !== 'mermaid') return
+    registerMermaidLoader()
     if (!mermaidCode.trim()) {
       setMermaidPreviewSVG('')
       setMermaidError('')
+      setMermaidPath(null)
       return
     }
     if (mermaidDebounceRef.current) clearTimeout(mermaidDebounceRef.current)
     mermaidDebounceRef.current = setTimeout(async () => {
-      if (window.__mermaidPreview) {
+      if (window.__mermaidPreviewDetailed) {
+        try {
+          const result = await window.__mermaidPreviewDetailed(mermaidCode)
+          if (result.ok && result.svg) {
+            setMermaidPreviewSVG(result.svg)
+            setMermaidError('')
+            setMermaidPath({ path: result.path, type: result.type, fallback: !!result.fallback })
+          } else {
+            setMermaidPreviewSVG('')
+            setMermaidError(formatMermaidErrors(result.errors))
+            setMermaidPath(null)
+          }
+        } catch (err) {
+          setMermaidPreviewSVG('')
+          setMermaidError(err?.message || 'Parse error')
+          setMermaidPath(null)
+        }
+      } else if (window.__mermaidPreview) {
         try {
           const svg = await window.__mermaidPreview(mermaidCode)
           if (svg) {
@@ -773,7 +809,18 @@ export default function AIModal() {
   const handlePlaceMermaid = useCallback(async () => {
     if (!mermaidCode.trim() || !mermaidPreviewSVG) return
     handleClose()
-    if (window.__mermaidRenderer) {
+    if (window.__mermaidRenderDetailed) {
+      try {
+        const result = await window.__mermaidRenderDetailed(mermaidCode)
+        if (!result.ok) {
+          setToast({ status: 'error', message: formatMermaidErrors(result.errors) })
+          return
+        }
+      } catch (err) {
+        setToast({ status: 'error', message: err?.message || 'Failed to render diagram' })
+        return
+      }
+    } else if (window.__mermaidRenderer) {
       try {
         const success = await window.__mermaidRenderer(mermaidCode)
         if (!success) {
@@ -1167,6 +1214,8 @@ export default function AIModal() {
                         { label: 'ER Diagram', code: 'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  CUSTOMER {\n    string name\n    string email\n  }\n  ORDER {\n    int id PK\n    float total\n  }' },
                         { label: 'Bar Chart', code: 'xychart-beta\n  title "Weekly Focus"\n  x-axis [Mon, Tue, Wed, Thu, Fri]\n  bar [4, 7, 5, 8, 6]' },
                         { label: 'Pie Chart', code: 'pie title Project Time\n  "Design" : 35\n  "Build" : 45\n  "Review" : 20' },
+                        { label: 'Class', code: 'classDiagram\n  class Animal {\n    <<abstract>>\n    +String name\n    +speak() void\n  }\n  Animal <|-- Dog\n  Dog "1" *-- "4" Leg : has' },
+                        { label: 'State (image)', code: 'stateDiagram-v2\n  [*] --> Idle\n  Idle --> Busy : start\n  Busy --> Idle : done\n  Busy --> [*]' },
                       ].map((preset) => (
                         <button
                           key={preset.label}
@@ -1199,8 +1248,8 @@ export default function AIModal() {
                 <div className="flex-1 flex flex-col min-w-0">
                   <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Preview</p>
                   {mermaidError ? (
-                    <div className="flex-1 flex items-center justify-center rounded-xl bg-surface-card border border-border">
-                      <p className="text-red-400/70 text-sm">{mermaidError}</p>
+                    <div className="flex-1 flex items-center justify-center rounded-xl bg-surface-card border border-border p-4 overflow-auto">
+                      <pre className="text-red-400/80 text-xs whitespace-pre-wrap font-mono max-w-full">{mermaidError}</pre>
                     </div>
                   ) : mermaidPreviewSVG ? (
                     <DiagramPreview svgMarkup={mermaidPreviewSVG} className="flex-1 min-h-[300px]" />
@@ -1209,7 +1258,16 @@ export default function AIModal() {
                       <p className="text-text-dim text-sm">Type Mermaid code to see a live preview</p>
                     </div>
                   )}
-                  <p className="text-text-dim text-[10px] mt-1">Scroll to zoom, drag to pan</p>
+                  <p className="text-text-dim text-[10px] mt-1">
+                    Scroll to zoom, drag to pan
+                    {mermaidPath && !mermaidError && (
+                      <span className="ml-2">
+                        · {mermaidPath.path === 'native'
+                          ? 'Places editable shapes'
+                          : `Places an image rendered by Mermaid${mermaidPath.fallback ? ' (syntax beyond the native importer)' : ''}`}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
 

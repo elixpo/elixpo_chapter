@@ -9,6 +9,7 @@ import { useProfileStore } from '@/hooks/useGuestProfile'
 import { getSessionID } from '@/hooks/useSessionID'
 import { triggerDocCloudSync, persistLayoutMode } from '@/hooks/useDocAutoSave'
 import { showToast } from '@/utils/toast'
+import { localSceneBytes } from '@/utils/sceneLocalStore'
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B'
@@ -93,8 +94,9 @@ export default function CanvasPropertiesModal() {
     // Estimate canvas data size from localStorage (per-session key, fall
     // back to the legacy single-key entry).
     const sceneSavedKey = sessionId ? `lixsketch-autosave-${sessionId}` : 'lixsketch-autosave'
-    const sceneSaved = localStorage.getItem(sceneSavedKey) || localStorage.getItem('lixsketch-autosave')
-    const dataSize = sceneSaved ? new Blob([sceneSaved]).size : 0
+    // The key holds either the body or an IndexedDB pointer that records
+    // the body size (see utils/sceneLocalStore.js).
+    const dataSize = localSceneBytes(sceneSavedKey) || localSceneBytes('lixsketch-autosave')
 
     // Doc stats: pulled from the doc-autosave localStorage buffer.
     const docKey = sessionId ? `lixsketch-doc-autosave-${sessionId}` : 'lixsketch-doc-autosave'

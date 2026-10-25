@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Header from '@/components/header/Header'
-import useUIStore from '@/store/useUIStore'
+import useUIStore, { clearWorkspaceTheme } from '@/store/useUIStore'
 import Toolbar from '@/components/toolbar/Toolbar'
 import Footer from '@/components/footer/Footer'
 import AppMenu from '@/components/menu/AppMenu'
@@ -20,9 +20,11 @@ import TextSidebar from '@/components/sidebars/TextSidebar'
 import FrameSidebar from '@/components/sidebars/FrameSidebar'
 import IconSidebar from '@/components/sidebars/IconSidebar'
 import ImageSidebar from '@/components/sidebars/ImageSidebar'
+import IconPropertiesSidebar from '@/components/sidebars/IconPropertiesSidebar'
 import PaintBucketSidebar from '@/components/sidebars/PaintBucketSidebar'
 import SVGCanvas from '@/components/canvas/SVGCanvas'
 import CanvasDocConnectors from '@/components/canvas/CanvasDocConnectors'
+import WelcomeHints from '@/components/canvas/WelcomeHints'
 import MultiSelectActions from '@/components/canvas/MultiSelectActions'
 import ImageSourcePicker from '@/components/canvas/ImageSourcePicker'
 import ImageGenerateModal from '@/components/modals/ImageGenerateModal'
@@ -32,6 +34,7 @@ import useSessionID from '@/hooks/useSessionID'
 import useGuestProfile from '@/hooks/useGuestProfile'
 import useAuth from '@/hooks/useAuth'
 import useAutoSave from '@/hooks/useAutoSave'
+import useSceneFileBridge from '@/hooks/useSceneFileBridge'
 import CanvasLoadingOverlay from '@/components/canvas/CanvasLoadingOverlay'
 import ContextMenu from '@/components/canvas/ContextMenu'
 import FindBar from '@/components/canvas/FindBar'
@@ -61,9 +64,8 @@ export default function CanvasPage() {
     useSketchStore.getState().hydrateLayoutMode?.()
     return () => {
       media.removeEventListener?.('change', handleSystemTheme)
-      document.body.classList.remove('canvas-mode', 'theme-dark', 'theme-light')
-      delete document.body.dataset.resolvedTheme
-      document.documentElement.style.removeProperty('color-scheme')
+      // Restore site defaults (light, no canvas/UI theme classes).
+      clearWorkspaceTheme()
     }
   }, [])
 
@@ -72,6 +74,7 @@ export default function CanvasPage() {
   useSessionID()
   useGuestProfile()
   useAutoSave()
+  useSceneFileBridge()
 
   const activeRoomId = useCollabStore((s) => s.activeRoomId)
   useCollaboration(activeRoomId)
@@ -92,6 +95,7 @@ export default function CanvasPage() {
                 can't visually overflow into the docs panel during split. */}
             {canvasVisible && (
               <>
+                <WelcomeHints />
                 <Toolbar />
                 <RectangleSidebar />
                 <CircleSidebar />
@@ -102,6 +106,7 @@ export default function CanvasPage() {
                 <FrameSidebar />
                 <IconSidebar />
                 <ImageSidebar />
+                <IconPropertiesSidebar />
                 <PaintBucketSidebar />
                 <MultiSelectActions />
                 <Footer />

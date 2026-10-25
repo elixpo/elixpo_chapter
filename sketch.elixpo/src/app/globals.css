@@ -1,69 +1,124 @@
 @import "tailwindcss";
 
 @theme {
-  /* Public pages were designed on a dark surface, so their global tokens
-   * stay dark. Canvas-only selectors below own both complete canvas themes. */
-  --color-surface: #211a2e;
-  --color-surface-hover: #342745;
-  --color-surface-active: #4a3563;
-  --color-surface-dark: #15101f;
-  --color-surface-card: #1d1729;
-  --color-accent: #c7a4ff;
-  --color-accent-dim: #5b417b;
-  --color-accent-blue: #8b6de0;
-  --color-accent-blue-hover: #a080ef;
-  --color-text-primary: #fcf9ff;
-  --color-text-secondary: #e9e0f3;
-  --color-text-muted: #beafcd;
-  --color-text-dim: #9586a6;
-  --color-border: #30263f;
-  --color-border-light: #49385e;
-  --color-border-accent: #a987d2;
+  /* Site tokens: the Elixpo standard paper/ink system. Every non-workspace
+   * route reads these. The workspace (body.canvas-mode) overrides the
+   * surface/text/border tokens below with its own complete themes. */
+  --font-site: Arial, Helvetica, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-paper: #fbfbf8;
+  --color-paper-deep: #eff1ed;
+  --color-ink: #142018;
+  --color-muted: #5f6962;
+  --color-line: #d7dbd6;
+  --color-lx-blue: #3a65c7;
+  --color-blue-wash: #dce7ff;
+  --color-lx-green: #0b623c;
+  --color-lx-orange: #e76043;
+
+  --color-surface: #ffffff;
+  --color-surface-hover: #f2f3ef;
+  --color-surface-active: #e6e9e4;
+  --color-surface-dark: #eff1ed;
+  --color-surface-card: #ffffff;
+  --color-accent: #3a65c7;
+  --color-accent-dim: #dce7ff;
+  --color-accent-blue: #3a65c7;
+  --color-accent-blue-hover: #2f54a8;
+  --color-text-primary: #142018;
+  --color-text-secondary: #2b372f;
+  --color-text-muted: #5f6962;
+  --color-text-dim: #7e8680;
+  --color-border: #e3e6e2;
+  --color-border-light: #d7dbd6;
+  --color-border-accent: #9fb5e6;
 }
 
-body.canvas-mode.theme-light {
+:root {
+  --paper: var(--color-paper);
+  --paper-deep: var(--color-paper-deep);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --blue: var(--color-lx-blue);
+  --blue-wash: var(--color-blue-wash);
+  --green: var(--color-lx-green);
+  --orange: var(--color-lx-orange);
+}
+
+/* Workspace chrome (header, toolbar, menus, sidebars, modals).
+ * Driven by the UI theme: body.ui-light (default) / body.ui-dark.
+ * Tuned to be easy on the eyes (Excalidraw-like): neutral surfaces, very
+ * low-alpha island borders with soft shadows instead of dark outlines and
+ * muted icons. */
+body.canvas-mode,
+body.canvas-mode.ui-light {
   --color-surface: #ffffff;
-  --color-surface-hover: #f4effa;
-  --color-surface-active: #e9def5;
-  --color-surface-dark: #ffffff;
+  --color-surface-hover: #f1f0ee;
+  --color-surface-active: #e0dfff;
+  --color-surface-dark: #fcfcfb;
   --color-surface-card: #ffffff;
-  --color-accent: #8964bd;
-  --color-accent-dim: #e8dcf5;
-  --color-accent-blue: #7c59c3;
-  --color-accent-blue-hover: #6d4caf;
-  --color-text-primary: #31283f;
-  --color-text-secondary: #4c405d;
-  --color-text-muted: #6e607d;
-  --color-text-dim: #897d96;
-  --color-border: #d8cde5;
-  --color-border-light: #c8b8d9;
-  --color-border-accent: #a88bc8;
-  --lixsketch-grid-fine: rgba(60, 60, 80, 0.07);
-  --lixsketch-grid-major: rgba(60, 60, 80, 0.14);
+  --color-accent: #6965db;
+  --color-accent-dim: #e0dfff;
+  --color-accent-blue: #6965db;
+  --color-accent-blue-hover: #5b57d1;
+  --color-text-primary: #1b1b1f;
+  --color-text-secondary: #3f3f46;
+  --color-text-muted: #5d5d66;
+  --color-text-dim: #8b8b94;
+  --color-border: rgba(24, 24, 32, 0.07);
+  --color-border-light: rgba(24, 24, 32, 0.09);
+  --color-border-accent: #a5a3ef;
+  --lix-island-shadow: 0 0 0 1px rgba(24, 24, 32, 0.04), 0 1px 2px rgba(24, 24, 32, 0.04), 0 4px 14px rgba(24, 24, 32, 0.05);
   --lix-icon-filter: none;
 }
 
+body.canvas-mode.ui-dark {
+  --color-surface: #232129;
+  --color-surface-hover: #2f2c37;
+  --color-surface-active: #403a52;
+  --color-surface-dark: #1b1a20;
+  --color-surface-card: #222028;
+  --color-accent: #a8a5ff;
+  --color-accent-dim: #403a63;
+  --color-accent-blue: #7f7bea;
+  --color-accent-blue-hover: #8f8cf0;
+  --color-text-primary: #ececf1;
+  --color-text-secondary: #d4d3dc;
+  --color-text-muted: #a9a7b3;
+  --color-text-dim: #7f7d8a;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-light: rgba(255, 255, 255, 0.08);
+  --color-border-accent: #7d79c9;
+  --lix-island-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 14px rgba(0, 0, 0, 0.22);
+  --lix-icon-filter: brightness(0) invert(0.9);
+}
+
+/* Canvas surface. Driven by the independent canvas theme:
+ * body.theme-light (default) / body.theme-dark, which the engine also reads.
+ * The canvas ink itself lives in packages/lixsketch/src/utils/themeColors.js
+ * (THEME_INK) and is mirrored here as --lix-canvas-ink for chrome previews. */
 body.canvas-mode,
+body.canvas-mode.theme-light {
+  --lixsketch-grid-fine: rgba(30, 30, 40, 0.1);
+  --lixsketch-grid-major: rgba(30, 30, 40, 0.18);
+  --lix-canvas-ink: #1e1e1e;
+  --lix-handle-fill: #ffffff;
+}
+
 body.canvas-mode.theme-dark {
-  --color-surface: #241c31;
-  --color-surface-hover: #38294a;
-  --color-surface-active: #50386a;
-  --color-surface-dark: #171120;
-  --color-surface-card: #20182c;
-  --color-accent: #c7a4ff;
-  --color-accent-dim: #5b417b;
-  --color-accent-blue: #8b6de0;
-  --color-accent-blue-hover: #a080ef;
-  --color-text-primary: #faf7ff;
-  --color-text-secondary: #e7def1;
-  --color-text-muted: #bcaecc;
-  --color-text-dim: #9485a5;
-  --color-border: #332642;
-  --color-border-light: #4a385e;
-  --color-border-accent: #8165a6;
-  --lixsketch-grid-fine: rgba(255, 255, 255, 0.06);
-  --lixsketch-grid-major: rgba(255, 255, 255, 0.12);
-  --lix-icon-filter: brightness(0) invert(1);
+  --lixsketch-grid-fine: rgba(255, 255, 255, 0.08);
+  --lixsketch-grid-major: rgba(255, 255, 255, 0.14);
+  --lix-canvas-ink: #e3e3e8;
+  --lix-handle-fill: #1b1a20;
+}
+
+/* Floating chrome ("islands"): toolbar, zoom/undo groups, property panels.
+ * Depth comes from a soft shadow; the border token is nearly invisible. */
+body.canvas-mode .lix-island {
+  box-shadow: var(--lix-island-shadow);
 }
 
 /* Font faces — served from /public/fonts/ */
@@ -91,47 +146,26 @@ body.canvas-mode.theme-dark {
 /* Global utilities */
 body {
   margin: 0;
-  background: #120e1a;
-  color: #fcf9ff;
-  font-family: "lixFont", sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-site);
   font-size: 16px;
 }
 
-/* lixFont has a compact x-height. Non-canvas routes use a slightly larger
- * optical scale while the workspace keeps its dense control layout. */
-body:not(.canvas-mode) .text-\[6px\] {
-  font-size: 8px !important;
-}
-
-body:not(.canvas-mode) .text-\[8px\] {
-  font-size: 10px !important;
-}
-
-body:not(.canvas-mode) .text-\[9px\] {
-  font-size: 11px !important;
-}
-
-body:not(.canvas-mode) .text-\[10px\] {
-  font-size: 12px !important;
-}
-
-body:not(.canvas-mode) .text-\[11px\],
-body:not(.canvas-mode) .text-xs {
-  font-size: 13px !important;
-  line-height: 1.25rem !important;
-}
-
-body:not(.canvas-mode) .text-\[13px\] {
-  font-size: 14px !important;
-}
-
-body:not(.canvas-mode) .text-sm {
-  font-size: 15px !important;
-  line-height: 1.4rem !important;
+/* The workspace keeps its compact lixFont control layout. */
+body.canvas-mode {
+  background: var(--lixsketch-canvas-background, #ffffff);
+  color: var(--color-text-primary);
+  font-family: "lixFont", sans-serif;
 }
 
 body.canvas-mode {
   overflow: hidden;
+  /* The public-site body is near-black. Behind the workspace it must match
+   * the canvas, or any sub-pixel gap (split pane edges, rounding at the left
+   * of the SVG) shows up as a hard dark seam on the light canvas. */
+  background: var(--lixsketch-canvas-background, var(--color-surface-dark));
+  color: var(--color-text-primary);
 }
 
 /* Canvas labels are draggable content, never browser-selectable text. */
@@ -141,9 +175,9 @@ body.canvas-mode #freehand-canvas tspan {
   -webkit-user-select: none;
 }
 
-/* Light canvases use white control interiors so resize and rotation handles
- * read as outlined controls instead of dark blocks over the artwork. */
-body.canvas-mode.theme-light #freehand-canvas :is(
+/* Resize and rotation handles use the theme's surface for their interior so
+ * they read as calm outlined controls instead of dark blocks over artwork. */
+body.canvas-mode #freehand-canvas :is(
   .anchor,
   .resize-anchor,
   .resize-handle,
@@ -152,7 +186,7 @@ body.canvas-mode.theme-light #freehand-canvas :is(
   .multi-selection-anchor,
   .multi-selection-rotation-anchor
 ) {
-  fill: #ffffff !important;
+  fill: var(--lix-handle-fill, #ffffff) !important;
 }
 
 /* Solid primary controls keep consistent contrast in the light canvas.
@@ -163,25 +197,25 @@ body.canvas-mode .bg-accent-blue {
 }
 
 .e2e-badge {
-  color: #73d995;
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(74, 222, 128, 0.16);
-}
-
-.e2e-badge:hover {
-  color: #8ae3a7;
-  background: rgba(34, 197, 94, 0.18);
-}
-
-body.canvas-mode.theme-light .e2e-badge {
   color: #285f3c;
   background: #dcecdf;
   border-color: #b5d4bd;
 }
 
-body.canvas-mode.theme-light .e2e-badge:hover {
+.e2e-badge:hover {
   color: #1f5031;
   background: #cfe4d4;
+}
+
+body.canvas-mode.ui-dark .e2e-badge {
+  color: #73d995;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(74, 222, 128, 0.16);
+}
+
+body.canvas-mode.ui-dark .e2e-badge:hover {
+  color: #8ae3a7;
+  background: rgba(34, 197, 94, 0.18);
 }
 
 /* ── Global custom scrollbar ────────────────────────────────── */
@@ -194,10 +228,16 @@ body.canvas-mode.theme-light .e2e-badge:hover {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #49385e;
+  background: #c9cec8;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
+  background: #8f9890;
+}
+body.canvas-mode.ui-dark ::-webkit-scrollbar-thumb {
+  background: #49385e;
+}
+body.canvas-mode.ui-dark ::-webkit-scrollbar-thumb:hover {
   background: #9a7fba;
 }
 ::-webkit-scrollbar-corner {
@@ -207,6 +247,9 @@ body.canvas-mode.theme-light .e2e-badge:hover {
 /* Firefox */
 * {
   scrollbar-width: thin;
+  scrollbar-color: #c9cec8 transparent;
+}
+body.canvas-mode.ui-dark * {
   scrollbar-color: #2a2a3a transparent;
 }
 
@@ -234,15 +277,15 @@ body.canvas-mode textarea::-webkit-scrollbar {
   background: transparent;
 }
 .docs-scroll::-webkit-scrollbar-thumb {
-  background: #3a3a50;
+  background: #c9cec8;
   border-radius: 3px;
 }
 .docs-scroll::-webkit-scrollbar-thumb:hover {
-  background: #8B88E8;
+  background: #8f9890;
 }
 .docs-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #3a3a50 transparent;
+  scrollbar-color: #c9cec8 transparent;
 }
 
 /* ── LixScript preview scrollbar ───────────────────────────── */

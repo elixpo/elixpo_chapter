@@ -1,13 +1,12 @@
 "use client"
 
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
-import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
+import ShapeSidebar, { ToolbarButton, Divider, LayerControls, SloppinessControl } from './ShapeSidebar'
+import { EdgesControl, OpacityControl } from './AppearanceControls'
 import { useState, useCallback } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
+import { BACKGROUND_SWATCHES, getStrokeSwatches, getThemeInk } from '@elixpo/lixsketch/src/utils/themeColors.js'
 import useUIStore from '@/store/useUIStore'
-
-const STROKE_COLORS = ['#000000', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
-const BG_COLORS = ['transparent', '#f0f0f0', '#ffcccb', '#90ee90', '#add8e6', '#FFE4B5', '#DDA0DD', '#2d2d2d']
 
 const FILLS = [
   { value: 'hachure', label: 'sidebar.fill.hachure' },
@@ -27,7 +26,7 @@ function ColorGrid({ colors, selected, onSelect }) {
             key={c}
             onClick={() => onSelect(c)}
             className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${
-              selected === c ? 'border-[#7667a8] scale-110' : 'border-border-light hover:border-text-dim'
+              selected === c ? 'border-accent scale-110' : 'border-border-light hover:border-text-dim'
             }`}
             style={!isTrans ? { backgroundColor: c } : undefined}
           >
@@ -49,11 +48,12 @@ export default function RectangleSidebar() {
   const selectedShapeSidebar = useSketchStore((s) => s.selectedShapeSidebar)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
   const [strokeColor, setStrokeColor] = useState(null)
-  const displayedStrokeColor = strokeColor ?? (resolvedTheme === 'light' ? '#000000' : '#ffffff')
+  const displayedStrokeColor = strokeColor ?? getThemeInk(resolvedTheme)
   const [bgColor, setBgColor] = useState('transparent')
   const [thickness, setThickness] = useState(2)
   const [lineStyle, setLineStyle] = useState('solid')
   const [fillStyle, setFillStyle] = useState('hachure')
+  const [roughness, setRoughness] = useState(1.5)
 
   const update = useCallback((changes, localSetters) => {
     Object.entries(localSetters).forEach(([, fn]) => fn())
@@ -66,6 +66,8 @@ export default function RectangleSidebar() {
   const updateStyle = useCallback((v) => { setLineStyle(v); if (window.updateSelectedRectStyle) window.updateSelectedRectStyle({ outlineStyle: v }) }, [])
   const updateFill = useCallback((v) => { setFillStyle(v); if (window.updateSelectedRectStyle) window.updateSelectedRectStyle({ fillStyle: v }) }, [])
 
+  const updateRoughness = useCallback((v) => { setRoughness(v); if (window.updateSelectedRectStyle) window.updateSelectedRectStyle({ roughness: v }) }, [])
+
   return (
     <ShapeSidebar visible={activeTool === TOOLS.RECTANGLE || selectedShapeSidebar === 'rectangle'}>
       {/* Stroke color */}
@@ -74,7 +76,7 @@ export default function RectangleSidebar() {
         preview={<span className="w-4 h-4 rounded-md border border-border-light" style={{ backgroundColor: displayedStrokeColor }} />}
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.stroke')}</p>
-        <ColorGrid colors={STROKE_COLORS} selected={displayedStrokeColor} onSelect={updateStroke} />
+        <ColorGrid colors={getStrokeSwatches(resolvedTheme)} selected={displayedStrokeColor} onSelect={updateStroke} />
       </ToolbarButton>
 
       <Divider />
@@ -91,7 +93,7 @@ export default function RectangleSidebar() {
         }
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.background')}</p>
-        <ColorGrid colors={BG_COLORS} selected={bgColor} onSelect={updateBg} />
+        <ColorGrid colors={BACKGROUND_SWATCHES} selected={bgColor} onSelect={updateBg} />
       </ToolbarButton>
 
       <Divider />
@@ -105,7 +107,7 @@ export default function RectangleSidebar() {
               key={w}
               onClick={() => updateThickness(w)}
               className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${
-                thickness === w ? 'bg-[#7667a8]/20 text-[#7667a8]' : 'text-text-muted hover:bg-surface-hover'
+                thickness === w ? 'bg-accent/15 text-accent' : 'text-text-muted hover:bg-surface-hover'
               }`}
             >
               <div className="w-5 rounded-full bg-current" style={{ height: Math.max(1, w) }} />
@@ -129,7 +131,7 @@ export default function RectangleSidebar() {
               key={s.v}
               onClick={() => updateStyle(s.v)}
               className={`w-11 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${
-                lineStyle === s.v ? 'bg-[#7667a8]/20' : 'hover:bg-surface-hover'
+                lineStyle === s.v ? 'bg-accent/15' : 'hover:bg-surface-hover'
               }`}
             >
               <svg width="28" height="4" viewBox="0 0 28 4">
@@ -151,7 +153,7 @@ export default function RectangleSidebar() {
               key={f.value}
               onClick={() => updateFill(f.value)}
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${
-                fillStyle === f.value ? 'bg-[#7667a8] text-white' : 'text-text-secondary hover:bg-surface-hover'
+                fillStyle === f.value ? 'bg-accent text-white' : 'text-text-secondary hover:bg-surface-hover'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -161,6 +163,13 @@ export default function RectangleSidebar() {
         </div>
       </ToolbarButton>
 
+      <Divider />
+      <SloppinessControl value={roughness} onChange={updateRoughness} />
+
+      <Divider />
+      <EdgesControl onDefaultChange={(edges) => window.updateSelectedRectStyle?.({ edges })} />
+      <Divider />
+      <OpacityControl />
       <Divider />
       <LayerControls />
     </ShapeSidebar>

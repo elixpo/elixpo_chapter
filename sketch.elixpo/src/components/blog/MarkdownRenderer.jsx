@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { getThemeInk, isThemeOwnedColor } from '@elixpo/lixsketch/src/utils/themeColors.js'
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false)
@@ -16,8 +17,8 @@ function CopyButton({ text }) {
       onClick={handleCopy}
       className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all duration-200 cursor-pointer ${
         copied
-          ? 'bg-green-500/20 text-green-400'
-          : 'bg-white/5 text-[#6969aa] hover:text-white hover:bg-white/10'
+          ? 'bg-green-500/20 text-green-700'
+          : 'bg-ink/[0.03] text-muted hover:text-ink hover:bg-ink/[0.06]'
       }`}
     >
       <i className={`bx ${copied ? 'bx-check' : 'bx-copy'} text-xs`} />
@@ -27,7 +28,7 @@ function CopyButton({ text }) {
 }
 
 // ── RoughJS heading underline (drawn on a canvas element) ─────────────────────
-function RoughHeadingLine({ width = 200, color = '#7667a8', roughness = 2 }) {
+function RoughHeadingLine({ width = 200, color = '#3a65c7', roughness = 2 }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -92,7 +93,7 @@ function RoughBlockquote({ children }) {
 
       const rc = rough.canvas(canvas)
       rc.line(4, 2, 4, h - 2, {
-        stroke: '#7667a8',
+        stroke: '#3a65c7',
         strokeWidth: 2,
         roughness: 1.8,
         bowing: 0.5,
@@ -106,7 +107,7 @@ function RoughBlockquote({ children }) {
   return (
     <div ref={containerRef} className="relative flex items-start my-5">
       <canvas ref={canvasRef} className="flex-shrink-0 mr-4" />
-      <div className="text-[#a0a0b0] text-sm leading-relaxed italic font-[lixFont]">
+      <div className="text-muted text-sm leading-relaxed italic">
         {children}
       </div>
     </div>
@@ -138,10 +139,10 @@ function RoughBullet() {
 
       const rc = rough.canvas(canvas)
       rc.circle(5, 5, 6, {
-        stroke: '#7667a8',
+        stroke: '#3a65c7',
         strokeWidth: 1,
         roughness: 2,
-        fill: '#7667a8',
+        fill: '#3a65c7',
         fillStyle: 'solid',
       })
     }
@@ -154,6 +155,50 @@ function RoughBullet() {
 }
 
 // ── RoughJS LixScript preview (matches actual canvas rendering) ───────────────
+// Site pages are light, so previews draw like the light canvas: theme-default
+// colors (white, near-white greys) become the canvas ink, and fills that were
+// dark surfaces on the old dark preview become a light surface. Brand colors
+// are left as written.
+const PREVIEW_BG = '#ffffff'
+const PREVIEW_INK = getThemeInk('light')
+const PREVIEW_MUTED = '#5d5d66'
+const PREVIEW_SURFACE = '#f1f0ee'
+
+function luminance(color) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || '').trim())
+  if (!m) return null
+  const hex = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1]
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** Stroke / text color on the light preview. */
+function previewInk(color, fallback = PREVIEW_INK) {
+  if (!color) return fallback
+  return isThemeOwnedColor(color) ? PREVIEW_INK : color
+}
+
+/** Shape fill on the light preview: old dark surfaces become light. */
+function previewFill(fill) {
+  if (!fill || fill === 'transparent' || fill === 'none') return 'transparent'
+  const lum = luminance(fill)
+  return lum !== null && lum < 0.2 ? PREVIEW_SURFACE : fill
+}
+
+/**
+ * Label color. On a brand-colored fill the author's color is kept (e.g.
+ * white on blue); without one, pick white or ink by the fill's lightness.
+ * Unfilled shapes and the light surface use the light-theme mapping.
+ */
+function previewLabel(color, fill, fallback = PREVIEW_INK) {
+  if (fill && fill !== 'transparent' && fill !== PREVIEW_SURFACE) {
+    if (color) return color
+    const lum = luminance(fill)
+    return lum !== null && lum < 0.5 ? '#ffffff' : PREVIEW_INK
+  }
+  return previewInk(color, fallback)
+}
+
 function RoughLixScriptCanvas({ parsed }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -247,7 +292,7 @@ function RoughLixScriptCanvas({ parsed }) {
       const rc = rough.canvas(canvas)
 
       // Background color for label cutout effect
-      const BG = '#0a0a12'
+      const BG = PREVIEW_BG
       const LABEL_PAD_X = 6
       const LABEL_PAD_Y = 3
 
@@ -255,7 +300,9 @@ function RoughLixScriptCanvas({ parsed }) {
        * Draw text with background padding. Supports multiline word-wrap
        * when maxWidth is provided (used for labels inside shapes).
        */
-      function drawLabel(text, x, y, font, color, align, baseline, maxWidth) {
+      // `bg` is the cut-out behind the text: the shape's fill for labels
+      // inside filled shapes, the preview background otherwise.
+      function drawLabel(text, x, y, font, color, align, baseline, maxWidth, bg = BG) {
         ctx.save()
         ctx.font = font
         ctx.textAlign = align || 'center'
@@ -301,7 +348,7 @@ function RoughLixScriptCanvas({ parsed }) {
         else if (baseline === 'bottom') bgY = y - totalTextH - LABEL_PAD_Y
 
         // Draw background
-        ctx.fillStyle = BG
+        ctx.fillStyle = bg
         ctx.fillRect(bgX, bgY, maxLineW + LABEL_PAD_X * 2, totalTextH + LABEL_PAD_Y * 2)
 
         // Draw each line
@@ -338,9 +385,9 @@ function RoughLixScriptCanvas({ parsed }) {
       // Draw each shape with RoughJS
       for (const def of sorted) {
         const props = def.props || {}
-        const stroke = props.stroke || '#fff'
+        const stroke = previewInk(props.stroke)
         const sw = props.strokeWidth || 2
-        const fill = props.fill || 'transparent'
+        const fill = previewFill(props.fill)
         const roughness = 1.5
 
         switch (def.type) {
@@ -354,7 +401,8 @@ function RoughLixScriptCanvas({ parsed }) {
             if (props.label) {
               drawLabel(props.label, x + w / 2, y + h / 2,
                 `${props.labelFontSize || 14}px lixFont, sans-serif`,
-                props.labelColor || '#e0e0e0', 'center', 'middle', w)
+                previewLabel(props.labelColor, fill), 'center', 'middle', w,
+                fill !== 'transparent' ? fill : BG)
             }
             break
           }
@@ -371,7 +419,8 @@ function RoughLixScriptCanvas({ parsed }) {
             if (props.label) {
               drawLabel(props.label, cx, cy,
                 `${props.labelFontSize || 14}px lixFont, sans-serif`,
-                props.labelColor || '#e0e0e0', 'center', 'middle', w * 0.85)
+                previewLabel(props.labelColor, fill), 'center', 'middle', w * 0.85,
+                fill !== 'transparent' ? fill : BG)
             }
             break
           }
@@ -380,7 +429,7 @@ function RoughLixScriptCanvas({ parsed }) {
             const content = props.content || props.text || 'Text'
             drawLabel(content, def.x || 0, def.y || 0,
               `${props.fontSize || 16}px lixFont, sans-serif`,
-              props.color || props.fill || '#fff', 'left', 'top')
+              previewInk(props.color || props.fill), 'left', 'top')
             break
           }
 
@@ -442,7 +491,7 @@ function RoughLixScriptCanvas({ parsed }) {
                 const ly = 0.25 * from.y + 0.5 * cpY + 0.25 * toOrig.y
                 drawLabel(props.label, lx, ly,
                   '11px lixFont, sans-serif',
-                  props.labelColor || '#a0a0b0', 'center', 'middle')
+                  previewInk(props.labelColor, PREVIEW_MUTED), 'center', 'middle')
               }
             } else {
               // Straight arrow
@@ -479,7 +528,7 @@ function RoughLixScriptCanvas({ parsed }) {
                 const ly = (from.y + toOrig.y) / 2
                 drawLabel(props.label, lx, ly,
                   '11px lixFont, sans-serif',
-                  props.labelColor || '#a0a0b0', 'center', 'middle')
+                  previewInk(props.labelColor, PREVIEW_MUTED), 'center', 'middle')
               }
             }
             break
@@ -503,7 +552,7 @@ function RoughLixScriptCanvas({ parsed }) {
             // Draw filled background if specified
             if (props.fillStyle === 'solid' && props.fillColor) {
               ctx.save()
-              ctx.fillStyle = props.fillColor
+              ctx.fillStyle = previewFill(props.fillColor)
               ctx.fillRect(x, y, w, h)
               ctx.restore()
             }
@@ -530,7 +579,7 @@ function RoughLixScriptCanvas({ parsed }) {
             }
             // Draw placeholder border
             rc.rectangle(x, y, w, h, {
-              stroke: '#555',
+              stroke: '#8b8b94',
               strokeWidth: 0.8,
               roughness: 1,
               bowing: 0.5,
@@ -542,7 +591,7 @@ function RoughLixScriptCanvas({ parsed }) {
           case 'icon': {
             const x = def.x || 0, y = def.y || 0
             const size = def.width || 32
-            const color = props.color || props.fill || '#ffffff'
+            const color = previewInk(props.color || props.fill)
             const svgContent = props.svg || ''
             if (svgContent) {
               // Parse inline SVG and draw paths
@@ -672,7 +721,7 @@ function RoughLixScriptCanvas({ parsed }) {
   }, [parsed])
 
   return (
-    <div ref={containerRef} className="bg-[#0a0a12] p-6 flex items-center justify-center overflow-auto lixscript-preview">
+    <div ref={containerRef} className="bg-white p-6 flex items-center justify-center overflow-auto lixscript-preview">
       <canvas ref={canvasRef} />
     </div>
   )
@@ -712,16 +761,16 @@ function LixScriptBlock({ code }) {
   const showPreview = tab === 'preview' && parsedData && !parseError
 
   return (
-    <div className="my-6 rounded-xl border border-[#8B88E8]/25 overflow-hidden bg-[#0d1117]">
+    <div className="my-6 rounded-xl border border-line overflow-hidden bg-white">
       {/* Header with tabs */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#8B88E8]/5 border-b border-[#8B88E8]/15">
+      <div className="flex items-center justify-between px-4 py-2 bg-paper border-b border-line">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setTab('preview')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer font-[lixFont] ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer ${
               tab === 'preview'
-                ? 'bg-[#8B88E8]/45 text-[#8B88E8]'
-                : 'text-[#6969aa] hover:text-[#a0a0b0]'
+                ? 'bg-ink text-white'
+                : 'text-muted hover:text-ink'
             }`}
           >
             <i className="bx bx-show text-sm" />
@@ -729,10 +778,10 @@ function LixScriptBlock({ code }) {
           </button>
           <button
             onClick={() => setTab('code')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer font-[lixFont] ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer ${
               tab === 'code'
-                ? 'bg-[#8B88E8]/15 text-[#8B88E8]'
-                : 'text-[#6969aa] hover:text-[#a0a0b0]'
+                ? 'bg-ink text-white'
+                : 'text-muted hover:text-ink'
             }`}
           >
             <i className="bx bx-code-alt text-sm" />
@@ -745,25 +794,25 @@ function LixScriptBlock({ code }) {
       {showPreview && <RoughLixScriptCanvas parsed={parsedData} />}
 
       {tab === 'preview' && !parsedData && !parseError && (
-        <div className="bg-[#0a0a12] p-8 flex items-center justify-center min-h-48">
-          <div className="flex items-center gap-2 text-[#6969aa] text-xs font-[lixFont]">
-            <div className="w-4 h-4 border border-[#8B88E8]/40 border-t-transparent rounded-full animate-spin" />
+        <div className="bg-white p-8 flex items-center justify-center min-h-48">
+          <div className="flex items-center gap-2 text-muted text-xs">
+            <div className="w-4 h-4 border border-lx-blue/40 border-t-transparent rounded-full animate-spin" />
             Rendering diagram...
           </div>
         </div>
       )}
 
       {tab === 'preview' && parseError && (
-        <div className="bg-[#0a0a12] p-8 flex items-center justify-center min-h-48">
-          <div className="text-center text-[#6969aa] text-xs font-[lixFont]">
-            <i className="bx bx-shape-square text-2xl text-[#8B88E8]/30 mb-2" />
+        <div className="bg-white p-8 flex items-center justify-center min-h-48">
+          <div className="text-center text-muted text-xs">
+            <i className="bx bx-shape-square text-2xl text-lx-blue/30 mb-2" />
             <p>Preview unavailable — switch to Code tab to view the LixScript source.</p>
           </div>
         </div>
       )}
 
       {tab === 'code' && (
-        <pre className="p-4 overflow-x-auto bg-[#171120] max-h-96 overflow-y-auto docs-scroll select-text">
+        <pre className="p-4 overflow-x-auto bg-[#0d1117] max-h-96 overflow-y-auto docs-scroll select-text">
           <code className="text-[#c9d1d9] text-sm font-[lixCode] leading-relaxed">{code}</code>
         </pre>
       )}
@@ -821,7 +870,7 @@ function CodeFenceBlock({ code, language }) {
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       <div className="relative z-10">
         <div className="flex items-center justify-between px-4 py-1.5 border-b border-[#30363d]/50">
-          <span className="text-[#6969aa] text-[10px] font-[lixCode] uppercase">{language || 'code'}</span>
+          <span className="text-muted text-[10px] font-[lixCode] uppercase">{language || 'code'}</span>
           <CopyButton text={code} />
         </div>
         <pre className="p-4 overflow-x-auto max-h-96 overflow-y-auto docs-scroll select-text">
@@ -846,9 +895,9 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
   let skippedTitle = false
 
   // Use canvas colors when canvasStyle is set
-  const textColor = canvasStyle ? 'text-[#c9d1d9]' : 'text-text-muted'
-  const headingColor = canvasStyle ? 'text-white' : 'text-text-primary'
-  const font = canvasStyle ? 'font-[lixFont]' : ''
+  const textColor = canvasStyle ? 'text-text-secondary' : 'text-text-muted'
+  const headingColor = canvasStyle ? 'text-ink' : 'text-text-primary'
+  const font = canvasStyle ? '' : ''
 
   while (i < lines.length) {
     const line = lines[i]
@@ -884,8 +933,8 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
     if (/^---+$/.test(line.trim())) {
       elements.push(
         canvasStyle
-          ? <div key={elements.length} className="my-8"><RoughHeadingLine width={600} color="#30363d" roughness={1.5} /></div>
-          : <hr key={elements.length} className="border-white/[0.06] my-8" />
+          ? <div key={elements.length} className="my-8"><RoughHeadingLine width={600} color="#d7dbd6" roughness={1.5} /></div>
+          : <hr key={elements.length} className="border-line my-8" />
       )
       i++
       continue
@@ -905,7 +954,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
           <h1 className={`text-2xl font-semibold ${headingColor} ${font}`}>
             {renderInline(line.slice(2), canvasStyle)}
           </h1>
-          {canvasStyle && <RoughHeadingLine width={240} color="#8B88E8" />}
+          {canvasStyle && <RoughHeadingLine width={240} color="#3a65c7" />}
           {!canvasStyle && <div className="mb-4" />}
         </div>
       )
@@ -918,7 +967,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
           <h2 className={`text-xl font-semibold ${headingColor} ${font}`}>
             {renderInline(line.slice(3), canvasStyle)}
           </h2>
-          {canvasStyle && <RoughHeadingLine width={180} color="#D99BF0" roughness={2.5} />}
+          {canvasStyle && <RoughHeadingLine width={180} color="#e76043" roughness={2.5} />}
           {!canvasStyle && <div className="mb-3" />}
         </div>
       )
@@ -931,7 +980,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
           <h3 className={`text-base font-medium ${headingColor} ${font}`}>
             {renderInline(line.slice(4), canvasStyle)}
           </h3>
-          {canvasStyle && <RoughHeadingLine width={120} color="#6B6BA0" roughness={3} />}
+          {canvasStyle && <RoughHeadingLine width={120} color="#8f9890" roughness={3} />}
           {!canvasStyle && <div className="mb-2" />}
         </div>
       )
@@ -993,7 +1042,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
         <ol key={elements.length} className="list-none space-y-2 my-4">
           {items.map((item, ii) => (
             <li key={ii} className={`flex items-start gap-2.5 ${textColor} text-sm leading-relaxed ${font}`}>
-              <span className="text-[#8B88E8] text-xs font-medium min-w-4 mt-0.5 font-[lixFont]">{ii + 1}.</span>
+              <span className="text-lx-blue text-xs font-medium min-w-4 mt-0.5">{ii + 1}.</span>
               <span>{renderInline(item, canvasStyle)}</span>
             </li>
           ))}
@@ -1036,7 +1085,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
           <div key={elements.length} className="my-5 overflow-x-auto">
             <table className={`w-full text-sm ${font}`}>
               <thead>
-                <tr className="border-b border-[#8B88E8]/20">
+                <tr className="border-b border-lx-blue/20">
                   {headers.map((h, hi) => (
                     <th
                       key={hi}
@@ -1050,7 +1099,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
               </thead>
               <tbody>
                 {bodyRows.map((row, ri) => (
-                  <tr key={ri} className="border-b border-white/[0.04]">
+                  <tr key={ri} className="border-b border-line">
                     {row.map((cell, ci) => (
                       <td
                         key={ci}
@@ -1078,7 +1127,7 @@ export default function MarkdownRenderer({ content, canvasStyle }) {
           <img
             src={imgMatch[2]}
             alt={imgMatch[1]}
-            className="max-w-full rounded-xl border border-white/[0.06] shadow-lg"
+            className="max-w-full rounded-xl border border-line shadow-lg"
             loading="lazy"
           />
         </div>
@@ -1115,7 +1164,7 @@ function renderInline(text, canvasStyle) {
     if (match && match.index !== undefined) {
       if (match.index > 0) parts.push(remaining.slice(0, match.index))
       parts.push(
-        <strong key={key++} className={canvasStyle ? 'text-white font-medium font-[lixFont]' : 'text-text-primary font-medium'}>
+        <strong key={key++} className={canvasStyle ? 'text-ink font-medium' : 'text-text-primary font-medium'}>
           {match[1]}
         </strong>
       )
@@ -1128,7 +1177,7 @@ function renderInline(text, canvasStyle) {
     if (match && match.index !== undefined) {
       if (match.index > 0) parts.push(remaining.slice(0, match.index))
       parts.push(
-        <em key={key++} className={canvasStyle ? 'text-[#c9d1d9] italic font-[lixFont]' : 'text-text-secondary italic'}>
+        <em key={key++} className={canvasStyle ? 'text-text-secondary italic' : 'text-text-secondary italic'}>
           {match[1]}
         </em>
       )
@@ -1143,7 +1192,7 @@ function renderInline(text, canvasStyle) {
       parts.push(
         <code key={key++} className={
           canvasStyle
-            ? 'font-[lixCode] text-[#8B88E8] text-xs bg-[#161b22] border border-[#30363d] px-1.5 py-0.5 rounded'
+            ? 'font-[lixCode] text-lx-blue text-xs bg-paper-deep border border-line px-1.5 py-0.5 rounded'
             : 'font-[lixCode] text-accent-blue text-xs bg-accent-blue/10 px-1.5 py-0.5 rounded'
         }>
           {match[1]}
@@ -1159,7 +1208,7 @@ function renderInline(text, canvasStyle) {
       if (match.index > 0) parts.push(remaining.slice(0, match.index))
       parts.push(
         <a key={key++} href={match[2]}
-          className={canvasStyle ? 'text-[#8B88E8] hover:underline font-[lixFont]' : 'text-accent-blue hover:underline'}
+          className={canvasStyle ? 'text-lx-blue hover:underline' : 'text-accent-blue hover:underline'}
           target={match[2].startsWith('http') ? '_blank' : undefined}
           rel={match[2].startsWith('http') ? 'noopener noreferrer' : undefined}
         >

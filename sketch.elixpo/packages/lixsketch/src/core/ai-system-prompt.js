@@ -63,14 +63,18 @@ You MUST respond with ONLY a valid JSON object — no markdown fences, no explan
   "stroke":          "string — edge color (default '#e0e0e0')",
   "strokeWidth":     "number — edge thickness (default 1.5)",
   "lineStyle":       "string — 'solid' | 'dashed' | 'dotted' (default 'solid')",
-  "arrowHeadStyle":  "string — 'default' | 'outline' | 'solid' | 'square' (default 'default', only for directed edges)"
+  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'cross' (default 'none')",
+  "endArrowhead":    "string — same values (default 'arrow', only for directed edges)"
 }
 
-Arrow head styles (only apply when "directed": true):
-  • "default" — open V-shaped polyline head (two angled lines meeting at tip)
-  • "outline" — closed hollow triangle head (stroke only, no fill)
-  • "solid"   — closed filled triangle head (filled with stroke color)
-  • "square"  — rectangular head perpendicular to the arrow shaft
+Arrowheads (startArrowhead / endArrowhead, only when "directed": true):
+  • "arrow"   — open V head (default end)
+  • "triangle" / "triangle_outline" — filled / hollow triangle
+  • "dot" / "circle" — filled / hollow circle;  "bar" — perpendicular bar
+  • "diamond" / "diamond_outline" — e.g. UML composition / aggregation
+  • "crowfoot_one" / "crowfoot_many" / "crowfoot_one_or_many" — ER cardinality
+  • "cross" — an X;  "none" — no head (default start)
+  Set both ends for a two-way edge (one edge, not two).
 
 ─── SubgraphObject ───────────────────────
 
@@ -463,7 +467,8 @@ You MUST respond with ONLY valid JSON — no markdown fences, no explanations.
   "stroke":          "string — edge color",
   "strokeWidth":     "number — edge thickness",
   "lineStyle":       "string — 'solid' | 'dashed' | 'dotted'",
-  "arrowHeadStyle":  "string — 'default' | 'outline' | 'solid' | 'square'"
+  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'cross'",
+  "endArrowhead":    "string — same values"
 }
 
 ─── SubgraphObject ───────────────────────
@@ -572,7 +577,7 @@ EDGE CONVENTIONS:
   • Loss/gradient flow: dotted arrows, stroke #FF6B6B
   • Attention connections: solid, stroke #9B59B6
   • Label critical edges with tensor shapes: "B×256×256", "1024-d"
-  • Use arrowHeadStyle "solid" for clean technical look
+  • Use endArrowhead "triangle" for a clean technical look
 
 ═══════════════════════════════════════════
  KNOWN ARCHITECTURE TEMPLATES

@@ -27,14 +27,14 @@ const DISCONNECTED_STATUS = {
 function MeterTrack({ percentage, label }) {
   return (
     <div
-      className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]"
+      className="mt-2 h-2 overflow-hidden rounded-full bg-ink/[0.03]"
       role="progressbar"
       aria-label={label}
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow={Math.round(percentage)}
     >
-      <div className="h-full rounded-full bg-[#9E91EE] transition-all duration-500" style={{ width: `${percentage}%` }} />
+      <div className="h-full rounded-full bg-lx-blue transition-all duration-500" style={{ width: `${percentage}%` }} />
     </div>
   )
 }
@@ -46,10 +46,10 @@ function ManagedStorageMeter({ usage, active }) {
   const percentage = limitBytes > 0 ? Math.min(100, (usedBytes / limitBytes) * 100) : 0
 
   return (
-    <div className={`rounded-xl border p-3 ${active ? 'border-[#8B88E8]/45 bg-[#8B88E8]/10' : 'border-white/[0.07] bg-black/10'}`}>
+    <div className={`rounded-xl border p-3 ${active ? 'border-lx-blue/45 bg-lx-blue/10' : 'border-line bg-paper-deep'}`}>
       <div className="flex items-center justify-between gap-3 text-[10px]">
         <span className="uppercase tracking-wider text-text-dim">LixSketch managed</span>
-        {active && <span className="rounded-full bg-[#8B88E8]/20 px-2 py-0.5 text-[#C4B8F8]">Active</span>}
+        {active && <span className="rounded-full bg-lx-blue/20 px-2 py-0.5 text-lx-blue">Active</span>}
       </div>
       <MeterTrack percentage={percentage} label="LixSketch managed storage usage" />
       <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-text-dim">
@@ -66,10 +66,10 @@ function PersonalStorageMeter({ usage, active }) {
   const usesCredits = usage.mode === 'credits'
   const hasQuota = usesCredits || usage.mode === 'storage'
   return (
-    <div className={`rounded-xl border p-3 ${active ? 'border-[#8B88E8]/45 bg-[#8B88E8]/10' : 'border-white/[0.07] bg-black/10'}`}>
+    <div className={`rounded-xl border p-3 ${active ? 'border-lx-blue/45 bg-lx-blue/10' : 'border-line bg-paper-deep'}`}>
       <div className="flex items-center justify-between gap-3 text-[10px]">
         <span className="uppercase tracking-wider text-text-dim">Personal Cloudinary</span>
-        {active && <span className="rounded-full bg-[#8B88E8]/20 px-2 py-0.5 text-[#C4B8F8]">Active</span>}
+        {active && <span className="rounded-full bg-lx-blue/20 px-2 py-0.5 text-lx-blue">Active</span>}
       </div>
 
       {hasQuota && <MeterTrack percentage={percentage} label="Personal Cloudinary storage usage" />}
@@ -194,17 +194,17 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
   }
 
   return (
-    <section id="integrations" className="rounded-2xl border border-[#8B88E8]/25 bg-[#8B88E8]/[0.045] p-5">
+    <section id="integrations" className="rounded-2xl border border-lx-blue/25 bg-lx-blue/[0.045] p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#8B88E8]/15 text-[#A99CF1]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lx-blue/15 text-lx-blue">
             <i className="bx bx-cloud text-2xl" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-medium text-text-primary">Personal Cloudinary storage</h2>
               {status && (
-                <span className={`rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wider ${status.connected ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-text-dim'}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wider ${status.connected ? 'bg-green-500/10 text-green-700' : 'bg-ink/[0.03] text-text-dim'}`}>
                   {status.connected ? 'Connected' : 'Not connected'}
                 </span>
               )}
@@ -212,23 +212,23 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
             <p className="mt-1 max-w-xl text-xs leading-5 text-text-dim">
               Store new canvas and document images in your own Cloudinary product environment. Personal storage does not consume LixSketch’s per-workspace image allowance.
             </p>
-            <a href="/docs/connectors#cloudinary" className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-[#A99CF1] hover:text-white">Connector docs <i className="bx bx-right-arrow-alt" /></a>
+            <a href="/docs/connectors#cloudinary" className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-lx-blue hover:text-ink">Connector docs <i className="bx bx-right-arrow-alt" /></a>
           </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/[0.07] bg-black/10 p-3">
+        <div className="rounded-xl border border-line bg-paper-deep p-3">
           <p className="text-[9px] uppercase tracking-wider text-text-dim">Provider</p>
           <p className="mt-1 text-xs text-text-secondary">{status?.connected ? 'Cloudinary' : 'Not connected'}</p>
           <p className="mt-1 text-[9px] text-text-dim">{status?.connected ? status.cloudName : 'Connect a product environment'}</p>
         </div>
-        <div className="rounded-xl border border-white/[0.07] bg-black/10 p-3">
+        <div className="rounded-xl border border-line bg-paper-deep p-3">
           <p className="text-[9px] uppercase tracking-wider text-text-dim">Authorization</p>
           <p className="mt-1 text-xs text-text-secondary">{status?.connected ? 'OAuth 2.0 active' : 'Authorization required'}</p>
           <p className="mt-1 text-[9px] text-text-dim">{status?.connected ? 'Encrypted refresh-token storage' : 'No Cloudinary access granted'}</p>
         </div>
-        <div className="rounded-xl border border-white/[0.07] bg-black/10 p-3">
+        <div className="rounded-xl border border-line bg-paper-deep p-3">
           <p className="text-[9px] uppercase tracking-wider text-text-dim">Upload route</p>
           <p className="mt-1 text-xs text-text-secondary">{status?.useForUploads ? 'Personal storage' : 'LixSketch managed'}</p>
           <p className="mt-1 text-[9px] text-text-dim">Only new media follows this route</p>
@@ -236,7 +236,7 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
       </div>
 
       {oauthMessage && (
-        <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${oauthMessage.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+        <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${oauthMessage.ok ? 'bg-green-500/10 text-green-700' : 'bg-red-500/10 text-red-700'}`}>
           {oauthMessage.text}{oauthReference && !oauthMessage.ok ? ` Reference: ${oauthReference}` : ''}
         </p>
       )}
@@ -251,19 +251,19 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
       )}
 
       {loading ? (
-        <div className="mt-4 h-16 animate-pulse rounded-xl bg-white/[0.035]" />
+        <div className="mt-4 h-16 animate-pulse rounded-xl bg-ink/[0.03]" />
       ) : !status?.connected ? (
-        <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.07] pt-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs text-text-secondary">Authorize upload and asset management access</p>
             <p className="mt-1 text-[10px] text-text-dim">Choose your product environment on Cloudinary. OAuth authorizes access and offline access lets the server refresh encrypted tokens. Your API secret is never requested.</p>
           </div>
-          <a href="/api/integrations/cloudinary/connect" className="shrink-0 cursor-pointer rounded-lg bg-[#8B88E8] px-4 py-2 text-center text-xs text-white transition-colors hover:bg-[#9E91EE]">
+          <a href="/api/integrations/cloudinary/connect" className="shrink-0 cursor-pointer rounded-lg bg-lx-blue px-4 py-2 text-center text-xs text-white transition-colors hover:bg-lx-blue">
             {oauthResult === 'failed_environment' ? 'Reconnect Cloudinary' : 'Connect Cloudinary'}
           </a>
         </div>
       ) : (
-        <div className="mt-4 border-t border-white/[0.07] pt-4">
+        <div className="mt-4 border-t border-line pt-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-text-dim">Product environment</p>
@@ -272,29 +272,29 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
               <p className="mt-1 text-[10px] text-text-dim">Connected {formatConnectionDate(status.connectedAt)} · {status.scope || 'OAuth scopes active'}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={busy} onClick={toggleStorage} className="cursor-pointer rounded-lg border border-[#8B88E8]/30 px-3 py-2 text-xs text-[#A99CF1] hover:bg-[#8B88E8]/10 disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={toggleStorage} className="cursor-pointer rounded-lg border border-lx-blue/30 px-3 py-2 text-xs text-lx-blue hover:bg-lx-blue/10 disabled:opacity-50">
                 {status.useForUploads ? 'Use LixSketch storage' : 'Use personal storage'}
               </button>
-              <button type="button" disabled={busy} onClick={() => { setError(''); setConfirmDisconnect(true) }} className="cursor-pointer rounded-lg border border-red-500/25 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={() => { setError(''); setConfirmDisconnect(true) }} className="cursor-pointer rounded-lg border border-red-500/25 px-3 py-2 text-xs text-red-700 hover:bg-red-500/10 disabled:opacity-50">
                 Disconnect
               </button>
             </div>
           </div>
           {status.providerUsageUnavailable && (
-            <p className="mt-3 text-[10px] text-amber-300/80">
+            <p className="mt-3 text-[10px] text-amber-700/80">
               Cloudinary usage details are available in its dashboard. LixSketch has tracked {formatBytes(status.trackedBytes)} of uploaded media.
             </p>
           )}
-          <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${status.useForUploads ? 'bg-green-500/10 text-green-400' : 'bg-white/[0.035] text-text-dim'}`}>
+          <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${status.useForUploads ? 'bg-green-500/10 text-green-700' : 'bg-ink/[0.03] text-text-dim'}`}>
             New media will use {status.useForUploads ? status.cloudName : 'LixSketch managed storage'}. Existing images stay where they were uploaded.
           </p>
         </div>
       )}
-      {error && <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-700">{error}</p>}
 
       {confirmDisconnect && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/65 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !busy) {
@@ -304,14 +304,14 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
           }}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-red-400/25 bg-[#1B1426] p-5 shadow-2xl shadow-black/50"
+            className="w-full max-w-md rounded-2xl border border-red-400/25 bg-paper-deep p-5 shadow-2xl shadow-ink/10"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="cloudinary-disconnect-title"
             aria-describedby="cloudinary-disconnect-description"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-700">
                 <i className="bx bx-unlink text-xl" />
               </div>
               <div>
@@ -322,15 +322,15 @@ export default function CloudinaryIntegrationCard({ managedUsage }) {
               </div>
             </div>
 
-            {error && <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-700">{error}</p>}
 
-            <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.07] pt-4">
+            <div className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
               <button
                 type="button"
                 disabled={busy}
                 autoFocus
                 onClick={() => { setConfirmDisconnect(false); setError('') }}
-                className="cursor-pointer rounded-lg border border-white/10 px-4 py-2 text-xs text-text-secondary hover:bg-white/[0.05] disabled:cursor-wait disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-line px-4 py-2 text-xs text-text-secondary hover:bg-ink/[0.06] disabled:cursor-wait disabled:opacity-50"
               >
                 Cancel
               </button>

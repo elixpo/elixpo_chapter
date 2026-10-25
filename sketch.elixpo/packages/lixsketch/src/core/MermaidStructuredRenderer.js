@@ -121,6 +121,17 @@ export function parseERDiagram(src) {
     return { type: 'erDiagram', title: 'Entity relationship diagram', entities: [...entityMap.values()], relationships };
 }
 
+/**
+ * Mermaid ER cardinality token (`||`, `|o`, `o|`, `}o`, `o{`, `}|`, `|{`)
+ * → crow's-foot arrowhead. Zero-or-one has no dedicated head and uses the
+ * closest one ("one"); zero-or-many uses "many".
+ */
+export function crowfootForCardinality(token = '') {
+    const many = /[{}]/.test(token);
+    if (many) return token.includes('|') ? 'crowfoot_one_or_many' : 'crowfoot_many';
+    return 'crowfoot_one';
+}
+
 function layoutER(diagram) {
     const width = 230;
     const headerHeight = 44;
@@ -402,9 +413,12 @@ export function renderEROnCanvas(diagram) {
         // closest to the geometric center on a short, wide header box.
         const start = rectBoundaryPoint(from, toCenter);
         const end = rectBoundaryPoint(to, fromCenter);
+        // Crow's-foot heads carry the cardinality at each entity.
         const arrow = push(new window.Arrow(start, end, {
             stroke: TK.line, strokeWidth: 1.5, roughness: 0,
-            label: `${relation.fromCardinality} ${relation.label} ${relation.toCardinality}`,
+            startArrowhead: crowfootForCardinality(relation.fromCardinality),
+            endArrowhead: crowfootForCardinality(relation.toCardinality),
+            label: relation.label,
             labelColor: TK.text, labelBg: false, labelOffsetY: -12,
         }), frame);
         if (arrow && window.__autoAttach) {

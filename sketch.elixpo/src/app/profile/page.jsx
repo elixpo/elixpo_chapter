@@ -11,7 +11,7 @@ import { getRememberedCanvasId } from '@/utils/canvasSession'
 import CloudinaryIntegrationCard from '@/components/profile/CloudinaryIntegrationCard'
 import PollinationsIntegrationCard from '@/components/profile/PollinationsIntegrationCard'
 import PersonalDetailsCard from '@/components/profile/PersonalDetailsCard'
-import LandingNav from '@/components/landing/LandingNav'
+import { SiteShell } from '@/components/site/Site'
 import McpWorkspaceAccessModal from '@/components/profile/McpWorkspaceAccessModal'
 import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
@@ -40,77 +40,12 @@ function parseDatabaseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-// ── Dot grid background ──────────────────────────────────────────────────────
+// ── Card ─────────────────────────────────────────────────────────────────────
 
-function DotGrid() {
+function RoughCard({ children, className = '' }) {
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60" width="100%" height="100%">
-      <defs>
-        <pattern id="profile-dot-grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="0.9" fill="rgba(74, 144, 217, 0.18)" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#profile-dot-grid)" />
-    </svg>
-  )
-}
-
-// ── Ambient glow ─────────────────────────────────────────────────────────────
-
-function AmbientGlow() {
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute -top-20 -left-32 w-[600px] h-[600px] rounded-full bg-[#4A90D9]/[0.05] blur-[130px]" />
-      <div className="absolute top-[20%] -right-40 w-[500px] h-[500px] rounded-full bg-[#8B88E8]/[0.06] blur-[120px]" />
-      <div className="absolute bottom-[10%] left-1/2 -translate-x-1/3 w-[700px] h-[350px] rounded-full bg-[#D99BF0]/[0.04] blur-[130px]" />
-    </div>
-  )
-}
-
-// ── RoughJS card ─────────────────────────────────────────────────────────────
-
-function RoughCard({ children, color = '#4A90D9', className = '' }) {
-  const canvasRef = useRef(null)
-  const containerRef = useRef(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const container = containerRef.current
-    if (!canvas || !container) return
-
-    let raf
-    const draw = async () => {
-      const rough = (await import('roughjs')).default
-      const { width, height } = container.getBoundingClientRect()
-      canvas.width = width * 2
-      canvas.height = height * 2
-      canvas.style.width = width + 'px'
-      canvas.style.height = height + 'px'
-      const rc = rough.canvas(canvas)
-      const ctx = canvas.getContext('2d')
-      ctx.scale(2, 2)
-      ctx.clearRect(0, 0, width, height)
-
-      rc.rectangle(4, 4, width - 8, height - 8, {
-        stroke: color,
-        strokeWidth: 1.2,
-        roughness: 1.2,
-        bowing: 0.6,
-        fill: 'transparent',
-        fillStyle: 'solid',
-      })
-    }
-
-    raf = requestAnimationFrame(draw)
-    const ro = new ResizeObserver(() => { raf = requestAnimationFrame(draw) })
-    ro.observe(container)
-    return () => { cancelAnimationFrame(raf); ro.disconnect() }
-  }, [color])
-
-  return (
-    <div ref={containerRef} className={`relative ${className}`}>
-      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
-      <div className="relative z-10">{children}</div>
+    <div className={`lx-panel relative ${className}`}>
+      {children}
     </div>
   )
 }
@@ -125,7 +60,7 @@ function UsageBar({ used, limit, color = '#4A90D9', label, unit = '', showRemain
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-text-secondary text-xs">{label}</span>
-        <span className={`text-xs font-mono ${isNearLimit ? 'text-red-400' : 'text-text-dim'}`}>
+        <span className={`text-xs font-mono ${isNearLimit ? 'text-red-700' : 'text-text-dim'}`}>
           {showRemaining && `${Math.max(0, limit - used).toFixed(2)}${unit} remaining · `}
           {used}{unit} / {limit}{unit}
         </span>
@@ -145,14 +80,14 @@ function UsageBar({ used, limit, color = '#4A90D9', label, unit = '', showRemain
 
 function SectionIntro({ tab }) {
   return (
-    <div className="flex flex-col gap-2 border-b border-white/[0.07] pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex flex-col gap-2 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[#8B88E8]">Profile</p>
-        <h2 className="mt-1 flex items-center gap-2 text-lg font-medium font-[lixFont] text-text-primary">
-          <i className={`bx ${tab.icon} text-[#A99CF1]`} />
+        <p className="lx-eyebrow !mb-1">Profile</p>
+        <h2 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
+          <i className={`bx ${tab.icon} text-lx-blue`} />
           {tab.label}
         </h2>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-text-dim">{tab.description}</p>
+        <p className="mt-1 max-w-xl text-sm leading-6 text-muted">{tab.description}</p>
       </div>
     </div>
   )
@@ -160,7 +95,7 @@ function SectionIntro({ tab }) {
 
 function MetricCard({ icon, label, value, detail, color = '#8B88E8' }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
+    <div className="rounded-xl border border-line bg-ink/[0.03] p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[9px] uppercase tracking-wider text-text-dim">{label}</p>
@@ -209,12 +144,12 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.25) }}
-      className="group rounded-xl border border-white/[0.08] bg-[#141120]/80 p-3 transition-colors hover:border-[#8B88E8]/35 hover:bg-[#181426]"
+      className="group rounded-xl border border-line bg-paper-deep/80 p-3 transition-colors hover:border-lx-blue/35 hover:bg-paper-deep"
     >
       <div className="flex items-start gap-2.5">
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#8B88E8]/12 text-[#A99CF1]">
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-lx-blue/12 text-lx-blue">
           <i className="bx bx-shape-square text-base" />
-          {hasActiveMcp && <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[#141120] bg-[#54D6A0] text-[#141120]" title="Remote MCP active"><i className="bx bx-plug text-[9px]" /></span>}
+          {hasActiveMcp && <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-lx-green text-white" title="Remote MCP active"><i className="bx bx-plug text-[9px]" /></span>}
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-medium text-text-primary" title={workspace.workspace_name || 'Untitled'}>
@@ -227,22 +162,22 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {hasActiveMcp && <span className="inline-flex items-center gap-1 rounded-full border border-[#54D6A0]/20 bg-[#54D6A0]/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-[#70DFB3]" title={`${workspace.active_mcp_grants} active Remote MCP client${Number(workspace.active_mcp_grants) === 1 ? '' : 's'}`}><i className="bx bx-plug text-[9px]" />MCP</span>}
-          <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-green-400" title="End-to-end encrypted">E2E</span>
+          {hasActiveMcp && <span className="inline-flex items-center gap-1 rounded-full border border-lx-green/20 bg-lx-green/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-lx-green" title={`${workspace.active_mcp_grants} active Remote MCP client${Number(workspace.active_mcp_grants) === 1 ? '' : 's'}`}><i className="bx bx-plug text-[9px]" />MCP</span>}
+          <span className="rounded-full bg-green-500/10 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-green-700" title="End-to-end encrypted">E2E</span>
         </div>
       </div>
 
       {workspace.template_mode === 'fork' && workspace.template_slug && (
-        <Link href={`/templates/${workspace.template_slug}`} className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-[9px] text-[#A99CF1] hover:underline">
+        <Link href={`/templates/${workspace.template_slug}`} className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-[9px] text-lx-blue hover:underline">
           <i className="bx bx-git-repo-forked" />
           Forked from {workspace.template_title || 'template'}
         </Link>
       )}
 
-      <div className="mt-3 flex gap-1.5 border-t border-white/[0.06] pt-2.5">
+      <div className="mt-3 flex gap-1.5 border-t border-line pt-2.5">
         <Link
           href={`/c/${workspace.session_id}`}
-          className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-[#8B88E8] px-2 py-1.5 text-[10px] text-white transition-colors hover:bg-[#9E91EE]"
+          className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-lx-blue px-2 py-1.5 text-[10px] text-white transition-colors hover:bg-lx-blue"
         >
           <i className="bx bx-window-open" />
           Open canvas
@@ -252,7 +187,7 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
             type="button"
             onClick={() => { if (REMOTE_MCP_ENABLED) onMcpAccess(workspace) }}
             disabled={!REMOTE_MCP_ENABLED}
-            className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-[#8B88E8]/30 px-2.5 py-1.5 text-[10px] text-[#B6ACF4] transition-colors hover:bg-[#8B88E8]/10 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+            className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-lx-blue/30 px-2.5 py-1.5 text-[10px] text-lx-blue transition-colors hover:bg-lx-blue/10 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
             title={REMOTE_MCP_ENABLED ? 'Manage Remote MCP access' : 'Remote MCP is coming soon'}
           >
             <i className="bx bx-plug text-xs" />
@@ -265,8 +200,8 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
           disabled={deleting}
           className={`min-w-8 cursor-pointer rounded-lg border px-2 py-1.5 text-[10px] transition-all ${
             confirmDelete
-              ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-              : 'border-white/10 text-text-dim hover:border-red-500/30 hover:text-red-400'
+              ? 'border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/20'
+              : 'border-line text-text-dim hover:border-red-500/30 hover:text-red-700'
           } ${deleting ? 'cursor-not-allowed opacity-50' : ''}`}
           title={confirmDelete ? 'Click again to confirm' : 'Delete workspace'}
         >
@@ -280,10 +215,10 @@ function WorkspaceCard({ workspace, index, onDelete, onMcpAccess }) {
 // ── Tier badge ───────────────────────────────────────────────────────────────
 
 const TIER_COLORS = {
-  guest: { bg: 'bg-white/5', text: 'text-text-dim', border: 'border-white/10' },
+  guest: { bg: 'bg-ink/[0.03]', text: 'text-text-dim', border: 'border-line' },
   free: { bg: 'bg-[#4A90D9]/10', text: 'text-[#4A90D9]', border: 'border-[#4A90D9]/20' },
-  pro: { bg: 'bg-[#8B88E8]/10', text: 'text-[#8B88E8]', border: 'border-[#8B88E8]/20' },
-  team: { bg: 'bg-[#D99BF0]/10', text: 'text-[#D99BF0]', border: 'border-[#D99BF0]/20' },
+  pro: { bg: 'bg-lx-blue/10', text: 'text-lx-blue', border: 'border-lx-blue/20' },
+  team: { bg: 'bg-lx-orange/10', text: 'text-lx-orange', border: 'border-lx-orange/20' },
 }
 
 const PROFILE_TABS = [
@@ -447,12 +382,8 @@ export default function ProfilePage() {
     : 0
 
   return (
-    <div className="profile-page relative min-h-screen bg-[#0a0a12] text-text-primary overflow-hidden">
-      <LandingNav />
-      <DotGrid />
-      <AmbientGlow />
-
-      <div className="relative z-10 max-w-3xl mx-auto px-6 pb-16 pt-20 sm:pt-24">
+    <SiteShell className="profile-page">
+      <div className="lx-page lx-page-narrow">
         {/* Back link */}
         <motion.div
           ref={headerRef}
@@ -462,24 +393,25 @@ export default function ProfilePage() {
         >
           <button
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-text-dim text-xs hover:text-text-secondary transition-colors mb-8 bg-transparent border-none cursor-pointer"
+            className="lx-back mb-8 cursor-pointer border-none bg-transparent"
           >
             <i className="bx bx-arrow-back text-sm" />
             Back
           </button>
 
           {/* Profile header */}
-          <div className="flex items-start gap-4 mb-8">
-            <div className="w-14 h-14 rounded-xl bg-accent-blue/20 flex items-center justify-center shrink-0">
+          <div className="mb-10 flex flex-wrap items-end gap-5 border-b border-line pb-10">
+            <div className="w-16 h-16 rounded-full bg-blue-wash flex items-center justify-center shrink-0 overflow-hidden">
               {isAuthenticated && user?.avatar ? (
-                <img src={user.avatar} alt="" className="w-14 h-14 rounded-xl" referrerPolicy="no-referrer" />
+                <img src={user.avatar} alt="" className="w-16 h-16 rounded-full" referrerPolicy="no-referrer" />
               ) : (
                 <i className="bx bx-user text-2xl text-accent-blue" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl font-medium font-[lixFont] text-text-primary truncate">
+              <p className="lx-eyebrow">Account</p>
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <h1 className="lx-title !text-[clamp(2.2rem,5vw,4rem)] truncate">
                   {isAuthenticated ? (user?.displayName || user?.email || 'User') : 'Guest'}
                 </h1>
                 <span className={`px-2 py-0.5 text-[10px] rounded-full font-medium uppercase tracking-wider border ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`}>
@@ -497,14 +429,14 @@ export default function ProfilePage() {
               {isAuthenticated ? (
                 <button
                   onClick={logout}
-                  className="px-3 py-1.5 rounded-lg text-xs text-text-dim border border-white/10 hover:border-red-500/30 hover:text-red-400 transition-all"
+                  className="lx-btn lx-btn-sm cursor-pointer hover:!border-red-700 hover:!bg-red-50 hover:!text-red-700"
                 >
                   Sign out
                 </button>
               ) : (
                 <button
                   onClick={() => login()}
-                  className="px-4 py-1.5 rounded-lg text-xs text-white bg-accent-blue hover:bg-accent-blue/80 transition-all"
+                  className="lx-btn lx-btn-sm lx-btn-primary cursor-pointer"
                 >
                   Sign in
                 </button>
@@ -513,7 +445,7 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        <nav className="mb-8 flex gap-1 overflow-x-auto rounded-xl border border-[#8B88E8]/20 bg-[#151321]/80 p-1.5" aria-label="Profile sections">
+        <nav className="mb-10 flex gap-1 overflow-x-auto rounded-full border border-line bg-white p-1.5 no-scrollbar" aria-label="Profile sections">
           {PROFILE_TABS.map((tab) => {
             const selected = activeTab === tab.id
             return (
@@ -521,9 +453,9 @@ export default function ProfilePage() {
                 key={tab.id}
                 type="button"
                 onClick={() => selectTab(tab.id)}
-                className={`flex min-w-max flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${selected
-                  ? 'bg-[#8B88E8]/20 text-[#B6ACF4]'
-                  : 'text-text-dim hover:bg-white/[0.04] hover:text-text-secondary'
+                className={`flex min-w-max flex-1 cursor-pointer items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${selected
+                  ? 'bg-ink text-white'
+                  : 'text-muted hover:bg-paper hover:text-ink'
                 }`}
                 aria-current={selected ? 'page' : undefined}
               >
@@ -559,8 +491,8 @@ export default function ProfilePage() {
               </div>
               <RoughCard color="#8B88E8">
                 <div className="p-5">
-                  <h2 className="text-sm font-medium font-[lixFont] text-text-primary mb-4 flex items-center gap-2">
-                    <i className="bx bx-bar-chart-alt-2 text-[#8B88E8]" />
+                  <h2 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">
+                    <i className="bx bx-bar-chart-alt-2 text-lx-blue" />
                     Usage
                   </h2>
 
@@ -583,7 +515,7 @@ export default function ProfilePage() {
                   {tier !== 'pro' && tier !== 'team' && (
                     <Link
                       href="/pricing"
-                      className="inline-flex items-center gap-1.5 mt-2 text-[#8B88E8] text-xs hover:underline"
+                      className="inline-flex items-center gap-1.5 mt-2 text-lx-blue text-xs hover:underline"
                     >
                       <i className="bx bx-rocket text-sm" />
                       Upgrade for more
@@ -601,7 +533,7 @@ export default function ProfilePage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-medium font-[lixFont] text-text-primary">Your canvases</h3>
+                  <h3 className="text-sm font-medium text-text-primary">Your canvases</h3>
                   <p className="mt-1 text-[10px] text-text-dim">Workspace names, activity, scene size, and access history.</p>
                 </div>
                 {workspaces.length < workspaceLimit && (
@@ -637,20 +569,20 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+              <div className="mt-4 rounded-xl border border-line bg-ink/[0.03] px-3.5 py-3">
                 <div className="mb-2 flex items-center justify-between gap-3 text-[10px]">
                   <span className="text-text-secondary">Workspace usage</span>
-                  <span className="font-mono text-[#B6ACF4]">{workspaces.length} / {workspaceLimit}</span>
+                  <span className="font-mono text-lx-blue">{workspaces.length} / {workspaceLimit}</span>
                 </div>
                 <div
-                  className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]"
+                  className="h-1.5 overflow-hidden rounded-full bg-ink/[0.03]"
                   role="progressbar"
                   aria-label="Workspace usage"
                   aria-valuemin={0}
                   aria-valuemax={workspaceLimit}
                   aria-valuenow={workspaces.length}
                 >
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#7568C8] to-[#B094EA] transition-[width] duration-500" style={{ width: `${workspaceUsagePercent}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-lx-blue to-lx-blue transition-[width] duration-500" style={{ width: `${workspaceUsagePercent}%` }} />
                 </div>
                 <p className="mt-2 text-[9px] text-text-dim">{workspaceRemaining} workspace slot{workspaceRemaining === 1 ? '' : 's'} remaining on the {tier} plan.</p>
               </div>
@@ -658,7 +590,7 @@ export default function ProfilePage() {
               {isAuthenticated && <div className="mt-8 border-t border-border-light pt-6">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium font-[lixFont] text-text-primary">Published templates</h3>
+                    <h3 className="text-sm font-medium text-text-primary">Published templates</h3>
                     <p className="mt-1 text-[10px] text-text-dim">Public snapshots others can fork or clone.</p>
                   </div>
                   <Link href="/templates" className="flex items-center gap-1 rounded-lg border border-accent-blue/20 px-3 py-1.5 text-xs text-accent-blue transition hover:bg-accent-blue/10"><i className="bx bx-world" />Browse</Link>
@@ -703,7 +635,7 @@ export default function ProfilePage() {
               >
                 <RoughCard color="#555">
                   <div className="p-5">
-                    <h2 className="text-sm font-medium font-[lixFont] text-text-primary mb-3 flex items-center gap-2">
+                    <h2 className="text-sm font-medium text-text-primary mb-3 flex items-center gap-2">
                       <i className="bx bx-info-circle text-text-dim" />
                       Guest Account
                     </h2>
@@ -711,15 +643,15 @@ export default function ProfilePage() {
                       <p>You're using LixSketch as a guest. Your workspace data is stored locally and synced to the cloud under a guest session.</p>
                       <ul className="space-y-1.5 mt-3">
                         <li className="flex items-center gap-2">
-                          <i className="bx bx-check text-green-400" />
+                          <i className="bx bx-check text-green-700" />
                           <span className="text-text-secondary">1 workspace</span>
                         </li>
                         <li className="flex items-center gap-2">
-                          <i className="bx bx-check text-green-400" />
+                          <i className="bx bx-check text-green-700" />
                           <span className="text-text-secondary">2 MB image limit per workspace</span>
                         </li>
                         <li className="flex items-center gap-2">
-                          <i className="bx bx-x text-red-400" />
+                          <i className="bx bx-x text-red-700" />
                           <span className="text-text-secondary">Unused workspaces deleted after 1 month</span>
                         </li>
                       </ul>
@@ -732,7 +664,7 @@ export default function ProfilePage() {
                         </button>
                         <Link
                           href="/pricing"
-                          className="px-4 py-2 rounded-lg text-xs text-text-dim border border-white/10 hover:border-white/20 hover:text-text-secondary transition-all"
+                          className="px-4 py-2 rounded-lg text-xs text-text-dim border border-line hover:border-ink/30 hover:text-text-secondary transition-all"
                         >
                           View plans
                         </Link>
@@ -746,12 +678,12 @@ export default function ProfilePage() {
             {activeTab === 'integrations' && !isAuthenticated && (
               <RoughCard color="#8B88E8">
                 <div id="integrations" className="p-8 text-center">
-                  <i className="bx bx-plug mb-3 text-3xl text-[#A99CF1]" />
+                  <i className="bx bx-plug mb-3 text-3xl text-lx-blue" />
                   <h2 className="text-sm font-medium text-text-primary">Personal integrations</h2>
                   <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-text-dim">
                     Sign in to connect your own Cloudinary product environment and keep personal media outside the managed workspace allowance.
                   </p>
-                  <button type="button" onClick={() => login('/profile?tab=integrations')} className="mt-4 cursor-pointer rounded-lg bg-[#8B88E8] px-4 py-2 text-xs text-white hover:bg-[#9E91EE]">
+                  <button type="button" onClick={() => login('/profile?tab=integrations')} className="mt-4 cursor-pointer rounded-lg bg-lx-blue px-4 py-2 text-xs text-white hover:bg-lx-blue">
                     Sign in to connect
                   </button>
                 </div>
@@ -771,7 +703,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h2 className="flex items-center gap-2 text-sm font-medium text-text-primary">
-                        <i className="bx bx-credit-card text-[#A99CF1]" />
+                        <i className="bx bx-credit-card text-lx-blue" />
                         Billing
                       </h2>
                       <p className="mt-2 text-xs leading-5 text-text-dim">
@@ -782,7 +714,7 @@ export default function ProfilePage() {
                       {tier} plan
                     </span>
                   </div>
-                  <div className="mt-5 grid gap-3 border-y border-white/[0.07] py-4 text-xs sm:grid-cols-3">
+                  <div className="mt-5 grid gap-3 border-y border-line py-4 text-xs sm:grid-cols-3">
                     <div>
                       <p className="text-text-dim">Workspaces</p>
                       <p className="mt-1 text-text-secondary">{workspaceLimit}</p>
@@ -796,22 +728,22 @@ export default function ProfilePage() {
                       <p className="mt-1 text-text-secondary">{tier === 'pro' || tier === 'team' ? 'Early access' : 'No active subscription'}</p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-xs">
+                  <div className="mt-4 rounded-xl border border-line bg-ink/[0.03] p-3 text-xs">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-text-dim">Next charge</span>
                       <span className="text-text-secondary">No scheduled charge</span>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-2">
+                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2">
                       <span className="text-text-dim">Invoices</span>
                       <span className="text-text-secondary">No invoices yet</span>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Link href="/pricing" className="cursor-pointer rounded-lg bg-[#8B88E8] px-4 py-2 text-xs text-white hover:bg-[#9E91EE]">
+                    <Link href="/pricing" className="cursor-pointer rounded-lg bg-lx-blue px-4 py-2 text-xs text-white hover:bg-lx-blue">
                       View plans
                     </Link>
                     {!isAuthenticated && (
-                      <button type="button" onClick={() => login()} className="cursor-pointer rounded-lg border border-[#8B88E8]/30 px-4 py-2 text-xs text-[#A99CF1] hover:bg-[#8B88E8]/10">
+                      <button type="button" onClick={() => login()} className="cursor-pointer rounded-lg border border-lx-blue/30 px-4 py-2 text-xs text-lx-blue hover:bg-lx-blue/10">
                         Sign in
                       </button>
                     )}
@@ -824,6 +756,6 @@ export default function ProfilePage() {
         )}
       </div>
       {REMOTE_MCP_ENABLED && mcpWorkspace && <McpWorkspaceAccessModal workspace={mcpWorkspace} onClose={() => setMcpWorkspace(null)} onGrantCountChange={handleMcpGrantCountChange} />}
-    </div>
+    </SiteShell>
   )
 }

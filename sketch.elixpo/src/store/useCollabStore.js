@@ -14,6 +14,7 @@ const useCollabStore = create((set, get) => ({
   myRole: 'editor',
   isAdmin: false,
   users: [],       // [{ userId, displayName, avatar, color }]
+  presence: {},    // { [connectionId]: { x, y, lastSeen } }
   expiresAt: null,
   adminUserId: null,
   sharingEnabled: true,
@@ -36,6 +37,7 @@ const useCollabStore = create((set, get) => ({
     myRole: info.role || 'editor',
     isAdmin: !!info.isAdmin,
     users: info.users || [],
+    presence: {},
     expiresAt: info.expiresAt,
     adminUserId: info.adminUserId,
     sharingEnabled: info.sharingEnabled !== false,
@@ -48,15 +50,23 @@ const useCollabStore = create((set, get) => ({
     users: [...s.users.filter((u) => (u.connectionId || u.userId) !== (user.connectionId || user.userId)), user],
   })),
 
-  removeUser: (connectionId) => set((s) => ({
-    users: s.users.filter((u) => (u.connectionId || u.userId) !== connectionId),
-  })),
+  removeUser: (connectionId) => set((s) => {
+    const presence = { ...s.presence }
+    delete presence[connectionId]
+    return {
+      users: s.users.filter((u) => (u.connectionId || u.userId) !== connectionId),
+      presence,
+    }
+  }),
 
-  updatePresence: (connectionId, cursor) => set((s) => ({
-    users: s.users.map((u) =>
-      (u.connectionId || u.userId) === connectionId ? { ...u, cursor } : u
-    ),
-  })),
+  // Live cursors (canvas coordinates) keyed by connectionId. Kept apart
+  // from `users` so 30 Hz pointer updates don't re-render the user list.
+  updatePresence: (connectionId, cursor) => set((s) => {
+    const presence = { ...s.presence }
+    if (cursor) presence[connectionId] = { x: cursor.x, y: cursor.y, lastSeen: Date.now() }
+    else delete presence[connectionId]
+    return { presence }
+  }),
 
   updateUserAccess: (userId, role) => set((s) => ({
     users: s.users.map((u) => u.userId === userId ? { ...u, role } : u),
@@ -85,6 +95,7 @@ const useCollabStore = create((set, get) => ({
     myRole: 'editor',
     isAdmin: false,
     users: [],
+    presence: {},
     expiresAt: null,
     adminUserId: null,
     sharingEnabled: true,

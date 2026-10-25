@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { getThemeForeground as getThemeStroke } from '../utils/themeColors.js';
 import { pushCreateAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
 import {
     MAX_GESTURE_POINTS,
@@ -21,9 +22,6 @@ let previewPath = null;
 let previewFrame = 0;
 let latestPrediction = null;
 
-function getThemeStroke() {
-    return document.body?.classList.contains('theme-dark') ? '#f7f4ff' : '#000000';
-}
 
 function getSVGPoint(event) {
     const viewBox = svg.viewBox.baseVal;

@@ -45,6 +45,8 @@ const {
   pushDeleteAction,
   pushFrameAttachmentAction,
   pushTransformAction,
+  pushAppearanceChangeAction,
+  pushOptionsChangeAction,
   rebindUndoHistory,
   redo,
   setTextReferences,
@@ -381,5 +383,93 @@ describe('UndoRedo regressions for recent tools', () => {
     expect(targetFrame.containedShapes).toEqual([first, second])
     expect(first.group.parentNode).toBe(targetFrame.clipGroup)
     expect(second.group.parentNode).toBe(targetFrame.clipGroup)
+  })
+})
+
+describe('appearance undo', () => {
+  beforeEach(() => {
+    clearUndoHistory()
+    shapes.length = 0
+  })
+
+  it('undoes and redoes an opacity + edges change as one step', () => {
+    const shape = rectangle('appearance', 0, 0)
+    shape.opacity = 1
+    shape.edges = 'sharp'
+    const before = { opacity: 1, edges: 'sharp' }
+    shape.opacity = 0.3
+    shape.edges = 'round'
+    pushAppearanceChangeAction(shape, before)
+
+    undo()
+    expect(shape.opacity).toBe(1)
+    expect(shape.edges).toBe('sharp')
+    expect(shape.draw).toHaveBeenCalled()
+
+    redo()
+    expect(shape.opacity).toBe(0.3)
+    expect(shape.edges).toBe('round')
+  })
+
+  it('records nothing when the appearance did not change', () => {
+    const shape = rectangle('same', 0, 0)
+    shape.opacity = 0.5
+    pushAppearanceChangeAction(shape, { opacity: 0.5, edges: 'sharp' })
+    undo()
+    expect(shape.opacity).toBe(0.5)
+  })
+
+  it('batches a multi-selection change into a single undo', () => {
+    const a = rectangle('a', 0, 0)
+    const b = rectangle('b', 50, 0)
+    for (const s of [a, b]) { s.opacity = 1; s.edges = 'sharp' }
+    const batch = beginUndoBatch()
+    for (const s of [a, b]) {
+      s.opacity = 0.2
+      pushAppearanceChangeAction(s, { opacity: 1, edges: 'sharp' })
+    }
+    endUndoBatch(batch, 'appearance')
+    undo()
+    expect([a.opacity, b.opacity]).toEqual([1, 1])
+    redo()
+    expect([a.opacity, b.opacity]).toEqual([0.2, 0.2])
+  })
+})
+
+describe('arrowhead undo', () => {
+  beforeEach(() => clearUndoHistory())
+
+  it('restores both heads from an options snapshot, including legacy snapshots', () => {
+    const arrow = { shapeName: 'arrow', options: { stroke: '#000' }, startArrowhead: 'none', endArrowhead: 'arrow', arrowOutlineStyle: 'solid', draw: vi.fn() }
+    const before = { ...arrow.options, arrowOutlineStyle: 'solid', startArrowhead: 'none', endArrowhead: 'arrow' }
+    arrow.startArrowhead = 'bar'
+    arrow.endArrowhead = 'diamond'
+    pushOptionsChangeAction(arrow, before, { ...arrow.options, arrowOutlineStyle: 'solid', startArrowhead: 'bar', endArrowhead: 'diamond' })
+    undo()
+    expect([arrow.startArrowhead, arrow.endArrowhead]).toEqual(['none', 'arrow'])
+    expect(arrow.options).not.toHaveProperty('startArrowhead')
+    redo()
+    expect([arrow.startArrowhead, arrow.endArrowhead]).toEqual(['bar', 'diamond'])
+
+    // Snapshots written before start/end heads only had arrowHeadStyle.
+    pushOptionsChangeAction(arrow, { stroke: '#000', arrowHeadStyle: 'solid' }, { stroke: '#000', startArrowhead: 'bar', endArrowhead: 'diamond' })
+    undo()
+    expect([arrow.startArrowhead, arrow.endArrowhead]).toEqual(['none', 'triangle'])
+  })
+})
+
+describe('line arrowhead undo', () => {
+  beforeEach(() => clearUndoHistory())
+
+  it('restores line heads from options snapshots', () => {
+    const line = { shapeName: 'line', options: { stroke: '#000' }, startArrowhead: 'none', endArrowhead: 'none', draw: vi.fn() }
+    const before = { stroke: '#000', startArrowhead: 'none', endArrowhead: 'none' }
+    line.endArrowhead = 'arrow'
+    pushOptionsChangeAction(line, before, { stroke: '#000', startArrowhead: 'none', endArrowhead: 'arrow' })
+    undo()
+    expect(line.endArrowhead).toBe('none')
+    expect(line.options).toEqual({ stroke: '#000' })
+    redo()
+    expect(line.endArrowhead).toBe('arrow')
   })
 })

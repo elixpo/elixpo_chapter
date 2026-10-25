@@ -73,3 +73,47 @@ describe('frame clipboard trees', () => {
     expect(getCopyRoots([child])).toEqual([child])
   })
 })
+
+describe('clipboard appearance', () => {
+  it('copies opacity and round edges with the shape and its frame children', () => {
+    const child = { ...rectangle('child', 40, 60), opacity: 0.5, edges: 'round' }
+    const plain = rectangle('plain', 0, 0)
+    const source = frame('frame', [child])
+    source.edges = 'round'
+
+    expect(serializeShape(child)).toMatchObject({ opacity: 0.5, edges: 'round' })
+    expect(serializeShape(plain)).not.toHaveProperty('opacity')
+    expect(serializeShape(plain)).not.toHaveProperty('edges')
+    const data = serializeShape(source)
+    expect(data.edges).toBe('round')
+    expect(data.children[0]).toMatchObject({ opacity: 0.5, edges: 'round' })
+  })
+})
+
+describe('clipboard line arrowheads', () => {
+  it('copies line heads and omits none', () => {
+    const base = { shapeName: 'line', startPoint: { x: 0, y: 0 }, endPoint: { x: 5, y: 5 }, options: {}, parentFrame: null }
+    expect(serializeShape({ ...base, startArrowhead: 'none', endArrowhead: 'dot' })).toMatchObject({ endArrowhead: 'dot' })
+    expect(serializeShape({ ...base, startArrowhead: 'none', endArrowhead: 'dot' })).not.toHaveProperty('startArrowhead')
+    expect(serializeShape(base)).not.toHaveProperty('endArrowhead')
+  })
+})
+
+describe('clipboard arrowheads', () => {
+  it('copies both heads, defaulting legacy arrows', () => {
+    const base = { shapeName: 'arrow', startPoint: { x: 0, y: 0 }, endPoint: { x: 5, y: 5 }, options: {}, parentFrame: null }
+    expect(serializeShape({ ...base, startArrowhead: 'bar', endArrowhead: 'cross' })).toMatchObject({ startArrowhead: 'bar', endArrowhead: 'cross' })
+    const legacy = serializeShape(base)
+    expect(legacy).toMatchObject({ startArrowhead: 'none', endArrowhead: 'arrow' })
+    expect(legacy).not.toHaveProperty('arrowHeadStyle')
+  })
+})
+
+describe('duplicateSelected', () => {
+  it('returns no shapes and leaves the clipboard alone without a selection', () => {
+    globalThis.window.multiSelection = { selectedShapes: new Set() }
+    expect(copyPaste.duplicateSelected()).toEqual([])
+    expect(copyPaste.pasteClipboard()).toBe(false)
+    delete globalThis.window.multiSelection
+  })
+})

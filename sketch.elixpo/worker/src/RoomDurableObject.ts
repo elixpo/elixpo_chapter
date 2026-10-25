@@ -8,6 +8,35 @@ const CURSOR_COLORS = [
 const MAX_WORKSPACE_NAME_LENGTH = 20;
 const ABSOLUTE_MAX_USERS = 5;
 const PRESENCE_MIN_INTERVAL_MS = 30;
+const MAX_OP_PAYLOAD = 900_000;
+
+// Protocol v2 (OT): the room is a sequencer for opaque, end-to-end encrypted
+// ops. It assigns serverSeq, acks the sender, and keeps a bounded log tail
+// so reconnecting clients can catch up by seq. v1 full-scene ops are still
+// sequenced and relayed unchanged.
+const PROTOCOL_VERSION = 2;
+const LOG_MAX_ENTRIES = 2000;
+const LOG_MAX_BYTES = 8 * 1024 * 1024;
+// Durable Object storage values are capped at 128 KiB; long payloads are
+// split across several keys.
+const LOG_PART_CHARS = 100_000;
+
+// Join rejections are delivered over an accepted socket so the browser can
+// read the reason (a failed upgrade only surfaces as close code 1006).
+const REJECT_CLOSE_CODES: Record<string, number> = {
+  ROOM_FULL: 4429,
+  ROOM_EXPIRED: 4410,
+  ROOM_LIMIT_REACHED: 4429,
+  ROOM_SHARING_DISABLED: 4403,
+  INVALID_INVITE: 4403,
+  INVALID_SESSION: 4401,
+};
+
+interface LogIndexEntry {
+  seq: number;
+  parts: number;
+  bytes: number;
+}
 
 type RoomRole = 'editor' | 'viewer';
 
@@ -54,10 +83,23 @@ export class RoomDurableObject {
   private lastActivityAt = Date.now();
   private availableColors: string[] = [...CURSOR_COLORS];
   private lastPresenceAt: Map<string, number> = new Map();
+  private logIndex: LogIndexEntry[] = [];
+  /** Catch-up is possible for any `since >= logFloor`. */
+  private logFloor = 0;
+  private clientSeqs: Map<string, number> = new Map();
 
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
+
+    // serverSeq and the log index must survive hibernation / eviction,
+    // otherwise sequence numbers would restart and clients would ignore ops.
+    this.state.blockConcurrencyWhile(async () => {
+      const stored = await this.state.storage.get(['opSeq', 'logFloor', 'logIndex']);
+      this.serverSeq = Number(stored.get('opSeq') || 0);
+      this.logFloor = Number(stored.get('logFloor') ?? this.serverSeq);
+      this.logIndex = (stored.get('logIndex') as LogIndexEntry[] | undefined) || [];
+    });
 
     // Durable Objects may hibernate between messages. Rebuild the in-memory
     // session index from WebSocket attachments so live rooms keep relaying
@@ -82,12 +124,11 @@ export class RoomDurableObject {
       if (typeof message.payload !== 'string' || message.payload.length > 900_000) {
         return new Response('Invalid operation', { status: 400 });
       }
-      this.broadcast(null, {
+      await this.sequence(null, {
         type: 'agent-op',
         from: `agent:${message.agent?.id || 'mcp'}`,
         displayName: message.agent?.label || 'MCP agent',
         revision: Number(message.revision || 0),
-        serverSeq: ++this.serverSeq,
         payload: message.payload,
       });
       return new Response(null, { status: 204 });
@@ -133,7 +174,7 @@ export class RoomDurableObject {
       } catch {}
     }
     if (authToken && !authSession) {
-      return new Response('Invalid or expired session', { status: 401 });
+      return rejectSocket('INVALID_SESSION');
     }
 
     const userId = authSession?.userId
@@ -155,39 +196,33 @@ export class RoomDurableObject {
 
     // Check room status
     if (this.roomState!.status !== 'active') {
-      return new Response(JSON.stringify({ error: 'ROOM_EXPIRED' }), {
-        status: 410,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return rejectSocket('ROOM_EXPIRED');
     }
 
     // The room owner's plan controls total room occupancy (owner included).
     // Never trust a client-provided tier.
     const maxUsers = Math.min(this.roomState!.maxUsers || 1, ABSOLUTE_MAX_USERS);
 
-    // A stable per-tab connection ID lets reconnects replace their stale
-    // socket instead of consuming another seat in the room.
-    for (const [existingWs, existingUser] of this.sessions) {
-      if (existingUser.connectionId === connectionId) {
-        try { existingWs.close(1000, 'reconnected'); } catch {}
-        this.handleDisconnect(existingWs, false);
-      }
-    }
-
     const isAdmin = roomCreated
       || (!!authSession && authSession.userId === this.roomState!.ownerId)
       || (!!suppliedAdminToken && suppliedAdminToken === this.roomState!.adminToken);
     if (!isAdmin) {
       if (!this.roomState!.sharingEnabled) {
-        return jsonError('ROOM_SHARING_DISABLED', 403);
+        return rejectSocket('ROOM_SHARING_DISABLED');
       }
       if (!suppliedInviteToken || suppliedInviteToken !== this.roomState!.inviteToken) {
-        return jsonError('INVALID_INVITE', 403);
+        return rejectSocket('INVALID_INVITE');
       }
     }
 
+    // A stable per-tab connection ID lets reconnects replace their stale
+    // socket instead of consuming another seat in the room. Only done after
+    // the caller is authorized and only for the same user, so a guessed
+    // clientId cannot evict anyone.
+    this.replaceStaleConnection(connectionId, userId);
+
     if (this.sessions.size >= maxUsers) {
-      return jsonError('ROOM_FULL', 429);
+      return rejectSocket('ROOM_FULL', maxUsers);
     }
 
     // 1 room per user (guest or authenticated)
@@ -205,14 +240,17 @@ export class RoomDurableObject {
         try {
           await this.env.DB.prepare(`UPDATE rooms SET status = 'expired' WHERE id = ?`).bind(roomId).run();
         } catch {}
-        return new Response(JSON.stringify({ error: 'ROOM_LIMIT_REACHED' }), {
-          status: 429,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return rejectSocket('ROOM_LIMIT_REACHED');
       }
       // Reserve this slot
       const ttlSeconds = parseInt(this.env.ROOM_TTL_HOURS || '3') * 3600;
       await this.env.KV.put(limitKey, roomId, { expirationTtl: ttlSeconds });
+    }
+
+    // Re-check occupancy: the awaits above let other joins interleave.
+    this.replaceStaleConnection(connectionId, userId);
+    if (this.sessions.size >= maxUsers) {
+      return rejectSocket('ROOM_FULL', maxUsers);
     }
 
     // Assign color
@@ -254,6 +292,9 @@ export class RoomDurableObject {
       expiresAt: this.roomState!.expiresAt,
       yourColor: color,
       users: Array.from(this.sessions.values()),
+      protocol: PROTOCOL_VERSION,
+      seq: this.serverSeq,
+      logFloor: this.logFloor,
     });
 
     // Broadcast join to everyone else
@@ -266,7 +307,8 @@ export class RoomDurableObject {
       color,
       role: userInfo.role,
       isAdmin,
-      serverSeq: ++this.serverSeq,
+      // Membership events are not ops; they report the current op seq only.
+      serverSeq: this.serverSeq,
     });
 
     return new Response(null, { status: 101, webSocket: client });
@@ -291,25 +333,55 @@ export class RoomDurableObject {
           this.sendTo(ws, { type: 'error', code: 'READ_ONLY' });
           break;
         }
-        if (typeof msg.payload !== 'string' || msg.payload.length > 900_000) {
+        if (typeof msg.payload !== 'string' || msg.payload.length > MAX_OP_PAYLOAD) {
           this.sendTo(ws, { type: 'error', code: 'INVALID_OPERATION' });
           break;
         }
         this.lastActivityAt = Date.now();
         user.lastActivity = new Date().toISOString();
         ws.serializeAttachment(user);
-        this.broadcast(ws, {
+        if (msg.v === PROTOCOL_VERSION) {
+          const clientSeq = Number(msg.clientSeq);
+          if (!Number.isSafeInteger(clientSeq) || clientSeq < 1) {
+            this.sendTo(ws, { type: 'error', code: 'INVALID_OPERATION' });
+            break;
+          }
+          // Resends after a reconnect must not be sequenced twice.
+          const lastClientSeq = await this.getLastClientSeq(user.connectionId);
+          if (clientSeq <= lastClientSeq) {
+            this.sendTo(ws, { type: 'ack', clientSeq, duplicate: true, seq: this.serverSeq });
+            break;
+          }
+          await this.setLastClientSeq(user.connectionId, clientSeq);
+          const serverSeq = await this.sequence(ws, {
+            type: 'op',
+            v: PROTOCOL_VERSION,
+            from: user.userId,
+            connectionId: user.connectionId,
+            clientSeq,
+            baseSeq: Number(msg.baseSeq) || 0,
+            payload: msg.payload,
+          });
+          this.sendTo(ws, { type: 'ack', clientSeq, serverSeq });
+          break;
+        }
+        // v1: full-scene snapshot op.
+        await this.sequence(ws, {
           type: 'op',
           from: user.userId,
           connectionId: user.connectionId,
           seq: msg.seq,
-          serverSeq: ++this.serverSeq,
           payload: msg.payload,
         });
         break;
 
+      case 'catch-up':
+        await this.sendCatchUp(ws, user, Number(msg.since));
+        break;
+
       case 'presence':
-        if (!isValidCursor(msg.cursor)) break;
+        // cursor: null hides this user's cursor (pointer left / idle).
+        if (msg.cursor !== null && !isValidCursor(msg.cursor)) break;
         {
           const now = Date.now();
           const previous = this.lastPresenceAt.get(user.connectionId) || 0;
@@ -341,16 +413,22 @@ export class RoomDurableObject {
         break;
 
       case 'sync-response':
-        if (typeof msg.payload !== 'string' || msg.payload.length > 900_000) {
+        if (typeof msg.payload !== 'string' || msg.payload.length > MAX_OP_PAYLOAD) {
           this.sendTo(ws, { type: 'error', code: 'INVALID_OPERATION' });
           break;
         }
         // Relay full sync to the requesting user
         for (const [otherWs, otherUser] of this.sessions) {
           if (otherUser.connectionId === (msg.targetConnectionId || msg.targetUserId)) {
+            // v2 responders send the seq their snapshot reflects; the
+            // requester catches up from there through the log.
+            const snapshotSeq = Number(msg.seq);
             this.sendTo(otherWs, {
               type: 'sync-response',
-              serverSeq: this.serverSeq,
+              serverSeq: Number.isSafeInteger(snapshotSeq) && snapshotSeq >= 0 && snapshotSeq <= this.serverSeq
+                ? snapshotSeq
+                : this.serverSeq,
+              v: msg.v === PROTOCOL_VERSION ? PROTOCOL_VERSION : undefined,
               payload: msg.payload,
             });
             break;
@@ -484,6 +562,89 @@ export class RoomDurableObject {
 
   // --- Private helpers ---
 
+  private replaceStaleConnection(connectionId: string, userId: string): void {
+    for (const [existingWs, existingUser] of Array.from(this.sessions)) {
+      if (existingUser.connectionId === connectionId && existingUser.userId === userId) {
+        try { existingWs.close(1000, 'reconnected'); } catch {}
+        this.handleDisconnect(existingWs, false);
+      }
+    }
+  }
+
+  /**
+   * Assign the next serverSeq to an op, append it to the log tail and relay
+   * it to every other session. Returns the assigned seq.
+   */
+  private async sequence(sender: WebSocket | null, message: Record<string, unknown>): Promise<number> {
+    const serverSeq = ++this.serverSeq;
+    const data = JSON.stringify({ ...message, serverSeq });
+    const entries: Record<string, unknown> = { opSeq: serverSeq };
+    const parts = Math.max(1, Math.ceil(data.length / LOG_PART_CHARS));
+    for (let i = 0; i < parts; i += 1) {
+      entries[logKey(serverSeq, i)] = data.slice(i * LOG_PART_CHARS, (i + 1) * LOG_PART_CHARS);
+    }
+    this.logIndex.push({ seq: serverSeq, parts, bytes: data.length });
+
+    const stale: string[] = [];
+    let total = this.logIndex.reduce((sum, entry) => sum + entry.bytes, 0);
+    while (this.logIndex.length > 1 && (this.logIndex.length > LOG_MAX_ENTRIES || total > LOG_MAX_BYTES)) {
+      const oldest = this.logIndex.shift()!;
+      total -= oldest.bytes;
+      this.logFloor = oldest.seq;
+      for (let i = 0; i < oldest.parts; i += 1) stale.push(logKey(oldest.seq, i));
+    }
+    entries.logIndex = this.logIndex;
+    entries.logFloor = this.logFloor;
+    await this.state.storage.put(entries);
+    for (let i = 0; i < stale.length; i += 128) {
+      await this.state.storage.delete(stale.slice(i, i + 128));
+    }
+
+    for (const [ws] of this.sessions) {
+      if (ws === sender) continue;
+      try { ws.send(data); } catch {}
+    }
+    return serverSeq;
+  }
+
+  /** Replay logged ops after `since`, or tell the client to fall back to a snapshot. */
+  private async sendCatchUp(ws: WebSocket, user: UserInfo, since: number): Promise<void> {
+    const yourLastClientSeq = await this.getLastClientSeq(user.connectionId);
+    const done = (ok: boolean) => this.sendTo(ws, {
+      type: 'catch-up-done', ok, since, seq: this.serverSeq, logFloor: this.logFloor, yourLastClientSeq,
+    });
+    const covered = Number.isSafeInteger(since) && since >= this.logFloor && since <= this.serverSeq;
+    if (!covered) {
+      done(false);
+      return;
+    }
+    for (const entry of this.logIndex) {
+      if (entry.seq <= since) continue;
+      const keys = Array.from({ length: entry.parts }, (_, i) => logKey(entry.seq, i));
+      const stored = await this.state.storage.get<string>(keys);
+      const data = keys.map((key) => stored.get(key) || '').join('');
+      if (!data) {
+        done(false);
+        return;
+      }
+      try { ws.send(data); } catch { return; }
+    }
+    done(true);
+  }
+
+  private async getLastClientSeq(connectionId: string): Promise<number> {
+    const cached = this.clientSeqs.get(connectionId);
+    if (cached !== undefined) return cached;
+    const stored = Number(await this.state.storage.get(`cseq:${connectionId}`) || 0);
+    this.clientSeqs.set(connectionId, stored);
+    return stored;
+  }
+
+  private async setLastClientSeq(connectionId: string, clientSeq: number): Promise<void> {
+    this.clientSeqs.set(connectionId, clientSeq);
+    await this.state.storage.put(`cseq:${connectionId}`, clientSeq);
+  }
+
   private async ensureRoomState(roomId: string, ownerId: string, authenticatedOwnerId: string | null, ownerIp: string, workspaceName: string): Promise<boolean> {
     if (this.roomState) return false;
     const stored = await this.state.storage.get<RoomState>('roomState');
@@ -588,7 +749,7 @@ export class RoomDurableObject {
         type: 'leave',
         from: user.userId,
         connectionId: user.connectionId,
-        serverSeq: ++this.serverSeq,
+        serverSeq: this.serverSeq,
       });
     }
 
@@ -675,11 +836,23 @@ function isValidCursor(cursor: unknown): cursor is { x: number; y: number } {
     && Math.abs(value.x) < 10_000_000 && Math.abs(value.y) < 10_000_000;
 }
 
-function jsonError(error: string, status: number): Response {
-  return new Response(JSON.stringify({ error }), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+function logKey(seq: number, part: number): string {
+  return `log:${String(seq).padStart(12, '0')}:${part}`;
+}
+
+/**
+ * Accept the upgrade only to report why the join was refused, then close.
+ * The socket is never registered as a session, so it takes no seat.
+ */
+function rejectSocket(code: string, maxUsers?: number): Response {
+  const pair = new WebSocketPair();
+  const [client, server] = [pair[0], pair[1]];
+  server.accept();
+  try {
+    server.send(JSON.stringify({ type: 'error', code, maxUsers }));
+    server.close(REJECT_CLOSE_CODES[code] || 4400, code);
+  } catch {}
+  return new Response(null, { status: 101, webSocket: client });
 }
 
 function isAllowedOrigin(origin: string | null, env: Env): boolean {

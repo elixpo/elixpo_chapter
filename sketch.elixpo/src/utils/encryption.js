@@ -19,6 +19,31 @@ function requireWebCrypto() {
   return crypto
 }
 
+// importKey is async and not free; autosave encrypts with the same session
+// key many times, so cache the imported CryptoKey per (key, usage).
+const _importedKeys = new Map()
+const MAX_CACHED_KEYS = 16
+
+async function importAesKey(webCrypto, keyBase64url, usage) {
+  const cacheKey = `${usage}:${keyBase64url}`
+  const cached = _importedKeys.get(cacheKey)
+  if (cached) return cached
+  const keyBuf = base64urlToBuf(keyBase64url)
+  if (keyBuf.byteLength !== 32) throw new Error('Invalid AES-256 key length')
+  const promise = webCrypto.subtle.importKey(
+    'raw', keyBuf,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    [usage]
+  )
+  _importedKeys.set(cacheKey, promise)
+  promise.catch(() => _importedKeys.delete(cacheKey))
+  if (_importedKeys.size > MAX_CACHED_KEYS) {
+    _importedKeys.delete(_importedKeys.keys().next().value)
+  }
+  return promise
+}
+
 /**
  * Generate a new AES-GCM 256-bit encryption key.
  * Returns the key as a base64url string for embedding in URLs.
@@ -41,14 +66,7 @@ export async function generateKey() {
 export async function encrypt(plaintext, keyBase64url) {
   const webCrypto = requireWebCrypto()
 
-  const keyBuf = base64urlToBuf(keyBase64url)
-  if (keyBuf.byteLength !== 32) throw new Error('Invalid AES-256 key length')
-  const key = await webCrypto.subtle.importKey(
-    'raw', keyBuf,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt']
-  )
+  const key = await importAesKey(webCrypto, keyBase64url, 'encrypt')
 
   const iv = webCrypto.getRandomValues(new Uint8Array(12))
   const encoded = new TextEncoder().encode(plaintext)
@@ -73,14 +91,7 @@ export async function encrypt(plaintext, keyBase64url) {
 export async function decrypt(ciphertextBase64url, keyBase64url) {
   const webCrypto = requireWebCrypto()
 
-  const keyBuf = base64urlToBuf(keyBase64url)
-  if (keyBuf.byteLength !== 32) throw new Error('Invalid AES-256 key length')
-  const key = await webCrypto.subtle.importKey(
-    'raw', keyBuf,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['decrypt']
-  )
+  const key = await importAesKey(webCrypto, keyBase64url, 'decrypt')
 
   const combined = base64urlToBuf(ciphertextBase64url)
   if (combined.byteLength < 28) throw new Error('Invalid AES-GCM ciphertext')
@@ -100,8 +111,13 @@ export async function decrypt(ciphertextBase64url, keyBase64url) {
 
 function bufToBase64url(buf) {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
+  // Chunked conversion: per-byte string concatenation is quadratic-ish on
+  // multi-megabyte scenes.
   let binary = ''
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  const CHUNK = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK))
+  }
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 

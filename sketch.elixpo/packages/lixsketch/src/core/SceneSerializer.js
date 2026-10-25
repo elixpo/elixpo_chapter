@@ -18,6 +18,10 @@ import { CodeShape } from '../shapes/CodeShape.js';
 import { ImageShape } from '../shapes/ImageShape.js';
 import { IconShape } from '../shapes/IconShape.js';
 import { clearUndoHistory, pushCanvasResetAction } from './UndoRedo.js';
+import { applyContainerLabel, serializeContainerLabel } from './ShapeLabelState.js';
+import { applySerializedAppearance, serializeAppearance } from './ShapeAppearance.js';
+import { readArrowheads, readLineArrowheads, serializeLineArrowheads } from './ArrowHeads.js';
+import { LIXSKETCH_EXTENSION, LIXSKETCH_MIME_TYPE, formatDiagnostic, sceneFromFileText, sceneToLixSketch } from './LixSketchFormat.js';
 
 const FORMAT_VERSION = 1;
 const GZIP_MAGIC = [0x1f, 0x8b];
@@ -38,8 +42,52 @@ export function resetSessionID() {
     _sessionID = null;
 }
 
+// Plain-data deep clone with JSON semantics (drops undefined/functions,
+// non-finite numbers become null) but without building an intermediate
+// string. Called once per shape on every save, so it is on the hot path.
+function clonePlain(value) {
+    if (value === null) return null;
+    switch (typeof value) {
+        case 'number': return Number.isFinite(value) ? value : null;
+        case 'string':
+        case 'boolean': return value;
+        case 'object': {
+            if (Array.isArray(value)) {
+                const out = new Array(value.length);
+                for (let i = 0; i < value.length; i += 1) {
+                    const item = clonePlain(value[i]);
+                    out[i] = item === undefined ? null : item;
+                }
+                return out;
+            }
+            if (typeof value.toJSON === 'function') return JSON.parse(JSON.stringify(value));
+            const out = {};
+            for (const key in value) {
+                if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+                const item = clonePlain(value[key]);
+                if (item !== undefined) out[key] = item;
+            }
+            return out;
+        }
+        default: return undefined;
+    }
+}
+
 function cloneOptions(options) {
-    return JSON.parse(JSON.stringify(options));
+    return options == null ? {} : clonePlain(options);
+}
+
+// outerHTML of the live node is identical to outerHTML of a deep clone, so
+// skip the clone (a full subtree copy per text/code/icon shape per save).
+function nodeMarkup(node) {
+    return node ? node.outerHTML : '';
+}
+
+function restoreShapeMetadata(shape, data) {
+    if (data.locked) shape.locked = true;
+    if (typeof data.link === 'string' && data.link) shape.link = data.link;
+    // Opacity / edges; missing fields mean opacity 1 and sharp edges.
+    applySerializedAppearance(shape, data);
 }
 
 function restoreDocBlockLinks(shape, data) {
@@ -51,6 +99,81 @@ function restoreDocBlockLinks(shape, data) {
     if (ids.length) {
         (shape.group || shape.element)?.setAttribute('data-doc-block-ids', JSON.stringify(ids));
     }
+}
+
+function serializeBinding(attachment, legacyRef) {
+    const target = attachment?.shape || legacyRef;
+    if (!target || !target.shapeID) return null;
+    if (!attachment) return { shapeID: target.shapeID };
+    return {
+        shapeID: target.shapeID,
+        side: attachment.side ?? null,
+        offset: attachment.offset ? clonePlain(attachment.offset) : null,
+    };
+}
+
+// Scenes saved before bindings carried side/offset only stored the target
+// id. Infer the side from the saved endpoint (same rule as LixScript's
+// autoAttach) so the arrow keeps following the shape after load.
+function inferBindingSide(shape, point) {
+    if (!point) return 'bottom';
+    const cx = shape.shapeName === 'circle' ? (shape.x || 0) : (shape.x || 0) + (shape.width || 0) / 2;
+    const cy = shape.shapeName === 'circle' ? (shape.y || 0) : (shape.y || 0) + (shape.height || 0) / 2;
+    const dx = point.x - cx;
+    const dy = point.y - cy;
+    if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
+    return dy > 0 ? 'bottom' : 'top';
+}
+
+function restoreBinding(arrow, isStart, target, binding) {
+    // Real Arrow instances: set the binding directly. The saved endpoint is
+    // already the attached point, so no recompute/redraw is needed here —
+    // that used to cost one extra arrow render per binding on load.
+    if ('attachedToStart' in arrow || 'attachedToEnd' in arrow) {
+        const point = isStart ? arrow.startPoint : arrow.endPoint;
+        const value = {
+            shape: target,
+            side: binding?.side ?? inferBindingSide(target, point),
+            offset: binding?.offset ? { ...binding.offset } : { x: 0, y: 0 },
+        };
+        if (isStart) arrow.attachedToStart = value; else arrow.attachedToEnd = value;
+        return;
+    }
+    const setter = isStart ? arrow.setStartAttachment : arrow.setEndAttachment;
+    if (typeof setter === 'function') setter.call(arrow, target);
+}
+
+// Label / shading / arrowhead state lives on the shape instance (set by
+// setLabel(), the sidebars, LixScript), not in `options`, so it used to be
+// dropped on save. The constructors read these keys back from `options`,
+// so persisting them there restores them on load.
+const INSTANCE_OPTION_KEYS = {
+    label: (s) => (s.label ? s.label : undefined),
+    labelColor: (s) => (s.label && s.labelColor ? s.labelColor : undefined),
+    labelFontSize: (s) => (s.label && s.labelFontSize ? s.labelFontSize : undefined),
+    labelBg: (s) => (s.labelBg === false ? false : undefined),
+    labelOffsetY: (s) => (s.labelOffsetY ? s.labelOffsetY : undefined),
+    shadeColor: (s) => (s.shadeColor ? s.shadeColor : undefined),
+    shadeOpacity: (s) => (s.shadeColor && s.shadeOpacity !== undefined ? s.shadeOpacity : undefined),
+    shadeDirection: (s) => (s.shadeColor && s.shadeDirection ? s.shadeDirection : undefined),
+    arrowHeadLength: (s) => (s.shapeName === 'arrow' && Number.isFinite(s.arrowHeadLength) && s.arrowHeadLength !== 15 ? s.arrowHeadLength : undefined),
+    arrowHeadAngleDeg: (s) => (s.shapeName === 'arrow' && Number.isFinite(s.arrowHeadAngleDeg) && s.arrowHeadAngleDeg !== 30 ? s.arrowHeadAngleDeg : undefined),
+    elbowX: (s) => (s.shapeName === 'arrow' && s.elbowX !== null && s.elbowX !== undefined ? s.elbowX : undefined),
+};
+
+// Rectangle/circle labels are persisted top-level by serializeContainerLabel
+// (ShapeLabelState.js), which also keeps theme-default label colors unfrozen.
+const CONTAINER_LABEL_KEYS = new Set(['label', 'labelColor', 'labelFontSize']);
+
+function shapeOptions(shape) {
+    const options = cloneOptions(shape.options);
+    const isContainer = shape.shapeName === 'rectangle' || shape.shapeName === 'circle';
+    for (const key in INSTANCE_OPTION_KEYS) {
+        if (isContainer && CONTAINER_LABEL_KEYS.has(key)) continue;
+        const value = INSTANCE_OPTION_KEYS[key](shape);
+        if (value !== undefined) options[key] = clonePlain(value);
+    }
+    return options;
 }
 
 // ============================================================
@@ -70,6 +193,10 @@ function serializeShape(shape) {
         // unit (see Selection.handleMultiSelectionMouseDown).
         groupId: shape.groupId || null,
     };
+    // Optional editor metadata, persisted only when set.
+    if (shape.locked) base.locked = true;
+    if (typeof shape.link === 'string' && shape.link) base.link = shape.link;
+    Object.assign(base, serializeAppearance(shape));
 
     switch (shape.shapeName) {
         case 'rectangle':
@@ -78,8 +205,9 @@ function serializeShape(shape) {
                 type: 'rectangle',
                 x: shape.x, y: shape.y,
                 width: shape.width, height: shape.height,
+                ...serializeContainerLabel(shape),
                 rotation: shape.rotation,
-                options: cloneOptions(shape.options),
+                options: shapeOptions(shape),
             };
 
         case 'circle':
@@ -88,8 +216,9 @@ function serializeShape(shape) {
                 type: 'circle',
                 x: shape.x, y: shape.y,
                 rx: shape.rx, ry: shape.ry,
+                ...serializeContainerLabel(shape),
                 rotation: shape.rotation,
-                options: cloneOptions(shape.options),
+                options: shapeOptions(shape),
             };
 
         case 'line':
@@ -100,7 +229,8 @@ function serializeShape(shape) {
                 endPoint: { x: shape.endPoint.x, y: shape.endPoint.y },
                 controlPoint: shape.controlPoint ? { x: shape.controlPoint.x, y: shape.controlPoint.y } : null,
                 isCurved: shape.isCurved || false,
-                options: cloneOptions(shape.options),
+                options: shapeOptions(shape),
+                ...serializeLineArrowheads(shape),
             };
 
         case 'arrow': {
@@ -109,17 +239,22 @@ function serializeShape(shape) {
                 type: 'arrow',
                 startPoint: { x: shape.startPoint.x, y: shape.startPoint.y },
                 endPoint: { x: shape.endPoint.x, y: shape.endPoint.y },
-                options: cloneOptions(shape.options),
+                options: shapeOptions(shape),
                 arrowOutlineStyle: shape.arrowOutlineStyle,
-                arrowHeadStyle: shape.arrowHeadStyle,
+                startArrowhead: shape.startArrowhead || 'none',
+                endArrowhead: shape.endArrowhead || 'arrow',
                 arrowCurved: shape.arrowCurved,
                 arrowCurveAmount: shape.arrowCurveAmount,
             };
             if (shape.controlPoint1) data.controlPoint1 = { x: shape.controlPoint1.x, y: shape.controlPoint1.y };
             if (shape.controlPoint2) data.controlPoint2 = { x: shape.controlPoint2.x, y: shape.controlPoint2.y };
-            // Serialize attachments by shapeID
-            if (shape.startAttachment) data.startAttachmentID = shape.startAttachment.shapeID;
-            if (shape.endAttachment) data.endAttachmentID = shape.endAttachment.shapeID;
+            // Serialize bindings by shapeID. The Arrow class keeps them in
+            // `attachedToStart/End` ({ shape, side, offset }); older code
+            // paths used `startAttachment/endAttachment` (shape refs).
+            const start = serializeBinding(shape.attachedToStart, shape.startAttachment);
+            const end = serializeBinding(shape.attachedToEnd, shape.endAttachment);
+            if (start) { data.startAttachmentID = start.shapeID; if (start.side != null) data.startBinding = start; }
+            if (end) { data.endAttachmentID = end.shapeID; if (end.side != null) data.endBinding = end; }
             return data;
         }
 
@@ -127,7 +262,7 @@ function serializeShape(shape) {
             return {
                 ...base,
                 type: 'freehandStroke',
-                points: JSON.parse(JSON.stringify(shape.points)),
+                points: clonePlain(shape.points),
                 rotation: shape.rotation,
                 options: cloneOptions(shape.options),
             };
@@ -165,7 +300,7 @@ function serializeShape(shape) {
                 type: 'text',
                 x: shape.x, y: shape.y,
                 rotation: shape.rotation,
-                groupHTML: group.cloneNode(true).outerHTML,
+                groupHTML: nodeMarkup(group),
             };
         }
 
@@ -176,7 +311,7 @@ function serializeShape(shape) {
                 type: 'code',
                 x: shape.x, y: shape.y,
                 rotation: shape.rotation,
-                groupHTML: group.cloneNode(true).outerHTML,
+                groupHTML: nodeMarkup(group),
             };
         }
 
@@ -210,7 +345,7 @@ function serializeShape(shape) {
                 x: shape.x, y: shape.y,
                 width: shape.width, height: shape.height,
                 rotation: shape.rotation,
-                elementHTML: el.cloneNode(true).outerHTML,
+                elementHTML: nodeMarkup(el),
                 viewboxWidth: parseFloat(el.getAttribute('data-viewbox-width')) || 24,
                 viewboxHeight: parseFloat(el.getAttribute('data-viewbox-height')) || 24,
             };
@@ -233,6 +368,7 @@ function deserializeShape(data) {
     switch (data.type) {
         case 'rectangle': {
             const shape = new Rectangle(data.x, data.y, data.width, data.height, data.options || {});
+            applyContainerLabel(shape, data);
             if (data.rotation) shape.rotation = data.rotation;
             if (data.shapeID) shape.shapeID = data.shapeID;
             return shape;
@@ -240,13 +376,14 @@ function deserializeShape(data) {
 
         case 'circle': {
             const shape = new Circle(data.x, data.y, data.rx, data.ry, data.options || {});
+            applyContainerLabel(shape, data);
             if (data.rotation) shape.rotation = data.rotation;
             if (data.shapeID) shape.shapeID = data.shapeID;
             return shape;
         }
 
         case 'line': {
-            const shape = new Line(data.startPoint, data.endPoint, data.options || {});
+            const shape = new Line(data.startPoint, data.endPoint, { ...(data.options || {}), ...readLineArrowheads(data) });
             if (data.controlPoint) shape.controlPoint = data.controlPoint;
             if (data.isCurved) shape.isCurved = data.isCurved;
             if (data.shapeID) shape.shapeID = data.shapeID;
@@ -254,13 +391,16 @@ function deserializeShape(data) {
         }
 
         case 'arrow': {
-            const shape = new Arrow(data.startPoint, data.endPoint, data.options || {});
-            if (data.controlPoint1) shape.controlPoint1 = data.controlPoint1;
-            if (data.controlPoint2) shape.controlPoint2 = data.controlPoint2;
-            if (data.arrowOutlineStyle) shape.arrowOutlineStyle = data.arrowOutlineStyle;
-            if (data.arrowHeadStyle) shape.arrowHeadStyle = data.arrowHeadStyle;
-            if (data.arrowCurved) shape.arrowCurved = data.arrowCurved;
-            if (data.arrowCurveAmount) shape.arrowCurveAmount = data.arrowCurveAmount;
+            // Heads: new start/end keys, or the legacy end-only arrowHeadStyle.
+            // Outline style and curve mode go through the constructor: it
+            // derives the dash pattern and default control points from them,
+            // so scenes without a stored strokeDasharray / control points
+            // (DSL, MCP, AI) still load dashed and curved.
+            const arrowOpts = { ...(data.options || {}), ...readArrowheads(data) };
+            for (const key of ['arrowOutlineStyle', 'arrowCurved', 'arrowCurveAmount', 'controlPoint1', 'controlPoint2']) {
+                if (data[key] !== undefined && data[key] !== null) arrowOpts[key] = data[key];
+            }
+            const shape = new Arrow(data.startPoint, data.endPoint, arrowOpts);
             if (data.shapeID) shape.shapeID = data.shapeID;
             return shape;
         }
@@ -283,7 +423,10 @@ function deserializeShape(data) {
             const shape = new Frame(data.x, data.y, data.width, data.height, frameOpts);
             if (data.rotation) shape.rotation = data.rotation;
             if (data.shapeID) shape.shapeID = data.shapeID;
-            shape.draw();
+            // Frames with an id are redrawn once in loadScene's
+            // reconciliation pass after their children are attached;
+            // drawing here too doubled the frame render cost on load.
+            if (!data.shapeID) shape.draw();
             return shape;
         }
 
@@ -368,6 +511,45 @@ function deserializeShape(data) {
 }
 
 // ============================================================
+// Per-shape API for incremental collaboration (core/collab/SceneApplier.js)
+// ============================================================
+
+/** Serialize one live shape (same data saveScene writes for it). */
+export function serializeShapeData(shape) {
+    return shape ? serializeShape(shape) : null;
+}
+
+/**
+ * Construct one shape from serialized data, outside a full scene load.
+ * Frame containment and arrow bindings are wired by the caller, because
+ * they reference other live shapes.
+ */
+export function createShapeFromData(data) {
+    const shape = deserializeShape(data);
+    if (!shape) return null;
+    if (data.groupId) shape.groupId = data.groupId;
+    restoreDocBlockLinks(shape, data);
+    restoreShapeMetadata(shape, data);
+    // deserializeShape defers frame drawing to loadScene's reconciliation.
+    if (shape.shapeName === 'frame' && typeof shape.draw === 'function') {
+        try { shape.draw(); } catch (err) { console.warn('[SceneSerializer] frame draw failed:', err); }
+    }
+    return shape;
+}
+
+/** Bind (target) or unbind (target = null) one end of an arrow. */
+export function setArrowBinding(arrow, isStart, target, binding = null) {
+    if (!arrow) return;
+    if (!target) {
+        if (typeof arrow.detachFromShape === 'function') arrow.detachFromShape(isStart);
+        else if (isStart) { arrow.attachedToStart = null; arrow.startAttachment = null; }
+        else { arrow.attachedToEnd = null; arrow.endAttachment = null; }
+        return;
+    }
+    restoreBinding(arrow, isStart, target, binding);
+}
+
+// ============================================================
 // SAVE: Serialize entire scene to .lixsketch JSON
 // ============================================================
 export function saveScene(workspaceName = 'Untitled') {
@@ -418,7 +600,9 @@ export function saveScene(workspaceName = 'Untitled') {
 // ============================================================
 // LOAD: Deserialize .lixsketch JSON and recreate scene
 // ============================================================
-export function loadScene(sceneData) {
+// options.preserveViewport: keep this viewer's zoom/pan (collaboration
+// applies peers' changes without moving anyone's camera).
+export function loadScene(sceneData, options = {}) {
     const validation = validateScene(sceneData);
     if (!validation.valid) {
         console.error('[SceneSerializer] Invalid scene:', validation.error);
@@ -470,6 +654,7 @@ export function loadScene(sceneData) {
             // Restore group membership if present.
             if (data.groupId) shape.groupId = data.groupId;
             restoreDocBlockLinks(shape, data);
+            restoreShapeMetadata(shape, data);
             window.shapes.push(shape);
             if (data.shapeID) idMap.set(data.shapeID, shape);
         }
@@ -481,6 +666,7 @@ export function loadScene(sceneData) {
         if (shape) {
             if (data.groupId) shape.groupId = data.groupId;
             restoreDocBlockLinks(shape, data);
+            restoreShapeMetadata(shape, data);
             window.shapes.push(shape);
             if (data.shapeID) idMap.set(data.shapeID, shape);
         }
@@ -523,11 +709,11 @@ export function loadScene(sceneData) {
             if (!arrow) continue;
             if (data.startAttachmentID) {
                 const target = idMap.get(data.startAttachmentID);
-                if (target && arrow.setStartAttachment) arrow.setStartAttachment(target);
+                if (target) restoreBinding(arrow, true, target, data.startBinding);
             }
             if (data.endAttachmentID) {
                 const target = idMap.get(data.endAttachmentID);
-                if (target && arrow.setEndAttachment) arrow.setEndAttachment(target);
+                if (target) restoreBinding(arrow, false, target, data.endBinding);
             }
         }
     }
@@ -603,12 +789,12 @@ export function loadScene(sceneData) {
     }
 
     // Restore viewport
-    if (sceneData.viewport && svgEl) {
+    if (sceneData.viewport && svgEl && !options.preserveViewport) {
         const vb = sceneData.viewport;
         window.currentViewBox = { ...vb };
         svgEl.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.width} ${vb.height}`);
     }
-    if (sceneData.zoom) {
+    if (sceneData.zoom && !options.preserveViewport) {
         window.currentZoom = sceneData.zoom;
     }
 
@@ -688,6 +874,82 @@ export async function downloadScene(workspaceName = 'Untitled') {
 }
 
 // ============================================================
+// .lixsketch text export / import
+// ============================================================
+
+// Scene settings (background/theme/grid) live in the host app's stores; the
+// app registers window.__lixsketchSceneSettings (getter) and
+// window.__applyLixsketchSceneSettings (setter) to take part in export/import.
+function currentSceneSettings() {
+    try {
+        const settings = typeof window.__lixsketchSceneSettings === 'function' ? window.__lixsketchSceneSettings() : null;
+        return settings && typeof settings === 'object' ? settings : null;
+    } catch {
+        return null;
+    }
+}
+
+/** Current canvas as `.lixsketch` text. */
+export function saveSceneAsLixSketch(workspaceName = 'Untitled') {
+    const scene = saveScene(workspaceName);
+    const settings = currentSceneSettings();
+    if (settings && Object.keys(settings).length) scene.settings = settings;
+    return sceneToLixSketch(scene);
+}
+
+export function downloadLixSketch(workspaceName = 'Untitled') {
+    const text = saveSceneAsLixSketch(workspaceName);
+    const blob = new Blob([text], { type: LIXSKETCH_MIME_TYPE });
+    const url = URL.createObjectURL(blob);
+    const fileName = `${safeWorkspaceFileName(workspaceName)}-${sceneFileTimestamp()}${LIXSKETCH_EXTENSION}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return { fileName, sizeBytes: blob.size };
+}
+
+export const SCENE_FILE_ACCEPT = '.lixsketch,.lixjson,.json';
+
+export function isSceneFileName(name) {
+    return /\.(lixsketch|lixjson|json)$/i.test(String(name || ''));
+}
+
+/**
+ * Load a `.lixsketch` (DSL text), `.lixjson` (gzip/plain JSON) or `.json`
+ * file onto the canvas. Resolves { success, error?, warnings?, validation?, kind? }.
+ */
+export async function openSceneFile(file) {
+    try {
+        const text = await decodeSceneFile(await file.arrayBuffer());
+        let parsed;
+        try {
+            parsed = sceneFromFileText(text);
+        } catch (err) {
+            const message = err?.errors?.length
+                ? `${file.name || 'file'}:${formatDiagnostic(err.errors[0])}`
+                : (err.message || 'Could not read the file');
+            return { success: false, error: message, errors: err?.errors || [] };
+        }
+        const { scene, warnings = [], kind } = parsed;
+        const validation = validateScene(scene);
+        if (!validation.valid) return { success: false, error: validation.error };
+        resetSessionID(); // New session for loaded scene
+        const result = loadScene(scene);
+        if (result && scene.settings && typeof window.__applyLixsketchSceneSettings === 'function') {
+            try { window.__applyLixsketchSceneSettings(scene.settings); } catch (err) { console.warn('[SceneSerializer] settings apply failed:', err); }
+        }
+        return { success: result, validation, warnings, kind };
+    } catch (err) {
+        console.error('[SceneSerializer] Failed to open file:', err);
+        return { success: false, error: err.message || 'Failed to open scene file' };
+    }
+}
+
+// ============================================================
 // UPLOAD: Open file picker and load .lixsketch file
 // ============================================================
 // Validate scene JSON structure before loading
@@ -718,27 +980,13 @@ export function uploadScene() {
     return new Promise((resolve, reject) => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.lixjson,.json';
+        input.accept = SCENE_FILE_ACCEPT;
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return resolve(false);
-
-            try {
-                const json = await decodeSceneFile(await file.arrayBuffer());
-                const data = JSON.parse(json);
-                const validation = validateScene(data);
-                if (!validation.valid) {
-                    console.error('[SceneSerializer] Invalid file:', validation.error);
-                    resolve({ success: false, error: validation.error });
-                    return;
-                }
-                resetSessionID(); // New session for loaded scene
-                const result = loadScene(data);
-                resolve({ success: result, validation });
-            } catch (err) {
-                console.error('[SceneSerializer] Failed to parse file:', err);
-                resolve({ success: false, error: err.message || 'Failed to parse .lixjson file' });
-            }
+            const result = await openSceneFile(file);
+            if (!result.success && result.error) console.error('[SceneSerializer] Invalid file:', result.error);
+            resolve(result);
         };
         input.click();
     });
@@ -1002,6 +1250,10 @@ export function initSceneSerializer() {
         save: saveScene,
         load: loadScene,
         download: downloadScene,
+        downloadLixSketch,
+        toLixSketch: saveSceneAsLixSketch,
+        openFile: openSceneFile,
+        isSceneFile: isSceneFileName,
         upload: uploadScene,
         exportPNG: exportAsPNG,
         exportPDF: exportAsPDF,
@@ -1009,5 +1261,9 @@ export function initSceneSerializer() {
         copyAsSVG,
         resetCanvas,
         findText: findTextOnCanvas,
+        // Per-shape API used by live collaboration's incremental applier.
+        createShape: createShapeFromData,
+        serializeShape: serializeShapeData,
+        setArrowBinding,
     };
 }

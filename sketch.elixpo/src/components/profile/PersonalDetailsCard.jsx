@@ -15,7 +15,7 @@ const EMPTY_PROFILE = {
   links: [],
 }
 
-const inputClass = 'mt-1.5 w-full rounded-lg border border-white/10 bg-black/15 px-3 py-2.5 text-xs text-text-primary outline-none placeholder:text-text-dim focus:border-[#8B88E8]/60'
+const inputClass = 'mt-1.5 w-full rounded-lg border border-line bg-paper-deep px-3 py-2.5 text-xs text-text-primary outline-none placeholder:text-text-dim focus:border-lx-blue/60'
 
 function Field({ label, hint, children }) {
   return (
@@ -93,35 +93,35 @@ export default function PersonalDetailsCard() {
     }
   }
 
-  if (loading) return <div className="h-48 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.025]" />
+  if (loading) return <div className="h-48 animate-pulse rounded-2xl border border-line bg-ink/[0.03]" />
 
   return (
-    <form onSubmit={save} className="rounded-2xl border border-[#8B88E8]/25 bg-[#8B88E8]/[0.04] p-5">
-      <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] pb-4">
+    <form onSubmit={save} className="rounded-2xl border border-lx-blue/25 bg-lx-blue/[0.04] p-5">
+      <div className="flex items-start justify-between gap-4 border-b border-line pb-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-medium text-text-primary">
-            <i className="bx bx-id-card text-[#A99CF1]" />
+            <i className="bx bx-id-card text-lx-blue" />
             Personal details
           </h2>
           <p className="mt-1 text-xs leading-5 text-text-dim">Information used across your LixSketch profile and shared workspace identity.</p>
         </div>
-        <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-[#8B88E8] px-4 py-2 text-xs text-white hover:bg-[#9E91EE] disabled:cursor-wait disabled:opacity-60">
+        <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-lx-blue px-4 py-2 text-xs text-white hover:bg-lx-blue disabled:cursor-wait disabled:opacity-60">
           {saving ? 'Saving…' : 'Save changes'}
         </button>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/[0.07] bg-black/10 p-3 sm:col-span-2">
+        <div className="rounded-xl border border-line bg-paper-deep p-3 sm:col-span-2">
           <div className="flex items-center justify-between gap-3 text-[10px]">
             <span className="uppercase tracking-wider text-text-dim">Profile completeness</span>
-            <span className="font-mono text-[#A99CF1]">{completion}%</span>
+            <span className="font-mono text-lx-blue">{completion}%</span>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-            <div className="h-full rounded-full bg-[#8B88E8] transition-all duration-500" style={{ width: `${completion}%` }} />
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/[0.03]">
+            <div className="h-full rounded-full bg-lx-blue transition-all duration-500" style={{ width: `${completion}%` }} />
           </div>
           <p className="mt-2 text-[9px] text-text-dim">Complete details help collaborators identify you in shared rooms.</p>
         </div>
-        <div className="rounded-xl border border-white/[0.07] bg-black/10 p-3">
+        <div className="rounded-xl border border-line bg-paper-deep p-3">
           <p className="text-[9px] uppercase tracking-wider text-text-dim">Public links</p>
           <p className="mt-1 text-lg text-text-primary">{profile.links.filter((link) => link.label && link.url).length} / 6</p>
           <p className="mt-1 text-[9px] text-text-dim">Portfolio and social profiles</p>
@@ -130,7 +130,7 @@ export default function PersonalDetailsCard() {
 
       <div className="mt-5">
         <h3 className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-          <i className="bx bx-user-circle text-[#A99CF1]" /> Identity
+          <i className="bx bx-user-circle text-lx-blue" /> Identity
         </h3>
         <p className="mt-1 text-[10px] text-text-dim">Core information visible to people collaborating with you.</p>
       </div>
@@ -149,9 +149,9 @@ export default function PersonalDetailsCard() {
         </Field>
       </div>
 
-      <div className="mt-5 border-t border-white/[0.07] pt-4">
+      <div className="mt-5 border-t border-line pt-4">
         <h3 className="flex items-center gap-2 text-xs font-medium text-text-secondary">
-          <i className="bx bx-briefcase text-[#A99CF1]" /> About and presence
+          <i className="bx bx-briefcase text-lx-blue" /> About and presence
         </h3>
         <p className="mt-1 text-[10px] text-text-dim">Optional context for your profile and public links.</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -173,13 +173,13 @@ export default function PersonalDetailsCard() {
         </div>
       </div>
 
-      <div className="mt-5 border-t border-white/[0.07] pt-4">
+      <div className="mt-5 border-t border-line pt-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-xs font-medium text-text-secondary">Links</h3>
             <p className="mt-1 text-[10px] text-text-dim">Add a portfolio, GitHub, LinkedIn, or another public profile.</p>
           </div>
-          <button type="button" onClick={addLink} disabled={profile.links.length >= 6} className="cursor-pointer rounded-lg border border-[#8B88E8]/25 px-3 py-1.5 text-[10px] text-[#A99CF1] hover:bg-[#8B88E8]/10 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={addLink} disabled={profile.links.length >= 6} className="cursor-pointer rounded-lg border border-lx-blue/25 px-3 py-1.5 text-[10px] text-lx-blue hover:bg-lx-blue/10 disabled:cursor-not-allowed disabled:opacity-40">
             <i className="bx bx-plus mr-1" /> Add link
           </button>
         </div>
@@ -189,7 +189,7 @@ export default function PersonalDetailsCard() {
               <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.5fr)_auto]">
                 <input className={inputClass.replace('mt-1.5 ', '')} value={link.label} maxLength={30} onChange={(event) => updateLink(index, 'label', event.target.value)} placeholder="Label" aria-label={`Link ${index + 1} label`} />
                 <input className={inputClass.replace('mt-1.5 ', '')} value={link.url} maxLength={300} onChange={(event) => updateLink(index, 'url', event.target.value)} placeholder="https://" inputMode="url" aria-label={`Link ${index + 1} URL`} />
-                <button type="button" onClick={() => removeLink(index)} className="min-h-9 cursor-pointer rounded-lg border border-red-500/20 px-3 text-red-400 hover:bg-red-500/10" aria-label={`Remove link ${index + 1}`}>
+                <button type="button" onClick={() => removeLink(index)} className="min-h-9 cursor-pointer rounded-lg border border-red-500/20 px-3 text-red-700 hover:bg-red-500/10" aria-label={`Remove link ${index + 1}`}>
                   <i className="bx bx-trash" />
                 </button>
               </div>
@@ -199,7 +199,7 @@ export default function PersonalDetailsCard() {
       </div>
 
       {message && (
-        <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${message.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`} role="status">
+        <p className={`mt-4 rounded-lg px-3 py-2 text-xs ${message.ok ? 'bg-green-500/10 text-green-700' : 'bg-red-500/10 text-red-700'}`} role="status">
           {message.text}
         </p>
       )}

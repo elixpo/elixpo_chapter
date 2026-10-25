@@ -291,16 +291,29 @@ export default function ContextMenu() {
   }
 
   const handleDuplicate = () => {
-    // Copy then paste
-    if (typeof window.copySelected === 'function') window.copySelected()
-    setTimeout(() => {
-      if (typeof window.pasteClipboard === 'function') window.pasteClipboard()
-    }, 50)
+    // Engine duplicate: offsets the copy and leaves the clipboard untouched.
+    window.__canvasCommands?.duplicate()
+    close()
+  }
+
+  const handleCopyStyles = () => {
+    window.__canvasCommands?.copyStyles()
+    close()
+  }
+
+  const handlePasteStyles = () => {
+    window.__canvasCommands?.pasteStyles()
     close()
   }
 
   // Layer order
   const handleLayerAction = (action) => {
+    // Whole multi-selection when there is one, keeping relative order.
+    if (window.multiSelection?.selectedShapes?.size > 0 && window.__canvasCommands) {
+      window.__canvasCommands.applyLayerAction(action)
+      close()
+      return
+    }
     const shape = targetShape || window.currentShape
     if (!shape || !window.__layerOrder) { close(); return }
     window.__layerOrder[action](shape)
@@ -326,7 +339,7 @@ export default function ContextMenu() {
 
   // Wrap selection in frame
   const handleWrapInFrame = () => {
-    // Simulate the frame wrap if engine supports it
+    if (typeof window.frameSelectedShapes === 'function') window.frameSelectedShapes()
     close()
   }
 
@@ -421,18 +434,22 @@ export default function ContextMenu() {
           <MenuItem label="Copy to clipboard as SVG" onClick={handleCopySVG} />
 
           <Separator />
+          <MenuItem label="Copy styles" shortcut="Ctrl+Alt+C" onClick={handleCopyStyles} />
+          <MenuItem label="Paste styles" shortcut="Ctrl+Alt+V" onClick={handlePasteStyles} />
+
+          <Separator />
           <MenuItem label="Send backward" shortcut="Ctrl+[" onClick={() => handleLayerAction('sendBackward')} />
           <MenuItem label="Bring forward" shortcut="Ctrl+]" onClick={() => handleLayerAction('bringForward')} />
           <MenuItem label="Send to back" shortcut="Ctrl+Shift+[" onClick={() => handleLayerAction('sendToBack')} />
           <MenuItem label="Bring to front" shortcut="Ctrl+Shift+]" onClick={() => handleLayerAction('bringToFront')} />
 
           <Separator />
-          <MenuItem label="Flip horizontal" shortcut="Shift+H" onClick={() => handleFlip('h')} />
-          <MenuItem label="Flip vertical" shortcut="Shift+V" onClick={() => handleFlip('v')} />
+          <MenuItem label="Flip horizontal" onClick={() => handleFlip('h')} />
+          <MenuItem label="Flip vertical" onClick={() => handleFlip('v')} />
 
           <Separator />
           <MenuItem label="Duplicate" shortcut="Ctrl+D" onClick={handleDuplicate} />
-          <MenuItem label="Delete" danger onClick={handleDeleteShape} />
+          <MenuItem label="Delete" shortcut="Del" danger onClick={handleDeleteShape} />
         </>
       ) : (
         /* ── Canvas context menu ── */

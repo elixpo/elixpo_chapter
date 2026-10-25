@@ -1,10 +1,11 @@
 /* eslint-disable */
+import { getThemeForeground as getThemeStroke } from '../utils/themeColors.js';
 // Freehand tool event handlers - extracted from canvasStroke.js
 import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransformAction, pushFrameAttachmentAction } from '../core/UndoRedo.js';
 import { updateAttachedArrows as updateArrowsForShape, cleanupAttachments } from './arrowTool.js';
 import { calculateSnap, clearSnapGuides } from '../core/SnapGuides.js';
 
-function getThemeStroke() { if (typeof document === "undefined") return "#fff"; return document.body && document.body.classList.contains("theme-dark") ? "#fff" : "#000000"; }
+
 
 // Expose updateArrowsForShape globally so FreehandStroke.updateAttachedArrows() can call it
 // (FreehandStroke.js is a separate module and cannot import freehandTool's local bindings)
@@ -381,11 +382,9 @@ function handleMouseUp(e) {
                 pushFrameAttachmentAction(finalFrame, currentStroke, 'attach', null);
             }
 
-            // Auto-select the drawn stroke and switch to selection tool
-            const drawnShape = currentStroke;
-            if (window.__sketchStoreApi) window.__sketchStoreApi.setActiveTool('select', { afterDraw: true });
-            currentShape = drawnShape;
-            currentShape.selectStroke();
+            // Excalidraw keeps the pen active after a stroke so handwriting
+            // and multi-stroke sketches don't need the tool re-picked each
+            // time (Esc or V returns to selection).
         } else if (currentStroke) {
             // Remove strokes that are too small
             shapes.pop();

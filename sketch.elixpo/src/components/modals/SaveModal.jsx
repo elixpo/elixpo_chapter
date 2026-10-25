@@ -10,6 +10,7 @@ import usePlanEntitlements from '@/hooks/usePlanEntitlements'
 import useAuthStore from '@/store/useAuthStore'
 import useSketchStore from '@/store/useSketchStore'
 import { triggerCloudSync } from '@/hooks/useAutoSave'
+import { saveLixSketchFile } from '@/utils/sceneFiles'
 import {
   canvasToLosslessPNG,
   createExportSVG,
@@ -342,6 +343,11 @@ export default function SaveModal() {
     toggleSaveModal()
   }
 
+  const handleExportLixSketch = () => {
+    saveLixSketchFile()
+    toggleSaveModal()
+  }
+
   const handleExportPNG = async () => {
     const clone = createExportSVG(bgMode, resolvedTheme, canvasBackground)
     if (!clone) return
@@ -550,6 +556,14 @@ export default function SaveModal() {
               >
                 <i className="bx bx-braces text-sm" />
                 .lixjson Scene
+              </button>
+              <button
+                onClick={handleExportLixSketch}
+                title="Readable LixSketch DSL text — diff-friendly, editable by hand"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
+              >
+                <i className="bx bx-code-curly text-sm" />
+                .lixsketch File
               </button>
             </div>
           </div>}

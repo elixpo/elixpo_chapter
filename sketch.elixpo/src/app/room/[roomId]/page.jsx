@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import { useEffect } from 'react'
 import Script from 'next/script'
 import Header from '@/components/header/Header'
-import useUIStore from '@/store/useUIStore'
+import useUIStore, { clearWorkspaceTheme } from '@/store/useUIStore'
 import Toolbar from '@/components/toolbar/Toolbar'
 import Footer from '@/components/footer/Footer'
 import AppMenu from '@/components/menu/AppMenu'
@@ -22,6 +22,7 @@ import TextSidebar from '@/components/sidebars/TextSidebar'
 import FrameSidebar from '@/components/sidebars/FrameSidebar'
 import IconSidebar from '@/components/sidebars/IconSidebar'
 import ImageSidebar from '@/components/sidebars/ImageSidebar'
+import IconPropertiesSidebar from '@/components/sidebars/IconPropertiesSidebar'
 import SVGCanvas from '@/components/canvas/SVGCanvas'
 import MultiSelectActions from '@/components/canvas/MultiSelectActions'
 import ImageSourcePicker from '@/components/canvas/ImageSourcePicker'
@@ -47,9 +48,8 @@ export default function RoomPage() {
     media.addEventListener?.('change', handleSystemTheme)
     return () => {
       media.removeEventListener?.('change', handleSystemTheme)
-      document.body.classList.remove('canvas-mode', 'theme-dark', 'theme-light')
-      delete document.body.dataset.resolvedTheme
-      document.documentElement.style.removeProperty('color-scheme')
+      // Restore site defaults (light, no canvas/UI theme classes).
+      clearWorkspaceTheme()
     }
   }, [])
 
@@ -72,6 +72,7 @@ export default function RoomPage() {
       <FrameSidebar />
       <IconSidebar />
       <ImageSidebar />
+      <IconPropertiesSidebar />
 
       <SVGCanvas />
 

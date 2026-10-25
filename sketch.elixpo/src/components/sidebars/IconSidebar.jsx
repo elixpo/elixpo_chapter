@@ -3,8 +3,8 @@
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
-
-const iconResultCache = new Map()
+import { iconUrl } from '@elixpo/lixsketch/src/core/IconLibrary.js'
+import { getIconLibrary, prefetchIconIndex } from '@/utils/iconLibrary'
 
 const CATEGORIES = [
   { value: null, label: 'All', icon: 'bxs-grid-alt' },
@@ -17,31 +17,11 @@ const CATEGORIES = [
   { value: 'media', label: 'Media', icon: 'bxs-videos' },
 ]
 
-// Normalize an SVG string so it renders fully within a fixed box.
-// Ensures the inner <svg> has width/height="100%" and a viewBox.
-function normalizeSvg(raw) {
-  if (!raw) return raw
-  // Parse to a temp element so we can inspect attributes
-  const tmp = document.createElement('div')
-  tmp.innerHTML = raw
-  const svgEl = tmp.querySelector('svg')
-  if (!svgEl) return raw
-
-  // Ensure viewBox exists — derive from width/height if missing
-  if (!svgEl.getAttribute('viewBox')) {
-    const w = parseFloat(svgEl.getAttribute('width')) || 24
-    const h = parseFloat(svgEl.getAttribute('height')) || 24
-    svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`)
-  }
-  // Force the SVG to fill its container
-  svgEl.setAttribute('width', '100%')
-  svgEl.setAttribute('height', '100%')
-  return tmp.innerHTML
-}
-
+// Thumbnails are plain <img> tags pointing at the static SVG files: the
+// browser decodes them off the main thread and serves repeats from its HTTP
+// cache, so no per-cell markup parsing happens while typing.
 function IconCell({ icon, onClick }) {
   const name = icon.filename?.replace('.svg', '').replace(/_/g, ' ') || ''
-  const normalizedSvg = typeof document !== 'undefined' && icon.svg ? normalizeSvg(icon.svg) : icon.svg
   return (
     <button
       onClick={onClick}
@@ -49,19 +29,15 @@ function IconCell({ icon, onClick }) {
       style={{ width: '44px', height: '44px', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
       className="hover:bg-surface-hover transition-colors duration-100"
     >
-      {normalizedSvg ? (
-        <div
-          style={{ width: '24px', height: '24px', overflow: 'visible', flexShrink: 0, pointerEvents: 'none', filter: 'var(--lix-icon-filter, brightness(0) invert(1))' }}
-          dangerouslySetInnerHTML={{ __html: normalizedSvg }}
-        />
-      ) : (
-        <img
-          src={`/icons/${encodeURIComponent(icon.filename)}`}
-          alt=""
-          style={{ width: '24px', height: '24px', pointerEvents: 'none', filter: 'var(--lix-icon-filter, brightness(0) invert(1))' }}
-          loading="lazy"
-        />
-      )}
+      <img
+        src={iconUrl(icon.filename)}
+        alt=""
+        width={24}
+        height={24}
+        decoding="async"
+        loading="lazy"
+        style={{ width: '24px', height: '24px', objectFit: 'contain', pointerEvents: 'none', filter: 'var(--lix-icon-filter, brightness(0) invert(1))' }}
+      />
     </button>
   )
 }
@@ -75,9 +51,12 @@ export default function IconSidebar() {
   const [category, setCategory] = useState(null)
   const [icons, setIcons] = useState([])
   const [loading, setLoading] = useState(false)
-  const debounceRef = useRef(null)
   const searchInputRef = useRef(null)
   const requestSequenceRef = useRef(0)
+
+  // The sidebar stays mounted (rendering nothing) while hidden, so this
+  // downloads the index in idle time before the icon tool is first opened.
+  useEffect(() => prefetchIconIndex(), [])
 
   useEffect(() => {
     if (!visible) return
@@ -111,45 +90,34 @@ export default function IconSidebar() {
     return () => svgEl.removeEventListener('mousedown', handleCanvasClick)
   }, [visible, setActiveTool])
 
-  const fetchIcons = useCallback(async (searchQuery, cat) => {
-    const requestSequence = ++requestSequenceRef.current
-    const params = new URLSearchParams()
-    if (searchQuery) params.set('q', searchQuery)
-    if (cat) params.set('category', cat)
-    params.set('inline', '1')
-    const cacheKey = params.toString()
-
-    // Return cached results instantly if available
-    if (iconResultCache.has(cacheKey)) {
-      setIcons(iconResultCache.get(cacheKey))
-      setLoading(false)
-      return
-    }
-
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/icons/search?${cacheKey}`)
-      if (res.ok) {
-        const data = await res.json()
-        const results = data.results || []
-        iconResultCache.set(cacheKey, results)
-        if (requestSequence === requestSequenceRef.current) setIcons(results)
-      }
-    } catch (err) {
-      console.error('Icon fetch failed:', err)
-    }
-    if (requestSequence === requestSequenceRef.current) setLoading(false)
+  const showResults = useCallback((results, requestSequence) => {
+    if (requestSequence !== requestSequenceRef.current) return
+    setIcons(results)
+    setLoading(false)
+    // Warm the markup for the first rows so a click places instantly.
+    getIconLibrary().prefetchSvgs(results.map((icon) => icon.filename))
   }, [])
 
-  // Fetch icons when visibility, query, or category changes (debounced for query typing)
+  // Search runs in the browser against the downloaded index: once it is
+  // loaded every keystroke is answered synchronously, without debounce.
   useEffect(() => {
     if (!visible) return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchIcons(query, category)
-    }, query ? 80 : 0)
-    return () => clearTimeout(debounceRef.current)
-  }, [query, visible, category, fetchIcons])
+    const requestSequence = ++requestSequenceRef.current
+    const library = getIconLibrary()
+    const params = { q: query, category }
+    const ready = library.searchSync(params)
+    if (ready) {
+      showResults(ready, requestSequence)
+      return
+    }
+    setLoading(true)
+    library.search(params)
+      .then((results) => showResults(results, requestSequence))
+      .catch((err) => {
+        console.error('Icon search failed:', err)
+        if (requestSequence === requestSequenceRef.current) setLoading(false)
+      })
+  }, [query, visible, category, showResults])
 
   const handleIconClick = useCallback((icon) => {
     if (typeof window === 'undefined') return
@@ -163,10 +131,7 @@ export default function IconSidebar() {
     if (icon.svg) {
       place(icon.svg)
     } else {
-      fetch(`/icons/${encodeURIComponent(icon.filename)}`)
-        .then((r) => r.text())
-        .then(place)
-        .catch(() => {})
+      getIconLibrary().getSvg(icon.filename).then(place).catch(() => {})
     }
   }, [])
 

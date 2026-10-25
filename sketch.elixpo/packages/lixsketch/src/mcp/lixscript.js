@@ -1,4 +1,5 @@
 import { parseLixScript, resolveShapeRefs } from '../core/LixScriptParser.js';
+import { readArrowheads } from '../core/ArrowHeads.js';
 
 const MAX_SOURCE_LENGTH = 100_000;
 
@@ -74,7 +75,7 @@ export function compileLixScript(source, { x = 0, y = 0 } = {}) {
       startPoint.x += x; startPoint.y += y; endPoint.x += x; endPoint.y += y;
       shape = def.type === 'line'
         ? { type: 'line', shapeID: id, startPoint, endPoint, isCurved: def.props.curve === true || def.props.curve === 'true', options: options(def), parentFrame }
-        : { type: 'arrow', shapeID: id, startPoint, endPoint, arrowHeadStyle: def.props.head || 'triangle', arrowOutlineStyle: def.props.style || 'solid', arrowCurved: def.props.curve && def.props.curve !== 'straight', arrowCurveAmount: Number(def.props.curveAmount) || 0.2, options: options(def), parentFrame };
+        : { type: 'arrow', shapeID: id, startPoint, endPoint, ...readArrowheads({ startArrowhead: def.props.startHead, endArrowhead: def.props.endHead, arrowHeadStyle: def.props.head || 'triangle' }), arrowOutlineStyle: def.props.style || 'solid', arrowCurved: def.props.curve && def.props.curve !== 'straight', arrowCurveAmount: Number(def.props.curveAmount) || 0.2, options: options(def), parentFrame };
     } else throw new Error(`LixScript ${def.type} is not writable through MCP`);
     shapes.push(shape);
     const label = labelShape(def, id, parentFrame);

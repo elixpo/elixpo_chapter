@@ -3,6 +3,7 @@
 import useSketchStore from '../../store/useSketchStore'
 import useUIStore from '../../store/useUIStore'
 import ShapeSidebar, { Divider, LayerControls } from './ShapeSidebar'
+import { OpacityControl } from './AppearanceControls'
 import { useCallback } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 
@@ -86,6 +87,8 @@ export default function ImageSidebar() {
       )}
 
       {/* Layer controls */}
+      <OpacityControl />
+      <Divider />
       <LayerControls />
     </ShapeSidebar>
   )

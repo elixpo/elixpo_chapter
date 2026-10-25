@@ -24,7 +24,8 @@ function ensureHost() {
     'transform:translateX(-50%)',
     'z-index:99999',
     'pointer-events:none',
-    'font-family:lixFont, system-ui, sans-serif',
+    // Inherit: lixFont in the workspace (body.canvas-mode), the site font elsewhere.
+    'font-family:inherit',
   ].join(';')
   document.body.appendChild(host)
   return host

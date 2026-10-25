@@ -27,6 +27,7 @@ import TextSidebar from './components/sidebars/TextSidebar.jsx';
 import FrameSidebar from './components/sidebars/FrameSidebar.jsx';
 import IconSidebar from './components/sidebars/IconSidebar.jsx';
 import ImageSidebar from './components/sidebars/ImageSidebar.jsx';
+import IconPropertiesSidebar from './components/sidebars/IconPropertiesSidebar.jsx';
 import MultiSelectActions from './components/canvas/MultiSelectActions.jsx';
 import ContextMenu from './components/canvas/ContextMenu.jsx';
 import FindBar from './components/canvas/FindBar.jsx';
@@ -231,6 +232,7 @@ export default function LixSketchCanvas({
       <FrameSidebar />
       <IconSidebar />
       <ImageSidebar />
+      <IconPropertiesSidebar />
       <MultiSelectActions />
       <CommandPalette />
       <ExportImageModal />

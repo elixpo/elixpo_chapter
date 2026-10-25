@@ -2,6 +2,7 @@
   "menu": {
     "open": "खोलें",
     "quickSave": ".lixjson सहेजें",
+    "saveLixSketch": ".lixsketch सहेजें",
     "saveShare": "सहेजें और साझा करें",
     "exportImage": "चित्र निर्यात करें",
     "commands": "कमांड",
@@ -14,9 +15,12 @@
     "signIn": "साइन इन करें",
     "signOut": "साइन आउट करें",
     "theme": "थीम",
+    "canvasTheme": "कैनवास थीम",
+    "interfaceTheme": "इंटरफ़ेस थीम",
     "canvasBackground": "कैनवास पृष्ठभूमि",
     "canvasBg": {
       "white": "सफेद",
+      "offWhite": "हल्का सफेद",
       "cream": "क्रीम",
       "paper": "कागज़",
       "skyTint": "आसमानी रंग",
@@ -107,7 +111,6 @@
     "pan": "पैन",
     "selection": "चयन",
     "rectangle": "आयत",
-    "diamond": "डायमंड",
     "circle": "वृत्त",
     "arrow": "तीर",
     "line": "रेखा",

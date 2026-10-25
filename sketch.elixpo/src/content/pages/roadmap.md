@@ -17,7 +17,7 @@ The core drawing engine is fully functional with a hand-drawn aesthetic powered 
 - **Undo/redo** — full action-based history stack
 - **Copy/paste** — Ctrl+C/V for duplicating elements
 - **Image tool** — drag-and-drop or click to insert images
-- **Icon library** — searchable icon set with 250K+ icons
+- **Icon library** — searchable icon set with 5,000+ icons
 - **Frame tool** — group elements into artboards
 - **Eraser** — remove elements with a brush stroke
 - **Laser pointer** — for presentations and walkthroughs

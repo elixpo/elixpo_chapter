@@ -1,7 +1,8 @@
 /* eslint-disable */
 import { registerRotationAnchor } from '../core/ScreenSpaceControls.js';
 import { canvasToLocal, localToCanvas } from '../core/CanvasSpace.js';
-import { DEFAULT_SHAPE_LABEL_FONT_SIZE } from '../core/ShapeLabelLayout.js';
+import { DEFAULT_SHAPE_LABEL_FONT_SIZE, ELLIPSE_INSET, fitShapeToLabel, measureShapeLabel } from '../core/ShapeLabelLayout.js';
+import { openShapeLabelEditor } from '../core/ShapeLabelEditor.js';
 import { resolveThemeLabelColor } from '../utils/themeColors.js';
 // Circle shape class - extracted from drawCircle.js
 // Depends on globals: svg, shapes, rough, currentShape, currentZoom, rc
@@ -19,10 +20,16 @@ const outlineStyleValueCircle = document.querySelectorAll(".circleOutlineStyle")
 
 class Circle {
     constructor(x, y, rx, ry, options = {}) {
+        // Bound label state first: the rx/ry setters fit the ellipse to the
+        // label. `_userRx`/`_userRy` hold the explicit radii; `rx`/`ry` return
+        // the rendered radii, which may be grown to fit the label.
+        this.label = options.label || '';
+        this.labelFontSize = options.labelFontSize || DEFAULT_SHAPE_LABEL_FONT_SIZE;
+        this.labelWrap = options.labelWrap !== false;
+        this.isBeingDrawn = false;
         this.x = x; 
         this.y = y; 
-        this.rx = rx; 
-        this.ry = ry; 
+        this.setUserRadii(rx, ry);
         this.options = {
             roughness: 1.5,
             stroke: "#fff",
@@ -53,10 +60,8 @@ class Circle {
         this.parentFrame = null;
 
         // Embedded label support
-        this.label = options.label || '';
         this.labelElement = null;
         this.labelColor = resolveThemeLabelColor(options.labelColor);
-        this.labelFontSize = options.labelFontSize || DEFAULT_SHAPE_LABEL_FONT_SIZE;
         this._isEditingLabel = false;
         this._hitArea = null;
         this._labelBg = null;
@@ -67,7 +72,6 @@ class Circle {
         this.shadeDirection = options.shadeDirection || 'bottom';
         this._shadeEllipse = null;
         this._shadeGradient = null;
-        this.isBeingDrawn = false;
         this._drawingRenderFrame = null;
         this._isLivePreviewElement = false;
 
@@ -100,7 +104,69 @@ class Circle {
         this.ry = value / 2;
     }
 
+    get rx() { return this._rx; }
+    set rx(value) { this.setUserRadii(value, this._userRy); }
+    get ry() { return this._ry; }
+    set ry(value) { this.setUserRadii(this._userRx, value); }
+    get userRx() { return this._userRx; }
+    set userRx(value) { this.setUserRadii(value, this._userRy); }
+    get userRy() { return this._userRy; }
+    set userRy(value) { this.setUserRadii(this._userRx, value); }
+
+    /**
+     * Set the explicit radii. The rendered radii are the explicit ones grown
+     * so the bound label fits inside the ellipse's inscribed rectangle.
+     */
+    setUserRadii(rx, ry) {
+        this._userRx = Number(rx) || 0;
+        this._userRy = Number(ry) || 0;
+        this._syncLabelLayout();
+    }
+
+    /**
+     * Recompute rendered radii + label layout. With `anchorTopLeft`, growth
+     * caused by the label (not by an explicit resize) keeps the bounding
+     * box's top-left corner fixed by moving the center.
+     */
+    _syncLabelLayout({ anchorTopLeft = false } = {}) {
+        if (this._userRx === undefined || this._userRy === undefined) return null;
+        const prevRx = this._rx;
+        const prevRy = this._ry;
+        let layout = null;
+        if (!this.label || this.isBeingDrawn) {
+            this._rx = this._userRx;
+            this._ry = this._userRy;
+            layout = this.label ? measureShapeLabel(this.label, this.labelFontSize) : null;
+        } else {
+            const fit = fitShapeToLabel({
+                label: this.label,
+                fontSize: this.labelFontSize,
+                wrap: this.labelWrap !== false,
+                userWidth: this._userRx * 2,
+                userHeight: this._userRy * 2,
+                inset: ELLIPSE_INSET,
+            });
+            this._rx = fit.width / 2;
+            this._ry = fit.height / 2;
+            layout = fit.layout;
+        }
+        if (anchorTopLeft && prevRx !== undefined && prevRy !== undefined) {
+            this.x += this._rx - prevRx;
+            this.y += this._ry - prevRy;
+        }
+        this._labelLayout = layout;
+        return layout;
+    }
+
     draw() {
+        this._syncLabelLayout({ anchorTopLeft: true });
+        // Label-driven growth (typing, font change, undo, remote load) moves
+        // the edges; keep attached arrows glued to them.
+        const sizeKey = `${this._rx}x${this._ry}`;
+        if (this._arrowSizeKey !== undefined && this._arrowSizeKey !== sizeKey && !this.isBeingDrawn) {
+            this.updateAttachedArrows();
+        }
+        this._arrowSizeKey = sizeKey;
         const childrenToRemove = [];
         const preserveSet = this._skipAnchors ? new Set([...this.anchors, this.selectionOutline, this.rotationAnchor].filter(Boolean)) : null;
         for (let i = 0; i < this.group.children.length; i++) {
@@ -650,38 +716,31 @@ class Circle {
             this.labelElement.setAttribute('pointer-events', 'none');
         }
 
+        const layout = this._labelLayout || measureShapeLabel(this.label, this.labelFontSize);
         // Circle center is at (0, 0) in local coords
+        const startY = -layout.contentHeight / 2;
+        while (this.labelElement.firstChild) this.labelElement.removeChild(this.labelElement.firstChild);
+        layout.lines.forEach((line, index) => {
+            const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            tspan.setAttribute('x', 0);
+            tspan.setAttribute('y', startY + index * layout.lineHeight);
+            tspan.setAttribute('dominant-baseline', 'hanging');
+            tspan.textContent = line || ' ';
+            this.labelElement.appendChild(tspan);
+        });
         this.labelElement.setAttribute('x', 0);
-        this.labelElement.setAttribute('y', 0);
         this.labelElement.setAttribute('text-anchor', 'middle');
-        this.labelElement.setAttribute('dominant-baseline', 'central');
         this.labelElement.setAttribute('fill', this.labelColor);
         this.labelElement.setAttribute('font-size', this.labelFontSize);
         this.labelElement.setAttribute('font-family', 'lixFont, sans-serif');
-        this.labelElement.textContent = this.label;
+        // The HTML editor overlay shows the text while editing.
+        this.labelElement.setAttribute('visibility', this._isEditingLabel ? 'hidden' : 'visible');
 
-        // Background padding rect behind text (like arrows have)
-        const canvasBg = window.getComputedStyle(svg).backgroundColor || '#000';
-        if (!this._labelBg) {
-            this._labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            this._labelBg.setAttribute('pointer-events', 'none');
-        }
-        this._labelBg.setAttribute('fill', canvasBg);
-        const hPadding = 6;
-        const vPadding = 2;
-        const charWidth = this.labelFontSize * 0.6;
-        const bgW = this.label.length * charWidth + hPadding * 2;
-        const bgH = this.labelFontSize + vPadding * 2;
-        this._labelBg.setAttribute('x', -bgW / 2);
-        this._labelBg.setAttribute('y', -bgH / 2);
-        this._labelBg.setAttribute('width', bgW);
-        this._labelBg.setAttribute('height', bgH);
-        this._labelBg.setAttribute('rx', 3);
-
-        // Re-append bg then text on top
-        if (this._labelBg.parentNode === this.group) this.group.removeChild(this._labelBg);
+        // Text sits directly on the shape (transparent background, like
+        // Excalidraw); only arrow/line labels keep a cut-out over the stroke.
+        if (this._labelBg && this._labelBg.parentNode === this.group) this.group.removeChild(this._labelBg);
+        this._labelBg = null;
         if (this.labelElement.parentNode === this.group) this.group.removeChild(this.labelElement);
-        this.group.appendChild(this._labelBg);
         this.group.appendChild(this.labelElement);
     }
 
@@ -694,96 +753,29 @@ class Circle {
     }
 
     startLabelEdit() {
-        if (this._isEditingLabel) return;
-        this._isEditingLabel = true;
-
-        if (this.labelElement) {
-            this.labelElement.setAttribute('visibility', 'hidden');
-        }
-
-        // Get shape's screen position via CTM
-        const ctm = this.group.getScreenCTM();
-        if (!ctm) { this._isEditingLabel = false; return; }
-
-        // Map the ellipse bounding box to screen coords
-        const pt1 = svg.createSVGPoint();
-        pt1.x = -this.rx; pt1.y = -this.ry;
-        const screenTL = pt1.matrixTransform(ctm);
-        const pt2 = svg.createSVGPoint();
-        pt2.x = this.rx; pt2.y = this.ry;
-        const screenBR = pt2.matrixTransform(ctm);
-
-        const screenW = Math.abs(screenBR.x - screenTL.x);
-        const screenH = Math.abs(screenBR.y - screenTL.y);
-        const screenX = Math.min(screenTL.x, screenBR.x);
-        const screenY = Math.min(screenTL.y, screenBR.y);
-
-        // Create HTML overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'shape-label-editor';
-        overlay.style.cssText = `
-            position: fixed; z-index: 10000;
-            left: ${screenX}px; top: ${screenY}px;
-            width: ${screenW}px; height: ${screenH}px;
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: auto;
-        `;
-
-        const canvasBg = window.getComputedStyle(svg).backgroundColor || '#000';
-        const input = document.createElement('div');
-        input.setAttribute('contenteditable', 'true');
-        input.style.cssText = `
-            max-width: ${screenW - 8}px; min-width: 30px; min-height: 20px;
-            background: ${canvasBg}; border: none;
-            outline: none; padding: 2px 6px;
-            color: ${this.labelColor}; font-size: ${Math.max(12, this.labelFontSize * (screenW / Math.max(this.rx * 2, 1)))}px;
-            font-family: lixFont, sans-serif; text-align: center;
-            white-space: pre-wrap; word-break: break-word;
-            cursor: text;
-        `;
-        if (this.label) {
-            input.textContent = this.label;
-        } else {
-            input.innerHTML = '&nbsp;';
-        }
-
-        overlay.appendChild(input);
-        document.body.appendChild(overlay);
-
-        setTimeout(() => {
-            input.focus();
-            const sel = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(input);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }, 10);
-
-        const finishEdit = () => {
-            const newText = input.textContent.trim().replace(/\u00A0/g, '');
-            this.label = newText;
-            this._isEditingLabel = false;
-
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-            if (this.labelElement) this.labelElement.setAttribute('visibility', 'visible');
-            this.draw();
-        };
-
-        input.addEventListener('blur', finishEdit);
-        input.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
-            if (e.key === 'Escape') { input.textContent = this.label; input.blur(); }
-        });
-        input.addEventListener('pointerdown', (e) => e.stopPropagation());
-        input.addEventListener('pointermove', (e) => e.stopPropagation());
-        input.addEventListener('pointerup', (e) => e.stopPropagation());
+        openShapeLabelEditor(this, () => ({ x0: -this.rx, y0: -this.ry, x1: this.rx, y1: this.ry }));
     }
 
     setLabel(text, color, fontSize) {
         this.label = text || '';
         if (color) this.labelColor = color;
         if (fontSize) this.labelFontSize = fontSize;
+        this.draw();
+    }
+
+    /**
+     * Apply serialized/remote label state in one pass without moving the
+     * center. Missing fields keep their current values; `userRx`/`userRy`
+     * default to the current explicit radii.
+     */
+    applyLabelState(state = {}) {
+        if (state.label !== undefined) this.label = state.label || '';
+        if (state.labelColor) this.labelColor = state.labelColor;
+        if (state.labelFontSize) this.labelFontSize = state.labelFontSize;
+        if (state.labelWrap !== undefined) this.labelWrap = state.labelWrap !== false;
+        const userRx = Number.isFinite(state.userRx) ? state.userRx : this._userRx;
+        const userRy = Number.isFinite(state.userRy) ? state.userRy : this._userRy;
+        this.setUserRadii(userRx, userRy);
         this.draw();
     }
 

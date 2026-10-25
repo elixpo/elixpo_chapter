@@ -4,7 +4,7 @@ import { pushOptionsChangeAction } from '../core/UndoRedo.js';
 const OPTION_FILL_SHAPES = new Set(['rectangle', 'circle']);
 
 window.paintBucketSettings = window.paintBucketSettings || {
-    fillColor: '#A98DEB',
+    fillColor: '#d0bfff',
     fillStyle: 'solid',
 };
 

@@ -2,6 +2,7 @@
   "menu": {
     "open": "Open",
     "quickSave": "Quick Save",
+    "saveLixSketch": "Save .lixsketch",
     "saveShare": "Save & Share",
     "exportImage": "Export Image",
     "commands": "Commands",
@@ -14,6 +15,8 @@
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "theme": "Theme",
+    "canvasTheme": "Canvas Theme",
+    "interfaceTheme": "Interface Theme",
     "canvasBackground": "Canvas Background",
     "canvasBg": {
       "black": "Black",
@@ -102,7 +105,6 @@
     "pan": "Pan",
     "selection": "Selection",
     "rectangle": "Rectangle",
-    "diamond": "Diamond",
     "circle": "Circle",
     "arrow": "Arrow",
     "line": "Line",

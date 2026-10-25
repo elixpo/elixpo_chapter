@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import useSketchStore from './useSketchStore'
+import { getThemeInk, isThemeOwnedColor, normalizeColor } from '../../utils/themeColors.js'
 
 export const MAX_WORKSPACE_NAME_LENGTH = 20
 
@@ -16,17 +17,10 @@ function invertShapeColors(prevResolved, nextResolved) {
   const shapes = window.shapes
   if (!shapes || shapes.length === 0) return
 
-  // Going light → dark: #000 → #fff.  Going dark → light: #fff → #000.
-  const from = nextResolved === 'light' ? '#ffffff' : '#000000'
-  const to   = nextResolved === 'light' ? '#000000' : '#ffffff'
-
-  const normalize = (c) => {
-    if (!c || c === 'transparent' || c === 'none') return c
-    const lower = c.toLowerCase().trim()
-    if (lower === '#fff' || lower === '#ffffff' || lower === 'white') return '#ffffff'
-    if (lower === '#000' || lower === '#000000' || lower === 'black') return '#000000'
-    return lower
-  }
+  // Theme defaults (soft ink + legacy #000/#fff and label greys) follow the
+  // theme; explicit user colors are left alone.
+  const to = getThemeInk(nextResolved)
+  const isOwned = (c) => isThemeOwnedColor(c) && normalizeColor(c) !== to
 
   for (const shape of shapes) {
     let changed = false
@@ -87,30 +81,27 @@ function invertShapeColors(prevResolved, nextResolved) {
       }
     } else {
       if (shape.options) {
-        if (normalize(shape.options.stroke) === from) {
+        if (isOwned(shape.options.stroke)) {
           shape.options.stroke = to
           changed = true
         }
-        if (normalize(shape.options.fill) === from) {
+        if (isOwned(shape.options.fill)) {
           shape.options.fill = to
           changed = true
         }
       }
       // Text shapes store color directly
-      if (shape.color !== undefined && normalize(shape.color) === from) {
+      if (shape.color !== undefined && isOwned(shape.color)) {
         shape.color = to
         changed = true
       }
-      if (shape.strokeColor !== undefined && normalize(shape.strokeColor) === from) {
+      if (shape.strokeColor !== undefined && isOwned(shape.strokeColor)) {
         shape.strokeColor = to
         changed = true
       }
-      if (shape.labelColor !== undefined) {
-        const labelColor = normalize(shape.labelColor)
-        if (labelColor === from || labelColor === '#e0e0e0' || labelColor === '#e8e3f3') {
-          shape.labelColor = to
-          changed = true
-        }
+      if (shape.labelColor !== undefined && isOwned(shape.labelColor)) {
+        shape.labelColor = to
+        changed = true
       }
     }
     if (changed && typeof shape.draw === 'function') {
@@ -147,7 +138,7 @@ function applyTheme(theme) {
   body.classList.add(`theme-${resolved}`)
 
   const svgEl = window.svg
-  if (svgEl) svgEl.style.background = resolved === 'light' ? '#ffffff' : '#15111f'
+  if (svgEl) svgEl.style.background = resolved === 'light' ? '#FAFAF9' : '#15111f'
 }
 
 const useUIStore = create((set, get) => ({

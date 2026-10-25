@@ -10,6 +10,7 @@ import { beginWorkspaceDeletion } from '@/hooks/useAutoSave'
 import { discardPendingDocChanges } from '@/hooks/useDocAutoSave'
 import { useTranslation } from '@/hooks/useTranslation'
 import { CANVAS_BACKGROUNDS } from '@/utils/canvasBackgrounds'
+import { openSceneFilePicker, saveLixSketchFile } from '@/utils/sceneFiles'
 
 function DangerWarningDialog({ action, busy, error, workspaceName, onCancel, onConfirm }) {
   useEffect(() => {
@@ -142,6 +143,8 @@ export default function AppMenu() {
   const theme = useUIStore((s) => s.theme)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
   const setTheme = useUIStore((s) => s.setTheme)
+  const uiTheme = useUIStore((s) => s.uiTheme)
+  const setUITheme = useUIStore((s) => s.setUITheme)
   const persistUIPrefs = useUIStore((s) => s.persistUIPrefs)
   const canvasBackground = useSketchStore((s) => s.canvasBackground)
   const setCanvasBackground = useSketchStore((s) => s.setCanvasBackground)
@@ -267,15 +270,12 @@ export default function AppMenu() {
   // Menu is always accessible (via floating button in view/zen mode)
 
   const handleOpen = () => {
-    const serializer = window.__sceneSerializer
-    if (serializer) {
-      serializer.upload().then((result) => {
-        if (result && result.success) closeMenu()
-        else if (result && result.error) {
-          console.warn('[Open] Invalid scene file:', result.error)
-        }
-      })
-    }
+    void openSceneFilePicker()
+    closeMenu()
+  }
+
+  const handleSaveLixSketch = () => {
+    saveLixSketchFile()
     closeMenu()
   }
 
@@ -290,6 +290,7 @@ export default function AppMenu() {
 
   const actionItems = [
     { label: t('menu.quickSave'), icon: 'bx-check-circle', shortcut: 'Ctrl+S', onClick: handleQuickSave },
+    { label: t('menu.saveLixSketch'), icon: 'bx-code-curly', shortcut: 'Ctrl+Alt+S', onClick: handleSaveLixSketch },
     { label: t('menu.open'), icon: 'bx-folder-open', shortcut: 'Ctrl+O', onClick: handleOpen },
     { label: t('menu.saveShare'), icon: 'bx-save', shortcut: 'Ctrl+Shift+S', onClick: () => { toggleSaveModal(); closeMenu() } },
     { label: t('menu.exportImage'), icon: 'bx-image', shortcut: 'Ctrl+Shift+E', onClick: () => { toggleExportImageModal(); closeMenu() } },
@@ -527,34 +528,39 @@ export default function AppMenu() {
 
         <hr className="border-border-light my-1" />
 
-        {/* Theme toggle */}
-        <div className="px-3 py-2">
-          <p className="text-text-dim text-xs uppercase tracking-wider mb-2">
-            {t('menu.theme')}
-          </p>
-          <div className="flex items-center gap-1">
-            {[
-              { value: 'light', icon: 'bxs-sun' },
-              { value: 'dark', icon: 'bxs-moon' },
-              { value: 'system', icon: 'bx-laptop' },
-            ].map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                aria-label={`Use ${t.value} theme`}
-                aria-pressed={theme === t.value}
-                onClick={() => setTheme(t.value)}
-                className={`flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${
-                  theme === t.value
-                    ? 'bg-accent text-text-primary'
-                    : 'text-text-muted hover:bg-surface-hover'
-                }`}
-              >
-                <i className={`bx ${t.icon} text-sm`} />
-              </button>
-            ))}
+        {/* Interface (chrome) theme and canvas theme are independent. */}
+        {[
+          { id: 'interface', label: t('menu.interfaceTheme'), value: uiTheme, onChange: setUITheme },
+          { id: 'canvas', label: t('menu.canvasTheme'), value: theme, onChange: setTheme },
+        ].map((group) => (
+          <div key={group.id} className="px-3 py-2">
+            <p className="text-text-dim text-xs uppercase tracking-wider mb-2">
+              {group.label}
+            </p>
+            <div className="flex items-center gap-1" role="group" aria-label={group.label}>
+              {[
+                { value: 'light', icon: 'bxs-sun' },
+                { value: 'dark', icon: 'bxs-moon' },
+                { value: 'system', icon: 'bx-laptop' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-label={`Use ${option.value} ${group.id} theme`}
+                  aria-pressed={group.value === option.value}
+                  onClick={() => group.onChange(option.value)}
+                  className={`flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${
+                    group.value === option.value
+                      ? 'bg-accent text-text-primary'
+                      : 'text-text-muted hover:bg-surface-hover'
+                  }`}
+                >
+                  <i className={`bx ${option.icon} text-sm`} />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
 
         {/* Canvas background */}
         <div className="px-3 py-2">

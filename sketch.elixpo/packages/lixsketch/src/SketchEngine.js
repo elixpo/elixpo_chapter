@@ -177,6 +177,7 @@ class SketchEngine {
                 'code': 'text',
                 'frame': 'frame',
                 'image': 'image',
+                'icon': 'icon',
             };
             const sidebar = sidebarMap[shapeName];
             // Emit to consumer callback
@@ -330,6 +331,10 @@ class SketchEngine {
             // Initialize layer ordering
             const layerOrder = await import('./core/LayerOrder.js');
             if (layerOrder.initLayerOrder) layerOrder.initLayerOrder();
+
+            // Selection commands for nudge / layer / style / label shortcuts
+            const canvasCommands = await import('./core/CanvasCommands.js');
+            if (canvasCommands.initCanvasCommands) canvasCommands.initCanvasCommands();
 
             // Initialize LixScript programmatic diagram engine
             const lixScript = await import('./core/LixScriptParser.js');

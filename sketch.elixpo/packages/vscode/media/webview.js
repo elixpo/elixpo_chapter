@@ -13,6 +13,25 @@
     let engine = null;
     let saveTimeout = null;
     let isLoading = false;
+    // Format of the open file: 'lixsketch' (DSL text, default for new
+    // files) or 'json' (older .lixsketch files were scene JSON). Saves keep
+    // the format the file was opened in.
+    let fileKind = 'lixsketch';
+
+    function serializeScene(sceneData) {
+        if (typeof sceneData === 'string') return sceneData;
+        const format = typeof LixSketch !== 'undefined' ? LixSketch : null;
+        if (fileKind !== 'json' && format && typeof format.sceneToLixSketch === 'function') {
+            return format.sceneToLixSketch(sceneData);
+        }
+        return JSON.stringify(sceneData, null, 2);
+    }
+
+    function parseSceneText(content) {
+        const format = typeof LixSketch !== 'undefined' ? LixSketch : null;
+        if (format && typeof format.sceneFromFileText === 'function') return format.sceneFromFileText(content);
+        return { scene: JSON.parse(content), kind: 'json', warnings: [] };
+    }
     let toolLocked = false;
 
     // ═══════════ TOOLBAR ═══════════
@@ -537,8 +556,7 @@
             try {
                 const sceneData = engine.scene.save('VS Code Diagram');
                 if (sceneData) {
-                    const json = typeof sceneData === 'string' ? sceneData : JSON.stringify(sceneData, null, 2);
-                    vscode.postMessage({ type: 'update', content: json });
+                    vscode.postMessage({ type: 'update', content: serializeScene(sceneData) });
                     if (saveDot) saveDot.classList.remove('unsaved');
                 }
             } catch (err) {
@@ -553,8 +571,7 @@
         try {
             const sceneData = engine.scene.save('VS Code Diagram');
             if (sceneData) {
-                const json = typeof sceneData === 'string' ? sceneData : JSON.stringify(sceneData, null, 2);
-                vscode.postMessage({ type: 'manual-save', content: json });
+                vscode.postMessage({ type: 'manual-save', content: serializeScene(sceneData) });
                 if (saveDot) saveDot.classList.remove('unsaved');
                 showSaveToast();
             }
@@ -710,7 +727,10 @@
                 isLoading = true;
                 const content = msg.content.trim();
                 if (content && content !== '{}') {
-                    const sceneData = JSON.parse(content);
+                    const parsed = parseSceneText(content);
+                    fileKind = parsed.kind === 'json' ? 'json' : 'lixsketch';
+                    const sceneData = parsed.scene;
+                    if (parsed.warnings && parsed.warnings.length) console.warn('[LixSketch] warnings:', parsed.warnings);
                     if (sceneData.shapes && sceneData.shapes.length > 0) {
                         engine.scene.load(sceneData);
                         // Ensure shapes are interactive after load

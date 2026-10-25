@@ -18,13 +18,12 @@ export default function SVGCanvas() {
   const rulerUnit = useSketchStore((s) => s.rulerUnit)
   const hydrateRulers = useSketchStore((s) => s.hydrateRulers)
   const resolvedTheme = useUIStore((s) => s.resolvedTheme)
-  // Issue #38 follow-up: grid strokes were hardcoded to white-on-dark
-  // (`rgba(255,255,255,0.06)`) — invisible on the new light canvas.
-  // Pick a dark-on-light stroke when the theme is light so the grid
-  // stays visible regardless of canvas background.
+  // Grid strokes come from the theme tokens in globals.css
+  // (--lixsketch-grid-fine / --lixsketch-grid-major) so both canvas themes
+  // keep a quiet, low-alpha grid. The fallbacks only apply outside canvas mode.
   const isLight = resolvedTheme === 'light'
-  const gridStrokeFine  = isLight ? 'rgba(40,40,60,0.10)'  : 'rgba(255,255,255,0.06)'
-  const gridStrokeMajor = isLight ? 'rgba(40,40,60,0.18)'  : 'rgba(255,255,255,0.12)'
+  const gridStrokeFine  = `var(--lixsketch-grid-fine, ${isLight ? 'rgba(30,30,40,0.1)' : 'rgba(255,255,255,0.08)'})`
+  const gridStrokeMajor = `var(--lixsketch-grid-major, ${isLight ? 'rgba(30,30,40,0.18)' : 'rgba(255,255,255,0.14)'})`
   const getCursor = useSketchStore((s) => s.getCursor)
   const cursor = getCursor()
 
@@ -141,7 +140,7 @@ export default function SVGCanvas() {
             <path
               d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`}
               fill="none"
-              stroke={gridStrokeFine}
+              style={{ stroke: gridStrokeFine }}
               strokeWidth="0.5"
             />
           </pattern>
@@ -155,7 +154,7 @@ export default function SVGCanvas() {
             <path
               d={`M ${GRID_SIZE * 5} 0 L 0 0 0 ${GRID_SIZE * 5}`}
               fill="none"
-              stroke={gridStrokeMajor}
+              style={{ stroke: gridStrokeMajor }}
               strokeWidth="0.8"
             />
           </pattern>

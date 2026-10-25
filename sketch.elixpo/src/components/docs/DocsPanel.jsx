@@ -407,8 +407,9 @@ export default function DocsPanel() {
   // `defaultTheme` + manual `localStorage.setItem` workaround that was
   // needed because the storage-overrides-default precedence pinned the
   // editor to whatever theme was saved in a previous session.
-  const canvasTheme = useUIStore((s) => s.theme)
-  const docTheme = canvasTheme === 'dark' ? 'dark' : 'light'
+  // The docs editor is part of the workspace chrome, so it follows the
+  // interface theme (not the canvas theme).
+  const docTheme = useUIStore((s) => s.resolvedUITheme) === 'dark' ? 'dark' : 'light'
 
   const { initialContent, ready } = useDocAutoSave(visible)
 

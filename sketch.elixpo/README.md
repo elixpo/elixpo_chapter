@@ -89,6 +89,8 @@ fashion — sharable with anyone at any time in a matter of a click.
 | 🔓 | **No login required** — start drawing instantly as a guest |
 | 🎁 | **Generous freemium model** — powerful tools at zero cost |
 | 📜 | **LixScript** — our own [diagram scripting language](https://sketch.elixpo.com/docs) |
+| 📄 | **`.lixsketch` files** — readable, diff-friendly scene files ([format & DSL reference](https://sketch.elixpo.com/docs/lixsketch-dsl)) |
+| 🧜 | **Mermaid import** — flowchart, sequence, ER, pie and XY charts as editable shapes ([what's supported](https://sketch.elixpo.com/docs/mermaid)) |
 | 🧩 | **All-in-one workspace** — combines Excalidraw + TLDraw + Eraser.io |
 | 🛡️ | **E2E encrypted sharing** — your data stays yours |
 | 📂 | **Open Source** — MIT licensed, built in public |
@@ -166,6 +168,10 @@ the publishable artifacts live under `packages/`:
 We have a dedicated section for our [LixSketch Docs](https://sketch.elixpo.com/docs)
 with a rich definition on how we implemented our architecture and product in the
 open source with security and transparency.
+
+- [`.lixsketch` format & DSL reference](https://sketch.elixpo.com/docs/lixsketch-dsl) — every shape, property, binding and the EBNF grammar ([source](src/content/docs/lixsketch-dsl.md))
+- [Mermaid support](https://sketch.elixpo.com/docs/mermaid) — supported diagram types, syntax subset and limitations ([source](src/content/docs/mermaid.md))
+- [LixScript tour](LIXSCRIPT.md)
 
 <img width="1861" height="863" alt="LixSketch docs" src="https://github.com/user-attachments/assets/03130310-9ebb-4916-b0af-ee1c3c78ec60" />
 

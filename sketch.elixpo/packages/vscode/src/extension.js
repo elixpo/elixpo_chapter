@@ -43,16 +43,15 @@ function activate(context) {
             const fileName = name.endsWith('.lixsketch') ? name : `${name}.lixsketch`;
             const fileUri = vscode.Uri.joinPath(targetDir, fileName);
 
-            // Write empty scene
-            const emptyScene = JSON.stringify({
-                format: 'lixsketch',
-                version: 1,
-                name: name.replace('.lixsketch', ''),
-                createdAt: new Date().toISOString(),
-                viewport: { x: 0, y: 0, width: 1920, height: 1080 },
-                zoom: 1,
-                shapes: [],
-            }, null, 2);
+            // Write an empty `.lixsketch` document (text DSL, see
+            // src/content/docs/lixsketch-dsl.md). Older JSON .lixsketch files still open.
+            const emptyScene = [
+                'lixsketch 1',
+                `@name ${JSON.stringify(name.replace('.lixsketch', ''))}`,
+                `@created ${JSON.stringify(new Date().toISOString())}`,
+                '@viewport 0 0 1920 1080',
+                '',
+            ].join('\n');
 
             await vscode.workspace.fs.writeFile(fileUri, Buffer.from(emptyScene, 'utf-8'));
             await vscode.commands.executeCommand('vscode.openWith', fileUri, 'lixsketch.editor');

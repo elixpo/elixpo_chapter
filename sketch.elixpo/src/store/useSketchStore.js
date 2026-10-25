@@ -201,7 +201,7 @@ const useSketchStore = create((set, get) => ({
   // --- Canvas background ---
   // Dark matches the default platform theme; switching themes updates this
   // through useUIStore while preserving explicit user-selected backgrounds.
-  canvasBackground: DEFAULT_CANVAS_BACKGROUNDS.dark,
+  canvasBackground: DEFAULT_CANVAS_BACKGROUNDS.light,
   canvasBackgrounds: { ...DEFAULT_CANVAS_BACKGROUNDS },
   setCanvasBackground: (color, theme = 'dark') => {
     const resolved = theme === 'light' ? 'light' : 'dark'

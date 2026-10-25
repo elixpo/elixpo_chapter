@@ -209,6 +209,10 @@ const handleMainMouseDown = (e) => {
         handleMouseDownIcon(e);
     }
     else if (isSelectionToolActive) {
+        // Alt+drag: swap the selection for an in-place copy, then let the
+        // normal drag path below move the copy.
+        duplicateSelectionForAltDrag(e);
+
         // Try multi-selection first when selection tool is active
         if (handleMultiSelectionMouseDown(e)) {
             captureSelectionGesture(e);
@@ -532,8 +536,66 @@ const handleMainDblClick = (e) => {
     if (targetTextGroup) {
         e.stopPropagation();
         enterEditMode(targetTextGroup);
+        return;
+    }
+    // Excalidraw: double-click on empty canvas with the selection tool drops
+    // a text box at the pointer. Shapes stop propagation for their own label
+    // editing, so reaching here on a shape-free target means empty canvas.
+    if (isSelectionToolActive && isEmptyCanvasTarget(e.target) && typeof window.__createTextAt === 'function') {
+        e.preventDefault();
+        if (multiSelection.selectedShapes.size > 0) multiSelection.clearSelection();
+        if (currentShape && typeof currentShape.removeSelection === 'function') {
+            currentShape.removeSelection();
+            currentShape = null;
+        }
+        window.__createTextAt(e);
     }
 };
+
+/** True for the SVG root and canvas decorations (grid), never shape content. */
+function isEmptyCanvasTarget(target) {
+    if (!target || typeof target.closest !== 'function') return false;
+    if (target.closest('g')) return false;
+    if (target.closest('foreignObject')) return false;
+    return true;
+}
+
+/**
+ * Alt+drag on a selected shape duplicates it in place and drags the copy,
+ * leaving the original behind (Excalidraw behaviour).
+ */
+function duplicateSelectionForAltDrag(e) {
+    if (!e.altKey || typeof window.duplicateSelected !== 'function') return false;
+    let hitsSelection = false;
+    if (multiSelection.selectedShapes.size > 1) {
+        const pt = getCanvasPoint(e);
+        hitsSelection = !!pt && multiSelection.isPointInBounds(pt.x, pt.y);
+    } else if (currentShape && currentShape.isSelected) {
+        // Alt on a resize/rotate handle is a transform, not a duplicate.
+        const pt = getCanvasPoint(e);
+        if (pt && typeof currentShape.isNearAnchor === 'function' && currentShape.isNearAnchor(pt.x, pt.y)) return false;
+        const root = currentShape.group || currentShape.element;
+        hitsSelection = !!(root && typeof root.contains === 'function' && root.contains(e.target));
+    } else if (multiSelection.selectedShapes.size === 1) {
+        const [only] = multiSelection.selectedShapes;
+        const root = only.group || only.element;
+        hitsSelection = !!(root && typeof root.contains === 'function' && root.contains(e.target));
+    }
+    if (!hitsSelection) return false;
+    const copies = window.duplicateSelected({ offsetX: 0, offsetY: 0 });
+    return copies.length > 0;
+}
+
+function getCanvasPoint(e) {
+    const el = _boundSvg || (typeof svg !== 'undefined' ? svg : null);
+    if (!el || typeof el.createSVGPoint !== 'function') return null;
+    const ctm = el.getScreenCTM && el.getScreenCTM();
+    if (!ctm) return null;
+    const pt = el.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    return pt.matrixTransform(ctm.inverse());
+}
 
 function initEventDispatcher(svgEl) {
     if (_boundSvg) cleanupEventDispatcher();

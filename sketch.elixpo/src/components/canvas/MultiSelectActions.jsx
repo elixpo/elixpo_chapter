@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { showToast } from '@/utils/toast'
+import { OpacityControl } from '@/components/sidebars/AppearanceControls'
 
 export default function MultiSelectActions() {
   const [count, setCount] = useState(0)
@@ -81,6 +82,9 @@ export default function MultiSelectActions() {
         <span className="text-text-muted text-xs">
           {count} selected{grouped && <span className="ml-1 text-accent-blue">· grouped</span>}
         </span>
+        <div className="w-px h-4 bg-border-light" />
+        {/* Applies to every selected shape as one undo step. */}
+        <OpacityControl />
         <div className="w-px h-4 bg-border-light" />
 
         {/* Frame is only useful when shapes aren't already grouped — a

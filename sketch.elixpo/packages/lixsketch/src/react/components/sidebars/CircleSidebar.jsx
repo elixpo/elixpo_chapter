@@ -2,12 +2,11 @@
 
 import useSketchStore, { TOOLS } from '../../store/useSketchStore'
 import ShapeSidebar, { ToolbarButton, Divider, LayerControls } from './ShapeSidebar'
+import { OpacityControl } from './AppearanceControls'
 import { useState, useCallback } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
+import { BACKGROUND_SWATCHES, getStrokeSwatches, getThemeInk } from '../../../utils/themeColors.js'
 import useUIStore from '../../store/useUIStore'
-
-const STROKE_COLORS = ['#000000', '#ffffff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
-const BG_COLORS = ['transparent', '#f0f0f0', '#ffcccb', '#90ee90', '#add8e6', '#FFE4B5', '#DDA0DD', '#2d2d2d']
 
 const FILLS = [
   { value: 'hachure', label: 'sidebar.fill.hachure' },
@@ -52,7 +51,7 @@ export default function CircleSidebar() {
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : theme
   const [strokeColor, setStrokeColor] = useState(null)
-  const displayedStrokeColor = strokeColor ?? (resolvedTheme === 'light' ? '#000000' : '#ffffff')
+  const displayedStrokeColor = strokeColor ?? getThemeInk(resolvedTheme)
   const [bgColor, setBgColor] = useState('transparent')
   const [thickness, setThickness] = useState(2)
   const [lineStyle, setLineStyle] = useState('solid')
@@ -71,7 +70,7 @@ export default function CircleSidebar() {
         preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: displayedStrokeColor }} />}
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.stroke')}</p>
-        <ColorGrid colors={STROKE_COLORS} selected={displayedStrokeColor} onSelect={updateStroke} />
+        <ColorGrid colors={getStrokeSwatches(resolvedTheme)} selected={displayedStrokeColor} onSelect={updateStroke} />
       </ToolbarButton>
 
       <Divider />
@@ -85,7 +84,7 @@ export default function CircleSidebar() {
         }
       >
         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">{t('sidebar.sectionHeader.background')}</p>
-        <ColorGrid colors={BG_COLORS} selected={bgColor} onSelect={updateBg} />
+        <ColorGrid colors={BACKGROUND_SWATCHES} selected={bgColor} onSelect={updateBg} />
       </ToolbarButton>
 
       <Divider />
@@ -95,7 +94,7 @@ export default function CircleSidebar() {
         <div className="flex items-center gap-1">
           {[1, 2, 4, 7].map((w) => (
             <button key={w} onClick={() => updateThickness(w)}
-              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${thickness === w ? 'bg-[#7667a8]/20 text-[#7667a8]' : 'text-text-muted hover:bg-white/[0.06]'}`}
+              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${thickness === w ? 'bg-accent/15 text-accent' : 'text-text-muted hover:bg-white/[0.06]'}`}
             >
               <div className="w-5 rounded-full bg-current" style={{ height: Math.max(1, w) }} />
             </button>
@@ -110,7 +109,7 @@ export default function CircleSidebar() {
         <div className="flex items-center gap-1">
           {[{ v: 'solid', d: '' }, { v: 'dashed', d: '6 4' }, { v: 'dotted', d: '2 3' }].map((s) => (
             <button key={s.v} onClick={() => updateStyle(s.v)}
-              className={`w-11 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${lineStyle === s.v ? 'bg-[#7667a8]/20' : 'hover:bg-white/[0.06]'}`}
+              className={`w-11 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${lineStyle === s.v ? 'bg-accent/15' : 'hover:bg-white/[0.06]'}`}
             >
               <svg width="28" height="4" viewBox="0 0 28 4"><line x1="0" y1="2" x2="28" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray={s.d} strokeLinecap="round" /></svg>
             </button>
@@ -125,7 +124,7 @@ export default function CircleSidebar() {
         <div className="flex flex-col gap-0.5">
           {FILLS.map((f) => (
             <button key={f.value} onClick={() => updateFill(f.value)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${fillStyle === f.value ? 'bg-[#7667a8] text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${fillStyle === f.value ? 'bg-accent text-white' : 'text-text-secondary hover:bg-white/[0.06]'}`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
               {t(f.label)}
@@ -133,6 +132,8 @@ export default function CircleSidebar() {
           ))}
         </div>
       </ToolbarButton>
+      <Divider />
+      <OpacityControl />
       <Divider />
       <LayerControls />
     </ShapeSidebar>
