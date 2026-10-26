@@ -3,6 +3,7 @@ import { getDB } from '@/lib/db';
 import { TIER_LIMITS } from '@/lib/types';
 import Link from 'next/link';
 import LogoutButton from './LogoutButton';
+import { Icon, PageHeader, shortDate } from '@/app/components/app/ui';
 
 export const runtime = 'edge';
 
@@ -25,160 +26,171 @@ export default async function ProfilePage() {
   ]);
 
   const urlLimit = limits.maxUrls === -1 ? '∞' : limits.maxUrls;
+  const urlsUsed = urlCount?.count || 0;
+  const keysUsed = keyCount?.count || 0;
+  const urlPct = limits.maxUrls === -1 ? 0 : Math.min(Math.round((urlsUsed / limits.maxUrls) * 100), 100);
+  const keyPct = Math.min(Math.round((keysUsed / limits.maxApiKeys) * 100), 100);
 
   return (
-    <div>
-      <h1 className="text-2xl font-sans font-bold text-text-primary mb-6">Profile</h1>
+    <div className="app-stack">
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        lede="Your identity, usage and account settings."
+        actions={
+          <a
+            href="https://accounts.elixpo.com/dashboard/services"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            Manage on Elixpo
+            <Icon.external />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Account */}
-        <div className="glass-card p-6">
-          <h2 className="text-sm font-semibold mb-4">Account</h2>
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-16 h-16 rounded-full overflow-hidden border border-border-medium shrink-0">
+        <section className="panel" aria-labelledby="account-title">
+          <h2 id="account-title" className="sr-only">Account</h2>
+          <div className="mb-6 flex items-center gap-4">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-line">
               <img
                 src={user.avatar_url || `https://accounts.elixpo.com/api/avatar/${user.elixpo_id}`}
-                alt={user.display_name}
-                className="w-full h-full object-cover"
+                alt=""
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
               />
             </div>
-            <div>
-              <div className="text-lg font-semibold">{user.display_name}</div>
-              <div className="text-sm text-text-secondary">{user.email}</div>
-              <div className="flex gap-1.5 mt-1">
-                <span className="badge bg-accent-dim text-accent-main border border-accent-border capitalize">{user.tier}</span>
-                {user.role === 'admin' && (
-                  <span className="badge bg-accent-dim text-accent-light border border-accent-border">Admin</span>
-                )}
+            <div className="min-w-0">
+              <p className="truncate text-[1.25rem] font-bold tracking-[-0.03em] text-ink">{user.display_name}</p>
+              <p className="truncate text-sm text-[#5f6962]">{user.email}</p>
+              <div className="mt-2 flex gap-1.5">
+                <span className="pill pill--blue">{user.tier}</span>
+                {user.role === 'admin' && <span className="pill">Admin</span>}
               </div>
             </div>
           </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-text-muted">Elixpo ID</span>
-              <span className="text-text-secondary font-mono text-xs">{user.elixpo_id}</span>
+          <dl className="kv">
+            <div>
+              <dt>Elixpo ID</dt>
+              <dd className="font-mono text-[0.8rem]">{user.elixpo_id}</dd>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Provider</span>
-              <span className="text-text-secondary">Elixpo Accounts</span>
+            <div>
+              <dt>Provider</dt>
+              <dd>Elixpo Accounts</dd>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Member since</span>
-              <span className="text-text-secondary">{new Date(user.created_at).toLocaleDateString()}</span>
+            <div>
+              <dt>Member since</dt>
+              <dd>{shortDate(user.created_at)}</dd>
             </div>
-          </div>
-        </div>
+          </dl>
+        </section>
 
         {/* Usage */}
-        <div className="glass-card p-6">
-          <h2 className="text-sm font-semibold mb-4">Usage</h2>
-          <div className="space-y-5">
+        <section className="panel" aria-labelledby="usage-title">
+          <div className="panel-head">
+            <h2 id="usage-title" className="panel-title">Usage</h2>
+            <Link href="/dashboard/subscription" className="text-link text-sm">Billing →</Link>
+          </div>
+          <div className="space-y-6">
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-text-muted">URLs</span>
-                <span>{urlCount?.count || 0} / {urlLimit}</span>
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold text-ink">URLs</span>
+                <span className="tabular-nums text-[#5f6962]">{urlsUsed} / {urlLimit}</span>
               </div>
               {limits.maxUrls !== -1 && (
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
-                  <div className="h-full rounded-full bg-accent-main transition-all" style={{ width: `${Math.min(((urlCount?.count || 0) / limits.maxUrls) * 100, 100)}%` }} />
+                <div className="meter" role="meter" aria-label="URLs used" aria-valuemin={0} aria-valuemax={100} aria-valuenow={urlPct}>
+                  <span style={{ width: `${urlPct}%` }} />
                 </div>
               )}
             </div>
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-text-muted">API Keys</span>
-                <span>{keyCount?.count || 0} / {limits.maxApiKeys}</span>
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold text-ink">API keys</span>
+                <span className="tabular-nums text-[#5f6962]">{keysUsed} / {limits.maxApiKeys}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
-                <div className="h-full rounded-full bg-accent-light transition-all" style={{ width: `${Math.min(((keyCount?.count || 0) / limits.maxApiKeys) * 100, 100)}%` }} />
+              <div className="meter" role="meter" aria-label="API keys used" aria-valuemin={0} aria-valuemax={100} aria-valuenow={keyPct}>
+                <span style={{ width: `${keyPct}%` }} />
               </div>
             </div>
-            <div>
-              <div className="text-xs text-text-muted mb-1">Total Clicks</div>
-              <div className="text-2xl font-bold">{totalClicks?.count || 0}</div>
+            <div className="border-t border-line pt-5">
+              <p className="kicker">Total clicks</p>
+              <p className="stat__value">{totalClicks?.count || 0}</p>
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Settings */}
-      <div className="glass-card p-6 mb-6">
-        <h2 className="text-sm font-semibold mb-4">Settings</h2>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-border-light">
-            <div>
-              <div className="text-sm font-medium">Default redirect type</div>
-              <div className="text-xs text-text-muted mt-0.5">HTTP 302 temporary redirect for all short URLs</div>
+      <section className="panel" aria-labelledby="settings-title">
+        <h2 id="settings-title" className="panel-title mb-2">Settings</h2>
+        <ul className="row-list">
+          <li className="flex-wrap justify-between">
+            <div className="min-w-0 flex-1 basis-60">
+              <p className="text-sm font-bold text-ink">Default redirect type</p>
+              <p className="mt-0.5 text-[0.8rem] text-[#5f6962]">HTTP 302 temporary redirect for all short URLs</p>
             </div>
-            <span className="text-xs text-text-disabled font-mono px-2.5 py-1 rounded-lg" style={{ background: 'rgba(0,0,0,0.06)' }}>302</span>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-border-light">
-            <div>
-              <div className="text-sm font-medium">API Keys</div>
-              <div className="text-xs text-text-muted mt-0.5">Manage your API keys for programmatic access</div>
+            <span className="pill font-mono">302</span>
+          </li>
+          <li className="flex-wrap justify-between">
+            <div className="min-w-0 flex-1 basis-60">
+              <p className="text-sm font-bold text-ink">API keys</p>
+              <p className="mt-0.5 text-[0.8rem] text-[#5f6962]">Manage your API keys for programmatic access</p>
             </div>
-            <Link href="/profile/keys" className="btn-glass text-xs no-underline">Manage</Link>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-border-light">
-            <div>
-              <div className="text-sm font-medium">Active sessions</div>
-              <div className="text-xs text-text-muted mt-0.5">Sessions expire after 15 days of inactivity</div>
+            <Link href="/profile/keys" className="btn-secondary btn-sm">Manage</Link>
+          </li>
+          <li className="flex-wrap justify-between">
+            <div className="min-w-0 flex-1 basis-60">
+              <p className="text-sm font-bold text-ink">Active sessions</p>
+              <p className="mt-0.5 text-[0.8rem] text-[#5f6962]">Sessions expire after 15 days of inactivity</p>
             </div>
-            <span className="text-xs text-text-secondary">{sessionCount?.count || 0} active</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div className="min-w-0 pr-3">
-              <div className="text-sm font-medium">Connected account</div>
-              <div className="text-xs text-text-muted mt-0.5">
+            <span className="pill">{sessionCount?.count || 0} active</span>
+          </li>
+          <li className="flex-wrap justify-between">
+            <div className="min-w-0 flex-1 basis-60">
+              <p className="text-sm font-bold text-ink">Connected account</p>
+              <p className="mt-0.5 text-[0.8rem] leading-relaxed text-[#5f6962]">
                 Profile, email, avatar, and account deletion are all
                 managed from Elixpo Accounts — your single sign-on for the
                 ecosystem.
-              </div>
+              </p>
             </div>
             <a
               href="https://accounts.elixpo.com/dashboard/services"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-glass text-xs no-underline whitespace-nowrap inline-flex items-center gap-1.5"
+              className="btn-secondary btn-sm whitespace-nowrap"
             >
               Manage on Elixpo
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
+              <Icon.external />
+              <span className="sr-only"> (opens in a new tab)</span>
             </a>
-          </div>
-        </div>
-      </div>
+          </li>
+        </ul>
+      </section>
 
       {/* Account actions */}
-      <div className="space-y-3">
-        {/* Sign out — this session only */}
-        <div
-          className="glass-card p-5 flex items-center justify-between gap-3"
-          style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
-        >
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white">Sign out</h2>
-            <p className="text-xs text-text-muted mt-0.5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section className="panel flex flex-col gap-4" aria-labelledby="signout-title">
+          <div>
+            <h2 id="signout-title" className="panel-title">Sign out</h2>
+            <p className="panel-desc">
               Ends your session on this device only. Your account stays
               intact.
             </p>
           </div>
-          <LogoutButton />
-        </div>
+          <div className="mt-auto">
+            <LogoutButton />
+          </div>
+        </section>
 
-        {/* Delete account — explicit redirect to Elixpo Accounts */}
-        <div
-          className="glass-card p-5 flex items-center justify-between gap-3"
-          style={{ borderColor: 'rgba(239, 68, 68, 0.18)' }}
-        >
-          <div className="min-w-0 pr-3">
-            <h2 className="text-sm font-semibold text-[#f87171]">
-              Delete account
-            </h2>
-            <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+        <section className="panel panel--danger flex flex-col gap-4" aria-labelledby="delete-title">
+          <div>
+            <h2 id="delete-title" className="panel-title !text-[#b42318]">Delete account</h2>
+            <p className="panel-desc">
               Your ElixpoURL account is bound to your Elixpo Account.
               Deleting it has to happen from Elixpo Accounts so your
               identity is removed across the whole ecosystem in one place
@@ -187,24 +199,19 @@ export default async function ProfilePage() {
               the Elixpo Account.
             </p>
           </div>
-          <a
-            href="https://accounts.elixpo.com/dashboard/services"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-glass text-xs no-underline whitespace-nowrap inline-flex items-center gap-1.5"
-            style={{
-              borderColor: 'rgba(239, 68, 68, 0.4)',
-              color: '#f87171',
-            }}
-          >
-            Open Elixpo Accounts
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-        </div>
+          <div className="mt-auto">
+            <a
+              href="https://accounts.elixpo.com/dashboard/services"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-danger min-h-[44px] px-5 no-underline"
+            >
+              Open Elixpo Accounts
+              <Icon.external />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export interface TierLimits {
 // subscription UIs. seats, webhooks, and rateLimitPerMin remain reserved
 // entitlement values until their corresponding product paths enforce them.
 export const TIER_LIMITS: Record<Tier, TierLimits> = {
-  free:       { maxUrls: 25,    maxApiKeys: 1,   maxClicksRetention: 7,   customCodes: false, analytics: false, expiringLinks: false, seats: 1,  brandedDomains: 0,  webhooks: false, rateLimitPerMin: 60,   qrPresets: 3,  qrLogo: false },
+  free:       { maxUrls: 25,    maxApiKeys: 2,   maxClicksRetention: 7,   customCodes: false, analytics: false, expiringLinks: false, seats: 1,  brandedDomains: 0,  webhooks: false, rateLimitPerMin: 60,   qrPresets: 3,  qrLogo: false },
   pro:        { maxUrls: 1000,  maxApiKeys: 5,   maxClicksRetention: 30,  customCodes: true,  analytics: true,  expiringLinks: true,  seats: 1,  brandedDomains: 1,  webhooks: true,  rateLimitPerMin: 600,  qrPresets: -1, qrLogo: true },
   business:   { maxUrls: 10000, maxApiKeys: 20,  maxClicksRetention: 365, customCodes: true,  analytics: true,  expiringLinks: true,  seats: 5,  brandedDomains: 3,  webhooks: true,  rateLimitPerMin: 6000, qrPresets: -1, qrLogo: true },
   enterprise: { maxUrls: -1,    maxApiKeys: 100, maxClicksRetention: 730, customCodes: true,  analytics: true,  expiringLinks: true,  seats: -1, brandedDomains: -1, webhooks: true,  rateLimitPerMin: -1,   qrPresets: -1, qrLogo: true },

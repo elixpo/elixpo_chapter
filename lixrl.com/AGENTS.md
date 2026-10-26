@@ -8,25 +8,27 @@ ElixpoURL — open URL shortener on Cloudflare's edge. Next.js 15, Cloudflare Pa
 - **Database**: Cloudflare D1 (SQLite). Migrations in `workers/migrations/`. Access via `lib/db.ts`.
 - **Auth**: Session cookies issued by `accounts.elixpo` (SSO). Verified in `lib/auth.ts`.
 - **Rate limiting**: KV-backed quota enforcement in `lib/ratelimit.ts`.
-- **UI**: Next 15 + React 19 + Tailwind (no MUI). Geist sans + mono via `next/font`. Accent color: `#9b7bf7` (`accent.main` in `tailwind.config.ts`).
-- **Animations**: framer-motion is installed but new components should prefer the aurora background + small CSS transitions; reserve framer-motion for genuinely interactive elements.
+- **UI**: Next 15 + React 19 + Tailwind (no MUI). Design language mirrors research.elixpo — see **Design System** below. System fonts only (no `next/font` download).
+- **Animations**: prefer small CSS transitions (honour `prefers-reduced-motion`, already wired in `globals.css`); reserve framer-motion for genuinely interactive elements.
 
 ## Repository Structure
 
 ```
 app/
-  page.tsx                   - Landing page (aurora hero + product video)
-  layout.tsx                 - Root layout: Geist fonts, SEO, favicon
-  globals.css                - Aurora keyframes + base styles
+  page.tsx                   - Landing entry (auth redirect) → LandingPageClient.tsx (server-rendered)
+  layout.tsx                 - Root layout: SEO, favicon (system fonts)
+  globals.css                - Design tokens, component classes, focus + reduced-motion
+  styles/app-shell.css       - Logged-in app shell: page header, panels, responsive tables, skeletons, bottom tab bar (imported by dashboard/profile/admin layouts)
   icon.png / apple-icon.png  - Favicon (Next auto-emits link tags)
   components/
-    BackgroundAurora.tsx     - Slow-drifting gradient background, 3 palettes
-    Navbar.tsx               - Top bar: brand + GitHub icon + Sign in CTA
-    Footer.tsx               - Brand + nav + click-to-copy hello@elixpo.com
-    Sidebar.tsx              - Dashboard sidebar (legacy lime — TODO: port)
+    Navbar.tsx               - Floating pill header + skip link + mobile menu
+    Footer.tsx               - Brand + link columns (server) + CopyEmailButton island
+    Sidebar.tsx              - Dashboard pill top bar + account menu
+    NotFoundView.tsx         - Shared 404 surface
+    landing/GuestShortener   - Client island for the guest short-link form
   pricing/                   - Pricing page ("coming soon" until tiers ship)
-  docs/                      - Integrator docs (TODO: split into sections)
-  dashboard/                 - Logged-in user dashboard (TODO: aurora port)
+  docs/                      - Integrator docs; sections come from lib/docs-sections.ts (also drives sitemap)
+  dashboard/                 - Logged-in user dashboard
   profile/                   - Account profile + API key management
   admin/                     - Admin panel (RBAC-gated)
   login/                     - Sign-in screen
@@ -52,19 +54,21 @@ These will break the Cloudflare Pages build or fail at runtime if violated:
 - **Never import Node built-ins** (`crypto`, `fs`, `path`, `stream`, `buffer`). Use Web APIs.
 - **D1 is SQLite**, not Postgres. No `RETURNING *` on multi-row writes, no `JSONB`, no window functions in older binding versions.
 - **KV has eventual consistency** (up to 60s globally). Don't use KV as the source of truth for link records — D1 is authoritative. Rate-limit counters in KV are tolerated because eventual consistency only relaxes enforcement.
-- **MUI is not installed.** This repo is Tailwind-only. Don't add `@mui/*` to keep the bundle lean.
+- **MUI is not installed.** This repo is Tailwind-only. Don't add `@mui/*` to keep the bundle le## Design System
 
-## Design System
+The visual language matches research.elixpo. Tokens live in `theme.js` (`palette`, `fonts`, `radii`), are exposed to Tailwind in `tailwind.config.ts`, and mirrored as CSS variables in `app/globals.css`.
 
-The visual language matches the rest of the Elixpo ecosystem (accounts.elixpo):
+- **Palette**: paper `#fbfbf8` (page), paper-deep `#eff1ed`, paper-soft `#f5f6f2` (alt sections), ink `#142018` (text + primary buttons), muted `#5f6962`, line `#d7dbd6`, blue `#3a65c7` / blue-deep `#2f56b0` (eyebrows, focus, accents), blue-wash `#dce7ff` (CTA panels), green `#0b623c` (inline links), danger `#b42318`. Pastels for art panels: `#f1c64f #cbdcff #dfd0f3 #d4eadf #f3dfb5`. Tailwind: `bg-paper`, `text-ink`, `border-line`, `text-accent-deep`, `text-green`, `bg-pastel-*`.
+- **Typography**: Arial/Helvetica (`font-sans`), Georgia for italic `<em>` accents inside display headings (`font-serif`), `ui-monospace` for code and eyebrows. Classes: `.display-1` (hero h1), `.display-2` (section h2), `.lede`, `.eyebrow` (mono uppercase kicker), `.app-title` (dashboard/profile h1), `.doc-h1/.doc-h2/.doc-h3/.doc-p` (docs).
+- **Chrome**: `Navbar` is a floating, blurred pill header (`shadow-header`) with a skip link to `#main-content`; the dashboard `Sidebar` uses the same pill bar. `Footer` is white with a hairline top border and mono column labels.
+- **Surfaces**: `.glass-card` / `.glass-card-hover` — white, `border-line`, `rounded-[1.4rem]`, hover lifts 3px with a soft shadow. Ink sections (`bg-ink text-white`) for developer/API callouts; blue-wash panels for closing CTAs. `.art-panel` + `.art-ring` / `.art-pill` draw the research-style geometry.
+- **Buttons**: pills only. `.btn-primary` (alias `.btn-accent`) = solid ink; `.btn-secondary` (alias `.btn-glass`) = ink outline; `.btn-danger`. Minimum 44px touch target.
+- **Accessibility**: one `<h1>` per route (use `sr-only` when the visual title lives in a modal), every page wraps content in `<main id="main-content">`, global `:focus-visible` ring in blue, decorative SVG/geometry is `aria-hidden`, muted text never lighter than `#5f6962` on paper.
+- **Performance**: keep marketing pages server components; isolate interactivity in small client islands (e.g. `components/landing/GuestShortener.tsx`, `components/CopyEmailButton.tsx`). Give every `<img>` explicit `width`/`height`.
 
-- **Background**: `BackgroundAurora` component (drop into any layout, `variant="default" | "auth" | "warm"`).
-- **Accent**: purple `#9b7bf7` → `#7c5cff` gradient for primary CTAs. `tailwind.config.ts` exposes this as `accent.main`, `accent.deep`, `bg-gradient-accent`.
-- **Surfaces**: glassmorphic cards — `linear-gradient(135deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 100%)` with a soft border. Hover lifts the border to `rgba(155,123,247,0.3)`.
-- **Typography**: Geist Sans for headings + body, Geist Mono for code + descriptive prose. Both wired via `next/font` in `app/layout.tsx`.
-- **Buttons**: gradient primary (purple → indigo, soft shadow), outlined secondary (white/12 border, accent hover).
+Legacy `lime` / `sage` / `honey` aliases have been removed — every route uses the tokens above. Don't reintroduce red (`#e53935`) or purple accents.
 
-The Tailwind config keeps the old `lime` / `sage` / `honey` palettes as aliases pointing at the new purple so unported routes don't visibly break during the migration. **Drop those aliases once every route uses `accent` directly.**
+.**
 
 ## Migrations
 

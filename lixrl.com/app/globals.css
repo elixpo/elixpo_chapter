@@ -2,23 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens — mirrored from research.elixpo (see theme.js). */
 :root {
-  --bg-page: #ffffff;
-  --bg-cream: #f9f5f0;
-  --ink: #111111;
-  --ink-soft: #555555;
-  --ink-faint: #888888;
-  --line: #e8e8e8;
-  --accent-main: #e53935;
-  --accent-deep: #c62828;
-  --accent-dim: rgba(229, 57, 53, 0.08);
-  --accent-border: rgba(229, 57, 53, 0.2);
+  --paper: #fbfbf8;
+  --paper-deep: #eff1ed;
+  --paper-soft: #f5f6f2;
+  --ink: #142018;
+  --ink-soft: #24372b;
+  --muted: #5f6962;
+  --line: #d7dbd6;
+  --blue: #3a65c7;
+  --blue-deep: #2f56b0;
+  --blue-wash: #dce7ff;
+  --green: #0b623c;
+  --orange: #e76043;
+
+  /* Legacy names still referenced by inline styles. */
+  --ink-faint: #68716b;
+  --accent-main: var(--blue);
+  --accent-deep: var(--blue-deep);
+  --accent-dim: rgba(58, 101, 199, 0.1);
+  --accent-border: rgba(58, 101, 199, 0.25);
+
+  color-scheme: light;
 }
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
@@ -28,212 +47,314 @@ body {
   overflow-x: hidden;
 }
 
-/* The authenticated app and documentation share the landing page's light
-   surface. Old route markup retains a few dark-theme utility classes, so
-   these scoped compatibility rules keep legacy content readable while the
-   routes use the new white cards and red accent. */
-.theme-light .text-white { color: #111111; }
-.theme-light [class*="text-white/"] { color: #555555; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--blue-wash);
+  color: var(--ink);
+}
+
+/* Visible, consistent keyboard focus on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+a:focus-visible,
+button:focus-visible {
+  border-radius: 999px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 1px;
+  border-radius: 12px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Shared surfaces: legacy class names kept so older markup inherits the
+   palette. White text utilities inside .theme-light are remapped to ink. */
+.theme-light {
+  background-color: var(--paper);
+}
+.theme-light .text-white { color: var(--ink); }
+.theme-light [class*="text-white/"] { color: var(--muted); }
 .theme-light input.text-white,
-.theme-light select.text-white { color: #111111; }
+.theme-light select.text-white { color: var(--ink); }
 .theme-light a.text-white,
 .theme-light button.text-white { color: #ffffff; }
-.theme-light .placeholder-white\/40::placeholder { color: #999999; }
+.theme-light .placeholder-white\/40::placeholder { color: #8a928c; }
 
-/* Documentation code samples intentionally use a true dark surface. Several
-   older pages still carry inline dark-theme rgba values; !important keeps the
-   shared docs presentation consistent until those pages are consolidated. */
+/* Documentation code samples intentionally use a dark ink surface. */
 #docs-content pre {
-  background: #171717 !important;
-  border-color: #2f2f2f !important;
-  color: #f5f5f4 !important;
+  background: #142018 !important;
+  border-color: #24372b !important;
+  color: #f2f4ef !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 #docs-content pre code {
   color: inherit;
 }
 #docs-content pre ::selection {
-  background: rgba(229, 57, 53, 0.45);
+  background: rgba(58, 101, 199, 0.55);
   color: #ffffff;
 }
 
-body {
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
-    sans-serif;
-  background: var(--bg-page);
-  color: var(--ink);
-  min-height: 100vh;
-}
-
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--paper); }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
+  background: rgba(20, 32, 24, 0.18);
+  border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: rgba(20, 32, 24, 0.3); }
 
-/* Card + button base styles */
 @layer components {
+  /* Mono uppercase kicker above headings (research.elixpo .eyebrow). */
+  .eyebrow {
+    @apply mb-4 font-mono text-[0.68rem] font-bold uppercase leading-snug;
+    color: var(--blue-deep);
+    letter-spacing: 0.19em;
+  }
+
+  /* Large, tightly tracked display headings. */
+  .display-1 {
+    @apply font-sans;
+    font-weight: 510;
+    font-size: clamp(2.6rem, 9vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.065em;
+    text-wrap: balance;
+  }
+  .display-2 {
+    @apply font-sans font-bold;
+    font-size: clamp(2.1rem, 6vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+  .display-1 em,
+  .display-2 em {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: clamp(1rem, 1.3vw, 1.15rem);
+    line-height: 1.72;
+  }
+
+  /* In-app page titles (dashboard, profile, CLI approval). */
+  .app-title {
+    @apply font-sans font-bold;
+    color: var(--ink);
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+  }
+
+  /* Documentation typography. */
+  .doc-h1 {
+    @apply mb-5 font-sans font-bold;
+    color: var(--ink);
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+  .doc-h2 {
+    @apply mb-3 mt-12 font-sans font-bold;
+    color: var(--ink);
+    font-size: clamp(1.45rem, 2.6vw, 1.9rem);
+    line-height: 1.1;
+    letter-spacing: -0.045em;
+  }
+  .doc-h3 {
+    @apply mb-2 mt-7 font-sans text-[1.08rem] font-bold;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .doc-p {
+    @apply mb-4 max-w-[760px] text-[0.98rem] leading-7;
+    color: var(--muted);
+  }
+
+  /* Page container + section rhythm. */
+  .shell {
+    width: min(calc(100% - 2rem), 1450px);
+    margin-inline: auto;
+  }
+  .section-block {
+    padding-block: clamp(4rem, 8vw, 8rem);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Cards: white, hairline border, generous radius, soft lift on hover. */
   .glass-card {
-    @apply bg-white border border-[var(--line)] rounded-2xl;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.05);
+    @apply rounded-[1.4rem] border bg-white;
+    border-color: var(--line);
   }
   .glass-card-hover {
-    @apply glass-card transition-all duration-300;
+    @apply glass-card transition-[transform,box-shadow,border-color] duration-200;
   }
   .glass-card-hover:hover {
-    border-color: #ccc;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+    border-color: #c3c9c3;
+    box-shadow: 0 20px 50px rgba(24, 38, 28, 0.09);
+    transform: translateY(-3px);
   }
 
-  /* Primary CTA — solid black, lifts on hover */
-  .btn-accent {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-200 cursor-pointer text-white;
-    background: #111111;
-    border: 1px solid transparent;
+  /* Pill buttons: solid ink primary, outlined secondary. */
+  .btn-accent,
+  .btn-primary {
+    @apply inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold no-underline transition-colors duration-200;
+    background: var(--ink);
+    color: #ffffff;
+    border: 1px solid var(--ink);
   }
-  .btn-accent:hover {
-    background: #333333;
-    transform: translateY(-1px);
+  .btn-accent:hover,
+  .btn-primary:hover {
+    background: var(--ink-soft);
+    border-color: var(--ink-soft);
+  }
+  .btn-accent:disabled,
+  .btn-primary:disabled {
+    @apply cursor-not-allowed opacity-60;
   }
 
-  .btn-glass {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm transition-all duration-200 cursor-pointer;
+  .btn-glass,
+  .btn-secondary {
+    @apply inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold no-underline transition-colors duration-200;
     background: transparent;
     color: var(--ink);
-    border: 1.5px solid var(--line);
+    border: 1px solid var(--ink);
   }
-  .btn-glass:hover {
-    background: #f8f8f8;
-    border-color: #bbb;
+  .btn-glass:hover,
+  .btn-secondary:hover {
+    background: var(--paper-deep);
   }
 
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer;
-    background: rgba(239, 68, 68, 0.08);
-    color: #c62828;
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    @apply inline-flex min-h-[40px] cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-200;
+    background: rgba(180, 35, 24, 0.07);
+    color: #b42318;
+    border: 1px solid rgba(180, 35, 24, 0.25);
   }
   .btn-danger:hover {
-    background: rgba(239, 68, 68, 0.14);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(180, 35, 24, 0.12);
+    border-color: rgba(180, 35, 24, 0.4);
   }
 
   .input-field {
-    @apply w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none;
+    @apply w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-[border-color,box-shadow] duration-200;
     background: #fff;
     border: 1px solid var(--line);
     color: var(--ink);
   }
   .input-field:focus {
-    border-color: rgba(229, 57, 53, 0.45);
-    box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.12);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(58, 101, 199, 0.16);
   }
-  .input-field::placeholder { color: #aaa; }
+  .input-field::placeholder { color: #8a928c; }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[0.68rem] font-semibold uppercase tracking-wider;
   }
   .stat-card { @apply glass-card p-5; }
+
+  /* Pastel art panel with research.elixpo geometry (rings, pills, discs). */
+  .art-panel {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .art-panel > i {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+  }
+  .art-ring {
+    width: 310px;
+    height: 310px;
+    right: -80px;
+    top: -140px;
+    border: 1px solid rgba(20, 32, 24, 0.28);
+    border-radius: 50%;
+  }
+  .art-pill {
+    width: 80px;
+    height: 240px;
+    left: 20%;
+    bottom: -130px;
+    border: 1px solid rgba(20, 32, 24, 0.28);
+    border-radius: 999px;
+    background: rgba(251, 251, 248, 0.35);
+    transform: rotate(42deg);
+  }
 }
 
-/* Chart bars — analytics rendering uses these */
-.chart-bar {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 120px;
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
-.chart-bar .bar {
-  background: linear-gradient(to top, rgba(229, 57, 53, 0.35), rgba(229, 57, 53, 0.75));
-  border-radius: 4px 4px 0 0;
-  min-width: 6px;
-  max-width: 56px;
-  flex: 1 1 0;
-  position: relative;
-  transition: all 0.2s;
-}
-.chart-bar .bar:hover {
-  background: linear-gradient(to top, rgba(229, 57, 53, 0.55), #e53935);
-  box-shadow: 0 0 8px rgba(229, 57, 53, 0.35);
-}
-.chart-bar .bar .tip {
-  display: none;
+
+/* Landing hero geometry (research.elixpo .orbit / .object). */
+.hero-orbit {
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(17, 17, 17, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  white-space: nowrap;
-  margin-bottom: 6px;
-  z-index: 10;
+  display: block;
+  border: 1px solid rgba(20, 32, 24, 0.25);
+  border-radius: 50%;
 }
-.chart-bar .bar:hover .tip { display: block; }
-
-/* Headline gradient text — black to warm grey, italic-friendly */
-.text-gradient-accent {
-  background: linear-gradient(180deg, #111111 0%, #555555 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Soft glow used behind primary CTAs (kept subtle on light bg) */
-.glow-accent {
-  box-shadow: 0 0 60px rgba(229, 57, 53, 0.08),
-              0 0 120px rgba(229, 57, 53, 0.04);
-}
-
-/* Hero video header — light scrim so foreground text stays readable */
-.video-hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: 24px;
-  isolation: isolate;
-}
-.video-hero video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: brightness(1.02) saturate(1.05);
-}
-.video-hero::before {
+.hero-orbit::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.15) 35%,
-    rgba(255, 255, 255, 0.55) 75%,
-    rgba(255, 255, 255, 0.88) 100%
-  );
-  pointer-events: none;
-  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
 }
-.video-hero::after {
-  content: '';
+.hero-object {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 35%,
-    rgba(255, 255, 255, 0.4) 75%,
-    rgba(255, 255, 255, 0.75) 100%
-  );
-  pointer-events: none;
-  z-index: 2;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  box-shadow: 0 28px 80px rgba(24, 38, 28, 0.16);
 }
-.video-hero > .video-hero-content {
-  z-index: 3;
+@media (max-width: 1050px) {
+  .hero-object { opacity: 0.35; }
+}
+@media (max-width: 760px) {
+  .hero-object { display: none; }
+  .hero-orbit { opacity: 0.6; }
 }

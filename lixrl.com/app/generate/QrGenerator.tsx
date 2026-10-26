@@ -204,49 +204,59 @@ export default function QrGenerator() {
     }
   };
 
+  const formatLabel = exportFormat === 'jpeg' ? 'JPG' : exportFormat.toUpperCase();
+
   return (
-    <div className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-stretch">
+    <div className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)] lg:items-start">
       <form
         onSubmit={generate}
-        className="flex flex-col justify-center rounded-3xl border border-[#e3e3e3] bg-white p-5 shadow-[0_16px_45px_rgba(0,0,0,0.06)] md:p-8"
+        className="rounded-[1.4rem] border border-line bg-white p-5 sm:p-7 md:p-9"
+        aria-describedby={error ? 'qr-error' : undefined}
       >
-        <label htmlFor="qr-destination" className="text-sm font-bold text-[#222]">
-          Link to turn into a QR code
-        </label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input
-            id="qr-destination"
-            name="destination"
-            type="text"
-            inputMode="url"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            required
-            value={destination}
-            onChange={(event) => setDestination(event.target.value)}
-            placeholder="https://example.com/page"
-            className="min-w-0 flex-1 rounded-xl border border-[#d8d8d8] bg-white px-4 py-3 text-sm text-[#111] outline-none transition-colors placeholder:text-[#999] focus:border-[#e53935]"
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-xl bg-gradient-to-r from-[#e53935] to-[#c62828] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_22px_rgba(229,57,53,0.22)] disabled:cursor-wait disabled:opacity-60"
-          >
-            {busy ? 'Creating…' : 'Generate QR code'}
-          </button>
+        {/* Step 1 — destination */}
+        <div>
+          <p className="qr-step" aria-hidden="true">01</p>
+          <label htmlFor="qr-destination" className="block text-lg font-bold tracking-[-0.03em] text-ink">
+            Link to turn into a QR code
+          </label>
+          <p id="qr-destination-hint" className="mt-1 text-sm text-[#5f6962]">
+            Any public web address. We add https:// if you leave it out.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 rounded-[1.4rem] border border-line bg-paper-soft p-1.5 transition-[border-color,box-shadow] duration-200 focus-within:border-accent-main focus-within:shadow-glow-accent sm:flex-row sm:rounded-full">
+            <input
+              id="qr-destination"
+              name="destination"
+              type="text"
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              required
+              aria-describedby="qr-destination-hint"
+              aria-invalid={error ? true : undefined}
+              value={destination}
+              onChange={(event) => setDestination(event.target.value)}
+              placeholder="https://example.com/page"
+              className="min-h-[46px] min-w-0 flex-1 rounded-full bg-transparent px-4 text-[0.95rem] text-ink outline-none placeholder:text-[#737b75] focus-visible:outline-none"
+            />
+            <button type="submit" disabled={busy} aria-busy={busy} className="btn-primary shrink-0 disabled:cursor-wait">
+              {busy ? 'Creating…' : 'Generate QR code'}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-sm font-bold text-[#222]">Choose a style</h2>
+        {/* Step 2 — style */}
+        <div className="mt-9 border-t border-line pt-8" role="group" aria-labelledby="qr-style-heading">
+          <p className="qr-step" aria-hidden="true">02</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="qr-style-heading" className="text-lg font-bold tracking-[-0.03em] text-ink">Choose a style</h2>
             {!paid && (
-              <Link href="/pricing" className="text-xs font-semibold text-[#c62828] no-underline">
-                Unlock every style →
+              <Link href="/pricing" className="text-sm font-semibold text-green underline decoration-[#9cc4ad] underline-offset-4">
+                Unlock every style
               </Link>
             )}
           </div>
-          <div className="mt-4 flex flex-wrap gap-2.5">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {QR_PRESETS.map((preset, index) => {
               const locked = account.presetLimit !== -1 && index >= account.presetLimit;
               const selected = preset.id === presetId;
@@ -264,88 +274,117 @@ export default function QrGenerator() {
                     setError('');
                     setPresetId(preset.id);
                   }}
-                  className="group inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-left text-xs font-bold transition-all"
-                  style={{
-                    borderColor: selected ? '#e53935' : '#e1e1e1',
-                    background: selected ? '#fff6f5' : '#ffffff',
-                    color: locked ? '#888' : '#222',
-                    boxShadow: selected ? '0 0 0 2px rgba(229,57,53,0.12)' : '0 1px 2px rgba(0,0,0,0.03)',
-                  }}
+                  className={`flex min-h-[48px] items-center gap-2.5 rounded-2xl border px-3 text-left text-[0.82rem] font-bold transition-[border-color,background-color,box-shadow] duration-200 ${
+                    selected
+                      ? 'border-accent-main bg-[#eef3ff] text-ink shadow-glow-accent'
+                      : locked
+                        ? 'border-line bg-paper-soft text-[#5f6962] hover:border-[#c3c9c3]'
+                        : 'border-line bg-white text-ink hover:border-[#c3c9c3] hover:bg-paper-soft'
+                  }`}
                 >
                   <span
-                    className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-black/10"
+                    className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-black/10"
                     style={{ background: preset.swatch, opacity: locked ? 0.55 : 1 }}
                     aria-hidden="true"
                   >
-                    <span className="absolute inset-[6px] rounded-[2px] border-2 border-white/90" />
+                    <span className="absolute inset-[7px] rounded-[2px] border-2 border-white/90" />
                   </span>
-                  <span>{preset.name}</span>
-                  {locked && <span className="rounded-full bg-[#f1f1f1] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[#777]">Pro</span>}
-                  {selected && !locked && <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e53935] text-[10px] text-white" aria-hidden="true">✓</span>}
+                  <span className="min-w-0 flex-1 truncate">{preset.name}</span>
+                  {locked && (
+                    <span className="badge shrink-0 border border-line bg-white px-1.5 text-[0.58rem] text-[#5f6962]">
+                      Pro<span className="sr-only"> (locked)</span>
+                    </span>
+                  )}
+                  {selected && !locked && (
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-main text-[0.65rem] text-white" aria-hidden="true">
+                      ✓
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-[#e5e5e5] bg-[#fcfcfc] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-bold text-[#222]">Center logo</div>
-              {!account.allowLogo && <span className="rounded-full bg-[#f5f5f5] px-2 py-1 text-[10px] font-bold text-[#777]">PRO</span>}
-            </div>
-            {account.allowLogo ? (
-              <input
-                type="url"
-                value={logoUrl}
-                onChange={(event) => setLogoUrl(event.target.value)}
-                placeholder="https://site.com/logo.png"
-                className="mt-2 w-full rounded-lg border border-[#dddddd] px-3 py-2 text-xs outline-none focus:border-[#e53935]"
-              />
-            ) : (
-              <Link href="/pricing" className="mt-2 inline-flex text-xs font-semibold text-[#c62828] no-underline">
-                Unlock logo →
-              </Link>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-[#e5e5e5] bg-[#fcfcfc] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-bold text-[#222]">Scan analytics</div>
-              {!paid && <span className="rounded-full bg-[#f5f5f5] px-2 py-1 text-[10px] font-bold text-[#777]">PAID</span>}
-            </div>
-            {paid ? (
-              <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#444]">
+        {/* Step 3 — extras */}
+        <div className="mt-9 border-t border-line pt-8">
+          <p className="qr-step" aria-hidden="true">03</p>
+          <h2 className="text-lg font-bold tracking-[-0.03em] text-ink">Extras</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.2rem] border border-line bg-paper-soft p-4">
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="qr-logo" className="text-sm font-bold text-ink">
+                  Center logo
+                </label>
+                {!account.allowLogo && <span className="badge border border-line bg-white text-[#5f6962]">Pro</span>}
+              </div>
+              {account.allowLogo ? (
                 <input
-                  type="checkbox"
-                  checked={trackScans}
-                  onChange={(event) => setTrackScans(event.target.checked)}
-                  className="h-4 w-4 accent-[#e53935]"
+                  id="qr-logo"
+                  type="url"
+                  value={logoUrl}
+                  onChange={(event) => setLogoUrl(event.target.value)}
+                  placeholder="https://site.com/logo.png"
+                  className="input-field mt-3 min-h-[42px] text-[0.82rem]"
                 />
-                Create a tracked Lixrl link
-              </label>
-            ) : (
-              <Link
-                href={account.loggedIn ? '/pricing' : '/api/auth/login?return_to=%2Fgenerate'}
-                className="mt-2 inline-flex text-xs font-semibold text-[#c62828] no-underline"
-              >
-                {account.loggedIn ? 'Upgrade for scan analytics →' : 'Sign in to view options →'}
-              </Link>
-            )}
+              ) : (
+                <>
+                  <p className="mt-1 text-[0.8rem] leading-5 text-[#5f6962]">Place your mark in the middle of the code.</p>
+                  <Link href="/pricing" className="mt-2 inline-flex min-h-[32px] items-center text-[0.8rem] font-semibold text-green underline decoration-[#9cc4ad] underline-offset-4">
+                    Unlock logo
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="rounded-[1.2rem] border border-line bg-paper-soft p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-ink">Scan analytics</span>
+                {!paid && <span className="badge border border-line bg-white text-[#5f6962]">Paid</span>}
+              </div>
+              {paid ? (
+                <label className="mt-3 flex min-h-[32px] cursor-pointer items-center gap-2.5 text-[0.82rem] font-semibold text-[#3d4842]">
+                  <input
+                    type="checkbox"
+                    checked={trackScans}
+                    onChange={(event) => setTrackScans(event.target.checked)}
+                    className="h-4 w-4 accent-[#3a65c7]"
+                  />
+                  Create a tracked Lixrl link
+                </label>
+              ) : (
+                <>
+                  <p className="mt-1 text-[0.8rem] leading-5 text-[#5f6962]">Count scans through a Lixrl short link.</p>
+                  <Link
+                    href={account.loggedIn ? '/pricing' : '/api/auth/login?return_to=%2Fgenerate'}
+                    className="mt-2 inline-flex min-h-[32px] items-center text-[0.8rem] font-semibold text-green underline decoration-[#9cc4ad] underline-offset-4"
+                  >
+                    {account.loggedIn ? 'Upgrade for scan analytics' : 'Sign in to view options'}
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="mt-6 rounded-xl border border-[#efb8b5] bg-[#fff6f5] px-4 py-3 text-sm text-[#a82420]" role="alert">
+          <div id="qr-error" className="mt-6 flex items-start gap-3 rounded-[1.1rem] border border-[#fecdca] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]" role="alert">
+            <span aria-hidden="true" className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#b42318] text-[0.7rem] font-bold text-white">!</span>
             {error}
           </div>
         )}
       </form>
 
-      <aside className="flex min-h-[320px] flex-col items-center justify-center rounded-3xl border border-[#e5e5e5] bg-[#fafafa] p-6 text-center lg:h-full lg:max-h-[560px] lg:min-h-0 lg:self-start lg:overflow-y-auto">
+      <section
+        aria-labelledby="qr-preview-heading"
+        className="qr-preview flex min-h-[360px] flex-col items-center justify-center rounded-[1.4rem] border border-line p-4 text-center sm:p-7 lg:sticky lg:top-28"
+      >
+        <h2 id="qr-preview-heading" className="sr-only">
+          QR code preview
+        </h2>
         {qrData ? (
           <>
-            <div className="rounded-2xl bg-white p-3 shadow-[0_12px_35px_rgba(0,0,0,0.10)]">
+            <div className="rounded-[1.4rem] bg-white p-3 shadow-object">
               <StyledQr
                 ref={qrRef}
                 options={options}
@@ -354,65 +393,75 @@ export default function QrGenerator() {
                 onError={setError}
               />
             </div>
-            <p className="mt-5 max-w-sm break-all font-mono text-xs leading-5 text-[#777]">{qrData}</p>
+            <p className="mt-5 max-w-sm break-all font-mono text-xs leading-5 text-[#5f6962]">
+              <span className="sr-only">Encodes </span>
+              {qrData}
+            </p>
             {trackedResult && (
               <Link
                 href={`/dashboard/urls/${encodeURIComponent(trackedResult.short_code)}`}
-                className="mt-2 text-xs font-semibold text-[#c62828] no-underline"
+                className="mt-2 text-sm font-semibold text-green underline decoration-[#9cc4ad] underline-offset-4"
               >
-                Open scan analytics →
+                Open scan analytics
               </Link>
             )}
-            <div className="mt-5 flex w-full max-w-[520px] flex-col items-end gap-3">
-              <div className="inline-flex rounded-xl border border-[#d8d8d8] bg-white p-1" aria-label="QR download format">
-                {(['svg', 'png', 'jpeg'] as ExportFormat[]).map((format) => (
-                  <button
-                    key={format}
-                    type="button"
-                    aria-pressed={exportFormat === format}
-                    onClick={() => setExportFormat(format)}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase transition-colors"
-                    style={{
-                      background: exportFormat === format ? '#111' : 'transparent',
-                      color: exportFormat === format ? '#fff' : '#666',
-                    }}
-                  >
-                    {format === 'jpeg' ? 'JPG' : format}
-                  </button>
-                ))}
+
+            <div className="mt-6 w-full max-w-[420px] rounded-[1.2rem] border border-line bg-white p-3 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5f6962]" id="qr-format-label">
+                  Format
+                </span>
+                <div className="inline-flex rounded-full border border-line bg-paper-soft p-1" role="group" aria-labelledby="qr-format-label">
+                  {(['svg', 'png', 'jpeg'] as ExportFormat[]).map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      aria-pressed={exportFormat === format}
+                      onClick={() => setExportFormat(format)}
+                      className={`min-h-[34px] rounded-full px-3.5 text-[0.7rem] font-bold uppercase transition-colors duration-200 ${
+                        exportFormat === format ? 'bg-ink text-white' : 'text-[#5f6962] hover:text-ink'
+                      }`}
+                    >
+                      {format === 'jpeg' ? 'JPG' : format}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => qrRef.current?.download(exportFormat)}
-                  className="rounded-lg bg-[#111] px-4 py-2 text-xs font-bold text-white"
-                >
-                  Download {exportFormat === 'jpeg' ? 'JPG' : exportFormat.toUpperCase()}
+              <button
+                type="button"
+                onClick={() => qrRef.current?.download(exportFormat)}
+                className="btn-primary mt-3 w-full"
+              >
+                <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
+                </svg>
+                Download {formatLabel}
+              </button>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button type="button" onClick={copyCompressedJpeg} className="btn-secondary min-h-[42px] px-3 text-[0.75rem]">
+                  {imageCopied ? 'JPG copied' : 'Copy JPG'}
                 </button>
-                <button
-                  type="button"
-                  onClick={copyCompressedJpeg}
-                  className="rounded-lg border border-[#d8d8d8] bg-white px-4 py-2 text-xs font-bold text-[#333]"
-                >
-                  {imageCopied ? 'JPG copied' : 'Copy compressed JPG'}
-                </button>
-                <button type="button" onClick={copyQrLink} className="rounded-lg border border-[#d8d8d8] bg-white px-4 py-2 text-xs font-bold text-[#333]">
+                <button type="button" onClick={copyQrLink} className="btn-secondary min-h-[42px] px-3 text-[0.75rem]">
                   {copied ? 'Copied' : 'Copy link'}
                 </button>
               </div>
+              <p className="sr-only" role="status" aria-live="polite">
+                {imageCopied ? 'Compressed JPG copied to clipboard.' : copied ? 'QR link copied to clipboard.' : ''}
+              </p>
             </div>
           </>
         ) : (
           <div className="max-w-xs">
-            <div className="mx-auto grid h-20 w-20 grid-cols-3 gap-1 rounded-xl bg-white p-3 shadow-sm" aria-hidden="true">
-              {Array.from({ length: 9 }, (_, index) => (
-                <span key={index} className="rounded-sm bg-[#222]" style={{ opacity: index === 4 ? 0.15 : 1 }} />
+            <div className="qr-placeholder mx-auto" aria-hidden="true">
+              {Array.from({ length: 49 }, (_, index) => (
+                <span key={index} />
               ))}
             </div>
-            <h2 className="mt-5 text-base font-bold">Your QR code appears here</h2>
+            <p className="mt-6 text-base font-bold text-ink">Your QR code appears here</p>
+            <p className="mt-1 text-sm leading-6 text-[#5f6962]">Paste a link and press Generate. Nothing is uploaded for basic codes.</p>
           </div>
         )}
-      </aside>
+      </section>
     </div>
   );
 }

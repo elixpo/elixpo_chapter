@@ -1,16 +1,18 @@
-import type { Metadata } from 'next';
+import { buildMetadata, DEFAULT_KEYWORDS } from '@/lib/seo';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import LandingPageClient from './LandingPageClient';
 
 export const runtime = 'edge';
 
-export const metadata: Metadata = {
-  title: { absolute: 'Lixrl — URL Shortener & Quick QR Code Generator' },
+export const metadata = buildMetadata({
+  title: 'Lixrl — Free URL Shortener, QR Code Generator & Link Analytics',
+  absoluteTitle: true,
   description:
-    'Shorten a URL in one click, generate a QR code for any link, and unlock branded links, custom QR styles, and analytics when you need them.',
-  alternates: { canonical: '/' },
-};
+    'Shorten long URLs for free, create custom short links and branded subdomains, generate QR codes, and track every click with link analytics. Open source, with a REST API and CLI.',
+  path: '/',
+  keywords: DEFAULT_KEYWORDS,
+});
 
 /**
  * Landing-page entry point.

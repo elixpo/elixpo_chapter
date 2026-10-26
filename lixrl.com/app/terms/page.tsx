@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import { LegalNote, LegalPage, LegalSection } from '../components/LegalPage';
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: 'Terms of Service',
-  description: 'The rules for using LixRL links, accounts, API access, and paid plans.',
-  alternates: { canonical: '/terms' },
-};
+  description: 'The rules for using Lixrl short links, QR codes, accounts, API access, and paid plans.',
+  path: '/terms',
+});
 
 const UPDATED = '25 August 2026';
 const EMAIL = 'hello@elixpo.com';

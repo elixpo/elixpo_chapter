@@ -3,6 +3,11 @@ export const runtime = 'edge';
 import { redirect } from 'next/navigation';
 import Sidebar from '@/app/components/Sidebar';
 import { getCurrentUser } from '@/lib/auth';
+import { noIndexMetadata } from '@/lib/seo';
+import '@/app/styles/app-shell.css';
+
+// Auth-gated, per-user surface: never index.
+export const metadata = noIndexMetadata('Dashboard');
 
 export default async function DashboardLayout({
   children,
@@ -13,13 +18,11 @@ export default async function DashboardLayout({
   if (!user) redirect('/login');
 
   return (
-    <div className="theme-light min-h-screen bg-white">
-      <div className="relative">
-        <Sidebar user={user} />
-        <main className="px-4 sm:px-8 pb-4 sm:pb-8 pt-20 sm:pt-24">
-          {children}
-        </main>
-      </div>
+    <div className="theme-light min-h-screen bg-paper">
+      <Sidebar user={user} />
+      <main id="main-content" className="app-main">
+        {children}
+      </main>
     </div>
   );
 }

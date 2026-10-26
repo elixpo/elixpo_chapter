@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Modal, { ConfirmDialog } from '@/app/components/Modal';
+import { EmptyState, Icon, PageHeader } from '@/app/components/app/ui';
 
 interface ApiKey {
   id: number;
@@ -111,156 +112,97 @@ export default function ApiKeysPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div className="w-full max-w-4xl mx-auto py-8 px-2">
-      {/* Header row — title + primary CTA */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl md:text-[1.8rem] font-bold text-white tracking-tight">
-            API Keys
-          </h1>
-          <p className="text-sm text-white/55 mt-1">
-            Manage keys for programmatic access ·{' '}
-            <Link
-              href="/docs/keys"
-              className="text-[#e53935] no-underline hover:underline"
-            >
-              Read the docs
-            </Link>
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setCreateError('');
-            setCreateOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold text-white transition-all"
-          style={{
-            background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-            boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background =
-              'linear-gradient(135deg, #e85a57 0%, #8a6dff 100%)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background =
-              'linear-gradient(135deg, #e53935 0%, #c62828 100%)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New API key
-        </button>
-      </div>
+  const openCreate = () => {
+    setCreateError('');
+    setCreateOpen(true);
+  };
 
-      {/* Keys list */}
-      <div
-        className="rounded-2xl p-6"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.92) 100%)',
-          border: '1px solid rgba(0,0,0,0.10)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
-        <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45 mb-4">
-          Your keys
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Developers"
+        title="API keys"
+        lede={
+          <>
+            Manage keys for programmatic access.{' '}
+            <Link href="/docs/keys" className="text-link">
+              Read the docs →
+            </Link>
+          </>
+        }
+        actions={
+          <button type="button" onClick={openCreate} className="btn-primary">
+            <Icon.plus />
+            New API key
+          </button>
+        }
+      />
+
+      <section className="panel" aria-labelledby="keys-title" aria-busy={loading}>
+        <div className="panel-head">
+          <h2 id="keys-title" className="panel-title">Your keys</h2>
+          {!loading && keys.length > 0 && (
+            <span className="kicker">
+              {keys.filter((k) => k.is_active).length} active
+            </span>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 gap-2 text-white/40 text-sm">
-            <span
-              className="w-4 h-4 rounded-full border-2 border-current"
-              style={{
-                borderTopColor: 'transparent',
-                animation: 'spin 0.6s linear infinite',
-              }}
-            />
-            Loading...
+          <div role="status">
+            <span className="sr-live">Loading API keys…</span>
+            <ul className="row-list" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <li key={i}>
+                  <span className="skeleton h-10 w-10 !rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <span className="skeleton h-3.5 w-40" />
+                    <span className="skeleton h-3 w-56 max-w-full" />
+                  </div>
+                  <span className="skeleton h-6 w-16 !rounded-full" />
+                </li>
+              ))}
+            </ul>
           </div>
         ) : keys.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="text-sm text-white/55 mb-4">
-              No API keys yet. Mint one to start hitting the API
-              programmatically.
-            </p>
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold text-white transition-all"
-              style={{
-                background:
-                  'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-              }}
-            >
-              Create your first key
-            </button>
-          </div>
+          <EmptyState
+            icon={<Icon.key />}
+            title={<>No API keys <em>yet</em></>}
+            action={
+              <button type="button" onClick={() => setCreateOpen(true)} className="btn-primary btn-sm">
+                <Icon.plus />
+                Create your first key
+              </button>
+            }
+          >
+            Mint one to start hitting the API programmatically.
+          </EmptyState>
         ) : (
-          <ul className="space-y-2 list-none p-0">
+          <ul className="row-list">
             {keys.map((k) => (
-              <li
-                key={k.id}
-                className="flex items-center gap-4 p-4 rounded-xl transition-all"
-                style={{
-                  background: k.is_active
-                    ? 'rgba(255,255,255,0.98)'
-                    : 'rgba(250,250,250,0.9)',
-                  border: `1px solid ${k.is_active ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.05)'}`,
-                  opacity: k.is_active ? 1 : 0.5,
-                }}
-              >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                  style={{
-                    background: k.is_active
-                      ? 'rgba(229,57,53,0.1)'
-                      : 'rgba(0,0,0,0.05)',
-                    border: `1px solid ${k.is_active ? 'rgba(229,57,53,0.25)' : 'rgba(0,0,0,0.08)'}`,
-                  }}
+              <li key={k.id} className={`flex-wrap sm:flex-nowrap ${k.is_active ? '' : 'opacity-60'}`}>
+                <span
+                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
+                    k.is_active ? 'bg-accent-wash text-accent-deep' : 'bg-paper-deep text-[#68716b]'
+                  }`}
+                  aria-hidden="true"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke={k.is_active ? '#e53935' : '#71717a'}
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="w-4 h-4"
-                  >
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                     <circle cx="7.5" cy="12.5" r="3.5" />
                     <path d="M10.2 9.8L16 4M14 4l2 2M12.5 6.5l2 2" />
                   </svg>
-                </div>
+                </span>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white truncate">
-                      {k.name}
-                    </span>
-                    <span
-                      className="text-[0.6rem] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{
-                        background: 'rgba(229,57,53,0.12)',
-                        color: '#e85a57',
-                        border: '1px solid rgba(229,57,53,0.25)',
-                      }}
-                    >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-[0.95rem] font-bold text-ink">{k.name}</span>
+                    <span className="pill pill--blue">
                       {k.scopes.includes('write') ? 'R/W' : 'Read'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs text-white/40 font-mono">
-                      {k.key_prefix}...
-                    </span>
-                    <span className="text-xs text-white/40">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#5f6962]">
+                    <span className="font-mono">{k.key_prefix}...</span>
+                    <span>
                       {k.last_used_at
                         ? `Used ${new Date(k.last_used_at).toLocaleDateString()}`
                         : 'Never used'}
@@ -268,17 +210,8 @@ export default function ApiKeysPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <span
-                    className="text-[0.6rem] font-medium uppercase tracking-wider px-2 py-1 rounded-lg"
-                    style={{
-                      background: k.is_active
-                        ? 'rgba(34,197,94,0.1)'
-                        : 'rgba(239,68,68,0.1)',
-                      color: k.is_active ? '#86efac' : '#f87171',
-                      border: `1px solid ${k.is_active ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
-                    }}
-                  >
+                <div className="ml-[3.25rem] flex shrink-0 items-center gap-2 sm:ml-0">
+                  <span className={`pill pill--dot ${k.is_active ? 'pill--green' : 'pill--red'}`}>
                     {k.is_active ? 'Active' : 'Revoked'}
                   </span>
                   {k.is_active === 1 && (
@@ -288,10 +221,10 @@ export default function ApiKeysPage() {
                         setRevokeError('');
                         setRevokeTarget(k);
                       }}
-                      className="text-xs text-white/55 hover:text-[#f87171] transition-colors px-2 py-1"
-                      style={{ background: 'transparent', border: 'none' }}
+                      className="btn-danger !min-h-[36px] !py-1.5"
                     >
                       Revoke
+                      <span className="sr-only"> {k.name}</span>
                     </button>
                   )}
                 </div>
@@ -299,7 +232,7 @@ export default function ApiKeysPage() {
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
       {/* ─────── Create API key modal ─────── */}
       <Modal
@@ -310,12 +243,9 @@ export default function ApiKeysPage() {
         size="md"
         disableBackdropClose={creating}
       >
-        <form onSubmit={handleCreate}>
-          <div className="mb-4">
-            <label
-              htmlFor="key-name"
-              className="block text-[0.7rem] text-white/65 mb-1.5 uppercase tracking-wider font-medium"
-            >
+        <form onSubmit={handleCreate} aria-busy={creating}>
+          <div className="field">
+            <label htmlFor="key-name" className="field-label">
               Key name
             </label>
             <input
@@ -326,110 +256,68 @@ export default function ApiKeysPage() {
               placeholder="e.g. Production server, CI pipeline"
               required
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg text-sm outline-none text-white placeholder-white/40 transition-colors"
-              style={{
-                background: 'rgba(0,0,0,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#e53935';
-                e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-              }}
+              autoComplete="off"
+              aria-invalid={createError ? true : undefined}
+              aria-describedby={createError ? 'key-create-error' : undefined}
+              className="control"
             />
           </div>
 
-          <div className="mb-5">
-            <div className="block text-[0.7rem] text-white/65 mb-2 uppercase tracking-wider font-medium">
-              Permissions
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <fieldset className="field m-0 border-0 p-0">
+            <legend className="field-label">Permissions</legend>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {scopeOptions.map((opt) => {
                 const selected = scopes === opt.value;
                 return (
-                  <button
+                  <label
                     key={opt.value}
-                    type="button"
-                    onClick={() => setScopes(opt.value)}
-                    className="text-left p-3 rounded-xl transition-all cursor-pointer"
-                    style={{
-                      background: selected
-                        ? 'rgba(229,57,53,0.08)'
-                        : 'rgba(255,255,255,0.98)',
-                      border: `1.5px solid ${selected ? 'rgba(229,57,53,0.5)' : 'rgba(0,0,0,0.10)'}`,
-                    }}
+                    className={`flex cursor-pointer gap-3 rounded-[1rem] border p-3.5 transition-colors focus-within:shadow-glow-accent ${
+                      selected ? 'border-accent-main bg-[#f1f5ff]' : 'border-line bg-white hover:bg-paper-soft'
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                        style={{
-                          border: `2px solid ${selected ? '#e53935' : 'rgba(0,0,0,0.25)'}`,
-                        }}
-                      >
-                        {selected && (
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ background: '#e53935' }}
-                          />
-                        )}
-                      </span>
-                      <span
-                        className="text-sm font-medium"
-                        style={{ color: selected ? '#fff' : '#f5f5f4' }}
-                      >
-                        {opt.label}
-                      </span>
-                    </div>
-                    <p className="text-[0.72rem] text-white/50 ml-6 leading-relaxed">
-                      {opt.desc}
-                    </p>
-                  </button>
+                    <input
+                      type="radio"
+                      name="scopes"
+                      value={opt.value}
+                      checked={selected}
+                      onChange={() => setScopes(opt.value)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-accent-main"
+                    />
+                    <span>
+                      <span className="block text-sm font-bold text-ink">{opt.label}</span>
+                      <span className="mt-0.5 block text-[0.76rem] leading-relaxed text-[#5f6962]">{opt.desc}</span>
+                    </span>
+                  </label>
                 );
               })}
             </div>
+          </fieldset>
+
+          <div aria-live="assertive">
+            {createError && (
+              <div id="key-create-error" role="alert" className="notice notice--danger mt-5">
+                <p className="notice__body">{createError}</p>
+              </div>
+            )}
           </div>
 
-          {createError && (
-            <div
-              className="mb-4 p-3 rounded-lg text-sm"
-              style={{
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                color: '#f87171',
-              }}
-            >
-              {createError}
-            </div>
-          )}
-
-          <div className="flex gap-2 justify-end">
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={() => setCreateOpen(false)}
               disabled={creating}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white/85 transition-colors"
-              style={{
-                background: 'rgba(0,0,0,0.05)',
-                border: '1px solid rgba(0,0,0,0.12)',
-              }}
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={creating || !name.trim()}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
-              style={{
-                background:
-                  'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                boxShadow: '0 4px 14px rgba(229,57,53,0.4)',
-                opacity: creating || !name.trim() ? 0.6 : 1,
-              }}
+              aria-busy={creating}
+              className="btn-primary"
             >
-              {creating ? 'Creating...' : 'Create key'}
+              {creating && <span className="spinner" aria-hidden="true" />}
+              {creating ? 'Creating…' : 'Create key'}
             </button>
           </div>
         </form>
@@ -443,42 +331,24 @@ export default function ApiKeysPage() {
         description="Copy this now — we hash it on save and won't show it again."
         size="md"
       >
-        <div
-          className="p-4 rounded-xl mb-4 font-mono text-sm break-all"
-          style={{
-            background: 'rgba(0,0,0,0.45)',
-            border: '1px solid rgba(229,57,53,0.25)',
-            color: '#e8e8ed',
-          }}
-        >
-          {newKey}
+        <div className="notice notice--warn mb-4 !text-[0.8rem]">
+          <span className="shrink-0"><Icon.alert /></span>
+          <p className="notice__body !text-[#6b4700]">Store it somewhere safe, like a secrets manager. Anyone with this key can act on your links.</p>
         </div>
-        <div className="flex gap-2 justify-end">
+        <div className="mono-box mb-5 !bg-ink !text-[#f2f4ef] !border-ink-soft select-all">{newKey}</div>
+        <p className="sr-live" aria-live="polite">
+          {copied ? 'API key copied to clipboard' : ''}
+        </p>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => newKey && handleCopy(newKey)}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white/85 transition-colors inline-flex items-center gap-2"
-            style={{
-              background: 'rgba(0,0,0,0.05)',
-              border: '1px solid rgba(0,0,0,0.12)',
-            }}
+            className="btn-secondary"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-            </svg>
+            {copied ? <Icon.check /> : <Icon.copy />}
             {copied ? 'Copied!' : 'Copy'}
           </button>
-          <button
-            type="button"
-            onClick={() => setNewKey(null)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{
-              background:
-                'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-              boxShadow: '0 4px 14px rgba(229,57,53,0.4)',
-            }}
-          >
+          <button type="button" onClick={() => setNewKey(null)} className="btn-primary">
             I&apos;ve saved it
           </button>
         </div>

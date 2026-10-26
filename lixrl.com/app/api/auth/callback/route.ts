@@ -10,8 +10,17 @@ export async function GET(request: NextRequest) {
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
 
+  // Surface the provider's actual error (access_denied, invalid_scope,
+  // temporarily_unavailable, ...) instead of collapsing everything into
+  // access_denied. /login renders an error page when `error` is present, so
+  // this never re-enters the OAuth flow automatically.
   if (error) {
-    return NextResponse.redirect(new URL('/login?error=access_denied', request.url));
+    if (state) await getKV().delete(`oauth_state:${state}`).catch(() => {});
+    const dest = new URL('/login', request.url);
+    dest.searchParams.set('error', error.slice(0, 64));
+    const description = url.searchParams.get('error_description');
+    if (description) dest.searchParams.set('error_description', description.slice(0, 300));
+    return NextResponse.redirect(dest);
   }
 
   if (!code || !state) {

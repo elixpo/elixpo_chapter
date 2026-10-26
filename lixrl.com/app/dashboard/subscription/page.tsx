@@ -9,13 +9,7 @@ import {
   TIER_LIMITS,
   TIER_PRICING,
 } from '@/lib/types';
-
-const CARD_STYLE = {
-  background:
-    'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.92) 100%)',
-  border: '1px solid rgba(0,0,0,0.10)',
-  backdropFilter: 'blur(20px)',
-} as const;
+import { Icon, PageHeader } from '@/app/components/app/ui';
 
 function fmtRetention(days: number): string {
   return days >= 365 ? `${Math.round(days / 365)} year` : `${days} days`;
@@ -75,206 +69,171 @@ export default async function SubscriptionPage({
   const urlPct =
     limits.maxUrls === -1 ? 0 : Math.min(100, Math.round((usedUrls / limits.maxUrls) * 100));
 
+  const statusPill =
+    billingStatus === 'past_due' ? 'pill--amber' : isCanceled ? 'pill--red' : 'pill--green';
+  const meterClass = urlPct >= 100 ? 'meter meter--over' : urlPct >= 80 ? 'meter meter--warn' : 'meter';
+
   return (
-    <div className="w-full max-w-4xl mx-auto py-2 px-2">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-[1.8rem] font-bold text-white tracking-tight">
-          Subscription
-        </h1>
-        <p className="text-sm text-white/55 mt-1">
-          Your current plan, usage, and billing.
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Billing"
+        title="Subscription"
+        lede="Your current plan, usage, and billing."
+        actions={
+          <Link href="/pricing" className="btn-secondary">
+            Plans &amp; pricing
+          </Link>
+        }
+      />
 
       {upgraded && (
-        <div
-          className="mb-6 p-4 rounded-xl flex items-center gap-3"
-          style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)' }}
-        >
-          <span className="w-2 h-2 rounded-full" style={{ background: '#6ee7b7' }} />
-          <div className="text-sm text-[#a7f3d0]">
+        <div role="status" className="notice notice--success mb-6">
+          <span className="shrink-0 pt-0.5"><Icon.check /></span>
+          <p className="notice__body">
             Payment received — you&apos;re on <strong className="capitalize">{user.tier}</strong>. Your
             new limits are active now.
-          </div>
+          </p>
         </div>
       )}
 
-      {/* Current plan */}
-      <div className="p-6 rounded-2xl mb-6" style={CARD_STYLE}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="inline-flex items-center px-2.5 py-1 rounded-md text-[0.78rem] font-bold uppercase tracking-wider"
-              style={{
-                background: 'rgba(229,57,53,0.18)',
-                color: '#c62828',
-                border: '1px solid rgba(229,57,53,0.4)',
-              }}
-            >
-              {user.tier}
-            </span>
+      {billingStatus === 'past_due' && (
+        <div role="alert" className="notice notice--warn mb-6">
+          <span className="shrink-0"><Icon.alert /></span>
+          <p className="notice__body !text-[#6b4700]">
+            Your last payment didn&apos;t go through. Update your mandate to keep your plan active.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        {/* Current plan */}
+        <section className="panel" aria-labelledby="plan-title">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
-              <div className="text-base font-bold text-white">
-                {isEnterprise
-                  ? 'Enterprise — custom plan'
-                  : `${pricing?.name} plan`}
-              </div>
-              <div className="text-[0.8rem] text-white/55 mt-0.5">
+              <p className="kicker">Current plan</p>
+              <h2 id="plan-title" className="mt-3 text-[clamp(1.6rem,3vw,2.2rem)] font-bold leading-none tracking-[-0.05em] text-ink">
+                {isEnterprise ? (
+                  <>Enterprise <em className="font-serif font-normal">— custom plan</em></>
+                ) : (
+                  <>{pricing?.name} <em className="font-serif font-normal">plan</em></>
+                )}
+              </h2>
+              <p className="mt-2 text-[0.88rem] text-[#5f6962]">
                 {isPaid
                   ? `${CURRENCY_SYMBOL.INR}${headlineAmount.toLocaleString()}/mo · autopay`
                   : isEnterprise
                     ? 'Billed by agreement'
                     : 'Free forever · no card on file'}
-              </div>
+              </p>
             </div>
+            <span className={`pill pill--dot ${statusPill} self-start`}>{statusLabel}</span>
           </div>
 
-          {(() => {
-            const tone =
-              billingStatus === 'past_due'
-                ? { bg: 'rgba(251,191,36,0.12)', fg: '#fde68a', dot: '#fbbf24', bd: 'rgba(251,191,36,0.3)' }
-                : isCanceled
-                  ? { bg: 'rgba(248,113,113,0.12)', fg: '#fca5a5', dot: '#f87171', bd: 'rgba(248,113,113,0.3)' }
-                  : { bg: 'rgba(52,211,153,0.12)', fg: '#6ee7b7', dot: '#6ee7b7', bd: 'rgba(52,211,153,0.3)' };
-            return (
-              <span
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[0.75rem] font-semibold self-start sm:self-center"
-                style={{ background: tone.bg, color: tone.fg, border: `1px solid ${tone.bd}` }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.dot }} />
-                {statusLabel}
-              </span>
-            );
-          })()}
-        </div>
+          {/* Billing meta — populated by the Elixpo Pay entitlement webhook. */}
+          <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-line pt-5 min-[420px]:grid-cols-3">
+            <Meta label="Status" value={statusLabel} />
+            <Meta
+              label={isCanceled ? 'Access until' : 'Renews'}
+              value={isPaid ? fmtDate(user.tier_expires_at) : '—'}
+            />
+            <Meta label="Payment method" value={isPaid ? 'UPI / Card mandate' : '—'} />
+          </dl>
 
-        {/* Billing meta — populated by the Elixpo Pay entitlement webhook. */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-5 border-t border-white/8">
-          <Meta label="Status" value={statusLabel} />
-          <Meta
-            label={isCanceled ? 'Access until' : 'Renews'}
-            value={isPaid ? fmtDate(user.tier_expires_at) : '—'}
-          />
-          <Meta label="Payment method" value={isPaid ? 'UPI / Card mandate' : '—'} />
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3 mt-6">
-          {!isPaid && !isEnterprise && (
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[12px] text-sm font-semibold text-white no-underline"
-              style={{
-                background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-              }}
-            >
-              Upgrade plan
-            </Link>
-          )}
-          {/* Active paid plan → change or cancel. Already cancelled/lapsing →
-              no cancel button; offer resubscribe instead. */}
-          {isPaid && !isCanceled && (
-            <>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[12px] text-sm font-semibold text-white no-underline"
-                style={{
-                  background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                  boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-                }}
-              >
-                Change plan
+          {/* Actions */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {!isPaid && !isEnterprise && (
+              <Link href="/pricing" className="btn-primary">
+                Upgrade plan
+                <Icon.arrow />
               </Link>
+            )}
+            {/* Active paid plan → change or cancel. Already cancelled/lapsing →
+                no cancel button; offer resubscribe instead. */}
+            {isPaid && !isCanceled && (
+              <>
+                <Link href="/pricing" className="btn-primary">
+                  Change plan
+                </Link>
+                <a
+                  href="mailto:hello@elixpo.com?subject=ElixpoURL%20cancel%20subscription"
+                  className="btn-secondary"
+                >
+                  Cancel subscription
+                </a>
+              </>
+            )}
+            {isPaid && isCanceled && (
+              <Link href="/pricing" className="btn-primary">
+                Resubscribe
+              </Link>
+            )}
+            {isEnterprise && (
               <a
-                href="mailto:hello@elixpo.com?subject=ElixpoURL%20cancel%20subscription"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[12px] text-sm font-medium text-white/80 no-underline"
-                style={{ border: '1px solid rgba(0,0,0,0.14)' }}
+                href="mailto:hello@elixpo.com?subject=ElixpoURL%20Enterprise"
+                className="btn-secondary"
               >
-                Cancel subscription
+                Contact your account manager
               </a>
-            </>
-          )}
-          {isPaid && isCanceled && (
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[12px] text-sm font-semibold text-white no-underline"
-              style={{
-                background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-              }}
-            >
-              Resubscribe
-            </Link>
-          )}
-          {isEnterprise && (
-            <a
-              href="mailto:hello@elixpo.com?subject=ElixpoURL%20Enterprise"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[12px] text-sm font-medium text-white/80 no-underline"
-              style={{ border: '1px solid rgba(0,0,0,0.14)' }}
-            >
-              Contact your account manager
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* Usage vs plan limits */}
-      <div className="p-6 rounded-2xl mb-6" style={CARD_STYLE}>
-        <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45 mb-4">
-          Usage this plan
-        </div>
-
-        <div className="mb-5">
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-white/70">Short links</span>
-            <span className="text-white/55">
-              {usedUrls.toLocaleString()} / {limits.maxUrls === -1 ? '∞' : limits.maxUrls.toLocaleString()}
-            </span>
+            )}
           </div>
-          {limits.maxUrls !== -1 && (
-            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.max(urlPct, 2)}%`,
-                  background:
-                    urlPct >= 100
-                      ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                      : urlPct >= 80
-                        ? 'linear-gradient(90deg,#fbbf24,#f59e0b)'
-                        : 'linear-gradient(90deg,#e53935,#c62828)',
-                }}
-              />
-            </div>
-          )}
-        </div>
+        </section>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Meta
-            label="API keys"
-            value={`${usedKeys} / ${limits.maxApiKeys}`}
-          />
-          <Meta label="Analytics retention" value={fmtRetention(limits.maxClicksRetention)} />
-          <Meta label="Custom slugs" value={limits.customCodes ? 'Included' : '—'} />
-        </div>
+        {/* Usage vs plan limits */}
+        <section className="panel" aria-labelledby="usage-title">
+          <h2 id="usage-title" className="panel-title">Usage</h2>
+          <p className="panel-desc">How much of this plan you&apos;re using.</p>
+
+          <div className="mt-5">
+            <div className="flex justify-between gap-3 text-sm">
+              <span className="font-semibold text-ink">Short links</span>
+              <span className="tabular-nums text-[#5f6962]">
+                {usedUrls.toLocaleString()} / {limits.maxUrls === -1 ? '∞' : limits.maxUrls.toLocaleString()}
+              </span>
+            </div>
+            {limits.maxUrls !== -1 && (
+              <div
+                className={meterClass}
+                role="meter"
+                aria-label="Short links used"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={urlPct}
+              >
+                <span style={{ width: `${Math.max(urlPct, 2)}%` }} />
+              </div>
+            )}
+          </div>
+
+          <dl className="kv !mt-6">
+            <div>
+              <dt>API keys</dt>
+              <dd>{`${usedKeys} / ${limits.maxApiKeys}`}</dd>
+            </div>
+            <div>
+              <dt>Analytics retention</dt>
+              <dd>{fmtRetention(limits.maxClicksRetention)}</dd>
+            </div>
+            <div>
+              <dt>Custom slugs</dt>
+              <dd>{limits.customCodes ? 'Included' : '—'}</dd>
+            </div>
+          </dl>
+        </section>
       </div>
 
       {/* What's included */}
       {!isEnterprise && pricing && (
-        <div className="p-6 rounded-2xl" style={CARD_STYLE}>
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45 mb-4">
-            What&apos;s included
-          </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 list-none p-0">
+        <section className="panel mt-6" aria-labelledby="included-title">
+          <h2 id="included-title" className="panel-title mb-4">What&apos;s included</h2>
+          <ul className="m-0 grid list-none grid-cols-1 gap-x-6 gap-y-2.5 p-0 sm:grid-cols-2">
             {planFeatures(user.tier as SellableTier).map((f) => (
-              <li key={f} className="text-[0.88rem] text-white/75 flex items-start gap-2">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#e53935' }} />
+              <li key={f} className="flex items-start gap-2.5 text-[0.9rem] text-[#3d4842]">
+                <span className="mt-0.5 shrink-0 text-green"><Icon.check /></span>
                 {f}
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
     </div>
   );
@@ -283,8 +242,8 @@ export default async function SubscriptionPage({
 function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[0.65rem] text-white/45 uppercase tracking-wider mb-1">{label}</div>
-      <div className="text-sm font-medium text-white">{value}</div>
+      <dt className="kicker">{label}</dt>
+      <dd className="mt-1.5 text-sm font-semibold text-ink">{value}</dd>
     </div>
   );
 }

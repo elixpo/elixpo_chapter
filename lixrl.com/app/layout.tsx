@@ -1,29 +1,44 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import {
+  BRAND_COLOR,
+  DEFAULT_DESCRIPTION,
+  DEFAULT_KEYWORDS,
+  DEFAULT_TITLE,
+  FREE_OFFER,
+  jsonLd,
+  OG_IMAGE,
+  ORGANIZATION_JSON_LD,
+  SITE_NAME,
+  SITE_URL,
+} from '@/lib/seo';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+// Typography follows research.elixpo: system Arial/Helvetica for UI,
+// Georgia for display accents, ui-monospace for code — no web-font download.
+const siteUrl = SITE_URL;
+const title = DEFAULT_TITLE;
+const description = DEFAULT_DESCRIPTION;
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+// Search-engine ownership verification ("HTML tag" method). Set the content
+// value each console gives you and rebuild; empty → no tag emitted. DNS-TXT
+// verification is an alternative that needs no code change.
+//   NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION  — Google Search Console
+//   NEXT_PUBLIC_BING_SITE_VERIFICATION    — Bing Webmaster Tools (msvalidate.01)
+//   NEXT_PUBLIC_YANDEX_SITE_VERIFICATION  — Yandex Webmaster
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'BNHixOaTOql4f1ae0czjnwhWoozDBupjA8HSPT8etAg';
+const bingSiteVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || '';
+const yandexSiteVerification = process.env.NEXT_PUBLIC_YANDEX_SITE_VERIFICATION || '';
 
-const siteUrl = 'https://lixrl.com';
-const title =
-  'Lixrl — URL Shortener & Quick QR Code Generator';
-const description =
-  'Shorten URLs, generate QR codes instantly, create branded short links, and track link or QR scan activity from one focused dashboard.';
+const verification: Metadata['verification'] = {
+  ...(googleSiteVerification ? { google: googleSiteVerification } : {}),
+  ...(yandexSiteVerification ? { yandex: yandexSiteVerification } : {}),
+  ...(bingSiteVerification ? { other: { 'msvalidate.01': bingSiteVerification } } : {}),
+};
 
-// Google Search Console — "HTML tag" verification method. Set
-// NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION (the `content` value Google gives you)
-// in .env.local and rebuild. Empty → no tag emitted. The DNS-TXT method is an
-// alternative that needs no code change at all.
-const googleSiteVerification =
-  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '';
+export const viewport: Viewport = {
+  themeColor: BRAND_COLOR,
+  colorScheme: 'light dark',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -32,35 +47,14 @@ export const metadata: Metadata = {
     template: '%s | Lixrl',
   },
   description,
-  applicationName: 'Lixrl',
+  applicationName: SITE_NAME,
   manifest: '/manifest.webmanifest',
-  keywords: [
-    'url shortener',
-    'link shortener',
-    'short links',
-    'custom links',
-    'branded links',
-    'branded subdomains',
-    'url analytics',
-    'link analytics',
-    'link management',
-    'URL shortener CLI',
-    'QR code CLI',
-    'command line link management',
-    'qr codes',
-    'QR code generator',
-    'free QR code generator',
-    'URL to QR code',
-    'tracked QR codes',
-  ],
-  
+  keywords: DEFAULT_KEYWORDS,
   authors: [{ name: 'Elixpo', url: 'https://elixpo.com' }],
   creator: 'Elixpo',
   publisher: 'Elixpo',
-  category: 'business',
-  ...(googleSiteVerification
-    ? { verification: { google: googleSiteVerification } }
-    : {}),
+  category: 'technology',
+  ...(Object.keys(verification).length ? { verification } : {}),
   robots: {
     index: true,
     follow: true,
@@ -76,24 +70,16 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    siteName: 'Lixrl',
+    siteName: SITE_NAME,
     title,
     description,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1822,
-        height: 825,
-        alt: 'Lixrl short links and analytics',
-        type: 'image/png',
-      },
-    ],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
-    images: ['/og-image.png'],
+    images: [OG_IMAGE.url],
     creator: '@elixpo',
     site: '@elixpo',
   },
@@ -104,7 +90,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'Lixrl',
+    title: SITE_NAME,
     statusBarStyle: 'default',
   },
   // Icons declared explicitly so they're emitted as <link> tags pointing
@@ -124,61 +110,66 @@ export const metadata: Metadata = {
   },
 };
 
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    ORGANIZATION_JSON_LD,
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      name: SITE_NAME,
+      alternateName: ['lixrl.com', 'Lixrl URL Shortener'],
+      url: siteUrl,
+      description,
+      inLanguage: 'en',
+      publisher: { '@id': `${siteUrl}/#organization` },
+    },
+    {
+      '@type': ['WebApplication', 'SoftwareApplication'],
+      '@id': `${siteUrl}/#application`,
+      name: 'Lixrl URL Shortener',
+      url: siteUrl,
+      description,
+      applicationCategory: 'BusinessApplication',
+      applicationSubCategory: 'URL shortener',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires a modern web browser',
+      isAccessibleForFree: true,
+      image: `${siteUrl}${OG_IMAGE.url}`,
+      publisher: { '@id': `${siteUrl}/#organization` },
+      featureList: [
+        'Free URL shortener',
+        'Custom short links and slugs',
+        'Branded lixrl.com subdomains',
+        'Free QR code generator',
+        'Tracked QR code scans',
+        'Link click analytics: countries, referrers, devices',
+        'Expiring links',
+        'REST API with scoped API keys',
+        'Developer CLI for short links and QR codes',
+        'Open source and self-hostable',
+      ],
+      offers: FREE_OFFER,
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'WebSite',
-        '@id': `${siteUrl}/#website`,
-        name: 'Lixrl',
-        url: siteUrl,
-        description,
-      },
-      {
-        '@type': 'WebApplication',
-        '@id': `${siteUrl}/#application`,
-        name: 'Lixrl',
-        url: siteUrl,
-        description,
-        applicationCategory: 'BusinessApplication',
-        operatingSystem: 'Any',
-        browserRequirements: 'Requires a modern web browser',
-        featureList: [
-          'Short links',
-          'Click analytics',
-          'Custom link names',
-          'Quick QR code generator',
-          'Tracked QR code scans',
-          'Expiring links',
-          'Branded lixrl.com subdomains',
-          'Developer CLI for short links and QR codes',
-        ],
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'USD',
-          description: 'Free account plan',
-        },
-      },
-    ],
-  };
-
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} overflow-x-hidden`}
+      className="overflow-x-hidden"
       suppressHydrationWarning
     >
       <body className="antialiased overflow-x-hidden font-sans">
         {children}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
         />
       </body>
     </html>

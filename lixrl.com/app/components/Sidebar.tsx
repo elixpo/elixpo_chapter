@@ -114,11 +114,11 @@ const Icons = {
 };
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Icons.dashboard },
-  { href: '/dashboard/urls', label: 'My URLs', icon: Icons.link },
-  { href: '/dashboard/new', label: 'Shorten URL', icon: Icons.plus },
-  { href: '/generate', label: 'QR Generator', icon: Icons.qr },
-  { href: '/dashboard/domains', label: 'Subdomains', icon: Icons.domain },
+  { href: '/dashboard', label: 'Dashboard', short: 'Home', icon: Icons.dashboard },
+  { href: '/dashboard/urls', label: 'My URLs', short: 'Links', icon: Icons.link },
+  { href: '/dashboard/new', label: 'Shorten URL', short: 'New', icon: Icons.plus },
+  { href: '/generate', label: 'QR Generator', short: 'QR', icon: Icons.qr },
+  { href: '/dashboard/domains', label: 'Subdomains', short: 'Domains', icon: Icons.domain },
 ];
 
 const accountItems = [
@@ -139,6 +139,7 @@ export default function Sidebar({ user }: { user: User }) {
   const avatarUrl = getAvatarUrl(user);
   const [accountOpen, setAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const isActive = (href: string) => {
     if (href === '/dashboard' || href === '/profile') {
@@ -152,190 +153,176 @@ export default function Sidebar({ user }: { user: User }) {
     window.location.href = '/';
   };
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or Escape.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setAccountOpen(false);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAccountOpen((open) => {
+          if (open) triggerRef.current?.focus();
+          return false;
+        });
+      }
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
 
-  // Icon + text on lg; icon-only (with a native tooltip) below lg.
+  // Icon + text on lg; icon-only (with a native tooltip) from 900px to lg.
   const NavPill = ({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) => (
     <Link
       href={href}
       title={label}
-      className={`group flex items-center gap-2 h-9 px-2 lg:px-3 rounded-lg transition-all duration-200 no-underline ${
+      aria-current={isActive(href) ? 'page' : undefined}
+      className={`group flex h-10 min-w-10 items-center justify-center gap-2 rounded-full px-2.5 no-underline transition-colors duration-200 lg:px-3.5 ${
         isActive(href)
-          ? 'text-accent-main bg-[rgba(229,57,53,0.08)]'
-          : 'text-text-secondary hover:text-text-primary hover:bg-bg-glass'
+          ? 'bg-paper-deep font-semibold text-ink'
+          : 'text-[#3d4842] hover:bg-paper-deep hover:text-ink'
       }`}
     >
-      <span className={isActive(href) ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}>
+      <span aria-hidden="true" className={isActive(href) ? 'text-accent-deep' : 'opacity-70 group-hover:opacity-100'}>
         {icon}
       </span>
-      <span className="hidden lg:inline text-sm font-medium">{label}</span>
+      <span className="sr-only lg:not-sr-only lg:text-[0.8rem] lg:font-semibold">{label}</span>
     </Link>
   );
 
+  const close = () => setAccountOpen(false);
+
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border-light"
-      style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(20px)' }}
-    >
-      {/* Left: Logo */}
-      <Link href="/?noredirect=1" className="flex items-center gap-2 no-underline shrink-0">
-        <Image src="/logo.png" alt="ElixpoURL" width={26} height={26} className="rounded-lg" />
-        <span className="text-base font-sans font-bold text-text-primary hidden sm:inline">
-          <span className="text-accent-main">Elixpo</span>URL
-        </span>
-      </Link>
-
-      {/* Right: Nav + Account dropdown */}
-      <div className="flex items-center gap-0.5 sm:gap-1">
-        {/* App nav — icon+text on lg. Pricing intentionally omitted inside the
-            dashboard; it's still reachable from the profile menu. */}
-        {navItems.map((item) => (
-          <NavPill key={item.href} {...item} />
-        ))}
-
-        <div className="w-px h-6 bg-border-light mx-1" />
-        <NavPill href="/docs" label="Docs" icon={Icons.docs} />
-
-        {/* Divider before account */}
-        <div className="w-px h-6 bg-border-light ml-1 sm:ml-2" />
-
-        {/* Account dropdown */}
-        <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => setAccountOpen(!accountOpen)}
-          className="flex items-center gap-2.5 p-1 lg:pl-1.5 lg:pr-2.5 rounded-lg hover:bg-bg-glass transition-all duration-200 bg-transparent border-none cursor-pointer group"
-        >
-          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-border-medium group-hover:border-accent-main/40 transition-colors">
-            <img
-              src={avatarUrl}
-              alt={user.display_name}
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          {/* Name + email on lg; avatar-only below lg. */}
-          <div className="hidden lg:flex flex-col items-start leading-tight min-w-0 max-w-[160px]">
-            <span className="text-sm text-text-primary truncate w-full">{user.display_name}</span>
-            <span className="text-[0.65rem] text-text-secondary truncate w-full">{user.email}</span>
-          </div>
-          <span className={`hidden lg:block text-text-secondary transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`}>
-            {Icons.chevron}
+    <>
+      <header className="fixed left-1/2 top-2 z-30 flex h-[60px] w-[min(calc(100%-1rem),1450px)] -translate-x-1/2 items-center justify-between gap-2 rounded-full border border-[rgba(20,32,24,0.14)] bg-[rgba(251,251,248,0.92)] pl-4 pr-2 shadow-header backdrop-blur-[18px] sm:top-3.5 sm:h-[68px] sm:w-[min(calc(100%-2rem),1450px)] sm:pl-5 sm:pr-3">
+        <Link href="/?noredirect=1" aria-label="Lixrl home" className="flex shrink-0 items-center gap-3 text-ink no-underline">
+          <Image src="/base_logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-full object-contain" />
+          <span className="flex items-baseline gap-1.5">
+            <b className="text-base tracking-tight">Lixrl</b>
+            <small className="hidden font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#5f6962] sm:inline">App</small>
           </span>
-        </button>
+        </Link>
 
-        {/* Dropdown */}
-        {accountOpen && (
-          <div
-            className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-border-light overflow-hidden shadow-xl z-50"
-            style={{ background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(20px)' }}
-          >
-            {/* Profile card — avatar, identity, current plan */}
-            <div
-              className="px-4 py-3.5 border-b border-border-light"
-              style={{ background: 'linear-gradient(135deg, rgba(229,57,53,0.08) 0%, #ffffff 100%)' }}
+        <div className="flex items-center gap-1">
+          {/* Primary nav — on phones and tablets this moves to the bottom tab bar. */}
+          <nav aria-label="Dashboard" className="hidden items-center gap-1 min-[900px]:flex">
+            {navItems.map((item) => (
+              <NavPill key={item.href} href={item.href} label={item.label} icon={item.icon} />
+            ))}
+            <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
+            <NavPill href="/docs" label="Docs" icon={Icons.docs} />
+            <span aria-hidden="true" className="ml-1 h-6 w-px bg-line sm:ml-2" />
+          </nav>
+
+          <div className="relative" ref={dropdownRef}>
+            <button
+              ref={triggerRef}
+              type="button"
+              aria-label={`Account menu for ${user.display_name}`}
+              aria-haspopup="true"
+              aria-expanded={accountOpen}
+              aria-controls="account-menu"
+              onClick={() => setAccountOpen(!accountOpen)}
+              className="group flex cursor-pointer items-center gap-2.5 rounded-full border-none bg-transparent p-1 transition-colors duration-200 hover:bg-paper-deep lg:pl-1.5 lg:pr-2.5"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-accent-main/30">
-                  <img
-                    src={avatarUrl}
-                    alt={user.display_name}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-text-primary truncate">{user.display_name}</div>
-                  <div className="text-[0.68rem] text-text-secondary truncate">{user.email}</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[0.6rem] uppercase tracking-wider text-text-secondary font-semibold">Current plan</span>
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[0.62rem] font-bold uppercase tracking-wider"
-                  style={{
-                    background: 'rgba(229,57,53,0.1)',
-                    color: '#c62828',
-                    border: '1px solid rgba(229,57,53,0.25)',
-                  }}
-                >
-                  {user.tier}
-                </span>
-              </div>
-            </div>
+              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-line">
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              </span>
+              <span className="hidden min-w-0 max-w-[160px] flex-col items-start leading-tight lg:flex">
+                <span className="w-full truncate text-sm font-semibold text-ink">{user.display_name}</span>
+                <span className="w-full truncate text-[0.68rem] text-[#5f6962]">{user.email}</span>
+              </span>
+              <span aria-hidden="true" className={`hidden text-[#5f6962] transition-transform duration-200 lg:block ${accountOpen ? 'rotate-180' : ''}`}>
+                {Icons.chevron}
+              </span>
+            </button>
 
-            {/* Upgrade CTA — only when there's headroom to sell into. */}
-            {user.tier === 'free' && (
-              <Link
-                href="/pricing"
-                onClick={() => setAccountOpen(false)}
-                className="flex items-center gap-3 mx-2 my-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white no-underline"
-                style={{
-                  background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                  boxShadow: '0 4px 12px rgba(229,57,53,0.2)',
-                }}
-              >
-                <span className="opacity-90">{Icons.sparkle}</span>
-                Upgrade to Pro
-              </Link>
+            {accountOpen && (
+              <div id="account-menu" className="app-menu">
+                {/* Identity + current plan */}
+                <div className="border-b border-line bg-paper-soft px-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-line">
+                      <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-ink">{user.display_name}</span>
+                      <span className="block truncate text-[0.72rem] text-[#5f6962]">{user.email}</span>
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="kicker">Current plan</span>
+                    <span className="pill pill--blue">{user.tier}</span>
+                  </div>
+                </div>
+
+                {/* Upgrade CTA — only when there's headroom to sell into. */}
+                {user.tier === 'free' && (
+                  <div className="border-b border-line p-2">
+                    <Link
+                      href="/pricing"
+                      onClick={close}
+                      className="menu-cta"
+                    >
+                      <span aria-hidden="true">{Icons.sparkle}</span>
+                      Upgrade to Pro
+                    </Link>
+                  </div>
+                )}
+
+                <nav aria-label="Account" className="py-1.5">
+                  {accountItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={close}
+                      aria-current={isActive(item.href) ? 'page' : undefined}
+                    >
+                      <span aria-hidden="true">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+
+                <nav aria-label="Resources" className="border-t border-line py-1.5">
+                  {resourceItems.map((item) => (
+                    <Link key={item.href + item.label} href={item.href} onClick={close}>
+                      <span aria-hidden="true">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+
+                <div className="border-t border-line py-1.5">
+                  <button type="button" onClick={handleLogout} className="menu-item menu-item--danger">
+                    <span aria-hidden="true">{Icons.logout}</span>
+                    Sign out
+                  </button>
+                </div>
+              </div>
             )}
-
-            {/* Account links */}
-            <div className="py-1.5">
-              {accountItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setAccountOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-150 no-underline ${
-                    isActive(item.href)
-                      ? 'text-accent-main bg-[rgba(229,57,53,0.06)]'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-glass'
-                  }`}
-                >
-                  <span className={isActive(item.href) ? 'opacity-100' : 'opacity-50'}>{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Resources */}
-            <div className="border-t border-border-light py-1.5">
-              {resourceItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setAccountOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-glass transition-all duration-150 no-underline"
-                >
-                  <span className="opacity-50">{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Sign out */}
-            <div className="border-t border-border-light py-1.5">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-[#f87171] hover:bg-bg-glass transition-all duration-150 cursor-pointer bg-transparent border-none text-left"
-              >
-                <span className="opacity-50">{Icons.logout}</span>
-                Sign Out
-              </button>
-            </div>
           </div>
-        )}
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Mobile / tablet primary navigation. */}
+      <nav aria-label="Dashboard" className="app-tabbar">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            <span aria-hidden="true">{item.icon}</span>
+            {item.short}
+          </Link>
+        ))}
+      </nav>
+    </>
   );
 }

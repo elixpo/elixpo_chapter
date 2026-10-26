@@ -1,26 +1,20 @@
-import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 
 const description =
-  'Compare Lixrl Free, Pro, and Business plans for URL shortening, QR code generation, scan tracking, custom styles, analytics, and branded subdomains.';
+  'Lixrl pricing: a free URL shortener plan with unlimited basic QR codes, plus Pro and Business plans for custom short links, branded subdomains, QR scan tracking, and longer link analytics history.';
 
-export const metadata: Metadata = {
-  title: 'Pricing',
+export const metadata = buildMetadata({
+  title: 'Pricing — Free URL Shortener Plan, Pro & Business',
   description,
-  alternates: { canonical: '/pricing' },
-  openGraph: {
-    type: 'website',
-    url: '/pricing',
-    title: 'Lixrl pricing — Free, Pro, and Business',
-    description,
-    images: [{ url: '/og-image.png', width: 1822, height: 825, alt: 'Lixrl pricing' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Lixrl pricing — Free, Pro, and Business',
-    description,
-    images: ['/og-image.png'],
-  },
-};
+  path: '/pricing',
+  keywords: [
+    'url shortener pricing',
+    'free url shortener',
+    'link shortener plans',
+    'bitly alternative pricing',
+    'custom short links pricing',
+  ],
+});
 
 export default function PricingLayout({ children }: { children: React.ReactNode }) {
   return children;

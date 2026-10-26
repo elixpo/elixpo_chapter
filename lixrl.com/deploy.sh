@@ -129,13 +129,23 @@ has_script() {
 }
 
 build_npm_package() {
-  local directory="$1" name
+  local directory="$1" name tarball
   name="$(package_name "$directory")"
   log "Building ${BOLD}$name${RESET}..."
   run_in_dir "$directory" npm ci
   if has_script "$directory" build; then run_in_dir "$directory" npm run build; fi
   if has_script "$directory" test; then run_in_dir "$directory" npm test; fi
-  run_in_dir "$directory" npm pack --dry-run
+  
+  mkdir -p "$SCRIPT_DIR/dist"
+  tarball="$(run_in_dir "$directory" npm pack --pack-destination "$SCRIPT_DIR/dist" --quiet)"
+  
+  log "Running packed-artifact smoke test for ${BOLD}$name${RESET}..."
+  local test_dir="$SCRIPT_DIR/dist/test-$name"
+  mkdir -p "$test_dir"
+  run_in_dir "$test_dir" npm init -y >/dev/null
+  # Resolve the CI tarball using an absolute workspace path to avoid GitHub repository shorthand
+  run_in_dir "$test_dir" npm install "$SCRIPT_DIR/dist/$tarball" --no-save
+  rm -rf "$test_dir"
 }
 
 publish_npm_package() {
@@ -149,7 +159,15 @@ publish_npm_package() {
   fi
   local arguments=(publish --access public --registry https://registry.npmjs.org/)
   if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then arguments+=(--provenance); fi
-  run_in_dir "$directory" npm "${arguments[@]}"
+  
+  local tarball
+  tarball="$(find "$SCRIPT_DIR/dist" -name "*$version.tgz" -print -quit 2>/dev/null || true)"
+  if [ -n "$tarball" ]; then
+    arguments+=("$tarball")
+    run_in_dir "$SCRIPT_DIR" npm "${arguments[@]}"
+  else
+    run_in_dir "$directory" npm "${arguments[@]}"
+  fi
 }
 
 publish_github_package() {
@@ -157,7 +175,16 @@ publish_github_package() {
   name="$(package_name "$directory")"
   version="$(package_version "$directory")"
   log "Mirroring ${BOLD}$name@$version${RESET} to GitHub Packages..."
-  run_in_dir "$directory" npm publish --access public --registry https://npm.pkg.github.com/
+  
+  local arguments=(publish --access public --registry https://npm.pkg.github.com/)
+  local tarball
+  tarball="$(find "$SCRIPT_DIR/dist" -name "*$version.tgz" -print -quit 2>/dev/null || true)"
+  if [ -n "$tarball" ]; then
+    arguments+=("$tarball")
+    run_in_dir "$SCRIPT_DIR" npm "${arguments[@]}"
+  else
+    run_in_dir "$directory" npm "${arguments[@]}"
+  fi
 }
 
 build_vscode_package() {
@@ -191,17 +218,28 @@ run_packages() {
     err "No ${mode} package matched '${PACKAGE_SELECTOR:-all}'."
     exit 1
   fi
-  for directory in "${directories[@]}"; do
-    bump_package "$directory"
-    if [ "$mode" = "vscode" ]; then
-      if $action_build; then build_vscode_package "$directory"; fi
-      if $action_deploy; then publish_vscode_package "$directory"; fi
-    else
-      if $action_build; then build_npm_package "$directory"; fi
-      if $action_deploy && [ "$registry" = "npm" ]; then publish_npm_package "$directory"; fi
-      if $action_deploy && [ "$registry" = "github" ]; then publish_github_package "$directory"; fi
-    fi
-  done
+  
+  if $action_build; then
+    for directory in "${directories[@]}"; do
+      bump_package "$directory"
+      if [ "$mode" = "vscode" ]; then
+        build_vscode_package "$directory"
+      else
+        build_npm_package "$directory"
+      fi
+    done
+  fi
+
+  if $action_deploy; then
+    for directory in "${directories[@]}"; do
+      if [ "$mode" = "vscode" ]; then
+        publish_vscode_package "$directory"
+      else
+        if [ "$registry" = "npm" ]; then publish_npm_package "$directory"; fi
+        if [ "$registry" = "github" ]; then publish_github_package "$directory"; fi
+      fi
+    done
+  fi
 }
 
 load_cloudflare_auth() {

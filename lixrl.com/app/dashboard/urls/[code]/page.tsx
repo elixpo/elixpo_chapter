@@ -9,6 +9,7 @@ import CopyButton from './CopyButton';
 import DeleteButton from './DeleteButton';
 import QrCard from './QrCard';
 import { pruneUserClicks } from '@/lib/analytics-retention';
+import { EmptyState, Icon, PageHeader, shortDate } from '@/app/components/app/ui';
 
 export const runtime = 'edge';
 
@@ -22,13 +23,6 @@ const RANGE_OPTIONS = [
 
 // Hard chart-range ceiling regardless of tier, per product spec.
 const ABS_MAX_DAYS = 90;
-
-const CARD_STYLE = {
-  background:
-    'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.92) 100%)',
-  border: '1px solid rgba(0,0,0,0.10)',
-  backdropFilter: 'blur(20px)',
-} as const;
 
 /** Fill missing days with zero so the chart has continuous bars. */
 function buildTimeline(
@@ -77,8 +71,23 @@ export default async function UrlDetailPage({
 
   if (!url) {
     return (
-      <div className="rounded-2xl p-8 text-center" style={CARD_STYLE}>
-        <p className="text-white/45">URL not found</p>
+      <div>
+        <PageHeader
+          back={{ href: '/dashboard/urls', label: 'All links' }}
+          eyebrow="Link not found"
+          title={<span className="font-mono">/{code}</span>}
+        />
+        <EmptyState
+          icon={<Icon.search />}
+          title="We couldn’t find that link"
+          action={
+            <Link href="/dashboard/urls" className="btn-primary btn-sm">
+              Back to my URLs
+            </Link>
+          }
+        >
+          It may have been deleted, or it belongs to a different account.
+        </EmptyState>
       </div>
     );
   }
@@ -149,133 +158,83 @@ export default async function UrlDetailPage({
   const isFree = user.tier === 'free';
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-2 px-2">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            /{code}
-          </h1>
-          <p className="text-sm text-white/55 mt-1 max-w-lg truncate">
-            {url.original_url}
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <CopyButton value={shortUrl} />
-          <DeleteButton code={code} />
-        </div>
-      </div>
+    <div className="app-stack">
+      <div>
+        <PageHeader
+          back={{ href: '/dashboard/urls', label: 'All links' }}
+          eyebrow="Link analytics"
+          title={<span className="font-mono tracking-[-0.04em] [overflow-wrap:anywhere]">/{code}</span>}
+          lede={
+            <a
+              href={url.original_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex max-w-full items-center gap-1.5 text-[#5f6962] no-underline hover:text-ink"
+            >
+              <span className="truncate">{url.original_url}</span>
+              <span className="shrink-0"><Icon.external /></span>
+            </a>
+          }
+          actions={
+            <>
+              <CopyButton value={shortUrl} />
+              <DeleteButton code={code} />
+            </>
+          }
+        />
 
-      {/* Stat row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="p-5 rounded-2xl" style={CARD_STYLE}>
-          <div className="text-[0.7rem] text-white/45 uppercase tracking-wider mb-2">
-            Total clicks
+        {/* Stat row */}
+        <section aria-label="Link summary" className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="stat">
+            <p className="kicker">Total clicks</p>
+            <p className="stat__value">{url.clicks}</p>
           </div>
-          <div className="text-2xl font-bold text-white tabular-nums">
-            {url.clicks}
+          <div className="stat">
+            <p className="kicker">Status</p>
+            <p className="mt-3">
+              <span className={`pill pill--dot ${url.is_active ? 'pill--green' : 'pill--red'}`}>
+                {url.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </p>
           </div>
-        </div>
-        <div className="p-5 rounded-2xl" style={CARD_STYLE}>
-          <div className="text-[0.7rem] text-white/45 uppercase tracking-wider mb-2">
-            Status
+          <div className="stat">
+            <p className="kicker">Created</p>
+            <p className="mt-3 text-[1.05rem] font-bold text-ink">
+              <time dateTime={url.created_at}>{shortDate(url.created_at)}</time>
+            </p>
           </div>
-          <span
-            className="inline-flex items-center px-2 py-0.5 rounded-md text-[0.65rem] font-bold uppercase tracking-wider"
-            style={
-              url.is_active
-                ? {
-                    background: 'rgba(34,197,94,0.1)',
-                    color: '#86efac',
-                    border: '1px solid rgba(34,197,94,0.3)',
-                  }
-                : {
-                    background: 'rgba(239,68,68,0.1)',
-                    color: '#f87171',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                  }
-            }
-          >
-            {url.is_active ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-        <div className="p-5 rounded-2xl" style={CARD_STYLE}>
-          <div className="text-[0.7rem] text-white/45 uppercase tracking-wider mb-2">
-            Created
-          </div>
-          <div className="text-sm font-medium text-white">
-            {new Date(url.created_at).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </div>
-        </div>
+        </section>
       </div>
 
       {/* Main click chart */}
-      <div className="p-6 rounded-2xl mb-6" style={CARD_STYLE}>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <section className="panel" aria-labelledby="activity-title">
+        <div className="panel-head">
           <div>
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45 mb-0.5">
-              Click activity
-            </div>
-            <div className="text-sm text-white/55">
-              Last <span className="text-white font-semibold">{days}</span> day
+            <h2 id="activity-title" className="panel-title">Click activity</h2>
+            <p className="panel-desc">
+              Last <strong className="text-ink">{days}</strong> day
               {days === 1 ? '' : 's'}
-              {isFree && (
-                <span className="ml-2 text-[#c62828]">
-                  · Free preview
-                </span>
-              )}
-            </div>
+              {isFree && <span className="text-accent-deep"> · Free preview</span>}
+            </p>
           </div>
 
           {/* Range chips */}
-          <div className="flex gap-1">
+          <nav aria-label="Chart range" className="seg">
             {RANGE_OPTIONS.map((opt) => {
               const locked = opt.days > tierMax;
               const active = !locked && opt.days === days;
               const href = `?days=${opt.days}`;
-              const cls =
-                'inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium no-underline transition-colors';
-              const style = active
-                ? {
-                    background: 'rgba(229,57,53,0.12)',
-                    color: '#c62828',
-                    border: '1px solid rgba(229,57,53,0.4)',
-                  }
-                : locked
-                  ? {
-                      background: 'rgba(0,0,0,0.03)',
-                      color: 'rgba(0,0,0,0.35)',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      cursor: 'not-allowed',
-                    }
-                  : {
-                      background: 'transparent',
-                      color: 'rgba(0,0,0,0.55)',
-                      border: '1px solid rgba(0,0,0,0.10)',
-                    };
               if (locked) {
                 return (
                   <span
                     key={opt.days}
-                    className={cls}
-                    style={style}
+                    className="inline-flex min-h-[34px] cursor-not-allowed items-center gap-1 rounded-full px-[0.85rem] font-mono text-[0.72rem] font-bold uppercase tracking-[0.06em] text-[#8a928c]"
                     title="Pro tier required for this range"
+                    aria-disabled="true"
                   >
                     {opt.label}
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                    <span className="sr-only"> (Pro required)</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0110 0v4" />
                     </svg>
@@ -283,227 +242,94 @@ export default async function UrlDetailPage({
                 );
               }
               return (
-                <Link
-                  key={opt.days}
-                  href={href}
-                  className={cls}
-                  style={style}
-                >
+                <Link key={opt.days} href={href} aria-current={active ? 'page' : undefined}>
                   {opt.label}
                 </Link>
               );
             })}
-          </div>
+          </nav>
         </div>
 
         <ClicksChart data={timeline} />
 
         {isFree && (
-          <div
-            className="mt-5 p-3 rounded-lg flex items-center justify-between gap-3 text-sm"
-            style={{
-              background:
-                'linear-gradient(135deg, rgba(229,57,53,0.1) 0%, rgba(95,182,255,0.04) 100%)',
-              border: '1px solid rgba(229,57,53,0.25)',
-            }}
-          >
-            <span className="text-white/75">
+          <div className="notice notice--info mt-5 flex-col sm:flex-row sm:!items-center">
+            <p className="notice__body">
               You&apos;re seeing a 3-day preview. Upgrade to unlock 7-day, 30-day, and 90-day windows.
-            </span>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white no-underline whitespace-nowrap"
-              style={{
-                background:
-                  'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                boxShadow: '0 4px 12px rgba(229,57,53,0.35)',
-              }}
-            >
+            </p>
+            <Link href="/pricing" className="btn-primary btn-sm shrink-0">
               Upgrade
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
+              <Icon.arrow />
             </Link>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Export click data (left) + QR (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 mb-6">
-        <div
-          className="rounded-2xl p-6 relative overflow-hidden"
-          style={CARD_STYLE}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45">
-              Export click data
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="panel" aria-labelledby="export-title">
+          <div className="panel-head">
+            <div>
+              <h2 id="export-title" className="panel-title">Export click data</h2>
+              <p className="panel-desc">Per-click rows for the selected window.</p>
             </div>
-            <span
-              className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
-              style={
-                limits.analytics
-                  ? {
-                      background: 'rgba(229,57,53,0.12)',
-                      color: '#c62828',
-                      border: '1px solid rgba(229,57,53,0.3)',
-                    }
-                  : {
-                      background: 'rgba(0,0,0,0.08)',
-                      color: 'rgba(0,0,0,0.7)',
-                      border: '1px solid rgba(0,0,0,0.15)',
-                    }
-              }
-            >
+            <span className={`pill ${limits.analytics ? 'pill--blue' : ''}`}>
               {limits.analytics ? 'Pro' : 'Preview'}
             </span>
           </div>
 
           {/* Sparkline preview — visible for ALL tiers (3-day teaser for free) */}
-          <div
-            className="rounded-xl p-3 mb-4"
-            style={{
-              background: 'rgba(0,0,0,0.25)',
-              border: '1px solid rgba(0,0,0,0.06)',
-            }}
-          >
+          <div className="mb-4 rounded-[1rem] border border-line bg-paper-soft p-3">
             <ClicksChart data={timeline} height={110} compact />
           </div>
 
-          {/* Stat tiles */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div
-              className="px-3 py-2.5 rounded-lg"
-              style={{
-                background: 'rgba(255,255,255,0.98)',
-                border: '1px solid rgba(0,0,0,0.10)',
-              }}
-            >
-              <div className="text-[0.62rem] uppercase tracking-wider text-white/40 mb-0.5">
-                Rows
+          <dl className="mb-5 grid grid-cols-3 gap-2">
+            {[
+              { k: 'Rows', v: rows.toLocaleString() },
+              { k: 'Size', v: sizeEstimate },
+              {
+                k: 'Latest',
+                v: latest
+                  ? latest.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                  : '—',
+              },
+            ].map((t) => (
+              <div key={t.k} className="min-w-0 rounded-[0.9rem] border border-line px-3 py-2.5">
+                <dt className="kicker !text-[0.58rem]">{t.k}</dt>
+                <dd className="mt-1 truncate text-base font-bold tabular-nums text-ink">{t.v}</dd>
               </div>
-              <div className="text-base font-bold text-white tabular-nums">
-                {rows.toLocaleString()}
-              </div>
-            </div>
-            <div
-              className="px-3 py-2.5 rounded-lg"
-              style={{
-                background: 'rgba(255,255,255,0.98)',
-                border: '1px solid rgba(0,0,0,0.10)',
-              }}
-            >
-              <div className="text-[0.62rem] uppercase tracking-wider text-white/40 mb-0.5">
-                Size
-              </div>
-              <div className="text-base font-bold text-white tabular-nums">
-                {sizeEstimate}
-              </div>
-            </div>
-            <div
-              className="px-3 py-2.5 rounded-lg"
-              style={{
-                background: 'rgba(255,255,255,0.98)',
-                border: '1px solid rgba(0,0,0,0.10)',
-              }}
-            >
-              <div className="text-[0.62rem] uppercase tracking-wider text-white/40 mb-0.5">
-                Latest
-              </div>
-              <div className="text-base font-bold text-white">
-                {latest
-                  ? latest.toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : '—'}
-              </div>
-            </div>
-          </div>
+            ))}
+          </dl>
 
           {/* CTA — download for paid, upgrade for free */}
           {limits.analytics ? (
-            <a
-              href={`/api/urls/${code}/clicks.csv`}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold no-underline transition-all ${
-                rows > 0 ? 'text-white' : 'pointer-events-none'
-              }`}
-              style={
-                rows > 0
-                  ? {
-                      background:
-                        'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                      boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-                    }
-                  : {
-                      background: 'rgba(0,0,0,0.05)',
-                      border: '1px solid rgba(0,0,0,0.10)',
-                      color: 'rgba(0,0,0,0.4)',
-                    }
-              }
-              aria-disabled={rows === 0}
-              tabIndex={rows > 0 ? 0 : -1}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              {rows > 0
-                ? `Download CSV (${rows.toLocaleString()} row${rows === 1 ? '' : 's'})`
-                : 'No clicks yet'}
-            </a>
+            rows > 0 ? (
+              <a href={`/api/urls/${code}/clicks.csv`} className="btn-primary">
+                <Icon.download />
+                {`Download CSV (${rows.toLocaleString()} row${rows === 1 ? '' : 's'})`}
+              </a>
+            ) : (
+              <span className="btn-secondary cursor-not-allowed opacity-60" aria-disabled="true">
+                <Icon.download />
+                No clicks yet
+              </span>
+            )
           ) : (
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-xs text-white/55 leading-relaxed">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[0.82rem] leading-relaxed text-[#5f6962]">
                 Per-click CSV exports — full window, all fields. Available
                 from Pro.
-              </div>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white no-underline whitespace-nowrap"
-                style={{
-                  background:
-                    'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-                  boxShadow: '0 4px 12px rgba(229,57,53,0.35)',
-                }}
-              >
+              </p>
+              <Link href="/pricing" className="btn-primary btn-sm shrink-0">
                 Unlock
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0110 0v4" />
+                    </svg>
               </Link>
             </div>
           )}
-        </div>
+        </section>
         <QrCard
           shortUrl={shortUrl}
           presetLimit={limits.qrPresets}
@@ -513,78 +339,54 @@ export default async function UrlDetailPage({
 
       {/* Country / Browser / Device breakdowns — Pro+ only */}
       {breakdowns ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             { title: 'Countries', rows: breakdowns.countries, key: 'country' as const },
             { title: 'Browsers', rows: breakdowns.browsers, key: 'browser' as const },
             { title: 'Devices', rows: breakdowns.devices, key: 'device' as const },
-          ].map((panel) => (
-            <div key={panel.title} className="p-5 rounded-2xl" style={CARD_STYLE}>
-              <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-white/45 mb-3">
-                {panel.title}
-              </div>
-              {panel.rows.length > 0 ? (
-                <div className="space-y-2">
-                  {panel.rows.map((r) => {
-                    const label = (r as any)[panel.key] || 'Unknown';
-                    return (
-                      <div
-                        key={String(label)}
-                        className="flex justify-between text-sm"
-                      >
-                        <span className="text-white/70 truncate pr-2">
-                          {label}
-                        </span>
-                        <span className="text-white font-medium tabular-nums">
-                          {r.count}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-white/40 text-sm italic">No data</div>
-              )}
-            </div>
-          ))}
+          ].map((panel) => {
+            const max = Math.max(1, ...panel.rows.map((r) => r.count));
+            return (
+              <section key={panel.title} className="panel" aria-label={panel.title}>
+                <h2 className="panel-title mb-4">{panel.title}</h2>
+                {panel.rows.length > 0 ? (
+                  <ul className="m-0 list-none space-y-3 p-0">
+                    {panel.rows.map((r) => {
+                      const label = (r as any)[panel.key] || 'Unknown';
+                      return (
+                        <li key={String(label)}>
+                          <div className="flex justify-between gap-2 text-sm">
+                            <span className="truncate text-[#3d4842]">{label}</span>
+                            <span className="font-bold tabular-nums text-ink">{r.count}</span>
+                          </div>
+                          <div className="meter !mt-1.5 !h-1" aria-hidden="true">
+                            <span style={{ width: `${Math.round((r.count / max) * 100)}%` }} />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-[#5f6962]">No data in this window yet.</p>
+                )}
+              </section>
+            );
+          })}
         </div>
       ) : (
-        <div
-          className="p-6 rounded-2xl text-center"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(229,57,53,0.1) 0%, rgba(95,182,255,0.04) 100%)',
-            border: '1px solid rgba(229,57,53,0.25)',
-          }}
-        >
-          <p className="text-white/65 mb-3">
-            Country, browser, and device breakdowns are available on Pro and
-            above.
-          </p>
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white no-underline"
-            style={{
-              background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-              boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-            }}
-          >
+        <section className="panel panel--soft flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Breakdowns">
+          <div>
+            <p className="eyebrow !mb-2">Pro analytics</p>
+            <p className="max-w-[56ch] text-[0.92rem] leading-relaxed text-[#5f6962]">
+              Country, browser, and device breakdowns are available on Pro and
+              above.
+            </p>
+          </div>
+          <Link href="/pricing" className="btn-primary btn-sm shrink-0">
             See plans
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
+            <Icon.arrow />
           </Link>
-        </div>
+        </section>
       )}
     </div>
   );

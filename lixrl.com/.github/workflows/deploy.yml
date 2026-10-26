@@ -70,7 +70,20 @@ jobs:
               pages) npm_packages=""; vscode_packages=""; worker=false; pages=true; migrations=true ;;
             esac
           else
-            git diff --name-only "$BEFORE" "$AFTER" > "$RUNNER_TEMP/changed-files"
+            # Multi-commit pushes put BEFORE outside the shallow clone; fetch it,
+            # and treat every file as changed when it is unavailable (new branch,
+            # force push).
+            have_before=false
+            if [[ ! "$BEFORE" =~ ^0+$ ]]; then
+              if git cat-file -e "$BEFORE^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BEFORE"; then
+                have_before=true
+              fi
+            fi
+            if [ "$have_before" = true ]; then
+              git diff --name-only "$BEFORE" "$AFTER" > "$RUNNER_TEMP/changed-files"
+            else
+              git ls-files > "$RUNNER_TEMP/changed-files"
+            fi
             npm_packages=""
             vscode_packages=""
             while IFS= read -r directory; do

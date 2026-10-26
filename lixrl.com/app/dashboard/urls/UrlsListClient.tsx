@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/Modal';
 import type { UrlRecord } from '@/lib/types';
+import { EmptyState, Icon, shortDate } from '@/app/components/app/ui';
 
 interface Props {
   urls: UrlRecord[];
@@ -13,9 +14,6 @@ interface Props {
   search: string;
   status: string;
 }
-
-const COL_HEAD =
-  'text-left text-[0.7rem] text-white/45 uppercase tracking-wider pb-3 font-semibold';
 
 export default function UrlsListClient({
   urls,
@@ -74,194 +72,157 @@ export default function UrlsListClient({
     return p.toString();
   }, [search, status]);
 
+  const filtered = Boolean(search) || (status && status !== 'all');
+  const pageHref = (n: number) =>
+    `/dashboard/urls?${paramsString ? `${paramsString}&` : ''}page=${n}`;
+
+  if (urls.length === 0) {
+    return filtered ? (
+      <EmptyState
+        icon={<Icon.search />}
+        title="No links match those filters"
+        action={
+          <Link href="/dashboard/urls" className="btn-secondary btn-sm">
+            Clear filters
+          </Link>
+        }
+      >
+        Try a different search term or status.
+      </EmptyState>
+    ) : (
+      <EmptyState
+        title={<>No links <em>yet</em></>}
+        action={
+          <Link href="/dashboard/new" className="btn-primary btn-sm">
+            <Icon.plus />
+            Shorten your first URL
+          </Link>
+        }
+      >
+        Every link you shorten appears here with its clicks and status.
+      </EmptyState>
+    );
+  }
+
   return (
     <>
-      {/* Selection toolbar — slides above the table when any rows are picked */}
-      {selected.size > 0 && (
-        <div
-          className="flex items-center justify-between gap-3 mb-3 p-3 rounded-lg"
-          style={{
-            background: 'rgba(229,57,53,0.08)',
-            border: '1px solid rgba(229,57,53,0.3)',
-          }}
-        >
-          <div className="text-sm text-white/85">
-            <span className="font-semibold text-white">
-              {selected.size}
-            </span>{' '}
-            selected
-          </div>
-          <div className="flex items-center gap-2">
+      {/* Selection toolbar — appears above the table when any rows are picked */}
+      <div aria-live="polite">
+        {selected.size > 0 && (
+          <div className="notice notice--info mb-4 !items-center">
+            <p className="notice__body">
+              <strong>{selected.size}</strong> selected
+            </p>
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-xs text-white/55 hover:text-white px-3 py-1.5"
-              style={{ background: 'transparent', border: 'none' }}
+              className="btn-secondary btn-sm !border-transparent"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-              style={{
-                background:
-                  'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-                boxShadow: '0 4px 14px rgba(239,68,68,0.35)',
-              }}
+              className="btn-danger"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6" />
-              </svg>
+              <Icon.trash />
               Delete {selected.size}
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px]">
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.10)' }}>
-              <th className="w-8 pb-3">
+      <label className="mb-1 flex min-h-[40px] items-center gap-2.5 text-sm font-semibold text-ink min-[760px]:hidden">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          onChange={toggleAll}
+          className="h-4 w-4 cursor-pointer accent-accent-main"
+        />
+        Select all on this page
+      </label>
+
+      <table className="data-table">
+        <caption className="sr-only">Your short links</caption>
+        <thead>
+          <tr>
+            <th scope="col" className="w-8">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                aria-label="Select all"
+                className="h-4 w-4 cursor-pointer accent-accent-main"
+              />
+            </th>
+            <th scope="col">Code</th>
+            <th scope="col">Destination</th>
+            <th scope="col">Title</th>
+            <th scope="col">Clicks</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {urls.map((u) => (
+            <tr key={u.short_code} data-selected={selected.has(u.short_code) || undefined}>
+              <td className="cell-select">
                 <input
                   type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                  aria-label="Select all"
-                  className="cursor-pointer"
-                  style={{ accentColor: '#e53935' }}
+                  checked={selected.has(u.short_code)}
+                  onChange={() => toggleOne(u.short_code)}
+                  aria-label={`Select ${u.short_code}`}
+                  className="h-4 w-4 cursor-pointer accent-accent-main"
                 />
-              </th>
-              <th className={COL_HEAD}>Code</th>
-              <th className={COL_HEAD}>Destination</th>
-              <th className={COL_HEAD}>Title</th>
-              <th className={COL_HEAD}>Clicks</th>
-              <th className={COL_HEAD}>Status</th>
-              <th className={COL_HEAD}>Created</th>
+              </td>
+              <td className="cell-primary">
+                <Link href={`/dashboard/urls/${u.short_code}`} className="code-link">
+                  /{u.short_code}
+                </Link>
+              </td>
+              <td className="cell-wide">
+                <span className="dest block min-[760px]:max-w-[280px]" title={u.original_url}>{u.original_url}</span>
+              </td>
+              <td data-label="Title" className="text-[#5f6962]">
+                <span className="min-w-0 truncate">{u.title || '—'}</span>
+              </td>
+              <td data-label="Clicks" className="num">
+                {u.clicks}
+              </td>
+              <td data-label="Status">
+                <span className={`pill pill--dot ${u.is_active ? 'pill--green' : 'pill--red'}`}>
+                  {u.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td data-label="Created" className="whitespace-nowrap text-[#5f6962]">
+                <time dateTime={u.created_at}>{shortDate(u.created_at)}</time>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {urls.length > 0 ? (
-              urls.map((u) => (
-                <tr
-                  key={u.short_code}
-                  style={{
-                    borderBottom: '1px solid rgba(0,0,0,0.05)',
-                    background: selected.has(u.short_code)
-                      ? 'rgba(229,57,53,0.04)'
-                      : 'transparent',
-                  }}
-                >
-                  <td className="py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(u.short_code)}
-                      onChange={() => toggleOne(u.short_code)}
-                      aria-label={`Select ${u.short_code}`}
-                      className="cursor-pointer"
-                      style={{ accentColor: '#e53935' }}
-                    />
-                  </td>
-                  <td className="py-3">
-                    <Link
-                      href={`/dashboard/urls/${u.short_code}`}
-                      className="text-[#c62828] text-sm font-mono font-semibold no-underline hover:underline"
-                    >
-                      /{u.short_code}
-                    </Link>
-                  </td>
-                  <td className="py-3 text-sm text-white/65 max-w-[280px] truncate">
-                    {u.original_url}
-                  </td>
-                  <td className="py-3 text-sm text-white/55">
-                    {u.title || '—'}
-                  </td>
-                  <td className="py-3 text-sm font-semibold text-white">
-                    {u.clicks}
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[0.65rem] font-bold uppercase tracking-wider"
-                      style={
-                        u.is_active
-                          ? {
-                              background: 'rgba(34,197,94,0.1)',
-                              color: '#86efac',
-                              border: '1px solid rgba(34,197,94,0.3)',
-                            }
-                          : {
-                              background: 'rgba(239,68,68,0.1)',
-                              color: '#f87171',
-                              border: '1px solid rgba(239,68,68,0.3)',
-                            }
-                      }
-                    >
-                      {u.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="py-3 text-sm text-white/45">
-                    {new Date(u.created_at).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="py-12 text-center text-white/45 text-sm"
-                >
-                  {search || status !== 'all'
-                    ? 'No URLs match those filters'
-                    : 'No URLs yet'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex gap-2 justify-center mt-4">
-          {page > 1 && (
-            <Link
-              href={`/dashboard/urls?${
-                paramsString ? `${paramsString}&` : ''
-              }page=${page - 1}`}
-              className="px-3 py-1.5 rounded-lg text-xs no-underline transition-colors text-white/75"
-              style={{
-                background: 'rgba(0,0,0,0.05)',
-                border: '1px solid rgba(0,0,0,0.12)',
-              }}
-            >
+        <nav aria-label="Pagination" className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-5">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="btn-secondary btn-sm" rel="prev">
               ← Prev
             </Link>
+          ) : (
+            <span />
           )}
-          <span className="text-xs text-white/45 px-3 py-1.5">
+          <span className="kicker" aria-current="page">
             Page {page} of {totalPages}
           </span>
-          {page < totalPages && (
-            <Link
-              href={`/dashboard/urls?${
-                paramsString ? `${paramsString}&` : ''
-              }page=${page + 1}`}
-              className="px-3 py-1.5 rounded-lg text-xs no-underline transition-colors text-white/75"
-              style={{
-                background: 'rgba(0,0,0,0.05)',
-                border: '1px solid rgba(0,0,0,0.12)',
-              }}
-            >
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className="btn-secondary btn-sm" rel="next">
               Next →
             </Link>
+          ) : (
+            <span />
           )}
-        </div>
+        </nav>
       )}
 
       {/* Bulk delete confirm */}

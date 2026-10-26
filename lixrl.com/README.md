@@ -83,6 +83,37 @@ Other projects include [Elixpo Blogs](https://blogs.elixpo.com),
 [Elixpo Search](https://search.elixpo.com), and
 [Elixpo Accounts](https://accounts.elixpo.com).
 
+## Edge Architecture
+
+Lixrl relies on a Cloudflare Worker acting as a subdomain router at the edge. The following high-level diagram illustrates how incoming short link requests are intercepted, validated against user entitlements, and resolved via a fast KV cache or D1 database before silently logging analytics.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant W as Worker (fetch)
+    participant D1 as D1 Database
+    participant KV as KV Cache
+    participant A as Worker (trackClick)
+
+    C->>W: GET http://[label].lixrl.com/[code]
+    W->>D1: Query Domain & User Entitlement
+    alt Invalid/Inactive
+        W-->>C: 404 Not Found
+    else .well-known challenge
+        W-->>C: 200 { verified: true }
+    else Valid Request
+        W->>KV: Get Cached Redirect
+        alt Cache Miss
+            W->>D1: Query Redirect Record
+            W->>KV: Put Redirect Record
+        end
+        W-->>C: 302 Redirect to Original URL
+        Note over W,A: Analytics (ctx.waitUntil)
+        W->>A: Spawn trackClick()
+        A->>D1: Update clicks & Insert click record
+    end
+```
+
 ## Built in the open
 
 Lixrl is shaped by contributors and its users. You can report a problem,

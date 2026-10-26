@@ -1,7 +1,7 @@
 {
   "name": "@elixpo/lixrl-cli",
   "version": "1.1.5",
-  "description": "Official Lixrl CLI for shortening URLs, managing links and analytics, and generating production-ready QR codes.",
+  "description": "Free URL shortener and QR code generator CLI for Lixrl — create custom short links, manage branded links, export click analytics, and render QR codes from your terminal or CI.",
   "author": {
     "name": "Elixpo",
     "email": "hello@elixpo.com",
@@ -39,11 +39,24 @@
   "keywords": [
     "lixrl",
     "url-shortener",
+    "link-shortener",
     "short-link",
+    "short-url",
+    "shorten-url",
+    "url-shortener-cli",
     "qr-code",
+    "qr-code-generator",
+    "qrcode",
+    "link-analytics",
     "analytics",
+    "branded-links",
+    "custom-short-links",
+    "bitly-alternative",
+    "tinyurl-alternative",
     "cli",
+    "command-line",
     "command-line-url-shortener",
+    "terminal",
     "device-authorization",
     "developer-tools",
     "automation",
@@ -60,7 +73,7 @@
     "url": "git+https://github.com/elixpo/lixrl.com.git",
     "directory": "packages/lixrl-cli"
   },
-  "homepage": "https://lixrl.com",
+  "homepage": "https://lixrl.com/docs/cli",
   "bugs": {
     "url": "https://github.com/elixpo/lixrl.com/issues"
   },

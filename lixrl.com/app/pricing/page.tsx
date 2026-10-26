@@ -13,7 +13,7 @@ import {
   TIER_PRICING,
 } from '@/lib/types';
 
-const ACCENT = '#e53935';
+const ACCENT = '#3a65c7';
 
 const PLAN_GUIDANCE: Record<SellableTier, string> = {
   free: 'For personal links and trying Lixrl.',
@@ -27,7 +27,7 @@ const COMPARISON_ROWS: { label: string; values: Record<SellableTier, string> }[]
   { label: 'Analytics', values: { free: 'Click totals · 7 days', pro: 'Geo, device & CSV · 30 days', business: 'Geo, device & CSV · 1 year' } },
   { label: 'Custom slugs', values: { free: '—', pro: 'Included', business: 'Included' } },
   { label: 'Branded lixrl.com subdomains', values: { free: '—', pro: '1', business: '3' } },
-  { label: 'API keys', values: { free: '1', pro: '5', business: '20' } },
+  { label: 'API keys', values: { free: '2 · API + CLI', pro: '5', business: '20' } },
   { label: 'Expiring links', values: { free: '—', pro: 'Included', business: 'Included' } },
   { label: 'Quick QR generation', values: { free: 'Unlimited', pro: 'Unlimited', business: 'Unlimited' } },
   { label: 'QR export formats', values: { free: 'SVG, PNG & JPG', pro: 'SVG, PNG & JPG', business: 'SVG, PNG & JPG' } },
@@ -136,25 +136,19 @@ export default function PricingPage() {
   );
 
   return (
-    <div className="theme-light min-h-screen flex flex-col text-[#111] bg-white">
+    <div className="theme-light min-h-screen flex flex-col text-ink bg-paper">
 
       <div className="relative z-10">
         <Navbar />
       </div>
 
-      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-4 md:px-6 pt-6 md:pt-8 pb-16">
+      <main id="main-content" className="relative z-10 flex-1 shell pt-12 md:pt-16 pb-20">
         <section className="text-center max-w-[760px] mx-auto flex flex-col items-center gap-3">
-          <h1
-            className="text-[2.15rem] md:text-[2.75rem] font-extrabold leading-[1.08] tracking-tight"
-            style={{
-              background: 'linear-gradient(180deg, #111111 0%, #555555 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Simple pricing. <span style={{ color: ACCENT, WebkitTextFillColor: ACCENT }}>Start free.</span>
+          <p className="eyebrow !mb-1">Pricing</p>
+          <h1 className="display-1 !text-[clamp(2.6rem,7vw,5.2rem)]">
+            Simple pricing. <em>Start free.</em>
           </h1>
-          <p className="text-sm md:text-base text-[#666] max-w-[580px] leading-relaxed">
+          <p className="lede max-w-[580px] mt-2">
             Choose a plan now. Compare every limit below when you need the details.
           </p>
 
@@ -197,7 +191,7 @@ export default function PricingPage() {
         )}
 
         {/* One offer panel keeps prices and actions comparable without scrolling. */}
-        <section className="mt-6 grid grid-cols-1 overflow-hidden rounded-[22px] border border-[#e3e3e3] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)] md:grid-cols-3">
+        <section className="mt-6 grid grid-cols-1 overflow-hidden rounded-[1.4rem] border border-line bg-white md:grid-cols-3">
           {SELLABLE_TIER_ORDER.map((tier) => {
             const p = TIER_PRICING[tier];
             const amount = p.price[currency][interval];
@@ -206,51 +200,50 @@ export default function PricingPage() {
             return (
               <div
                 key={tier}
-                className="relative flex flex-col border-t border-[#ececec] p-5 first:border-t-0 md:min-h-[430px] md:border-l md:border-t-0 md:first:border-l-0 lg:p-6"
+                className="relative flex flex-col border-t border-[#e3e6e1] p-5 first:border-t-0 md:min-h-[430px] md:border-l md:border-t-0 md:first:border-l-0 lg:p-6"
                 style={{
                   // Current plan is greyed/dimmed — it's not an upgrade target.
                   background: isCurrent
-                    ? 'linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(250,250,250,0.9) 100%)'
+                    ? '#f5f6f2'
                     : isPopular
-                      ? 'linear-gradient(145deg, rgba(229,57,53,0.13) 0%, rgba(198,40,40,0.03) 100%)'
-                      : 'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.92) 100%)',
-                  backdropFilter: 'blur(20px)',
+                      ? '#eef2ff'
+                      : '#ffffff',
                   opacity: isCurrent ? 0.6 : 1,
                 }}
               >
                 {isCurrent ? (
                   <span
                     className="absolute right-4 top-4 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ background: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.8)', border: '1px solid rgba(0,0,0,0.2)' }}
+                    style={{ background: 'rgba(20,32,24,0.12)', color: 'rgba(20,32,24,0.8)', border: '1px solid rgba(20,32,24,0.2)' }}
                   >
                     Current plan
                   </span>
                 ) : isPopular ? (
                   <span
                     className="absolute right-4 top-4 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white"
-                    style={{ background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)' }}
+                    style={{ background: '#142018' }}
                   >
                     Most popular
                   </span>
                 ) : null}
 
-                <h3 className="text-[1.15rem] font-bold text-[#111]">{p.name}</h3>
-                <p className="text-[0.85rem] text-[#666] mt-1 min-h-[2.4em]">{p.tagline}</p>
-                <p className="mb-3 mt-2 min-h-[2.5em] text-[0.78rem] leading-5 text-[#777]">{PLAN_GUIDANCE[tier]}</p>
+                <h2 className="text-[1.6rem] font-bold tracking-[-0.05em] text-ink">{p.name}</h2>
+                <p className="text-[0.85rem] text-[#5f6962] mt-1 min-h-[2.4em]">{p.tagline}</p>
+                <p className="mb-3 mt-2 min-h-[2.5em] text-[0.78rem] leading-5 text-[#5f6962]">{PLAN_GUIDANCE[tier]}</p>
 
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-[2.1rem] font-extrabold text-[#111]">
+                  <span className="text-[2.1rem] font-extrabold text-[#142018]">
                     {CURRENCY_SYMBOL[currency]}
                     {amount.toLocaleString()}
                   </span>
                   {amount > 0 && (
-                    <span className="text-sm text-[#777]">
+                    <span className="text-sm text-[#5f6962]">
                       /{interval === 'monthly' ? 'mo' : 'yr'}
                     </span>
                   )}
                 </div>
                 <div className="text-[0.72rem] mb-5 h-4 flex items-center gap-2">
-                  <span className="text-[#777]">
+                  <span className="text-[#5f6962]">
                     {amount > 0 && interval === 'annual'
                       ? `${CURRENCY_SYMBOL[currency]}${Math.round(amount / 12).toLocaleString()}/mo, billed yearly`
                       : amount > 0
@@ -258,7 +251,7 @@ export default function PricingPage() {
                         : 'Free forever'}
                   </span>
                   {amount > 0 && interval === 'annual' && (
-                    <span className="font-semibold text-[#278560]">
+                    <span className="font-semibold text-green">
                       save {CURRENCY_SYMBOL[currency]}
                       {(p.price[currency].monthly * 12 - amount).toLocaleString()}
                     </span>
@@ -278,7 +271,7 @@ export default function PricingPage() {
 
                 <ul className="space-y-2 list-none p-0 mt-5">
                   {featuresFor(tier).slice(0, 5).map((f) => (
-                    <li key={f} className="text-[0.85rem] text-[#555] flex items-start gap-2">
+                    <li key={f} className="text-[0.85rem] text-[#5f6962] flex items-start gap-2">
                       <span className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ background: ACCENT }} />
                       {f}
                     </li>
@@ -291,30 +284,30 @@ export default function PricingPage() {
 
         <section className="mt-14" aria-labelledby="compare-plans">
           <div className="max-w-2xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c62828]">Plan details</p>
-            <h2 id="compare-plans" className="mt-2 text-2xl font-extrabold tracking-tight text-[#111] md:text-3xl">
+            <p className="eyebrow">Plan details</p>
+            <h2 id="compare-plans" className="display-2 !text-[clamp(2rem,4.5vw,3.6rem)]">
               Compare every limit
             </h2>
-            <p className="mt-3 text-sm leading-6 text-[#666]">
+            <p className="mt-3 text-sm leading-6 text-[#5f6962]">
               The details are here when you need them. These limits match what the product enforces.
             </p>
           </div>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-[#e5e5e5]">
+          <div className="mt-6 overflow-x-auto rounded-[1.4rem] border border-line bg-white">
             <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <thead className="bg-[#fafafa]">
+              <thead className="bg-[#f5f6f2]">
                 <tr>
-                  <th className="px-5 py-4 font-semibold text-[#777]">Feature</th>
+                  <th scope="col" className="px-5 py-4 font-semibold text-[#5f6962]">Feature</th>
                   {SELLABLE_TIER_ORDER.map((tier) => (
-                    <th key={tier} className="px-5 py-4 text-base font-bold text-[#111]">{TIER_PRICING[tier].name}</th>
+                    <th key={tier} scope="col" className="px-5 py-4 text-base font-bold text-[#142018]">{TIER_PRICING[tier].name}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {COMPARISON_ROWS.map((row) => (
-                  <tr key={row.label} className="border-t border-[#ececec]">
-                    <th className="px-5 py-4 font-semibold text-[#333]">{row.label}</th>
+                  <tr key={row.label} className="border-t border-[#e3e6e1]">
+                    <th scope="row" className="px-5 py-4 font-semibold text-[#2b3830]">{row.label}</th>
                     {SELLABLE_TIER_ORDER.map((tier) => (
-                      <td key={tier} className="px-5 py-4 text-[#666]">{row.values[tier]}</td>
+                      <td key={tier} className="px-5 py-4 text-[#5f6962]">{row.values[tier]}</td>
                     ))}
                   </tr>
                 ))}
@@ -325,10 +318,10 @@ export default function PricingPage() {
 
         <section className="mx-auto mt-16 max-w-3xl" aria-labelledby="pricing-faq">
           <div className="text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c62828]">Before you choose</p>
-            <h2 id="pricing-faq" className="mt-2 text-2xl font-extrabold tracking-tight text-[#111] md:text-3xl">Pricing questions, answered</h2>
+            <p className="eyebrow">Before you choose</p>
+            <h2 id="pricing-faq" className="display-2 !text-[clamp(2rem,4.5vw,3.6rem)]">Pricing questions, answered</h2>
           </div>
-          <div className="mt-7 divide-y divide-[#e8e8e8] rounded-2xl border border-[#e5e5e5] px-5 md:px-7">
+          <div className="mt-7 divide-y divide-[#d7dbd6] rounded-[1.4rem] border border-line bg-white px-5 md:px-7">
             <Faq question="Can I shorten a link without an account?">
               Yes. A guest can create one short link, valid for 24 hours. Create a Free account for persistent links and dashboard access.
             </Faq>
@@ -363,13 +356,13 @@ export default function PricingPage() {
 function Faq({ question, children }: { question: string; children: ReactNode }) {
   return (
     <details className="group py-5">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-[#111]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-[#142018]">
         {question}
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#ddd] text-lg font-normal text-[#777] transition-transform group-open:rotate-45">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#d7dbd6] text-lg font-normal text-[#5f6962] transition-transform group-open:rotate-45" aria-hidden="true">
           +
         </span>
       </summary>
-      <p className="max-w-2xl pr-10 pt-3 text-sm leading-6 text-[#666]">{children}</p>
+      <p className="max-w-2xl pr-10 pt-3 text-sm leading-6 text-[#5f6962]">{children}</p>
     </details>
   );
 }
@@ -385,19 +378,20 @@ function Toggle({
 }) {
   return (
     <div
-      className="inline-flex p-1 rounded-[12px] gap-1"
-      style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.10)' }}
+      role="group" className="inline-flex p-1 rounded-full gap-1"
+      style={{ background: 'rgba(20,32,24,0.06)', border: '1px solid rgba(20,32,24,0.10)' }}
     >
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
-          className="px-3.5 py-1.5 rounded-[9px] text-[0.82rem] font-semibold transition-all cursor-pointer border-none"
+          aria-pressed={value === o.value}
+          className="min-h-[40px] px-4 rounded-full text-[0.82rem] font-semibold transition-all cursor-pointer border-none"
           style={
             value === o.value
-              ? { background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)', color: '#fff' }
-              : { background: 'transparent', color: 'rgba(0,0,0,0.6)' }
+              ? { background: '#142018', color: '#fff' }
+              : { background: 'transparent', color: '#3d4842' }
           }
         >
           {o.label}
@@ -457,22 +451,22 @@ function CtaButton({
       onClick={() => onSelect(tier)}
       disabled={disabled}
       aria-busy={thisSubmitting}
-      className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[12px] font-semibold text-sm transition-all border-none"
+      className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all border-none"
       style={{
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: !loaded ? 0.5 : 1,
-        color: isCurrentPlanCta ? 'rgba(0,0,0,0.4)' : filled ? '#fff' : 'rgba(0,0,0,0.9)',
+        color: isCurrentPlanCta ? '#5f6962' : filled ? '#fff' : 'rgba(20,32,24,0.9)',
         background: isCurrentPlanCta
-          ? 'rgba(0,0,0,0.06)'
+          ? 'rgba(20,32,24,0.06)'
           : filled
-            ? 'linear-gradient(135deg, #e53935 0%, #c62828 100%)'
+            ? '#142018'
             : 'transparent',
-        boxShadow: filled && !disabled ? '0 6px 18px rgba(229,57,53,0.24)' : 'none',
+        boxShadow: 'none',
         border: isCurrentPlanCta
-          ? '1px solid rgba(0,0,0,0.1)'
+          ? '1px solid rgba(20,32,24,0.1)'
           : filled
             ? 'none'
-            : '1px solid rgba(0,0,0,0.16)',
+            : '1px solid #142018',
       }}
     >
       {thisSubmitting && (

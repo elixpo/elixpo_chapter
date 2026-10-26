@@ -1,27 +1,22 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = 'https://lixrl.com';
+import { SITE_URL } from '@/lib/seo';
 
 /**
  * Robots policy.
  *
  * Public marketing + docs surface is crawlable. Everything that requires
- * auth (dashboard, profile, admin) is disallowed — those pages aren't
- * useful for search and shouldn't be indexed under any user's session.
- *
- * The dynamic /{code} redirect route is also disallowed so search engines
- * don't index short links as content. Short links exist to redirect, not
- * to rank.
- *
- * The API surface is disallowed: it serves JSON / CSV and isn't meant to
- * show up in SERPs.
+ * auth (dashboard, profile, admin, CLI authorization) and the sign-in
+ * redirect are disallowed. The API serves JSON / CSV and isn't meant for
+ * SERPs. Short-link redirects (/{code}) can't be expressed as a robots
+ * pattern without blocking real pages; they send `X-Robots-Tag: noindex`
+ * from app/[code]/route.ts and are never listed in the sitemap.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/about', '/generate', '/pricing', '/docs', '/privacy', '/terms'],
+        allow: ['/', '/about', '/generate', '/pricing', '/docs', '/docs/', '/privacy', '/terms'],
         disallow: [
           '/api/',
           '/dashboard',
@@ -31,13 +26,12 @@ export default function robots(): MetadataRoute.Robots {
           '/admin',
           '/admin/',
           '/login',
-          // Bare short-code paths — single-segment, alphanumeric/dash/underscore.
-          // Doesn't catch every shape but stops the obvious indexing path.
-          '/?',
+          '/cli/authorize',
+          '/not-found',
         ],
       },
     ],
-    sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

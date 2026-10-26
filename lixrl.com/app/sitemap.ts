@@ -1,76 +1,44 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = 'https://lixrl.com';
+import { DOCS_SECTIONS, docsHref } from '@/lib/docs-sections';
+import { absoluteUrl } from '@/lib/seo';
 
 /**
  * Sitemap covers the public marketing + docs surface only. Dashboard,
- * profile, admin, and per-link analytics pages are intentionally NOT
- * listed — they require auth, vary per user, and shouldn't be indexed.
+ * profile, admin, login, and short-link redirects are intentionally NOT
+ * listed — they require auth, vary per user, or exist only to redirect.
+ *
+ * Docs entries are generated from lib/docs-sections.ts, the same source the
+ * docs sidebar and per-page metadata use.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: `${BASE_URL}/`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
-    {
-      url: `${BASE_URL}/pricing`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/about`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/generate`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/docs`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/privacy`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/terms`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
+  const pages: {
+    path: string;
+    priority: number;
+    changeFrequency: NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
+  }[] = [
+    { path: '/', priority: 1.0, changeFrequency: 'weekly' },
+    { path: '/generate', priority: 0.95, changeFrequency: 'weekly' },
+    { path: '/pricing', priority: 0.9, changeFrequency: 'monthly' },
+    { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
+    { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' },
+    { path: '/terms', priority: 0.3, changeFrequency: 'yearly' },
   ];
 
-  const docsSections: MetadataRoute.Sitemap = [
-    'quickstart',
-    'cli',
-    'api',
-    'keys',
-    'analytics',
-    'subdomains',
-    'webhooks',
-    'errors',
-    'self-hosting',
-  ].map((slug) => ({
-    url: `${BASE_URL}/docs/${slug}`,
+  const staticRoutes: MetadataRoute.Sitemap = pages.map((page) => ({
+    url: absoluteUrl(page.path),
     lastModified: now,
-    changeFrequency: 'weekly',
-    priority: 0.7,
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
   }));
 
-  return [...staticRoutes, ...docsSections];
+  const docsRoutes: MetadataRoute.Sitemap = DOCS_SECTIONS.map((section) => ({
+    url: absoluteUrl(docsHref(section.slug)),
+    lastModified: now,
+    changeFrequency: section.changeFrequency,
+    priority: section.priority,
+  }));
+
+  return [...staticRoutes, ...docsRoutes];
 }

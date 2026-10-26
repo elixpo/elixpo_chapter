@@ -78,8 +78,17 @@ with Ayushman Bhattacharya added to its uploaders. It was merged on 24 October
 The ITP was accepted by the Debian BTS on 19 October 2026 as
 [#1151280](https://bugs.debian.org/1151280). The submitted message is retained
 in `docs/development/debian-itp.txt` for packaging history. Further ITP
-correspondence belongs at `1151280@bugs.debian.org`. The draft sponsorship
-request is in `docs/development/debian-rfs.txt`.
+correspondence belongs at `1151280@bugs.debian.org`. The sponsorship request
+in `docs/development/debian-rfs.txt` was filed as
+[#1152019](https://bugs.debian.org/1152019). Simon Quigley sponsored 1.1.0-1,
+which entered the NEW queue on 26 October 2026; the ITP closes when NEW accepts
+the package.
+
+1.1.0-2 answers the review of 1.1.0-1: `debian/copyright` lists the Sigstore
+test fixtures (Apache-2.0), limits CC-BY-4.0 to the website images, and
+credits the Pollinations logo; the package moves to debhelper compat 14 and a
+version 5 watch file; and the autopkgtests now run the upstream test suite
+against Debian's crates and exercise the installed binary offline.
 
 ## Archive submission sequence
 
@@ -91,8 +100,8 @@ request is in `docs/development/debian-rfs.txt`.
    environment.
 4. Run `lintian`, `autopkgtest`, `piuparts`, and `sbuild`.
 5. Upload the signed source package to `mentors.debian.net` and file an RFS
-   against `sponsorship-requests`.
-6. Respond to sponsor and FTP NEW review.
+   against `sponsorship-requests` (done: #1152019, sponsored).
+6. Respond to sponsor and FTP NEW review (in progress).
 
 Do not announce Crumb as being in Debian until the package clears Debian's NEW
 queue and appears in the official archive.

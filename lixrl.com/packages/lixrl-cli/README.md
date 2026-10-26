@@ -1,11 +1,33 @@
-# @elixpo/lixrl-cli
+# Lixrl CLI — URL shortener and QR code generator for the terminal
 
-Official command-line client for [Lixrl](https://lixrl.com). Manage production short links and QR codes from a terminal, deployment job, or agent workflow.
+[![npm](https://img.shields.io/npm/v/@elixpo/lixrl-cli.svg)](https://www.npmjs.com/package/@elixpo/lixrl-cli)
+[![license](https://img.shields.io/npm/l/@elixpo/lixrl-cli.svg)](https://github.com/elixpo/lixrl.com/blob/main/packages/lixrl-cli/LICENSE)
+
+`@elixpo/lixrl-cli` is the official command-line client for [Lixrl](https://lixrl.com), a free and open source URL shortener. Shorten URLs, create custom short links, generate QR codes, and export click analytics from a terminal, CI job, or agent workflow — a scriptable, open alternative to Bitly, TinyURL, and Dub.
+
+- **Shorten URLs** with custom slugs, titles, tags, and expiry.
+- **Generate QR codes** as PNG or SVG, with styles and optional scan tracking.
+- **Link analytics**: clicks over time, countries, referrers, and CSV export.
+- **Branded subdomains** and scoped **API keys** managed from the shell.
+- **Automation-ready**: `--json --no-input` output for CI and scripts.
+
+Full documentation: [lixrl.com/docs/cli](https://lixrl.com/docs/cli)
+
+## Install
+
+Requires Node.js 20 or newer on macOS, Linux, or Windows.
 
 ```bash
 npm install --global @elixpo/lixrl-cli
-lixrl login --open
-lixrl whoami
+```
+
+## Quick start
+
+```bash
+lixrl login --open                               # sign in through your browser
+lixrl urls create https://example.com/launch     # shorten a URL
+lixrl qr https://example.com --output qr.svg     # generate a QR code (SVG, PNG, or JPEG)
+lixrl urls analytics <code> --days 30            # view click analytics
 ```
 
 If the selected profile already has a valid local key, login reuses it. Otherwise, the CLI asks whether to create a scoped key through Elixpo Accounts or paste an existing raw key. The final key is stored in the operating-system keychain. Accounts tokens used during approval remain in memory and are revoked after the exchange.
@@ -37,7 +59,7 @@ For CI, set `LIXRL_API_KEY` through the CI secret store and use `--json --no-inp
 
 Use `lixrl --help` for the complete command list. `shortner` is provided as a compatibility alias.
 
-## Core workflows
+## Usage: shorten URLs, generate QR codes, read analytics
 
 ```bash
 lixrl urls create https://example.com/launch --title "Launch" --tag campaign
@@ -68,3 +90,10 @@ lixrl skills install lixrl-qr
 ```
 
 `skills install` copies the selected skill into the current Codex skills directory. This keeps the skill version tied to the installed CLI release.
+
+## Links
+
+- Website: [lixrl.com](https://lixrl.com)
+- Free QR code generator: [lixrl.com/generate](https://lixrl.com/generate)
+- URL shortener API docs: [lixrl.com/docs/api](https://lixrl.com/docs/api)
+- Issues: [github.com/elixpo/lixrl.com/issues](https://github.com/elixpo/lixrl.com/issues)

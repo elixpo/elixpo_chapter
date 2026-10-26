@@ -16,7 +16,9 @@ Visual assets
 Visual and brand assets under `crumb.elixpo/public/`, including icons, mascot
 art, and social artwork, are licensed under Creative Commons Attribution 4.0
 International. The canonical license text is in
-`LICENSES/preferred/CC-BY-4.0`.
+`LICENSES/preferred/CC-BY-4.0`. Text and data files in that directory are
+code or documentation and fall under the MIT License above. The Pollinations
+logo (`pollinations-favicon.png`) is third-party material; see below.
 
     SPDX-License-Identifier: CC-BY-4.0
 

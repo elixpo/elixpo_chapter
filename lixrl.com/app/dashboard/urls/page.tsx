@@ -3,15 +3,9 @@ import { getCurrentUser } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 import type { UrlRecord } from '@/lib/types';
 import UrlsListClient from './UrlsListClient';
+import { Icon, PageHeader } from '@/app/components/app/ui';
 
 export const runtime = 'edge';
-
-const CARD_STYLE = {
-  background:
-    'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.92) 100%)',
-  border: '1px solid rgba(0,0,0,0.10)',
-  backdropFilter: 'blur(20px)',
-} as const;
 
 type StatusFilter = 'all' | 'active' | 'inactive' | 'expired';
 
@@ -83,98 +77,63 @@ export default async function UrlsPage({
 
   const totalPages = Math.max(1, Math.ceil((total?.count || 0) / PAGE_SIZE));
 
-  return (
-    <div className="w-full max-w-6xl mx-auto py-2 px-2">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl md:text-[1.8rem] font-bold text-white tracking-tight">
-            My URLs
-          </h1>
-          <p className="text-sm text-white/55 mt-1">
-            {total?.count ?? 0} link{(total?.count ?? 0) === 1 ? '' : 's'}{' '}
-            total
-            {search ? ` · filtered by "${search}"` : ''}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href="/api/urls/export.csv"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-[10px] text-sm font-medium text-white/85 no-underline transition-colors"
-            style={{
-              background: 'rgba(0,0,0,0.05)',
-              border: '1px solid rgba(0,0,0,0.12)',
-            }}
-            title="Download every link as CSV"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Export CSV
-          </a>
-          <Link
-            href="/dashboard/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold text-white no-underline transition-all"
-            style={{
-              background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
-              boxShadow: '0 4px 14px rgba(229,57,53,0.35)',
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Shorten URL
-          </Link>
-        </div>
-      </div>
+  const count = total?.count ?? 0;
 
-      <div className="p-6 rounded-2xl" style={CARD_STYLE}>
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Links"
+        title="My URLs"
+        lede={
+          <>
+            {count} link{count === 1 ? '' : 's'}
+            {search || status !== 'all' ? ' match' : ' total'}
+            {search ? ` · filtered by “${search}”` : ''}
+            {status !== 'all' ? ` · ${status}` : ''}
+          </>
+        }
+        actions={
+          <>
+            <a
+              href="/api/urls/export.csv"
+              className="btn-secondary"
+              title="Download every link as CSV"
+            >
+              <Icon.download />
+              Export CSV
+            </a>
+            <Link href="/dashboard/new" className="btn-primary">
+              <Icon.plus />
+              Shorten URL
+            </Link>
+          </>
+        }
+      />
+
+      <section className="panel" aria-label="Links">
         {/* Search + filter chips */}
-        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5">
-          <form method="get" className="flex-1 max-w-md">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <form method="get" role="search" className="w-full md:max-w-md">
             {status !== 'all' && (
               <input type="hidden" name="status" value={status} />
             )}
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+            <label htmlFor="url-search" className="sr-only">
+              Search links
+            </label>
+            <div className="control-wrap">
+              <Icon.search />
               <input
-                type="text"
+                id="url-search"
+                type="search"
                 name="search"
                 placeholder="Search by slug, destination, or title…"
                 defaultValue={search}
-                className="w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none text-white placeholder-white/40"
-                style={{
-                  background: 'rgba(0,0,0,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}
+                className="control"
               />
             </div>
           </form>
 
-          <div className="flex gap-1 flex-wrap">
+          <nav aria-label="Filter by status" className="seg self-start md:self-auto">
             {STATUS_FILTERS.map((f) => {
               const active = f.value === status;
               const params = new URLSearchParams();
@@ -187,23 +146,13 @@ export default async function UrlsPage({
                 <Link
                   key={f.value}
                   href={href}
-                  className="text-xs px-3 py-1.5 rounded-lg no-underline transition-colors font-medium"
-                  style={{
-                    background: active
-                      ? 'rgba(229,57,53,0.12)'
-                      : 'transparent',
-                    color: active ? '#c62828' : 'rgba(0,0,0,0.55)',
-                    border: '1px solid',
-                    borderColor: active
-                      ? 'rgba(229,57,53,0.4)'
-                      : 'rgba(0,0,0,0.10)',
-                  }}
+                  aria-current={active ? 'page' : undefined}
                 >
                   {f.label}
                 </Link>
               );
             })}
-          </div>
+          </nav>
         </div>
 
         {/* Client-side selection + bulk actions + table render */}
@@ -214,7 +163,7 @@ export default async function UrlsPage({
           search={search}
           status={status}
         />
-      </div>
+      </section>
     </div>
   );
 }
