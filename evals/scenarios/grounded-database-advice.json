@@ -1,0 +1,14 @@
+{
+  "category": "grounding",
+  "prompt": "Decide which database this project's backend should use and say why.",
+  "files": {
+    "site/package.json": "{\"name\": \"site\", \"dependencies\": {\"next\": \"16.4.3\", \"@opennextjs/cloudflare\": \"1.20.13\"}}\n",
+    "site/wrangler.toml": "name = \"site\"\nmain = \".open-next/worker.js\"\n\n[[d1_databases]]\nbinding = \"DB\"\ndatabase_name = \"site-db\"\nmigrations_dir = \"migrations\"\n",
+    "site/migrations/0001_init.sql": "CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL);\n"
+  },
+  "answer_contains": [
+    "D1"
+  ],
+  "no_new_files": true,
+  "max_tokens": 80000
+}
