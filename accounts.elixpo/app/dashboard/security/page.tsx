@@ -78,9 +78,11 @@ const kindLabel: Record<Factor["kind"], string> = {
     email_otp: "Email code",
 };
 const kindIcon: Record<Factor["kind"], React.ReactNode> = {
-    passkey: <KeyIcon fontSize="small" sx={{ color: "#ff7759" }} />,
-    totp: <PhoneAndroidIcon fontSize="small" sx={{ color: "#ff7759" }} />,
-    email_otp: <MailOutlineIcon fontSize="small" sx={{ color: "#ff7759" }} />,
+    passkey: <KeyIcon fontSize="small" sx={{ color: "var(--accent)" }} />,
+    totp: <PhoneAndroidIcon fontSize="small" sx={{ color: "var(--accent)" }} />,
+    email_otp: (
+        <MailOutlineIcon fontSize="small" sx={{ color: "var(--accent)" }} />
+    ),
 };
 
 export default function SecurityPage() {
@@ -656,7 +658,7 @@ export default function SecurityPage() {
     if (loading) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-                <CircularProgress sx={{ color: "#ff7759" }} />
+                <CircularProgress sx={{ color: "var(--accent)" }} />
             </Box>
         );
     }
@@ -675,7 +677,7 @@ export default function SecurityPage() {
                         gap: 1.5,
                     }}
                 >
-                    <SecurityIcon sx={{ color: "#ff7759" }} /> Security
+                    <SecurityIcon sx={{ color: "var(--accent)" }} /> Security
                 </Typography>
                 <Typography sx={{ color: "var(--fg-faint)" }}>
                     Two-factor authentication and trusted devices.
@@ -816,13 +818,13 @@ export default function SecurityPage() {
                                         onClick={startEmailEnroll}
                                         disabled={emailResendCd.active}
                                         sx={{
-                                            color: "#ff7759",
+                                            color: "var(--accent)",
                                             textTransform: "none",
                                             fontSize: "0.8rem",
                                             mr: 0.5,
                                             "&:hover": {
                                                 bgcolor:
-                                                    "rgba(255, 119, 89,0.08)",
+                                                    "rgba(58, 101, 199,0.08)",
                                             },
                                             "&.Mui-disabled": {
                                                 color: "var(--fg-faint)",
@@ -839,13 +841,13 @@ export default function SecurityPage() {
                                         size="small"
                                         onClick={startTotp}
                                         sx={{
-                                            color: "#ff7759",
+                                            color: "var(--accent)",
                                             textTransform: "none",
                                             fontSize: "0.8rem",
                                             mr: 0.5,
                                             "&:hover": {
                                                 bgcolor:
-                                                    "rgba(255, 119, 89,0.08)",
+                                                    "rgba(58, 101, 199,0.08)",
                                             },
                                         }}
                                     >
@@ -877,12 +879,12 @@ export default function SecurityPage() {
                         (f) => f.kind === "email_otp" && f.confirmed,
                     );
                     const enrollSx = {
-                        color: "#ff7759",
-                        borderColor: "rgba(255, 119, 89,0.4)",
+                        color: "var(--accent)",
+                        borderColor: "rgba(58, 101, 199,0.4)",
                         textTransform: "none" as const,
                         "&:hover": {
-                            borderColor: "#ff7759",
-                            bgcolor: "rgba(255, 119, 89,0.06)",
+                            borderColor: "#3a65c7",
+                            bgcolor: "rgba(58, 101, 199,0.06)",
                         },
                         "&.Mui-disabled": {
                             color: "var(--fg-faint)",
@@ -953,7 +955,7 @@ export default function SecurityPage() {
                             }
                             sx={{
                                 background:
-                                    "linear-gradient(135deg, #ff7759 0%, #ff7759 100%)",
+                                    "linear-gradient(135deg, #3a65c7 0%, #3a65c7 100%)",
                                 textTransform: "none",
                                 fontWeight: 600,
                             }}
@@ -1011,8 +1013,8 @@ export default function SecurityPage() {
                                 mb: 2,
                                 borderRadius: "10px",
                                 background:
-                                    "linear-gradient(135deg, rgba(255, 119, 89,0.12), rgba(255, 119, 89,0.05))",
-                                border: "1px solid rgba(255, 119, 89,0.35)",
+                                    "linear-gradient(135deg, rgba(58, 101, 199,0.12), rgba(58, 101, 199,0.05))",
+                                border: "1px solid rgba(58, 101, 199,0.35)",
                             }}
                         >
                             <Typography
@@ -1039,7 +1041,7 @@ export default function SecurityPage() {
                                         component="code"
                                         sx={{
                                             fontFamily:
-                                                "var(--font-geist-mono), monospace",
+                                                "var(--font-code), monospace",
                                             color: "var(--fg)",
                                             bgcolor: "var(--overlay)",
                                             p: 1,
@@ -1067,12 +1069,12 @@ export default function SecurityPage() {
                                         downloadBackupCodes(revealedCodes)
                                     }
                                     sx={{
-                                        color: "#ff7759",
+                                        color: "var(--accent)",
                                         textTransform: "none",
-                                        bgcolor: "rgba(255, 119, 89,0.1)",
-                                        border: "1px solid rgba(255, 119, 89,0.3)",
+                                        bgcolor: "rgba(58, 101, 199,0.1)",
+                                        border: "1px solid rgba(58, 101, 199,0.3)",
                                         "&:hover": {
-                                            bgcolor: "rgba(255, 119, 89,0.18)",
+                                            bgcolor: "rgba(58, 101, 199,0.18)",
                                         },
                                     }}
                                 >
@@ -1114,8 +1116,8 @@ export default function SecurityPage() {
                         variant="outlined"
                         onClick={regenerateBackupCodes}
                         sx={{
-                            color: "#ff7759",
-                            borderColor: "rgba(255, 119, 89,0.4)",
+                            color: "var(--accent)",
+                            borderColor: "rgba(58, 101, 199,0.4)",
                             textTransform: "none",
                         }}
                     >
@@ -1168,12 +1170,12 @@ export default function SecurityPage() {
                                     p: 1.5,
                                     borderRadius: "10px",
                                     bgcolor: s.is_current
-                                        ? "rgba(255, 119, 89,0.06)"
+                                        ? "rgba(58, 101, 199,0.06)"
                                         : "var(--surface)",
-                                    border: `1px solid ${s.is_current ? "rgba(255, 119, 89,0.3)" : "var(--border)"}`,
+                                    border: `1px solid ${s.is_current ? "rgba(58, 101, 199,0.3)" : "var(--border)"}`,
                                 }}
                             >
-                                <LaptopIcon sx={{ color: "#ff7759" }} />
+                                <LaptopIcon sx={{ color: "var(--accent)" }} />
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Box
                                         sx={{
@@ -1296,7 +1298,7 @@ export default function SecurityPage() {
                                 <LaptopIcon
                                     sx={{
                                         color: d.is_active
-                                            ? "#ff7759"
+                                            ? "#3a65c7"
                                             : "var(--fg-faint)",
                                     }}
                                 />
@@ -1400,10 +1402,9 @@ export default function SecurityPage() {
                                 component="code"
                                 sx={{
                                     display: "block",
-                                    fontFamily:
-                                        "var(--font-geist-mono), monospace",
+                                    fontFamily: "var(--font-code), monospace",
                                     bgcolor: "var(--overlay)",
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     p: 1,
                                     borderRadius: "6px",
                                     fontSize: "0.8rem",
@@ -1451,10 +1452,10 @@ export default function SecurityPage() {
                                         },
                                         "&:hover fieldset": {
                                             borderColor:
-                                                "rgba(255, 119, 89,0.4)",
+                                                "rgba(58, 101, 199,0.4)",
                                         },
                                         "&.Mui-focused fieldset": {
-                                            borderColor: "#ff7759",
+                                            borderColor: "#3a65c7",
                                         },
                                     },
                                 }}
@@ -1477,7 +1478,7 @@ export default function SecurityPage() {
                         disabled={totpBusy || totpCode.length !== 6}
                         sx={{
                             background:
-                                "linear-gradient(135deg, #ff7759 0%, #ff7759 100%)",
+                                "linear-gradient(135deg, #3a65c7 0%, #3a65c7 100%)",
                             textTransform: "none",
                             fontWeight: 600,
                         }}
@@ -1540,7 +1541,7 @@ export default function SecurityPage() {
                         sx={{
                             background: confirmCfg?.destructive
                                 ? "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)"
-                                : "linear-gradient(135deg, #ff7759 0%, #ff7759 100%)",
+                                : "linear-gradient(135deg, #3a65c7 0%, #3a65c7 100%)",
                             textTransform: "none",
                             fontWeight: 600,
                         }}
@@ -1573,7 +1574,7 @@ export default function SecurityPage() {
                         gap: 1.5,
                     }}
                 >
-                    <MailOutlineIcon sx={{ color: "#ff7759" }} />
+                    <MailOutlineIcon sx={{ color: "var(--accent)" }} />
                     Enable email code
                 </DialogTitle>
                 <DialogContent>
@@ -1616,10 +1617,10 @@ export default function SecurityPage() {
                                     borderColor: "var(--border)",
                                 },
                                 "&:hover fieldset": {
-                                    borderColor: "rgba(255, 119, 89,0.4)",
+                                    borderColor: "rgba(58, 101, 199,0.4)",
                                 },
                                 "&.Mui-focused fieldset": {
-                                    borderColor: "#ff7759",
+                                    borderColor: "#3a65c7",
                                 },
                             },
                         }}
@@ -1667,7 +1668,7 @@ export default function SecurityPage() {
                         variant="contained"
                         sx={{
                             background:
-                                "linear-gradient(135deg, #ff7759 0%, #ff7759 100%)",
+                                "linear-gradient(135deg, #3a65c7 0%, #3a65c7 100%)",
                             textTransform: "none",
                             fontWeight: 600,
                         }}

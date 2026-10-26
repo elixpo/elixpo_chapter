@@ -4,7 +4,7 @@ import { Box, Chip, Typography } from "@mui/material";
 import Link from "next/link";
 import type React from "react";
 
-const CORAL = "#ff7759";
+const CORAL = "var(--orange)";
 const ACTION_BLUE = "var(--action-fg)";
 const INK = "var(--fg)";
 const SLATE = "var(--fg-muted)";
@@ -15,9 +15,9 @@ export function DocTitle({ children }: { children: React.ReactNode }) {
         <Typography
             component="h1"
             sx={{
-                fontWeight: 500,
-                fontSize: "2.2rem",
-                letterSpacing: "-0.03em",
+                fontWeight: 600,
+                fontSize: { xs: "2.3rem", md: "2.9rem" },
+                letterSpacing: "-0.055em",
                 mb: 2,
                 color: "var(--fg)",
                 fontFamily: "var(--font-display)",
@@ -175,7 +175,7 @@ export function Callout({
                 my: 3,
                 p: 2.5,
                 borderRadius: "8px",
-                border: `1px solid ${isWarn ? "rgba(255, 119, 89, 0.25)" : "rgba(24, 99, 220, 0.15)"}`,
+                border: `1px solid ${isWarn ? "rgba(231, 96, 67, 0.25)" : "rgba(24, 99, 220, 0.15)"}`,
                 background: bgColor,
                 borderLeft: `3px solid ${borderColor}`,
             }}

@@ -211,11 +211,13 @@ function GmailHint() {
                 gap: 1.2,
                 p: 1.6,
                 borderRadius: "10px",
-                background: "rgba(95,182,255,0.06)",
-                border: "1px solid rgba(95,182,255,0.22)",
+                background: "rgba(58, 101, 199, 0.06)",
+                border: "1px solid rgba(58, 101, 199, 0.22)",
             }}
         >
-            <InfoOutlinedIcon sx={{ fontSize: 18, color: "#5fb6ff", flexShrink: 0, mt: 0.2 }} />
+            <InfoOutlinedIcon
+                sx={{ fontSize: 18, color: "var(--action-fg)", flexShrink: 0, mt: 0.2 }}
+            />
             <Typography sx={{ fontSize: "0.8rem", color: "var(--fg-muted)", lineHeight: 1.6 }}>
                 For Gmail you need 2-Step Verification enabled, then a 16-character{" "}
                 <MuiLink
@@ -223,9 +225,9 @@ function GmailHint() {
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
-                        color: "#5fb6ff",
+                        color: "var(--action-fg)",
                         fontWeight: 600,
-                        textDecorationColor: "rgba(95,182,255,0.4)",
+                        textDecorationColor: "rgba(58, 101, 199, 0.4)",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 0.3,
@@ -235,7 +237,10 @@ function GmailHint() {
                     <OpenInNewIcon sx={{ fontSize: 13 }} />
                 </MuiLink>{" "}
                 — not your normal account password. The proven default is port 465 / Implicit TLS.{" "}
-                <MuiLink href="/docs/deliverability" sx={{ color: "#5fb6ff", fontWeight: 600 }}>
+                <MuiLink
+                    href="/docs/deliverability"
+                    sx={{ color: "var(--action-fg)", fontWeight: 600 }}
+                >
                     Review the production deliverability checklist
                 </MuiLink>
                 .

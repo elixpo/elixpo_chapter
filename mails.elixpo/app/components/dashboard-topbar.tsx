@@ -41,7 +41,7 @@ interface WorkspaceOption {
 }
 
 const BORDER = "var(--border)";
-const ACCENT = "#ff7759";
+const ACCENT = "var(--accent)";
 
 const MENU_ITEM_SX = {
     fontSize: "0.86rem",
@@ -248,6 +248,7 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                             height: 28,
                             fontSize: "0.85rem",
                             bgcolor: "var(--accent)",
+                            color: "var(--accent-contrast)",
                         }}
                     >
                         {initials(user)}
@@ -325,6 +326,7 @@ export default function DashboardTopbar({ user }: { user: DashboardUser }) {
                                     height: 38,
                                     fontSize: "1rem",
                                     bgcolor: "var(--accent)",
+                                    color: "var(--accent-contrast)",
                                 }}
                             >
                                 {initials(user)}

@@ -7,19 +7,31 @@ import type { NextRequest } from "next/server";
 function page(title: string, body: string, status = 200): Response {
     const html = `<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title}</title>
+<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">
+<title>${title} · Elixpo Mails</title>
 <style>
-  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#0b0d12;
-         font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:#e7e5e4; }
-  .card { max-width:440px; width:90%; padding:36px 32px; background:#15161c; border:1px solid rgba(255,255,255,0.08);
-          border-radius:16px; text-align:center; }
-  h1 { font-size:1.25rem; margin:0 0 10px; color:#f5f5f4; }
-  p { color:rgba(245,245,244,0.6); font-size:0.95rem; line-height:1.6; margin:0 0 22px; }
-  button { font:inherit; font-weight:700; color:#fff; border:0; cursor:pointer; padding:12px 26px; border-radius:11px;
-           background:linear-gradient(135deg,#9b7bf7,#7c5cff); }
-  .muted { color:rgba(245,245,244,0.4); font-size:0.82rem; margin-top:18px; }
-</style></head><body><div class="card">${body}</div></body></html>`;
-    return new Response(html, { status, headers: { "content-type": "text/html; charset=utf-8" } });
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#fbfbf8;
+         font-family:Arial,Helvetica,sans-serif; color:#142018; }
+  .card { max-width:460px; width:calc(100% - 32px); box-sizing:border-box; padding:36px 32px; background:#fff;
+          border:1px solid #d7dbd6; border-radius:1.4rem; text-align:left; box-shadow:0 18px 48px rgba(20,32,24,.09); }
+  .eyebrow { margin:0 0 14px; color:#3a65c7; font:700 .68rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+             letter-spacing:.19em; text-transform:uppercase; }
+  h1 { font-size:2.3rem; font-weight:600; line-height:.98; letter-spacing:-.055em; margin:0 0 14px; }
+  p { color:#5f6962; font-size:0.95rem; line-height:1.65; margin:0 0 22px; }
+  strong { color:#142018; }
+  button { font:inherit; font-size:.85rem; font-weight:700; color:#fff; border:0; cursor:pointer; padding:13px 24px;
+           border-radius:999px; background:#142018; }
+  button:hover { opacity:.82; }
+  .muted { color:#7e8680; font-size:0.8rem; margin-top:18px; }
+</style></head><body><main class="card"><p class="eyebrow">Elixpo Mails</p>${body}</main></body></html>`;
+    return new Response(html, {
+        status,
+        headers: {
+            "content-type": "text/html; charset=utf-8",
+            "x-robots-tag": "noindex, nofollow",
+            "cache-control": "no-store",
+        },
+    });
 }
 
 /** GET /u/:token — confirmation page with a one-click Unsubscribe button. */

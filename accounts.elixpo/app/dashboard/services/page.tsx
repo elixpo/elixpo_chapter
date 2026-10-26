@@ -250,8 +250,8 @@ const ServicesPage = () => {
                         textTransform: "none",
                         fontWeight: 600,
                     },
-                    "& .Mui-selected": { color: "#ff7759" },
-                    "& .MuiTabs-indicator": { backgroundColor: "#ff7759" },
+                    "& .Mui-selected": { color: "var(--accent)" },
+                    "& .MuiTabs-indicator": { backgroundColor: "#3a65c7" },
                 }}
             >
                 <Tab value="confidential" label="Web Application" />
@@ -260,7 +260,7 @@ const ServicesPage = () => {
 
             {loading ? (
                 <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-                    <CircularProgress sx={{ color: "#ff7759" }} />
+                    <CircularProgress sx={{ color: "var(--accent)" }} />
                 </Box>
             ) : services.length === 0 ? (
                 <Box
@@ -354,12 +354,12 @@ const ServicesPage = () => {
                                         "border-color 0.2s, background-color 0.2s, transform 0.2s",
                                     cursor: "pointer",
                                     "&:hover": {
-                                        borderColor: "rgba(255, 119, 89,0.45)",
-                                        bgcolor: "rgba(255, 119, 89,0.04)",
+                                        borderColor: "rgba(58, 101, 199,0.45)",
+                                        bgcolor: "rgba(58, 101, 199,0.04)",
                                         transform: "translateY(-1px)",
                                     },
                                     "&:focus-visible": {
-                                        outline: "2px solid #ff7759",
+                                        outline: "2px solid #3a65c7",
                                         outlineOffset: 2,
                                     },
                                     display: "flex",
@@ -404,7 +404,7 @@ const ServicesPage = () => {
                                                     alignItems: "center",
                                                     gap: 0.5,
                                                     "&:hover": {
-                                                        color: "#ff7759",
+                                                        color: "var(--accent)",
                                                     },
                                                 }}
                                             >

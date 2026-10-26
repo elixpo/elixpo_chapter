@@ -42,9 +42,11 @@ jobs:
         shell: bash
         env:
           ONLY: ${{ inputs.only }}
+          # Set the CRUMB_EVAL_MAX_TOKENS repository variable to change the cap.
+          MAX_TOKENS: ${{ vars.CRUMB_EVAL_MAX_TOKENS || '600000' }}
         run: |
           # shellcheck disable=SC2086
-          python3 evals/run.py --crumb target/release/crumb ${ONLY:+--only $ONLY} | tee evals/summary.txt
+          python3 evals/run.py --crumb target/release/crumb --max-total-tokens "$MAX_TOKENS" ${ONLY:+--only $ONLY} | tee evals/summary.txt
       - name: Summary
         if: always()
         run: |

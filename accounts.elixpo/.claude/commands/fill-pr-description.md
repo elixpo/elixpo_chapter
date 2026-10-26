@@ -19,7 +19,7 @@ Generate a PR description from the diff. Triggered when a whitelisted author put
    - Skip lockfiles, generated files, and formatting-only noise.
 
 3. **Pick the checklist items** relevant to this diff. Only include items that actually apply:
-   - `- [ ] \`export const runtime = 'edge'\` on any new API route` — only if a new `app/api/**/route.ts` was added.
+   - `- [ ] \`export const runtime = 'edge'\` on any new API route`— only if a new`app/api/**/route.ts` was added.
    - `- [ ] No Node built-ins imported (crypto, fs, path, stream, Buffer)` — only if `src/` code changed.
    - `- [ ] New DB columns/tables have a migration in \`src/workers/migrations/\`` — only if D1 / schema changed.
    - `- [ ] Rate-limit middleware on new public auth endpoints` — only if a new `app/api/auth/**` route was added.

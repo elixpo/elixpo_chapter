@@ -33,22 +33,22 @@ const methodMeta: Record<
 > = {
     passkey: {
         label: "Use passkey",
-        icon: <KeyIcon sx={{ color: "#ff7759" }} />,
+        icon: <KeyIcon sx={{ color: "var(--accent)" }} />,
         hint: "Touch ID, security key, or another passkey-capable device.",
     },
     totp: {
         label: "Use authenticator app",
-        icon: <PhoneAndroidIcon sx={{ color: "#ff7759" }} />,
+        icon: <PhoneAndroidIcon sx={{ color: "var(--accent)" }} />,
         hint: "Enter the 6-digit code from your authenticator.",
     },
     email_otp: {
         label: "Use email code",
-        icon: <MailOutlineIcon sx={{ color: "#ff7759" }} />,
+        icon: <MailOutlineIcon sx={{ color: "var(--accent)" }} />,
         hint: "We'll send a code to your registered email.",
     },
     backup_code: {
         label: "Use backup code",
-        icon: <SecurityIcon sx={{ color: "#ff7759" }} />,
+        icon: <SecurityIcon sx={{ color: "var(--accent)" }} />,
         hint: "One of the codes you saved when you enabled 2FA.",
     },
 };
@@ -130,7 +130,7 @@ function ChallengeInner() {
                 <Typography sx={{ color: "#b91c1c" }}>
                     Missing challenge token.
                 </Typography>
-                <Button href="/login" sx={{ mt: 2, color: "#ff7759" }}>
+                <Button href="/login" sx={{ mt: 2, color: "var(--accent)" }}>
                     Back to sign in
                 </Button>
             </Box>
@@ -268,7 +268,7 @@ function ChallengeInner() {
                 <VerifiedBrandBanner branding={branding} />
                 <Box sx={{ textAlign: "center", mb: 3 }}>
                     <SecurityIcon
-                        sx={{ color: "#ff7759", fontSize: 36, mb: 1 }}
+                        sx={{ color: "var(--accent)", fontSize: 36, mb: 1 }}
                     />
                     <Typography
                         variant="h5"
@@ -311,14 +311,14 @@ function ChallengeInner() {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1.5,
-                                border: `1px solid ${selected === m ? "rgba(255, 119, 89,0.5)" : "var(--border)"}`,
+                                border: `1px solid ${selected === m ? "rgba(58, 101, 199,0.5)" : "var(--border)"}`,
                                 bgcolor:
                                     selected === m
-                                        ? "rgba(255, 119, 89,0.08)"
+                                        ? "rgba(58, 101, 199,0.08)"
                                         : "transparent",
                                 transition: "all 0.15s",
                                 "&:hover": {
-                                    borderColor: "rgba(255, 119, 89,0.4)",
+                                    borderColor: "rgba(58, 101, 199,0.4)",
                                 },
                             }}
                         >
@@ -361,13 +361,13 @@ function ChallengeInner() {
                         disabled={busy}
                         startIcon={<KeyIcon />}
                         sx={{
-                            background: "#ff7759",
+                            background: "#3a65c7",
                             color: "#fff",
                             textTransform: "none",
                             py: 1.2,
                             fontWeight: 600,
                             "&:hover": {
-                                background: "rgba(255, 119, 89, 0.9)",
+                                background: "rgba(58, 101, 199, 0.9)",
                             },
                         }}
                     >
@@ -381,8 +381,8 @@ function ChallengeInner() {
                             onClick={sendEmailOtp}
                             disabled={busy}
                             sx={{
-                                color: "#ff7759",
-                                borderColor: "rgba(255, 119, 89,0.4)",
+                                color: "var(--accent)",
+                                borderColor: "rgba(58, 101, 199,0.4)",
                                 textTransform: "none",
                                 py: 1.2,
                             }}
@@ -420,10 +420,10 @@ function ChallengeInner() {
                                         },
                                         "&:hover fieldset": {
                                             borderColor:
-                                                "rgba(255, 119, 89,0.4)",
+                                                "rgba(58, 101, 199,0.4)",
                                         },
                                         "&.Mui-focused fieldset": {
-                                            borderColor: "#ff7759",
+                                            borderColor: "#3a65c7",
                                         },
                                     },
                                 }}
@@ -434,13 +434,13 @@ function ChallengeInner() {
                                 onClick={submitCode}
                                 disabled={busy || code.length !== 6}
                                 sx={{
-                                    background: "#ff7759",
+                                    background: "#3a65c7",
                                     color: "#fff",
                                     textTransform: "none",
                                     py: 1.2,
                                     fontWeight: 600,
                                     "&:hover": {
-                                        background: "rgba(255, 119, 89, 0.9)",
+                                        background: "rgba(58, 101, 199, 0.9)",
                                     },
                                 }}
                             >
@@ -488,10 +488,10 @@ function ChallengeInner() {
                                         borderColor: "var(--border)",
                                     },
                                     "&:hover fieldset": {
-                                        borderColor: "rgba(255, 119, 89,0.4)",
+                                        borderColor: "rgba(58, 101, 199,0.4)",
                                     },
                                     "&.Mui-focused fieldset": {
-                                        borderColor: "#ff7759",
+                                        borderColor: "#3a65c7",
                                     },
                                 },
                             }}
@@ -502,13 +502,13 @@ function ChallengeInner() {
                             onClick={submitCode}
                             disabled={busy || code.length < 6}
                             sx={{
-                                background: "#ff7759",
+                                background: "#3a65c7",
                                 color: "#fff",
                                 textTransform: "none",
                                 py: 1.2,
                                 fontWeight: 600,
                                 "&:hover": {
-                                    background: "rgba(255, 119, 89, 0.9)",
+                                    background: "rgba(58, 101, 199, 0.9)",
                                 },
                             }}
                         >
@@ -559,7 +559,7 @@ function ChallengeInner() {
                                 }
                                 sx={{
                                     color: "var(--fg-faint)",
-                                    "&.Mui-checked": { color: "#ff7759" },
+                                    "&.Mui-checked": { color: "var(--accent)" },
                                 }}
                             />
                         }
@@ -580,7 +580,7 @@ export default function MfaChallengePage() {
         <Suspense
             fallback={
                 <Box sx={{ display: "flex", justifyContent: "center", p: 8 }}>
-                    <CircularProgress sx={{ color: "#ff7759" }} />
+                    <CircularProgress sx={{ color: "var(--accent)" }} />
                 </Box>
             }
         >

@@ -6,10 +6,12 @@ fresh temporary workspace through `crumb exec --json`, then grades the
 outcome only by checks: files and their content, commands that must
 succeed, text the answer must contain, files that must not appear, and a
 token budget. Scenarios call the configured model provider (Pollinations by
-default) with your credential, so a run spends real tokens.
+default) with your credential, so a run spends real tokens; once the run has
+spent --max-total-tokens, the remaining scenarios are skipped and fail.
 
 Usage:
     python3 evals/run.py [--crumb PATH] [--only NAME ...] [--timeout SECONDS]
+                         [--max-total-tokens N]
 
 Writes evals/results/<timestamp>.json and prints a summary table.
 """
@@ -137,6 +139,9 @@ def main() -> int:
     parser.add_argument("--crumb", default=str(built) if built.exists() else shutil.which("crumb"))
     parser.add_argument("--only", nargs="*", default=[])
     parser.add_argument("--timeout", type=int, default=600)
+    # A full run uses about 430k tokens; this stops a misbehaving model from
+    # draining the credential.
+    parser.add_argument("--max-total-tokens", type=int, default=600_000)
     parser.add_argument("--keep", action="store_true", help="keep workspaces for inspection")
     arguments = parser.parse_args()
     arguments.crumb = str(Path(arguments.crumb).resolve())
@@ -148,6 +153,12 @@ def main() -> int:
         scenarios = [path for path in scenarios if path.stem in arguments.only]
     results = []
     for path in scenarios:
+        spent = sum(result["tokens"] for result in results)
+        if spent >= arguments.max_total_tokens:
+            failure = f"skipped: run budget of {arguments.max_total_tokens} tokens spent"
+            results.append({"scenario": path.stem, "passed": False, "failures": [failure], "tokens": 0})
+            print(f"SKIP  {path.stem:<28} {failure}", flush=True)
+            continue
         scenario = json.loads(path.read_text())
         folder = Path(tempfile.mkdtemp(prefix=f"crumb-eval-{path.stem}-"))
         try:

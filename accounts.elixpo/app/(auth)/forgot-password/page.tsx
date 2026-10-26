@@ -21,7 +21,7 @@ const textFieldSx = {
         background: "transparent",
         "& fieldset": { borderColor: "var(--border)" },
         "&:hover fieldset": { borderColor: "var(--border)" },
-        "&.Mui-focused fieldset": { borderColor: "#ff7759" },
+        "&.Mui-focused fieldset": { borderColor: "#3a65c7" },
         "& input:-webkit-autofill": {
             WebkitBoxShadow: "0 0 0 1000px transparent inset !important",
             WebkitTextFillColor: "var(--fg) !important",
@@ -38,21 +38,21 @@ const textFieldSx = {
     },
     "& .MuiInputBase-input::placeholder": { color: "transparent", opacity: 0 },
     "& .MuiInputLabel-root": { color: "var(--fg-muted)" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#ff7759" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "var(--accent)" },
 };
 
 const btnSx = {
     my: 2,
-    background: "#ff7759",
+    background: "#3a65c7",
     color: "#fff",
-    border: "1px solid #ff7759",
+    border: "1px solid #3a65c7",
     fontWeight: 600,
     py: 1.2,
     textTransform: "none",
     fontSize: "1rem",
     "&:hover": {
-        background: "rgba(255, 119, 89, 0.9)",
-        borderColor: "rgba(255, 119, 89, 0.9)",
+        background: "rgba(58, 101, 199, 0.9)",
+        borderColor: "rgba(58, 101, 199, 0.9)",
     },
     "&:disabled": {
         color: "var(--fg-faint)",
@@ -230,7 +230,7 @@ function ForgotPasswordContent() {
                     background: "transparent",
                 }}
             >
-                <CircularProgress sx={{ color: "#ff7759" }} />
+                <CircularProgress sx={{ color: "var(--accent)" }} />
             </Box>
         );
     }
@@ -365,7 +365,7 @@ function ForgotPasswordContent() {
                                 onClick={handleResendOtp}
                                 sx={{
                                     textTransform: "none",
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     "&:hover": { background: "transparent" },
                                     "&:disabled": {
                                         color: "var(--fg-faint)",
@@ -471,7 +471,7 @@ function ForgotPasswordContent() {
                                     : "/login"
                             }
                             style={{
-                                color: "#ff7759",
+                                color: "var(--accent)",
                                 textDecoration: "none",
                                 fontWeight: 600,
                             }}
@@ -498,7 +498,7 @@ export default function ForgotPasswordPage() {
                         background: "transparent",
                     }}
                 >
-                    <CircularProgress sx={{ color: "#ff7759" }} />
+                    <CircularProgress sx={{ color: "var(--accent)" }} />
                 </Box>
             }
         >

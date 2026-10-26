@@ -404,8 +404,8 @@ export default function TemplateTestDialog({
                                         px: 1.6,
                                         py: 1.2,
                                         borderRadius: "10px",
-                                        background: "rgba(95,182,255,0.06)",
-                                        border: "1px solid rgba(95,182,255,0.22)",
+                                        background: "rgba(58, 101, 199, 0.06)",
+                                        border: "1px solid rgba(58, 101, 199, 0.22)",
                                     }}
                                 >
                                     <Typography
@@ -420,9 +420,9 @@ export default function TemplateTestDialog({
                                             component={NextLink}
                                             href="/dashboard/senders"
                                             sx={{
-                                                color: "#5fb6ff",
+                                                color: "var(--action-fg)",
                                                 fontWeight: 600,
-                                                textDecorationColor: "rgba(95,182,255,0.4)",
+                                                textDecorationColor: "rgba(58, 101, 199, 0.4)",
                                             }}
                                         >
                                             Connect a sender first

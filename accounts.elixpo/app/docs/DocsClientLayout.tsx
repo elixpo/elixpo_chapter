@@ -283,7 +283,7 @@ export default function DocsClientLayout({
                     placeholder="Search docs..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-[var(--border)] bg-[var(--surface)] rounded-xl text-sm font-medium focus:outline-none focus:border-[#ff7759] focus:ring-1 focus:ring-[#ff7759]"
+                    className="w-full pl-10 pr-4 py-2 border border-[var(--border)] bg-[var(--surface)] rounded-xl text-sm font-medium focus:outline-none focus:border-[#3a65c7] focus:ring-1 focus:ring-[#3a65c7]"
                 />
             </div>
 
@@ -298,7 +298,7 @@ export default function DocsClientLayout({
                             onClick={() => setMobileOpen(false)}
                             className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold tracking-wide transition-all ${
                                 active
-                                    ? "bg-[#ff7759]/10 text-[#ff7759]"
+                                    ? "bg-[#3a65c7]/10 text-[var(--accent)]"
                                     : "text-[var(--fg-muted)] hover:bg-[var(--overlay)] hover:text-[var(--fg)]"
                             }`}
                         >
@@ -320,7 +320,7 @@ export default function DocsClientLayout({
                                     onClick={() => setMobileOpen(false)}
                                     className={`flex items-center px-4 py-2 rounded-xl text-sm font-semibold tracking-wide transition-all ${
                                         active
-                                            ? "bg-[#ff7759]/10 text-[#ff7759]"
+                                            ? "bg-[#3a65c7]/10 text-[var(--accent)]"
                                             : "text-[var(--fg-muted)] hover:bg-[var(--overlay)] hover:text-[var(--fg)]"
                                     }`}
                                 >
@@ -341,7 +341,7 @@ export default function DocsClientLayout({
     );
 
     return (
-        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#ff7759] selection:text-white flex flex-col overflow-x-hidden">
+        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#3a65c7] selection:text-white flex flex-col overflow-x-hidden">
             <style>{`
                 .font-heading { font-family: var(--font-heading), sans-serif; }
                 .font-body { font-family: var(--font-body), sans-serif; }
@@ -391,7 +391,7 @@ export default function DocsClientLayout({
                     padding: 0.15rem 0.4rem;
                     border-radius: 6px;
                     font-size: 0.9em;
-                    font-family: var(--font-geist-mono), monospace;
+                    font-family: var(--font-code), monospace;
                 }
                 #docs-content pre {
                     background: var(--surface-2);
@@ -410,19 +410,19 @@ export default function DocsClientLayout({
                     font-size: 0.88em;
                 }
                 #docs-content a {
-                    color: #ff7759;
+                    color: #3a65c7;
                     font-weight: 650;
                     text-decoration: underline;
-                    text-decoration-color: rgba(255, 119, 89, 0.35);
+                    text-decoration-color: rgba(58, 101, 199, 0.35);
                     text-underline-offset: 3px;
                 }
                 #docs-content a:hover {
-                    text-decoration-color: #ff7759;
+                    text-decoration-color: #3a65c7;
                 }
             `}</style>
 
             {/* Header / Navbar */}
-            <header className="border-b border-[var(--border)] bg-[var(--surface)]/75 backdrop-blur-md sticky top-0 z-40 w-full text-[var(--fg)]">
+            <header className="border-b border-[var(--border)] bg-[var(--header-bg)] backdrop-blur-[18px] sticky top-0 z-40 w-full text-[var(--fg)]">
                 <div className="max-w-[1400px] w-full mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Mobile Menu Icon */}
@@ -441,12 +441,16 @@ export default function DocsClientLayout({
                         >
                             <img
                                 src="/LOGO/logo.png"
-                                alt="Elixpo Mascot"
-                                className="w-7.5 h-7.5 rounded-lg object-contain bg-[var(--surface)]/80 p-0.5"
+                                alt=""
+                                width={32}
+                                height={32}
+                                className="h-8 w-8 object-contain"
                             />
-                            <span className="font-heading text-lg font-bold tracking-tight">
-                                Elixpo{" "}
-                                <span className="text-[#ff7759]">Accounts</span>
+                            <span className="flex items-baseline gap-[0.45rem]">
+                                <b className="text-base">Elixpo</b>
+                                <small className="text-[0.72rem] text-[var(--muted)]">
+                                    Accounts Docs
+                                </small>
                             </span>
                         </Link>
                     </div>
@@ -456,7 +460,7 @@ export default function DocsClientLayout({
                         {/* Copy for LLM */}
                         <button
                             onClick={handleCopyForLlm}
-                            className="flex items-center gap-2 border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--overlay)] px-3 py-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all shadow-sm active:scale-[0.98]"
+                            className="flex items-center gap-2 border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--fg)] px-3.5 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.98]"
                         >
                             {copied ? (
                                 <>
@@ -476,7 +480,7 @@ export default function DocsClientLayout({
                         {/* Dashboard Link */}
                         <Link
                             href="/dashboard/oauth-apps"
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-[var(--overlay)] transition-colors text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[var(--cta-bg)] text-[var(--cta-fg)] transition-opacity hover:opacity-85"
                         >
                             <LayoutDashboard className="w-3.5 h-3.5" />
                             <span>Dashboard</span>
@@ -487,7 +491,7 @@ export default function DocsClientLayout({
                             href="https://github.com/elixpo/accounts.elixpo"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--overlay)] rounded-xl transition-all active:scale-[0.96] text-[var(--fg)]"
+                            className="p-2 border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--fg)] rounded-full transition-all active:scale-[0.96] text-[var(--fg)]"
                             aria-label="View on GitHub"
                         >
                             <Github className="w-4 h-4" />
@@ -513,7 +517,7 @@ export default function DocsClientLayout({
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setMobileOpen(false)}
-                                className="fixed inset-0 bg-[#192837]/35 backdrop-blur-[4px] z-50 pointer-events-auto"
+                                className="fixed inset-0 bg-[#142018]/35 backdrop-blur-[4px] z-50 pointer-events-auto"
                             />
                             {/* Drawer Sheet */}
                             <motion.div
@@ -524,7 +528,7 @@ export default function DocsClientLayout({
                                     ease: [0.22, 1, 0.36, 1] as const,
                                     duration: 0.45,
                                 }}
-                                className="fixed left-0 top-0 w-[min(88vw,280px)] h-[100dvh] bg-[var(--surface)] shadow-[12px_0_48px_rgba(25,40,55,0.18)] z-50 flex flex-col p-6 text-[var(--fg)]"
+                                className="fixed left-0 top-0 w-[min(88vw,280px)] h-[100dvh] bg-[var(--surface)] shadow-[12px_0_48px_rgba(20,32,24,0.18)] z-50 flex flex-col p-6 text-[var(--fg)]"
                             >
                                 <div className="flex items-center justify-between pb-4 border-b border-[var(--border)] mb-6">
                                     <div className="flex items-center gap-2">
@@ -569,7 +573,7 @@ export default function DocsClientLayout({
                             {prevPage ? (
                                 <Link
                                     href={prevPage.href}
-                                    className="flex items-center gap-2 border border-[#ff7759]/25 hover:border-[#ff7759] bg-[var(--surface)] hover:bg-[#ff7759]/5 text-[#ff7759] px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
+                                    className="flex items-center gap-2 border border-[#3a65c7]/25 hover:border-[#3a65c7] bg-[var(--surface)] hover:bg-[#3a65c7]/5 text-[var(--accent)] px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
                                     <span>{prevPage.label}</span>
@@ -581,7 +585,7 @@ export default function DocsClientLayout({
                             {nextPage ? (
                                 <Link
                                     href={nextPage.href}
-                                    className="flex items-center gap-2 border border-[#ff7759]/25 hover:border-[#ff7759] bg-[var(--surface)] hover:bg-[#ff7759]/5 text-[#ff7759] px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
+                                    className="flex items-center gap-2 border border-[#3a65c7]/25 hover:border-[#3a65c7] bg-[var(--surface)] hover:bg-[#3a65c7]/5 text-[var(--accent)] px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
                                 >
                                     <span>{nextPage.label}</span>
                                     <ArrowRight className="w-4 h-4" />
@@ -612,7 +616,7 @@ export default function DocsClientLayout({
                                         href={`#${h.id}`}
                                         className={`transition-colors hover:text-[var(--fg)] ${
                                             activeHeadingId === h.id
-                                                ? "text-[#ff7759] font-bold"
+                                                ? "text-[var(--accent)] font-bold"
                                                 : "text-[var(--fg-faint)]"
                                         }`}
                                     >

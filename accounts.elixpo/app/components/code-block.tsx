@@ -48,7 +48,7 @@ export default function CodeBlock({ code, language }: CodeBlockProps) {
                         position: "absolute",
                         top: 8,
                         right: 8,
-                        color: copied ? "#ff7759" : "var(--fg-faint)",
+                        color: copied ? "#3a65c7" : "var(--fg-faint)",
                         bgcolor: "var(--overlay)",
                         opacity: { xs: 1, md: 0 },
                         transition: "all 0.2s ease",
@@ -69,7 +69,7 @@ export default function CodeBlock({ code, language }: CodeBlockProps) {
                 component="pre"
                 sx={{
                     margin: 0,
-                    fontFamily: "var(--font-geist-mono), monospace",
+                    fontFamily: "var(--font-code), monospace",
                     fontSize: "0.82rem",
                     color: "var(--fg)",
                     overflowX: "auto",

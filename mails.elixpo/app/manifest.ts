@@ -6,10 +6,12 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Elixpo Mails",
         description:
             "Bring your own sender, design templates with {{variables}}, and trigger transactional email via webhook on Cloudflare's edge.",
-        start_url: "/",
+        id: "/",
+        start_url: "/dashboard",
+        scope: "/",
         display: "standalone",
-        background_color: "#0b0d12",
-        theme_color: "#0b0d12",
+        background_color: "#fbfbf8",
+        theme_color: "#fbfbf8",
         categories: ["business", "productivity", "developer"],
         icons: [
             { src: "/icon.png", sizes: "256x256", type: "image/png" },

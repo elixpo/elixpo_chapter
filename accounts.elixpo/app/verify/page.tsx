@@ -102,7 +102,9 @@ function VerifyContent() {
             >
                 {status === "loading" && (
                     <>
-                        <CircularProgress sx={{ color: "#ff7759", mb: 2 }} />
+                        <CircularProgress
+                            sx={{ color: "var(--accent)", mb: 2 }}
+                        />
                         <Typography
                             sx={{ color: "#f5f5f4", fontSize: "1.1rem" }}
                         >
@@ -116,7 +118,11 @@ function VerifyContent() {
                         <Box sx={{ fontSize: "3rem", mb: 1 }}>&#10003;</Box>
                         <Typography
                             variant="h5"
-                            sx={{ fontWeight: 700, color: "#ff7759", mb: 1 }}
+                            sx={{
+                                fontWeight: 700,
+                                color: "var(--accent)",
+                                mb: 1,
+                            }}
                         >
                             Verified
                         </Typography>
@@ -136,12 +142,12 @@ function VerifyContent() {
                         <Button
                             href="/dashboard/oauth-apps"
                             sx={{
-                                color: "#ff7759",
-                                border: "1px solid rgba(255, 119, 89, 0.3)",
+                                color: "var(--accent)",
+                                border: "1px solid rgba(58, 101, 199, 0.3)",
                                 textTransform: "none",
                                 fontWeight: 600,
                                 "&:hover": {
-                                    background: "rgba(255, 119, 89, 0.1)",
+                                    background: "rgba(58, 101, 199, 0.1)",
                                 },
                             }}
                         >
@@ -167,12 +173,12 @@ function VerifyContent() {
                         <Button
                             href="/login"
                             sx={{
-                                color: "#ff7759",
-                                border: "1px solid rgba(255, 119, 89, 0.3)",
+                                color: "var(--accent)",
+                                border: "1px solid rgba(58, 101, 199, 0.3)",
                                 textTransform: "none",
                                 fontWeight: 600,
                                 "&:hover": {
-                                    background: "rgba(255, 119, 89, 0.1)",
+                                    background: "rgba(58, 101, 199, 0.1)",
                                 },
                             }}
                         >
@@ -198,7 +204,7 @@ export default function VerifyPage() {
                         bgcolor: "var(--bg)",
                     }}
                 >
-                    <CircularProgress sx={{ color: "#ff7759" }} />
+                    <CircularProgress sx={{ color: "var(--accent)" }} />
                 </Box>
             }
         >

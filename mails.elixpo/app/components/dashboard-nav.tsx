@@ -12,7 +12,7 @@ import { Box, Stack } from "@mui/material";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const ACCENT = "#ff7759"; // Coral
+const ACCENT = "var(--accent)"; // Coral
 
 export interface NavItem {
     label: string;

@@ -1,6 +1,5 @@
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, jsonLd } from "@/lib/seo";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import BackgroundAurora from "./components/background-aurora";
 import { THEME_BOOT_SCRIPT, ThemeProvider } from "./components/theme-provider";
 import "./globals.css";
@@ -17,20 +16,10 @@ const OG_IMAGE = {
 export const viewport: Viewport = {
     themeColor: [
         { media: "(prefers-color-scheme: light)", color: "#fbfbf8" },
-        { media: "(prefers-color-scheme: dark)", color: "#0b0d12" },
+        { media: "(prefers-color-scheme: dark)", color: "#0f1712" },
     ],
     colorScheme: "light dark",
 };
-
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
     title: {
@@ -82,7 +71,7 @@ export const metadata: Metadata = {
             "The transactional email layer for modern software — bring your own sender, design on-brand templates with live preview, and send via signed webhook.",
         images: [OG_IMAGE.url],
     },
-    appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "black-translucent" },
+    appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
     icons: {
         // Served as static assets from public/. Kept out of app/ so
         // @cloudflare/next-on-pages doesn't turn each into an edge route.
@@ -159,7 +148,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
                 />
             </head>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <body className="antialiased">
                 <script
                     type="application/ld+json"
                     // eslint-disable-next-line react/no-danger

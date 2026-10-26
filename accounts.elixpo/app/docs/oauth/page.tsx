@@ -78,7 +78,7 @@ export default function OAuthPage() {
                 directly or use the{" "}
                 <Link
                     href="/docs/lixaccounts"
-                    style={{ color: "#ff7759", fontWeight: 700 }}
+                    style={{ color: "var(--accent)", fontWeight: 700 }}
                 >
                     @elixpo/accounts SDK
                 </Link>{" "}
@@ -116,7 +116,7 @@ export default function OAuthPage() {
                 sx={{
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    color: "#ff7759",
+                    color: "var(--accent)",
                     mt: 3,
                     mb: 2,
                 }}
@@ -329,7 +329,7 @@ export default function OAuthPage() {
                     color: "var(--fg-muted)",
                     mb: 1,
                     pl: 2,
-                    borderLeft: "2px solid #ff7759",
+                    borderLeft: "2px solid #3a65c7",
                 }}
             >
                 <strong>Approved:</strong>{" "}

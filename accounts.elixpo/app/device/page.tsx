@@ -102,6 +102,9 @@ function DeviceVerificationContent() {
     const [account, setAccount] = useState<ConsentAccount | null>(null);
     const [accounts, setAccounts] = useState<ConsentAccount[]>([]);
     const [isSwitching, setIsSwitching] = useState(false);
+    const [pendingAccountId, setPendingAccountId] = useState<string | null>(
+        null,
+    );
     const autoLookupCode = useRef<string | null>(null);
 
     const doLookup = useCallback(
@@ -187,16 +190,20 @@ function DeviceVerificationContent() {
     async function switchAccount(userId: string) {
         if (userId === account?.id || isSwitching) return;
         setIsSwitching(true);
+        setPendingAccountId(userId);
         const response = await fetch("/api/auth/accounts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId }),
-        });
-        if (response.ok) {
-            window.location.reload();
+        }).catch(() => null);
+        if (response?.ok) {
+            // Keep the overlay up through navigation; the code is carried in
+            // the URL so the request is looked up again for the new account.
+            window.location.assign(currentUrlForNext(userCode.trim()));
             return;
         }
         setIsSwitching(false);
+        setPendingAccountId(null);
         setView({
             phase: "error",
             message: "Unable to switch accounts. Please try again.",
@@ -272,18 +279,64 @@ function DeviceVerificationContent() {
             : null;
 
     return (
-        <main
-            className="min-h-screen flex items-center justify-center bg-[var(--bg)] px-6 py-12"
-            style={{
-                backgroundImage: `radial-gradient(circle at 15% 18%, color-mix(in srgb, ${activeBrand?.branding_primary_color || "#ff7759"} 16%, transparent), transparent 38%), radial-gradient(circle at 86% 82%, color-mix(in srgb, ${activeBrand?.branding_accent_color || activeBrand?.branding_primary_color || "#ff9b85"} 14%, transparent), transparent 42%)`,
-            }}
-        >
-            <div
-                className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl"
+        <main className="relative min-h-screen flex items-center justify-center bg-[var(--bg)] px-4 py-12 overflow-hidden">
+            <span
+                aria-hidden="true"
+                className="orbit"
                 style={{
-                    borderTop: `4px solid ${activeBrand?.branding_primary_color || "#ff7759"}`,
+                    width: 460,
+                    height: 460,
+                    right: -160,
+                    top: -120,
+                    ["--dot" as string]:
+                        activeBrand?.branding_primary_color || "#3f7cec",
+                }}
+            />
+            <span
+                aria-hidden="true"
+                className="orbit"
+                style={{
+                    width: 260,
+                    height: 260,
+                    left: -110,
+                    bottom: -110,
+                    ["--dot" as string]: "#e76043",
+                }}
+            />
+            <div
+                className="relative z-[1] w-full max-w-md overflow-hidden rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface)] p-7 shadow-[0_24px_60px_rgba(20,32,24,0.08)]"
+                style={{
+                    borderTop: `4px solid ${activeBrand?.branding_primary_color || "var(--accent)"}`,
                 }}
             >
+                {pendingAccountId &&
+                    (() => {
+                        const target = accounts.find(
+                            (candidate) => candidate.id === pendingAccountId,
+                        );
+                        return (
+                            <div
+                                className="consent-overlay"
+                                role="status"
+                                aria-live="polite"
+                            >
+                                <div className="spinner" />
+                                <div>
+                                    <strong>
+                                        Switching to{" "}
+                                        {target?.displayName ||
+                                            target?.email ||
+                                            "account"}
+                                    </strong>
+                                    <span>
+                                        Loading this request for the selected
+                                        account…
+                                    </span>
+                                </div>
+                                <div className="consent-progress" />
+                            </div>
+                        );
+                    })()}
                 {view.phase === "entering" || view.phase === "loading" ? (
                     <>
                         <p className="text-xs font-mono uppercase tracking-wide text-[var(--fg-faint)] mb-2">
@@ -316,7 +369,7 @@ function DeviceVerificationContent() {
                                     view.phase === "loading" ||
                                     userCode.trim().length === 0
                                 }
-                                className="mt-4 w-full rounded-lg bg-[var(--accent)] py-3 font-semibold text-[var(--accent-contrast)] disabled:opacity-50"
+                                className="mt-4 w-full rounded-full bg-[var(--cta-bg)] py-3 font-bold text-[var(--cta-fg)] disabled:opacity-50"
                             >
                                 {view.phase === "loading"
                                     ? "Checking…"
@@ -392,6 +445,7 @@ function DeviceVerificationContent() {
                                 account={account}
                                 accounts={accounts}
                                 disabled={isSwitching}
+                                pendingId={pendingAccountId}
                                 onSwitch={switchAccount}
                                 addHref={`/login?add_account=1&next=${encodeURIComponent(currentUrlForNext(userCode))}`}
                             />
@@ -401,14 +455,17 @@ function DeviceVerificationContent() {
                             scopes={view.details.scopes || []}
                             customScopes={view.details.custom_scopes || []}
                             accentColor={
-                                view.details.branding_primary_color || "#ff7759"
+                                view.details.is_branding_verified
+                                    ? view.details.branding_primary_color ||
+                                      undefined
+                                    : undefined
                             }
                         />
 
                         <div className="mt-6 flex flex-col gap-3">
                             <button
                                 onClick={() => resolve("approve")}
-                                className="w-full rounded-lg bg-[var(--accent)] py-3 font-semibold text-[var(--accent-contrast)]"
+                                className="w-full rounded-full bg-[var(--cta-bg)] py-3 font-bold text-[var(--cta-fg)]"
                                 style={
                                     view.details.is_branding_verified &&
                                     view.details.branding_primary_color
@@ -428,7 +485,7 @@ function DeviceVerificationContent() {
                             </button>
                             <button
                                 onClick={() => resolve("deny")}
-                                className="w-full rounded-lg border border-[var(--border)] py-3 font-semibold text-red-500"
+                                className="w-full rounded-full border border-red-500/40 py-3 font-bold text-red-600"
                             >
                                 Deny
                             </button>
@@ -475,7 +532,7 @@ function DeviceVerificationContent() {
                         ) : (
                             <button
                                 onClick={() => setView({ phase: "entering" })}
-                                className="w-full rounded-lg border border-[var(--border)] py-3 font-semibold text-[var(--fg)]"
+                                className="w-full rounded-full border border-[var(--fg)] py-3 font-bold text-[var(--fg)]"
                             >
                                 Enter another code
                             </button>
@@ -496,7 +553,7 @@ function DeviceVerificationContent() {
                         </p>
                         <button
                             onClick={() => setView({ phase: "entering" })}
-                            className="w-full rounded-lg border border-[var(--border)] py-3 font-semibold text-[var(--fg)]"
+                            className="w-full rounded-full border border-[var(--fg)] py-3 font-bold text-[var(--fg)]"
                         >
                             Enter a new code
                         </button>

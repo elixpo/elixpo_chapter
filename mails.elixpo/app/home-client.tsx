@@ -25,22 +25,22 @@ import CodeBlock from "./components/code-block";
 import PageShell from "./components/page-shell";
 import PixelHero from "./components/pixel-hero";
 
-const CORAL = "#ff7759";
+const CORAL = "var(--accent)"; // legacy name: research blue accent
 const ACTION_BLUE = "var(--action-fg)";
 
 // Cohere primary CTA button styles
 const PRIMARY_BTN = {
     textTransform: "none" as const,
-    fontWeight: 500,
-    fontSize: "0.95rem",
+    fontWeight: 700,
+    fontSize: "0.9rem",
     color: "var(--bg)",
     px: 3.5,
     py: 1.3,
-    borderRadius: "32px", // Pill
+    borderRadius: "999px",
     background: "var(--fg)",
     boxShadow: "none",
     fontFamily: "var(--font-sans)",
-    "&:hover": { background: "var(--fg-muted)" },
+    "&:hover": { background: "var(--fg)", opacity: 0.82 },
 };
 
 // ── Section heading helper ──────────────────────────────────────────────────
@@ -59,10 +59,10 @@ function SectionHead({
         <Stack alignItems="center" textAlign="center" spacing={1.8} sx={{ mb: { xs: 5, md: 8 } }}>
             <Typography
                 sx={{
-                    color: whiteText ? "#ffad9b" : CORAL, // Soft Coral / Coral
-                    fontWeight: 500,
-                    fontSize: "0.78rem",
-                    letterSpacing: "0.18em",
+                    color: whiteText ? "#79a7ff" : "var(--accent)",
+                    fontWeight: 700,
+                    fontSize: "0.68rem",
+                    letterSpacing: "0.19em",
                     textTransform: "uppercase",
                     fontFamily: "var(--font-mono)",
                 }}
@@ -73,12 +73,13 @@ function SectionHead({
                 component="h2"
                 sx={{
                     fontFamily: "var(--font-display)",
-                    fontWeight: 500,
-                    fontSize: { xs: "2rem", md: "2.8rem" },
-                    letterSpacing: "-0.03em",
-                    lineHeight: 1.05,
+                    fontWeight: 510,
+                    fontSize: { xs: "2.6rem", md: "clamp(3rem,5vw,4.6rem)" },
+                    letterSpacing: "-0.062em",
+                    lineHeight: 0.96,
                     color: whiteText ? "#ffffff" : "var(--fg)",
-                    maxWidth: 720,
+                    maxWidth: 900,
+                    "& em": { fontFamily: "var(--font-serif)", fontWeight: 400 },
                 }}
             >
                 {title}
@@ -427,7 +428,7 @@ export default function Home() {
                                         sx={{
                                             width: 68,
                                             height: 68,
-                                            borderRadius: "20px",
+                                            borderRadius: "1.4rem",
                                             display: "grid",
                                             placeItems: "center",
                                             background: "var(--surface)",
@@ -516,7 +517,7 @@ export default function Home() {
                                 key={f.title}
                                 sx={{
                                     p: 3,
-                                    borderRadius: "18px",
+                                    borderRadius: "1.4rem",
                                     background: "var(--surface)",
                                     border: "1px solid var(--border)",
                                     boxShadow: "var(--card-shadow)",
@@ -702,7 +703,7 @@ export default function Home() {
 
             <SectionThread node={false} />
 
-            {/* ── Closing CTA: dark video panel ──────────────────────────────────── */}
+            {/* ── Closing CTA: ink panel ──────────────────────────────────── */}
             <Box
                 sx={{
                     background: "var(--bg)",
@@ -716,69 +717,87 @@ export default function Home() {
                             textAlign: "center",
                             py: { xs: 8, md: 10 },
                             px: { xs: 3, md: 6 },
-                            background: "#0c0d12", // Dark base fallback
+                            background: "#142018",
                             border: "1px solid var(--border)",
-                            borderRadius: "22px", // Signature 22px radius
+                            borderRadius: "1.6rem",
                             overflow: "hidden",
-                            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
                             "[data-theme='dark'] &": {
                                 background: "var(--surface)",
-                                boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
                             },
                         }}
                     >
-                        {/* Video Background */}
+                        {/* Research geometry */}
                         <Box
-                            component="video"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            sx={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                zIndex: 0,
-                                opacity: 0.85,
-                            }}
-                        >
-                            <source
-                                src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_115655_b4d9cd77-feed-43cd-a198-af78ebdf1f7a.mp4"
-                                type="video/mp4"
-                            />
-                        </Box>
-
-                        {/* Readability Overlay */}
-                        <Box
+                            aria-hidden
                             sx={{
                                 position: "absolute",
                                 inset: 0,
-                                background:
-                                    "linear-gradient(180deg, rgba(11, 13, 18, 0.45) 0%, rgba(11, 13, 18, 0.7) 100%)",
-                                zIndex: 1,
+                                zIndex: 0,
+                                pointerEvents: "none",
+                                "& i": { position: "absolute", display: "block" },
                             }}
-                        />
+                        >
+                            <Box
+                                component="i"
+                                sx={{
+                                    width: 330,
+                                    height: 330,
+                                    right: -90,
+                                    top: -150,
+                                    border: "1px solid rgba(255,255,255,.22)",
+                                    borderRadius: "50%",
+                                }}
+                            />
+                            <Box
+                                component="i"
+                                sx={{
+                                    width: 110,
+                                    height: 110,
+                                    left: -24,
+                                    bottom: -30,
+                                    borderRadius: "18% 82% 61% 39%",
+                                    background: "#f3b529",
+                                    transform: "rotate(-13deg)",
+                                }}
+                            />
+                            <Box
+                                component="i"
+                                sx={{
+                                    width: 70,
+                                    height: 200,
+                                    right: "16%",
+                                    bottom: -110,
+                                    borderRadius: 999,
+                                    background: "#3f7cec",
+                                    transform: "rotate(42deg)",
+                                }}
+                            />
+                        </Box>
 
                         {/* Content Wrapper */}
                         <Box sx={{ position: "relative", zIndex: 2 }}>
                             <Typography
                                 sx={{
                                     fontFamily: "var(--font-display)",
-                                    fontWeight: 500,
-                                    fontSize: { xs: "1.75rem", md: "2.5rem" },
-                                    letterSpacing: "-0.03em",
+                                    fontWeight: 510,
+                                    fontSize: { xs: "2.4rem", md: "3.6rem" },
+                                    lineHeight: 0.98,
+                                    letterSpacing: "-0.06em",
                                     mb: 2,
                                     color: "#ffffff",
                                 }}
                             >
-                                Ship your first email today
+                                Ship your first email{" "}
+                                <Box
+                                    component="em"
+                                    sx={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}
+                                >
+                                    today
+                                </Box>
                             </Typography>
                             <Typography
                                 sx={{
-                                    color: "rgba(255, 255, 255, 0.75)",
+                                    color: "#b5c0b8",
                                     fontSize: "1rem",
                                     maxWidth: 480,
                                     mx: "auto",
@@ -795,7 +814,7 @@ export default function Home() {
                                 signedOutLabel="Sign in with Elixpo"
                                 sx={{
                                     background: "#ffffff",
-                                    color: "#0b0d12",
+                                    color: "#142018",
                                     "&:hover": {
                                         background: "rgba(255, 255, 255, 0.9)",
                                     },

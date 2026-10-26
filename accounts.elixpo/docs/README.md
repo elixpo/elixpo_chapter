@@ -32,15 +32,15 @@ lifecycle operations, JWKS verification, and sanitized typed errors.
 
 ```ts
 import {
-  createAccountsClient,
-  parseAuthorizationCallback,
+    createAccountsClient,
+    parseAuthorizationCallback,
 } from "@elixpo/accounts";
 
 const accounts = createAccountsClient({
-  issuer: "https://accounts.elixpo.com",
-  clientId: process.env.ELIXPO_CLIENT_ID!,
-  clientSecret: process.env.ELIXPO_CLIENT_SECRET,
-  redirectUri: "https://example.com/auth/callback",
+    issuer: "https://accounts.elixpo.com",
+    clientId: process.env.ELIXPO_CLIENT_ID!,
+    clientSecret: process.env.ELIXPO_CLIENT_SECRET,
+    redirectUri: "https://example.com/auth/callback",
 });
 
 const { url, transaction } = await accounts.createAuthorizationRequest();
@@ -48,8 +48,8 @@ const { url, transaction } = await accounts.createAuthorizationRequest();
 
 const { code } = parseAuthorizationCallback(callbackUrl, transaction.state);
 const tokens = await accounts.exchangeAuthorizationCode({
-  code,
-  codeVerifier: transaction.codeVerifier,
+    code,
+    codeVerifier: transaction.codeVerifier,
 });
 await accounts.verifyIdToken(tokens.idToken!, transaction.nonce);
 ```
@@ -122,11 +122,11 @@ directly to `main`. The site deploy completes before npm publication.
 
 Required GitHub secrets:
 
-| Secret | Purpose |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | D1 migration and Pages deployment |
-| `CLOUDFLARE_ACCOUNT_ID` | Wrangler authentication |
-| `NPM_TOKEN` | Publish `@elixpo/accounts` |
+| Secret                  | Purpose                           |
+| ----------------------- | --------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | D1 migration and Pages deployment |
+| `CLOUDFLARE_ACCOUNT_ID` | Wrangler authentication           |
+| `NPM_TOKEN`             | Publish `@elixpo/accounts`        |
 
 Protect the `production` and `npm` environments. Runtime application secrets
 remain in Cloudflare Pages and are never compiled into the browser bundle.

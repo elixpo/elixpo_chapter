@@ -14,13 +14,13 @@ The retired issue and PR agent workflows must not be restored: separate listener
 Configure these as organization-level Actions secrets and grant them to every
 repository that installs the agent workflows:
 
-| Secret | Purpose | Required access |
-| --- | --- | --- |
-| `ELIXPO_POLLINATIONS_API_KEY` | Every model request: agent, triage, PR metadata, and changelog summaries | Pollinations text API; this is the only model credential |
-| `ELIXPOO_GITHUB_AGENTIC_TOKEN` | Repository reads/writes, issue and PR metadata, branches, failed-run retries, repository variables, and Project V2 fields | See the token profiles below |
-| `ELIXPOO_GITHUB_NOTIFICATIONS_TOKEN` | Optional discovery of mentions outside repositories with installed webhooks | Classic PAT with `notifications`; fine-grained PATs are unsupported by this endpoint |
-| `AGENT_GITHUB_SOLVER_TOKEN` | Solve/Submit fork creation, fork branch pushes, and pull-request creation | Classic PAT from the fork owner with `public_repo` for public targets |
-| `ELIXPOO_GIST_AGENTIC_TOKEN` | Merge changelog and Steward follow-up memory | Gist read/write |
+| Secret                               | Purpose                                                                                                                   | Required access                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `ELIXPO_POLLINATIONS_API_KEY`        | Every model request: agent, triage, PR metadata, and changelog summaries                                                  | Pollinations text API; this is the only model credential                             |
+| `ELIXPOO_GITHUB_AGENTIC_TOKEN`       | Repository reads/writes, issue and PR metadata, branches, failed-run retries, repository variables, and Project V2 fields | See the token profiles below                                                         |
+| `ELIXPOO_GITHUB_NOTIFICATIONS_TOKEN` | Optional discovery of mentions outside repositories with installed webhooks                                               | Classic PAT with `notifications`; fine-grained PATs are unsupported by this endpoint |
+| `AGENT_GITHUB_SOLVER_TOKEN`          | Solve/Submit fork creation, fork branch pushes, and pull-request creation                                                 | Classic PAT from the fork owner with `public_repo` for public targets                |
+| `ELIXPOO_GIST_AGENTIC_TOKEN`         | Merge changelog and Steward follow-up memory                                                                              | Gist read/write                                                                      |
 
 `GITHUB_TOKEN` is created automatically for each workflow run. It is not an
 organization secret and must not be copied into organization settings.
@@ -43,10 +43,10 @@ Recommended `ELIXPOO_GITHUB_AGENTIC_TOKEN` fine-grained PAT:
   read/write, Pull requests read/write, Variables read/write, Workflows
   read/write, and Metadata read.
 - Organization permissions: Projects read/write.
-Classic PAT fallback for `ELIXPOO_GITHUB_AGENTIC_TOKEN`: `repo`, `workflow`, and `project`.
-Add `read:org` only if the organization restricts project access in a
-way that requires membership lookup. This is broader than the fine-grained
-profile.
+  Classic PAT fallback for `ELIXPOO_GITHUB_AGENTIC_TOKEN`: `repo`, `workflow`, and `project`.
+  Add `read:org` only if the organization restricts project access in a
+  way that requires membership lookup. This is broader than the fine-grained
+  profile.
 
 The commit identity is `elixpoo <elixpoo@gmail.com>`. Keep that email verified
 on the `elixpoo` GitHub account or replace it everywhere with the account's
@@ -122,11 +122,11 @@ These are not part of the organization agent bundle:
 
 ## Cost-aware routes
 
-| Route | Model | Use |
-| --- | --- | --- |
-| repository_agent | `nova-fast` | bounded issue replies, PR review, and OreoFlow routing |
-| code | `qwen-coder` | Solve and Steward Fix coding only |
-| webSearch | `perplexity-fast` | time-sensitive external lookup only |
+| Route            | Model             | Use                                                    |
+| ---------------- | ----------------- | ------------------------------------------------------ |
+| repository_agent | `nova-fast`       | bounded issue replies, PR review, and OreoFlow routing |
+| code             | `qwen-coder`      | Solve and Steward Fix coding only                      |
+| webSearch        | `perplexity-fast` | time-sensitive external lookup only                    |
 
 Token ceilings are centralized in `.github/ci_config.py`. The prompt directs the agent to read the prepared context once, use targeted repository reads, and avoid search unless local context is insufficient. RTK compresses supported shell output before it reaches the model.
 

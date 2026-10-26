@@ -25,7 +25,7 @@ import type React from "react";
 import { useState } from "react";
 import CopyForLlm from "./_components/copy-for-llm";
 
-const CORAL = "#ff7759";
+const CORAL = "var(--accent)";
 const INK = "var(--fg)";
 const SLATE = "var(--fg-muted)";
 const HAIRLINE = "var(--border)";
@@ -79,12 +79,12 @@ export default function DocsClientLayout({ children }: { children: React.ReactNo
                                     borderRadius: "8px",
                                     py: 0.8,
                                     px: 2,
-                                    bgcolor: active ? "rgba(255, 119, 89, 0.06)" : "transparent",
+                                    bgcolor: active ? "rgba(58, 101, 199, 0.06)" : "transparent",
                                     color: active ? CORAL : "var(--fg-muted)",
                                     transition: "all 0.15s ease",
                                     "&:hover": {
                                         bgcolor: active
-                                            ? "rgba(255, 119, 89, 0.1)"
+                                            ? "rgba(58, 101, 199, 0.1)"
                                             : "var(--overlay)",
                                         color: active ? CORAL : "var(--fg)",
                                     },

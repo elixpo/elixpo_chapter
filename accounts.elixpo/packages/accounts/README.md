@@ -34,10 +34,7 @@ const { url, transaction } = await accounts.createAuthorizationRequest();
 ```ts
 import { parseAuthorizationCallback } from "@elixpo/accounts";
 
-const { code } = parseAuthorizationCallback(
-    request.url,
-    transaction.state,
-);
+const { code } = parseAuthorizationCallback(request.url, transaction.state);
 const tokens = await accounts.exchangeAuthorizationCode({
     code,
     codeVerifier: transaction.codeVerifier,
@@ -52,6 +49,29 @@ const rotated = await accounts.refresh(tokens.refreshToken);
 // Atomically replace the stored token with rotated.refreshToken.
 await accounts.revoke(rotated.refreshToken);
 ```
+
+## Verify webhooks
+
+Read the request body as text before parsing it, then verify the signed
+timestamp and body with the endpoint secret:
+
+```ts
+import { verifyWebhookSignature } from "@elixpo/accounts/webhooks";
+
+const payload = await request.text();
+await verifyWebhookSignature(
+    payload,
+    {
+        signature: request.headers.get("x-elixpo-signature") ?? "",
+        timestamp: request.headers.get("x-elixpo-timestamp") ?? "",
+    },
+    { secret: process.env.ELIXPO_WEBHOOK_SECRET! },
+);
+
+const event = JSON.parse(payload);
+```
+
+Pass a `ReplayStore` for atomic replay rejection in production.
 
 ## Configuration boundaries
 

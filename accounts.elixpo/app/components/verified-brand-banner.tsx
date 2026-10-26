@@ -78,7 +78,7 @@ export function useVerifiedBranding(
                     primaryColor:
                         typeof data.branding_primary_color === "string"
                             ? data.branding_primary_color
-                            : "#ff7759",
+                            : "#3a65c7",
                 });
             } catch (error) {
                 if ((error as Error).name !== "AbortError") {

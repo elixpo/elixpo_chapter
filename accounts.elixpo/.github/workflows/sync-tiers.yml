@@ -24,49 +24,49 @@ name: Sync tier catalog to payouts.elixpo
 permissions: {}
 
 concurrency:
-  group: sync-tiers
-  cancel-in-progress: false
+    group: sync-tiers
+    cancel-in-progress: false
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "app/api/cron/sync-tiers/route.ts"
-      - ".github/workflows/sync-tiers.yml"
-  schedule:
-    - cron: "0 3 * * *"
-  workflow_dispatch:
+    push:
+        branches: [main]
+        paths:
+            - "app/api/cron/sync-tiers/route.ts"
+            - ".github/workflows/sync-tiers.yml"
+    schedule:
+        - cron: "0 3 * * *"
+    workflow_dispatch:
 
 jobs:
-  sync:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Trigger /api/cron/sync-tiers
-        env:
-          CRON_SECRET: ${{ secrets.ELIXPO_ACCOUNTS_PAYOUT_CLIENT_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::ELIXPO_PAY_SESSION_SECRET is not set in repo secrets"
-            exit 1
-          fi
+    sync:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - name: Trigger /api/cron/sync-tiers
+              env:
+                  CRON_SECRET: ${{ secrets.ELIXPO_ACCOUNTS_PAYOUT_CLIENT_SECRET }}
+              run: |
+                  if [ -z "$CRON_SECRET" ]; then
+                    echo "::error::ELIXPO_PAY_SESSION_SECRET is not set in repo secrets"
+                    exit 1
+                  fi
 
-          response=$(curl --silent --show-error --fail-with-body \
-            --max-time 60 \
-            -w "\nHTTP_STATUS:%{http_code}\n" \
-            -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "https://accounts.elixpo.com/api/cron/sync-tiers")
+                  response=$(curl --silent --show-error --fail-with-body \
+                    --max-time 60 \
+                    -w "\nHTTP_STATUS:%{http_code}\n" \
+                    -X POST \
+                    -H "Authorization: Bearer $CRON_SECRET" \
+                    "https://accounts.elixpo.com/api/cron/sync-tiers")
 
-          http_status=$(echo "$response" | grep "^HTTP_STATUS:" | cut -d: -f2)
-          body=$(echo "$response" | sed '/^HTTP_STATUS:/d')
+                  http_status=$(echo "$response" | grep "^HTTP_STATUS:" | cut -d: -f2)
+                  body=$(echo "$response" | sed '/^HTTP_STATUS:/d')
 
-          echo "Status: $http_status"
-          echo "Body: $body"
+                  echo "Status: $http_status"
+                  echo "Body: $body"
 
-          if [ "$http_status" != "200" ]; then
-            echo "::error::Sync failed (HTTP $http_status)"
-            exit 1
-          fi
+                  if [ "$http_status" != "200" ]; then
+                    echo "::error::Sync failed (HTTP $http_status)"
+                    exit 1
+                  fi
 
-          echo "Tier catalog synced successfully."
+                  echo "Tier catalog synced successfully."

@@ -35,7 +35,7 @@ import { useRole } from "./role-provider";
 import TemplateSendDialog from "./template-send-dialog";
 import TemplateTestDialog from "./template-test-dialog";
 
-const ACCENT = "#ff7759";
+const ACCENT = "var(--accent)";
 const TEXT = "var(--fg)";
 const TEXT_60 = "var(--fg-muted)";
 

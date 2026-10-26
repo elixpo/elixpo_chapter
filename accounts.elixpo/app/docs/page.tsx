@@ -83,8 +83,8 @@ export default function OverviewPage() {
 
             <Box
                 sx={{
-                    border: "1px solid rgba(255, 119, 89, 0.28)",
-                    bgcolor: "rgba(255, 119, 89, 0.06)",
+                    border: "1px solid rgba(58, 101, 199, 0.28)",
+                    bgcolor: "rgba(58, 101, 199, 0.06)",
                     borderRadius: 3,
                     p: { xs: 2.5, sm: 3 },
                     mb: 4,
@@ -109,7 +109,7 @@ export default function OverviewPage() {
                 </Typography>
                 <Link
                     href="/docs/lixaccounts"
-                    style={{ color: "#ff7759", fontWeight: 700 }}
+                    style={{ color: "var(--accent)", fontWeight: 700 }}
                 >
                     Open the Developer SDK guide →
                 </Link>

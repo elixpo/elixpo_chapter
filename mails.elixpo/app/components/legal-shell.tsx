@@ -4,7 +4,7 @@ import { Box, Container, Stack, Typography } from "@mui/material";
 import type React from "react";
 import PageShell from "./page-shell";
 
-const CORAL = "#ff7759";
+const CORAL = "var(--accent)";
 const INK = "var(--fg)";
 const SLATE = "var(--fg-muted)";
 const HAIRLINE = "var(--border)";
@@ -41,10 +41,10 @@ export function LegalShell({
                     <Typography
                         component="h1"
                         sx={{
-                            fontWeight: 500,
-                            fontSize: { xs: "2.2rem", md: "3.2rem" },
-                            letterSpacing: "-0.03em",
-                            lineHeight: 1.05,
+                            fontWeight: 510,
+                            fontSize: { xs: "2.8rem", md: "clamp(3.5rem,5.5vw,5.4rem)" },
+                            letterSpacing: "-0.065em",
+                            lineHeight: 0.95,
                             color: "var(--fg)",
                             mb: 2,
                             fontFamily: "var(--font-display)",

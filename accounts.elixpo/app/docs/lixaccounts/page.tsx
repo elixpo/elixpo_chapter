@@ -80,9 +80,9 @@ export default function LixaccountsDocsPage() {
                     rel="noopener noreferrer"
                     clickable
                     sx={{
-                        bgcolor: "rgba(255, 119, 89, 0.1)",
-                        color: "#ff7759",
-                        border: "1px solid rgba(255, 119, 89, 0.25)",
+                        bgcolor: "rgba(58, 101, 199, 0.1)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(58, 101, 199, 0.25)",
                         fontWeight: 700,
                     }}
                 />

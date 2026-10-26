@@ -1,27 +1,32 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { MuiThemeBridge } from "./components/mui-theme";
 import { THEME_BOOT_SCRIPT, ThemeProvider } from "./components/theme-provider";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
+const SITE_URL = "https://accounts.elixpo.com";
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#fbfbf8" },
+        { media: "(prefers-color-scheme: dark)", color: "#0f1712" },
+    ],
+    colorScheme: "light dark",
+};
 
 export const metadata: Metadata = {
     title: {
-        default: "Authentication & User Management | Elixpo Accounts",
+        default: "Elixpo Accounts — Single Sign-On & User Management",
         template: "%s | Elixpo Accounts",
     },
     description:
         "Add branded sign-in, sign-out, SSO, passkeys, social login, sessions, and user management to any app with hosted OAuth/OIDC and a TypeScript SDK.",
     applicationName: "Elixpo Accounts",
-    category: "Authentication and identity management",
+    category: "technology",
+    referrer: "strict-origin-when-cross-origin",
+    formatDetection: { email: false, address: false, telephone: false },
+    manifest: "/manifest.webmanifest",
     keywords: [
         "authentication platform",
         "user management",
@@ -33,15 +38,18 @@ export const metadata: Metadata = {
         "hosted authentication",
         "TypeScript authentication SDK",
         "edge authentication",
+        "Elixpo account",
+        "Elixpo login",
+        "Elixpo SSO",
     ],
     authors: [{ name: "Elixpo", url: "https://elixpo.com" }],
     creator: "Elixpo",
     publisher: "Elixpo",
-    metadataBase: new URL("https://accounts.elixpo.com"),
+    metadataBase: new URL(SITE_URL),
     openGraph: {
         type: "website",
         locale: "en_US",
-        url: "https://accounts.elixpo.com",
+        url: SITE_URL,
         siteName: "Elixpo Accounts",
         title: "Authentication, SSO & User Management for Any App",
         description:
@@ -111,6 +119,17 @@ const websiteStructuredData = {
             publisher: { "@id": "https://elixpo.com/#organization" },
             inLanguage: "en",
         },
+        {
+            "@type": "WebApplication",
+            "@id": "https://accounts.elixpo.com/#webapp",
+            name: "Elixpo Accounts",
+            url: "https://accounts.elixpo.com",
+            applicationCategory: "SecurityApplication",
+            operatingSystem: "Any",
+            browserRequirements: "Requires JavaScript",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+            publisher: { "@id": "https://elixpo.com/#organization" },
+        },
     ],
 };
 
@@ -127,15 +146,8 @@ export default function RootLayout({
                 <script
                     dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
                 />
-                <link
-                    rel="stylesheet"
-                    href="https://db.onlinewebfonts.com/c/04e6981992c0e2e7642af2074ebe3901?family=Helvetica+Now+Display+Bold"
-                    type="text/css"
-                />
             </head>
-            <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            >
+            <body className="antialiased">
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -145,7 +157,9 @@ export default function RootLayout({
                         ),
                     }}
                 />
-                <ThemeProvider>{children}</ThemeProvider>
+                <ThemeProvider>
+                    <MuiThemeBridge>{children}</MuiThemeBridge>
+                </ThemeProvider>
             </body>
         </html>
     );

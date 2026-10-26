@@ -24,7 +24,7 @@ const TIERS: Tier[] = [
         name: "Hobby",
         priceLabel: "₹0",
         priceCaption: "Forever free",
-        accent: "#192837",
+        accent: "#142018",
         description:
             "Get started with personal OAuth apps and a Studio's worth of fun.",
         features: [
@@ -41,7 +41,7 @@ const TIERS: Tier[] = [
         name: "Indie",
         priceLabel: "₹1,599",
         priceCaption: "per month · billed in INR",
-        accent: "#ff7759",
+        accent: "#3a65c7",
         description:
             "Ship real products to real users. Lift the small-app caps.",
         features: [
@@ -161,7 +161,7 @@ export default function PricingClient() {
     };
 
     return (
-        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#ff7759] selection:text-white overflow-x-hidden">
+        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#3a65c7] selection:text-white overflow-x-hidden">
             <style>{`
                 .font-heading { font-family: var(--font-heading), sans-serif; }
                 .font-body { font-family: var(--font-body), sans-serif; }
@@ -172,9 +172,9 @@ export default function PricingClient() {
             <main className="w-full max-w-[1280px] mx-auto px-5 sm:px-8 py-8 sm:py-16 relative z-10">
                 {/* Header */}
                 <div className="flex flex-col items-center text-center gap-4 mb-16 max-w-[700px] mx-auto">
-                    <h1 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] gsap-pricing-hero">
-                        Pricing built for indie devs{" "}
-                        <span className="text-[#ff7759]">and studios.</span>
+                    <p className="eyebrow gsap-pricing-hero">Pricing</p>
+                    <h1 className="display text-[clamp(2.8rem,6.4vw,6rem)] gsap-pricing-hero">
+                        Pricing built for indie devs <em>and studios.</em>
                     </h1>
                     <p className="font-body text-base sm:text-lg text-[var(--fg)] opacity-80 leading-relaxed gsap-pricing-hero">
                         Start free. Scale only when your apps actually have
@@ -183,7 +183,7 @@ export default function PricingClient() {
                     </p>
 
                     {loading ? null : me?.is_internal ? (
-                        <div className="mt-4 px-4 py-1.5 rounded-full bg-[#ff7759]/10 border border-[#ff7759]/30 text-xs font-semibold text-[#ff7759] gsap-pricing-hero">
+                        <div className="mt-4 px-4 py-1.5 rounded-full bg-[#3a65c7]/10 border border-[#3a65c7]/30 text-xs font-semibold text-[var(--accent)] gsap-pricing-hero">
                             You're on an internal account — billing is bypassed.
                         </div>
                     ) : null}
@@ -208,12 +208,12 @@ export default function PricingClient() {
                                 key={tier.id}
                                 className={`bg-[var(--surface)] border rounded-2xl p-6 sm:p-8 flex flex-col justify-between min-h-[480px] relative transition-all gsap-pricing-card ${
                                     tier.highlight
-                                        ? "border-2 border-[#ff7759] shadow-[0_14px_60px_-20px_rgba(255, 119, 89,0.22)]"
-                                        : "border-[var(--border)] shadow-[0_4px_24px_rgba(25,40,55,0.015)] hover:shadow-[0_12px_32px_rgba(255, 119, 89,0.04)]"
+                                        ? "border-2 border-[#3a65c7] shadow-[0_14px_60px_-20px_rgba(58,101,199,0.22)]"
+                                        : "border-[var(--border)] shadow-[0_4px_24px_rgba(20,32,24,0.015)] hover:shadow-[0_12px_32px_rgba(58,101,199,0.04)]"
                                 }`}
                             >
                                 {tier.highlight && (
-                                    <span className="absolute top-4 right-4 bg-[#ff7759]/10 border border-[#ff7759]/35 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-[#ff7759]">
+                                    <span className="absolute top-4 right-4 bg-[#3a65c7]/10 border border-[#3a65c7]/35 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-[var(--accent)]">
                                         Most Popular
                                     </span>
                                 )}
@@ -281,10 +281,10 @@ export default function PricingClient() {
                                         tier.id === "hobby"
                                             ? "bg-[var(--overlay)] text-[var(--fg-faint)] border border-[var(--border)]"
                                             : isCurrent
-                                              ? "bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/25 cursor-default"
+                                              ? "bg-[#3a65c7]/10 text-[var(--accent)] border border-[#3a65c7]/25 cursor-default"
                                               : tier.highlight
-                                                ? "bg-[#ff7759] hover:brightness-110 text-white shadow-md active:scale-[0.98]"
-                                                : "bg-[var(--overlay)] hover:bg-[#192837]/10 border border-[var(--border)] text-[var(--fg)] active:scale-[0.98]"
+                                                ? "bg-[#3a65c7] hover:brightness-110 text-white shadow-md active:scale-[0.98]"
+                                                : "bg-[var(--overlay)] hover:bg-[#142018]/10 border border-[var(--border)] text-[var(--fg)] active:scale-[0.98]"
                                     }`}
                                 >
                                     {isBusy ? (

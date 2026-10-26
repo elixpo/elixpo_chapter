@@ -42,7 +42,7 @@ import { useRole } from "./role-provider";
 
 // ── Palette ─────────────────────────────────────────────────────────────────
 const ACCENT = "var(--accent)";
-const HOOK_ACCENT = "#5fb6ff";
+const HOOK_ACCENT = "var(--action-fg)";
 const GREEN = "var(--success)";
 const RED = "var(--danger)";
 const TEXT = "var(--fg)";

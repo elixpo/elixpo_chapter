@@ -17,7 +17,7 @@ import ThemeToggle from "./theme-toggle";
 
 const PRODUCT = {
     name: "Accounts",
-    accent: "#ff7759",
+    accent: "#3a65c7",
     description:
         "Complete sign-in, sign-out, single sign-on, and user management for your product. Choose the providers and branding; we run the identity infrastructure behind them.",
     repo: "elixpo/accounts.elixpo",
@@ -44,14 +44,25 @@ const COLUMNS: {
             { label: "Developer SDK", href: "/docs/lixaccounts" },
             { label: "OAuth 2.0", href: "/docs/oauth" },
             { label: "Webhooks", href: "/docs/webhooks" },
-            { label: "Pricing", href: "/pricing" },
+            {
+                label: "OpenID discovery",
+                href: "/.well-known/openid-configuration",
+                external: true,
+            },
         ],
     },
     {
-        title: "Legal",
+        title: "Company",
         links: [
+            { label: "About", href: "/about" },
+            { label: "Pricing", href: "/pricing" },
             { label: "Privacy Policy", href: "/privacy" },
             { label: "Terms of Service", href: "/terms" },
+            {
+                label: "Security",
+                href: "https://github.com/elixpo/accounts.elixpo/security/policy",
+                external: true,
+            },
         ],
     },
 ];
@@ -102,12 +113,12 @@ function GithubStarsButton({ repo }: { repo: string }) {
             href={`https://github.com/${repo}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-semibold text-[var(--fg)] transition-all hover:border-[var(--border)] hover:shadow-sm active:scale-[0.98]"
+            className="group inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-[0.78rem] font-bold text-[var(--fg)] transition-all hover:border-[var(--fg)] active:scale-[0.98]"
             aria-label={`Star ${repo} on GitHub`}
         >
             <Github className="h-[18px] w-[18px]" />
             <span>Star</span>
-            <span className="flex items-center gap-1 rounded-md bg-[var(--overlay)] px-1.5 py-0.5 text-xs font-bold tabular-nums">
+            <span className="flex items-center gap-1 rounded-full bg-[var(--overlay)] px-1.5 py-0.5 text-xs font-bold tabular-nums">
                 <Star className="h-3 w-3 fill-[#fbbf24] text-[#fbbf24]" />
                 {stars === null ? "—" : formatStars(stars)}
             </span>
@@ -130,7 +141,7 @@ function EmailButton({ email }: { email: string }) {
         <button
             type="button"
             onClick={copy}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-sm font-semibold text-[var(--fg)] transition-all hover:border-[var(--border)] hover:shadow-sm active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-[0.78rem] font-bold text-[var(--fg)] transition-all hover:border-[var(--fg)] active:scale-[0.98]"
         >
             {copied ? (
                 <>
@@ -151,29 +162,30 @@ function EmailButton({ email }: { email: string }) {
 export default function Footer() {
     const year = new Date().getFullYear();
     return (
-        <footer className="relative z-10 w-full border-t border-[var(--border)] bg-[var(--bg)] font-body text-[var(--fg)]">
-            <div className="mx-auto max-w-[1280px] px-5 py-16 sm:px-8">
+        <footer className="relative z-10 w-full border-t border-[var(--border)] bg-[var(--surface)] font-body text-[var(--fg)]">
+            <div className="mx-auto max-w-[1450px] px-4 py-14 sm:px-8 sm:py-16">
                 {/* Top: brand + link columns */}
                 <div className="flex flex-col gap-12 lg:flex-row lg:justify-between">
                     {/* Brand */}
                     <div className="max-w-sm">
-                        <Link
-                            href="/"
-                            className="mb-4 flex items-center gap-2.5"
-                        >
+                        <Link href="/" className="mb-4 flex items-center gap-4">
                             <img
                                 src="/LOGO/logo.png"
-                                alt="Elixpo"
-                                className="h-8 w-8 rounded-lg bg-white/85 object-contain p-0.5"
+                                alt=""
+                                width={42}
+                                height={42}
+                                className="h-[42px] w-[42px] object-contain"
                             />
-                            <span className="font-heading text-xl font-bold">
-                                Elixpo{" "}
-                                <span style={{ color: PRODUCT.accent }}>
-                                    {PRODUCT.name}
+                            <span>
+                                <strong className="block text-base">
+                                    Elixpo {PRODUCT.name}
+                                </strong>
+                                <span className="text-sm text-[var(--muted)]">
+                                    One identity across the Elixpo suite.
                                 </span>
                             </span>
                         </Link>
-                        <p className="text-sm leading-relaxed opacity-80">
+                        <p className="text-sm leading-[1.7] text-[var(--muted)]">
                             {PRODUCT.description}
                         </p>
 
@@ -188,21 +200,26 @@ export default function Footer() {
                     <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 sm:gap-16">
                         {COLUMNS.map((col) => (
                             <div key={col.title}>
-                                <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest opacity-50">
-                                    {col.title}
-                                </h4>
-                                <ul className="flex flex-col gap-3 text-sm font-semibold">
+                                <h2 className="eyebrow">{col.title}</h2>
+                                <ul className="flex flex-col gap-3 text-[0.8rem] font-[650]">
                                     {col.links.map((link) => (
                                         <li key={link.label}>
-                                            <Link
-                                                href={link.href}
-                                                className="inline-flex items-center gap-1 opacity-90 transition-opacity hover:opacity-60"
-                                            >
-                                                {link.label}
-                                                {link.external && (
+                                            {link.external ? (
+                                                <a
+                                                    href={link.href}
+                                                    className="inline-flex items-center gap-1 transition-opacity hover:opacity-55"
+                                                >
+                                                    {link.label}
                                                     <ArrowUpRight className="h-3 w-3" />
-                                                )}
-                                            </Link>
+                                                </a>
+                                            ) : (
+                                                <Link
+                                                    href={link.href}
+                                                    className="inline-flex items-center gap-1 transition-opacity hover:opacity-55"
+                                                >
+                                                    {link.label}
+                                                </Link>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
@@ -212,11 +229,11 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-[var(--border)] pt-8 text-sm font-medium opacity-70 sm:flex-row">
+                <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-[var(--border)] pt-8 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-[var(--muted)] sm:flex-row">
                     <div>
                         © {year} Elixpo ·{" "}
-                        <span className="font-semibold opacity-100">
-                            Built in the Open
+                        <span className="text-[var(--fg)]">
+                            Built in the open
                         </span>
                     </div>
                     <div className="flex items-center gap-4">
@@ -224,7 +241,7 @@ export default function Footer() {
                             href={SUITE_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 transition-opacity hover:opacity-100"
+                            className="inline-flex items-center gap-1 transition-colors hover:text-[var(--fg)]"
                         >
                             Part of the Elixpo suite
                             <ArrowUpRight className="h-3.5 w-3.5" />

@@ -5,17 +5,7 @@ import GitHubIcon from "@mui/icons-material/GitHub";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import MenuIcon from "@mui/icons-material/Menu";
 import StarIcon from "@mui/icons-material/Star";
-import {
-    Avatar,
-    Box,
-    Button,
-    Chip,
-    Drawer,
-    IconButton,
-    Stack,
-    Toolbar,
-    Typography,
-} from "@mui/material";
+import { Avatar, Box, Button, Drawer, IconButton, Stack, Toolbar, Typography } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,8 +18,7 @@ interface Me {
     avatar: string | null;
 }
 
-const ACCENT = "#ff7759";
-const REPO = "elixpo/mail.elixpo";
+const REPO = "elixpo/mails.elixpo";
 const REPO_URL = `https://github.com/${REPO}`;
 
 const LINKS = [
@@ -100,15 +89,17 @@ const Navbar = () => {
     const githubHoverBg = "var(--accent-tint)";
     const githubHoverBorder = "var(--accent-border)";
 
-    // Primary CTA (Sign In) — coral pill, readable in both themes.
+    // Primary CTA (Sign In) — ink pill, inverted in dark theme.
     const ctaStyles = {
-        background: "var(--accent)",
-        color: "var(--accent-contrast)",
-        borderRadius: "32px", // Pill
+        background: "var(--fg)",
+        color: "var(--bg)",
+        borderRadius: "999px",
         boxShadow: "none",
-        transition: "background 0.2s ease",
+        px: 2.3,
+        transition: "opacity 0.2s ease",
         "&:hover": {
-            background: "var(--accent-2)",
+            background: "var(--fg)",
+            opacity: 0.82,
         },
     };
 
@@ -151,40 +142,23 @@ const Navbar = () => {
                     <Box
                         component="img"
                         src="/mark.png"
-                        alt="Elixpo Mails"
-                        sx={{ height: 32, width: 32, borderRadius: "8px", display: "block" }}
+                        alt=""
+                        sx={{ height: 34, width: 34, borderRadius: "8px", display: "block" }}
                     />
-                    <Typography
-                        sx={{
-                            fontWeight: 700,
-                            fontSize: "1.15rem",
-                            color: brandColor,
-                            letterSpacing: "-0.01em",
-                            fontFamily: "var(--font-display)",
-                        }}
+                    <Box
+                        component="span"
+                        sx={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}
                     >
-                        Elixpo
-                        <Box component="span" sx={{ color: "var(--accent)" }}>
-                            {" "}
+                        <Box component="b" sx={{ fontSize: "1rem", color: brandColor }}>
+                            Elixpo
+                        </Box>
+                        <Box
+                            component="small"
+                            sx={{ fontSize: "0.72rem", color: "var(--fg-muted)" }}
+                        >
                             Mails
                         </Box>
-                    </Typography>
-                    {!me && (
-                        <Chip
-                            label="EMAIL"
-                            size="small"
-                            sx={{
-                                display: { xs: "none", sm: "inline-flex" },
-                                bgcolor: "var(--accent-tint)",
-                                color: "var(--accent)",
-                                fontSize: "10px",
-                                height: "22px",
-                                fontWeight: 600,
-                                letterSpacing: "0.04em",
-                                border: "1px solid var(--accent-border)",
-                            }}
-                        />
-                    )}
+                    </Box>
                 </Link>
 
                 <Box
@@ -206,8 +180,8 @@ const Navbar = () => {
                                     href={l.href}
                                     sx={{
                                         textTransform: "none",
-                                        fontWeight: 500,
-                                        fontSize: "0.88rem",
+                                        fontWeight: 650,
+                                        fontSize: "0.8rem",
                                         color: linkColor,
                                         px: 1.6,
                                         borderRadius: "9px",
@@ -311,6 +285,7 @@ const Navbar = () => {
                                     height: 28,
                                     fontSize: "0.85rem",
                                     bgcolor: "var(--accent)",
+                                    color: "var(--accent-contrast)",
                                 }}
                             >
                                 {(me.name || me.email || "?").charAt(0).toUpperCase()}
@@ -363,8 +338,8 @@ const Navbar = () => {
                             disableElevation
                             sx={{
                                 textTransform: "none",
-                                fontWeight: 500,
-                                fontSize: "0.9rem",
+                                fontWeight: 700,
+                                fontSize: "0.82rem",
                                 ...ctaStyles,
                             }}
                         >
@@ -416,9 +391,15 @@ const Navbar = () => {
                             sx={{ height: 26, width: 26, borderRadius: "7px" }}
                         />
                         <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: "var(--fg)" }}>
-                            Elixpo
-                            <Box component="span" sx={{ color: "var(--accent)" }}>
-                                {" "}
+                            Elixpo{" "}
+                            <Box
+                                component="small"
+                                sx={{
+                                    fontSize: "0.72rem",
+                                    color: "var(--fg-muted)",
+                                    fontWeight: 400,
+                                }}
+                            >
                                 Mails
                             </Box>
                         </Typography>
@@ -468,7 +449,7 @@ const Navbar = () => {
                             sx={{
                                 mt: 1,
                                 textTransform: "none",
-                                fontWeight: 500,
+                                fontWeight: 700,
                                 fontSize: "0.95rem",
                                 ...ctaStyles,
                             }}

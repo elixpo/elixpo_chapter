@@ -9,7 +9,7 @@ import { Box, Button, Chip, Container, Stack, Typography } from "@mui/material";
 import PageShell from "../components/page-shell";
 import PricingFaq, { type Faq } from "../components/pricing-faq";
 
-const CORAL = "#ff7759";
+const CORAL = "var(--accent)";
 const INK = "var(--fg)";
 const SLATE = "var(--fg-muted)";
 const HAIRLINE = "var(--border)";
@@ -249,10 +249,10 @@ export default function PricingClient() {
                     <Typography
                         component="h1"
                         sx={{
-                            fontWeight: 500,
-                            fontSize: { xs: "2.4rem", md: "3.6rem" },
-                            letterSpacing: "-0.03em",
-                            lineHeight: 1.05,
+                            fontWeight: 510,
+                            fontSize: { xs: "3rem", md: "clamp(4rem,6.5vw,6.4rem)" },
+                            letterSpacing: "-0.068em",
+                            lineHeight: 0.93,
                             color: INK,
                             maxWidth: 760,
                             fontFamily: "var(--font-display)",
@@ -314,8 +314,8 @@ export default function PricingClient() {
                                 placeItems: "center",
                                 flexShrink: 0,
                                 color: CORAL,
-                                background: "rgba(255, 119, 89, 0.08)",
-                                border: "1px solid rgba(255, 119, 89, 0.2)",
+                                background: "rgba(58, 101, 199, 0.08)",
+                                border: "1px solid rgba(58, 101, 199, 0.2)",
                             }}
                         >
                             <BusinessIcon sx={{ fontSize: 24 }} />

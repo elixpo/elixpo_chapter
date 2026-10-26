@@ -93,17 +93,17 @@ contributor and dev workflow.
 
 ## The ecosystem
 
-| Tool | What it does | Link |
-| --- | --- | --- |
-| 🎨 **Elixpo Art** | AI image generation _(under dev)_ | [art.elixpo.com](https://elixpo.com) |
-| ✍️ **Elixpo Blogs** | A rich, modern writing and publishing space | [blogs.elixpo.com](https://blogs.elixpo.com) |
-| 🖊️ **LixSketch** | A hand-drawn style whiteboard for ideas and diagrams | [sketch.elixpo.com](https://sketch.elixpo.com) |
-| 💬 **Elixpo Chat** | A fluid, real-time AI chat experience _(under dev)_ | [chat.elixpo.com](https://chat.elixpo.com) |
-| 🔎 **Elixpo Search** | Fast, AI-assisted search | [search.elixpo.com](https://search.elixpo.com) |
-| 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
-| 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
-| 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Oreo** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| Tool                   | What it does                                         | Link                                               |
+| ---------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| 🎨 **Elixpo Art**      | AI image generation _(under dev)_                    | [art.elixpo.com](https://elixpo.com)               |
+| ✍️ **Elixpo Blogs**    | A rich, modern writing and publishing space          | [blogs.elixpo.com](https://blogs.elixpo.com)       |
+| 🖊️ **LixSketch**       | A hand-drawn style whiteboard for ideas and diagrams | [sketch.elixpo.com](https://sketch.elixpo.com)     |
+| 💬 **Elixpo Chat**     | A fluid, real-time AI chat experience _(under dev)_  | [chat.elixpo.com](https://chat.elixpo.com)         |
+| 🔎 **Elixpo Search**   | Fast, AI-assisted search                             | [search.elixpo.com](https://search.elixpo.com)     |
+| 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem              | [accounts.elixpo.com](https://accounts.elixpo.com) |
+| 🔗 **lixrl**           | Our flagship URL shortener                           | [lixrl.com](https://lixrl.com)                     |
+| 🪪 **Portfolios**      | Personal pages to showcase your work                 | [me.elixpo.com](https://me.elixpo.com)             |
+| 🐼 **Oreo**            | The mascot's home                                    | [oreo.elixpo.com](https://oreo.elixpo.com)         |
 
 Developers can drop our editors into their own projects with the
 **`@elixpo/lixsketch`** and **`@elixpo/lixeditor`** packages, on npm and as VS

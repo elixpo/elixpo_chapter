@@ -52,10 +52,10 @@ See `GET /v1/models` for every text, image, audio, video, and embedding model av
 
 All generation requests require an API key from [enter.pollinations.ai](https://enter.pollinations.ai/keys). Model listing endpoints work without authentication.
 
-| Type | Prefix | Use case | Rate limits | Description |
-|------|--------|----------|-------------|-------------|
-| Secret | `sk_` | Server-side apps | None | Personal developer key. Never expose in client-side code. |
-| App Key (BYOP) | `pk_` | Client-side & Frontend apps | None | Publishable key used in the **BYOP (Bring Your Own Pollen)** flow to authorize users' balances. |
+| Type           | Prefix | Use case                    | Rate limits | Description                                                                                     |
+| -------------- | ------ | --------------------------- | ----------- | ----------------------------------------------------------------------------------------------- |
+| Secret         | `sk_`  | Server-side apps            | None        | Personal developer key. Never expose in client-side code.                                       |
+| App Key (BYOP) | `pk_`  | Client-side & Frontend apps | None        | Publishable key used in the **BYOP (Bring Your Own Pollen)** flow to authorize users' balances. |
 
 > **Note:** Publishable Keys (`pk_`) for direct client-side requests have been replaced by the **BYOP (Bring Your Own Pollen)** auth flow. Frontend applications should use the OAuth authorization-code flow with PKCE to obtain a temporary user-authorized secret key (`sk_`). The legacy fragment redirect and device flow remain supported.
 
@@ -70,10 +70,10 @@ For detailed integration guides on user-pays authorization, including OAuth disc
 
 Generate text responses using AI models. Fully compatible with the OpenAI Chat Completions API — use any OpenAI SDK by changing the base URL.
 
-| Endpoint | Best for |
-|----------|----------|
+| Endpoint                    | Best for                                                                 |
+| --------------------------- | ------------------------------------------------------------------------ |
 | `POST /v1/chat/completions` | Full OpenAI compatibility — streaming, tools, vision, structured outputs |
-| `GET /text/{prompt}` | Quick prototyping — simple GET, returns plain text |
+| `GET /text/{prompt}`        | Quick prototyping — simple GET, returns plain text                       |
 
 **Available models:** openai, openai-fast, gpt-oss, gpt-5.4, gpt-5.4-mini, openai-large, gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, mercury, command-a-plus, qwen-coder, mistral-small-3.2, mistral, openai-audio, openai-audio-large, gemini-3-flash, gemini, gemini-flash-lite-3.5, gemini-fast, deepseek, gemma, gemma-4-31b, deepseek-pro, grok, grok-4-20-reasoning, grok-large, grok-4.5, gemini-search, gemini-search-fast, gemini-search-large, midijourney, midijourney-large, claude-fast, claude, claude-sonnet-5, claude-opus-4.6, claude-opus-4.7, claude-large, claude-fable-5, perplexity-fast, perplexity-high, perplexity, perplexity-reasoning, kimi, kimi-code, kimi-k3, laguna, longcat, nemotron, mimo-v2.5, mimo-v2.5-pro, gemini-large, nova-fast, nova, glm, llama, llama-maverick, llama-scout, minimax-m2.7, minimax, muse-spark-1.1, mistral-large, qwen-coder-large, qwen-large, qwen3.7-max, qwen3.7-flash, qwen-vision, qwen-vision-pro, step-flash, step-3.5-flash, qwen-safety
 
@@ -134,8 +134,8 @@ https://gen.pollinations.ai/video/sunset%20timelapse?model=veo&duration=4
 
 OpenAI-compatible Realtime WebSocket proxy for voice and multimodal sessions.
 
-| Endpoint | Description |
-|----------|-------------|
+| Endpoint           | Description                                           |
+| ------------------ | ----------------------------------------------------- |
 | `GET /v1/realtime` | WebSocket Realtime session (`model=gpt-realtime-2.1`) |
 
 Requires an API key with positive balance. Server clients can use `Authorization: Bearer <key>`; browser WebSocket clients can use `?key=pk_...`.
@@ -150,13 +150,21 @@ import WebSocket from "ws";
 // Server: Bearer auth. Browser: append `&key=pk_...` instead (headers aren't settable).
 const ws = new WebSocket(
     "wss://gen.pollinations.ai/v1/realtime?model=gpt-realtime-2.1",
-    { headers: { Authorization: `Bearer ${process.env.POLLINATIONS_API_KEY}` } },
+    {
+        headers: {
+            Authorization: `Bearer ${process.env.POLLINATIONS_API_KEY}`,
+        },
+    },
 );
 
-ws.on("open", () => ws.send(JSON.stringify({
-    type: "session.update",
-    session: { type: "realtime", instructions: "Be concise." },
-})));
+ws.on("open", () =>
+    ws.send(
+        JSON.stringify({
+            type: "session.update",
+            session: { type: "realtime", instructions: "Be concise." },
+        }),
+    ),
+);
 ws.on("message", (m) => console.log(JSON.parse(m.toString())));
 ```
 
@@ -182,11 +190,11 @@ https://gen.pollinations.ai/3d/no_prompt_for_trellis_needed?model=trellis-2-low&
 
 Text-to-speech, music generation, and audio transcription.
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /audio/{text}` | Simple URL-based TTS or music generation |
-| `POST /v1/audio/speech` | OpenAI-compatible TTS |
-| `POST /v1/audio/transcriptions` | Speech-to-text transcription |
+| Endpoint                        | Description                              |
+| ------------------------------- | ---------------------------------------- |
+| `GET /audio/{text}`             | Simple URL-based TTS or music generation |
+| `POST /v1/audio/speech`         | OpenAI-compatible TTS                    |
+| `POST /v1/audio/transcriptions` | Speech-to-text transcription             |
 
 **Audio models:** elevenlabs, elevenflash, eleven-multilingual-v2, eleven-dialogue, eleven-voice-changer, eleven-voice-isolator, elevenmusic, lyria-3-clip, eleven-sfx, whisper, scribe, universal-2, universal-3.5-pro, stable-audio-3-medium, stable-audio-3-large, qwen-tts, qwen-tts-instruct, csm-1b, kokoro
 
@@ -196,9 +204,9 @@ Text-to-speech, music generation, and audio transcription.
 
 Generate vector embeddings with an OpenAI-compatible response format.
 
-| Endpoint | Description |
-|----------|-------------|
-| `POST /v1/embeddings` | OpenAI-compatible embeddings endpoint |
+| Endpoint                 | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `POST /v1/embeddings`    | OpenAI-compatible embeddings endpoint        |
 | `GET /embeddings/models` | Embedding models with pricing and modalities |
 
 `gemini-2` supports text, image, audio, and video inputs. `cohere-embed-v4` supports text and one image per input. The OpenAI and Qwen embedding models are text-only.
@@ -215,15 +223,15 @@ Gemini task instructions count toward prompt token usage. Cohere requests contai
 
 Discover available models with pricing, capabilities, and metadata. No authentication required.
 
-| Endpoint | Returns |
-|----------|---------|
-| `GET /models` | All models with pricing, capabilities, and metadata |
-| `GET /v1/models` | All models in OpenAI-compatible format (`{object: "list", data: [...]}`) |
-| `GET /text/models` | Text models with pricing, context window, tool support |
-| `GET /image/models` | Image & video models with capabilities and pricing |
-| `GET /audio/models` | Audio models with supported voices |
-| `GET /embeddings/models` | Embedding models with supported modalities |
-| `GET /3d/models` | 3D Generation models with supported modalities |
+| Endpoint                 | Returns                                                                  |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `GET /models`            | All models with pricing, capabilities, and metadata                      |
+| `GET /v1/models`         | All models in OpenAI-compatible format (`{object: "list", data: [...]}`) |
+| `GET /text/models`       | Text models with pricing, context window, tool support                   |
+| `GET /image/models`      | Image & video models with capabilities and pricing                       |
+| `GET /audio/models`      | Audio models with supported voices                                       |
+| `GET /embeddings/models` | Embedding models with supported modalities                               |
+| `GET /3d/models`         | 3D Generation models with supported modalities                           |
 
 Rich model endpoints include `capabilities` for agentic/model traits:
 `tool_calling`, `reasoning`, `web_search`, and `code_execution`.
@@ -270,13 +278,13 @@ Upload images, audio, and video and get back a unique id and URL. Each upload ge
 
 Base URL: https://media.pollinations.ai
 
-| Endpoint | Description |
-|----------|-------------|
-| `POST /upload` | Upload a file, receive a unique media URL |
-| `GET /{id}` | Retrieve a previously uploaded file |
-| `GET /{id}/metadata` | Get file metadata as JSON |
-| `GET /media?tag={tag}` | List the public gallery for a tag (no auth) |
-| `DELETE /media/{id}` | Delete a published item you own (secret `sk_` key) |
+| Endpoint               | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `POST /upload`         | Upload a file, receive a unique media URL          |
+| `GET /{id}`            | Retrieve a previously uploaded file                |
+| `GET /{id}/metadata`   | Get file metadata as JSON                          |
+| `GET /media?tag={tag}` | List the public gallery for a tag (no auth)        |
+| `DELETE /media/{id}`   | Delete a published item you own (secret `sk_` key) |
 
 Upload requires an API key; retrieval is public. The decoded/file-size limit is 100MB for both upload formats. Files use a 30-day lifecycle from upload or the latest refresh. Retrieving the file body refreshes that lifecycle only when the object is at least 15 days old; metadata and HEAD requests do not refresh it. Two upload formats are accepted:
 
@@ -305,15 +313,15 @@ Self-service endpoints for the authenticated user. All endpoints require authent
 
 `account:usage` is the read-only account-state scope for balances, usage, quests, and earnings. `account:keys` manages keys and, where enabled, my-models. These permissions are independent; request both when a client needs both. Newly created child keys cannot receive `account:keys` through this API.
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /account/profile` | GitHub username, image, and community model access |
-| `GET /account/balance` | Current pollen balance |
-| `GET /account/quests` | Read-only quest status |
-| `GET /account/usage` | Per-request usage history with costs |
-| `GET /account/usage/daily` | Daily aggregated usage for dashboards |
-| `/account/my-models` | Private community model registration and allowlisted public publishing |
-| `GET /account/key` | API key validity, type, and permissions |
+| Endpoint                   | Description                                                            |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `GET /account/profile`     | GitHub username, image, and community model access                     |
+| `GET /account/balance`     | Current pollen balance                                                 |
+| `GET /account/quests`      | Read-only quest status                                                 |
+| `GET /account/usage`       | Per-request usage history with costs                                   |
+| `GET /account/usage/daily` | Daily aggregated usage for dashboards                                  |
+| `/account/my-models`       | Private community model registration and allowlisted public publishing |
+| `GET /account/key`         | API key validity, type, and permissions                                |
 
 ### GET /account/profile
 
@@ -383,13 +391,13 @@ All errors return JSON with a consistent shape:
 }
 ```
 
-| Status | Meaning |
-|--------|---------|
-| `400` | Invalid parameters or malformed request |
-| `401` | Missing or invalid API key |
-| `402` | Insufficient pollen balance |
-| `403` | API key lacks required permission |
-| `500` | Internal server error |
+| Status | Meaning                                 |
+| ------ | --------------------------------------- |
+| `400`  | Invalid parameters or malformed request |
+| `401`  | Missing or invalid API key              |
+| `402`  | Insufficient pollen balance             |
+| `403`  | API key lacks required permission       |
+| `500`  | Internal server error                   |
 
 ## Public Stats
 
@@ -404,13 +412,13 @@ Public read token (safe to embed client-side):
 p.eyJ1IjogImFjYTYzZjc5LThjNTYtNDhlNC05NWJjLWEyYmFjMTY0NmJkMyIsICJpZCI6ICI5ZWZmMGM3Ni1kOTZkLTQwYjgtYWQwOC1mNDFlMmRiYjBmYTIiLCAiaG9zdCI6ICJnY3AtZXVyb3BlLXdlc3QyIn0.6VnVkAQ5h_fkcDZVDUoU38dzTxaw0xo3DnmKkhECbA8
 ```
 
-| Endpoint | Params | Returns |
-|----------|--------|---------|
-| `GET /v0/pipes/public_model_stats.json` | `limit` (50) | Per-model usage over the last 7 days: request count, avg cost, avg response time |
-| `GET https://gen.pollinations.ai/v1/models/status` | `minutes` (60, max 10080) | Per-model health in a recent window: 2xx/4xx/5xx counts, latency p50/p95. Use this cached gateway instead of calling Tinybird directly. |
-| `GET /v0/pipes/weekly_health_stats.json` | `weeks_back` (12) | Weekly service availability (`2xx / (2xx + 5xx)`, cache excluded) and latency |
-| `GET /v0/pipes/app_top_weekly.json` | — | Top 10 registered apps owned by showcase contributors, by request count over the last 7 days. The owner is listed in the directory; the returned app may be any of their registered apps |
-| `GET /v0/pipes/app_directory_public.json` | `category`, `platform`, `limit` (1000) | The community app directory ([apps/APPS.md](https://github.com/pollinations/pollinations/blob/main/apps/APPS.md)) |
+| Endpoint                                           | Params                                 | Returns                                                                                                                                                                                  |
+| -------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v0/pipes/public_model_stats.json`            | `limit` (50)                           | Per-model usage over the last 7 days: request count, avg cost, avg response time                                                                                                         |
+| `GET https://gen.pollinations.ai/v1/models/status` | `minutes` (60, max 10080)              | Per-model health in a recent window: 2xx/4xx/5xx counts, latency p50/p95. Use this cached gateway instead of calling Tinybird directly.                                                  |
+| `GET /v0/pipes/weekly_health_stats.json`           | `weeks_back` (12)                      | Weekly service availability (`2xx / (2xx + 5xx)`, cache excluded) and latency                                                                                                            |
+| `GET /v0/pipes/app_top_weekly.json`                | —                                      | Top 10 registered apps owned by showcase contributors, by request count over the last 7 days. The owner is listed in the directory; the returned app may be any of their registered apps |
+| `GET /v0/pipes/app_directory_public.json`          | `category`, `platform`, `limit` (1000) | The community app directory ([apps/APPS.md](https://github.com/pollinations/pollinations/blob/main/apps/APPS.md))                                                                        |
 
 Tinybird responses are JSON: a `data` array of rows plus a `meta` array typing
 each column. Append `&token=<public-read-token>` to authenticate them. The
@@ -501,18 +509,18 @@ With restrictions:
 https://enter.pollinations.ai/authorize?response_type=code&redirect_uri=https://myapp.com/callback&client_id=pk_yourkey&scope=usage&models=flux,openai&expiry=7&budget=10&state=random&code_challenge=...&code_challenge_method=S256
 ```
 
-| Param | What it does | Example |
-|-------|-------------|---------|
-| `client_id` | Your publishable key — shows app name + author on consent screen, tracks traffic and developer earnings | `pk_abc123` |
-| `redirect_uri` | Where users return after authorizing — must exactly match a Redirect URI on the App Key, query string included (loopback `http://localhost` matches any port) | `https://myapp.com/callback` |
-| `response_type` | Use `code` for the OAuth authorization-code flow | `code` |
-| `state` | Opaque value echoed back on the callback for CSRF protection | `any-random-string` |
-| `code_challenge` | Base64url SHA-256 of your PKCE verifier | `abc...` |
-| `code_challenge_method` | Must be `S256` | `S256` |
-| `scope` | Account access (space or comma separated) | `usage keys` |
-| `models` | Restrict to specific models | `flux,openai,gptimage` |
-| `budget` | Numeric Pollen cap. Defaults to `5`; users can clear the budget field on the consent screen for unlimited. | `10` |
-| `expiry` | User-authorized key lifetime in days (default: 7) | `7` |
+| Param                   | What it does                                                                                                                                                  | Example                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `client_id`             | Your publishable key — shows app name + author on consent screen, tracks traffic and developer earnings                                                       | `pk_abc123`                  |
+| `redirect_uri`          | Where users return after authorizing — must exactly match a Redirect URI on the App Key, query string included (loopback `http://localhost` matches any port) | `https://myapp.com/callback` |
+| `response_type`         | Use `code` for the OAuth authorization-code flow                                                                                                              | `code`                       |
+| `state`                 | Opaque value echoed back on the callback for CSRF protection                                                                                                  | `any-random-string`          |
+| `code_challenge`        | Base64url SHA-256 of your PKCE verifier                                                                                                                       | `abc...`                     |
+| `code_challenge_method` | Must be `S256`                                                                                                                                                | `S256`                       |
+| `scope`                 | Account access (space or comma separated)                                                                                                                     | `usage keys`                 |
+| `models`                | Restrict to specific models                                                                                                                                   | `flux,openai,gptimage`       |
+| `budget`                | Numeric Pollen cap. Defaults to `5`; users can clear the budget field on the consent screen for unlimited.                                                    | `10`                         |
+| `expiry`                | User-authorized key lifetime in days (default: 7)                                                                                                             | `7`                          |
 
 Legacy names `app_key`, `redirect_url`, and `permissions` are still accepted for backwards compatibility.
 
@@ -546,10 +554,16 @@ Scopes: `profile` (name + email), `usage` (account balance + usage), `keys` (acc
 Use the returned `access_token` as the API key:
 
 ```javascript
-fetch('https://gen.pollinations.ai/v1/chat/completions', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ model: 'openai', messages: [{ role: 'user', content: 'yo' }] })
+fetch("https://gen.pollinations.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+        model: "openai",
+        messages: [{ role: "user", content: "yo" }],
+    }),
 });
 ```
 
@@ -576,19 +590,25 @@ Fragment, not query param — never hits server logs. 🔒 If you passed `state`
 ```javascript
 // Send user to auth
 const params = new URLSearchParams({
-  redirect_uri: location.href,
-  client_id: 'pk_yourkey',
+    redirect_uri: location.href,
+    client_id: "pk_yourkey",
 });
 window.location.href = `https://enter.pollinations.ai/authorize?${params}`;
 
 // Grab key from URL after redirect
-const apiKey = new URLSearchParams(location.hash.slice(1)).get('api_key');
+const apiKey = new URLSearchParams(location.hash.slice(1)).get("api_key");
 
 // Use their pollen
-fetch('https://gen.pollinations.ai/v1/chat/completions', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ model: 'openai', messages: [{ role: 'user', content: 'yo' }] })
+fetch("https://gen.pollinations.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+        model: "openai",
+        messages: [{ role: "user", content: "yo" }],
+    }),
 });
 ```
 
@@ -646,7 +666,7 @@ curl https://enter.pollinations.ai/api/device/userinfo \
 
 🕐 User-authorized keys default to 7 days. Users can revoke anytime from the dashboard.
 
-[edit this doc](https://github.com/pollinations/pollinations/edit/main/BRING_YOUR_OWN_POLLEN.md) · *h/t [Puter.js](https://docs.puter.com/user-pays-model/) for the idea*
+[edit this doc](https://github.com/pollinations/pollinations/edit/main/BRING_YOUR_OWN_POLLEN.md) · _h/t [Puter.js](https://docs.puter.com/user-pays-model/) for the idea_
 
 ## CLI
 
@@ -800,16 +820,16 @@ npx @pollinations/mcp
 
 ### Image & Video Generation
 
-| Tool                 | Description                                                |
-| -------------------- | ---------------------------------------------------------- |
-| `generateImageUrl`   | Generate a shareable image URL from a text prompt          |
-| `generateImage`      | Generate an image and return base64 data                   |
-| `generateImageBatch` | Generate multiple images in parallel (best with `sk_` keys)|
-| `generateVideo`      | Generate a video and return base64 data                    |
-| `generateVideoUrl`   | Generate a shareable video URL from a text prompt          |
-| `describeImage`      | Vision analysis of an image URL                            |
-| `analyzeVideo`       | Analyze YouTube videos or video URLs                       |
-| `listImageModels`    | List available image & video models (live)                 |
+| Tool                 | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| `generateImageUrl`   | Generate a shareable image URL from a text prompt           |
+| `generateImage`      | Generate an image and return base64 data                    |
+| `generateImageBatch` | Generate multiple images in parallel (best with `sk_` keys) |
+| `generateVideo`      | Generate a video and return base64 data                     |
+| `generateVideoUrl`   | Generate a shareable video URL from a text prompt           |
+| `describeImage`      | Vision analysis of an image URL                             |
+| `analyzeVideo`       | Analyze YouTube videos or video URLs                        |
+| `listImageModels`    | List available image & video models (live)                  |
 
 Common image parameters: `prompt`, `model`, `width`, `height`, `seed`, `quality`, `image` (for image-to-image), `transparent`. Common video parameters: `model`, `duration`, `aspectRatio`, `audio`. Call `listImageModels` for the current model set and per-model capabilities.
 
@@ -827,12 +847,12 @@ Call `listTextModels` for the current model set, aliases, and capabilities (reas
 
 ### Audio
 
-| Tool               | Description                              |
-| ------------------ | ---------------------------------------- |
-| `respondAudio`     | AI responds to a prompt with speech      |
-| `sayText`          | Text-to-speech (verbatim)                |
-| `transcribeAudio`  | Transcribe audio (gemini-large)          |
-| `listAudioVoices`  | List available voices (live)             |
+| Tool              | Description                         |
+| ----------------- | ----------------------------------- |
+| `respondAudio`    | AI responds to a prompt with speech |
+| `sayText`         | Text-to-speech (verbatim)           |
+| `transcribeAudio` | Transcribe audio (gemini-large)     |
+| `listAudioVoices` | List available voices (live)        |
 
 Call `listAudioVoices` for the current voice list. Output formats: mp3, wav, flac, opus, pcm16.
 

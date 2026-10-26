@@ -25,7 +25,7 @@ const textFieldSx = {
         background: "transparent",
         "& fieldset": { borderColor: "var(--border)" },
         "&:hover fieldset": { borderColor: "var(--border)" },
-        "&.Mui-focused fieldset": { borderColor: "#ff7759" },
+        "&.Mui-focused fieldset": { borderColor: "#3a65c7" },
         "& input:-webkit-autofill": {
             WebkitBoxShadow: "0 0 0 1000px transparent inset !important",
             WebkitTextFillColor: "var(--fg) !important",
@@ -42,7 +42,7 @@ const textFieldSx = {
     },
     "& .MuiInputBase-input::placeholder": { color: "transparent", opacity: 0 },
     "& .MuiInputLabel-root": { color: "var(--fg-muted)" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#ff7759" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "var(--accent)" },
 };
 
 const RegisterContent = () => {
@@ -277,11 +277,11 @@ const RegisterContent = () => {
                             disabled={loading}
                             sx={{
                                 my: 2,
-                                background: branding?.primaryColor || "#ff7759",
+                                background: branding?.primaryColor || "#3a65c7",
                                 color: branding
                                     ? getContrastColor(branding.primaryColor)
                                     : "#fff",
-                                border: `1px solid ${branding?.primaryColor || "#ff7759"}`,
+                                border: `1px solid ${branding?.primaryColor || "#3a65c7"}`,
                                 fontWeight: 600,
                                 py: 1.5,
                                 textTransform: "none",
@@ -317,7 +317,7 @@ const RegisterContent = () => {
                                     : "/login"
                             }
                             style={{
-                                color: "#ff7759",
+                                color: "var(--accent)",
                                 textDecoration: "none",
                                 fontWeight: 600,
                             }}

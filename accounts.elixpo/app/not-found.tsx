@@ -22,7 +22,7 @@ const NotFound = () => {
                     sx={{
                         fontSize: "120px",
                         fontWeight: 800,
-                        color: "#ff7759",
+                        color: "var(--accent)",
                         mb: 2,
                         lineHeight: 1,
                     }}
@@ -37,7 +37,7 @@ const NotFound = () => {
                             position: "absolute",
                             width: "200px",
                             height: "200px",
-                            border: "2px solid rgba(255, 119, 89, 0.2)",
+                            border: "2px solid rgba(58, 101, 199, 0.2)",
                             borderRadius: "50%",
                             top: "50%",
                             left: "50%",
@@ -60,7 +60,7 @@ const NotFound = () => {
                             position: "absolute",
                             width: "150px",
                             height: "150px",
-                            border: "2px solid rgba(255, 119, 89, 0.3)",
+                            border: "2px solid rgba(58, 101, 199, 0.3)",
                             borderRadius: "50%",
                             top: "50%",
                             left: "50%",
@@ -114,16 +114,16 @@ const NotFound = () => {
                             fullWidth
                             variant="contained"
                             sx={{
-                                background: "rgba(255, 119, 89, 0.15)",
-                                color: "#ff7759",
-                                border: "1px solid rgba(255, 119, 89, 0.3)",
+                                background: "rgba(58, 101, 199, 0.15)",
+                                color: "var(--accent)",
+                                border: "1px solid rgba(58, 101, 199, 0.3)",
                                 fontWeight: 600,
                                 py: 1.5,
                                 textTransform: "none",
                                 fontSize: "1rem",
                                 "&:hover": {
-                                    background: "rgba(255, 119, 89, 0.25)",
-                                    borderColor: "rgba(255, 119, 89, 0.5)",
+                                    background: "rgba(58, 101, 199, 0.25)",
+                                    borderColor: "rgba(58, 101, 199, 0.5)",
                                 },
                             }}
                         >
@@ -143,7 +143,7 @@ const NotFound = () => {
                                 textTransform: "none",
                                 fontSize: "1rem",
                                 "&:hover": {
-                                    borderColor: "rgba(25,40,55,0.4)",
+                                    borderColor: "rgba(20,32,24,0.4)",
                                     color: "#f5f5f4",
                                 },
                             }}

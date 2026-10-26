@@ -8,7 +8,8 @@ export type AccountsErrorCode =
     | "protocol_error"
     | "state_mismatch"
     | "nonce_mismatch"
-    | "token_verification_error";
+    | "token_verification_error"
+    | "webhook_verification_error";
 
 export class AccountsError extends Error {
     readonly code: AccountsErrorCode;

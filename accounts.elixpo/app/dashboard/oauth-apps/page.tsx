@@ -67,19 +67,19 @@ const textFieldSx = {
         background: "transparent",
         "& fieldset": { borderColor: "var(--border)" },
         "&:hover fieldset": { borderColor: "var(--border)" },
-        "&.Mui-focused fieldset": { borderColor: "#ff7759" },
+        "&.Mui-focused fieldset": { borderColor: "#3a65c7" },
     },
     "& .MuiInputLabel-root": { color: "var(--fg-muted)" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#ff7759" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "var(--accent)" },
     "& .MuiFormHelperText-root": { color: "var(--fg-faint)" },
 };
 
 const tableHeadSx = {
     "& .MuiTableCell-head": {
-        color: "#ff7759",
+        color: "var(--accent)",
         fontWeight: 600,
-        backgroundColor: "rgba(255, 119, 89,0.05)",
-        borderColor: "rgba(255, 119, 89,0.2)",
+        backgroundColor: "rgba(58, 101, 199,0.05)",
+        borderColor: "rgba(58, 101, 199,0.2)",
     },
 };
 
@@ -438,15 +438,15 @@ const OAuthAppsPage = () => {
                         // label content stays the same; only the surface
                         // changes via responsive sx.
                         sx={{
-                            background: "rgba(255, 119, 89,0.15)",
-                            color: "#ff7759",
-                            border: "1px solid rgba(255, 119, 89,0.3)",
+                            background: "rgba(58, 101, 199,0.15)",
+                            color: "var(--accent)",
+                            border: "1px solid rgba(58, 101, 199,0.3)",
                             fontWeight: 600,
                             textTransform: "none",
                             boxShadow: "none",
                             "&:hover": {
-                                background: "rgba(255, 119, 89,0.25)",
-                                borderColor: "rgba(255, 119, 89,0.5)",
+                                background: "rgba(58, 101, 199,0.25)",
+                                borderColor: "rgba(58, 101, 199,0.5)",
                                 boxShadow: "none",
                             },
                             minWidth: { xs: 44, sm: "auto" },
@@ -487,9 +487,9 @@ const OAuthAppsPage = () => {
                         onClose={() => setSuccessMessage("")}
                         sx={{
                             mb: 2,
-                            backgroundColor: "rgba(255, 119, 89,0.1)",
-                            color: "#ff7759",
-                            borderColor: "rgba(255, 119, 89,0.3)",
+                            backgroundColor: "rgba(58, 101, 199,0.1)",
+                            color: "var(--accent)",
+                            borderColor: "rgba(58, 101, 199,0.3)",
                         }}
                     >
                         {successMessage}
@@ -513,9 +513,9 @@ const OAuthAppsPage = () => {
                                     textTransform: "none",
                                     fontWeight: 600,
                                 },
-                                "& .Mui-selected": { color: "#ff7759" },
+                                "& .Mui-selected": { color: "var(--accent)" },
                                 "& .MuiTabs-indicator": {
-                                    backgroundColor: "#ff7759",
+                                    backgroundColor: "#3a65c7",
                                 },
                             }}
                         >
@@ -643,7 +643,7 @@ const OAuthAppsPage = () => {
                                                                     "none",
                                                                 cursor: "pointer",
                                                                 "&:hover": {
-                                                                    color: "#ff7759",
+                                                                    color: "var(--accent)",
                                                                     textDecoration:
                                                                         "underline",
                                                                     textUnderlineOffset:
@@ -667,12 +667,12 @@ const OAuthAppsPage = () => {
                                                                 bgcolor:
                                                                     app.client_type ===
                                                                     "public"
-                                                                        ? "rgba(255, 119, 89, 0.12)"
+                                                                        ? "rgba(58, 101, 199, 0.12)"
                                                                         : "var(--overlay)",
                                                                 color:
                                                                     app.client_type ===
                                                                     "public"
-                                                                        ? "#ff7759"
+                                                                        ? "#3a65c7"
                                                                         : "var(--fg-muted)",
                                                                 border: "1px solid var(--border)",
                                                                 fontSize:
@@ -718,7 +718,7 @@ const OAuthAppsPage = () => {
                                                                     textDecoration:
                                                                         "none",
                                                                     "&:hover": {
-                                                                        color: "#ff7759",
+                                                                        color: "var(--accent)",
                                                                         textDecoration:
                                                                             "underline",
                                                                     },
@@ -766,7 +766,7 @@ const OAuthAppsPage = () => {
                                                             )
                                                         }
                                                         sx={{
-                                                            color: "#ff7759",
+                                                            color: "var(--accent)",
                                                             p: 0.5,
                                                         }}
                                                         title="Copy Client ID"
@@ -786,15 +786,15 @@ const OAuthAppsPage = () => {
                                                     sx={{
                                                         backgroundColor:
                                                             app.is_active
-                                                                ? "rgba(255, 119, 89,0.2)"
+                                                                ? "rgba(58, 101, 199,0.2)"
                                                                 : "rgba(107, 114, 128, 0.2)",
                                                         color: app.is_active
-                                                            ? "#ff7759"
+                                                            ? "#3a65c7"
                                                             : "var(--fg-faint)",
                                                         border: "1px solid",
                                                         borderColor:
                                                             app.is_active
-                                                                ? "rgba(255, 119, 89,0.3)"
+                                                                ? "rgba(58, 101, 199,0.3)"
                                                                 : "rgba(107, 114, 128, 0.3)",
                                                     }}
                                                 />
@@ -1122,7 +1122,7 @@ const OAuthAppsPage = () => {
                                 })
                             }
                             sx={{
-                                color: "#ff7759",
+                                color: "var(--accent)",
                                 textTransform: "none",
                                 fontSize: "0.8rem",
                                 mt: 0.5,
@@ -1165,12 +1165,12 @@ const OAuthAppsPage = () => {
                         disableElevation
                         disabled={loading}
                         sx={{
-                            background: "rgba(255, 119, 89,0.15)",
-                            color: "#ff7759",
-                            border: "1px solid rgba(255, 119, 89,0.3)",
+                            background: "rgba(58, 101, 199,0.15)",
+                            color: "var(--accent)",
+                            border: "1px solid rgba(58, 101, 199,0.3)",
                             fontWeight: 600,
                             "&:hover": {
-                                background: "rgba(255, 119, 89,0.25)",
+                                background: "rgba(58, 101, 199,0.25)",
                             },
                             "&:disabled": { color: "var(--fg-faint)" },
                         }}
@@ -1316,12 +1316,12 @@ const OAuthAppsPage = () => {
                                         background: "var(--surface)",
                                         p: 1.5,
                                         borderRadius: "8px",
-                                        border: "1px solid rgba(255, 119, 89,0.2)",
+                                        border: "1px solid rgba(58, 101, 199,0.2)",
                                     }}
                                 >
                                     <Typography
                                         sx={{
-                                            color: "#ff7759",
+                                            color: "var(--accent)",
                                             fontFamily: "monospace",
                                             fontSize: "0.85rem",
                                             flex: 1,
@@ -1338,7 +1338,7 @@ const OAuthAppsPage = () => {
                                                 "id",
                                             )
                                         }
-                                        sx={{ color: "#ff7759" }}
+                                        sx={{ color: "var(--accent)" }}
                                     >
                                         <ContentCopyIcon fontSize="small" />
                                     </IconButton>
@@ -1346,7 +1346,7 @@ const OAuthAppsPage = () => {
                                 {idCopied && (
                                     <Typography
                                         sx={{
-                                            color: "#ff7759",
+                                            color: "var(--accent)",
                                             fontSize: "0.75rem",
                                             mt: 0.5,
                                         }}
@@ -1441,9 +1441,9 @@ const OAuthAppsPage = () => {
                                             size="small"
                                             sx={{
                                                 backgroundColor:
-                                                    "rgba(255, 119, 89,0.1)",
-                                                color: "#ff7759",
-                                                border: "1px solid rgba(255, 119, 89,0.2)",
+                                                    "rgba(58, 101, 199,0.1)",
+                                                color: "var(--accent)",
+                                                border: "1px solid rgba(58, 101, 199,0.2)",
                                             }}
                                         />
                                     ))}
@@ -1463,11 +1463,11 @@ const OAuthAppsPage = () => {
                         variant="contained"
                         disableElevation
                         sx={{
-                            background: "rgba(255, 119, 89,0.15)",
-                            color: "#ff7759",
-                            border: "1px solid rgba(255, 119, 89,0.3)",
+                            background: "rgba(58, 101, 199,0.15)",
+                            color: "var(--accent)",
+                            border: "1px solid rgba(58, 101, 199,0.3)",
                             "&:hover": {
-                                background: "rgba(255, 119, 89,0.25)",
+                                background: "rgba(58, 101, 199,0.25)",
                             },
                         }}
                     >

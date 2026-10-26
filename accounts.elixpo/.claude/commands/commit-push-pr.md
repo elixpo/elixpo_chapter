@@ -7,12 +7,14 @@ git branch --show-current
 ```
 
 ### If on `main`
+
 - **NEVER commit to main.** Create a new branch first.
 - For agent runs: `BRANCH="elixpo/issue-$ISSUE_N-$(openssl rand -hex 2)"`
 - For human work: `feat/<slug>` or `fix/<slug>`
 - `git checkout -b "$BRANCH"`, continue to Step 2.
 
 ### If on a feature branch
+
 Check whether this branch already has an open PR:
 
 ```bash
@@ -21,13 +23,17 @@ gh pr list --head "$(git branch --show-current)" --state open --json number,url 
 
 - **Open PR exists** → push to this branch (Step 2). Do NOT open another PR.
 - **No open PR** → check for a merged one:
+
   ```bash
   gh pr list --head "$(git branch --show-current)" --state merged --json number --jq '.[0].number'
   ```
+
   - **Merged** → branch is stale. Cut a fresh branch from `main`:
+
     ```bash
     git checkout main && git pull && git checkout -b elixpo/issue-$ISSUE_N-$(openssl rand -hex 2)
     ```
+
     Re-apply the change there.
   - **Never had a PR** → push and open a new one (Step 3).
 
@@ -38,6 +44,7 @@ gh pr list --head "$(git branch --show-current)" --state open --json number,url 
 3. `git status` + `git diff --stat` — sanity-check what's staged.
 4. `git add` specific files — avoid `.env*`, `.wrangler/`, anything under `tsconfig.tsbuildinfo`.
 5. Commit with conventional format:
+
    ```
    feat: <concrete summary> (#<issue-n>)
    fix: <concrete summary> (#<issue-n>)

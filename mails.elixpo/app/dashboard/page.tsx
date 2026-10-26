@@ -22,7 +22,7 @@ import Link from "next/link";
 import { PRIMARY_BTN } from "../components/dashboard-ui";
 import { GlassCard } from "../components/glass-card";
 
-const ACCENT = "#ff7759";
+const ACCENT = "var(--accent)";
 const TEXT = "var(--fg)";
 const TEXT_55 = "var(--fg-muted)";
 const BORDER = "var(--border)";
@@ -115,7 +115,12 @@ export default async function OverviewPage() {
     const snap = await loadSnapshot(session.tenantId);
 
     const stats = [
-        { label: "Products", value: String(snap.products), icon: InventoryIcon, accent: "#ff7759" },
+        {
+            label: "Products",
+            value: String(snap.products),
+            icon: InventoryIcon,
+            accent: "var(--accent)",
+        },
         {
             label: "Templates",
             value: String(snap.templates),
@@ -126,7 +131,7 @@ export default async function OverviewPage() {
             label: "Sends this month",
             value: String(snap.sentThisMonth),
             icon: SendIcon,
-            accent: "#1863dc",
+            accent: "#3f7cec",
         },
         {
             label: "Deliverability",
@@ -143,7 +148,7 @@ export default async function OverviewPage() {
             body: "Add the mailbox you'll send from — email + app password, encrypted at rest.",
             cta: "Add sender",
             href: "/dashboard/senders",
-            accent: "#ff7759",
+            accent: "var(--accent)",
             done: snap.senders > 0,
         },
         {
@@ -161,7 +166,7 @@ export default async function OverviewPage() {
             body: "Compose in the visual editor with {{variables}} and a live preview.",
             cta: "Create template",
             href: "/dashboard/templates",
-            accent: "#1863dc",
+            accent: "#3f7cec",
             done: snap.templates > 0,
         },
         {
@@ -220,9 +225,9 @@ export default async function OverviewPage() {
                         sx={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.76rem",
-                            bgcolor: "rgba(255, 119, 89, 0.12)",
-                            color: "#ffad9b",
-                            border: "1px solid rgba(255, 119, 89, 0.3)",
+                            bgcolor: "rgba(58, 101, 199, 0.12)",
+                            color: "var(--accent)",
+                            border: "1px solid rgba(58, 101, 199, 0.3)",
                         }}
                     />
                 </Stack>
@@ -252,8 +257,8 @@ export default async function OverviewPage() {
                                     display: "grid",
                                     placeItems: "center",
                                     color: s.accent,
-                                    background: `${s.accent}14`,
-                                    border: `1px solid ${s.accent}33`,
+                                    background: `color-mix(in srgb, ${s.accent} 8%, transparent)`,
+                                    border: `1px solid color-mix(in srgb, ${s.accent} 20%, transparent)`,
                                 }}
                             >
                                 <s.icon sx={{ fontSize: 20 }} />
@@ -299,11 +304,11 @@ export default async function OverviewPage() {
                                 height: 20,
                                 fontSize: "0.66rem",
                                 fontWeight: 700,
-                                color: allDone ? "#86efac" : "#ffad9b",
+                                color: allDone ? "#86efac" : "var(--accent)",
                                 bgcolor: allDone
                                     ? "rgba(52,211,153,0.12)"
-                                    : "rgba(255, 119, 89, 0.12)",
-                                border: `1px solid ${allDone ? "rgba(52,211,153,0.3)" : "rgba(255, 119, 89, 0.3)"}`,
+                                    : "rgba(58, 101, 199, 0.12)",
+                                border: `1px solid ${allDone ? "rgba(52,211,153,0.3)" : "rgba(58, 101, 199, 0.3)"}`,
                             }}
                         />
                     </Stack>
@@ -341,8 +346,8 @@ export default async function OverviewPage() {
                                             color: step.done ? "#34d399" : step.accent,
                                             background: step.done
                                                 ? "rgba(52,211,153,0.14)"
-                                                : `${step.accent}14`,
-                                            border: `1px solid ${step.done ? "rgba(52,211,153,0.4)" : `${step.accent}40`}`,
+                                                : `color-mix(in srgb, ${step.accent} 8%, transparent)`,
+                                            border: `1px solid ${step.done ? "rgba(52,211,153,0.4)" : `color-mix(in srgb, ${step.accent} 25%, transparent)`}`,
                                         }}
                                     >
                                         <step.icon sx={{ fontSize: 22 }} />

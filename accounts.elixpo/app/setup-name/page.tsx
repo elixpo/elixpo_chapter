@@ -17,7 +17,7 @@ import {
     VerifiedBrandBanner,
 } from "../components/verified-brand-banner";
 
-const ACCENT = "#ff7759";
+const ACCENT = "#3a65c7";
 
 const textFieldSx = {
     "& .MuiOutlinedInput-root": {
@@ -227,7 +227,7 @@ const SetupNameContent = () => {
                     background: "var(--surface)",
                     border: "1px solid var(--border)",
                     borderRadius: "16px",
-                    boxShadow: "0 8px 32px 0 rgba(25, 40, 55, 0.06)",
+                    boxShadow: "0 8px 32px 0 rgba(20, 32, 24, 0.06)",
                     p: 4,
                 }}
             >
@@ -313,7 +313,7 @@ const SetupNameContent = () => {
                         textTransform: "none",
                         fontSize: "0.95rem",
                         py: 1.3,
-                        "&:hover": { background: "rgba(255, 119, 89, 0.9)" },
+                        "&:hover": { background: "rgba(58, 101, 199, 0.9)" },
                         "&:disabled": {
                             background: "var(--overlay)",
                             color: "var(--fg-faint)",

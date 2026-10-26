@@ -31,20 +31,57 @@ cleanup() {
 
 trap cleanup EXIT
 
-is_skipped_runtime_key() {
-  local key="$1"
+# Only keys the Pages runtime actually reads are pushed as secrets. Cloudflare
+# caps a Worker at 64 variables (secrets + vars), and deploy credentials,
+# local-dev settings, or SOPS metadata must never land in the runtime env.
+# Add a key here when runtime code starts reading it.
+RUNTIME_SECRETS=(
+  NODE_ENV
+  NEXT_PUBLIC_APP_URL
+  JWT_PRIVATE_KEY
+  JWT_PUBLIC_KEY
+  GOOGLE_CLIENT_ID
+  GOOGLE_CLIENT_SECRET
+  GITHUB_CLIENT_ID
+  GITHUB_CLIENT_SECRET
+  MICROSOFT_CLIENT_ID
+  MICROSOFT_CLIENT_SECRET
+  DISCORD_CLIENT_ID
+  DISCORD_CLIENT_SECRET
+  EMAIL_VERIFICATION_OTP_EXPIRY_MINUTES
+  AUTHORIZATION_TIMEOUT_SECONDS
+  MAILS_SHARED_SECRET
+  MAILS_HOOK_USER_VERIFY_OTP
+  MAILS_HOOK_PASSWORD_RESET
+  MAILS_HOOK_LOGIN_OTP
+  MAILS_HOOK_MFA_EMAIL
+  MAILS_HOOK_OAUTH_APP_REGISTER
+  MAILS_HOOK_OAUTH_APP_DELETE
+  MAILS_HOOK_ACCOUNT_SUSPENDED
+  MAILS_HOOK_SIGN_IN_DEVICE
+  MAILS_HOOK_WEBHOOK_FAIL
+  MAILS_HOOK_BILLING_SUBSCRIPTION_ACTIVATED
+  MAILS_HOOK_BILLING_PAYMENT_FAILED
+  MAILS_HOOK_BILLING_SUBSCRIPTION_CANCELLED
+  PAYOUTS_API_BASE
+  PAYOUTS_WEBHOOK_SECRET
+  ELIXPO_ACCOUNTS_PAYOUT_CLIENT_SECRET
+  ELIXPO_CLIENT_ID
+  ELIXPO_CLIENT_SECRET
+  BLOGS_CLIENT_ID
+  BLOGS_REVOKE_WEBHOOK_URL
+  BLOGS_REVOKE_WEBHOOK_SECRET
+  DEVICE_CLEANUP_CRON_SECRET
+  REFRESH_TOKEN_CLEANUP_CRON_SECRET
+  WEBHOOK_SECRET
+)
 
-  # Deployment credentials are local/CI inputs and must never become Pages
-  # runtime secrets. The remaining values are vars declared in wrangler.toml.
-  [[ "$key" == "NPM_TOKEN" || \
-     "$key" == "GITHUB_TOKEN" || \
-     "$key" == "VSCE_PAT" || \
-     "$key" == "CLOUDFLARE_API_TOKEN" || \
-     "$key" == "CLOUDFLARE_ACCOUNT_ID" || \
-     "$key" == "NPM_CONFIG_PROVENANCE" || \
-     "$key" == "ENVIRONMENT" || \
-     "$key" == "JWT_EXPIRATION_MINUTES" || \
-     "$key" == "REFRESH_TOKEN_EXPIRATION_DAYS" ]]
+is_runtime_secret() {
+  local key="$1" allowed
+  for allowed in "${RUNTIME_SECRETS[@]}"; do
+    [[ "$key" == "$allowed" ]] && return 0
+  done
+  return 1
 }
 
 read_env_value() {
@@ -146,7 +183,7 @@ push_pages_secrets() {
     fi
 
     [[ "$key" == "NODE_ENV" ]] && value="production"
-    is_skipped_runtime_key "$key" && continue
+    is_runtime_secret "$key" || continue
 
     echo "  Setting: $key"
     printf '%s' "$value" | npx wrangler pages secret put "$key" \

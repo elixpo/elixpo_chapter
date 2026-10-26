@@ -144,8 +144,8 @@ export function EmptyState({
                         display: "grid",
                         placeItems: "center",
                         color: accent,
-                        background: `${accent}14`,
-                        border: `1px solid ${accent}33`,
+                        background: `color-mix(in srgb, ${accent} 8%, transparent)`,
+                        border: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`,
                     }}
                 >
                     <Icon sx={{ fontSize: 32 }} />

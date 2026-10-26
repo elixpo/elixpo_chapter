@@ -4,6 +4,11 @@ Elixpo Accounts is the OAuth 2.0 and OpenID Connect identity provider for Elixpo
 
 ## Canonical documentation
 
+- [Product overview](https://accounts.elixpo.com/)
+- [Pricing](https://accounts.elixpo.com/pricing)
+- [Developer SDK (@elixpo/accounts)](https://accounts.elixpo.com/docs/lixaccounts)
+- [API keys](https://accounts.elixpo.com/docs/api-keys)
+- [Self-hosting](https://accounts.elixpo.com/docs/self-hosting)
 - [Developer documentation](https://accounts.elixpo.com/docs)
 - [OAuth flow](https://accounts.elixpo.com/docs/oauth)
 - [Quickstart](https://accounts.elixpo.com/docs/quickstart)

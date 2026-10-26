@@ -1,0 +1,6 @@
+Contact: https://github.com/elixpo/mails.elixpo/security/advisories/new
+Contact: mailto:hello@elixpo.com
+Expires: 2027-10-26T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://mails.elixpo.com/.well-known/security.txt
+Policy: https://github.com/elixpo/mails.elixpo/blob/main/SECURITY.md

@@ -20,11 +20,11 @@ notices/      Third-party attributions (the upstream credit list).
 
 ## Index
 
-| Path                            | SPDX ID            | Used for                                              |
-|---------------------------------|--------------------|------------------------------------------------------|
-| `preferred/MIT`                 | `MIT`              | All source code in the repository.                   |
-| `preferred/CC-BY-4.0`           | `CC-BY-4.0`        | Brand and visual assets (`brand/`, `public/brand/`). |
-| `exceptions/Oreo-trademarks`    | `Oreo-trademarks`  | Reserves Elixpo/Oreo names, mascot, and royalties.   |
+| Path                         | SPDX ID           | Used for                                             |
+| ---------------------------- | ----------------- | ---------------------------------------------------- |
+| `preferred/MIT`              | `MIT`             | All source code in the repository.                   |
+| `preferred/CC-BY-4.0`        | `CC-BY-4.0`       | Brand and visual assets (`brand/`, `public/brand/`). |
+| `exceptions/Oreo-trademarks` | `Oreo-trademarks` | Reserves Elixpo/Oreo names, mascot, and royalties.   |
 
 ## The notice board
 

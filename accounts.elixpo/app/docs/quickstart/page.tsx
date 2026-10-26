@@ -75,10 +75,10 @@ export default function QuickstartPage() {
                 <Chip
                     label="Base URL: https://accounts.elixpo.com"
                     sx={{
-                        bgcolor: "rgba(255, 119, 89, 0.1)",
-                        color: "#ff7759",
-                        border: "1px solid rgba(255, 119, 89, 0.2)",
-                        fontFamily: "var(--font-geist-mono), monospace",
+                        bgcolor: "rgba(58, 101, 199, 0.1)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(58, 101, 199, 0.2)",
+                        fontFamily: "var(--font-code), monospace",
                         fontSize: "0.85rem",
                     }}
                 />
@@ -186,7 +186,7 @@ export default function QuickstartPage() {
                 callback, token, and JWKS helpers, follow the{" "}
                 <Link
                     href="/docs/lixaccounts"
-                    style={{ color: "#ff7759", fontWeight: 700 }}
+                    style={{ color: "var(--accent)", fontWeight: 700 }}
                 >
                     Developer SDK guide
                 </Link>

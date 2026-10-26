@@ -136,7 +136,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -164,7 +164,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -192,7 +192,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -220,7 +220,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -248,7 +248,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -276,7 +276,7 @@ export default function ErrorsPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >

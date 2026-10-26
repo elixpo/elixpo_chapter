@@ -28,6 +28,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { generatePixelAvatar } from "@/lib/pixel-avatar";
+import {
+    type NavSection,
+    SectionPills,
+    SectionSidebar,
+    sectionAnchorSx,
+    useScrollSpy,
+} from "../../components/dashboard/section-nav";
 
 interface UserProfile {
     email: string;
@@ -74,14 +81,14 @@ const textFieldSx = {
         background: "transparent",
         "& fieldset": { borderColor: "var(--border)" },
         "&:hover fieldset": { borderColor: "var(--border)" },
-        "&.Mui-focused fieldset": { borderColor: "#ff7759" },
+        "&.Mui-focused fieldset": { borderColor: "#3a65c7" },
     },
     "& .MuiInputLabel-root": { color: "var(--fg-muted)" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#ff7759" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "var(--accent)" },
 };
 
 const switchSx = {
-    "& .MuiSwitch-switchBase.Mui-checked": { color: "#ff7759" },
+    "& .MuiSwitch-switchBase.Mui-checked": { color: "var(--accent)" },
     "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
         bgcolor: "#15803d",
     },
@@ -101,6 +108,15 @@ const sectionSubtitleSx = {
     fontSize: "0.9rem",
     mb: 3,
 };
+
+const PROFILE_SECTIONS: NavSection[] = [
+    { id: "profile-info", label: "Profile info" },
+    { id: "connected-services", label: "Connected services" },
+    { id: "update-profile", label: "Update profile" },
+    { id: "notifications", label: "Notifications" },
+    { id: "danger-zone", label: "Danger zone" },
+];
+const PROFILE_SECTION_IDS = PROFILE_SECTIONS.map((section) => section.id);
 
 const _dividerSx = {
     borderColor: "var(--border)",
@@ -148,6 +164,7 @@ function ServiceIconSmall({ svc }: { svc: ConnectedService }) {
 
 const ProfilePage = () => {
     const router = useRouter();
+    const activeSectionId = useScrollSpy(PROFILE_SECTION_IDS);
     // Profile state
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -589,278 +606,220 @@ const ProfilePage = () => {
                     Manage your account information and preferences
                 </Typography>
             </Box>
-            {/* Bento Grid */}
+            <SectionPills
+                sections={PROFILE_SECTIONS}
+                activeId={activeSectionId}
+                label="Profile sections"
+                sx={{ mb: 2 }}
+            />
 
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+                    gridTemplateColumns: {
+                        xs: "minmax(0, 1fr)",
+                        lg: "220px minmax(0, 1fr)",
+                    },
                     gap: 2.5,
+                    alignItems: "start",
                 }}
             >
-                {/* 1. Profile Info Card — left column */}
-                <Box sx={cardSx}>
-                    <Typography variant="h6" sx={sectionTitleSx}>
-                        <PersonIcon
-                            sx={{ color: "#ff7759", fontSize: "1.2rem" }}
-                        />
-                        Profile Info
-                    </Typography>
-                    <Typography sx={sectionSubtitleSx}>
-                        Your account details
-                    </Typography>
+                <SectionSidebar
+                    sections={PROFILE_SECTIONS}
+                    activeId={activeSectionId}
+                    label="Profile sections"
+                />
 
-                    {profileLoading ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 2,
-                                color: "var(--fg-faint)",
-                            }}
-                        >
-                            <CircularProgress
-                                size={18}
-                                sx={{ color: "#ff7759" }}
-                            />
-                            <Typography
+                {/* Bento Grid */}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+                        gap: 2.5,
+                    }}
+                >
+                    {/* 1. Profile Info Card — left column */}
+                    <Box
+                        id="profile-info"
+                        sx={{ ...cardSx, ...sectionAnchorSx }}
+                    >
+                        <Typography variant="h6" sx={sectionTitleSx}>
+                            <PersonIcon
                                 sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.9rem",
+                                    color: "var(--accent)",
+                                    fontSize: "1.2rem",
                                 }}
-                            >
-                                Loading profile...
-                            </Typography>
-                        </Box>
-                    ) : profileError ? (
-                        <Alert
-                            severity="error"
-                            sx={{
-                                backgroundColor: "rgba(239,68,68,0.1)",
-                                color: "#f87171",
-                                borderColor: "rgba(239,68,68,0.3)",
-                            }}
-                        >
-                            {profileError}
-                        </Alert>
-                    ) : profile ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 2.5,
-                            }}
-                        >
-                            {/* Avatar + Email Row */}
+                            />
+                            Profile Info
+                        </Typography>
+                        <Typography sx={sectionSubtitleSx}>
+                            Your account details
+                        </Typography>
+
+                        {profileLoading ? (
                             <Box
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 2,
+                                    color: "var(--fg-faint)",
                                 }}
                             >
-                                {profile.avatar ? (
-                                    <Box
-                                        component="img"
-                                        src={profile.avatar}
-                                        alt="Avatar"
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: "50%",
-                                            border: "2px solid rgba(255, 119, 89,0.3)",
-                                        }}
-                                    />
-                                ) : (
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: "50%",
-                                            background:
-                                                "linear-gradient(135deg, #ff7759 0%, #65a30d 100%)",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            fontSize: "1.3rem",
-                                            fontWeight: 700,
-                                            color: "#161816",
-                                        }}
-                                    >
-                                        {(profile.displayName || profile.email)
-                                            ?.charAt(0)
-                                            .toUpperCase()}
-                                    </Box>
-                                )}
-                                <Box>
-                                    <Typography
-                                        sx={{
-                                            color: "var(--fg)",
-                                            fontWeight: 600,
-                                            fontSize: "1rem",
-                                        }}
-                                    >
-                                        {profile.email}
-                                    </Typography>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                            mt: 0.5,
-                                        }}
-                                    >
-                                        {profile.emailVerified ? (
-                                            <Chip
-                                                icon={
-                                                    <VerifiedIcon
-                                                        sx={{
-                                                            fontSize:
-                                                                "0.95rem !important",
-                                                            color: "#ff7759 !important",
-                                                        }}
-                                                    />
-                                                }
-                                                label="Verified"
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor:
-                                                        "rgba(255, 119, 89,0.1)",
-                                                    color: "#ff7759",
-                                                    border: "1px solid rgba(255, 119, 89,0.25)",
-                                                    fontWeight: 500,
-                                                    height: 24,
-                                                }}
-                                            />
-                                        ) : (
-                                            <Chip
-                                                label="Unverified"
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor:
-                                                        "rgba(245,158,11,0.1)",
-                                                    color: "#f59e0b",
-                                                    border: "1px solid rgba(245,158,11,0.25)",
-                                                    fontWeight: 500,
-                                                    height: 24,
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-                                </Box>
-                            </Box>
-                            {/* Username (handle) */}
-
-                            <Box sx={{ mb: 3 }}>
+                                <CircularProgress
+                                    size={18}
+                                    sx={{ color: "var(--accent)" }}
+                                />
                                 <Typography
                                     sx={{
                                         color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.8,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
+                                        fontSize: "0.9rem",
                                     }}
                                 >
-                                    Username
+                                    Loading profile...
                                 </Typography>
-                                {usernameMsg && (
-                                    <Alert
-                                        severity={usernameMsg.type}
-                                        sx={{ mb: 1.5, py: 0 }}
-                                    >
-                                        {usernameMsg.text}
-                                    </Alert>
-                                )}
+                            </Box>
+                        ) : profileError ? (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    backgroundColor: "rgba(239,68,68,0.1)",
+                                    color: "#f87171",
+                                    borderColor: "rgba(239,68,68,0.3)",
+                                }}
+                            >
+                                {profileError}
+                            </Alert>
+                        ) : profile ? (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2.5,
+                                }}
+                            >
+                                {/* Avatar + Email Row */}
                                 <Box
                                     sx={{
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: 1.5,
-                                        p: 1.5,
-                                        background: "var(--surface)",
-                                        border: "1px solid var(--border)",
-                                        borderRadius: "10px",
+                                        gap: 2,
                                     }}
                                 >
+                                    {profile.avatar ? (
+                                        <Box
+                                            component="img"
+                                            src={profile.avatar}
+                                            alt="Avatar"
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: "50%",
+                                                border: "2px solid rgba(58, 101, 199,0.3)",
+                                            }}
+                                        />
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: "50%",
+                                                background:
+                                                    "linear-gradient(135deg, #3a65c7 0%, #65a30d 100%)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "1.3rem",
+                                                fontWeight: 700,
+                                                color: "#161816",
+                                            }}
+                                        >
+                                            {(
+                                                profile.displayName ||
+                                                profile.email
+                                            )
+                                                ?.charAt(0)
+                                                .toUpperCase()}
+                                        </Box>
+                                    )}
+                                    <Box>
+                                        <Typography
+                                            sx={{
+                                                color: "var(--fg)",
+                                                fontWeight: 600,
+                                                fontSize: "1rem",
+                                            }}
+                                        >
+                                            {profile.email}
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                                mt: 0.5,
+                                            }}
+                                        >
+                                            {profile.emailVerified ? (
+                                                <Chip
+                                                    icon={
+                                                        <VerifiedIcon
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.95rem !important",
+                                                                color: "#3a65c7 !important",
+                                                            }}
+                                                        />
+                                                    }
+                                                    label="Verified"
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor:
+                                                            "rgba(58, 101, 199,0.1)",
+                                                        color: "var(--accent)",
+                                                        border: "1px solid rgba(58, 101, 199,0.25)",
+                                                        fontWeight: 500,
+                                                        height: 24,
+                                                    }}
+                                                />
+                                            ) : (
+                                                <Chip
+                                                    label="Unverified"
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor:
+                                                            "rgba(245,158,11,0.1)",
+                                                        color: "#f59e0b",
+                                                        border: "1px solid rgba(245,158,11,0.25)",
+                                                        fontWeight: 500,
+                                                        height: 24,
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    </Box>
+                                </Box>
+                                {/* Username (handle) */}
+
+                                <Box sx={{ mb: 3 }}>
                                     <Typography
                                         sx={{
-                                            color: "var(--fg)",
-                                            fontWeight: 500,
-                                            flex: 1,
-                                        }}
-                                    >
-                                        @{profile.username || "—"}
-                                    </Typography>
-                                    <Button
-                                        size="small"
-                                        onClick={() => {
-                                            setNewUsername(
-                                                profile.username || "",
-                                            );
-                                            setUsernameCheck({ state: "idle" });
-                                            setUsernameMsg(null);
-                                            setUsernameDialogOpen(true);
-                                        }}
-                                        startIcon={
-                                            <EditIcon
-                                                sx={{ fontSize: "0.9rem" }}
-                                            />
-                                        }
-                                        sx={{
-                                            color: "#ff7759",
-                                            textTransform: "none",
+                                            color: "var(--fg-faint)",
                                             fontSize: "0.8rem",
-                                            "&:hover": {
-                                                backgroundColor:
-                                                    "rgba(255, 119, 89,0.08)",
-                                            },
+                                            mb: 0.8,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
                                         }}
                                     >
-                                        Change
-                                    </Button>
-                                </Box>
-                            </Box>
-                            {/* Display Name */}
-
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.8,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    Display Name
-                                </Typography>
-                                {nameMsg && (
-                                    <Alert
-                                        severity={nameMsg.type}
-                                        sx={{
-                                            mb: 1.5,
-                                            bgcolor:
-                                                nameMsg.type === "success"
-                                                    ? "rgba(255, 119, 89,0.1)"
-                                                    : "rgba(239,68,68,0.1)",
-                                            color:
-                                                nameMsg.type === "success"
-                                                    ? "#ff7759"
-                                                    : "#ef4444",
-                                            border: `1px solid ${nameMsg.type === "success" ? "rgba(255, 119, 89,0.3)" : "rgba(239,68,68,0.3)"}`,
-                                            "& .MuiAlert-icon": {
-                                                color:
-                                                    nameMsg.type === "success"
-                                                        ? "#ff7759"
-                                                        : "#ef4444",
-                                            },
-                                            py: 0,
-                                        }}
-                                    >
-                                        {nameMsg.text}
-                                    </Alert>
-                                )}
-                                {!editingName ? (
+                                        Username
+                                    </Typography>
+                                    {usernameMsg && (
+                                        <Alert
+                                            severity={usernameMsg.type}
+                                            sx={{ mb: 1.5, py: 0 }}
+                                        >
+                                            {usernameMsg.text}
+                                        </Alert>
+                                    )}
                                     <Box
                                         sx={{
                                             display: "flex",
@@ -879,25 +838,19 @@ const ProfilePage = () => {
                                                 flex: 1,
                                             }}
                                         >
-                                            {profile.displayName || (
-                                                <span
-                                                    style={{
-                                                        color: "var(--fg-faint)",
-                                                        fontStyle: "italic",
-                                                    }}
-                                                >
-                                                    No display name set
-                                                </span>
-                                            )}
+                                            @{profile.username || "—"}
                                         </Typography>
                                         <Button
                                             size="small"
                                             onClick={() => {
-                                                setEditingName(true);
-                                                setNewDisplayName(
-                                                    profile.displayName || "",
+                                                setNewUsername(
+                                                    profile.username || "",
                                                 );
-                                                setNameMsg(null);
+                                                setUsernameCheck({
+                                                    state: "idle",
+                                                });
+                                                setUsernameMsg(null);
+                                                setUsernameDialogOpen(true);
                                             }}
                                             startIcon={
                                                 <EditIcon
@@ -905,286 +858,122 @@ const ProfilePage = () => {
                                                 />
                                             }
                                             sx={{
-                                                color: "#ff7759",
+                                                color: "var(--accent)",
                                                 textTransform: "none",
                                                 fontSize: "0.8rem",
                                                 "&:hover": {
                                                     backgroundColor:
-                                                        "rgba(255, 119, 89,0.08)",
+                                                        "rgba(58, 101, 199,0.08)",
                                                 },
                                             }}
                                         >
-                                            Edit
+                                            Change
                                         </Button>
                                     </Box>
-                                ) : (
-                                    <Box>
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                gap: 1,
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <TextField
-                                                value={newDisplayName}
-                                                onChange={(e) =>
-                                                    setNewDisplayName(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="e.g. John, CoolDev, swift-fox"
-                                                inputProps={{ maxLength: 32 }}
-                                                size="small"
-                                                sx={{ ...textFieldSx, flex: 1 }}
-                                                disabled={nameLoading}
-                                            />
-                                            <Button
-                                                onClick={
-                                                    handleUpdateDisplayName
-                                                }
-                                                disabled={
-                                                    nameLoading ||
-                                                    !newDisplayName.trim()
-                                                }
-                                                sx={{
-                                                    background:
-                                                        "rgba(255, 119, 89,0.15)",
-                                                    color: "#ff7759",
-                                                    border: "1px solid rgba(255, 119, 89,0.3)",
-                                                    fontWeight: 600,
-                                                    textTransform: "none",
-                                                    fontSize: "0.85rem",
-                                                    py: 0.8,
-                                                    "&:hover": {
-                                                        background:
-                                                            "rgba(255, 119, 89,0.25)",
-                                                    },
-                                                    "&:disabled": {
-                                                        color: "var(--fg-faint)",
-                                                    },
-                                                }}
-                                            >
-                                                {nameLoading
-                                                    ? "Saving..."
-                                                    : "Save"}
-                                            </Button>
-                                            <Button
-                                                onClick={() => {
-                                                    setEditingName(false);
-                                                    setNameMsg(null);
-                                                }}
-                                                disabled={nameLoading}
-                                                sx={{
-                                                    color: "var(--fg-faint)",
-                                                    textTransform: "none",
-                                                    fontSize: "0.85rem",
-                                                    py: 0.8,
-                                                }}
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </Box>
-                                        <Typography
-                                            sx={{
-                                                color: "var(--fg-faint)",
-                                                fontSize: "0.75rem",
-                                                mt: 0.8,
-                                            }}
-                                        >
-                                            2-32 characters. You can change this
-                                            up to 2 times every 2 weeks.
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </Box>
-                            {/* Sign-in Method */}
-
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.8,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    Sign-in Method
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 1.5,
-                                        p: 1.5,
-                                        background: "var(--surface)",
-                                        border: "1px solid var(--border)",
-                                        borderRadius: "10px",
-                                    }}
-                                >
-                                    {profile.provider === "google" && (
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                        >
-                                            <path
-                                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                                fill="#4285F4"
-                                            />
-                                            <path
-                                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                                fill="#34A853"
-                                            />
-                                            <path
-                                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                                fill="#FBBC05"
-                                            />
-                                            <path
-                                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                                fill="#EA4335"
-                                            />
-                                        </svg>
-                                    )}
-                                    {profile.provider === "github" && (
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="var(--fg)"
-                                        >
-                                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                        </svg>
-                                    )}
-                                    {(profile.provider === "email" ||
-                                        !profile.provider) && (
-                                        <PersonIcon
-                                            sx={{
-                                                color: "#ff7759",
-                                                fontSize: "1.2rem",
-                                            }}
-                                        />
-                                    )}
-                                    <Typography
-                                        sx={{
-                                            color: "var(--fg)",
-                                            fontWeight: 500,
-                                            textTransform: "capitalize",
-                                        }}
-                                    >
-                                        {profile.provider === "email" ||
-                                        !profile.provider
-                                            ? "Email & Password"
-                                            : `${profile.provider} OAuth`}
-                                    </Typography>
                                 </Box>
-                            </Box>
-                            {/* Email Verification */}
+                                {/* Display Name */}
 
-                            {!profile.emailVerified && (
-                                <Box
-                                    sx={{
-                                        p: 2,
-                                        background: "rgba(245,158,11,0.06)",
-                                        border: "1px solid rgba(245,158,11,0.2)",
-                                        borderRadius: "10px",
-                                    }}
-                                >
+                                <Box>
                                     <Typography
                                         sx={{
-                                            color: "#f59e0b",
-                                            fontWeight: 600,
-                                            fontSize: "0.9rem",
-                                            mb: 1,
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.8rem",
+                                            mb: 0.8,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
                                         }}
                                     >
-                                        Verify your email
+                                        Display Name
                                     </Typography>
-                                    {verifyMsg && (
+                                    {nameMsg && (
                                         <Alert
-                                            severity={verifyMsg.type}
+                                            severity={nameMsg.type}
                                             sx={{
                                                 mb: 1.5,
                                                 bgcolor:
-                                                    verifyMsg.type === "success"
-                                                        ? "rgba(255, 119, 89,0.1)"
+                                                    nameMsg.type === "success"
+                                                        ? "rgba(58, 101, 199,0.1)"
                                                         : "rgba(239,68,68,0.1)",
                                                 color:
-                                                    verifyMsg.type === "success"
-                                                        ? "#ff7759"
+                                                    nameMsg.type === "success"
+                                                        ? "#3a65c7"
                                                         : "#ef4444",
-                                                border: `1px solid ${verifyMsg.type === "success" ? "rgba(255, 119, 89,0.3)" : "rgba(239,68,68,0.3)"}`,
+                                                border: `1px solid ${nameMsg.type === "success" ? "rgba(58, 101, 199,0.3)" : "rgba(239,68,68,0.3)"}`,
                                                 "& .MuiAlert-icon": {
                                                     color:
-                                                        verifyMsg.type ===
+                                                        nameMsg.type ===
                                                         "success"
-                                                            ? "#ff7759"
+                                                            ? "#3a65c7"
                                                             : "#ef4444",
                                                 },
                                                 py: 0,
                                             }}
                                         >
-                                            {verifyMsg.text}
+                                            {nameMsg.text}
                                         </Alert>
                                     )}
-                                    {verifyStep === "idle" && (
-                                        <Box>
+                                    {!editingName ? (
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5,
+                                                p: 1.5,
+                                                background: "var(--surface)",
+                                                border: "1px solid var(--border)",
+                                                borderRadius: "10px",
+                                            }}
+                                        >
                                             <Typography
                                                 sx={{
-                                                    color: "var(--fg-faint)",
-                                                    fontSize: "0.83rem",
-                                                    mb: 1.5,
+                                                    color: "var(--fg)",
+                                                    fontWeight: 500,
+                                                    flex: 1,
                                                 }}
                                             >
-                                                We&apos;ll send a 6-digit
-                                                verification code to{" "}
-                                                {profile.email}
+                                                {profile.displayName || (
+                                                    <span
+                                                        style={{
+                                                            color: "var(--fg-faint)",
+                                                            fontStyle: "italic",
+                                                        }}
+                                                    >
+                                                        No display name set
+                                                    </span>
+                                                )}
                                             </Typography>
                                             <Button
-                                                onClick={handleSendVerification}
-                                                disabled={
-                                                    verifyLoading ||
-                                                    verifyCooldown > 0
+                                                size="small"
+                                                onClick={() => {
+                                                    setEditingName(true);
+                                                    setNewDisplayName(
+                                                        profile.displayName ||
+                                                            "",
+                                                    );
+                                                    setNameMsg(null);
+                                                }}
+                                                startIcon={
+                                                    <EditIcon
+                                                        sx={{
+                                                            fontSize: "0.9rem",
+                                                        }}
+                                                    />
                                                 }
                                                 sx={{
-                                                    background:
-                                                        "rgba(245,158,11,0.15)",
-                                                    color: "#f59e0b",
-                                                    border: "1px solid rgba(245,158,11,0.3)",
-                                                    fontWeight: 600,
+                                                    color: "var(--accent)",
                                                     textTransform: "none",
-                                                    fontSize: "0.85rem",
+                                                    fontSize: "0.8rem",
                                                     "&:hover": {
-                                                        background:
-                                                            "rgba(245,158,11,0.25)",
-                                                    },
-                                                    "&:disabled": {
-                                                        color: "var(--fg-faint)",
+                                                        backgroundColor:
+                                                            "rgba(58, 101, 199,0.08)",
                                                     },
                                                 }}
                                             >
-                                                {verifyLoading
-                                                    ? "Sending..."
-                                                    : verifyCooldown > 0
-                                                      ? `Resend in ${verifyCooldown}s`
-                                                      : "Send Verification Code"}
+                                                Edit
                                             </Button>
                                         </Box>
-                                    )}
-                                    {verifyStep === "sent" && (
+                                    ) : (
                                         <Box>
-                                            <Typography
-                                                sx={{
-                                                    color: "var(--fg-faint)",
-                                                    fontSize: "0.83rem",
-                                                    mb: 1.5,
-                                                }}
-                                            >
-                                                Enter the 6-digit code sent to{" "}
-                                                {profile.email}
-                                            </Typography>
                                             <Box
                                                 sx={{
                                                     display: "flex",
@@ -1193,64 +982,248 @@ const ProfilePage = () => {
                                                 }}
                                             >
                                                 <TextField
-                                                    value={verifyCode}
+                                                    value={newDisplayName}
                                                     onChange={(e) =>
-                                                        setVerifyCode(
-                                                            e.target.value
-                                                                .replace(
-                                                                    /\D/g,
-                                                                    "",
-                                                                )
-                                                                .slice(0, 6),
+                                                        setNewDisplayName(
+                                                            e.target.value,
                                                         )
                                                     }
-                                                    placeholder="000000"
+                                                    placeholder="e.g. John, CoolDev, swift-fox"
                                                     inputProps={{
-                                                        maxLength: 6,
-                                                        style: {
-                                                            letterSpacing:
-                                                                "6px",
-                                                            fontFamily:
-                                                                "monospace",
-                                                            fontSize: "1.1rem",
-                                                            textAlign: "center",
-                                                        },
+                                                        maxLength: 32,
                                                     }}
+                                                    size="small"
                                                     sx={{
                                                         ...textFieldSx,
-                                                        width: "160px",
-                                                        "& .MuiOutlinedInput-root":
-                                                            {
-                                                                ...textFieldSx[
-                                                                    "& .MuiOutlinedInput-root"
-                                                                ],
-                                                                "&.Mui-focused fieldset":
-                                                                    {
-                                                                        borderColor:
-                                                                            "#f59e0b",
-                                                                    },
-                                                            },
+                                                        flex: 1,
                                                     }}
-                                                    disabled={verifyLoading}
+                                                    disabled={nameLoading}
                                                 />
                                                 <Button
-                                                    onClick={handleVerifyCode}
+                                                    onClick={
+                                                        handleUpdateDisplayName
+                                                    }
                                                     disabled={
-                                                        verifyLoading ||
-                                                        verifyCode.length !== 6
+                                                        nameLoading ||
+                                                        !newDisplayName.trim()
                                                     }
                                                     sx={{
                                                         background:
-                                                            "rgba(255, 119, 89,0.15)",
-                                                        color: "#ff7759",
-                                                        border: "1px solid rgba(255, 119, 89,0.3)",
+                                                            "rgba(58, 101, 199,0.15)",
+                                                        color: "var(--accent)",
+                                                        border: "1px solid rgba(58, 101, 199,0.3)",
                                                         fontWeight: 600,
                                                         textTransform: "none",
                                                         fontSize: "0.85rem",
-                                                        py: 1,
+                                                        py: 0.8,
                                                         "&:hover": {
                                                             background:
-                                                                "rgba(255, 119, 89,0.25)",
+                                                                "rgba(58, 101, 199,0.25)",
+                                                        },
+                                                        "&:disabled": {
+                                                            color: "var(--fg-faint)",
+                                                        },
+                                                    }}
+                                                >
+                                                    {nameLoading
+                                                        ? "Saving..."
+                                                        : "Save"}
+                                                </Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        setEditingName(false);
+                                                        setNameMsg(null);
+                                                    }}
+                                                    disabled={nameLoading}
+                                                    sx={{
+                                                        color: "var(--fg-faint)",
+                                                        textTransform: "none",
+                                                        fontSize: "0.85rem",
+                                                        py: 0.8,
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </Box>
+                                            <Typography
+                                                sx={{
+                                                    color: "var(--fg-faint)",
+                                                    fontSize: "0.75rem",
+                                                    mt: 0.8,
+                                                }}
+                                            >
+                                                2-32 characters. You can change
+                                                this up to 2 times every 2
+                                                weeks.
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Box>
+                                {/* Sign-in Method */}
+
+                                <Box>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.8rem",
+                                            mb: 0.8,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
+                                        }}
+                                    >
+                                        Sign-in Method
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            p: 1.5,
+                                            background: "var(--surface)",
+                                            border: "1px solid var(--border)",
+                                            borderRadius: "10px",
+                                        }}
+                                    >
+                                        {profile.provider === "google" && (
+                                            <svg
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                            >
+                                                <path
+                                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                                    fill="#4285F4"
+                                                />
+                                                <path
+                                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                                    fill="#34A853"
+                                                />
+                                                <path
+                                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                                    fill="#FBBC05"
+                                                />
+                                                <path
+                                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                                    fill="#EA4335"
+                                                />
+                                            </svg>
+                                        )}
+                                        {profile.provider === "github" && (
+                                            <svg
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 24 24"
+                                                fill="var(--fg)"
+                                            >
+                                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                            </svg>
+                                        )}
+                                        {(profile.provider === "email" ||
+                                            !profile.provider) && (
+                                            <PersonIcon
+                                                sx={{
+                                                    color: "var(--accent)",
+                                                    fontSize: "1.2rem",
+                                                }}
+                                            />
+                                        )}
+                                        <Typography
+                                            sx={{
+                                                color: "var(--fg)",
+                                                fontWeight: 500,
+                                                textTransform: "capitalize",
+                                            }}
+                                        >
+                                            {profile.provider === "email" ||
+                                            !profile.provider
+                                                ? "Email & Password"
+                                                : `${profile.provider} OAuth`}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                {/* Email Verification */}
+
+                                {!profile.emailVerified && (
+                                    <Box
+                                        sx={{
+                                            p: 2,
+                                            background: "rgba(245,158,11,0.06)",
+                                            border: "1px solid rgba(245,158,11,0.2)",
+                                            borderRadius: "10px",
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                color: "#f59e0b",
+                                                fontWeight: 600,
+                                                fontSize: "0.9rem",
+                                                mb: 1,
+                                            }}
+                                        >
+                                            Verify your email
+                                        </Typography>
+                                        {verifyMsg && (
+                                            <Alert
+                                                severity={verifyMsg.type}
+                                                sx={{
+                                                    mb: 1.5,
+                                                    bgcolor:
+                                                        verifyMsg.type ===
+                                                        "success"
+                                                            ? "rgba(58, 101, 199,0.1)"
+                                                            : "rgba(239,68,68,0.1)",
+                                                    color:
+                                                        verifyMsg.type ===
+                                                        "success"
+                                                            ? "#3a65c7"
+                                                            : "#ef4444",
+                                                    border: `1px solid ${verifyMsg.type === "success" ? "rgba(58, 101, 199,0.3)" : "rgba(239,68,68,0.3)"}`,
+                                                    "& .MuiAlert-icon": {
+                                                        color:
+                                                            verifyMsg.type ===
+                                                            "success"
+                                                                ? "#3a65c7"
+                                                                : "#ef4444",
+                                                    },
+                                                    py: 0,
+                                                }}
+                                            >
+                                                {verifyMsg.text}
+                                            </Alert>
+                                        )}
+                                        {verifyStep === "idle" && (
+                                            <Box>
+                                                <Typography
+                                                    sx={{
+                                                        color: "var(--fg-faint)",
+                                                        fontSize: "0.83rem",
+                                                        mb: 1.5,
+                                                    }}
+                                                >
+                                                    We&apos;ll send a 6-digit
+                                                    verification code to{" "}
+                                                    {profile.email}
+                                                </Typography>
+                                                <Button
+                                                    onClick={
+                                                        handleSendVerification
+                                                    }
+                                                    disabled={
+                                                        verifyLoading ||
+                                                        verifyCooldown > 0
+                                                    }
+                                                    sx={{
+                                                        background:
+                                                            "rgba(245,158,11,0.15)",
+                                                        color: "#f59e0b",
+                                                        border: "1px solid rgba(245,158,11,0.3)",
+                                                        fontWeight: 600,
+                                                        textTransform: "none",
+                                                        fontSize: "0.85rem",
+                                                        "&:hover": {
+                                                            background:
+                                                                "rgba(245,158,11,0.25)",
                                                         },
                                                         "&:disabled": {
                                                             color: "var(--fg-faint)",
@@ -1258,763 +1231,721 @@ const ProfilePage = () => {
                                                     }}
                                                 >
                                                     {verifyLoading
-                                                        ? "Verifying..."
-                                                        : "Verify"}
+                                                        ? "Sending..."
+                                                        : verifyCooldown > 0
+                                                          ? `Resend in ${verifyCooldown}s`
+                                                          : "Send Verification Code"}
                                                 </Button>
                                             </Box>
-                                            <Button
-                                                onClick={handleSendVerification}
-                                                disabled={
-                                                    verifyLoading ||
-                                                    verifyCooldown > 0
-                                                }
-                                                sx={{
-                                                    mt: 1,
-                                                    color: "var(--fg-faint)",
-                                                    textTransform: "none",
-                                                    fontSize: "0.8rem",
-                                                    "&:hover": {
-                                                        color: "#f59e0b",
-                                                    },
-                                                }}
-                                            >
-                                                {verifyCooldown > 0
-                                                    ? `Resend in ${verifyCooldown}s`
-                                                    : "Resend code"}
-                                            </Button>
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
-                            {/* Account ID */}
-
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.8,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    Account ID
-                                </Typography>
-                                <Typography
-                                    sx={{
-                                        fontFamily: "monospace",
-                                        fontSize: "0.88rem",
-                                        color: "var(--fg-muted)",
-                                        background: "var(--surface)",
-                                        border: "1px solid var(--border)",
-                                        borderRadius: "8px",
-                                        px: 2,
-                                        py: 1,
-                                        display: "inline-block",
-                                        letterSpacing: "0.03em",
-                                    }}
-                                >
-                                    {profile.id}
-                                </Typography>
-                            </Box>
-                            {/* Badges */}
-
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.8,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    Account Badges
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        gap: 1,
-                                        flexWrap: "wrap",
-                                    }}
-                                >
-                                    <Chip
-                                        label={profile.provider || "email"}
-                                        size="small"
-                                        sx={{
-                                            backgroundColor:
-                                                "rgba(99,102,241,0.15)",
-                                            color: "#a5b4fc",
-                                            border: "1px solid rgba(99,102,241,0.3)",
-                                            fontWeight: 500,
-                                            textTransform: "capitalize",
-                                        }}
-                                    />
-                                </Box>
-                            </Box>
-                        </Box>
-                    ) : null}
-                </Box>
-                {/* Connected Services — right column */}
-
-                <Box
-                    sx={{
-                        ...cardSx,
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            mb: 1.5,
-                            flexShrink: 0,
-                        }}
-                    >
-                        <Box>
-                            <Typography variant="h6" sx={sectionTitleSx}>
-                                <DevicesOtherIcon
-                                    sx={{
-                                        color: "#ff7759",
-                                        fontSize: "1.2rem",
-                                    }}
-                                />
-                                Connected Services
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.78rem",
-                                    mt: 0.25,
-                                }}
-                            >
-                                Apps you&apos;ve signed in to with Elixpo
-                            </Typography>
-                        </Box>
-                        {connectedServices.length > 0 && (
-                            <Button
-                                component={Link}
-                                href="/dashboard/services"
-                                size="small"
-                                endIcon={
-                                    <ArrowForwardIcon
-                                        sx={{ fontSize: "0.8rem !important" }}
-                                    />
-                                }
-                                sx={{
-                                    color: "#ff7759",
-                                    textTransform: "none",
-                                    fontSize: "0.78rem",
-                                    flexShrink: 0,
-                                    "&:hover": {
-                                        bgcolor: "rgba(255, 119, 89,0.08)",
-                                    },
-                                }}
-                            >
-                                View all
-                            </Button>
-                        )}
-                    </Box>
-
-                    {servicesLoading ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "center",
-                                py: 3,
-                            }}
-                        >
-                            <CircularProgress
-                                size={20}
-                                sx={{ color: "#ff7759" }}
-                            />
-                        </Box>
-                    ) : connectedServices.length === 0 ? (
-                        <Box sx={{ py: 4, textAlign: "center" }}>
-                            <DevicesOtherIcon
-                                sx={{
-                                    fontSize: "2rem",
-                                    color: "var(--fg-faint)",
-                                    mb: 1,
-                                }}
-                            />
-                            <Typography
-                                sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.85rem",
-                                }}
-                            >
-                                No connected services yet
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 0.75,
-                                overflowY: "auto",
-                                flex: 1,
-                                "&::-webkit-scrollbar": { width: 4 },
-                                "&::-webkit-scrollbar-thumb": {
-                                    bgcolor: "var(--border)",
-                                    borderRadius: 2,
-                                },
-                            }}
-                        >
-                            {connectedServices.slice(0, 3).map((svc) => {
-                                const isExpanded = expandedServices.has(
-                                    svc.client_id,
-                                );
-                                return (
-                                    <Box
-                                        key={svc.client_id}
-                                        sx={{
-                                            borderRadius: "10px",
-                                            bgcolor: "var(--surface)",
-                                            border: "1px solid var(--border)",
-                                            overflow: "hidden",
-                                            transition: "border-color 0.2s",
-                                            "&:hover": {
-                                                borderColor:
-                                                    "rgba(255, 119, 89,0.15)",
-                                            },
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <Box
-                                            onClick={() =>
-                                                setExpandedServices((prev) => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(svc.client_id))
-                                                        next.delete(
-                                                            svc.client_id,
-                                                        );
-                                                    else
-                                                        next.add(svc.client_id);
-                                                    return next;
-                                                })
-                                            }
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1.25,
-                                                p: 1.25,
-                                                cursor: "pointer",
-                                                userSelect: "none",
-                                            }}
-                                        >
-                                            <ServiceIconSmall svc={svc} />
-                                            <Box
-                                                sx={{
-                                                    flexGrow: 1,
-                                                    minWidth: 0,
-                                                }}
-                                            >
-                                                <Typography
-                                                    sx={{
-                                                        color: "var(--fg-muted)",
-                                                        fontWeight: 600,
-                                                        fontSize: "0.82rem",
-                                                        overflow: "hidden",
-                                                        textOverflow:
-                                                            "ellipsis",
-                                                        whiteSpace: "nowrap",
-                                                    }}
-                                                >
-                                                    {svc.name}
-                                                </Typography>
+                                        )}
+                                        {verifyStep === "sent" && (
+                                            <Box>
                                                 <Typography
                                                     sx={{
                                                         color: "var(--fg-faint)",
-                                                        fontSize: "0.7rem",
-                                                        overflow: "hidden",
-                                                        textOverflow:
-                                                            "ellipsis",
-                                                        whiteSpace: "nowrap",
+                                                        fontSize: "0.83rem",
+                                                        mb: 1.5,
                                                     }}
                                                 >
-                                                    {svc.description ||
-                                                        (svc.homepage_url
-                                                            ? (() => {
-                                                                  try {
-                                                                      return new URL(
-                                                                          svc.homepage_url,
-                                                                      )
-                                                                          .hostname;
-                                                                  } catch {
-                                                                      return "";
-                                                                  }
-                                                              })()
-                                                            : "Connected service")}
+                                                    Enter the 6-digit code sent
+                                                    to {profile.email}
                                                 </Typography>
-                                            </Box>
-                                            <ExpandMoreIcon
-                                                sx={{
-                                                    fontSize: "1rem",
-                                                    color: "var(--fg-faint)",
-                                                    transform: isExpanded
-                                                        ? "rotate(180deg)"
-                                                        : "rotate(0)",
-                                                    transition:
-                                                        "transform 0.2s",
-                                                    flexShrink: 0,
-                                                }}
-                                            />
-                                        </Box>
-
-                                        {isExpanded && (
-                                            <Box
-                                                sx={{
-                                                    px: 1.25,
-                                                    pb: 1.25,
-                                                    pt: 0.5,
-                                                    borderTop:
-                                                        "1px solid var(--border)",
-                                                }}
-                                            >
-                                                {svc.description && (
-                                                    <Typography
-                                                        sx={{
-                                                            color: "var(--fg-faint)",
-                                                            fontSize: "0.75rem",
-                                                            lineHeight: 1.5,
-                                                            mb: 0.75,
+                                                <Box
+                                                    sx={{
+                                                        display: "flex",
+                                                        gap: 1,
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    <TextField
+                                                        value={verifyCode}
+                                                        onChange={(e) =>
+                                                            setVerifyCode(
+                                                                e.target.value
+                                                                    .replace(
+                                                                        /\D/g,
+                                                                        "",
+                                                                    )
+                                                                    .slice(
+                                                                        0,
+                                                                        6,
+                                                                    ),
+                                                            )
+                                                        }
+                                                        placeholder="000000"
+                                                        inputProps={{
+                                                            maxLength: 6,
+                                                            style: {
+                                                                letterSpacing:
+                                                                    "6px",
+                                                                fontFamily:
+                                                                    "monospace",
+                                                                fontSize:
+                                                                    "1.1rem",
+                                                                textAlign:
+                                                                    "center",
+                                                            },
                                                         }}
-                                                    >
-                                                        {svc.description}
-                                                    </Typography>
-                                                )}
-                                                {svc.homepage_url && (
-                                                    <Typography
-                                                        component="a"
-                                                        href={svc.homepage_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
                                                         sx={{
-                                                            color: "#ff7759",
-                                                            fontSize: "0.7rem",
-                                                            fontFamily:
-                                                                "monospace",
-                                                            textDecoration:
+                                                            ...textFieldSx,
+                                                            width: "160px",
+                                                            "& .MuiOutlinedInput-root":
+                                                                {
+                                                                    ...textFieldSx[
+                                                                        "& .MuiOutlinedInput-root"
+                                                                    ],
+                                                                    "&.Mui-focused fieldset":
+                                                                        {
+                                                                            borderColor:
+                                                                                "#f59e0b",
+                                                                        },
+                                                                },
+                                                        }}
+                                                        disabled={verifyLoading}
+                                                    />
+                                                    <Button
+                                                        onClick={
+                                                            handleVerifyCode
+                                                        }
+                                                        disabled={
+                                                            verifyLoading ||
+                                                            verifyCode.length !==
+                                                                6
+                                                        }
+                                                        sx={{
+                                                            background:
+                                                                "rgba(58, 101, 199,0.15)",
+                                                            color: "var(--accent)",
+                                                            border: "1px solid rgba(58, 101, 199,0.3)",
+                                                            fontWeight: 600,
+                                                            textTransform:
                                                                 "none",
-                                                            display: "block",
-                                                            mb: 0.5,
-                                                            opacity: 0.7,
+                                                            fontSize: "0.85rem",
+                                                            py: 1,
                                                             "&:hover": {
-                                                                opacity: 1,
+                                                                background:
+                                                                    "rgba(58, 101, 199,0.25)",
+                                                            },
+                                                            "&:disabled": {
+                                                                color: "var(--fg-faint)",
                                                             },
                                                         }}
                                                     >
-                                                        {svc.homepage_url}
-                                                    </Typography>
-                                                )}
-                                                <Typography
+                                                        {verifyLoading
+                                                            ? "Verifying..."
+                                                            : "Verify"}
+                                                    </Button>
+                                                </Box>
+                                                <Button
+                                                    onClick={
+                                                        handleSendVerification
+                                                    }
+                                                    disabled={
+                                                        verifyLoading ||
+                                                        verifyCooldown > 0
+                                                    }
                                                     sx={{
+                                                        mt: 1,
                                                         color: "var(--fg-faint)",
-                                                        fontSize: "0.68rem",
+                                                        textTransform: "none",
+                                                        fontSize: "0.8rem",
+                                                        "&:hover": {
+                                                            color: "#f59e0b",
+                                                        },
                                                     }}
                                                 >
-                                                    Connected{" "}
-                                                    {new Date(
-                                                        svc.first_authorized,
-                                                    ).toLocaleDateString()}{" "}
-                                                    · Last used{" "}
-                                                    {new Date(
-                                                        svc.last_authorized,
-                                                    ).toLocaleDateString()}
-                                                </Typography>
+                                                    {verifyCooldown > 0
+                                                        ? `Resend in ${verifyCooldown}s`
+                                                        : "Resend code"}
+                                                </Button>
                                             </Box>
                                         )}
                                     </Box>
-                                );
-                            })}
-                            {connectedServices.length > 3 && (
-                                <Button
-                                    component={Link}
-                                    href="/dashboard/services"
-                                    size="small"
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        textTransform: "none",
-                                        fontSize: "0.75rem",
-                                        mt: 0.25,
-                                        flexShrink: 0,
-                                        "&:hover": { color: "#ff7759" },
-                                    }}
-                                >
-                                    +{connectedServices.length - 3} more — view
-                                    all services
-                                </Button>
-                            )}
-                        </Box>
-                    )}
-                </Box>
-                {/* 2. Update Profile Card */}
+                                )}
+                                {/* Account ID */}
 
-                <Box sx={cardSx}>
-                    <Typography variant="h6" sx={sectionTitleSx}>
-                        <EditIcon
-                            sx={{ color: "#ff7759", fontSize: "1.2rem" }}
-                        />
-                        Update Profile
-                    </Typography>
-                    <Typography sx={sectionSubtitleSx}>
-                        Personal info and preferences
-                    </Typography>
+                                <Box>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.8rem",
+                                            mb: 0.8,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
+                                        }}
+                                    >
+                                        Account ID
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            fontFamily: "monospace",
+                                            fontSize: "0.88rem",
+                                            color: "var(--fg-muted)",
+                                            background: "var(--surface)",
+                                            border: "1px solid var(--border)",
+                                            borderRadius: "8px",
+                                            px: 2,
+                                            py: 1,
+                                            display: "inline-block",
+                                            letterSpacing: "0.03em",
+                                        }}
+                                    >
+                                        {profile.id}
+                                    </Typography>
+                                </Box>
+                                {/* Badges */}
 
-                    {updateSuccess && (
-                        <Alert
-                            severity="success"
-                            sx={{
-                                mb: 2.5,
-                                backgroundColor: "rgba(255, 119, 89,0.1)",
-                                color: "#ff7759",
-                                borderColor: "rgba(255, 119, 89,0.3)",
-                            }}
-                        >
-                            {updateSuccess}
-                        </Alert>
-                    )}
-                    {updateError && (
-                        <Alert
-                            severity="error"
-                            sx={{
-                                mb: 2.5,
-                                backgroundColor: "rgba(239,68,68,0.1)",
-                                color: "#f87171",
-                                borderColor: "rgba(239,68,68,0.3)",
-                            }}
-                        >
-                            {updateError}
-                        </Alert>
-                    )}
+                                <Box>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.8rem",
+                                            mb: 0.8,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
+                                        }}
+                                    >
+                                        Account Badges
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            gap: 1,
+                                            flexWrap: "wrap",
+                                        }}
+                                    >
+                                        <Chip
+                                            label={profile.provider || "email"}
+                                            size="small"
+                                            sx={{
+                                                backgroundColor:
+                                                    "rgba(99,102,241,0.15)",
+                                                color: "#a5b4fc",
+                                                border: "1px solid rgba(99,102,241,0.3)",
+                                                fontWeight: 500,
+                                                textTransform: "capitalize",
+                                            }}
+                                        />
+                                    </Box>
+                                </Box>
+                            </Box>
+                        ) : null}
+                    </Box>
+                    {/* Connected Services — right column */}
 
                     <Box
+                        id="connected-services"
                         sx={{
+                            ...cardSx,
+                            ...sectionAnchorSx,
                             display: "flex",
                             flexDirection: "column",
-                            gap: 2,
+                            overflow: "hidden",
                         }}
                     >
-                        <TextField
-                            fullWidth
-                            label="Bio"
-                            value={bio}
-                            onChange={(e) => setBio(e.target.value)}
-                            placeholder="Tell us about yourself"
-                            multiline
-                            rows={2}
-                            inputProps={{ maxLength: 256 }}
-                            helperText={`${bio.length}/256`}
-                            sx={{
-                                ...textFieldSx,
-                                "& .MuiFormHelperText-root": {
-                                    color: "var(--fg-faint)",
-                                    textAlign: "right",
-                                },
-                            }}
-                            disabled={updateLoading}
-                        />
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: {
-                                    xs: "1fr",
-                                    md: "1fr 1fr",
-                                },
-                                gap: 2,
-                            }}
-                        >
-                            <TextField
-                                fullWidth
-                                label="Country"
-                                value={country}
-                                onChange={(e) => setCountry(e.target.value)}
-                                placeholder="India"
-                                sx={{
-                                    ...textFieldSx,
-                                    "& .MuiFormHelperText-root": {
-                                        color: "var(--fg-faint)",
-                                    },
-                                }}
-                                disabled={updateLoading}
-                            />
-                            <TextField
-                                fullWidth
-                                label="City"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                placeholder="Bangalore"
-                                sx={{
-                                    ...textFieldSx,
-                                    "& .MuiFormHelperText-root": {
-                                        color: "var(--fg-faint)",
-                                    },
-                                }}
-                                disabled={updateLoading}
-                            />
-                        </Box>
-                        <TextField
-                            fullWidth
-                            label="Location"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            placeholder="e.g. San Francisco, CA"
-                            helperText="Free-form location text"
-                            sx={{
-                                ...textFieldSx,
-                                "& .MuiFormHelperText-root": {
-                                    color: "var(--fg-faint)",
-                                },
-                            }}
-                            disabled={updateLoading}
-                        />
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: {
-                                    xs: "1fr",
-                                    md: "1fr 1fr",
-                                },
-                                gap: 2,
-                            }}
-                        >
-                            <TextField
-                                fullWidth
-                                label="Locale"
-                                value={locale}
-                                onChange={(e) => setLocale(e.target.value)}
-                                placeholder="en"
-                                helperText="e.g. en, fr, de"
-                                sx={{
-                                    ...textFieldSx,
-                                    "& .MuiFormHelperText-root": {
-                                        color: "var(--fg-faint)",
-                                    },
-                                }}
-                                disabled={updateLoading}
-                            />
-                            <TextField
-                                fullWidth
-                                label="Timezone"
-                                value={timezone}
-                                onChange={(e) => setTimezone(e.target.value)}
-                                placeholder="UTC"
-                                helperText="e.g. Asia/Kolkata, America/New_York"
-                                sx={{
-                                    ...textFieldSx,
-                                    "& .MuiFormHelperText-root": {
-                                        color: "var(--fg-faint)",
-                                    },
-                                }}
-                                disabled={updateLoading}
-                            />
-                        </Box>
-                    </Box>
-
-                    <Box sx={{ mt: 3 }}>
-                        <Button
-                            variant="contained"
-                            onClick={handleUpdateProfile}
-                            disabled={updateLoading}
-                            sx={{
-                                background: "rgba(255, 119, 89,0.15)",
-                                color: "#ff7759",
-                                border: "1px solid rgba(255, 119, 89,0.3)",
-                                fontWeight: 600,
-                                textTransform: "none",
-                                fontSize: "0.95rem",
-                                py: 1.1,
-                                px: 3,
-                                "&:hover": {
-                                    background: "rgba(255, 119, 89,0.25)",
-                                    borderColor: "rgba(255, 119, 89,0.5)",
-                                },
-                                "&:disabled": {
-                                    color: "var(--fg-faint)",
-                                },
-                            }}
-                        >
-                            {updateLoading ? (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 1,
-                                    }}
-                                >
-                                    <CircularProgress
-                                        size={16}
-                                        sx={{ color: "#ff7759" }}
-                                    />
-                                    Saving...
-                                </Box>
-                            ) : (
-                                "Save Changes"
-                            )}
-                        </Button>
-                    </Box>
-                </Box>
-                {/* 3. Notification Preferences Card */}
-
-                <Box sx={cardSx}>
-                    <Typography variant="h6" sx={sectionTitleSx}>
-                        <NotificationsIcon
-                            sx={{ color: "#ff7759", fontSize: "1.2rem" }}
-                        />
-                        Notification Preferences
-                    </Typography>
-                    <Typography sx={sectionSubtitleSx}>
-                        Control which email notifications you receive
-                    </Typography>
-
-                    {notifSuccess && (
-                        <Alert
-                            severity="success"
-                            sx={{
-                                mb: 2.5,
-                                backgroundColor: "rgba(255, 119, 89,0.1)",
-                                color: "#ff7759",
-                                borderColor: "rgba(255, 119, 89,0.3)",
-                            }}
-                        >
-                            {notifSuccess}
-                        </Alert>
-                    )}
-                    {notifError && (
-                        <Alert
-                            severity="error"
-                            sx={{
-                                mb: 2.5,
-                                backgroundColor: "rgba(239,68,68,0.1)",
-                                color: "#f87171",
-                                borderColor: "rgba(239,68,68,0.3)",
-                            }}
-                        >
-                            {notifError}
-                        </Alert>
-                    )}
-
-                    {notifLoading ? (
                         <Box
                             sx={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 2,
+                                justifyContent: "space-between",
+                                mb: 1.5,
+                                flexShrink: 0,
                             }}
                         >
-                            <CircularProgress
-                                size={18}
-                                sx={{ color: "#ff7759" }}
-                            />
-                            <Typography
-                                sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.9rem",
-                                }}
-                            >
-                                Loading preferences...
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <FormGroup sx={{ gap: 0.5 }}>
-                            {[
-                                {
-                                    key: "email_login_alerts" as const,
-                                    label: "Login Alerts",
-                                    description:
-                                        "Email me when a new login is detected",
-                                },
-                                {
-                                    key: "email_app_activity" as const,
-                                    label: "App Activity",
-                                    description: "Email me on OAuth app usage",
-                                },
-                                {
-                                    key: "email_weekly_digest" as const,
-                                    label: "Weekly Digest",
-                                    description:
-                                        "Receive weekly activity summary",
-                                },
-                                {
-                                    key: "email_security_alerts" as const,
-                                    label: "Security Alerts",
-                                    description: "Email on suspicious activity",
-                                },
-                            ].map(({ key, label, description }) => (
-                                <Box
-                                    key={key}
+                            <Box>
+                                <Typography variant="h6" sx={sectionTitleSx}>
+                                    <DevicesOtherIcon
+                                        sx={{
+                                            color: "var(--accent)",
+                                            fontSize: "1.2rem",
+                                        }}
+                                    />
+                                    Connected Services
+                                </Typography>
+                                <Typography
                                     sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        py: 1.5,
-                                        borderBottom: "1px solid var(--border)",
-                                        "&:last-child": {
-                                            borderBottom: "none",
+                                        color: "var(--fg-faint)",
+                                        fontSize: "0.78rem",
+                                        mt: 0.25,
+                                    }}
+                                >
+                                    Apps you&apos;ve signed in to with Elixpo
+                                </Typography>
+                            </Box>
+                            {connectedServices.length > 0 && (
+                                <Button
+                                    component={Link}
+                                    href="/dashboard/services"
+                                    size="small"
+                                    endIcon={
+                                        <ArrowForwardIcon
+                                            sx={{
+                                                fontSize: "0.8rem !important",
+                                            }}
+                                        />
+                                    }
+                                    sx={{
+                                        color: "var(--accent)",
+                                        textTransform: "none",
+                                        fontSize: "0.78rem",
+                                        flexShrink: 0,
+                                        "&:hover": {
+                                            bgcolor: "rgba(58, 101, 199,0.08)",
                                         },
                                     }}
                                 >
-                                    <Box>
-                                        <Typography
-                                            sx={{
-                                                color: "var(--fg)",
-                                                fontWeight: 500,
-                                                fontSize: "0.95rem",
-                                            }}
-                                        >
-                                            {label}
-                                        </Typography>
-                                        <Typography
-                                            sx={{
-                                                color: "var(--fg-faint)",
-                                                fontSize: "0.83rem",
-                                                mt: 0.2,
-                                            }}
-                                        >
-                                            {description}
-                                        </Typography>
-                                    </Box>
-                                    <Switch
-                                        checked={notifPrefs[key]}
-                                        onChange={() => handleNotifToggle(key)}
-                                        sx={switchSx}
-                                        disabled={notifSaveLoading}
-                                    />
-                                </Box>
-                            ))}
-                        </FormGroup>
-                    )}
+                                    View all
+                                </Button>
+                            )}
+                        </Box>
 
-                    {!notifLoading && (
+                        {servicesLoading ? (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    py: 3,
+                                }}
+                            >
+                                <CircularProgress
+                                    size={20}
+                                    sx={{ color: "var(--accent)" }}
+                                />
+                            </Box>
+                        ) : connectedServices.length === 0 ? (
+                            <Box sx={{ py: 4, textAlign: "center" }}>
+                                <DevicesOtherIcon
+                                    sx={{
+                                        fontSize: "2rem",
+                                        color: "var(--fg-faint)",
+                                        mb: 1,
+                                    }}
+                                />
+                                <Typography
+                                    sx={{
+                                        color: "var(--fg-faint)",
+                                        fontSize: "0.85rem",
+                                    }}
+                                >
+                                    No connected services yet
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 0.75,
+                                    overflowY: "auto",
+                                    flex: 1,
+                                    "&::-webkit-scrollbar": { width: 4 },
+                                    "&::-webkit-scrollbar-thumb": {
+                                        bgcolor: "var(--border)",
+                                        borderRadius: 2,
+                                    },
+                                }}
+                            >
+                                {connectedServices.slice(0, 3).map((svc) => {
+                                    const isExpanded = expandedServices.has(
+                                        svc.client_id,
+                                    );
+                                    return (
+                                        <Box
+                                            key={svc.client_id}
+                                            sx={{
+                                                borderRadius: "10px",
+                                                bgcolor: "var(--surface)",
+                                                border: "1px solid var(--border)",
+                                                overflow: "hidden",
+                                                transition: "border-color 0.2s",
+                                                "&:hover": {
+                                                    borderColor:
+                                                        "rgba(58, 101, 199,0.15)",
+                                                },
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            <Box
+                                                onClick={() =>
+                                                    setExpandedServices(
+                                                        (prev) => {
+                                                            const next =
+                                                                new Set(prev);
+                                                            if (
+                                                                next.has(
+                                                                    svc.client_id,
+                                                                )
+                                                            )
+                                                                next.delete(
+                                                                    svc.client_id,
+                                                                );
+                                                            else
+                                                                next.add(
+                                                                    svc.client_id,
+                                                                );
+                                                            return next;
+                                                        },
+                                                    )
+                                                }
+                                                sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1.25,
+                                                    p: 1.25,
+                                                    cursor: "pointer",
+                                                    userSelect: "none",
+                                                }}
+                                            >
+                                                <ServiceIconSmall svc={svc} />
+                                                <Box
+                                                    sx={{
+                                                        flexGrow: 1,
+                                                        minWidth: 0,
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            color: "var(--fg-muted)",
+                                                            fontWeight: 600,
+                                                            fontSize: "0.82rem",
+                                                            overflow: "hidden",
+                                                            textOverflow:
+                                                                "ellipsis",
+                                                            whiteSpace:
+                                                                "nowrap",
+                                                        }}
+                                                    >
+                                                        {svc.name}
+                                                    </Typography>
+                                                    <Typography
+                                                        sx={{
+                                                            color: "var(--fg-faint)",
+                                                            fontSize: "0.7rem",
+                                                            overflow: "hidden",
+                                                            textOverflow:
+                                                                "ellipsis",
+                                                            whiteSpace:
+                                                                "nowrap",
+                                                        }}
+                                                    >
+                                                        {svc.description ||
+                                                            (svc.homepage_url
+                                                                ? (() => {
+                                                                      try {
+                                                                          return new URL(
+                                                                              svc.homepage_url,
+                                                                          )
+                                                                              .hostname;
+                                                                      } catch {
+                                                                          return "";
+                                                                      }
+                                                                  })()
+                                                                : "Connected service")}
+                                                    </Typography>
+                                                </Box>
+                                                <ExpandMoreIcon
+                                                    sx={{
+                                                        fontSize: "1rem",
+                                                        color: "var(--fg-faint)",
+                                                        transform: isExpanded
+                                                            ? "rotate(180deg)"
+                                                            : "rotate(0)",
+                                                        transition:
+                                                            "transform 0.2s",
+                                                        flexShrink: 0,
+                                                    }}
+                                                />
+                                            </Box>
+
+                                            {isExpanded && (
+                                                <Box
+                                                    sx={{
+                                                        px: 1.25,
+                                                        pb: 1.25,
+                                                        pt: 0.5,
+                                                        borderTop:
+                                                            "1px solid var(--border)",
+                                                    }}
+                                                >
+                                                    {svc.description && (
+                                                        <Typography
+                                                            sx={{
+                                                                color: "var(--fg-faint)",
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                                lineHeight: 1.5,
+                                                                mb: 0.75,
+                                                            }}
+                                                        >
+                                                            {svc.description}
+                                                        </Typography>
+                                                    )}
+                                                    {svc.homepage_url && (
+                                                        <Typography
+                                                            component="a"
+                                                            href={
+                                                                svc.homepage_url
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            sx={{
+                                                                color: "var(--accent)",
+                                                                fontSize:
+                                                                    "0.7rem",
+                                                                fontFamily:
+                                                                    "monospace",
+                                                                textDecoration:
+                                                                    "none",
+                                                                display:
+                                                                    "block",
+                                                                mb: 0.5,
+                                                                opacity: 0.7,
+                                                                "&:hover": {
+                                                                    opacity: 1,
+                                                                },
+                                                            }}
+                                                        >
+                                                            {svc.homepage_url}
+                                                        </Typography>
+                                                    )}
+                                                    <Typography
+                                                        sx={{
+                                                            color: "var(--fg-faint)",
+                                                            fontSize: "0.68rem",
+                                                        }}
+                                                    >
+                                                        Connected{" "}
+                                                        {new Date(
+                                                            svc.first_authorized,
+                                                        ).toLocaleDateString()}{" "}
+                                                        · Last used{" "}
+                                                        {new Date(
+                                                            svc.last_authorized,
+                                                        ).toLocaleDateString()}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    );
+                                })}
+                                {connectedServices.length > 3 && (
+                                    <Button
+                                        component={Link}
+                                        href="/dashboard/services"
+                                        size="small"
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            textTransform: "none",
+                                            fontSize: "0.75rem",
+                                            mt: 0.25,
+                                            flexShrink: 0,
+                                            "&:hover": {
+                                                color: "var(--accent)",
+                                            },
+                                        }}
+                                    >
+                                        +{connectedServices.length - 3} more —
+                                        view all services
+                                    </Button>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
+                    {/* 2. Update Profile Card */}
+
+                    <Box
+                        id="update-profile"
+                        sx={{ ...cardSx, ...sectionAnchorSx }}
+                    >
+                        <Typography variant="h6" sx={sectionTitleSx}>
+                            <EditIcon
+                                sx={{
+                                    color: "var(--accent)",
+                                    fontSize: "1.2rem",
+                                }}
+                            />
+                            Update Profile
+                        </Typography>
+                        <Typography sx={sectionSubtitleSx}>
+                            Personal info and preferences
+                        </Typography>
+
+                        {updateSuccess && (
+                            <Alert
+                                severity="success"
+                                sx={{
+                                    mb: 2.5,
+                                    backgroundColor: "rgba(58, 101, 199,0.1)",
+                                    color: "var(--accent)",
+                                    borderColor: "rgba(58, 101, 199,0.3)",
+                                }}
+                            >
+                                {updateSuccess}
+                            </Alert>
+                        )}
+                        {updateError && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    mb: 2.5,
+                                    backgroundColor: "rgba(239,68,68,0.1)",
+                                    color: "#f87171",
+                                    borderColor: "rgba(239,68,68,0.3)",
+                                }}
+                            >
+                                {updateError}
+                            </Alert>
+                        )}
+
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
+                            }}
+                        >
+                            <TextField
+                                fullWidth
+                                label="Bio"
+                                value={bio}
+                                onChange={(e) => setBio(e.target.value)}
+                                placeholder="Tell us about yourself"
+                                multiline
+                                rows={2}
+                                inputProps={{ maxLength: 256 }}
+                                helperText={`${bio.length}/256`}
+                                sx={{
+                                    ...textFieldSx,
+                                    "& .MuiFormHelperText-root": {
+                                        color: "var(--fg-faint)",
+                                        textAlign: "right",
+                                    },
+                                }}
+                                disabled={updateLoading}
+                            />
+                            <Box
+                                sx={{
+                                    display: "grid",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        md: "1fr 1fr",
+                                    },
+                                    gap: 2,
+                                }}
+                            >
+                                <TextField
+                                    fullWidth
+                                    label="Country"
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    placeholder="India"
+                                    sx={{
+                                        ...textFieldSx,
+                                        "& .MuiFormHelperText-root": {
+                                            color: "var(--fg-faint)",
+                                        },
+                                    }}
+                                    disabled={updateLoading}
+                                />
+                                <TextField
+                                    fullWidth
+                                    label="City"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    placeholder="Bangalore"
+                                    sx={{
+                                        ...textFieldSx,
+                                        "& .MuiFormHelperText-root": {
+                                            color: "var(--fg-faint)",
+                                        },
+                                    }}
+                                    disabled={updateLoading}
+                                />
+                            </Box>
+                            <TextField
+                                fullWidth
+                                label="Location"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                                placeholder="e.g. San Francisco, CA"
+                                helperText="Free-form location text"
+                                sx={{
+                                    ...textFieldSx,
+                                    "& .MuiFormHelperText-root": {
+                                        color: "var(--fg-faint)",
+                                    },
+                                }}
+                                disabled={updateLoading}
+                            />
+                            <Box
+                                sx={{
+                                    display: "grid",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        md: "1fr 1fr",
+                                    },
+                                    gap: 2,
+                                }}
+                            >
+                                <TextField
+                                    fullWidth
+                                    label="Locale"
+                                    value={locale}
+                                    onChange={(e) => setLocale(e.target.value)}
+                                    placeholder="en"
+                                    helperText="e.g. en, fr, de"
+                                    sx={{
+                                        ...textFieldSx,
+                                        "& .MuiFormHelperText-root": {
+                                            color: "var(--fg-faint)",
+                                        },
+                                    }}
+                                    disabled={updateLoading}
+                                />
+                                <TextField
+                                    fullWidth
+                                    label="Timezone"
+                                    value={timezone}
+                                    onChange={(e) =>
+                                        setTimezone(e.target.value)
+                                    }
+                                    placeholder="UTC"
+                                    helperText="e.g. Asia/Kolkata, America/New_York"
+                                    sx={{
+                                        ...textFieldSx,
+                                        "& .MuiFormHelperText-root": {
+                                            color: "var(--fg-faint)",
+                                        },
+                                    }}
+                                    disabled={updateLoading}
+                                />
+                            </Box>
+                        </Box>
+
                         <Box sx={{ mt: 3 }}>
                             <Button
                                 variant="contained"
-                                onClick={handleSaveNotifPrefs}
-                                disabled={notifSaveLoading}
+                                onClick={handleUpdateProfile}
+                                disabled={updateLoading}
                                 sx={{
-                                    background: "rgba(255, 119, 89,0.15)",
-                                    color: "#ff7759",
-                                    border: "1px solid rgba(255, 119, 89,0.3)",
+                                    background: "rgba(58, 101, 199,0.15)",
+                                    color: "var(--accent)",
+                                    border: "1px solid rgba(58, 101, 199,0.3)",
                                     fontWeight: 600,
                                     textTransform: "none",
                                     fontSize: "0.95rem",
                                     py: 1.1,
                                     px: 3,
                                     "&:hover": {
-                                        background: "rgba(255, 119, 89,0.25)",
-                                        borderColor: "rgba(255, 119, 89,0.5)",
+                                        background: "rgba(58, 101, 199,0.25)",
+                                        borderColor: "rgba(58, 101, 199,0.5)",
                                     },
                                     "&:disabled": {
                                         color: "var(--fg-faint)",
                                     },
                                 }}
                             >
-                                {notifSaveLoading ? (
+                                {updateLoading ? (
                                     <Box
                                         sx={{
                                             display: "flex",
@@ -2024,167 +1955,359 @@ const ProfilePage = () => {
                                     >
                                         <CircularProgress
                                             size={16}
-                                            sx={{ color: "#ff7759" }}
+                                            sx={{ color: "var(--accent)" }}
                                         />
                                         Saving...
                                     </Box>
                                 ) : (
-                                    "Save Preferences"
+                                    "Save Changes"
                                 )}
                             </Button>
                         </Box>
-                    )}
-                </Box>
-                {/* 4. Danger Zone — full width */}
-
-                <Box
-                    sx={{
-                        ...cardSx,
-                        gridColumn: { lg: "1 / -1" },
-                        border: "1px solid rgba(239,68,68,0.35)",
-                    }}
-                >
-                    <Typography
-                        variant="h6"
-                        sx={{ ...sectionTitleSx, color: "#f87171" }}
-                    >
-                        <WarningAmberIcon
-                            sx={{ color: "#ef4444", fontSize: "1.2rem" }}
-                        />
-                        Danger Zone
-                    </Typography>
-                    <Typography sx={{ ...sectionSubtitleSx, mb: 2.5 }}>
-                        Irreversible actions — proceed with caution
-                    </Typography>
-
-                    {deleteError && (
-                        <Alert
-                            severity="error"
-                            sx={{
-                                mb: 2.5,
-                                backgroundColor: "rgba(239,68,68,0.1)",
-                                color: "#f87171",
-                                borderColor: "rgba(239,68,68,0.3)",
-                            }}
-                        >
-                            {deleteError}
-                        </Alert>
-                    )}
+                    </Box>
+                    {/* 3. Notification Preferences Card */}
 
                     <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: { xs: "column", md: "row" },
-                            gap: 2,
-                        }}
+                        id="notifications"
+                        sx={{ ...cardSx, ...sectionAnchorSx }}
                     >
-                        {/* Disable Account */}
-                        <Box
-                            sx={{
-                                flex: 1,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                flexWrap: "wrap",
-                                gap: 2,
-                                p: 2,
-                                borderRadius: "10px",
-                                background: "rgba(245,158,11,0.04)",
-                                border: "1px solid rgba(245,158,11,0.15)",
-                            }}
-                        >
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg)",
-                                        fontWeight: 600,
-                                        fontSize: "0.95rem",
-                                    }}
-                                >
-                                    Disable Account
-                                </Typography>
+                        <Typography variant="h6" sx={sectionTitleSx}>
+                            <NotificationsIcon
+                                sx={{
+                                    color: "var(--accent)",
+                                    fontSize: "1.2rem",
+                                }}
+                            />
+                            Notification Preferences
+                        </Typography>
+                        <Typography sx={sectionSubtitleSx}>
+                            Control which email notifications you receive
+                        </Typography>
+
+                        {notifSuccess && (
+                            <Alert
+                                severity="success"
+                                sx={{
+                                    mb: 2.5,
+                                    backgroundColor: "rgba(58, 101, 199,0.1)",
+                                    color: "var(--accent)",
+                                    borderColor: "rgba(58, 101, 199,0.3)",
+                                }}
+                            >
+                                {notifSuccess}
+                            </Alert>
+                        )}
+                        {notifError && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    mb: 2.5,
+                                    backgroundColor: "rgba(239,68,68,0.1)",
+                                    color: "#f87171",
+                                    borderColor: "rgba(239,68,68,0.3)",
+                                }}
+                            >
+                                {notifError}
+                            </Alert>
+                        )}
+
+                        {notifLoading ? (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                }}
+                            >
+                                <CircularProgress
+                                    size={18}
+                                    sx={{ color: "var(--accent)" }}
+                                />
                                 <Typography
                                     sx={{
                                         color: "var(--fg-faint)",
-                                        fontSize: "0.83rem",
-                                        mt: 0.2,
+                                        fontSize: "0.9rem",
                                     }}
                                 >
-                                    Temporarily deactivate your account
+                                    Loading preferences...
                                 </Typography>
                             </Box>
-                            <Button
-                                variant="outlined"
-                                startIcon={<BlockIcon />}
-                                sx={{
-                                    color: "#f59e0b",
-                                    borderColor: "rgba(245,158,11,0.4)",
-                                    fontWeight: 600,
-                                    textTransform: "none",
-                                    fontSize: "0.85rem",
-                                    "&:hover": {
-                                        borderColor: "#f59e0b",
-                                        backgroundColor:
-                                            "rgba(245,158,11,0.08)",
+                        ) : (
+                            <FormGroup sx={{ gap: 0.5 }}>
+                                {[
+                                    {
+                                        key: "email_login_alerts" as const,
+                                        label: "Login Alerts",
+                                        description:
+                                            "Email me when a new login is detected",
                                     },
+                                    {
+                                        key: "email_app_activity" as const,
+                                        label: "App Activity",
+                                        description:
+                                            "Email me on OAuth app usage",
+                                    },
+                                    {
+                                        key: "email_weekly_digest" as const,
+                                        label: "Weekly Digest",
+                                        description:
+                                            "Receive weekly activity summary",
+                                    },
+                                    {
+                                        key: "email_security_alerts" as const,
+                                        label: "Security Alerts",
+                                        description:
+                                            "Email on suspicious activity",
+                                    },
+                                ].map(({ key, label, description }) => (
+                                    <Box
+                                        key={key}
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            py: 1.5,
+                                            borderBottom:
+                                                "1px solid var(--border)",
+                                            "&:last-child": {
+                                                borderBottom: "none",
+                                            },
+                                        }}
+                                    >
+                                        <Box>
+                                            <Typography
+                                                sx={{
+                                                    color: "var(--fg)",
+                                                    fontWeight: 500,
+                                                    fontSize: "0.95rem",
+                                                }}
+                                            >
+                                                {label}
+                                            </Typography>
+                                            <Typography
+                                                sx={{
+                                                    color: "var(--fg-faint)",
+                                                    fontSize: "0.83rem",
+                                                    mt: 0.2,
+                                                }}
+                                            >
+                                                {description}
+                                            </Typography>
+                                        </Box>
+                                        <Switch
+                                            checked={notifPrefs[key]}
+                                            onChange={() =>
+                                                handleNotifToggle(key)
+                                            }
+                                            sx={switchSx}
+                                            disabled={notifSaveLoading}
+                                        />
+                                    </Box>
+                                ))}
+                            </FormGroup>
+                        )}
+
+                        {!notifLoading && (
+                            <Box sx={{ mt: 3 }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={handleSaveNotifPrefs}
+                                    disabled={notifSaveLoading}
+                                    sx={{
+                                        background: "rgba(58, 101, 199,0.15)",
+                                        color: "var(--accent)",
+                                        border: "1px solid rgba(58, 101, 199,0.3)",
+                                        fontWeight: 600,
+                                        textTransform: "none",
+                                        fontSize: "0.95rem",
+                                        py: 1.1,
+                                        px: 3,
+                                        "&:hover": {
+                                            background:
+                                                "rgba(58, 101, 199,0.25)",
+                                            borderColor:
+                                                "rgba(58, 101, 199,0.5)",
+                                        },
+                                        "&:disabled": {
+                                            color: "var(--fg-faint)",
+                                        },
+                                    }}
+                                >
+                                    {notifSaveLoading ? (
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                            }}
+                                        >
+                                            <CircularProgress
+                                                size={16}
+                                                sx={{ color: "var(--accent)" }}
+                                            />
+                                            Saving...
+                                        </Box>
+                                    ) : (
+                                        "Save Preferences"
+                                    )}
+                                </Button>
+                            </Box>
+                        )}
+                    </Box>
+                    {/* 4. Danger Zone — full width */}
+
+                    <Box
+                        id="danger-zone"
+                        sx={{
+                            ...cardSx,
+                            ...sectionAnchorSx,
+                            gridColumn: { lg: "1 / -1" },
+                            border: "1px solid rgba(239,68,68,0.35)",
+                        }}
+                    >
+                        <Typography
+                            variant="h6"
+                            sx={{ ...sectionTitleSx, color: "#f87171" }}
+                        >
+                            <WarningAmberIcon
+                                sx={{ color: "#ef4444", fontSize: "1.2rem" }}
+                            />
+                            Danger Zone
+                        </Typography>
+                        <Typography sx={{ ...sectionSubtitleSx, mb: 2.5 }}>
+                            Irreversible actions — proceed with caution
+                        </Typography>
+
+                        {deleteError && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    mb: 2.5,
+                                    backgroundColor: "rgba(239,68,68,0.1)",
+                                    color: "#f87171",
+                                    borderColor: "rgba(239,68,68,0.3)",
                                 }}
                             >
-                                Disable
-                            </Button>
-                        </Box>
-                        {/* Delete Account */}
+                                {deleteError}
+                            </Alert>
+                        )}
 
                         <Box
                             sx={{
-                                flex: 1,
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                flexWrap: "wrap",
+                                flexDirection: { xs: "column", md: "row" },
                                 gap: 2,
-                                p: 2,
-                                borderRadius: "10px",
-                                background: "rgba(239,68,68,0.04)",
-                                border: "1px solid rgba(239,68,68,0.15)",
                             }}
                         >
-                            <Box>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg)",
-                                        fontWeight: 600,
-                                        fontSize: "0.95rem",
-                                    }}
-                                >
-                                    Delete Account
-                                </Typography>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.83rem",
-                                        mt: 0.2,
-                                    }}
-                                >
-                                    Permanently remove your account and data
-                                </Typography>
-                            </Box>
-                            <Button
-                                variant="outlined"
-                                onClick={() => setDeleteDialogOpen(true)}
+                            {/* Disable Account */}
+                            <Box
                                 sx={{
-                                    color: "#ef4444",
-                                    borderColor: "rgba(239,68,68,0.4)",
-                                    fontWeight: 600,
-                                    textTransform: "none",
-                                    fontSize: "0.85rem",
-                                    "&:hover": {
-                                        borderColor: "#ef4444",
-                                        backgroundColor: "rgba(239,68,68,0.08)",
-                                    },
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 2,
+                                    p: 2,
+                                    borderRadius: "10px",
+                                    background: "rgba(245,158,11,0.04)",
+                                    border: "1px solid rgba(245,158,11,0.15)",
                                 }}
                             >
-                                Delete
-                            </Button>
+                                <Box>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg)",
+                                            fontWeight: 600,
+                                            fontSize: "0.95rem",
+                                        }}
+                                    >
+                                        Disable Account
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.83rem",
+                                            mt: 0.2,
+                                        }}
+                                    >
+                                        Temporarily deactivate your account
+                                    </Typography>
+                                </Box>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<BlockIcon />}
+                                    sx={{
+                                        color: "#f59e0b",
+                                        borderColor: "rgba(245,158,11,0.4)",
+                                        fontWeight: 600,
+                                        textTransform: "none",
+                                        fontSize: "0.85rem",
+                                        "&:hover": {
+                                            borderColor: "#f59e0b",
+                                            backgroundColor:
+                                                "rgba(245,158,11,0.08)",
+                                        },
+                                    }}
+                                >
+                                    Disable
+                                </Button>
+                            </Box>
+                            {/* Delete Account */}
+
+                            <Box
+                                sx={{
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 2,
+                                    p: 2,
+                                    borderRadius: "10px",
+                                    background: "rgba(239,68,68,0.04)",
+                                    border: "1px solid rgba(239,68,68,0.15)",
+                                }}
+                            >
+                                <Box>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg)",
+                                            fontWeight: 600,
+                                            fontSize: "0.95rem",
+                                        }}
+                                    >
+                                        Delete Account
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            color: "var(--fg-faint)",
+                                            fontSize: "0.83rem",
+                                            mt: 0.2,
+                                        }}
+                                    >
+                                        Permanently remove your account and data
+                                    </Typography>
+                                </Box>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                    sx={{
+                                        color: "#ef4444",
+                                        borderColor: "rgba(239,68,68,0.4)",
+                                        fontWeight: 600,
+                                        textTransform: "none",
+                                        fontSize: "0.85rem",
+                                        "&:hover": {
+                                            borderColor: "#ef4444",
+                                            backgroundColor:
+                                                "rgba(239,68,68,0.08)",
+                                        },
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
@@ -2277,11 +2400,11 @@ const ProfilePage = () => {
                         }
                         variant="contained"
                         sx={{
-                            background: "#ff7759",
+                            background: "#3a65c7",
                             color: "#fff",
                             textTransform: "none",
                             fontWeight: 600,
-                            "&:hover": { background: "#ff7759" },
+                            "&:hover": { background: "#3a65c7" },
                             "&:disabled": {
                                 background: "var(--border)",
                                 color: "var(--fg-faint)",

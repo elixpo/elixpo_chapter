@@ -1,23 +1,24 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
+import ResearchGeometry from "./components/research-geometry";
 
-const INK = "#212121";
-const SLATE = "#75758a";
-const HAIRLINE = "#d9d9dd";
+const INK = "var(--fg)";
+const SLATE = "var(--fg-muted)";
+const HAIRLINE = "var(--border)";
 
 const PRIMARY = {
     textTransform: "none" as const,
     fontWeight: 500,
     fontSize: "0.92rem",
-    color: "#fff",
+    color: "var(--bg)",
     px: 3,
     py: 1.1,
     borderRadius: "32px", // Pill
-    background: "#17171c",
+    background: "var(--fg)",
     boxShadow: "none",
     fontFamily: "var(--font-sans)",
-    "&:hover": { background: "#000" },
+    "&:hover": { background: "var(--fg-muted)" },
 };
 
 const GHOST = {
@@ -30,7 +31,7 @@ const GHOST = {
     borderRadius: "32px", // Pill outline
     border: `1px solid ${HAIRLINE}`,
     fontFamily: "var(--font-sans)",
-    "&:hover": { borderColor: INK, background: "rgba(0,0,0,0.02)" },
+    "&:hover": { borderColor: INK, background: "var(--overlay)" },
 };
 
 export default function NotFound() {
@@ -41,11 +42,19 @@ export default function NotFound() {
                 display: "grid",
                 placeItems: "center",
                 px: 3,
-                background: "#ffffff",
+                background: "var(--bg)",
                 color: INK,
+                position: "relative",
+                overflow: "hidden",
             }}
         >
-            <Stack alignItems="center" textAlign="center" spacing={3.5} sx={{ maxWidth: 460 }}>
+            <ResearchGeometry />
+            <Stack
+                alignItems="center"
+                textAlign="center"
+                spacing={3.5}
+                sx={{ maxWidth: 520, position: "relative", zIndex: 1 }}
+            >
                 <Image
                     src="/logo.png"
                     alt="Elixpo Mails"
@@ -56,11 +65,11 @@ export default function NotFound() {
                 <Box>
                     <Typography
                         sx={{
-                            fontWeight: 500,
-                            fontSize: { xs: "5rem", md: "6.5rem" },
-                            lineHeight: 1,
-                            letterSpacing: "-0.04em",
-                            color: "#000000",
+                            fontWeight: 510,
+                            fontSize: { xs: "6rem", md: "8rem" },
+                            lineHeight: 0.9,
+                            letterSpacing: "-0.073em",
+                            color: "var(--fg)",
                             fontFamily: "var(--font-display)",
                         }}
                     >
@@ -68,15 +77,16 @@ export default function NotFound() {
                     </Typography>
                     <Typography
                         sx={{
-                            fontWeight: 500,
-                            fontSize: "1.45rem",
+                            fontWeight: 600,
+                            fontSize: "1.9rem",
                             mt: 1.5,
-                            letterSpacing: "-0.02em",
-                            color: "#000000",
+                            letterSpacing: "-0.05em",
+                            color: "var(--fg)",
                             fontFamily: "var(--font-display)",
                         }}
                     >
-                        Lost in the outbox
+                        Lost in the{" "}
+                        <em style={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}>outbox</em>
                     </Typography>
                     <Typography
                         sx={{

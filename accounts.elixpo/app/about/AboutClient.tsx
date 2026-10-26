@@ -89,7 +89,7 @@ export default function AboutClient() {
     }, []);
 
     return (
-        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#ff7759] selection:text-white overflow-x-hidden">
+        <div className="relative w-full min-h-screen font-body text-[var(--fg)] bg-[var(--bg)] selection:bg-[#3a65c7] selection:text-white overflow-x-hidden">
             <style>{`
                 .font-heading { font-family: var(--font-heading), sans-serif; }
                 .font-body { font-family: var(--font-body), sans-serif; }
@@ -100,20 +100,12 @@ export default function AboutClient() {
             <main className="w-full max-w-[1100px] mx-auto px-5 sm:px-8 pt-8 sm:pt-16 pb-16 relative z-10">
                 {/* Hero Section */}
                 <div className="max-w-[780px] mx-auto flex flex-col items-center text-center gap-6 mb-16 sm:mb-24">
-                    <div className="flex items-center gap-3 gsap-about-hero">
-                        <img
-                            src="/LOGO/logo.png"
-                            alt="Elixpo Mascot"
-                            className="w-10 h-10 rounded-lg object-contain bg-white/80 p-0.5"
-                        />
-                        <span className="bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/25 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                            About
-                        </span>
-                    </div>
+                    <p className="eyebrow gsap-about-hero">
+                        About Elixpo Accounts
+                    </p>
 
-                    <h1 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-[1.1] gsap-about-hero">
-                        A modern identity layer{" "}
-                        <span className="text-[#ff7759]">for any app.</span>
+                    <h1 className="display text-[clamp(2.8rem,6.4vw,6rem)] text-[var(--fg)] gsap-about-hero">
+                        A modern identity layer <em>for any app.</em>
                     </h1>
 
                     <p className="font-body text-base sm:text-lg text-[var(--fg)] opacity-80 leading-relaxed max-w-[620px] gsap-about-hero">
@@ -126,7 +118,7 @@ export default function AboutClient() {
                     <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 gsap-about-hero">
                         <Link
                             href="/login"
-                            className="bg-[#ff7759] text-white px-8 py-3 rounded-full font-semibold hover:scale-[1.04] hover:brightness-110 active:scale-[0.96] transition-all duration-200 shadow-md text-center min-w-[160px]"
+                            className="bg-[var(--cta-bg)] text-[var(--cta-fg)] px-8 py-3 rounded-full font-semibold hover:scale-[1.04] active:scale-[0.96] transition-all duration-200 text-center min-w-[160px]"
                         >
                             Get started
                         </Link>
@@ -147,9 +139,9 @@ export default function AboutClient() {
                     {FEATURES.map(({ icon: Icon, title, desc }) => (
                         <div
                             key={title}
-                            className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(25,40,55,0.015)] transition-all hover:shadow-[0_12px_32px_rgba(255, 119, 89,0.05)] hover:border-[#ff7759]/30 flex flex-col items-start gsap-about-card"
+                            className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(20,32,24,0.015)] transition-all hover:shadow-[0_12px_32px_rgba(58,101,199,0.05)] hover:border-[#3a65c7]/30 flex flex-col items-start gsap-about-card"
                         >
-                            <div className="p-3 bg-[#ff7759]/10 border border-[#ff7759]/25 rounded-xl text-[#ff7759] mb-6">
+                            <div className="p-3 bg-[#3a65c7]/10 border border-[#3a65c7]/25 rounded-xl text-[var(--accent)] mb-6">
                                 <Icon className="w-5 h-5" />
                             </div>
                             <h3 className="font-heading text-lg font-bold text-[var(--fg)] mb-2">
@@ -163,7 +155,7 @@ export default function AboutClient() {
                 </div>
 
                 {/* Bottom Callout */}
-                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-10 shadow-[0_4px_24px_rgba(25,40,55,0.015)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 gsap-about-card">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 sm:p-10 shadow-[0_4px_24px_rgba(20,32,24,0.015)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 gsap-about-card">
                     <div>
                         <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--fg)] mb-2">
                             Fully open source
@@ -178,7 +170,7 @@ export default function AboutClient() {
                         href={REPO_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-[var(--overlay)] hover:bg-[#192837]/10 border border-[var(--border)] text-[var(--fg)] px-6 py-3 rounded-xl font-semibold text-sm transition-all flex-shrink-0 active:scale-[0.98]"
+                        className="flex items-center gap-2 bg-[var(--overlay)] hover:bg-[#142018]/10 border border-[var(--border)] text-[var(--fg)] px-6 py-3 rounded-xl font-semibold text-sm transition-all flex-shrink-0 active:scale-[0.98]"
                     >
                         <Github className="w-4 h-4 text-[var(--fg)]" />
                         <span>View on GitHub</span>

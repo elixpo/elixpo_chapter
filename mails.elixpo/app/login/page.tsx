@@ -10,6 +10,7 @@ import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material"
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import ResearchGeometry from "../components/research-geometry";
 
 const ACCOUNTS_URL = "https://accounts.elixpo.com/docs";
 
@@ -25,10 +26,10 @@ const ERROR_MESSAGES: Record<string, string> = {
     sso_failed: "We couldn't reach Elixpo Accounts to sign you in. Please try again in a moment.",
 };
 
-const CORAL = "#ff7759";
-const INK = "#212121";
-const SLATE = "#75758a";
-const HAIRLINE = "#d9d9dd";
+const CORAL = "var(--accent)";
+const INK = "var(--fg)";
+const SLATE = "var(--fg-muted)";
+const HAIRLINE = "var(--border)";
 
 const ghostBtn = {
     flex: 1,
@@ -41,7 +42,7 @@ const ghostBtn = {
     background: "transparent",
     border: `1px solid ${HAIRLINE}`,
     fontFamily: "var(--font-sans)",
-    "&:hover": { borderColor: INK, background: "rgba(0,0,0,0.03)" },
+    "&:hover": { borderColor: INK, background: "var(--overlay)" },
 };
 
 function LoginInner() {
@@ -74,7 +75,7 @@ function LoginInner() {
                     display: "grid",
                     placeItems: "center",
                     p: 2,
-                    background: "#ffffff",
+                    background: "var(--bg)",
                 }}
             >
                 <CircularProgress sx={{ color: CORAL }} />
@@ -92,10 +93,12 @@ function LoginInner() {
                 display: "grid",
                 placeItems: "center",
                 p: 2,
-                background: "#ffffff",
+                background: "var(--bg)",
                 color: INK,
+                overflow: "hidden",
             }}
         >
+            <ResearchGeometry label="SIGN IN → SEND" />
             <Box
                 sx={{
                     position: "relative",
@@ -105,9 +108,9 @@ function LoginInner() {
                     p: { xs: 4, md: 5 },
                     borderRadius: "22px", // lg radius token
                     textAlign: "center",
-                    background: "#ffffff", // Pure Canvas White
+                    background: "var(--surface)",
                     border: `1px solid ${HAIRLINE}`,
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.04)",
+                    boxShadow: "0 18px 48px rgba(20,32,24,.09)",
                 }}
             >
                 <Box
@@ -125,16 +128,22 @@ function LoginInner() {
                     }}
                 />
 
+                <Typography className="eyebrow" sx={{ mb: 1.5 }}>
+                    Elixpo Mails
+                </Typography>
                 <Typography
+                    component="h1"
                     sx={{
-                        fontWeight: 500,
-                        fontSize: "1.75rem",
-                        letterSpacing: "-0.02em",
+                        fontWeight: 600,
+                        fontSize: { xs: "2.1rem", md: "2.5rem" },
+                        lineHeight: 0.98,
+                        letterSpacing: "-0.055em",
                         fontFamily: "var(--font-display)",
-                        color: "#000000",
+                        color: "var(--fg)",
                     }}
                 >
-                    Sign in to Elixpo Mails
+                    Sign in to{" "}
+                    <em style={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}>Mails</em>
                 </Typography>
                 <Typography sx={{ color: SLATE, fontSize: "0.95rem", mt: 1 }}>
                     Manage your senders, templates, and transactional sends.
@@ -147,9 +156,9 @@ function LoginInner() {
                             px: 2,
                             py: 1.2,
                             borderRadius: "8px",
-                            background: "rgba(179,0,0,0.06)",
-                            border: "1px solid rgba(179,0,0,0.2)",
-                            color: "#b30000",
+                            background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--danger) 30%, transparent)",
+                            color: "var(--danger-fg)",
                             fontSize: "0.85rem",
                         }}
                     >
@@ -165,15 +174,15 @@ function LoginInner() {
                     sx={{
                         mt: 3.5,
                         textTransform: "none",
-                        fontWeight: 500,
+                        fontWeight: 700,
                         fontSize: "0.95rem",
-                        color: "#fff",
+                        color: "var(--bg)",
                         py: 1.3,
                         borderRadius: "32px", // Pill
-                        background: "#17171c",
+                        background: "var(--fg)",
                         boxShadow: "none",
                         fontFamily: "var(--font-sans)",
-                        "&:hover": { background: "#000" },
+                        "&:hover": { background: "var(--fg-muted)" },
                     }}
                 >
                     Continue with Elixpo Accounts
@@ -186,7 +195,7 @@ function LoginInner() {
                         p: 3,
                         borderRadius: "16px",
                         textAlign: "left",
-                        background: "#eeece7", // Soft Stone
+                        background: "var(--paper-deep)",
                         border: `1px solid ${HAIRLINE}`,
                     }}
                 >
@@ -197,7 +206,7 @@ function LoginInner() {
                                 fontWeight: 500,
                                 fontSize: "0.92rem",
                                 fontFamily: "var(--font-display)",
-                                color: "#000",
+                                color: "var(--fg)",
                             }}
                         >
                             What is Elixpo Accounts?
@@ -232,7 +241,7 @@ function LoginInner() {
                             alignItems: "center",
                             gap: 0.5,
                             mt: 2.5,
-                            color: "#1863dc", // Action Blue
+                            color: "var(--action-fg)",
                             fontSize: "0.84rem",
                             fontWeight: 500,
                             textDecoration: "none",

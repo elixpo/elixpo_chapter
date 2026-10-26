@@ -42,6 +42,7 @@ gh pr list --search "linked:issue-<n>" --state open --json number,headRefName,ti
 ```
 
 ### 4a. Open PR exists
+
 Someone (possibly you, earlier) already has a PR open for this issue.
 - `git fetch origin && git checkout <headRefName> && git pull`
 - Make changes on that branch.
@@ -49,6 +50,7 @@ Someone (possibly you, earlier) already has a PR open for this issue.
 - Comment on the issue: `pushed more changes to #<pr-n>`.
 
 ### 4b. Merged PR exists (no open one)
+
 Prior attempt merged. Cut a fresh branch.
 - `git pr diff <merged-pr>` — read the old diff for context.
 - New branch: `elixpo/issue-<n>-$(openssl rand -hex 2)`.
@@ -56,9 +58,11 @@ Prior attempt merged. Cut a fresh branch.
 - Follow `commit-push-pr.md` Steps 2-3.
 
 ### 4c. No PR exists
+
 Standard flow. Follow `.claude/commands/commit-push-pr.md` end-to-end.
 
 ### Implementation rules (all sub-paths)
+
 - Minimal, scoped edits. No unrelated cleanups.
 - Follow existing conventions (biome, tsconfig, neighbouring code style).
 - `./biome.sh ci` must exit 0 before commit.

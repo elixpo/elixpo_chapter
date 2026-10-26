@@ -1,8 +1,7 @@
 "use client";
 
-import { Box, Button, Chip, Container, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 // Senders brand list for the trust logos
 const SENDER_BRANDS = ["Gmail", "Outlook", "Yahoo", "iCloud", "Zoho", "Proton", "Fastmail", "SMTP"];
@@ -11,14 +10,6 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
     const signedIn = authed === true;
     const primaryHref = signedIn ? "/dashboard" : "/api/auth/login";
     const primaryLabel = signedIn ? "Go to your dashboard" : "Get started with Elixpo";
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return <Box sx={{ minHeight: "100vh" }} />;
-
     return (
         <Box
             sx={{
@@ -45,12 +36,69 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                         position: "absolute",
                         width: 430,
                         height: 430,
-                        border: "1px solid rgba(20,32,24,.2)",
+                        border: "1px solid color-mix(in srgb, var(--fg) 25%, transparent)",
                         borderRadius: "50%",
                         right: -120,
                         top: 80,
+                        "&::after": {
+                            content: '""',
+                            position: "absolute",
+                            width: 14,
+                            height: 14,
+                            left: 42,
+                            top: 55,
+                            borderRadius: "50%",
+                            background: "var(--geo-blue)",
+                        },
                     }}
                 />
+                <Box
+                    sx={{
+                        position: "absolute",
+                        width: 260,
+                        height: 260,
+                        left: -110,
+                        bottom: -110,
+                        border: "1px solid color-mix(in srgb, var(--fg) 25%, transparent)",
+                        borderRadius: "50%",
+                        "&::after": {
+                            content: '""',
+                            position: "absolute",
+                            width: 14,
+                            height: 14,
+                            right: 27,
+                            top: 28,
+                            borderRadius: "50%",
+                            background: "var(--orange)",
+                        },
+                    }}
+                />
+                <Box
+                    sx={{
+                        position: "absolute",
+                        width: 132,
+                        height: 132,
+                        right: "6%",
+                        bottom: "24%",
+                        borderRadius: "50%",
+                        bgcolor: "var(--geo-blue)",
+                        color: "#fff",
+                        transform: "rotate(8deg)",
+                        boxShadow: "0 28px 80px rgba(24,38,28,.16)",
+                        display: "grid",
+                        placeContent: "center",
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: ".62rem",
+                        fontWeight: 600,
+                        letterSpacing: ".14em",
+                    }}
+                >
+                    SMTP
+                    <Box component="b" sx={{ mt: 0.6, fontSize: ".78rem" }}>
+                        BYO
+                    </Box>
+                </Box>
                 <Box
                     sx={{
                         position: "absolute",
@@ -71,14 +119,14 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                         height: 112,
                         border: "1px solid var(--border)",
                         borderRadius: "18px",
-                        bgcolor: "rgba(255,255,255,.72)",
+                        bgcolor: "var(--surface)",
                         right: "25%",
                         bottom: "18%",
                         transform: "rotate(7deg)",
                         backdropFilter: "blur(12px)",
                         display: "grid",
                         placeItems: "center",
-                        color: "#3a65c7",
+                        color: "var(--accent)",
                         fontFamily: "var(--font-mono)",
                         fontWeight: 700,
                         fontSize: ".72rem",
@@ -103,11 +151,11 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                 {/* Taxonomy Chip */}
                 <Typography
                     sx={{
-                        color: "#ff7759", // Coral
+                        color: "var(--accent)",
                         fontFamily: "var(--font-mono)",
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        letterSpacing: "0.2em",
+                        fontSize: ".68rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.19em",
                         textTransform: "uppercase",
                         mb: 2.5,
                         display: "inline-block",
@@ -121,10 +169,10 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                     component="h1"
                     sx={{
                         fontFamily: "var(--font-display)",
-                        fontWeight: 500,
-                        fontSize: { xs: "3.35rem", sm: "5rem", md: "clamp(5rem,7.6vw,7.7rem)" },
+                        fontWeight: 510,
+                        fontSize: { xs: "3.35rem", sm: "5rem", md: "clamp(4rem,7.8vw,8rem)" },
                         lineHeight: 0.9,
-                        letterSpacing: "-0.067em",
+                        letterSpacing: "-0.073em",
                         color: "var(--fg)",
                         mb: 3,
                         maxWidth: 1120,
@@ -132,7 +180,6 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                             fontFamily: "Georgia, serif",
                             fontStyle: "italic",
                             fontWeight: 400,
-                            color: "var(--fg-muted)",
                         },
                     }}
                 >
@@ -171,15 +218,16 @@ export default function PixelHero({ authed }: { authed?: boolean | null }) {
                         sx={{
                             background: "var(--fg)",
                             color: "var(--bg)",
-                            borderRadius: "32px",
+                            borderRadius: "999px",
                             px: 3.5,
                             py: 1.4,
-                            fontSize: "0.95rem",
-                            fontWeight: 500,
+                            fontSize: "0.9rem",
+                            fontWeight: 700,
                             textTransform: "none",
                             boxShadow: "none",
                             "&:hover": {
-                                background: "var(--fg-muted)",
+                                background: "var(--fg)",
+                                opacity: 0.82,
                             },
                         }}
                     >

@@ -28,6 +28,55 @@ const nextConfig: NextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
+    async headers() {
+        // Credential, consent, and account surfaces must never be indexed or
+        // framed. Pages also carry robots metadata; the header covers
+        // redirects, API responses, and non-HTML clients.
+        const privatePaths = [
+            "/api/:path*",
+            "/authorize",
+            "/oauth/:path*",
+            "/callback/:path*",
+            "/dashboard",
+            "/dashboard/:path*",
+            "/mfa",
+            "/mfa/:path*",
+            "/device",
+            "/verify",
+            "/setup-name",
+            "/error",
+            "/forgot-password",
+        ];
+        return [
+            {
+                source: "/:path*",
+                headers: [
+                    { key: "X-Content-Type-Options", value: "nosniff" },
+                    {
+                        key: "Referrer-Policy",
+                        value: "strict-origin-when-cross-origin",
+                    },
+                    { key: "X-Frame-Options", value: "DENY" },
+                    {
+                        key: "Content-Security-Policy",
+                        value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+                    },
+                    {
+                        key: "Strict-Transport-Security",
+                        value: "max-age=31536000; includeSubDomains",
+                    },
+                    {
+                        key: "Permissions-Policy",
+                        value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+                    },
+                ],
+            },
+            ...privatePaths.map((source) => ({
+                source,
+                headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+            })),
+        ];
+    },
     webpack: (config, { isServer }) => {
         // Prevent webpack from trying to bundle nodemailer (Node.js-only)
         // into edge runtime chunks. It's dynamically imported at runtime only

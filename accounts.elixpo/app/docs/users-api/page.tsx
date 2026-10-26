@@ -92,7 +92,7 @@ export default function UsersApiPage() {
                 sx={{
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    color: "#ff7759",
+                    color: "var(--accent)",
                     mt: 3,
                     mb: 2,
                 }}
@@ -151,7 +151,7 @@ export default function UsersApiPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -178,7 +178,7 @@ export default function UsersApiPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -204,7 +204,7 @@ export default function UsersApiPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -231,7 +231,7 @@ export default function UsersApiPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >
@@ -258,7 +258,7 @@ export default function UsersApiPage() {
                             </TableCell>
                             <TableCell
                                 sx={{
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                     borderBottom: "1px solid var(--border)",
                                 }}
                             >

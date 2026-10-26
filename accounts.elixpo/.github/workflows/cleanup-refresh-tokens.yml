@@ -3,21 +3,21 @@ name: Cleanup Expired Refresh Tokens
 permissions: {}
 
 concurrency:
-  group: cleanup-refresh-tokens
-  cancel-in-progress: false
+    group: cleanup-refresh-tokens
+    cancel-in-progress: false
 
 on:
-  schedule:
-    - cron: '*/30 * * * *' # Run every 30 minutes
-  workflow_dispatch: # Allow manual triggering
+    schedule:
+        - cron: "*/30 * * * *" # Run every 30 minutes
+    workflow_dispatch: # Allow manual triggering
 
 jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Invoke Cleanup Cron
-        run: |
-          curl -X GET "https://accounts.elixpo.com/api/cron/cleanup-refresh-tokens" \
-            -H "Authorization: Bearer ${{ secrets.REFRESH_TOKEN_CLEANUP_CRON_SECRET }}" \
-            --fail
+    cleanup:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - name: Invoke Cleanup Cron
+              run: |
+                  curl -X GET "https://accounts.elixpo.com/api/cron/cleanup-refresh-tokens" \
+                    -H "Authorization: Bearer ${{ secrets.REFRESH_TOKEN_CLEANUP_CRON_SECRET }}" \
+                    --fail

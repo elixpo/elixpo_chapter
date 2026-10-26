@@ -42,10 +42,10 @@ const textFieldSx = {
         color: "var(--fg)",
         "& fieldset": { borderColor: "var(--border)" },
         "&:hover fieldset": { borderColor: "var(--border)" },
-        "&.Mui-focused fieldset": { borderColor: "#ff7759" },
+        "&.Mui-focused fieldset": { borderColor: "#3a65c7" },
     },
     "& .MuiInputLabel-root": { color: "var(--fg-muted)" },
-    "& .MuiInputLabel-root.Mui-focused": { color: "#ff7759" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "var(--accent)" },
 };
 
 export default function WebhookDetailPage() {
@@ -172,7 +172,7 @@ export default function WebhookDetailPage() {
                     py: 10,
                 }}
             >
-                <CircularProgress sx={{ color: "#ff7759" }} />
+                <CircularProgress sx={{ color: "var(--accent)" }} />
             </Box>
         );
     }
@@ -218,17 +218,17 @@ export default function WebhookDetailPage() {
                             mb: 3,
                             bgcolor:
                                 message.type === "success"
-                                    ? "rgba(255, 119, 89,0.1)"
+                                    ? "rgba(58, 101, 199,0.1)"
                                     : "rgba(239,68,68,0.1)",
                             color:
                                 message.type === "success"
-                                    ? "#ff7759"
+                                    ? "#3a65c7"
                                     : "#b91c1c",
-                            border: `1px solid ${message.type === "success" ? "rgba(255, 119, 89,0.3)" : "rgba(239,68,68,0.3)"}`,
+                            border: `1px solid ${message.type === "success" ? "rgba(58, 101, 199,0.3)" : "rgba(239,68,68,0.3)"}`,
                             "& .MuiAlert-icon": {
                                 color:
                                     message.type === "success"
-                                        ? "#ff7759"
+                                        ? "#3a65c7"
                                         : "#b91c1c",
                             },
                         }}
@@ -270,7 +270,7 @@ export default function WebhookDetailPage() {
                             }
                             sx={{
                                 "& .MuiSwitch-switchBase.Mui-checked": {
-                                    color: "#ff7759",
+                                    color: "var(--accent)",
                                 },
                                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                     { bgcolor: "#15803d" },
@@ -330,7 +330,7 @@ export default function WebhookDetailPage() {
                                         sx={{
                                             color: "var(--fg-faint)",
                                             "&.Mui-checked": {
-                                                color: "#ff7759",
+                                                color: "var(--accent)",
                                             },
                                         }}
                                     />
@@ -356,13 +356,13 @@ export default function WebhookDetailPage() {
                         onClick={handleSave}
                         disabled={saving}
                         sx={{
-                            background: "rgba(255, 119, 89,0.15)",
-                            color: "#ff7759",
-                            border: "1px solid rgba(255, 119, 89,0.3)",
+                            background: "rgba(58, 101, 199,0.15)",
+                            color: "var(--accent)",
+                            border: "1px solid rgba(58, 101, 199,0.3)",
                             fontWeight: 600,
                             textTransform: "none",
                             "&:hover": {
-                                background: "rgba(255, 119, 89,0.25)",
+                                background: "rgba(58, 101, 199,0.25)",
                             },
                         }}
                     >
@@ -381,7 +381,8 @@ export default function WebhookDetailPage() {
                         variant="body2"
                         sx={{ color: "var(--fg-faint)", mb: 2 }}
                     >
-                        Sends a <code style={{ color: "#ff7759" }}>ping</code>{" "}
+                        Sends a{" "}
+                        <code style={{ color: "var(--accent)" }}>ping</code>{" "}
                         event to verify your endpoint is reachable.
                     </Typography>
                     <Button
@@ -390,12 +391,12 @@ export default function WebhookDetailPage() {
                         onClick={handleTest}
                         disabled={testing}
                         sx={{
-                            borderColor: "rgba(255, 119, 89,0.3)",
-                            color: "#ff7759",
+                            borderColor: "rgba(58, 101, 199,0.3)",
+                            color: "var(--accent)",
                             textTransform: "none",
                             "&:hover": {
-                                borderColor: "#ff7759",
-                                bgcolor: "rgba(255, 119, 89,0.05)",
+                                borderColor: "#3a65c7",
+                                bgcolor: "rgba(58, 101, 199,0.05)",
                             },
                         }}
                     >

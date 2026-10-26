@@ -20,7 +20,7 @@ export default function PrivacyContent() {
 
     return (
         <main className="w-full max-w-[760px] mx-auto px-5 sm:px-8 py-8 sm:py-16 relative z-10 flex-1">
-            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight mb-2 text-[#192837] gsap-privacy-animate">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight mb-2 text-[var(--fg)] gsap-privacy-animate">
                 Privacy Policy
             </h1>
             <p className="text-sm opacity-60 font-semibold mb-10 gsap-privacy-animate">
@@ -38,7 +38,7 @@ export default function PrivacyContent() {
                 <Section title="2. Information we collect">
                     <ul className="list-disc pl-5 flex flex-col gap-3">
                         <li>
-                            <strong className="text-[#192837] font-semibold">
+                            <strong className="text-[var(--fg)] font-semibold">
                                 Account information:
                             </strong>{" "}
                             email address, display name, profile photo, and
@@ -46,7 +46,7 @@ export default function PrivacyContent() {
                             login provider (Google, GitHub, Discord, Microsoft).
                         </li>
                         <li>
-                            <strong className="text-[#192837] font-semibold">
+                            <strong className="text-[var(--fg)] font-semibold">
                                 Authentication signals:
                             </strong>{" "}
                             a hash of your IP address and a short user-agent
@@ -54,7 +54,7 @@ export default function PrivacyContent() {
                             sign-ins. We do not store raw IP addresses.
                         </li>
                         <li>
-                            <strong className="text-[#192837] font-semibold">
+                            <strong className="text-[var(--fg)] font-semibold">
                                 Multi-factor secrets:
                             </strong>{" "}
                             when you enroll TOTP, passkeys, or email OTP, we
@@ -62,7 +62,7 @@ export default function PrivacyContent() {
                             and KV.
                         </li>
                         <li>
-                            <strong className="text-[#192837] font-semibold">
+                            <strong className="text-[var(--fg)] font-semibold">
                                 OAuth app metadata:
                             </strong>{" "}
                             if you register an OAuth app, we store the app name,
@@ -70,7 +70,7 @@ export default function PrivacyContent() {
                             of the client secret.
                         </li>
                         <li>
-                            <strong className="text-[#192837] font-semibold">
+                            <strong className="text-[var(--fg)] font-semibold">
                                 Billing data:
                             </strong>{" "}
                             when you subscribe to a paid tier, we store your
@@ -122,7 +122,7 @@ export default function PrivacyContent() {
                             process applicable in our operating jurisdiction.
                         </li>
                     </ul>
-                    <p className="mt-4 font-semibold text-[#192837]">
+                    <p className="mt-4 font-semibold text-[var(--fg)]">
                         We do not sell your personal data.
                     </p>
                 </Section>
@@ -148,7 +148,7 @@ export default function PrivacyContent() {
                     correct, export, or delete your personal data. Email{" "}
                     <a
                         href="mailto:privacy@elixpo.com"
-                        className="text-[#7342E2] hover:underline font-semibold"
+                        className="text-[var(--green)] hover:underline font-semibold"
                     >
                         privacy@elixpo.com
                     </a>{" "}
@@ -171,7 +171,7 @@ export default function PrivacyContent() {
                     Questions about this policy:{" "}
                     <a
                         href="mailto:privacy@elixpo.com"
-                        className="text-[#7342E2] hover:underline font-semibold"
+                        className="text-[var(--green)] hover:underline font-semibold"
                     >
                         privacy@elixpo.com
                     </a>
@@ -191,7 +191,7 @@ function Section({
 }) {
     return (
         <div className="gsap-privacy-animate">
-            <h2 className="font-heading text-lg sm:text-xl font-bold mb-3 text-[#192837]">
+            <h2 className="font-heading text-lg sm:text-xl font-bold mb-3 text-[var(--fg)]">
                 {title}
             </h2>
             <div className="text-sm sm:text-base opacity-80 leading-relaxed font-body">

@@ -68,13 +68,13 @@ export default function SetupRequiredPage() {
                         href="/dashboard/security"
                         variant="contained"
                         sx={{
-                            background: "#ff7759",
+                            background: "#3a65c7",
                             color: "#fff",
                             textTransform: "none",
                             fontWeight: 600,
                             px: 3,
                             "&:hover": {
-                                background: "rgba(255, 119, 89, 0.9)",
+                                background: "rgba(58, 101, 199, 0.9)",
                             },
                         }}
                     >

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import {
     type CustomOAuthScope,
     findScopeOption,
 } from "@/lib/oauth-scope-registry";
 import { generatePixelAvatar } from "@/lib/pixel-avatar";
+import "./consent.css";
 
 export type ConsentAccount = {
     id: string;
@@ -13,103 +15,118 @@ export type ConsentAccount = {
     avatar?: string | null;
 };
 
+function avatarFor(account: ConsentAccount, size = 36) {
+    return account.avatar || generatePixelAvatar(account.email, size);
+}
+
+function AccountMeta({ account }: { account: ConsentAccount }) {
+    return (
+        <span className="account-meta">
+            <strong>{account.displayName || account.email}</strong>
+            {account.displayName && <span>{account.email}</span>}
+        </span>
+    );
+}
+
+/**
+ * Shows which account the request is for and lets the person switch to
+ * another signed-in account. `pendingId` marks the account being switched
+ * to so the row can show progress until the parent finishes reloading.
+ */
 export function AccountSelector({
     account,
     accounts,
     disabled,
     onSwitch,
     addHref,
+    pendingId = null,
 }: {
     account: ConsentAccount;
     accounts: ConsentAccount[];
     disabled: boolean;
     onSwitch: (userId: string) => void;
     addHref: string;
+    pendingId?: string | null;
 }) {
+    const others = accounts.filter((candidate) => candidate.id !== account.id);
+    const [open, setOpen] = useState(false);
+    const expanded = open || pendingId !== null;
+
     return (
-        <div style={{ padding: "0 16px 14px", textAlign: "center" }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                }}
-            >
-                <img
-                    src={
-                        account.avatar || generatePixelAvatar(account.email, 32)
-                    }
-                    alt=""
-                    width={32}
-                    height={32}
-                    style={{ borderRadius: "50%", flexShrink: 0 }}
-                />
-                <div style={{ minWidth: 0 }}>
-                    <strong
-                        style={{
-                            display: "block",
-                            color: "var(--fg)",
-                            fontSize: 12.5,
-                        }}
-                    >
-                        {account.displayName || account.email}
-                    </strong>
-                    <span
-                        style={{
-                            display: "block",
-                            color: "var(--fg-faint)",
-                            fontSize: 11.5,
-                            overflowWrap: "anywhere",
-                        }}
-                    >
-                        {account.email}
-                    </span>
-                </div>
+        <div className="consent-section">
+            <p className="eyebrow">Continuing as</p>
+            <div className="account-row" data-current="true">
+                <img src={avatarFor(account)} alt="" width={36} height={36} />
+                <AccountMeta account={account} />
+                <span className="account-tag">Active</span>
             </div>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    flexWrap: "wrap",
-                    marginTop: 10,
-                }}
-            >
-                {accounts.length > 1 && (
-                    <select
-                        aria-label="Choose an account"
-                        value={account.id}
+
+            {expanded && others.length > 0 && (
+                <div
+                    className="account-list"
+                    role="listbox"
+                    aria-label="Switch to another account"
+                >
+                    {others.map((candidate) => {
+                        const pending = pendingId === candidate.id;
+                        return (
+                            <button
+                                key={candidate.id}
+                                type="button"
+                                role="option"
+                                aria-selected={pending}
+                                className="account-row"
+                                data-pending={pending}
+                                disabled={disabled}
+                                onClick={() => onSwitch(candidate.id)}
+                            >
+                                <img
+                                    src={avatarFor(candidate)}
+                                    alt=""
+                                    width={36}
+                                    height={36}
+                                />
+                                <AccountMeta account={candidate} />
+                                {pending ? (
+                                    <span
+                                        className="spinner-sm"
+                                        role="img"
+                                        aria-label="Switching"
+                                    />
+                                ) : (
+                                    <span aria-hidden="true">→</span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            <div className="account-actions">
+                {others.length > 0 ? (
+                    <button
+                        type="button"
+                        className="text-btn"
                         disabled={disabled}
-                        onChange={(event) => onSwitch(event.target.value)}
-                        style={{
-                            maxWidth: "100%",
-                            border: "1px solid var(--border)",
-                            borderRadius: 8,
-                            background: "var(--surface)",
-                            color: "var(--fg-muted)",
-                            fontSize: 12,
-                            padding: "7px 9px",
-                        }}
+                        aria-expanded={expanded}
+                        onClick={() => setOpen((value) => !value)}
                     >
-                        {accounts.map((candidate) => (
-                            <option key={candidate.id} value={candidate.id}>
-                                {candidate.displayName || candidate.email}
-                            </option>
-                        ))}
-                    </select>
+                        {expanded
+                            ? "Hide other accounts"
+                            : `Switch account (${others.length})`}
+                    </button>
+                ) : (
+                    <span />
                 )}
                 <a
                     href={addHref}
-                    style={{
-                        color: "#ff7759",
-                        fontSize: 12,
-                        fontWeight: 650,
-                        textDecoration: "none",
+                    className="text-btn"
+                    aria-disabled={disabled}
+                    onClick={(event) => {
+                        if (disabled) event.preventDefault();
                     }}
                 >
-                    Add account
+                    + Add another account
                 </a>
             </div>
         </div>
@@ -119,81 +136,53 @@ export function AccountSelector({
 export function OAuthScopeList({
     scopes,
     customScopes = [],
-    accentColor = "#ff7759",
+    accentColor,
 }: {
     scopes: string[];
     customScopes?: CustomOAuthScope[];
     accentColor?: string;
 }) {
     return (
-        <div
-            style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                padding: 16,
-            }}
+        <ul
+            className="scope-list"
+            style={
+                accentColor
+                    ? ({ "--scope-accent": accentColor } as React.CSSProperties)
+                    : undefined
+            }
         >
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {scopes.map((scope) => {
-                    const detail = findScopeOption(scope, customScopes) || {
-                        label: scope,
-                        description: "Use this permission as registered.",
-                        highImpact: false,
-                        group: "unavailable" as const,
-                    };
-                    const highImpact = detail.highImpact === true;
-                    return (
-                        <div
-                            key={scope}
-                            style={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: 8,
-                                padding: highImpact ? 8 : 0,
-                                borderRadius: 8,
-                                background: highImpact
-                                    ? "rgba(217,119,6,0.1)"
-                                    : "transparent",
-                            }}
-                        >
-                            <span
-                                aria-hidden="true"
-                                style={{
-                                    color: highImpact ? "#d97706" : accentColor,
-                                    fontWeight: 800,
-                                }}
-                            >
-                                ✓
-                            </span>
-                            <span>
-                                <strong
-                                    style={{
-                                        display: "block",
-                                        color: "var(--fg)",
-                                        fontSize: 13,
-                                    }}
-                                >
-                                    {detail.label}
-                                    {detail.group === "custom"
-                                        ? " · App-defined"
-                                        : ""}
-                                    {highImpact ? " · High impact" : ""}
-                                </strong>
-                                <span
-                                    style={{
-                                        color: "var(--fg-muted)",
-                                        fontSize: 12,
-                                        lineHeight: 1.45,
-                                    }}
-                                >
-                                    {detail.description}
-                                </span>
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
+            {scopes.map((scope) => {
+                const detail = findScopeOption(scope, customScopes) || {
+                    label: scope,
+                    description: "Use this permission as registered.",
+                    highImpact: false,
+                    group: "unavailable" as const,
+                };
+                const highImpact = detail.highImpact === true;
+                return (
+                    <li key={scope} data-high={highImpact}>
+                        <span className="scope-check" aria-hidden="true">
+                            {highImpact ? "!" : "✓"}
+                        </span>
+                        <span>
+                            <strong>
+                                {detail.label}
+                                {detail.group === "custom" && (
+                                    <span className="scope-badge">
+                                        App-defined
+                                    </span>
+                                )}
+                                {highImpact && (
+                                    <span className="scope-badge">
+                                        High impact
+                                    </span>
+                                )}
+                            </strong>
+                            <small>{detail.description}</small>
+                        </span>
+                    </li>
+                );
+            })}
+        </ul>
     );
 }

@@ -385,7 +385,11 @@ export function OAuthScopePicker({
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={addCustomScope}
-                    sx={{ mt: 1, textTransform: "none", color: "#ff7759" }}
+                    sx={{
+                        mt: 1,
+                        textTransform: "none",
+                        color: "var(--accent)",
+                    }}
                 >
                     Add custom scope
                 </Button>

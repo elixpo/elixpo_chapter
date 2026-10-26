@@ -111,7 +111,7 @@ const ServiceDetailPage = ({
                     minHeight: "60vh",
                 }}
             >
-                <CircularProgress sx={{ color: "#ff7759" }} />
+                <CircularProgress sx={{ color: "var(--accent)" }} />
             </Box>
         );
     }
@@ -226,14 +226,13 @@ const ServiceDetailPage = ({
                                 sx={{
                                     color: "var(--fg-faint)",
                                     fontSize: "0.85rem",
-                                    fontFamily:
-                                        "var(--font-geist-mono), monospace",
+                                    fontFamily: "var(--font-code), monospace",
                                     textDecoration: "none",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: 0.5,
                                     mt: 0.5,
-                                    "&:hover": { color: "#ff7759" },
+                                    "&:hover": { color: "var(--accent)" },
                                 }}
                             >
                                 {hostname}
@@ -305,11 +304,11 @@ const ServiceDetailPage = ({
                                     label={s}
                                     size="small"
                                     sx={{
-                                        bgcolor: "rgba(255, 119, 89,0.1)",
-                                        color: "#ff7759",
-                                        border: "1px solid rgba(255, 119, 89,0.25)",
+                                        bgcolor: "rgba(58, 101, 199,0.1)",
+                                        color: "var(--accent)",
+                                        border: "1px solid rgba(58, 101, 199,0.25)",
                                         fontFamily:
-                                            "var(--font-geist-mono), monospace",
+                                            "var(--font-code), monospace",
                                         fontSize: "0.72rem",
                                     }}
                                 />
@@ -411,7 +410,7 @@ const ServiceDetailPage = ({
                                     height: `${Math.max((p.count / maxC) * 100, 4)}%`,
                                     borderRadius: "3px 3px 0 0",
                                     background:
-                                        "linear-gradient(180deg, rgba(255, 119, 89,0.95) 0%, rgba(255, 119, 89,0.55) 100%)",
+                                        "linear-gradient(180deg, rgba(58, 101, 199,0.95) 0%, rgba(58, 101, 199,0.55) 100%)",
                                     transition: "filter 0.15s ease",
                                     "&:hover": {
                                         filter: "brightness(1.25)",
@@ -472,7 +471,7 @@ function ServiceHeaderIcon({
     return (
         <Typography
             sx={{
-                color: "#ff7759",
+                color: "var(--accent)",
                 fontWeight: 700,
                 fontSize: "1.5rem",
             }}

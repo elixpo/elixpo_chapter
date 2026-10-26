@@ -3,7 +3,9 @@ import { isLixBlogsOrgHandle } from "../lixblogs-handles";
 
 const respond = (body: unknown, status = 200) =>
     (async () =>
-        new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+        new Response(JSON.stringify(body), {
+            status,
+        })) as unknown as typeof fetch;
 
 describe("isLixBlogsOrgHandle", () => {
     it("is true only for org handles", async () => {
@@ -32,7 +34,9 @@ describe("isLixBlogsOrgHandle", () => {
             return new Response(JSON.stringify({ available: true }));
         }) as unknown as typeof fetch;
         await isLixBlogsOrgHandle("acme", spy);
-        expect(called).toBe("https://blogs.elixpo.com/api/check-name?name=acme");
+        expect(called).toBe(
+            "https://blogs.elixpo.com/api/check-name?name=acme",
+        );
     });
 
     it("fails open when LixBlogs is unreachable or erroring", async () => {

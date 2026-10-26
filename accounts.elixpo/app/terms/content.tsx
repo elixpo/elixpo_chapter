@@ -21,7 +21,7 @@ export default function TermsContent() {
 
     return (
         <main className="w-full max-w-[760px] mx-auto px-5 sm:px-8 py-8 sm:py-16 relative z-10 flex-1">
-            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight mb-2 text-[#192837] gsap-terms-animate">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight mb-2 text-[var(--fg)] gsap-terms-animate">
                 Terms of Service
             </h1>
             <p className="text-sm opacity-60 font-semibold mb-10 gsap-terms-animate">
@@ -106,7 +106,7 @@ export default function TermsContent() {
                     listed on{" "}
                     <Link
                         href="/pricing"
-                        className="text-[#7342E2] hover:underline font-semibold"
+                        className="text-[var(--green)] hover:underline font-semibold"
                     >
                         /pricing
                     </Link>
@@ -119,7 +119,7 @@ export default function TermsContent() {
                     you've paid for, and we won't charge you again. Contact{" "}
                     <a
                         href="mailto:support@elixpo.com"
-                        className="text-[#7342E2] hover:underline font-semibold"
+                        className="text-[var(--green)] hover:underline font-semibold"
                     >
                         support@elixpo.com
                     </a>{" "}
@@ -189,7 +189,7 @@ export default function TermsContent() {
                     Questions about these terms:{" "}
                     <a
                         href="mailto:support@elixpo.com"
-                        className="text-[#7342E2] hover:underline font-semibold"
+                        className="text-[var(--green)] hover:underline font-semibold"
                     >
                         support@elixpo.com
                     </a>
@@ -209,7 +209,7 @@ function Section({
 }) {
     return (
         <div className="gsap-terms-animate">
-            <h2 className="font-heading text-lg sm:text-xl font-bold mb-3 text-[#192837]">
+            <h2 className="font-heading text-lg sm:text-xl font-bold mb-3 text-[var(--fg)]">
                 {title}
             </h2>
             <div className="text-sm sm:text-base opacity-80 leading-relaxed font-body">
