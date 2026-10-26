@@ -1,0 +1,98 @@
+/*
+ * Tool-page surfaces (QR generator). Imported from app/generate/page.tsx.
+ * Uses the :root tokens from app/globals.css.
+ */
+
+/* Mono step counter above each form block. */
+.qr-step {
+  margin-bottom: 0.6rem;
+  color: var(--blue-deep);
+  font: 700 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.19em;
+}
+
+/* Preview stage: soft paper with a faint research-style dot grid. */
+.qr-preview {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--paper-soft);
+}
+.qr-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.5;
+  background-image: radial-gradient(circle at center, rgba(20, 32, 24, 0.22) 1px, transparent 1.5px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+}
+
+/* Empty-state glyph: a 7×7 grid with three finder patterns. */
+.qr-placeholder {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  width: 112px;
+  height: 112px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(24, 38, 28, 0.08);
+}
+.qr-placeholder span {
+  border-radius: 2px;
+  background: var(--line);
+  transition: background-color 0.4s;
+}
+/* Finder corners (rows/cols 0–1 at three corners) in ink. */
+.qr-placeholder span:nth-child(1),
+.qr-placeholder span:nth-child(2),
+.qr-placeholder span:nth-child(8),
+.qr-placeholder span:nth-child(9),
+.qr-placeholder span:nth-child(6),
+.qr-placeholder span:nth-child(7),
+.qr-placeholder span:nth-child(13),
+.qr-placeholder span:nth-child(14),
+.qr-placeholder span:nth-child(36),
+.qr-placeholder span:nth-child(37),
+.qr-placeholder span:nth-child(43),
+.qr-placeholder span:nth-child(44) {
+  background: var(--ink);
+}
+.qr-placeholder span:nth-child(25) { background: var(--blue); border-radius: 50%; }
+.qr-preview:hover .qr-placeholder span:nth-child(3n + 4) { background: #c3c9c3; }
+
+/* Numbered "how it works" strip under the generator. */
+.tool-steps {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.4rem;
+  background: var(--line);
+  list-style: none;
+}
+@media (min-width: 768px) {
+  .tool-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.tool-steps li { padding: 1.5rem; background: #fff; }
+.tool-steps b {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--blue-deep);
+  font: 700 0.72rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.tool-steps h3 {
+  color: var(--ink);
+  font-size: 1.15rem;
+  letter-spacing: -0.035em;
+}
+.tool-steps p {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
