@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+:root {
+    /* Static brand palette (theme-independent) — the "oreo" / Cohere palette. */
+    --cohere-black: #000000;
+    --near-black: #17171c;
+    --deep-green: #003c33;
+    --deep-green-dark: #002520;
+    --dark-navy: #071829;
+    --action-blue: #1863dc;
+    --coral: #e76043;
+    --soft-coral: #79a7ff;
+    --canvas-white: #ffffff;
+    --soft-stone: #eeece7;
+    --pale-green: #edfce9;
+    --pale-blue: #f1f5ff;
+    --card-border: #f2f2f2;
+    --ink: #212121;
+    --muted-slate: #93939f;
+    --slate: #75758a;
+    --hairline: #d9d9dd;
+    --border-light: #e5e7eb;
+
+    /* Accent — Elixpo research blue, shared across both themes. */
+    --accent: #3a65c7;
+    --accent-2: #2c53ac;
+    --accent-contrast: #ffffff;
+    --accent-gradient: linear-gradient(135deg, #3a65c7 0%, #2c53ac 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #4b76d6 0%, #3a65c7 100%);
+    --accent-shadow: rgba(58, 101, 199, 0.24);
+    --accent-tint: rgba(58, 101, 199, 0.08);
+    --accent-tint-strong: rgba(58, 101, 199, 0.14);
+    --accent-border: rgba(58, 101, 199, 0.28);
+
+    /* Research palette (elixpo.com/research). */
+    --paper: #fbfbf8;
+    --paper-deep: #eff1ed;
+    --line: #d7dbd6;
+    --blue-wash: #dce7ff;
+    --green: #0b623c;
+    --orange: #e76043;
+    --geo-yellow: #f3b529;
+    --geo-blue: #3f7cec;
+
+    /* Type — matches research.elixpo. */
+    --font-geist-sans: Arial, Helvetica, sans-serif;
+    --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-serif: Georgia, "Times New Roman", serif;
+
+    /* Status colors — read on both themes. */
+    --success: #1f9d57;
+    --success-fg: #15803d;
+    --danger: #e0533d;
+    --danger-fg: #c2410c;
+}
+
+/* ── Light theme (oreo, default) ─────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+    --background: #fbfbf8;
+    --foreground: #142018;
+
+    --bg: #fbfbf8;
+    --bg-soft: #eff1ed;
+    --surface: #ffffff;
+    --surface-2: #f3f4f0;
+    --surface-3: #eff1ed;
+    --menu-surface: #ffffff;
+    --fg: #142018;
+    --fg-muted: #5f6962;
+    --fg-faint: #7e8680;
+    --border: #d7dbd6;
+    --border-soft: #e8ebe7;
+    --field-bg: #ffffff;
+    --field-border: #d9d9dd;
+    --overlay: rgba(0, 0, 0, 0.04);
+    --overlay-strong: rgba(0, 0, 0, 0.06);
+    --aurora-opacity: 0;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --topbar-bg: rgba(251, 251, 248, 0.9);
+    --drawer-bg: #ffffff;
+    --action-fg: #3a65c7;
+    color-scheme: light;
+
+    /* Inline code & Callout specific variables */
+    --code-fg: var(--deep-green);
+    --callout-info-bg: #f1f5ff;
+    --callout-warn-bg: rgba(231, 96, 67, 0.06);
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+    --background: #0f1712;
+    --foreground: #eef1ec;
+
+    --bg: #0f1712;
+    --bg-soft: #121b15;
+    --surface: #16201a;
+    --surface-2: rgba(238, 241, 236, 0.03);
+    --surface-3: rgba(238, 241, 236, 0.06);
+    --menu-surface: #16201a;
+    --fg: #eef1ec;
+    --fg-muted: #b5c0b8;
+    --fg-faint: rgba(238, 241, 236, 0.45);
+    --border: rgba(238, 241, 236, 0.12);
+    --border-soft: rgba(238, 241, 236, 0.07);
+    --field-bg: rgba(238, 241, 236, 0.03);
+    --field-border: rgba(238, 241, 236, 0.14);
+    --overlay: rgba(238, 241, 236, 0.04);
+    --overlay-strong: rgba(238, 241, 236, 0.07);
+    --aurora-opacity: 0;
+    --card-shadow: none;
+    --topbar-bg: rgba(15, 23, 18, 0.82);
+    --drawer-bg: #121b15;
+    --action-fg: #79a7ff;
+    --accent: #79a7ff;
+    --accent-2: #a5c2ff;
+    --accent-contrast: #0f1712;
+    --accent-gradient: linear-gradient(135deg, #79a7ff 0%, #a5c2ff 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #8db4ff 0%, #b6ceff 100%);
+    --accent-shadow: rgba(121, 167, 255, 0.22);
+    --danger-fg: #f2836f;
+    --accent-tint: rgba(121, 167, 255, 0.1);
+    --accent-tint-strong: rgba(121, 167, 255, 0.16);
+    --accent-border: rgba(121, 167, 255, 0.32);
+    --line: rgba(238, 241, 236, 0.12);
+    --paper: #0f1712;
+    --paper-deep: #121b15;
+    color-scheme: dark;
+
+    /* Inline code & Callout specific variables */
+    --code-fg: var(--pale-green);
+    --callout-info-bg: rgba(121, 167, 255, 0.08);
+    --callout-warn-bg: rgba(231, 96, 67, 0.1);
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: Arial, Helvetica, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-display: Arial, Helvetica, sans-serif;
+}
+
+html,
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+    background: #dce7ff;
+    color: #142018;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--fg-faint);
+}
+
+/* Research-style display headline: tight Arial, Georgia italics for <em>. */
+.cohere-headline {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 510;
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+}
+.cohere-headline em {
+    font-family: var(--font-serif);
+    font-weight: 400;
+}
+
+/* Mono uppercase eyebrow (research.elixpo). */
+/* Doubled selector so it beats MUI Typography's emotion class. */
+.eyebrow,
+.MuiTypography-root.eyebrow {
+    margin: 0 0 1rem;
+    color: var(--accent);
+    font: 700 0.68rem / 1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
