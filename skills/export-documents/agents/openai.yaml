@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Export"
+  short_description: "Prepare and export polished PDF documents"
+  default_prompt: "Use $export-documents to turn this content into a polished PDF

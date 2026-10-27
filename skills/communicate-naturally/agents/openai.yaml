@@ -1,0 +1,4 @@
+interface:
+  display_name: "Natural Communication"
+  short_description: "Translate naturally and format dates consistently"
+  default_prompt: "Use $communicate-naturally to answer in the user language with natural phrasing."

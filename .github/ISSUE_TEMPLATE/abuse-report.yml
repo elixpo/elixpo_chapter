@@ -1,0 +1,50 @@
+name: Search result abuse report
+description: Report an unsafe, malicious, or seriously misleading result returned by OreoLook.
+title: "[Abuse report]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping keep OreoLook and search.elixpo.com safe. Reports are reviewed by the maintainers.
+
+        GitHub issues are public. Do not include API keys, private messages, personal information, or other sensitive material. Do not open a reported unsafe URL merely to complete this form.
+
+  - type: input
+    id: request-url
+    attributes:
+      label: Affected OreoLook request or source URL
+      description: Paste the search.elixpo.com request URL or unsafe source URL without credentials or API keys.
+      placeholder: https://search.elixpo.com/...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reason
+    attributes:
+      label: Reason for the report
+      options:
+        - Phishing or credential theft
+        - Malware or unwanted software
+        - Spam or deceptive promotion
+        - Dangerous or illegal content
+        - Seriously misleading information
+        - Privacy or impersonation
+        - Other abuse
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: Describe the unsafe result and include non-sensitive evidence that helps maintainers reproduce it.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand this report is public, contains no secrets or personal information, and is accurate to the best of my knowledge.
+          required: true

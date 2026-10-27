@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Research"
+  short_description: "Search, fetch, and verify current web information"
+  default_prompt: "Use $research-web to research this question with relevant sources."
