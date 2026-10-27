@@ -1,4 +1,0 @@
-interface:
-  display_name: "Media Tools"
-  short_description: "Handle images, vision, YouTube, and transcription"
-  default_prompt: "Use $handle-media to process the requested image, video, or audio task."
