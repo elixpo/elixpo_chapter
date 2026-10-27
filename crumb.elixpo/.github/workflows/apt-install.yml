@@ -1,0 +1,87 @@
+name: APT install tests
+
+# Installs Crumb from packages.elixpo.com the way docs/apt-repository.md in
+# elixpo/packages.elixpo tells users to, on each supported distribution, then
+# checks it runs, upgrades from the previous release, and purges cleanly.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: ${{ matrix.image }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: "ubuntu:22.04", runner: ubuntu-latest, arch: amd64 }
+          - { image: "ubuntu:24.04", runner: ubuntu-latest, arch: amd64 }
+          - { image: "debian:12", runner: ubuntu-latest, arch: amd64 }
+          - { image: "debian:13", runner: ubuntu-latest, arch: amd64 }
+          - { image: "debian:13", runner: ubuntu-24.04-arm, arch: arm64 }
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      # The repository signing key; see docs/apt-repository.md in elixpo/packages.elixpo.
+      FINGERPRINT: 319DA9C9E089FAB1264F35F5F8ED950B52AE3CAB
+    steps:
+      - name: Register the signed repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -q
+          apt-get install -y -q curl gnupg ca-certificates jq
+          install -d -m 755 /etc/apt/keyrings
+          curl -fsSL -o /var/tmp/elixpo-packages.asc https://packages.elixpo.com/apt/keyring.asc
+          fingerprint=$(gpg --show-keys --with-colons /var/tmp/elixpo-packages.asc | awk -F: '$1 == "fpr" {print $10; exit}')
+          test "$fingerprint" = "$FINGERPRINT" || { echo "::error::unexpected key $fingerprint"; exit 1; }
+          gpg --dearmor --yes -o /etc/apt/keyrings/elixpo-packages.gpg /var/tmp/elixpo-packages.asc
+          echo 'deb [signed-by=/etc/apt/keyrings/elixpo-packages.gpg] https://packages.elixpo.com/apt/ ./' \
+            > /etc/apt/sources.list.d/elixpo-packages.list
+          apt-get update -q
+      - name: Upgrade from the previous release when it installs here
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=$(curl -fsSL "https://api.github.com/repos/elixpo/crumb.elixpo/releases?per_page=2" | jq -r '.[1].tag_name')
+          version=${tag#v}
+          deb="crumb_${version}-1.elixpo1_${{ matrix.arch }}.deb"
+          if ! curl -fsSL -o "/var/tmp/$deb" "https://github.com/elixpo/crumb.elixpo/releases/download/$tag/$deb"; then
+            echo "::notice::$tag has no $deb; skipping the upgrade check"
+            exit 0
+          fi
+          if ! apt-get install -y -q "/var/tmp/$deb"; then
+            echo "::notice::$tag does not install on ${{ matrix.image }}; skipping the upgrade check"
+            exit 0
+          fi
+          dpkg-query -W crumb
+      - name: Install or upgrade from the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get install -y -q crumb
+          expected=$(apt-cache policy crumb | awk '/Candidate:/ {print $2}')
+          test "$(dpkg-query -W -f '${Version}' crumb)" = "$expected"
+          echo "installed crumb $expected"
+      - name: Run the installed binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME=/var/tmp/home && mkdir -p "$HOME" && cd "$HOME"
+          crumb completions bash | grep -q crumb
+          test "$(crumb jobs list)" = "[]"
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            | timeout 30 crumb mcp serve | grep -q '"serverInfo":{"name":"crumb"'
+      - name: Purge cleanly
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get purge -y -q crumb
+          test ! -e /usr/bin/crumb
+          ! dpkg-query -W crumb 2>/dev/null | grep -q .
