@@ -12,6 +12,8 @@ from pipeline.config import (
     LEAKED_XML_TAG_RE,
     FETCH_MIN_USEFUL_CHARS,
     INTERNAL_LEAK_PATTERNS,
+    JEV_ENABLED,
+    LLM_DECISION_MODEL,
     LLM_MODEL,
     POLLINATIONS_ENDPOINT,
     TOPIC_DECOMPOSITION_MAX_PARTS,
@@ -22,6 +24,43 @@ from pipeline.sse_messages import get_status_message
 load_local_environment()
 
 MODEL = LLM_MODEL
+
+
+async def decision_completion(payload: dict, headers: dict, timeout: float, label: str) -> dict:
+    """POST a decision-type completion (decomposition, gating, classification).
+
+    Uses LLM_DECISION_MODEL. When the opt-in jev decision model fails, the same
+    call is retried once on LLM_MODEL. Returns the parsed JSON response.
+    """
+    models = [LLM_DECISION_MODEL]
+    if JEV_ENABLED and LLM_MODEL != LLM_DECISION_MODEL:
+        models.append(LLM_MODEL)
+    for index, model in enumerate(models):
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    requests.post,
+                    POLLINATIONS_ENDPOINT,
+                    json={**payload, "model": model},
+                    headers=headers,
+                    timeout=timeout,
+                ),
+                timeout=timeout + 3.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+            data["choices"][0]["message"]
+            return data
+        except Exception as exc:
+            if index + 1 >= len(models):
+                raise
+            logger.warning(
+                f"[Pipeline] decision model {model} failed for {label} ({exc}); "
+                f"falling back to {LLM_MODEL}"
+            )
+    raise RuntimeError(f"{label}: no decision model configured")
+
+
 def _scrub_tool_names(text: str) -> str:
     if not text:
         return text
@@ -586,7 +625,6 @@ async def _decompose_query_with_llm(query: str, headers: dict, max_parts: int = 
     ]
 
     payload = {
-        "model": MODEL,
         "messages": decomposition_prompt,
         "seed": random.randint(1000, 9999),
         "max_tokens": 500,
@@ -594,18 +632,7 @@ async def _decompose_query_with_llm(query: str, headers: dict, max_parts: int = 
     }
 
     try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(
-                requests.post,
-                POLLINATIONS_ENDPOINT,
-                json=payload,
-                headers=headers,
-                timeout=12
-            ),
-            timeout=15.0
-        )
-        response.raise_for_status()
-        data = response.json()
+        data = await decision_completion(payload, headers, 12, "query decomposition")
         content = data["choices"][0]["message"]["content"].strip()
 
         if content.startswith("```"):

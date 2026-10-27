@@ -166,16 +166,16 @@ jobs:
           deb=(dist/crumb_*.deb)
           cosign sign-blob --yes --bundle "${deb[0]}.sigstore.json" "${deb[0]}"
       - name: Attest release archive provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/crumb-${{ matrix.label }}.${{ matrix.archive }}
       - name: Attest Debian package provenance
         if: matrix.deb_arch != ''
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/crumb_*.deb
       - name: Upload verified release assets
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.label }}
           path: |

@@ -8,6 +8,8 @@ from loguru import logger
 from pipeline.config import (
     POLLINATIONS_ENDPOINT,
     LLM_MODEL,
+    LLM_MODEL_FALLBACK,
+    LLM_HTTP_TIMEOUT,
     RETRIEVAL_TOP_K,
     FETCH_MIN_USEFUL_CHARS,
     ERROR_MESSAGE_TRUNCATE,
@@ -56,58 +58,51 @@ async def run_standard_synthesis(messages, user_query, active_max_tokens, header
         "tool_choice": "none",
     }
 
+    models = tuple(dict.fromkeys((MODEL, LLM_MODEL_FALLBACK)))
+
     # --- Streaming synthesis when event_id is set ---
     if event_id and format_sse_fn:
-        try:
-            from pipeline.lixsearch import _stream_llm_call
-            content = ""
-            async for _stype, _sdata in _stream_llm_call(payload, headers):
-                if _stype == "content":
-                    content += _sdata
-                elif _stype == "done":
-                    pass
-            if content:
-                content = _scrub_tool_names(content.strip())
-                logger.info(f"[SYNTHESIS] Streamed: {len(content)} chars")
-            return content or None
-        except Exception as e:
-            logger.error(f"[SYNTHESIS STREAM ERROR]: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
-            return None
+        from pipeline.lixsearch import _stream_llm_call
+        for model in models:
+            try:
+                content = ""
+                async for _stype, _sdata in _stream_llm_call({**payload, "model": model}, headers):
+                    if _stype == "content":
+                        content += _sdata
+                if content:
+                    content = _scrub_tool_names(content.strip())
+                    logger.info(f"[SYNTHESIS] Streamed: {len(content)} chars model={model}")
+                    return content
+                logger.warning(f"[SYNTHESIS] model={model} streamed empty content")
+            except Exception as e:
+                logger.error(f"[SYNTHESIS STREAM ERROR] model={model}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
+        return None
 
-    # --- Non-streaming fallback ---
+    # --- Non-streaming, primary model then LLM_MODEL_FALLBACK ---
     payload["stream"] = False
-    try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(
-                requests.post, POLLINATIONS_ENDPOINT,
-                json=payload, headers=headers, timeout=45
-            ),
-            timeout=50.0
-        )
-        response.raise_for_status()
-        response_data = response.json()
+    for model in models:
         try:
-            message = response_data["choices"][0]["message"]
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    requests.post, POLLINATIONS_ENDPOINT,
+                    json={**payload, "model": model}, headers=headers, timeout=LLM_HTTP_TIMEOUT,
+                ),
+                timeout=sum(LLM_HTTP_TIMEOUT) + 5.0,
+            )
+            response.raise_for_status()
+            message = response.json()["choices"][0]["message"]
             message.pop("reasoning_content", None)
-            content = message.get("content", "").strip()
-
+            content = (message.get("content") or "").strip()
             if content and "<|tool_call" in content:
                 content = _scrub_tool_names(content)
-
             if content:
-                logger.info(f"[SYNTHESIS] Content extracted: {len(content)} chars")
-            else:
-                logger.error(f"[SYNTHESIS] API returned empty content")
-            return content
-        except (KeyError, IndexError, TypeError) as e:
-            logger.error(f"[SYNTHESIS] Failed to extract content: {e}")
-            return None
-    except asyncio.TimeoutError:
-        logger.error("[SYNTHESIS TIMEOUT]")
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"[SYNTHESIS HTTP ERROR]: {str(http_err)[:ERROR_MESSAGE_TRUNCATE]}")
-    except Exception as e:
-        logger.error(f"[SYNTHESIS ERROR]: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
+                logger.info(f"[SYNTHESIS] Content extracted: {len(content)} chars model={model}")
+                return content
+            logger.error(f"[SYNTHESIS] model={model} returned empty content")
+        except asyncio.TimeoutError:
+            logger.error(f"[SYNTHESIS TIMEOUT] model={model}")
+        except Exception as e:
+            logger.error(f"[SYNTHESIS ERROR] model={model}: {str(e)[:ERROR_MESSAGE_TRUNCATE]}")
 
     return None
 

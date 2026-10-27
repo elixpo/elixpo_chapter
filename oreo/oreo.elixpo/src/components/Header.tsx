@@ -1,23 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import {
-  Github, Star, GitFork, Home, Rocket, Cpu, LayoutGrid,
-  Wrench, GitPullRequest, BookOpen, FileText,
-} from "lucide-react";
+import { Github, Menu, Star, X } from "lucide-react";
 import { useGithubStats } from "@/lib/useGithubStats";
 
 const NAV = [
-  { href: "/",            label: "Home",        Icon: Home },
-  { href: "/get-started/",label: "Get Started", Icon: Rocket },
-  { href: "/badge/",      label: "Badge",       Icon: Cpu },
-  { href: "/apps/",       label: "Apps",        Icon: LayoutGrid },
-  { href: "/docs/",      label: "Docs",        Icon: BookOpen },
-  { href: "/paper/",     label: "Paper",       Icon: FileText },
-  { href: "/hacks/",      label: "Hacks",       Icon: Wrench },
-  { href: "/contribute/", label: "Contribute",  Icon: GitPullRequest },
+  { href: "/",             label: "Home" },
+  { href: "/get-started/", label: "Get Started" },
+  { href: "/badge/",       label: "Badge" },
+  { href: "/apps/",        label: "Apps" },
+  { href: "/docs/",        label: "Docs" },
+  { href: "/paper/",       label: "Paper" },
+  { href: "/hacks/",       label: "Hacks" },
+  { href: "/contribute/",  label: "Contribute" },
 ];
 
 function fmtCount(n: number | null): string {
@@ -27,84 +24,91 @@ function fmtCount(n: number | null): string {
   return String(n);
 }
 
+// Floating pill header, following the Elixpo Research site: brand on the
+// left, plain text navigation, and an ink GitHub pill on the right.
 export default function Header() {
   const pathname = usePathname();
-  const { stars, forks } = useGithubStats();
+  const { stars } = useGithubStats();
+  const [open, setOpen] = useState(false);
+
+  // Close the mobile menu after navigating.
+  useEffect(() => setOpen(false), [pathname]);
+
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
-    <motion.header
-      initial={{ y: -16, opacity: 0 }}
-      animate={{ y:   0, opacity: 1 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="sticky top-0 z-40 border-b border-border/60 bg-bg/80
-                 backdrop-blur supports-[backdrop-filter]:bg-bg/60"
-    >
-      <div className="container-page flex h-16 items-center justify-between">
-        {/* Logo + wordmark */}
-        <Link href="/" className="group flex items-center gap-3">
-          <div className="relative h-9 w-9 overflow-hidden rounded-md
-                          border border-primary/40 bg-bg-raised
-                          shadow-[0_0_24px_rgba(255,93,104,0.25)]
-                          transition-transform group-hover:scale-105">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/favicon.ico"
-              alt="OreoOS"
-              className="absolute inset-0 h-full w-full object-contain p-0.5"
-              loading="eager"
-              decoding="async"
-            />
-          </div>
-          <span className="font-display text-2xl tracking-tight">Oreo</span>
+    <header className="sticky top-3 z-40 mx-auto mt-3 w-[min(calc(100%-1.5rem),1510px)]">
+      <div className="flex min-h-[64px] items-center justify-between gap-4 rounded-pill
+                      border border-text/15 bg-bg/90 py-2 pl-4 pr-2
+                      shadow-[0_18px_48px_rgba(20,32,24,0.09)] backdrop-blur-xl">
+        <Link href="/" className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/favicon.ico" alt="" className="h-8 w-8 object-contain" loading="eager" decoding="async" />
+          <span className="flex items-baseline gap-2">
+            <b className="text-base">Oreo</b>
+            <small className="hidden text-xs text-muted sm:inline">OreoOS · Elixpo</small>
+          </span>
         </Link>
 
-        {/* Centre nav with per-item icons */}
-        <nav className="hidden items-center gap-1 lg:flex">
-          {NAV.map((n) => {
-            const active =
-              n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={`relative inline-flex items-center gap-1.5 rounded-md
-                            px-3 py-2 text-xs uppercase tracking-widest
-                            transition-colors
-                            ${active ? "text-text" : "text-muted hover:text-text"}`}
-              >
-                <n.Icon className="h-3.5 w-3.5" />
-                {n.label}
-                {active && (
-                  <motion.span
-                    layoutId="nav-underline"
-                    className="absolute inset-x-3 -bottom-px h-px bg-primary"
-                    transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                  />
-                )}
-              </Link>
-            );
-          })}
+        <nav className="hidden items-center gap-6 text-xs font-semibold lg:flex">
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              aria-current={isActive(n.href) ? "page" : undefined}
+              className={`transition-opacity hover:opacity-55 ${
+                isActive(n.href) ? "underline decoration-primary decoration-2 underline-offset-[6px]" : ""
+              }`}
+            >
+              {n.label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Live GitHub stats chip */}
-        <a
-          href="https://github.com/elixpo/oreo"
-          target="_blank" rel="noreferrer"
-          className="flex items-center gap-3 rounded-md border border-border
-                     bg-bg-raised px-3 py-2 text-xs text-text-dim
-                     transition-colors hover:border-primary/60 hover:text-text"
-          title={stars !== null ? `${stars} stars · ${forks} forks` : "GitHub"}
-        >
-          <Github className="h-4 w-4" />
-          <div className="hidden flex-col leading-tight sm:flex">
-            <span className="font-semibold text-text">elixpo/oreo</span>
-            <span className="flex items-center gap-2 text-muted">
+        <div className="flex items-center gap-2">
+          <a
+            href="https://github.com/elixpo/oreo"
+            target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-pill bg-text px-4 py-3
+                       text-xs font-bold text-bg transition-opacity hover:opacity-85"
+            title={stars !== null ? `${stars} stars` : "GitHub"}
+          >
+            <Github className="h-4 w-4" />
+            <span className="hidden sm:inline">GitHub</span>
+            <span className="inline-flex items-center gap-1 opacity-75">
               <Star className="h-3 w-3" /> {fmtCount(stars)}
-              <GitFork className="h-3 w-3" /> {fmtCount(forks)}
             </span>
-          </div>
-        </a>
+          </a>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={open ? "Close menu" : "Open menu"}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-pill
+                       border border-border lg:hidden"
+          >
+            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
-    </motion.header>
+
+      {open && (
+        <nav className="mt-2 grid gap-1 rounded-[1.4rem] border border-text/15 bg-bg/95 p-3
+                        text-sm font-semibold shadow-[0_18px_48px_rgba(20,32,24,0.09)]
+                        backdrop-blur-xl lg:hidden">
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              aria-current={isActive(n.href) ? "page" : undefined}
+              className={`rounded-pill px-4 py-2.5 ${isActive(n.href) ? "bg-bg-raised" : "hover:bg-bg-raised"}`}
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
+      )}
+    </header>
   );
 }

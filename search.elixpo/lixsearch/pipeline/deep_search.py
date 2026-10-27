@@ -24,6 +24,7 @@ from pipeline.response_builder import artifact_ledger_fields, auto_generate_pdf
 from pipeline.helpers import (
     _scrub_tool_names,
     _decompose_query_with_llm,
+    decision_completion,
 )
 from pipeline.utils import format_sse
 from sessions.conversation_cache import ConversationCacheManager
@@ -166,25 +167,14 @@ async def _evaluate_deep_search_need(query: str, headers: dict) -> bool:
         {"role": "user", "content": deep_search_gating_instruction(query)},
     ]
     payload = {
-        "model": MODEL,
         "messages": gating_messages,
         "seed": random.randint(1000, 9999),
         "max_tokens": 200,
         "stream": False,
     }
     try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(
-                requests.post,
-                POLLINATIONS_ENDPOINT,
-                json=payload,
-                headers=headers,
-                timeout=8
-            ),
-            timeout=10.0
-        )
-        response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"].strip()
+        data = await decision_completion(payload, headers, 8, "deep-search gating")
+        content = data["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):

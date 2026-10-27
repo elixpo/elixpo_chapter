@@ -4,6 +4,10 @@
 
 /* ── Design tokens ───────────────────────────────────────────────────
  *
+ * The site follows the Elixpo Research visual language: ink on a warm
+ * paper page, white cards, pill controls, and tight sans-serif display
+ * type with Georgia italics for emphasis.
+ *
  * Two parallel naming schemes coexist on the site:
  *
  *   • Brand tokens (`bg`, `card`, `primary` …) — declared in
@@ -11,94 +15,86 @@
  *     we wrote by hand.
  *
  *   • shadcn-style semantic tokens (`--background`, `--foreground`,
- *     `--primary`, `--border` …) — needed by the canvas-wave hero
- *     and any drop-in shadcn component we add later. They're populated
- *     from the same brand palette so visually they always agree.
+ *     `--primary`, `--border` …) — read by the canvas-wave hero and any
+ *     drop-in component. They mirror the same palette.
  *
- * Adding a new colour: update theme.js first, then mirror into the
- * shadcn variable here if a third-party component needs it.
+ * Adding a new colour: update theme.js first, then mirror it here if a
+ * third-party component needs it.
  */
 :root {
-  color-scheme: dark;
-  --font-display: "Pixelify Sans", "JetBrains Mono", ui-sans-serif, system-ui,
-                  sans-serif;
+  color-scheme: light;
+  --font-display: Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
 
-  /* shadcn-compatible semantic tokens (kept in oklch-adjacent hex
-     so we can paste in shadcn components without rewriting them) */
-  --background:           #0F0C1C;
-  --foreground:           #F5E6DC;
-  --card:                 #1C1A2E;
-  --card-foreground:      #F5E6DC;
-  --popover:              #1F1B33;
-  --popover-foreground:   #F5E6DC;
-  --primary:              #FF5D68;
-  --primary-foreground:   #0F0C1C;
-  --secondary:            #A29BFE;
-  --secondary-foreground: #0F0C1C;
-  --muted:                #1F1B33;
-  --muted-foreground:     #8A8294;
-  --accent:               #3DDC97;
-  --accent-foreground:    #0F0C1C;
-  --destructive:          #FF5D68;
-  --destructive-foreground:#0F0C1C;
-  --border:               #2A2640;
-  --input:                #2A2640;
-  --ring:                 #FF5D68;
-  --radius:               0.65rem;
+  --background:           #FBFBF8;
+  --foreground:           #142018;
+  --card:                 #EFF1ED;
+  --card-foreground:      #142018;
+  --popover:              #FFFFFF;
+  --popover-foreground:   #142018;
+  --primary:              #C93A45;
+  --primary-foreground:   #FFFFFF;
+  --secondary:            #3A65C7;
+  --secondary-foreground: #FFFFFF;
+  --muted:                #EFF1ED;
+  --muted-foreground:     #5F6962;
+  --accent:               #0B623C;
+  --accent-foreground:    #FFFFFF;
+  --destructive:          #C93A45;
+  --destructive-foreground:#FFFFFF;
+  --border:               #D7DBD6;
+  --input:                #D7DBD6;
+  --ring:                 #3A65C7;
+  --radius:               1.4rem;
 }
 
 html, body {
   background: var(--background);
   color:      var(--foreground);
-  font-family: theme("fontFamily.sans");
-  font-feature-settings: "ss01" 1, "ss02" 1, "cv11" 1;
+  font-family: Arial, Helvetica, theme("fontFamily.sans");
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Subtle ambient gradient layer — sits behind everything so the page
-   feels alive even before any component animates. Kept very faint so
-   it never fights real content. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(60% 50% at 25% 15%, rgba(255, 93, 104, 0.10), transparent 60%),
-    radial-gradient(50% 45% at 80% 90%, rgba(162, 155, 254, 0.08), transparent 60%),
-    radial-gradient(40% 35% at 90% 10%, rgba(61, 220, 151, 0.06), transparent 60%);
-  pointer-events: none;
-  z-index: -1;
-}
+html { scroll-behavior: smooth; overscroll-behavior: none; }
 
 ::selection {
-  background: theme("colors.primary");
-  color: theme("colors.bg");
+  background: #DCE7FF;
+  color: theme("colors.text");
 }
+
+/* Display type: tight tracking like the research headlines; italic
+   emphasis switches to Georgia. */
+.font-display { letter-spacing: -0.045em; font-weight: 600; }
+.font-display em, h1 em, h2 em { font-family: Georgia, serif; font-weight: 400; }
 
 /* ── Reusable components ─────────────────────────────────────────── */
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-6 sm:px-8;
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .eyebrow {
+    @apply font-mono text-[0.68rem] font-bold uppercase tracking-[0.19em] text-lilac;
   }
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5
-           font-semibold text-bg transition-colors hover:bg-primary-dim;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
+           border border-text bg-text px-5 py-2.5 text-sm font-bold text-bg
+           transition-opacity hover:opacity-85;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-md border border-border
-           px-5 py-2.5 text-text transition-colors hover:bg-card;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
+           border border-text px-5 py-2.5 text-sm font-bold text-text
+           transition-colors hover:bg-bg-raised;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-pill bg-card-sub px-2.5 py-1
-           text-xs uppercase tracking-wider text-text-dim;
+    @apply inline-flex items-center gap-1.5 rounded-pill border border-border bg-card
+           px-3 py-1 font-mono text-[0.68rem] font-semibold uppercase
+           tracking-[0.14em] text-muted;
   }
   .card-surface {
-    @apply rounded-lg border border-border bg-card transition-colors;
+    @apply rounded-[1.4rem] border border-border bg-card transition-all duration-200
+           hover:shadow-[0_20px_50px_rgba(24,38,28,0.09)];
   }
-  /* Conic-gradient border treatment used on hero CTAs and accent
-     cards — produces a thin animated luminous edge. Pairs with the
-     wave hero for visual continuity. */
+  /* Thin accent edge used on hero CTAs and featured cards. */
   .ring-glow {
     position: relative;
     isolation: isolate;
@@ -109,25 +105,14 @@ body::before {
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: conic-gradient(
-      from var(--ring-angle, 0deg),
-      theme("colors.primary"),
-      theme("colors.lilac"),
-      theme("colors.teal"),
-      theme("colors.primary")
-    );
+    background: linear-gradient(120deg,
+      theme("colors.primary"), theme("colors.lilac"), theme("colors.teal"));
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
             mask-composite: exclude;
     pointer-events: none;
-    opacity: 0.7;
-    animation: spin 8s linear infinite;
-  }
-  @keyframes spin {
-    to { --ring-angle: 360deg; transform: rotate(360deg); }
+    opacity: 0.6;
   }
 }
-
-html { overscroll-behavior: none; }

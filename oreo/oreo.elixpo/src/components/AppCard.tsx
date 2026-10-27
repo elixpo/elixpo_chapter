@@ -20,10 +20,10 @@ const ICONS: Record<AppIconId, LucideIcon> = {
 type Tint = { ring: string; glow: string; text: string };
 
 const TINT: Record<AppEntry["tint"], Tint> = {
-  primary: { ring: "ring-primary/40", glow: "shadow-[0_0_36px_rgba(255,93,104,0.22)]", text: "text-primary" },
-  teal:    { ring: "ring-teal/40",    glow: "shadow-[0_0_36px_rgba(61,220,151,0.20)]", text: "text-teal" },
-  gold:    { ring: "ring-gold/40",    glow: "shadow-[0_0_36px_rgba(255,209,102,0.18)]",text: "text-gold" },
-  lilac:   { ring: "ring-lilac/40",   glow: "shadow-[0_0_36px_rgba(162,155,254,0.20)]",text: "text-lilac" },
+  primary: { ring: "ring-primary/40", glow: "shadow-[0_14px_36px_rgba(201,58,69,0.16)]", text: "text-primary" },
+  teal:    { ring: "ring-teal/40",    glow: "shadow-[0_14px_36px_rgba(11,98,60,0.14)]", text: "text-teal" },
+  gold:    { ring: "ring-gold/40",    glow: "shadow-[0_14px_36px_rgba(154,100,0,0.14)]",text: "text-gold" },
+  lilac:   { ring: "ring-lilac/40",   glow: "shadow-[0_14px_36px_rgba(58,101,199,0.16)]",text: "text-lilac" },
 };
 
 /* Icon tile reused by AppCard + the detail-page related strip — keeps

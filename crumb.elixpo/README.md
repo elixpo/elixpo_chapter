@@ -80,6 +80,17 @@ If an AI service is unavailable, your terminal still works.
 
 Use model packs for different kinds of work, add focused [skills](https://crumb.elixpo.com/skills), install [plugins](https://crumb.elixpo.com/plugins), and connect outside services through [connectors](https://crumb.elixpo.com/profile/connectors).
 
+## Use it from other agents
+
+Claude Code, Codex, and other agents can hand Crumb a whole task. In Claude Code:
+
+```text
+/plugin marketplace add elixpo/crumb.elixpo
+/plugin install crumb@elixpo
+```
+
+Other agents can use the [Crumb skill and MCP server](integrations/claude-code/README.md) directly.
+
 <p align="center">
   <img src="crumb.elixpo/public/icon-192.png" width="96" height="96" alt="Crumb app icon" />
 </p>

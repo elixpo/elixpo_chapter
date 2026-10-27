@@ -74,10 +74,10 @@ export async function generateMetadata({
 }
 
 const TINT_BG: Record<AppEntry["tint"], string> = {
-  primary: "rgba(255, 93, 104, 0.22)",
-  teal:    "rgba( 61, 220, 151, 0.20)",
-  gold:    "rgba(255, 209, 102, 0.20)",
-  lilac:   "rgba(162, 155, 254, 0.22)",
+  primary: "rgba(201, 58, 69, 0.16)",
+  teal:    "rgba( 11, 98, 60, 0.14)",
+  gold:    "rgba(240, 173, 22, 0.20)",
+  lilac:   "rgba( 58, 101, 199, 0.16)",
 };
 const TINT_TEXT: Record<AppEntry["tint"], string> = {
   primary: "text-primary",
@@ -182,7 +182,7 @@ export default async function AppDetail({
             className="absolute inset-0"
             style={{
               background:
-                `linear-gradient(180deg,${TINT_BG[app.tint]} 0%, rgba(15,12,28,0.85) 50%, var(--background) 100%)`,
+                `linear-gradient(180deg,${TINT_BG[app.tint]} 0%, rgba(251,251,248,0.85) 50%, var(--background) 100%)`,
             }}
           />
         </div>

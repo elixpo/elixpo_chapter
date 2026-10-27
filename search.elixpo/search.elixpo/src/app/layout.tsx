@@ -1,19 +1,6 @@
 import type { Metadata } from 'next';
-import { DM_Sans, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import './theme.css';
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-body',
-  display: 'swap',
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
 
 const SITE_URL = 'https://search.elixpo.com';
 const TITLE = 'OreoLook — Search the web. Get the answer. Keep the receipts.';
@@ -108,7 +95,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en">
       <body className="font-body">
         {children}
       </body>

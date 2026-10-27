@@ -5,7 +5,7 @@ import asyncio
 import requests
 from loguru import logger
 
-from pipeline.config import POLLINATIONS_ENDPOINT, LLM_MODEL, LOG_MESSAGE_PREVIEW_TRUNCATE
+from pipeline.config import POLLINATIONS_ENDPOINT, LLM_MODEL, LLM_HTTP_TIMEOUT, LOG_MESSAGE_PREVIEW_TRUNCATE
 from pipeline.helpers import _scrub_tool_names, sanitize_final_response
 from sessions.clarification import artifacts_blocked
 from sessions.artifacts import ArtifactRejected, create_artifact_snapshot
@@ -182,7 +182,7 @@ async def try_image_synthesis(messages, user_query, image_pool, headers, event_i
     }
     try:
         response = await asyncio.wait_for(
-            asyncio.to_thread(requests.post, POLLINATIONS_ENDPOINT, json=payload, headers=headers, timeout=55),
+            asyncio.to_thread(requests.post, POLLINATIONS_ENDPOINT, json=payload, headers=headers, timeout=LLM_HTTP_TIMEOUT),
             timeout=60.0
         )
         response.raise_for_status()

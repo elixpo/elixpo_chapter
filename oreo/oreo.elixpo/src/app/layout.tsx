@@ -112,8 +112,8 @@ export const metadata: Metadata = {
 // Next 14 moved themeColor / colorScheme out of `metadata` into a
 // separate `viewport` export — they're per-render rather than static.
 export const viewport: Viewport = {
-  themeColor: "#0F0C1C",
-  colorScheme: "dark",
+  themeColor: "#FBFBF8",
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
 };

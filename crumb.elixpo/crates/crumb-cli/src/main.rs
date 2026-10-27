@@ -98,6 +98,7 @@ use reedline::{
 use sha2::{Digest, Sha256};
 
 mod agent_runtime;
+mod agent_tool;
 mod bundled_skills;
 mod choice_dialog;
 mod completion;
@@ -296,15 +297,22 @@ fn parse_exec_request(arguments: &[OsString]) -> Result<Option<(bool, String)>> 
     Ok(Some((json, request)))
 }
 
-fn run_agent_exec(cwd: &Path, request: &str, json: bool, writer: &mut dyn Write) -> Result<()> {
+/// A runtime for one non-interactive turn, as `crumb exec` and the
+/// `crumb_agent` MCP tool run it.
+fn exec_runtime(cwd: &Path) -> Result<AgentRuntime> {
     instance_store(cwd)
         .load_or_create()
         .context("Crumb instance identity could not be initialized")?;
-    let config = read_agent_config(cwd)?;
     let mut runtime = AgentRuntime::new()?;
     if let (Ok(workspace), Ok(bus_root)) = (instance_workspace(cwd), local_a2a_bus_root()) {
         let _ = runtime.initialize_peer_runtime(&workspace, &bus_root);
     }
+    Ok(runtime)
+}
+
+fn run_agent_exec(cwd: &Path, request: &str, json: bool, writer: &mut dyn Write) -> Result<()> {
+    let config = read_agent_config(cwd)?;
+    let mut runtime = exec_runtime(cwd)?;
     let cancellation = CancellationToken::default();
     let mut progress = ExecProgress::new(json);
     let result =
@@ -788,6 +796,7 @@ fn serve_mcp() -> Result<()> {
     enforce_graphify_pin(&workspace, &mut config);
     let search_api_key = configured_pollinations_runtime_key(&config);
     let mut host = workspace_read_host(&workspace, &config, search_api_key, None)?;
+    agent_tool::register_crumb_agent_tool(&mut host, &workspace, &config)?;
     let mut diagnostics = register_stdio_servers(
         &mut host,
         &config.mcp_servers,

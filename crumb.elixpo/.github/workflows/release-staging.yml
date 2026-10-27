@@ -81,12 +81,12 @@ jobs:
             Set-Content -NoNewline "$archive.sha256"
 
       - name: Attest staged archive provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/crumb-${{ inputs.version }}-${{ matrix.label }}.${{ matrix.archive }}
 
       - name: Upload unsigned staging bundle
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: crumb-${{ inputs.version }}-${{ matrix.label }}
           path: |

@@ -175,6 +175,99 @@ def _enforce_capability_route(request_mode: str, *, artifact_requested: bool) ->
     return request_mode
 
 
+class UpstreamUnavailableError(RuntimeError):
+    """The upstream LLM provider is unreachable or failing (connection/5xx)."""
+
+
+UPSTREAM_UNAVAILABLE_MESSAGE = (
+    "The language model provider is temporarily unavailable, so I can't answer "
+    "right now. Please try again in a few moments."
+)
+
+
+def _is_upstream_unavailable(exc: BaseException) -> bool:
+    """True for provider outages (unreachable host, 5xx), not bad model output."""
+    if isinstance(exc, UpstreamUnavailableError):
+        return True
+    if isinstance(exc, requests.exceptions.ConnectionError):  # includes ConnectTimeout
+        return True
+    if isinstance(exc, requests.exceptions.HTTPError):
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        return status is not None and status >= 500
+    return False
+
+
+class PipelineErrorText(str):
+    """Final non-streaming text that represents a failure, not an answer.
+
+    Gateways use ``code`` to return a proper error status instead of 200."""
+
+    code = "upstream_unavailable"
+
+
+def _upstream_error_output(event_id):
+    """Chunks for a provider outage: an explicit ERROR event, then DONE."""
+    if event_id:
+        yield format_sse("ERROR", UPSTREAM_UNAVAILABLE_MESSAGE)
+        yield format_sse("INFO", "<TASK>DONE</TASK>")
+    else:
+        yield PipelineErrorText(UPSTREAM_UNAVAILABLE_MESSAGE)
+
+
+def _decision_model_stages() -> list[tuple[str, ...]]:
+    """Ordered model stages for decision calls.
+
+    Default: race LLM_DECISION_MODEL against LLM_MODEL_FALLBACK (unchanged).
+    JEV_ENABLED: try jev alone first, then race LLM_MODEL / LLM_MODEL_FALLBACK.
+    """
+    if JEV_ENABLED:
+        return [
+            (LLM_DECISION_MODEL,),
+            tuple(dict.fromkeys((LLM_MODEL, LLM_MODEL_FALLBACK))),
+        ]
+    return [tuple(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))]
+
+
+def _llm_model_chain(primary: str) -> tuple[str, ...]:
+    """primary, then LLM_MODEL when primary is the opt-in jev decision model, then fallback."""
+    chain = [primary]
+    if JEV_ENABLED and primary == LLM_DECISION_MODEL:
+        chain.append(LLM_MODEL)
+    chain.append(LLM_MODEL_FALLBACK)
+    return tuple(dict.fromkeys(chain))
+
+
+async def _race_decision_call(call, label: str):
+    """Run a blocking decision call across model stages; first valid result wins.
+
+    Raises UpstreamUnavailableError when every attempt failed because the
+    provider is down, or RuntimeError for any other total failure.
+    """
+    errors: list[BaseException] = []
+    stages = _decision_model_stages()
+    for stage_index, models in enumerate(stages):
+        tasks = [asyncio.create_task(asyncio.to_thread(call, model)) for model in models]
+        try:
+            for completed in asyncio.as_completed(tasks):
+                try:
+                    return await completed
+                except Exception as exc:
+                    errors.append(exc)
+                    logger.warning(f"[pipeline] {label} attempt failed: {exc}")
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+        if stage_index + 1 < len(stages):
+            logger.warning(
+                f"[Pipeline] decision model {models[0]} failed for {label}; "
+                f"falling back to {LLM_MODEL}"
+            )
+    if errors and all(_is_upstream_unavailable(exc) for exc in errors):
+        raise UpstreamUnavailableError(f"{label}: upstream LLM unavailable ({errors[-1]})")
+    raise RuntimeError(f"{label}: every decision attempt failed")
+
+
 async def _decide_request_mode(
     user_query: str,
     image_count: int,
@@ -192,7 +285,6 @@ async def _decide_request_mode(
         {"role": "system", "content": _DECISION_INSTRUCTION},
         {"role": "user", "content": query},
     ]
-    models = list(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))
 
     def _call(model):
         response = requests.post(
@@ -217,29 +309,21 @@ async def _decide_request_mode(
             parse_clarification_need(content),
         )
 
-    tasks = [asyncio.create_task(asyncio.to_thread(_call, model)) for model in models]
     try:
-        for completed in asyncio.as_completed(tasks):
-            try:
-                mode, context_mode, clarification = await completed
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                logger.debug(
-                    f"[pipeline] request_mode={mode} context_mode={context_mode}"
-                )
-                logger.info(
-                    "[clarification] route required={} blocking_fields={}",
-                    clarification.required,
-                    list(clarification.missing_fields),
-                )
-                return mode, context_mode, clarification
-            except Exception as exc:
-                logger.warning(f"[pipeline] request router attempt failed: {exc}")
-    finally:
-        for task in tasks:
-            if not task.done():
-                task.cancel()
+        mode, context_mode, clarification = await _race_decision_call(_call, "request router")
+        logger.debug(f"[pipeline] request_mode={mode} context_mode={context_mode}")
+        logger.info(
+            "[clarification] route required={} blocking_fields={}",
+            clarification.required,
+            list(clarification.missing_fields),
+        )
+        return mode, context_mode, clarification
+    except UpstreamUnavailableError:
+        # A provider outage is not an underspecified request: surface it
+        # instead of persisting a misleading clarification task.
+        raise
+    except Exception as exc:
+        logger.warning(f"[pipeline] request router failed: {exc}")
 
     # Routing is an admission boundary. If every bounded router fails, do not
     # let the more permissive tool orchestrator guess at an underspecified
@@ -277,7 +361,6 @@ async def _resolve_pending_clarification(
             ),
         },
     ]
-    models = list(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))
 
     def _call(model):
         response = requests.post(
@@ -298,21 +381,12 @@ async def _resolve_pending_clarification(
             raise ValueError(f"resolver model {model} returned an invalid contract")
         return parse_resolution(content)
 
-    tasks = [asyncio.create_task(asyncio.to_thread(_call, model)) for model in models]
     try:
-        for completed in asyncio.as_completed(tasks):
-            try:
-                resolution = await completed
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                return resolution
-            except Exception as exc:
-                logger.warning(f"[pipeline] clarification resolver attempt failed: {exc}")
-    finally:
-        for task in tasks:
-            if not task.done():
-                task.cancel()
+        return await _race_decision_call(_call, "clarification resolver")
+    except Exception as exc:
+        # Includes provider outages: the pending task is preserved and resolved
+        # locally below where that is safe.
+        logger.warning(f"[pipeline] clarification resolver failed: {exc}")
 
     # The admission fallback creates exactly one generic field. Its answer is
     # the user's next explicit message, so it can be bound without semantic
@@ -345,7 +419,7 @@ async def _stream_llm_call(payload: dict, headers: dict):
         try:
             with requests.post(
                 POLLINATIONS_ENDPOINT, json={**payload, "stream": True},
-                headers=headers, stream=True, timeout=55,
+                headers=headers, stream=True, timeout=LLM_HTTP_TIMEOUT,
             ) as r:
                 r.raise_for_status()
                 for line in r.iter_lines(decode_unicode=True):
@@ -806,6 +880,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
         # --- Tool loop ---
         max_iterations = 3
         current_iteration = 0
+        llm_upstream_failed = False
         collected_sources = []
         collected_images_from_web = []
         collected_similar_images = []
@@ -976,7 +1051,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 _direct_messages[0] = {"role": "system", "name": "oreolook-direct-system", "content": direct_prompt}
                 payload = {"model": MODEL, "messages": _direct_messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
             else:
-                payload = {"model": MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
+                # Tool routing/selection is a decision call (jev when enabled).
+                payload = {"model": LLM_DECISION_MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
                 # Document export is a final commit owned by the runtime after
                 # synthesis and validation. It is never available during
                 # planning/tool selection.
@@ -1009,7 +1085,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
 
             if _use_streaming:
                 assistant_message = None
-                for _stream_model in (payload.get("model", MODEL), MODEL_FALLBACK):
+                for _stream_model in _llm_model_chain(payload.get("model", MODEL)):
                     try:
                         _stream_payload = {**payload, "model": _stream_model}
                         _streamed_content = ""
@@ -1048,10 +1124,17 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         logger.warning(f"Streaming model={_stream_model} returned empty, trying fallback")
                     except Exception as e:
                         logger.warning(f"Streaming API error with model={_stream_model}: {e}")
+                        if _visible_streamed_content:
+                            # Text already reached the client; retrying on another
+                            # model would duplicate it. Keep the partial answer.
+                            assistant_message = {"role": "assistant", "content": _visible_streamed_content}
+                            _model_protocol_content = _streamed_content
+                            break
                         if _stream_model == MODEL_FALLBACK:
                             logger.error(f"Streaming fallback also failed at iteration {current_iteration}")
                         continue
                 if not assistant_message:
+                    llm_upstream_failed = True
                     break
                 # Direct text is already delivered. Tool-call streams normally contain no
                 # content and continue through the tool loop.
@@ -1062,11 +1145,11 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             else:
                 # --- Non-streaming path: blocking call with keepalive + fallback ---
                 response_data = None
-                for _model_attempt in (payload.get("model", MODEL), MODEL_FALLBACK):
+                for _model_attempt in _llm_model_chain(payload.get("model", MODEL)):
                     _attempt_payload = {**payload, "model": _model_attempt}
                     try:
                         _api_task = asyncio.ensure_future(
-                            asyncio.to_thread(requests.post, POLLINATIONS_ENDPOINT, json=_attempt_payload, headers=headers, timeout=55)
+                            asyncio.to_thread(requests.post, POLLINATIONS_ENDPOINT, json=_attempt_payload, headers=headers, timeout=LLM_HTTP_TIMEOUT)
                         )
                         while not _api_task.done():
                             await asyncio.wait({_api_task}, timeout=5.0)
@@ -1086,6 +1169,8 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         break  # success — no need for fallback
                     except (requests.exceptions.RequestException, asyncio.TimeoutError) as e:
                         logger.warning(f"API error with model={_model_attempt} at iteration {current_iteration}: {e}")
+                        if JEV_ENABLED and _model_attempt == LLM_DECISION_MODEL:
+                            logger.warning(f"[Pipeline] decision model {_model_attempt} failed for tool selection; falling back to {MODEL}")
                         if _model_attempt == MODEL_FALLBACK:
                             logger.error(f"Fallback model also failed at iteration {current_iteration}")
                         continue
@@ -1094,6 +1179,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         break
 
                 if not response_data:
+                    llm_upstream_failed = True
                     break
 
                 choice = response_data.get("choices", [{}])[0]
@@ -1653,18 +1739,18 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 else:
                     yield response
                 return
-            _error_msg = (
-                "Hmm, I hit a snag — my brain (the LLM upstream) seems to be "
-                "taking a nap right now. This usually resolves in a few seconds. "
-                "Give it another shot and I should be back to my usual brilliant self."
-            )
-            if event_id:
-                yield format_sse("RESPONSE", _error_msg)
-                yield format_sse("INFO", "<TASK>DONE</TASK>")
-            else:
-                yield _error_msg
+            task_failed = True
+            if not llm_upstream_failed:
+                logger.error("[Pipeline] tool loop ended without content or an upstream failure")
+            for _err_chunk in _upstream_error_output(event_id):
+                yield _err_chunk
             return
 
+    except UpstreamUnavailableError as e:
+        task_failed = True
+        logger.error(f"[Pipeline] upstream LLM unavailable: {e}")
+        for _err_chunk in _upstream_error_output(event_id):
+            yield _err_chunk
     except Exception as e:
         task_failed = True
         logger.error(f"Pipeline error: {e}", exc_info=True)

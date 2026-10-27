@@ -28,8 +28,7 @@ export default function GetStartedPage() {
         >
           From box to badge,{" "}
           <span className="bg-gradient-to-r from-primary via-gold to-lilac
-                           bg-clip-text text-transparent
-                           drop-shadow-[0_0_30px_rgba(255,93,104,0.35)]">
+                           bg-clip-text text-transparent">
             in four steps.
           </span>
         </motion.h1>

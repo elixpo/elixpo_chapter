@@ -119,7 +119,7 @@ export default function VideoArchitecturePage() {
           <p className="mt-6 max-w-3xl text-lg leading-relaxed text-text-dim">OreoOS prepares full-colour RGB565 frames on the host, inflates them through custom ESP32-S3 firmware, and uses a double-buffered DMA display path to make a 24 FPS deadline achievable on microcontroller hardware.</p>
           <div className="mt-7 flex flex-wrap gap-2 text-xs text-muted">
             <span className="chip">ESP32-S3</span><span className="chip">MicroPython 1.28</span>
-            <span className="chip">RV565 v6</span><span className="chip">24.004 FPS native path</span>
+            <span className="chip">RV565 v6</span><span className="chip">24 FPS dual-core path</span>
             <span className="chip">320 × 240 RGB565</span>
           </div>
         </header>
@@ -134,7 +134,7 @@ export default function VideoArchitecturePage() {
           <article className="min-w-0 max-w-4xl text-[15px] leading-7 text-text-dim">
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
               <p className="font-semibold text-text">The central result</p>
-              <p className="mt-2">The standalone native pipeline sustained <strong className="text-text">24.004 FPS across 7,200 measured frames</strong> with no drops or deadline misses. The current complete Gallery path measures 14.093 FPS, revealing that firmware decompression alone is not enough while filesystem input and framebuffer presentation remain serialized.</p>
+              <p className="mt-2">With inflation moved to the second core, the standalone pipeline sustained <strong className="text-text">24 FPS with zero deadline misses and 10.3 ms of slack on both test windows</strong> (7,200 frames each). The serial path missed every frame of the heavier window. The complete Gallery path measures 12.170 FPS, showing that firmware decompression alone is not enough while filesystem input and framebuffer presentation remain serialized.</p>
             </div>
             <p className="mt-8">RV565 is not a new entropy codec. It is a frame-independent container and cross-layer playback architecture. Version 6 uses standard Deflate compression, but arranges representation, memory, native code, scheduling, and display I/O around the badge&apos;s actual frame deadline.</p>
 
@@ -179,17 +179,17 @@ compressed_size[n]  +  zlib frame n`}</pre>
             </div>
 
             <SectionTitle id="dma" icon={MonitorUp}>The proven 24 FPS DMA path</SectionTitle>
-            <p>The standalone ESP-IDF experiment isolates the hardware path. It inflates one frame into a reusable buffer, scales the image into two alternating internal-SRAM stripes, and queues each stripe to SPI2 GDMA. While DMA transfers stripe <em>n</em>, the CPU prepares stripe <em>n + 1</em>.</p>
+            <p>The standalone ESP-IDF experiment isolates the hardware path. It scales each decoded frame into two alternating internal-SRAM stripes and queues each stripe to SPI2 GDMA: while DMA transfers stripe <em>n</em>, core 0 prepares stripe <em>n + 1</em>. In the dual-core configuration, core 1 inflates the next frame into a second buffer at the same time, so inflation leaves the critical path and frame time equals the 31.3 ms display transfer.</p>
             <MermaidDiagram chart={dmaPipeline} label="Double-buffered stripe production overlaps CPU work with SPI2 GDMA" />
-            <p>DMA is valuable here because it creates concurrency, not merely because it copies bytes. The design avoids a second full 320 × 240 framebuffer and uses approximately 79.9 KiB of incremental internal allocation for decode state and two stripes in the standalone measurement.</p>
+            <p>DMA is valuable here because it creates concurrency, not merely because it copies bytes. The design avoids a second full 320 × 240 framebuffer and uses 79.9 KiB of incremental internal allocation in the serial configuration and 152.4 KiB with the second decoded frame and the core-1 worker.</p>
 
             <div className="my-7 overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[660px] text-left text-sm">
                 <thead className="bg-card-sub text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Data</th><th className="p-4">Memory tier</th><th className="p-4">Reason</th></tr></thead>
                 <tbody className="divide-y divide-border">
                   <tr><td className="p-4 text-text">Compressed media</td><td className="p-4">Flash / future SD</td><td className="p-4">Persistent capacity</td></tr>
-                  <tr><td className="p-4 text-text">Prefetch buffers</td><td className="p-4">PSRAM</td><td className="p-4">Absorb storage latency and jitter</td></tr>
-                  <tr><td className="p-4 text-text">Decoded source frame</td><td className="p-4">Reusable 8-bit memory</td><td className="p-4">Fixed working set</td></tr>
+                  <tr><td className="p-4 text-text">Prefetch buffers (planned)</td><td className="p-4">PSRAM</td><td className="p-4">Absorb storage latency and jitter</td></tr>
+                  <tr><td className="p-4 text-text">Decoded frames (one, or two in dual-core mode)</td><td className="p-4">Internal SRAM</td><td className="p-4">Fixed working set; core 1 fills the spare</td></tr>
                   <tr><td className="p-4 text-text">Alternating output stripes</td><td className="p-4">DMA-capable SRAM</td><td className="p-4">Direct SPI2 GDMA access</td></tr>
                 </tbody>
               </table>
@@ -200,21 +200,24 @@ compressed_size[n]  +  zlib frame n`}</pre>
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="bg-card-sub text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Configuration</th><th className="p-4">Frames</th><th className="p-4">FPS</th><th className="p-4">Drops</th><th className="p-4">Misses</th><th className="p-4">p50</th><th className="p-4">p99</th></tr></thead>
                 <tbody className="divide-y divide-border">
-                  <tr><td className="p-4 text-text">Standalone native DMA stripes</td><td className="p-4">7,200</td><td className="p-4 font-semibold text-teal">24.004</td><td className="p-4">0</td><td className="p-4">0</td><td className="p-4">38.552 ms</td><td className="p-4">40.206 ms</td></tr>
-                  <tr><td className="p-4 text-text">OreoOS Gallery + firmware inflate</td><td className="p-4">720</td><td className="p-4 font-semibold text-gold">14.093</td><td className="p-4">0</td><td className="p-4">720</td><td className="p-4">69.535 ms</td><td className="p-4">78.938 ms</td></tr>
+                  <tr><td className="p-4 text-text">W90 · serial</td><td className="p-4">7,200</td><td className="p-4 font-semibold text-teal">24.002</td><td className="p-4">0</td><td className="p-4">0</td><td className="p-4">40.205 ms</td><td className="p-4">41.348 ms</td></tr>
+                  <tr><td className="p-4 text-text">W90 · dual-core</td><td className="p-4">7,200</td><td className="p-4 font-semibold text-teal">24.009</td><td className="p-4">0</td><td className="p-4">0</td><td className="p-4">31.322 ms</td><td className="p-4">31.333 ms</td></tr>
+                  <tr><td className="p-4 text-text">W360 · serial</td><td className="p-4">7,200</td><td className="p-4 font-semibold text-gold">23.905</td><td className="p-4">20</td><td className="p-4">7,200</td><td className="p-4">41.828 ms</td><td className="p-4">41.881 ms</td></tr>
+                  <tr><td className="p-4 text-text">W360 · dual-core</td><td className="p-4">7,200</td><td className="p-4 font-semibold text-teal">24.009</td><td className="p-4">0</td><td className="p-4">0</td><td className="p-4">31.324 ms</td><td className="p-4">31.335 ms</td></tr>
+                  <tr><td className="p-4 text-text">W90 · OreoOS Gallery + firmware inflate</td><td className="p-4">720</td><td className="p-4 font-semibold text-gold">12.170</td><td className="p-4">n/a</td><td className="p-4">720</td><td className="p-4">80.174 ms</td><td className="p-4">87.117 ms</td></tr>
                 </tbody>
               </table>
             </div>
-            <p>The standalone result covers ten independently reset runs and remains below the 41.667 ms deadline at p99. It proves that the hardware path can sustain 24 FPS. It does not imply that every OreoOS layer already runs at the same rate.</p>
+            <p>Each standalone row pools ten independently reset runs of two ten-second Big Buck Bunny windows (W90 and W360, CC BY 3.0, Blender Foundation). The dual-core path stays below the 41.667 ms deadline on every frame of both; the serial path only fits the lighter window. This proves the hardware path can sustain 24 FPS. It does not imply that every OreoOS layer already runs at the same rate.</p>
 
             <SectionTitle id="gallery" icon={Database}>What remains inside the complete Gallery</SectionTitle>
             <p>The integrated Gallery run measures the real application loop. Its mean work is still mostly serial:</p>
             <div className="my-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {[["18.193 ms", "Filesystem read"], ["7.798 ms", "Firmware inflate"], ["7.650 ms", "Scale"], ["9.116 ms", "Gallery draw"], ["33.308 ms", "LCD present"], ["69.212 ms", "Total work"]].map(([value, label]) => (
+              {[["27.631 ms", "Filesystem read"], ["9.525 ms", "Firmware inflate"], ["7.641 ms", "Scale"], ["9.100 ms", "Gallery draw"], ["33.317 ms", "LCD present"], ["80.400 ms", "Total work"]].map(([value, label]) => (
                 <div key={label} className="card-surface p-4"><p className="font-mono text-xl text-text">{value}</p><p className="mt-1 text-xs uppercase tracking-wider text-muted">{label}</p></div>
               ))}
             </div>
-            <p>The clip can still look smooth because all 720 measured frames were presented without drops and the cadence is regular. Without an audio clock, slower playback is less obvious to the eye. That experience is useful, but it is not the same claim as measured real-time 24 FPS.</p>
+            <p>Gallery never skips a frame when it falls behind; it slows down instead, so W90 plays at about half speed with a regular cadence. Without an audio clock, slower playback is less obvious to the eye. That experience is useful, but it is not the same claim as measured real-time 24 FPS. Interpreter overhead is only 0.8 ms of the 80.4 ms.</p>
 
             <SectionTitle id="roadmap" icon={HardDrive}>The next integrated pipeline</SectionTitle>
             <p>The next step is to carry the proven overlap into OreoOS: prefetch compressed frames into PSRAM, fuse native inflate and stripe production, and send those stripes directly through SPI2 GDMA instead of completing separate draw and present stages.</p>
@@ -229,7 +232,7 @@ compressed_size[n]  +  zlib frame n`}</pre>
               <h2 className="mt-4 font-display text-2xl text-text">The contribution is the complete data path.</h2>
               <p className="mt-3">Deflate, RGB565, and DMA are established technologies. RV565 combines them with host preprocessing, frame independence, explicit memory placement, a narrow firmware API, and deadline-aware display scheduling for a MicroPython-class system.</p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/paper/" className="btn-primary"><FileText className="h-4 w-4" /> Paper preview</Link>
+                <Link href="/paper/" className="btn-primary"><FileText className="h-4 w-4" /> Read the paper</Link>
                 <a href="https://github.com/elixpo/oreo" target="_blank" rel="noreferrer" className="btn-ghost"><Github className="h-4 w-4" /> View implementation</a>
                 <a href="https://github.com/elixpo/oreo/blob/main/docs/RV565_KNOWLEDGE_DECK.md" target="_blank" rel="noreferrer" className="btn-ghost">Read the deck <ArrowRight className="h-4 w-4" /></a>
               </div>

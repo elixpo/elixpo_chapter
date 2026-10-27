@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timezone
 from quart import request, jsonify, Response
 from pipeline.searchPipeline import run_elixposearch_pipeline
+from pipeline.lixsearch import PipelineErrorText
 from app.utils import validate_query, validate_url, format_openai_response
 from pipeline.config import X_REQ_ID_SLICE_SIZE, REQUEST_ID_HEX_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE, RESPONSE_MODEL
 
@@ -94,40 +95,46 @@ async def search(pipeline_initialized: bool):
 
         if stream_mode:
             async def event_stream_generator():
-                async for chunk in run_elixposearch_pipeline(
-                    user_query=query,
-                    user_image=image_url,
-                    user_images=image_urls,
-                    event_id=request_id,
-                    session_id=session_id,
-                    is_ephemeral=is_ephemeral,
-                ):
-                    chunk_str = chunk if isinstance(chunk, str) else chunk.decode('utf-8')
+                try:
+                    async for chunk in run_elixposearch_pipeline(
+                        user_query=query,
+                        user_image=image_url,
+                        user_images=image_urls,
+                        event_id=request_id,
+                        session_id=session_id,
+                        is_ephemeral=is_ephemeral,
+                    ):
+                        chunk_str = chunk if isinstance(chunk, str) else chunk.decode('utf-8')
 
-                    try:
-                        lines = chunk_str.strip().split('\n')
-                        event_type = None
-                        event_data_lines = []
+                        try:
+                            lines = chunk_str.strip().split('\n')
+                            event_type = None
+                            event_data_lines = []
 
-                        for line in lines:
-                            if line.startswith('event:'):
-                                event_type = line.replace('event:', '').strip()
-                            elif line.startswith('data:'):
-                                # Strip exactly one leading space (SSE spec), preserve the rest
-                                raw = line[5:]  # skip "data:"
-                                if raw.startswith(' '):
-                                    raw = raw[1:]
-                                event_data_lines.append(raw)
+                            for line in lines:
+                                if line.startswith('event:'):
+                                    event_type = line.replace('event:', '').strip()
+                                elif line.startswith('data:'):
+                                    # Strip exactly one leading space (SSE spec), preserve the rest
+                                    raw = line[5:]  # skip "data:"
+                                    if raw.startswith(' '):
+                                        raw = raw[1:]
+                                    event_data_lines.append(raw)
 
-                        event_data = "\n".join(event_data_lines) if event_data_lines else None
-                        if event_type and event_data is not None:
-                            openai_sse = format_sse_event_openai(event_type, event_data, request_id)
-                            yield openai_sse.encode('utf-8')
-                        else:
+                            event_data = "\n".join(event_data_lines) if event_data_lines else None
+                            if event_type and event_data is not None:
+                                openai_sse = format_sse_event_openai(event_type, event_data, request_id)
+                                yield openai_sse.encode('utf-8')
+                            else:
+                                yield chunk_str.encode('utf-8') if isinstance(chunk, str) else chunk
+                        except Exception as e:
+                            logger.warning(f"[{request_id}] session={session_id} Failed to parse SSE: {e}")
                             yield chunk_str.encode('utf-8') if isinstance(chunk, str) else chunk
-                    except Exception as e:
-                        logger.warning(f"[{request_id}] session={session_id} Failed to parse SSE: {e}")
-                        yield chunk_str.encode('utf-8') if isinstance(chunk, str) else chunk
+                except Exception as e:
+                    # Keep the SSE protocol intact: explicit error event + DONE.
+                    logger.error(f"[{request_id}] session={session_id} stream failed: {e}", exc_info=True)
+                    yield format_sse_event_openai("ERROR", "The request failed unexpectedly. Please try again.", request_id).encode("utf-8")
+                    yield format_sse_event_openai("INFO", "<TASK>DONE</TASK>", request_id).encode("utf-8")
 
             return Response(
                 event_stream_generator(),
@@ -152,6 +159,8 @@ async def search(pipeline_initialized: bool):
                 if chunk:
                     response_content = chunk  # non-streaming mode: pipeline yields raw text
 
+            if isinstance(response_content, PipelineErrorText):
+                return jsonify({"error": str(response_content), "code": response_content.code}), 503
             if not response_content:
                 logger.error(f"[{request_id}] session={session_id} No response generated")
                 return jsonify({"error": "No response generated"}), 500

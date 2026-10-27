@@ -259,3 +259,7 @@ Optional overrides: `REDIS_HOST`, `REDIS_PORT`, `QDRANT_MODE`, `QDRANT_URL`, `QD
 ### Frontend (wrangler.toml vars + secrets)
 Vars: `BACKEND_URL`, `GUEST_REQUEST_LIMIT`, `SSO_REDIRECT_URI`
 Secrets (via `wrangler secret put`): `INTERNAL_API_KEY`, `XID`, `API_KEY`, `SSO_CLIENT_ID`, `SSO_CLIENT_SECRET`
+
+## Commit Rule
+
+- All commits use a single author: `Circuit-Overtime <ayushbhatt633@gmail.com>`. Do not add `Co-Authored-By` or any other attribution trailers.

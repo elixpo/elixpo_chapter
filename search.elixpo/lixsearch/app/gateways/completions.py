@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 from quart import request, jsonify, Response
 from pipeline.searchPipeline import run_elixposearch_pipeline
+from pipeline.lixsearch import PipelineErrorText
 from pipeline.config import (
     AGENT_STREAM_CHUNK_CHARS,
     AGENT_STREAM_DEFAULT,
@@ -163,48 +164,56 @@ async def chat_completions(pipeline_initialized: bool):
                             event_type="RESPONSE" if kind == "text" else "INFO",
                         )
 
-                async for chunk in run_elixposearch_pipeline(
-                    user_query=user_query,
-                    user_image=image_url,
-                    user_images=image_urls if image_urls else None,
-                    event_id=request_id,
-                    session_id=session_id,
-                    chat_history=chat_history if chat_history else None,
-                    is_ephemeral=is_ephemeral,
-                ):
-                    chunk_str = chunk if isinstance(chunk, str) else chunk.decode("utf-8")
+                try:
+                    async for chunk in run_elixposearch_pipeline(
+                        user_query=user_query,
+                        user_image=image_url,
+                        user_images=image_urls if image_urls else None,
+                        event_id=request_id,
+                        session_id=session_id,
+                        chat_history=chat_history if chat_history else None,
+                        is_ephemeral=is_ephemeral,
+                    ):
+                        chunk_str = chunk if isinstance(chunk, str) else chunk.decode("utf-8")
 
-                    try:
-                        lines = chunk_str.splitlines()
-                        event_type = None
-                        event_data_lines = []
-                        for line in lines:
-                            if line.startswith("event:"):
-                                event_type = line.replace("event:", "").strip()
-                            elif line.startswith("data:"):
-                                raw = line[5:]
-                                if raw.startswith(" "):
-                                    raw = raw[1:]
-                                event_data_lines.append(raw)
+                        try:
+                            lines = chunk_str.splitlines()
+                            event_type = None
+                            event_data_lines = []
+                            for line in lines:
+                                if line.startswith("event:"):
+                                    event_type = line.replace("event:", "").strip()
+                                elif line.startswith("data:"):
+                                    raw = line[5:]
+                                    if raw.startswith(" "):
+                                        raw = raw[1:]
+                                    event_data_lines.append(raw)
 
-                        event_data = "\n".join(event_data_lines) if event_data_lines else None
-                        if event_type and event_data is not None:
-                            if event_type == "RESPONSE":
-                                for output in formatted(buffer.feed(event_data)):
-                                    yield output
+                            event_data = "\n".join(event_data_lines) if event_data_lines else None
+                            if event_type and event_data is not None:
+                                if event_type == "RESPONSE":
+                                    for output in formatted(buffer.feed(event_data)):
+                                        yield output
+                                else:
+                                    for output in formatted(buffer.flush()):
+                                        yield output
+                                    yield _format_chunk(request_id, event_data, event_type=event_type)
                             else:
                                 for output in formatted(buffer.flush()):
                                     yield output
-                                yield _format_chunk(request_id, event_data, event_type=event_type)
-                        else:
+                                yield chunk_str
+                        except Exception as e:
+                            logger.warning(f"[{request_id}] session={session_id} Failed to parse SSE: {e}")
                             for output in formatted(buffer.flush()):
                                 yield output
                             yield chunk_str
-                    except Exception as e:
-                        logger.warning(f"[{request_id}] session={session_id} Failed to parse SSE: {e}")
-                        for output in formatted(buffer.flush()):
-                            yield output
-                        yield chunk_str
+                except Exception as e:
+                    # Never cut the stream silently: emit an explicit error chunk
+                    # and still terminate the SSE protocol below.
+                    logger.error(f"[{request_id}] session={session_id} stream failed: {e}", exc_info=True)
+                    for output in formatted(buffer.flush()):
+                        yield output
+                    yield _format_chunk(request_id, "The request failed unexpectedly. Please try again.", event_type="ERROR")
 
                 for output in formatted(buffer.flush()):
                     yield output
@@ -237,6 +246,8 @@ async def chat_completions(pipeline_initialized: bool):
                 if chunk:
                     response_content = chunk  # non-streaming: pipeline yields final text
 
+            if isinstance(response_content, PipelineErrorText):
+                return jsonify({"error": {"message": str(response_content), "type": "server_error", "code": response_content.code}}), 503
             if not response_content:
                 return jsonify({"error": {"message": "No response generated", "type": "server_error"}}), 500
 

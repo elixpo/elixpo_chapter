@@ -8,30 +8,28 @@
 
 const theme = {
   colors: {
-    // Surfaces — deep purple-black gradient anchor. Mirrors the badge's
-    // home-screen background so the web/device feel like one product.
-    bg:         "#0F0C1C",
-    bgRaised:   "#1C1A2E",
-    card:       "#1F1B33",
-    cardSubtle: "#26213E",
-    border:     "#2A2640",
+    // Surfaces — the Elixpo Research paper palette: warm off-white page,
+    // white cards, and a slightly deeper wash for inset panels.
+    bg:         "#FBFBF8",
+    bgRaised:   "#EFF1ED",
+    card:       "#FFFFFF",
+    cardSubtle: "#EFF1ED",
+    border:     "#D7DBD6",
 
-    // Brand — Oreo pink-red. Used for primary CTAs, the live "active"
-    // dot in the file-transfer page, and the wordmark accents.
-    primary:    "#FF5D68",
-    primaryDim: "#C8434C",
+    // Brand — Oreo pink-red, deepened so it stays readable on paper.
+    primary:    "#C93A45",
+    primaryDim: "#A92F39",
 
-    // Accent ladder (used sparingly for category tints).
-    teal:       "#3DDC97",
-    gold:       "#FFD166",
-    lilac:      "#A29BFE",
+    // Accent ladder, matched to the research site's green, gold and blue.
+    teal:       "#0B623C",
+    gold:       "#9A6400",
+    lilac:      "#3A65C7",
 
-    // Text — warm cream on dark, deliberately not pure white so the
-    // page doesn't feel like a status terminal.
-    text:       "#F5E6DC",
-    textDim:    "#C8B8B0",
-    muted:      "#8A8294",
-    mutedDeep:  "#4A4458",
+    // Text — research ink on paper.
+    text:       "#142018",
+    textDim:    "#555C58",
+    muted:      "#5F6962",
+    mutedDeep:  "#9AA39D",
   },
 
   // Radii / spacing — matches the badge's UI to keep visual continuity.

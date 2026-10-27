@@ -7,6 +7,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        paper: { DEFAULT: '#fbfbf8', deep: '#eff1ed', soft: '#f5f6f2' },
+        ink: { DEFAULT: '#142018', soft: '#24372b' },
+        line: '#d7dbd6',
         bg: {
           deep: '#0a0c14',
           card: 'rgba(12, 16, 28, 0.8)',
@@ -17,21 +20,21 @@ const config: Config = {
           elevated: '#1a1a1a',
         },
         lime: {
-          main: '#444ce7',
-          light: '#5558e8',
-          dim: 'rgba(68, 76, 231, 0.15)',
-          border: 'rgba(68, 76, 231, 0.3)',
-          glow: 'rgba(68, 76, 231, 0.6)',
+          main: '#3a65c7',
+          light: '#2f56b0',
+          dim: 'rgba(58, 101, 199, 0.15)',
+          border: 'rgba(58, 101, 199, 0.3)',
+          glow: 'rgba(58, 101, 199, 0.6)',
         },
         sage: {
-          main: '#6ea8fe',
-          dim: 'rgba(110, 168, 254, 0.15)',
-          border: 'rgba(110, 168, 254, 0.3)',
+          main: '#5b82d8',
+          dim: 'rgba(91, 130, 216, 0.15)',
+          border: 'rgba(91, 130, 216, 0.3)',
         },
         honey: {
-          main: '#818cf8',
-          dim: 'rgba(129, 140, 248, 0.15)',
-          border: 'rgba(129, 140, 248, 0.3)',
+          main: '#2f56b0',
+          dim: 'rgba(47, 86, 176, 0.15)',
+          border: 'rgba(47, 86, 176, 0.3)',
         },
         lavender: {
           main: '#c4b5fd',
@@ -54,10 +57,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        body: ['"DM Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        display: ['"Space Grotesk"', '"DM Sans"', 'sans-serif'],
-        mono: ['"SF Mono"', 'Monaco', 'Inconsolata', 'monospace'],
+        body: ['Arial', 'Helvetica', 'sans-serif'],
+        display: ['Arial', 'Helvetica', 'sans-serif'],
+        sans: ['Arial', 'Helvetica', 'sans-serif'],
+        serif: ['Georgia', '"Times New Roman"', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
+      letterSpacing: { display: '-0.065em', heading: '-0.05em', eyebrow: '0.19em' },
+      borderRadius: { card: '1.4rem' },
       backgroundImage: {
         'gradient-card': 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
         'gradient-page': 'linear-gradient(135deg, #0a0c14 0%, #0c1018 50%, #0a0c14 100%)',
@@ -69,7 +76,7 @@ const config: Config = {
         'card': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'card-hover': '0 20px 40px -10px rgba(0,0,0,0.4)',
         'card-lg': '0 25px 50px -10px rgba(0,0,0,0.5)',
-        'glow-lime': '0 0 20px rgba(68, 76, 231, 0.6)',
+        'glow-lime': '0 0 20px rgba(58, 101, 199, 0.6)',
         'button': '0 8px 25px rgba(0,0,0,0.3)',
       },
       animation: {

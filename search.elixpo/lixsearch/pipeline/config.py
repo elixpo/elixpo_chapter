@@ -26,6 +26,10 @@ isHeadless = True
 POLLINATIONS_ENDPOINT = "https://gen.pollinations.ai/v1/chat/completions"
 POLLINATIONS_ENDPOINT_IMAGE = "https://gen.pollinations.ai/image/"
 
+# Pollinations key kinds: sk_ (secret, server-side, no rate limit), pk_ (publishable;
+# legacy raw = 1 pollen/IP/hour, or app key for user-wallet OAuth). Sent as
+# "Authorization: Bearer <key>" (or ?key=). A single POLLINATIONS_API_KEY is used for all calls.
+
 MAX_SESSIONS = 1000
 SESSION_TTL_MINUTES = 30
 RAG_CONTEXT_REFRESH = True
@@ -80,7 +84,17 @@ LEAKED_XML_TAG_RE = re.compile(
 
 LLM_MODEL = os.getenv("LLM_MODEL", "nova-fast")
 LLM_MODEL_FALLBACK = os.getenv("LLM_MODEL_FALLBACK", "nova")
-LLM_DECISION_MODEL = os.getenv("LLM_DECISION_MODEL", LLM_MODEL)
+# Decision model (routing, clarification resolution, query decomposition, tool
+# selection, deep-search classification). "jev" is opt-in: JEV_ENABLED=true makes
+# JEV_MODEL the decision model; a failed jev call falls back to LLM_MODEL.
+JEV_ENABLED = os.getenv("JEV_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+JEV_MODEL = os.getenv("JEV_MODEL", "jev")
+LLM_DECISION_MODEL = JEV_MODEL if JEV_ENABLED else os.getenv("LLM_DECISION_MODEL", LLM_MODEL)
+# Upstream LLM timeouts (requests (connect, read) tuple). A short connect timeout
+# makes an unreachable provider fail fast instead of holding the stream open.
+LLM_CONNECT_TIMEOUT_SECONDS = float(os.getenv("LLM_CONNECT_TIMEOUT_SECONDS", "5"))
+LLM_READ_TIMEOUT_SECONDS = float(os.getenv("LLM_READ_TIMEOUT_SECONDS", "55"))
+LLM_HTTP_TIMEOUT = (LLM_CONNECT_TIMEOUT_SECONDS, LLM_READ_TIMEOUT_SECONDS)
 LLM_DECISION_TIMEOUT_SECONDS = float(os.getenv("LLM_DECISION_TIMEOUT_SECONDS", "1.8"))
 SSE_CHUNK_CHARS = int(os.getenv("SSE_CHUNK_CHARS", "32"))
 IMAGE_MODEL1 = os.getenv("IMAGE_MODEL1", "flux")

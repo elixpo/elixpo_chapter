@@ -56,7 +56,7 @@ jobs:
             cat evals/summary.txt 2>/dev/null || echo "no results"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: agent-eval-results

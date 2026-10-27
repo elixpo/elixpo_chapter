@@ -130,6 +130,7 @@ def test_multi_turn():
             {"role": "assistant", "content": "Nice to meet you, Alice! Cats are wonderful companions."},
             {"role": "user", "content": "What did I just tell you my name was?"},
         ],
+        "stream": False,
     }
     r = post(payload)
     report("status 200", r.status_code == 200, f"got {r.status_code}")
@@ -183,6 +184,7 @@ def test_image_url():
                 ],
             }
         ],
+        "stream": False,
     }
     t0 = time.perf_counter()
     r = post(payload, timeout=180)
@@ -223,6 +225,7 @@ def test_image_base64():
                 ],
             }
         ],
+        "stream": False,
     }
 
     t0 = time.perf_counter()
@@ -253,6 +256,7 @@ def test_image_only():
                 ],
             }
         ],
+        "stream": False,
     }
     t0 = time.perf_counter()
     r = post(payload, timeout=180)

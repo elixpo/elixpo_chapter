@@ -338,8 +338,7 @@ export default function WavesHero() {
                 — so the second half of the headline never dissolves
                 into the page background. */}
             <span className="bg-gradient-to-r from-primary via-gold to-lilac
-                             bg-clip-text text-transparent
-                             drop-shadow-[0_0_30px_rgba(255,93,104,0.35)]">
+                             bg-clip-text text-transparent">
               in a pocket-sized badge.
             </span>
           </motion.h1>

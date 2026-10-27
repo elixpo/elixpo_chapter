@@ -24,7 +24,7 @@ export default function DetailIcon({
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       className={`relative grid h-32 w-32 place-items-center overflow-hidden
                   rounded-2xl bg-card-sub p-4 ring-2 ring-inset ${tintRing}
-                  shadow-[0_20px_60px_-15px_rgba(255,93,104,0.45)]`}
+                  shadow-[0_20px_50px_-15px_rgba(24,38,28,0.25)]`}
     >
       {app.pngIcon && pngOk ? (
         // eslint-disable-next-line @next/next/no-img-element

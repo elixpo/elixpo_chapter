@@ -34,7 +34,7 @@ export default function BadgeMockup({ className = "" }: { className?: string }) 
       role="img"
       aria-label="Oreo badge hardware mockup"
       className={`h-auto w-full max-w-[280px] ${className}`}
-      style={{ filter: "drop-shadow(0 20px 60px rgba(255,93,104,0.25))" }}
+      style={{ filter: "drop-shadow(0 28px 60px rgba(24,38,28,0.22))" }}
     >
       {/* PCB body */}
       <defs>

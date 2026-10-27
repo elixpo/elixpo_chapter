@@ -96,3 +96,16 @@ The stdio entry point registers `read_file`, `list_directory`, and checkpointed
 user-owned permission allowlists from the workspace's live
 `.crumb/agent.json`. The checked-in Cordis composition exposes these tools as
 `mcp__crumb__...` and omits Harness-native shell and filesystem plugins.
+
+## Delegating a task to Crumb
+
+`crumb mcp serve` also offers `crumb_agent`, which lets another agent hand
+Crumb a whole task instead of calling its tools one by one. The call runs one
+non-interactive turn, as `crumb exec` does, in the workspace the server started
+in, and returns the final answer as text plus `session_id`, `finish_reason`,
+and token usage as structured content. The inner agent cannot ask questions,
+and its tool calls follow the same configured approvals, so delegating grants
+nothing the user's `.crumb/agent.json` does not. The call itself is classed as
+network access because it reaches the model provider and spends the user's
+credit; the default `sensitive-only` mode allows it, and `always-ask` requires
+listing `crumb_agent` in `allow_network_tools`.
