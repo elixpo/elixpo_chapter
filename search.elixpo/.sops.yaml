@@ -1,0 +1,6 @@
+creation_rules:
+  - path_regex: '\.env$'
+    age: >-
+      age1glsafdrwl4q83yp58p6qwypqujnzdrg7hhz9762628u5cxfykfnqnvttml
+
+#1. Ayushman

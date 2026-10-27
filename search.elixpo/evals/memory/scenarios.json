@@ -1,0 +1,17 @@
+{
+  "schema": "oreolook-memory-scenarios-v1",
+  "scenarios": [
+    {"id": "referential_followup", "gate": "local"},
+    {"id": "clarification_recovery", "gate": "local"},
+    {"id": "artifact_source_selection", "gate": "local"},
+    {"id": "fact_revision", "gate": "local"},
+    {"id": "long_session_recall", "gate": "local"},
+    {"id": "stale_memory_rejection", "gate": "local"},
+    {"id": "cross_scope_isolation", "gate": "local"},
+    {"id": "deletion_visibility", "gate": "local"},
+    {"id": "injection_budget", "gate": "local"},
+    {"id": "cross_replica_continuity", "gate": "compose"},
+    {"id": "cross_session_isolation", "gate": "compose"},
+    {"id": "clarification_blocks_artifacts", "gate": "compose"}
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Agent"
+  short_description: "Plan, write, and verify bounded code changes"
+  default_prompt: "Use $write-code to implement and verify this coding request."
