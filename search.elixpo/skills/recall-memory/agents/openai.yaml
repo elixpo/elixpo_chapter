@@ -1,0 +1,4 @@
+interface:
+  display_name: "Conversation Memory"
+  short_description: "Retrieve session history and semantic context"
+  default_prompt: "Use $recall-memory to retrieve relevant context from this conversation."

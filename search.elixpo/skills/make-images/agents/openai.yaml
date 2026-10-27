@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image Maker"
+  short_description: "Create images from concise visual specifications"
+  default_prompt: "Use $make-images to generate an image from this request."

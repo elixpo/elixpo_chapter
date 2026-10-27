@@ -1,0 +1,21 @@
+from multiprocessing.managers import BaseManager
+from api.utility import fetch_url_content_parallel
+import re
+
+class modelManager(BaseManager): pass
+modelManager.register("accessSearchAgents")
+modelManager.register("ipcService")
+
+manager = modelManager(address=("localhost", 5010), authkey=b"ipcService")
+manager.connect()
+
+# Get the search service
+search_service = manager.accessSearchAgents()
+
+
+def main():
+    urls = search_service.web_search("elixpo_chapter")
+    print(urls)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,135 @@
+\begin{tikzpicture}[
+    scale=1.0, transform shape,
+    >=Stealth,
+    every node/.style={font=\small},
+    mainbox/.style={draw, rounded corners=5pt, minimum width=3.2cm, minimum height=1.0cm, align=center, semithick},
+    subbox/.style={draw, rounded corners=4pt, minimum width=2.6cm, minimum height=0.8cm, align=center, font=\footnotesize, thin},
+    smallbox/.style={draw, rounded corners=3pt, minimum width=2.4cm, minimum height=0.7cm, align=center, font=\scriptsize, thin},
+    redis/.style={fill=red!8},
+    disk/.style={fill=orange!10},
+    coord/.style={fill=blue!8},
+    tealfill/.style={fill=teal!10},
+    yellowfill/.style={fill=yellow!10},
+    purplefill/.style={fill=purple!8},
+    grayfill/.style={fill=gray!8},
+    arrow/.style={->, semithick, >=Stealth},
+    dasharrow/.style={->, semithick, dashed, >=Stealth},
+]
+
+%% ── User Query ──
+\node[draw, rounded corners=5pt, fill=teal!10,
+      minimum width=3.0cm, minimum height=0.8cm, semithick]
+    (user) {\textbf{User Query}};
+
+%% ── CacheCoordinator ──
+\node[draw, rounded corners=5pt, coord,
+      minimum width=12.0cm, minimum height=0.9cm, semithick,
+      below=0.7cm of user]
+    (coordinator) {\textbf{CacheCoordinator}};
+
+%% ── Three main cache layers (row 2) ──
+\node[mainbox, redis,
+      below=0.5cm of coordinator, xshift=-4.0cm]
+    (session) {%
+        \textbf{\footnotesize Session Context}\\[-2pt]
+        {\scriptsize Redis DB\,2}\\[-2pt]
+        {\scriptsize\textit{20-msg window}}};
+
+\node[mainbox, redis,
+      below=0.5cm of coordinator]
+    (semantic) {%
+        \textbf{\footnotesize Semantic Cache}\\[-2pt]
+        {\scriptsize Redis DB\,0}\\[-2pt]
+        {\scriptsize\textit{cos $\geq$ 0.90}}};
+
+\node[mainbox, redis,
+      below=0.5cm of coordinator, xshift=4.0cm]
+    (urlcache) {%
+        \textbf{\footnotesize URL Embeddings}\\[-2pt]
+        {\scriptsize Redis DB\,1}\\[-2pt]
+        {\scriptsize\textit{global, 24\,h}}};
+
+%% ── Session sub-nodes (row 3) ──
+\node[subbox, redis,
+      below=0.5cm of session, xshift=-1.5cm]
+    (hot) {\textbf{Hot}\\{\scriptsize Redis}};
+
+\node[subbox, disk,
+      below=0.5cm of session, xshift=1.5cm]
+    (cold) {\textbf{Cold}\\{\scriptsize .huff}};
+
+%% ── Semantic sub-nodes (row 3) ──
+\node[subbox, tealfill,
+      below=2cm of semantic, xshift=0cm]
+    (semhit) {\textbf{HIT}\\{\scriptsize skip LLM}};
+
+\node[subbox, yellowfill,
+      below=0.5cm of semantic, xshift=1.5cm]
+    (semmiss) {\textbf{MISS}\\{\scriptsize call LLM}};
+
+%% ── URL sub-nodes (row 3) ──
+\node[subbox, tealfill,
+      below=2cm of urlcache, xshift=0cm]
+    (urlhit) {\textbf{HIT}\\{\scriptsize $\sim$0\,ms}};
+
+\node[subbox, yellowfill,
+      below=0.5cm of urlcache, xshift=1.5cm]
+    (urlmiss) {\textbf{MISS}\\{\scriptsize embed}};
+
+%% ── Hybrid Storage backing (row 4) ──
+\node[draw, rounded corners=5pt, fill=yellow!8,
+      minimum width=15.0cm, minimum height=1.1cm, semithick,
+      below=3.5cm of semantic,
+      label={[font=\footnotesize\bfseries]above:Hybrid Storage}]
+    (hybrid) {};
+
+\node[smallbox, redis, at=(hybrid.center), xshift=-5.3cm]
+    (hybhot) {Redis\\hot list};
+
+\node[smallbox, disk, at=(hybrid.center), xshift=-1.5cm]
+    (hybcold) {.huff\\archive};
+
+\node[smallbox, purplefill, at=(hybrid.center), xshift=1.5cm]
+    (hyblru) {LRU\\evict 2\,h};
+
+\node[smallbox, grayfill, at=(hybrid.center), xshift=5.3cm]
+    (hybttl) {TTL\\14\,d purge};
+
+%% ── Arrows: User → Coordinator ──
+\draw[arrow] (user.south) -- (coordinator.north);
+
+%% ── Arrows: Coordinator → Layers ──
+\draw[arrow]
+    (coordinator.south -| session.north) -- (session.north)
+    node[midway, left, font=\scriptsize] {\textcircled{\scriptsize 1}};
+
+\draw[arrow]
+    (coordinator.south) -- (semantic.north)
+    node[midway, left, font=\scriptsize] {\textcircled{\scriptsize 2}};
+
+\draw[arrow]
+    (coordinator.south -| urlcache.north) -- (urlcache.north)
+    node[midway, right, font=\scriptsize] {\textcircled{\scriptsize 3}};
+
+%% ── Arrows: Layers → Sub-nodes ──
+\draw[arrow] (session.south) -- ++(-1.5cm, 0) |- (hot.north);
+\draw[dasharrow] (session.south) -- ++(1.5cm, 0) |- (cold.north);
+
+\draw[arrow] (semantic.south) -- ++(0, -0.4cm) -| (semhit.north);
+\draw[arrow] (semantic.south -| semmiss.north) -- (semmiss.north);
+
+\draw[arrow] (urlcache.south) -- ++(0cm, -0.4cm) -| (urlhit.north);
+\draw[arrow] (urlcache.south -| urlmiss.north) -- (urlmiss.north);
+
+%% ── Arrows: Sub-nodes → Hybrid ──
+\draw[dasharrow, gray]
+    (hot.south)  -- ++(0,-0.4cm) -| (hybhot.north);
+\draw[dasharrow, gray]
+    (cold.south) -- ++(0,-0.4cm) -| (hybcold.north);
+
+%% ── Evict arrow inside Hybrid ──
+\draw[dasharrow, red!70!black]
+    (hybhot.east) -- (hybcold.west)
+    node[midway, above, font=\scriptsize, red!70!black] {evict};
+
+\end{tikzpicture}

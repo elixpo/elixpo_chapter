@@ -1,0 +1,9 @@
+base_url: https://gen.pollinations.ai/v1
+defaults:
+  effort: low
+  token_budget: 100000
+roles:
+  crawl:    {model: nova-fast}
+  classify: {model: nova-fast}
+  code:     {model: qwen-coder}
+  prose:    {model: nova-fast}
