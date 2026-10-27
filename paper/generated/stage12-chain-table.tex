@@ -1,0 +1,25 @@
+\begin{tabular}{llrrrrrrl}
+\toprule
+ & & & \multicolumn{2}{c}{Ordinary Linux} & \multicolumn{2}{c}{Tuned Linux} & MCU-first & \system \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-8}\cmidrule(lr){9-9}
+Load & Workload & $D_G$ (ms) & p95 & miss & p95 & miss & p95 & decision \\
+\midrule
+Idle & add & 96 & 0.27 & 0.0\% & 0.22 & 0.0\% & 74.6 & stay \\
+ & CRC-32 & 100 & 0.52 & 0.0\% & 0.26 & 0.0\% & 78.5 & stay \\
+ & FIR$\times$1 & 104 & 0.32 & 0.0\% & 0.25 & 0.0\% & 78.6 & stay \\
+ & FIR$\times$64 & 120 & 1.69 & 0.0\% & 1.63 & 0.0\% & 90.5 & stay \\
+ & FIR$\times$512 & 232 & 4.99 & 0.0\% & 4.65 & 0.0\% & 181.9 & stay \\
+\midrule
+CPU load & add & 96 & 5.34 & 0.0\% & 0.40 & 0.0\% & 76.5 & stay \\
+ & CRC-32 & 100 & 9.34 & 0.0\% & 0.64 & 0.0\% & 83.0 & stay \\
+ & FIR$\times$1 & 104 & 8.81 & 0.0\% & 0.66 & 0.0\% & 82.0 & stay \\
+ & FIR$\times$64 & 120 & 17.31 & 0.0\% & 1.69 & 0.0\% & 101.3 & stay \\
+ & FIR$\times$512 & 232 & 26.70 & 0.0\% & 4.52 & 0.0\% & 191.3 & stay \\
+\midrule
+RT contention & add & 96 & 0.58 & 0.2\% & 0.31 & 0.0\% & 444.5 & stay \\
+ & CRC-32 & 100 & 0.85 & 0.2\% & 0.56 & 0.0\% & 458.9 & stay \\
+ & FIR$\times$1 & 104 & 0.81 & 0.2\% & 0.71 & 0.2\% & 452.8 & stay \\
+ & FIR$\times$64 & 120 & 3.97 & 0.8\% & 2.97 & 0.2\% & 253.6 & stay \\
+ & FIR$\times$512 & 232 & 20.07 & 0.0\% & 17.00 & 0.8\% & 539.3 & stay \\
+\bottomrule
+\end{tabular}
