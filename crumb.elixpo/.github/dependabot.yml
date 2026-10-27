@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      rust-dependencies:
+        patterns: ['*']
+    # Debian builds Crumb against Debian's own Rust crates, which ship
+    # base64 0.22 and sha2 0.10; these breaking 0.x releases would break that
+    # build and the code that uses them.
+    ignore:
+      - dependency-name: base64
+        versions: ['>= 0.23']
+      - dependency-name: sha2
+        versions: ['>= 0.11']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
