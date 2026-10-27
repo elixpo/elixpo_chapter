@@ -1,0 +1,25 @@
+{
+  "intro": {
+    "heading": "KRISHNENDU",
+    "subheading": "ABOUT!",
+    "description": "I am a full-stack developer exploring AI engineering, building practical products, and contributing to open source. With experience as an AI Intern at FlyRank AI and active open-source contributions across the developer community, I focus on building scalable web architectures, developer utilities, and AI-native applications.",
+    "portraitImage": "/assets/krishnendu/krishnendu-avatar.jpg"
+  },
+  "fancySection": {
+    "banner": "PROFILE",
+    "subtitle": "Experience & Focus Areas",
+    "content": "My engineering philosophy is simple: build things that work, understand the systems beneath the abstractions, and keep learning in public . From real-time messaging architectures in Whisper to AI-driven codebase intelligence in StackAtlas and developer utilities in DevMate, I focus on turning complex technical challenges into dependable software.",
+    "highlights": [
+      "Full-Stack Web Architecture (React, Next.js, Node.js, Express, MongoDB)",
+      "AI Engineering & LLM APIs",
+      "AI Intern @ FlyRank AI",
+      "Open Source Contributor @ Elixpo & Upblit"
+    ],
+    "contactNote": "I'm passionate about AI engineering, system design, open-source contributions, and continuous improvement. Always eager to tackle ambitious challenges, collaborate with talented builders, and turn ideas into meaningful products.",
+    "shoutouts": ["FlyRank AI", "Elixpo Ecosystem", "Upblit Core Team"],
+    "shoutoutText": "for driving engineering excellence, open-source collaboration, and community growth."
+  },
+  "images": {
+    "gallery": []
+  }
+}
