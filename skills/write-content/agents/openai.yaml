@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing Agent"
+  short_description: "Draft and revise clear structured written content"
+  default_prompt: "Use $write-content to draft or revise this content clearly."

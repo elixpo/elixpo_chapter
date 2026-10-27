@@ -1,0 +1,4 @@
+interface:
+  display_name: "OreoLook Creator"
+  short_description: "Know OreoLook’s creator and project origin"
+  default_prompt: "Use $know-oreolook-creator to answer who created OreoLook."

@@ -1,0 +1,107 @@
+cff-version: 1.2.0
+type: software
+title: "A Three-Layer Caching Architecture for Low-Latency LLM Web Search on Commodity CPU Hardware"
+abstract: "A production-grade, horizontally-scalable search and Retrieval-Augmented Generation (RAG) system featuring multi-layer caching, Playwright-based search agents, and Huffman-compressed session archival on commodity CPU hardware."
+
+authors:
+  - family-names: "Bhattacharya"
+    given-names: "Ayushman"
+    email: "ayushman@myceli.ai"
+    affiliation: "Pollinations.ai"
+  - family-names: "Gazi"
+    given-names: "Nihal"
+    email: "info@nihalgazi.com"
+    affiliation: "Pollinations.ai"
+
+contact:
+  - family-names: "Bhattacharya"
+    given-names: "Ayushman"
+    email: "ayushman@myceli.ai"
+
+date-released: 2026-08-12
+identifiers:
+  - type: "doi"
+    value: "10.48550/arXiv.2609.05463"
+  - type: "url"
+    value: "https://arxiv.org/abs/2609.05463"
+    description: "Published paper on arXiv"
+  - type: "url"
+    value: "https://huggingface.co/papers/2609.05463"
+    description: "Paper page on Hugging Face"
+  - type: "url"
+    value: "https://github.com/pollinations/search.elixpo"
+    description: "Source code repository"
+
+keywords:
+  - "search"
+  - "RAG"
+  - "retrieval-augmented-generation"
+  - "caching"
+  - "LLM"
+  - "web-search"
+  - "Redis"
+  - "Huffman-coding"
+  - "session-management"
+  - "embeddings"
+  - "CPU-inference"
+  - "python"
+
+license: "MIT"
+license-url: "https://opensource.org/licenses/MIT"
+
+repository-code: "https://github.com/pollinations/search.elixpo"
+url: "https://search.elixpo.com"
+
+version: "1.0.0"
+
+preferred-citation:
+  type: "article"
+  title: "A Three-Layer Caching Architecture for Low-Latency LLM Web Search on Commodity CPU Hardware"
+  authors:
+    - family-names: "Bhattacharya"
+      given-names: "Ayushman"
+      email: "ayushman@myceli.ai"
+      affiliation: "Pollinations.ai"
+    - family-names: "Gazi"
+      given-names: "Nihal"
+      email: "info@nihalgazi.com"
+      affiliation: "Pollinations.ai"
+  year: 2026
+  doi: "10.48550/arXiv.2609.05463"
+  url: "https://arxiv.org/abs/2609.05463"
+  license: "CC-BY-NC-ND-4.0"
+  abstract: "We present a three-layer caching architecture for scaling LLM-powered web search on commodity CPU hardware. Deployed on a single 8-vCPU server, the system achieves an 89.3% cache hit rate with 0.1ms Redis read latency, reducing per-query cost by 1,000x compared to commercial search APIs."
+
+references:
+  - type: "software"
+    title: "Chroma: AI-native open-source vector database"
+    authors:
+      - family-names: "Chroma"
+        given-names: "Team"
+    url: "https://github.com/chroma-core/chroma"
+    license: "Apache-2.0"
+
+  - type: "software"
+    title: "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks"
+    authors:
+      - family-names: "Reimers"
+        given-names: "Nils"
+      - family-names: "Gurevych"
+        given-names: "Iryna"
+    repository-code: "https://github.com/UKPLab/sentence-transformers"
+
+  - type: "software"
+    title: "Quart: Async Python web microframework"
+    authors:
+      - family-names: "Quart"
+        given-names: "Contributors"
+    repository-code: "https://github.com/pallets/quart"
+    license: "MIT"
+
+  - type: "software"
+    title: "Playwright: Browser automation library"
+    authors:
+      - family-names: "Microsoft"
+        given-names: "Playwright Team"
+    repository-code: "https://github.com/microsoft/playwright"
+    license: "Apache-2.0"

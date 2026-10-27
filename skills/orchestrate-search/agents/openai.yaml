@@ -1,0 +1,4 @@
+interface:
+  display_name: "Search Orchestrator"
+  short_description: "Route requests into minimal parallel skill workflows"
+  default_prompt: "Use $orchestrate-search to route this request through the smallest useful set of skills."

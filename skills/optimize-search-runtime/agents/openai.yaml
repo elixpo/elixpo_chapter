@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize Search Runtime"
+  short_description: "Bound search depth, tools, context, and token usage."
+  default_prompt: "Choose the smallest sufficient search plan and stop when evidence is enough."

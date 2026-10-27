@@ -1,0 +1,4 @@
+interface:
+  display_name: "Answer Synthesis"
+  short_description: "Combine agent results into a sourced final answer"
+  default_prompt: "Use $synthesize-answer to combine the available evidence into a clear final response."
