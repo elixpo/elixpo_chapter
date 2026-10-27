@@ -1,0 +1,64 @@
+{
+  "heading": "PROJECTS",
+  "layout": "bento",
+  "heroImage": "/assets/krishnendu/projects/blackhole-stamp.webp",
+  "description": "Selected software systems, real-time architectures, AI developer tooling, and open-source contributions.",
+  "projects": [
+    {
+      "name": "Whisper",
+      "displayName": "Whisper — Real-Time Chat",
+      "description": "A modern real-time chat application built with the MERN stack, featuring secure JWT authentication, instant WebSocket messaging, online status indicators, and responsive UI.",
+      "stars": null,
+      "url": "https://github.com/dev-krish/Whisper",
+      "owner": "dev-krish",
+      "ownerLogo": "https://github.com/dev-krish.png",
+      "topics": ["chat", "mern", "socket-io", "realtime", "react"],
+      "language": "JavaScript",
+      "bentoSpan": 2
+    },
+    {
+      "name": "Stack-Atlas",
+      "displayName": "StackAtlas (In Progress)",
+      "description": "AI-powered codebase intelligence tool that analyzes GitHub repositories and ZIP files to generate architectural system maps, structure insights, and tech stack breakdowns.",
+      "stars": 1,
+      "url": "https://github.com/dev-krish/Stack-Atlas",
+      "owner": "dev-krish",
+      "ownerLogo": "https://github.com/dev-krish.png",
+      "topics": ["ai", "codebase-intelligence", "ast", "in-progress", "typescript"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "DevMate",
+      "displayName": "DevMate — Developer Bot",
+      "description": "Developer-focused Telegram bot built with Python and Docker providing cryptographic hashing (SHA-256), secure password generation, UUID generation, and developer automation.",
+      "stars": 1,
+      "url": "https://github.com/dev-krish/DevMate",
+      "owner": "dev-krish",
+      "ownerLogo": "https://github.com/dev-krish.png",
+      "topics": ["telegram-bot", "python", "docker", "developer-tools", "automation"],
+      "language": "Python"
+    },
+    {
+      "name": "Upblit",
+      "displayName": "Upblit Platform",
+      "description": "Collaborative platform engineering, open-source architecture, and developer tooling as a core team member.",
+      "stars": null,
+      "url": "https://github.com/Upblit/Upblit",
+      "owner": "dev-krish",
+      "ownerLogo": "https://github.com/dev-krish.png",
+      "topics": ["upblit", "open-source", "developer-tooling", "architecture"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "elixpo-ecosystem",
+      "displayName": "Elixpo Ecosystem & Chat",
+      "description": "Active open-source contributions across the Elixpo ecosystem, including chat services, authentication platforms, and community developer tooling.",
+      "stars": null,
+      "url": "https://github.com/elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://github.com/elixpo.png",
+      "topics": ["elixpo", "open-source", "chat", "multimodal", "contributor"],
+      "language": "TypeScript"
+    }
+  ]
+}
