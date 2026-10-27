@@ -51,7 +51,7 @@ Priority: optional
 Architecture: $architecture
 Maintainer: Ayushman Bhattacharya <ayushman.elixpo@gmail.com>
 Homepage: https://crumb.elixpo.com
-Depends: ca-certificates, libc6 (>= 2.39), libgcc-s1
+Depends: ca-certificates, libc6 (>= 2.31), libgcc-s1
 Description: self-hosted agent harness and natural-language terminal
  Crumb combines a normal interactive terminal with an autonomous agent harness.
  Commands remain available without AI, while optional Pollinations-powered

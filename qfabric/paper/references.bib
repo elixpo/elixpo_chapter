@@ -164,10 +164,164 @@
 }
 
 @misc{qfabric2026,
-  author  = {Ayushman Bhattacharya and Anwesha Chakraborty},
-  title   = {{QFabric}: Contract-Driven Cross-Domain Task Recovery},
-  year    = {2026},
-  version = {v1.0.1},
-  url     = {https://github.com/elixpo/qfabric},
-  note    = {Research artifact and replication package, Apache-2.0}
+  author       = {Ayushman Bhattacharya and Anwesha Chakraborty},
+  title        = {{QFabric}: Guarded Cross-Domain Task Recovery on a {Linux}--{RTOS} Board},
+  year         = {2026},
+  howpublished = {Zenodo, software release v1.1.0},
+  doi          = {10.5281/zenodo.23692354},
+  url          = {https://doi.org/10.5281/zenodo.23692354},
+  note         = {Source repository: \url{https://github.com/elixpo/qfabric}; Apache-2.0}
+}
+
+@misc{qfabric2026v101,
+  author       = {Ayushman Bhattacharya and Anwesha Chakraborty},
+  title        = {{QFabric}: Contract-Driven Cross-Domain Task Recovery},
+  year         = {2026},
+  howpublished = {GitHub release v1.0.1},
+  url          = {https://github.com/elixpo/qfabric/releases/tag/v1.0.1},
+  note         = {Earlier artifact release; its manuscript is superseded by this paper}
+}
+
+% Additional references for the QFabric Related Work section.
+% All fields verified on 2026-10-27 against Crossref / DataCite DOI metadata
+% or the arXiv abstract page (see related-additions.md for URLs).
+
+% --- Mixed-criticality systems and mode changes ---------------------------
+
+@inproceedings{vestal2007preemptive,
+  author    = {Steve Vestal},
+  title     = {Preemptive Scheduling of Multi-Criticality Systems with Varying Degrees of Execution Time Assurance},
+  booktitle = {Proceedings of the 28th IEEE International Real-Time Systems Symposium (RTSS)},
+  pages     = {239--243},
+  year      = {2007},
+  doi       = {10.1109/RTSS.2007.47}
+}
+
+@article{burns2017survey,
+  author  = {Alan Burns and Robert I. Davis},
+  title   = {A Survey of Research into Mixed Criticality Systems},
+  journal = {ACM Computing Surveys},
+  volume  = {50},
+  number  = {6},
+  pages   = {1--37},
+  year    = {2017},
+  doi     = {10.1145/3131347}
+}
+
+@article{real2004mode,
+  author  = {Jorge Real and Alfons Crespo},
+  title   = {Mode Change Protocols for Real-Time Systems: A Survey and a New Proposal},
+  journal = {Real-Time Systems},
+  volume  = {26},
+  number  = {2},
+  pages   = {161--197},
+  year    = {2004},
+  doi     = {10.1023/B:TIME.0000016129.97430.c6}
+}
+
+% --- Measurement-based / probabilistic timing analysis -------------------
+
+@article{wilhelm2008wcet,
+  author  = {Reinhard Wilhelm and Jakob Engblom and Andreas Ermedahl and Niklas Holsti and Stephan Thesing and David Whalley and Guillem Bernat and Christian Ferdinand and Reinhold Heckmann and Tulika Mitra and Frank Mueller and Isabelle Puaut and Peter Puschner and Jan Staschulat and Per Stenstr\"om},
+  title   = {The Worst-Case Execution-Time Problem---Overview of Methods and Survey of Tools},
+  journal = {ACM Transactions on Embedded Computing Systems},
+  volume  = {7},
+  number  = {3},
+  pages   = {1--53},
+  year    = {2008},
+  doi     = {10.1145/1347375.1347389}
+}
+
+@inproceedings{cucugrosjean2012mbpta,
+  author    = {Liliana Cucu-Grosjean and Luca Santinelli and Michael Houston and Code Lo and Tullio Vardanega and Leonidas Kosmidis and Jaume Abella and Enrico Mezzetti and Eduardo Qui\~nones and Francisco J. Cazorla},
+  title     = {Measurement-Based Probabilistic Timing Analysis for Multi-path Programs},
+  booktitle = {Proceedings of the 24th Euromicro Conference on Real-Time Systems (ECRTS)},
+  pages     = {91--101},
+  year      = {2012},
+  doi       = {10.1109/ECRTS.2012.31}
+}
+
+@article{davis2019probabilistic,
+  author  = {Robert I. Davis and Liliana Cucu-Grosjean},
+  title   = {A Survey of Probabilistic Timing Analysis Techniques for Real-Time Systems},
+  journal = {Leibniz Transactions on Embedded Systems},
+  volume  = {6},
+  number  = {1},
+  pages   = {03:1--03:60},
+  year    = {2019},
+  doi     = {10.4230/LITES-v006-i001-a003}
+}
+
+% --- Partitioning hypervisors on embedded Arm -----------------------------
+
+@inproceedings{ramsauer2017jailhouse,
+  author    = {Ralf Ramsauer and Jan Kiszka and Daniel Lohmann and Wolfgang Mauerer},
+  title     = {Look Mum, no {VM} Exits! (Almost)},
+  booktitle = {Proceedings of the 13th Workshop on Operating Systems Platforms for Embedded Real-Time Applications (OSPERT)},
+  year      = {2017},
+  eprint        = {1705.06932},
+  archiveprefix = {arXiv},
+  doi       = {10.48550/arXiv.1705.06932}
+}
+
+@inproceedings{martins2020bao,
+  author    = {Jos\'e Martins and Adriano Tavares and Marco Solieri and Marko Bertogna and Sandro Pinto},
+  title     = {{Bao}: A Lightweight Static Partitioning Hypervisor for Modern Multi-Core Embedded Systems},
+  booktitle = {Next Generation Real-Time Embedded Systems},
+  series    = {OpenAccess Series in Informatics},
+  volume    = {77},
+  pages     = {3:1--3:14},
+  year      = {2020},
+  doi       = {10.4230/OASIcs.NG-RES.2020.3}
+}
+
+@inproceedings{martins2023partitioning,
+  author    = {Jos\'e Martins and Sandro Pinto},
+  title     = {Shedding Light on Static Partitioning Hypervisors for {Arm}-based Mixed-Criticality Systems},
+  booktitle = {Proceedings of the 29th IEEE Real-Time and Embedded Technology and Applications Symposium (RTAS)},
+  pages     = {40--53},
+  year      = {2023},
+  doi       = {10.1109/RTAS58335.2023.00011}
+}
+
+@inproceedings{gracioli2019mixed,
+  author    = {Giovani Gracioli and Rohan Tabish and Renato Mancuso and Reza Mirosanlou and Rodolfo Pellizzoni and Marco Caccamo},
+  title     = {Designing Mixed Criticality Applications on Modern Heterogeneous {MPSoC} Platforms},
+  booktitle = {31st Euromicro Conference on Real-Time Systems (ECRTS 2019)},
+  series    = {Leibniz International Proceedings in Informatics},
+  volume    = {133},
+  pages     = {27:1--27:25},
+  year      = {2019},
+  doi       = {10.4230/LIPIcs.ECRTS.2019.27}
+}
+
+% --- AMP frameworks and inter-processor communication ---------------------
+
+@inproceedings{alonso2021openamp,
+  author    = {Sara Alonso and Jesus Lazaro and Jaime Jimenez and Leire Muguira and Unai Bidarte},
+  title     = {Evaluating the {OpenAMP} Framework in Real-Time Embedded {SoC} Platforms},
+  booktitle = {Proceedings of the 36th Conference on Design of Circuits and Integrated Systems (DCIS)},
+  pages     = {1--6},
+  year      = {2021},
+  doi       = {10.1109/DCIS53048.2021.9666157}
+}
+
+@inproceedings{coppik2025lowlatency,
+  author    = {Nicolas Coppik and Pascal Becker and Marcus Ritter},
+  title     = {Low-Latency Real-Time Applications on Heterogeneous {MPSoCs}},
+  booktitle = {Next Generation Real-Time Embedded Systems},
+  series    = {OpenAccess Series in Informatics},
+  volume    = {128},
+  pages     = {2:1--2:14},
+  year      = {2025},
+  doi       = {10.4230/OASIcs.NG-RES.2025.2}
+}
+
+@misc{openampProject,
+  author       = {{OpenAMP Project}},
+  title        = {The {OpenAMP} Project},
+  year         = {2026},
+  howpublished = {Hosted by Linaro},
+  url          = {https://www.openampproject.org/},
+  note         = {Accessed 2026-10-27}
 }

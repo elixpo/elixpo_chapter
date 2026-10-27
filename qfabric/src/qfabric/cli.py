@@ -86,6 +86,9 @@ from .recovery_evidence import (
 )
 from .recovery_scenarios import run_recovery_scenarios, write_recovery_scenarios
 from .runtime import parse_add_arguments, run_linux, run_rt
+from .stage12 import LOADS as STAGE12_LOADS
+from .stage12 import POLICIES as STAGE12_POLICIES
+from .stage12 import evaluate_stage12, run_kernel_profile, write_kernel_profile
 from .visualization_audit import audit_stage9, write_stage9_audit
 from .visualization_campaign import (
     run_visualization_campaign,
@@ -506,6 +509,30 @@ def build_parser() -> argparse.ArgumentParser:
     profile_audit.add_argument(
         "--output", type=Path, default=Path("data/processed/stage4/stage4-audit.json")
     )
+
+    workload = subparsers.add_parser(
+        "workload", help="profile Stage 12 kernels under controlled load"
+    )
+    workload_subparsers = workload.add_subparsers(dest="workload_command", required=True)
+    workload_profile = workload_subparsers.add_parser(
+        "profile", help="profile every Stage 12 workload in one domain"
+    )
+    workload_profile.add_argument("--domain", choices=("linux", "rt"), required=True)
+    workload_profile.add_argument("--load", choices=STAGE12_LOADS, required=True)
+    workload_profile.add_argument("--policy", choices=STAGE12_POLICIES, required=True)
+    workload_profile.add_argument("--iterations", type=int, default=2000)
+    workload_profile.add_argument("--warmup", type=int, default=100)
+    workload_profile.add_argument("--seed", type=int, default=12012026)
+    workload_profile.add_argument("--timeout", type=float, default=2.0)
+    workload_profile.add_argument("--address", default="unix:///var/run/arduino-router.sock")
+    workload_profile.add_argument("--root", type=Path, default=Path.cwd())
+    workload_profile.add_argument("--output", type=Path, required=True)
+    workload_evaluate = workload_subparsers.add_parser(
+        "evaluate", help="replay Stage 12 traces through the four-node chain baselines"
+    )
+    workload_evaluate.add_argument("--campaign", type=Path, required=True)
+    workload_evaluate.add_argument("--observations", type=int, default=500)
+    workload_evaluate.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -1041,6 +1068,37 @@ def main(argv: list[str] | None = None) -> int:
                 print(render_status(report))
             return 0
 
+        if args.command == "workload":
+            if task_arguments:
+                raise ValueError("qf workload does not accept task arguments")
+            if args.workload_command == "evaluate":
+                report = evaluate_stage12(args.campaign, args.observations)
+                write_kernel_profile(report, args.output)
+                for row in report["results"]:
+                    print(
+                        f"{row['workload']:>8} {row['load']:>13} {row['baseline']:>22}: "
+                        f"p95 {row['p95_ns'] / 1e6:8.3f} ms, miss {row['miss_rate_pct']:5.1f}%"
+                    )
+                print(f"Stage 12 evaluation: {args.output}")
+                return 0
+            report = run_kernel_profile(
+                args.root.resolve(),
+                args.address,
+                domain=args.domain,
+                load=args.load,
+                policy=args.policy,
+                iterations=args.iterations,
+                warmup=args.warmup,
+                seed=args.seed,
+                timeout=args.timeout,
+            )
+            write_kernel_profile(report, args.output)
+            for entry in report["workloads"]:
+                summary = entry["end_to_end"]
+                p95 = "n/a" if summary is None else f"{summary['p95_ns'] / 1e6:.3f} ms"
+                print(f"{entry['workload']}: p95 {p95}, failures {entry['failures']}")
+            print(f"Stage 12 profile: {args.output}")
+            return 0
         if args.command == "profile":
             if task_arguments:
                 raise ValueError("qf profile does not accept task arguments")

@@ -4,7 +4,7 @@ from datetime import datetime
 from quart import request, jsonify, Response
 from sessions.main import get_session_manager
 from chatEngine.main import get_chat_engine
-from pipeline.config import X_REQ_ID_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE
+from pipeline.config import X_REQ_ID_SLICE_SIZE, LOG_MESSAGE_QUERY_TRUNCATE, RESPONSE_MODEL
 from app.utils import validate_session_id
 
 
@@ -183,7 +183,7 @@ async def chat_completions(session_id: str, pipeline_initialized: bool):
                 "id": f"elixpo-{str(uuid.uuid4())[:X_REQ_ID_SLICE_SIZE]}",
                 "object": "chat.completion",
                 "created": int(datetime.utcnow().timestamp()),
-                "model": "lixsearch",
+                "model": RESPONSE_MODEL,
                 "choices": [{
                     "index": 0,
                     "message": {

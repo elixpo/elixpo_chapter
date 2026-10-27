@@ -157,6 +157,8 @@ fn read_file(
         bail!("path is not a regular file");
     }
     let mut file = File::open(&resolved).with_context(|| format!("failed to open `{path}`"))?;
+    let first_line =
+        line_number_at(&mut file, offset).with_context(|| format!("failed to read `{path}`"))?;
     file.seek(SeekFrom::Start(offset))
         .with_context(|| format!("failed to seek `{path}`"))?;
     let read_limit = u64::try_from(limit)
@@ -183,10 +185,11 @@ fn read_file(
     } else {
         ""
     };
+    // Numbered lines and a stated count spare the model from counting by eye.
+    let numbered = number_lines(&content, first_line);
     Ok(ToolOutput::text(bounded_text(
-        // A stated line count spares the model from counting lines by eye.
         format!(
-            "path: {path}\noffset_bytes: {offset}\nlines: {}{}\n{content}{suffix}",
+            "path: {path}\noffset_bytes: {offset}\nlines: {}{}\n{numbered}{suffix}",
             content.lines().count(),
             if truncated || offset > 0 {
                 " (this range only)"
@@ -196,6 +199,25 @@ fn read_file(
         ),
         boundary.limits.max_output_bytes,
     )))
+}
+
+/// The 1-based number of the line containing byte `offset`.
+fn line_number_at(file: &mut File, offset: u64) -> std::io::Result<usize> {
+    let mut prefix = Vec::new();
+    Read::by_ref(file).take(offset).read_to_end(&mut prefix)?;
+    // Splitting at each newline yields one piece more than there are newlines.
+    Ok(prefix.split(|&byte| byte == b'\n').count())
+}
+
+/// Prefixes each line with its number and a tab, as `cat -n` does.
+fn number_lines(content: &str, first_line: usize) -> String {
+    let mut numbered = String::with_capacity(content.len() + content.len() / 8);
+    for (index, line) in content.split_inclusive('\n').enumerate() {
+        numbered.push_str(&(first_line + index).to_string());
+        numbered.push('\t');
+        numbered.push_str(line);
+    }
+    numbered
 }
 
 struct ListDirectory(WorkspaceBoundary);
@@ -677,7 +699,10 @@ fn optional_string<'a>(arguments: &'a Value, name: &str) -> Result<Option<&'a st
 fn read_descriptor() -> ToolDescriptor {
     ToolDescriptor {
         name: READ_FILE.to_owned(),
-        description: "Read a bounded UTF-8 byte range from a file inside the workspace.".to_owned(),
+        description: "Read a bounded UTF-8 byte range from a file inside the workspace. Each line \
+                      starts with its line number and a tab; that prefix is not part of the \
+                      file, so leave it out of edits."
+            .to_owned(),
         input_schema: json!({
             "type":"object",
             "properties":{
@@ -884,7 +909,7 @@ mod tests {
         assert!(
             output
                 .text
-                .starts_with("path: b.txt\noffset_bytes: 0\nlines: 25\nb0\n"),
+                .starts_with("path: b.txt\noffset_bytes: 0\nlines: 25\n1\tb0\n2\tb1\n"),
             "{}",
             output.text
         );
@@ -900,6 +925,12 @@ mod tests {
             .expect("read-only call is authorized");
         assert!(
             partial.text.contains("(this range only)"),
+            "{}",
+            partial.text
+        );
+        // Byte 3 is the start of "b1", the second line.
+        assert!(
+            partial.text.contains("\n2\tb1\n3\tb2\n"),
             "{}",
             partial.text
         );

@@ -1,4 +1,4 @@
-import { getMemberSeo, getPersonContent } from "@/lib/content";
+import { getMemberSeo, getPersonContent, publicAssetExists } from "@/lib/content";
 
 export const SITE_URL = "https://me.elixpo.com";
 export const LANDING_TITLE = "Elixpo Member Portfolios — Projects, Research and Public Work";
@@ -102,7 +102,8 @@ export function getMemberSectionImagePath(person, section) {
     connect: `/assets/${person}/websiteSection/sq-seal1.webp`,
   };
 
-  return sectionImages[section] || getMemberImagePath(person);
+  const image = sectionImages[section];
+  return image && publicAssetExists(image) ? image : getMemberImagePath(person);
 }
 
 export function getAbsoluteUrl(pathname = "/") {
@@ -268,7 +269,12 @@ export function buildMemberProfileJsonLd(person) {
   const imageUrl = getAbsoluteUrl(getMemberImagePath(person));
   const imageWidth = seo.imageWidth || 384;
   const imageHeight = seo.imageHeight || 384;
-  const sameAs = profile.socials?.map(({ url }) => url).filter(Boolean) || [];
+  const sameAs = [
+    ...new Set([
+      ...(profile.socials?.map(({ url }) => url) || []),
+      ...(seo.sameAs || []),
+    ].filter(Boolean)),
+  ];
   const relatedPages = MEMBER_SECTION_SLUGS
     .filter((section) => isMemberSectionIndexable(person, section))
     .map((section) => ({
@@ -309,6 +315,12 @@ export function buildMemberProfileJsonLd(person) {
       : undefined,
     sameAs,
     knowsAbout: focusTags,
+    worksFor: seo.worksFor
+      ? { "@type": "Organization", name: seo.worksFor.name, url: seo.worksFor.url }
+      : undefined,
+    alumniOf: seo.alumniOf
+      ? { "@type": "CollegeOrUniversity", name: seo.alumniOf.name, url: seo.alumniOf.url }
+      : undefined,
     affiliation: seo.affiliations.map((affiliation) => ({
       "@type": "Organization",
       name: affiliation,

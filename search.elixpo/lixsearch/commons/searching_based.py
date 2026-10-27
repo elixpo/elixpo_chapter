@@ -7,7 +7,7 @@ from searching.fetch_full_text import fetch_full_text
 from pipeline.config import LOG_MESSAGE_QUERY_TRUNCATE, ERROR_MESSAGE_TRUNCATE, ERROR_CONTEXT_TRUNCATE
 
 
-async def webSearch(query: str):
+async def webSearch(query: str, max_links: int | None = None):
     initialized = _init_ipc_manager()
 
     if not initialized:
@@ -21,7 +21,8 @@ async def webSearch(query: str):
         loop = asyncio.get_event_loop()
         urls = await loop.run_in_executor(
             None,
-            lambda: manager.call("agents", "web_search", query)
+            lambda: manager.call("agents", "web_search", query, max_links=max_links)
+            if max_links else manager.call("agents", "web_search", query)
         )
         logger.debug(f"[Utility] Web search returned {len(urls) if urls else 0} results for: {query[:LOG_MESSAGE_QUERY_TRUNCATE]}")
         return urls if urls else []

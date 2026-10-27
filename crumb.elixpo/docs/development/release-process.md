@@ -15,6 +15,10 @@ targets:
 - `aarch64-apple-darwin`; and
 - `x86_64-pc-windows-msvc`.
 
+Linux binaries are built in a Debian 11 container, so they need only glibc
+2.31 (Ubuntu 20.04, Debian 11, RHEL 9, or newer); a release step fails if a
+binary needs anything newer.
+
 Each GitHub Release contains a fixed-name archive, SHA-256 checksum, SPDX SBOM,
 keyless Sigstore bundle, and GitHub build-provenance attestation. Fixed asset
 names let the repository installer resolve the newest stable release without
@@ -44,7 +48,7 @@ Pin an exact release with `CRUMB_VERSION`, for example:
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
   https://raw.githubusercontent.com/elixpo/crumb.elixpo/main/install.sh |
-  CRUMB_VERSION=v1.1.0 sh
+  CRUMB_VERSION=v1.2.0 sh
 ```
 
 Windows installs into `%LOCALAPPDATA%\Programs\Crumb\bin` and adds that
@@ -68,6 +72,13 @@ workspace version, enable `publish`, type `RELEASE`, and approve the protected
 `production-release` environment. Ordinary pushes and tags cannot publish. The
 workflow creates the tag and GitHub Release only after all target builds,
 checksums, SBOMs, signatures, and attestations succeed.
+
+After a release is published, run
+`python3 packaging/package-managers/update.py <version>`. It reads the
+release's `.sha256` files and rewrites `Formula/crumb.rb` (the Homebrew tap
+this repository serves) and `packaging/winget/<version>/`; commit both. To
+publish to WinGet, submit that manifest directory to `microsoft/winget-pkgs`,
+for example with `wingetcreate submit packaging/winget/<version>`.
 
 macOS architectures are distributed separately. The installer selects the
 matching archive; neither archive is advertised as universal.

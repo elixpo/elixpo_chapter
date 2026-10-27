@@ -12,9 +12,8 @@ from pipeline.config import (
     LEAKED_XML_TAG_RE,
     FETCH_MIN_USEFUL_CHARS,
     INTERNAL_LEAK_PATTERNS,
-    JEV_ENABLED,
-    LLM_DECISION_MODEL,
     LLM_MODEL,
+    LLM_MODEL_FALLBACK,
     POLLINATIONS_ENDPOINT,
     TOPIC_DECOMPOSITION_MAX_PARTS,
     TOPIC_DECOMPOSITION_TIMEOUT,
@@ -27,14 +26,11 @@ MODEL = LLM_MODEL
 
 
 async def decision_completion(payload: dict, headers: dict, timeout: float, label: str) -> dict:
-    """POST a decision-type completion (decomposition, gating, classification).
+    """POST a generative decision-type completion (decomposition, gating fallback).
 
-    Uses LLM_DECISION_MODEL. When the opt-in jev decision model fails, the same
-    call is retried once on LLM_MODEL. Returns the parsed JSON response.
+    Tries LLM_MODEL then LLM_MODEL_FALLBACK. Returns the parsed JSON response.
     """
-    models = [LLM_DECISION_MODEL]
-    if JEV_ENABLED and LLM_MODEL != LLM_DECISION_MODEL:
-        models.append(LLM_MODEL)
+    models = list(dict.fromkeys((LLM_MODEL, LLM_MODEL_FALLBACK)))
     for index, model in enumerate(models):
         try:
             response = await asyncio.wait_for(
@@ -54,11 +50,8 @@ async def decision_completion(payload: dict, headers: dict, timeout: float, labe
         except Exception as exc:
             if index + 1 >= len(models):
                 raise
-            logger.warning(
-                f"[Pipeline] decision model {model} failed for {label} ({exc}); "
-                f"falling back to {LLM_MODEL}"
-            )
-    raise RuntimeError(f"{label}: no decision model configured")
+            logger.warning(f"[Pipeline] {model} failed for {label} ({exc}); falling back to {models[index + 1]}")
+    raise RuntimeError(f"{label}: no model configured")
 
 
 def _scrub_tool_names(text: str) -> str:

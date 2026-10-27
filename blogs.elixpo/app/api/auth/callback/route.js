@@ -1,10 +1,10 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getOAuthConfig, signSession } from '../../../../lib/auth';
+import { SESSION_MAX_AGE, sessionExpiresAtFrom } from '../../../../lib/sessionLifetime';
 import { normalizeAccountUsername } from '../../../../lib/accountProfileSync';
 import { safeRelativeRedirect } from '../../../../lib/safeRedirect';
 
-const SESSION_MAX_AGE = 60 * 60 * 24 * 15; // 15 days
 
 function redirectAuthError(request, code) {
   const target = new URL('/auth-error', request.url);
@@ -194,7 +194,9 @@ export async function GET(request) {
     session = await signSession({
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
-      expiresAt: Date.now() + tokenData.expires_in * 1000,
+      // The access token lapses within the hour; the sign-in itself lasts 30 days.
+      accessTokenExpiresAt: Date.now() + tokenData.expires_in * 1000,
+      sessionExpiresAt: sessionExpiresAtFrom(),
       userId,
       // Cache user profile in cookie so /api/auth/me works without D1
       profile: {

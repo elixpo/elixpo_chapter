@@ -79,8 +79,9 @@ use crumb_tools::{
     DisposableToolConfig, GitHubIssueLimits, StackDetectionLimits, WaitToolLimits, WebFetchLimits,
     WorkspaceToolLimits, WorkspaceWriteLimits, register_a2a_tools, register_code_search_tool,
     register_current_time_tool, register_disposable_tool, register_github_issue_tool,
-    register_shell_tool_with_optimizer, register_stack_detection_tool, register_wait_tool,
-    register_web_fetch_tool, register_workspace_read_tools, register_workspace_write_tool,
+    register_github_read_tool, register_shell_tool_with_optimizer, register_stack_detection_tool,
+    register_wait_tool, register_web_fetch_tool, register_workspace_read_tools,
+    register_workspace_write_tool,
 };
 use crumb_ui::{
     FooterItem, GitSegment, PeerActivity, PeerActivityState, PromptContext, Renderer,
@@ -910,13 +911,12 @@ fn workspace_read_host(
             max_output_bytes,
         },
     )?;
-    register_github_issue_tool(
-        &mut host,
-        GitHubIssueLimits {
-            timeout: Duration::from_secs(config.limits.max_wall_time_seconds.min(60)),
-            max_output_bytes,
-        },
-    )?;
+    let github_limits = GitHubIssueLimits {
+        timeout: Duration::from_secs(config.limits.max_wall_time_seconds.min(60)),
+        max_output_bytes,
+    };
+    register_github_issue_tool(&mut host, github_limits)?;
+    register_github_read_tool(&mut host, github_limits)?;
     let search_route = config
         .models
         .get(&Modality::WebSearch)
@@ -4503,6 +4503,7 @@ fn trusted_tool_detail(name: &str, arguments: &serde_json::Value) -> Option<Stri
         "web_fetch" => "url",
         "search_code" => "pattern",
         "github_issue" => "target",
+        "github" => "repo",
         _ => return None,
     };
     let raw = arguments.get(field)?.as_str()?.trim();
@@ -4525,7 +4526,7 @@ fn trusted_tool_detail(name: &str, arguments: &serde_json::Value) -> Option<Stri
         "run_shell" => format!("$ {detail}"),
         "web_search" => format!("search: {detail}"),
         "web_fetch" => format!("fetch: {detail}"),
-        "github_issue" => format!("GitHub: {detail}"),
+        "github_issue" | "github" => format!("GitHub: {detail}"),
         _ => detail,
     })
 }
@@ -5424,6 +5425,8 @@ fn visible_tool_activity(name: &str, detail: Option<&str>) -> String {
         ("jev_decide", _) => "Asking Jev to weigh the options".to_owned(),
         ("web_fetch", Some(url)) => format!("Fetching page · {url}"),
         ("github_issue", Some(target)) => format!("Fetching GitHub item · {target}"),
+        ("github", Some(repo)) => format!("Reading GitHub · {repo}"),
+        ("github", None) => "Searching GitHub".to_owned(),
         ("list_peer_agents", _) => "Finding peer agents".to_owned(),
         ("send_peer_message", Some(peer)) => format!("Sending to peer · {peer}"),
         ("send_peer_message", None) => "Sending to peer".to_owned(),
@@ -5451,6 +5454,8 @@ fn finished_tool_activity(
         ("web_fetch", false) => "Page fetch failed",
         ("github_issue", true) => "Fetched GitHub item",
         ("github_issue", false) => "GitHub fetch failed",
+        ("github", true) => "Read GitHub",
+        ("github", false) => "GitHub read failed",
         ("write_file", true) => "Edited file",
         ("write_file", false) => "Edit failed",
         ("list_peer_agents", true) => "Listed peer agents",
@@ -7393,6 +7398,7 @@ fn show_agent_tools(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
         ("spawn_agents", "parallel analysis", true),
         ("web_fetch", "network", true),
         ("github_issue", "network", true),
+        ("github", "network", true),
         (
             "web_search",
             "network",
@@ -7473,11 +7479,11 @@ fn configure_permissions(command: &str, cwd: &Path, writer: &mut dyn Write) -> R
         "network"
             if !matches!(
                 *tool,
-                "web_fetch" | "web_search" | "github_issue" | "spawn_agents"
+                "web_fetch" | "web_search" | "github_issue" | "github" | "spawn_agents"
             ) =>
         {
             bail!(
-                "network permission tool must be web_fetch, web_search, github_issue, or spawn_agents"
+                "network permission tool must be web_fetch, web_search, github_issue, github, or spawn_agents"
             );
         }
         "workspace" if *tool != "write_file" => {
@@ -7549,10 +7555,16 @@ fn select_permission_mode(arguments: &[&str], cwd: &Path, writer: &mut dyn Write
 fn grant_all_permissions(cwd: &Path, writer: &mut dyn Write) -> Result<()> {
     update_agent_config(cwd, |config| {
         config.permissions.mode = ApprovalMode::FullAccess;
-        config
-            .permissions
-            .allow_network_tools
-            .extend(["spawn_agents", "web_fetch", "web_search", "github_issue"].map(str::to_owned));
+        config.permissions.allow_network_tools.extend(
+            [
+                "spawn_agents",
+                "web_fetch",
+                "web_search",
+                "github_issue",
+                "github",
+            ]
+            .map(str::to_owned),
+        );
         config
             .permissions
             .allow_workspace_tools

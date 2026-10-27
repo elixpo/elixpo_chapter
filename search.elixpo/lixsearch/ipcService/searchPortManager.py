@@ -459,6 +459,74 @@ class YahooSearchAgentText:
                 except Exception:
                     pass
 
+    async def render_page(self, url, timeout_ms=30000, wait_for_ms=0, screenshot=False,
+                          full_page=False, agent_idx=None):
+        """Render a page for the scrape API: HTML, final URL, status, optional PNG.
+
+        Every request the page makes (navigation, redirects, subresources) is
+        re-checked by the SSRF guard and aborted if it targets a non-public
+        address.
+        """
+        from commons.url_safety import check_public_url, UnsafeURLError
+
+        verdicts = {}
+
+        async def guard(route):
+            request_url = route.request.url
+            host_key = request_url.split("/", 3)[:3]
+            host_key = "/".join(host_key)
+            allowed = verdicts.get(host_key)
+            if allowed is None:
+                try:
+                    await asyncio.to_thread(check_public_url, request_url)
+                    allowed = True
+                except UnsafeURLError:
+                    allowed = False
+                except Exception:
+                    allowed = False
+                verdicts[host_key] = allowed
+            if allowed:
+                await route.continue_()
+            else:
+                logger.warning(f"[Scrape] Blocked non-public browser request: {request_url[:200]}")
+                await route.abort()
+
+        page = None
+        try:
+            page = await self.context.new_page()
+            self.tab_count += 1
+            await page.route("**/*", guard)
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            if wait_for_ms:
+                await page.wait_for_timeout(wait_for_ms)
+            final_url = page.url
+            await asyncio.to_thread(check_public_url, final_url)
+            html = await page.content()
+            shot = None
+            if screenshot:
+                import base64
+                png = await page.screenshot(full_page=bool(full_page), type="png", timeout=timeout_ms)
+                shot = base64.b64encode(png).decode("ascii")
+            if agent_idx is not None:
+                agent_pool.increment_tab_count("text", agent_idx)
+            return {
+                "url": final_url,
+                "status_code": response.status if response is not None else 200,
+                "html": html,
+                "screenshot": shot,
+                "error": None,
+            }
+        except Exception as e:
+            logger.warning(f"[Scrape] Browser render failed for {url}: {type(e).__name__}: {str(e)[:200]}")
+            return {"url": url, "status_code": None, "html": "", "screenshot": None,
+                    "error": f"{type(e).__name__}: {str(e)[:300]}"}
+        finally:
+            if page:
+                try:
+                    await page.close()
+                except Exception:
+                    pass
+
     async def close(self):
         try:
             if self.context:
@@ -656,7 +724,7 @@ class accessSearchAgents:
             "port_manager": port_manager.get_status(),
         }
     
-    async def _async_web_search(self, query):
+    async def _async_web_search(self, query, max_links=None):
         if not agent_pool.initialized:
             logger.info("[accessSearchAgents] Agent pool not initialized, initializing now...")
             await agent_pool.initialize_pool()
@@ -664,7 +732,7 @@ class accessSearchAgents:
         async with agent_pool.text_semaphore:
             agent, agent_idx = await agent_pool.get_text_agent()
             results = await asyncio.wait_for(
-                agent.search(query, max_links=MAX_LINKS_TO_TAKE, agent_idx=agent_idx),
+                agent.search(query, max_links=max_links or MAX_LINKS_TO_TAKE, agent_idx=agent_idx),
                 timeout=float(DEEP_SEARCH_WEB_SEARCH_TIMEOUT_SECONDS),
             )
             return results
@@ -705,8 +773,8 @@ class accessSearchAgents:
     async def _async_get_agent_pool_status(self):
         return await agent_pool.get_status()
 
-    def web_search(self, query):
-        return run_async_on_bg_loop(self._async_web_search(query))
+    def web_search(self, query, max_links=None):
+        return run_async_on_bg_loop(self._async_web_search(query, max_links=max_links))
     
     def get_youtube_metadata(self, url):
         return run_async_on_bg_loop(self._async_get_youtube_metadata(url))
@@ -729,6 +797,22 @@ class accessSearchAgents:
 
     def browser_fetch(self, url):
         return run_async_on_bg_loop(self._async_browser_fetch(url))
+
+    async def _async_browser_render(self, url, timeout_ms, wait_for_ms, screenshot, full_page):
+        if not agent_pool.initialized:
+            await agent_pool.initialize_pool()
+        async with agent_pool.text_semaphore:
+            agent, agent_idx = await agent_pool.get_text_agent()
+            return await agent.render_page(
+                url, timeout_ms=timeout_ms, wait_for_ms=wait_for_ms,
+                screenshot=screenshot, full_page=full_page, agent_idx=agent_idx,
+            )
+
+    def browser_render(self, url, timeout_ms=30000, wait_for_ms=0, screenshot=False, full_page=False):
+        """Render a page in the shared Playwright pool (Firecrawl-compatible scrape API)."""
+        return run_async_on_bg_loop(
+            self._async_browser_render(url, timeout_ms, wait_for_ms, screenshot, full_page)
+        )
 
 
 def get_port_status():

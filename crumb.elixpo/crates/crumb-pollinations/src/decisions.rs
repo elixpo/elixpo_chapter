@@ -16,6 +16,7 @@ use crumb_agent::{
 use reqwest::Client;
 use serde_json::{Map, Value, json};
 
+use crate::lazy_client::LazyClient;
 use crate::search::{truncate_utf8, wait_for_cancellation};
 
 const DECISION_MODEL: &str = "typesafe/jev-1.13";
@@ -69,12 +70,10 @@ impl std::fmt::Debug for JevDecisionConfig {
 ///
 /// # Errors
 ///
-/// Returns an error when the HTTP client or tool descriptor cannot be created.
+/// Returns an error when the tool descriptor cannot be registered.
 pub fn register_jev_decision_tool(host: &mut ToolHost, config: JevDecisionConfig) -> Result<()> {
-    let client = Client::builder()
-        .timeout(config.request_timeout)
-        .build()
-        .context("failed to construct decision client")?;
+    let timeout = config.request_timeout;
+    let client = LazyClient::new(move || Client::builder().timeout(timeout));
     host.register(
         ToolDescriptor {
             name: "jev_decide".to_owned(),
@@ -113,7 +112,7 @@ pub fn register_jev_decision_tool(host: &mut ToolHost, config: JevDecisionConfig
 
 #[derive(Clone)]
 struct JevDecision {
-    client: Client,
+    client: LazyClient,
     config: JevDecisionConfig,
 }
 
@@ -148,6 +147,8 @@ impl JevDecision {
     ) -> Result<ToolOutput> {
         let send = self
             .client
+            .get()
+            .context("failed to construct decision client")?
             .post(DECISIONS_URL)
             .bearer_auth(&self.config.api_key)
             .json(request)

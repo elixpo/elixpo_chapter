@@ -20,7 +20,7 @@ from pipeline.config import (
 )
 from sessions.episodic_memory import format_episodic_context, request_memory_scope
 from graphMemory.client import GraphMemoryClient, format_graph_context
-from pipeline.config import GRAPH_MEMORY_ENABLED
+from pipeline.config import GRAPH_MEMORY_ENABLED, RESPONSE_MODEL
 from agentRuntime.state import (
     ResponseStateStore,
     canonical_conversation_id,
@@ -106,7 +106,7 @@ def _response_object(
         "incomplete_details": None,
         "instructions": None,
         "max_output_tokens": None,
-        "model": result.get("model", "lixsearch"),
+        "model": result.get("model", RESPONSE_MODEL),
         "output": [{
             "id": message_id,
             "type": "message",

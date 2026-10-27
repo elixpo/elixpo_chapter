@@ -109,3 +109,8 @@ nothing the user's `.crumb/agent.json` does not. The call itself is classed as
 network access because it reaches the model provider and spends the user's
 credit; the default `sensitive-only` mode allows it, and `always-ask` requires
 listing `crumb_agent` in `allow_network_tools`.
+
+A delegated task can run for many minutes, and clients drop a server that stays
+silent too long. When a `tools/call` request carries `_meta.progressToken`, the
+server runs the call on a worker thread and sends `notifications/progress`
+every 15 seconds until the response is ready.

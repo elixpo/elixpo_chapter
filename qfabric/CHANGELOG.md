@@ -3,6 +3,36 @@
 All notable changes to QFabric are documented in this file. The project follows
 Semantic Versioning.
 
+## [1.1.0] - 2026-10-28
+
+### Added
+
+- Stage 12 matched-load evaluation: CRC-32 and FIR kernels with a 1/64/512-pass
+  compute sweep, a persistent Linux executor, a single-RPC MCU executor, and
+  `qf workload profile` / `qf workload evaluate`.
+- Campaign script profiling both domains under idle, CPU-load, and
+  higher-priority `SCHED_FIFO` contention with ordinary and `SCHED_FIFO`
+  callers, plus the retained traces of campaign `stage12-kernels-01`.
+- Ordered-trace replay of the recovery protocol (hysteresis, admission,
+  probation, commit or rollback), with the deadline rule fixed before data
+  collection.
+- Interconnect characterization and Stage 12 manuscript asset generators with
+  circular block-bootstrap confidence intervals, and a `make arxiv` bundle.
+
+### Corrected
+
+- The v1.0.x flagship result (36.6% p95 reduction from recovery) does not hold.
+  The Linux path timed a new process per invocation, and the replay drew MCU
+  latencies from idle traces while Linux traces were loaded. Under the
+  corrected Stage 12 method, Linux meets every contract and the controller
+  correctly never migrates.
+
+### Changed
+
+- Rewrote the manuscript for arXiv cs.AR around the Stage 12 results, with a
+  taxonomy, literature review, interconnect characterization, and hysteresis
+  ablation, and removed the all-rights-reserved banner from the paper body.
+
 ## [1.0.2] - 2026-10-09
 
 ### Changed
@@ -75,6 +105,7 @@ Semantic Versioning.
 - Claims are empirical soft real-time claims, not hard real-time guarantees.
 - Hardware control commands require the matching repository firmware and board.
 
+[1.1.0]: https://github.com/elixpo/qfabric/releases/tag/v1.1.0
 [1.0.2]: https://github.com/elixpo/qfabric/releases/tag/v1.0.2
 [1.0.1]: https://github.com/elixpo/qfabric/releases/tag/v1.0.1
 [1.0.0]: https://github.com/elixpo/qfabric/releases/tag/v1.0.0

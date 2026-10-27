@@ -11,6 +11,7 @@ from commons.environment import load_local_environment
 from commons.auth_context import pollinations_auth_headers
 
 from pipeline.config import *
+from pipeline import jev
 from pipeline.instruction import (
     system_instruction,
     synthesis_instruction,
@@ -162,6 +163,16 @@ def _search_urls_from_tool_result(tool_result) -> list[str]:
 
 
 async def _evaluate_deep_search_need(query: str, headers: dict) -> bool:
+    if JEV_ENABLED:
+        result = await asyncio.to_thread(
+            jev.classify,
+            query,
+            {"needs_deep_search": jev.yes_no_question(
+                "Does this query need multi-source deep research and a long structured report?")},
+            label="deep-search gating",
+        )
+        if result is not None:
+            return result["needs_deep_search"][0]
     gating_messages = [
         {"role": "system", "content": "You are a query complexity evaluator. Return only JSON."},
         {"role": "user", "content": deep_search_gating_instruction(query)},

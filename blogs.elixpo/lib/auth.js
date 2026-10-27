@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
+import { isSessionExpired, SESSION_MAX_AGE } from './sessionLifetime';
 
 const SESSION_COOKIE = 'lixblogs_session';
-const SESSION_MAX_AGE = 60 * 60 * 24 * 15; // 15 days
 const encoder = new TextEncoder();
 
 export function getOAuthConfig() {
@@ -74,7 +74,7 @@ export async function getSession() {
     const valid = await crypto.subtle.verify('HMAC', key, sigBytes, payloadBytes);
     if (!valid) return null;
     const session = JSON.parse(new TextDecoder().decode(payloadBytes));
-    if (session && Number.isFinite(session.expiresAt) && Date.now() > session.expiresAt) return null;
+    if (isSessionExpired(session)) return null;
     return session;
   } catch {
     return null;

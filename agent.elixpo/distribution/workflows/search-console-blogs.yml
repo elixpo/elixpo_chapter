@@ -1,0 +1,21 @@
+name: Search Console Sync
+on:
+  # LixBlogs publishes without merges, so it runs on a fast schedule instead
+  # of after deploys. Each run inspects the newest posts first.
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: search-console-${{ github.repository }}
+  cancel-in-progress: true
+jobs:
+  sync:
+    permissions:
+      contents: read
+    uses: elixpo/agent.elixpo/.github/workflows/search-console-reusable.yml@main
+    with:
+      site-url: https://blogs.elixpo.com
+      inspect-limit: 100
+    secrets:
+      google_service_account_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}

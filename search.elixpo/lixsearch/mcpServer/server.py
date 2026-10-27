@@ -21,6 +21,7 @@ from pipeline.lixsearch import run_elixposearch_pipeline
 from searching.citations import normalize_citations
 from searching.evidence import fetch_pages as fetch_evidence_pages
 from searching.evidence import structured_search
+from searching import scrape_api
 
 _URL_RE = re.compile(r"https?://[^\s<>\]\)\"']+")
 _TASK_RE = re.compile(r"<TASK>.*?</TASK>", re.IGNORECASE | re.DOTALL)
@@ -165,7 +166,8 @@ def build_mcp_server(is_ready: Callable[[], bool] | None = None) -> FastMCP:
         instructions=(
             "Use search_web for structured discovery and fetch_pages to read known URLs. "
             "Use research_web for focused synthesis and deep_research for multi-angle investigations. "
-            "Use export_research_pdf only for content already available in the conversation."
+            "Use export_research_pdf only for content already available in the conversation. "
+            "Use scrape_url, map_site, crawl_site/crawl_status and extract for Firecrawl-style page scraping."
         ),
         website_url="https://search.elixpo.com",
         streamable_http_path="/",
@@ -188,7 +190,10 @@ def build_mcp_server(is_ready: Callable[[], bool] | None = None) -> FastMCP:
                 "transport": "streamable-http",
                 "stateless": True,
                 "ready": healthy,
-                "tools": ["search_web", "fetch_pages", "research_web", "deep_research", "export_research_pdf"],
+                "tools": [
+                    "search_web", "fetch_pages", "research_web", "deep_research", "export_research_pdf",
+                    "scrape_url", "map_site", "crawl_site", "crawl_status", "extract",
+                ],
             },
             status_code=200 if healthy else 503,
         )
@@ -240,6 +245,91 @@ def build_mcp_server(is_ready: Callable[[], bool] | None = None) -> FastMCP:
             "successful": sum(page.status == "ok" for page in pages),
             "pages": [page.to_dict() for page in pages],
         }
+
+    @server.tool(
+        name="scrape_url",
+        description="Scrape one public http(s) URL into markdown, html, rawHtml, links, screenshot or json (Firecrawl-compatible). Private network targets are blocked, including on redirects.",
+        structured_output=True,
+    )
+    async def scrape_url(
+        url: str,
+        formats: list[str] | None = None,
+        only_main_content: bool = True,
+        wait_for: int = 0,
+        timeout: int = 30_000,
+        json_prompt: str | None = None,
+        json_schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        requested: list[Any] = [f for f in (formats or ["markdown"]) if f != "json"]
+        if json_prompt or json_schema or "json" in (formats or []):
+            requested.append({"type": "json", "prompt": json_prompt, "schema": json_schema})
+        async with _research_slots:
+            result = await scrape_api.do_scrape({
+                "url": url, "formats": requested, "onlyMainContent": only_main_content,
+                "waitFor": wait_for, "timeout": timeout,
+            })
+        return result["data"]
+
+    @server.tool(
+        name="map_site",
+        description="List same-site URLs discovered from sitemap.xml and the page's links, optionally filtered by search terms.",
+        structured_output=True,
+    )
+    async def map_site(
+        url: str, search: str | None = None, limit: int = 100, include_subdomains: bool = False,
+    ) -> dict[str, Any]:
+        async with _research_slots:
+            async with asyncio.timeout(MCP_RESEARCH_TIMEOUT_SECONDS):
+                result = await scrape_api.do_map({
+                    "url": url, "search": search, "limit": limit, "includeSubdomains": include_subdomains,
+                })
+        return {"count": len(result["links"]), "links": result["links"]}
+
+    @server.tool(
+        name="crawl_site",
+        description="Start an asynchronous same-site crawl. Returns a job id; poll it with crawl_status. Jobs expire after 24 hours.",
+        structured_output=True,
+    )
+    async def crawl_site(
+        url: str,
+        limit: int = 20,
+        max_depth: int = 2,
+        include_paths: list[str] | None = None,
+        exclude_paths: list[str] | None = None,
+        formats: list[str] | None = None,
+        only_main_content: bool = True,
+    ) -> dict[str, Any]:
+        result = await scrape_api.do_crawl({
+            "url": url, "limit": limit, "maxDepth": max_depth,
+            "includePaths": include_paths, "excludePaths": exclude_paths,
+            "scrapeOptions": {"formats": formats or ["markdown"], "onlyMainContent": only_main_content},
+        })
+        return {"id": result["id"], "status": "scraping"}
+
+    @server.tool(
+        name="crawl_status",
+        description="Get the status and scraped pages of a crawl started with crawl_site. Use skip to page through large results.",
+        structured_output=True,
+    )
+    async def crawl_status(id: str, skip: int = 0) -> dict[str, Any]:
+        _bounded_integer(skip, name="skip", minimum=0, maximum=1_000_000)
+        result = scrape_api.job_status(id, "crawl", skip)
+        if result is None:
+            raise ValueError("Crawl job not found or expired")
+        result.pop("success", None)
+        return result
+
+    @server.tool(
+        name="extract",
+        description="Extract structured JSON from up to ten public URLs using a prompt and/or a JSON Schema.",
+        structured_output=True,
+    )
+    async def extract(
+        urls: list[str], prompt: str | None = None, schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        async with _research_slots:
+            result = await scrape_api.do_extract({"urls": urls, "prompt": prompt, "schema": schema})
+        return {"data": result["data"]}
 
     @server.tool(name="research_web", description="Research a focused question using live web sources and return a concise synthesized answer with normalized citations and evidence.", structured_output=True)
     async def research_web(query: str, ctx: Context, max_sources: int = 4, include_pdf: bool = False, title: str | None = None) -> dict[str, Any]:

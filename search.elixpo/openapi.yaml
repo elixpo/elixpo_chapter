@@ -84,6 +84,8 @@ tags:
     description: Hosted files — images and PDFs referenced in chat responses
   - name: System
     description: Health and models
+  - name: Scrape
+    description: Firecrawl-compatible scraping — scrape, search, map, crawl, batch scrape and extract. Accepts Authorization Bearer <key> or X-API-Key.
 
 security:
   - BearerAuth: []
@@ -212,6 +214,277 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '503':
           $ref: '#/components/responses/NotInitialized'
+
+  # ─── Scrape (Firecrawl-compatible) ─────────────────
+
+  /v1/scrape:
+    post:
+      operationId: scrapeUrl
+      summary: Scrape one URL
+      description: Returns markdown, HTML, links, a screenshot or LLM-extracted JSON for a public http(s) URL. Private, loopback, link-local and metadata addresses are rejected, including on redirects.
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  required: [url]
+                  properties:
+                    url: {type: string, format: uri}
+                - $ref: '#/components/schemas/ScrapeOptions'
+            example:
+              url: https://example.com
+              formats: [markdown, links]
+      responses:
+        '200':
+          description: Scraped page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {type: boolean}
+                  data:
+                    $ref: '#/components/schemas/ScrapeDocument'
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+        '408': {$ref: '#/components/responses/ScrapeUpstream'}
+        '502': {$ref: '#/components/responses/ScrapeUpstream'}
+
+  /v1/search:
+    post:
+      operationId: scrapeSearch
+      summary: Web search with optional scraping of each result
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: {type: string}
+                limit: {type: integer, minimum: 1, maximum: 20, default: 5}
+                scrapeOptions:
+                  $ref: '#/components/schemas/ScrapeOptions'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {type: boolean}
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - type: object
+                          properties:
+                            url: {type: string}
+                            title: {type: string}
+                            description: {type: string}
+                        - $ref: '#/components/schemas/ScrapeDocument'
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+
+  /v1/map:
+    post:
+      operationId: mapSite
+      summary: Discover same-site URLs from sitemap.xml and page links
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: {type: string, format: uri}
+                search: {type: string, description: Keep URLs whose path or title contains these terms}
+                limit: {type: integer, minimum: 1, maximum: 5000, default: 100}
+                includeSubdomains: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Discovered links
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {type: boolean}
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url: {type: string}
+                        title: {type: string}
+                        description: {type: string}
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+
+  /v1/crawl:
+    post:
+      operationId: startCrawl
+      summary: Start an asynchronous same-site crawl
+      description: Jobs are stored in Redis and expire after 24 hours.
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: {type: string, format: uri}
+                limit: {type: integer, minimum: 1, maximum: 500, default: 20}
+                maxDepth: {type: integer, minimum: 0, maximum: 10, default: 2}
+                includePaths:
+                  type: array
+                  items: {type: string, description: Regex matched against the URL path}
+                excludePaths:
+                  type: array
+                  items: {type: string}
+                scrapeOptions:
+                  $ref: '#/components/schemas/ScrapeOptions'
+      responses:
+        '200':
+          description: Crawl started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapeJobStarted'
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+
+  /v1/crawl/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: getCrawlStatus
+      summary: Crawl status and results
+      tags: [Scrape]
+      parameters:
+        - {name: skip, in: query, required: false, schema: {type: integer, minimum: 0}}
+      responses:
+        '200':
+          description: Crawl status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapeJobStatus'
+        '404': {$ref: '#/components/responses/ScrapeNotFound'}
+    delete:
+      operationId: cancelCrawl
+      summary: Cancel a crawl
+      tags: [Scrape]
+      responses:
+        '200':
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {type: boolean}
+                  status: {type: string, const: cancelled}
+        '404': {$ref: '#/components/responses/ScrapeNotFound'}
+
+  /v1/batch/scrape:
+    post:
+      operationId: startBatchScrape
+      summary: Scrape many URLs asynchronously
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  required: [urls]
+                  properties:
+                    urls:
+                      type: array
+                      maxItems: 500
+                      items: {type: string, format: uri}
+                - $ref: '#/components/schemas/ScrapeOptions'
+      responses:
+        '200':
+          description: Batch started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapeJobStarted'
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+
+  /v1/batch/scrape/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: getBatchScrapeStatus
+      summary: Batch scrape status and results
+      tags: [Scrape]
+      parameters:
+        - {name: skip, in: query, required: false, schema: {type: integer, minimum: 0}}
+      responses:
+        '200':
+          description: Batch status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapeJobStatus'
+        '404': {$ref: '#/components/responses/ScrapeNotFound'}
+    delete:
+      operationId: cancelBatchScrape
+      summary: Cancel a batch scrape
+      tags: [Scrape]
+      responses:
+        '200':
+          description: Cancelled
+        '404': {$ref: '#/components/responses/ScrapeNotFound'}
+
+  /v1/extract:
+    post:
+      operationId: extractData
+      summary: Extract structured JSON from up to 10 URLs
+      tags: [Scrape]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [urls]
+              properties:
+                urls:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items: {type: string, format: uri}
+                prompt: {type: string}
+                schema: {type: object, description: JSON Schema for the result}
+      responses:
+        '200':
+          description: Extracted data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {type: boolean}
+                  data: {type: object}
+        '400': {$ref: '#/components/responses/ScrapeBadRequest'}
+        '401': {$ref: '#/components/responses/ScrapeUnauthorized'}
+        '502': {$ref: '#/components/responses/ScrapeUpstream'}
 
   /api/search:
     get:
@@ -426,7 +699,7 @@ paths:
       operationId: listModels
       summary: List models
       description: |
-        Returns available models. Currently returns `lixsearch`.
+        Returns available models. Returns `oreolook` and the legacy alias `lixsearch`.
         Also available at `/v1/models` for OpenAI SDK compatibility.
       tags: [System]
       security: []
@@ -448,7 +721,7 @@ paths:
                       properties:
                         id:
                           type: string
-                          example: lixsearch
+                          example: oreolook
                         object:
                           type: string
                           const: model
@@ -616,8 +889,8 @@ components:
           description: Conversation messages. Last user message = search query.
         model:
           type: string
-          description: Ignored — always uses lixsearch
-          default: lixsearch
+          description: Ignored — always uses oreolook (legacy `lixsearch` accepted)
+          default: oreolook
         stream:
           type: boolean
           default: false
@@ -685,7 +958,7 @@ components:
           type: integer
         model:
           type: string
-          example: lixsearch
+          example: oreolook
         choices:
           type: array
           items:
@@ -738,6 +1011,107 @@ components:
         error:
           type: string
 
+    ScrapeError:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: string
+
+    ScrapeFormat:
+      oneOf:
+        - type: string
+          enum: [markdown, html, rawHtml, links, screenshot, screenshot@fullPage, json]
+        - type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              const: json
+            schema:
+              type: object
+              description: JSON Schema the extracted object should follow
+            prompt:
+              type: string
+
+    ScrapeOptions:
+      type: object
+      properties:
+        formats:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScrapeFormat'
+          default: [markdown]
+        onlyMainContent:
+          type: boolean
+          default: true
+        waitFor:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          description: Milliseconds to wait after load (forces browser rendering)
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 60000
+          default: 30000
+
+    ScrapeMetadata:
+      type: object
+      properties:
+        title: {type: string}
+        description: {type: string}
+        language: {type: string}
+        sourceURL: {type: string}
+        url: {type: string}
+        statusCode: {type: [integer, 'null']}
+        error: {type: string, description: Present only on failed crawl/batch pages}
+
+    ScrapeDocument:
+      type: object
+      properties:
+        markdown: {type: string}
+        html: {type: string}
+        rawHtml: {type: string}
+        links:
+          type: array
+          items: {type: string}
+        screenshot:
+          type: string
+          description: PNG as a data URI
+        json:
+          type: object
+        metadata:
+          $ref: '#/components/schemas/ScrapeMetadata'
+
+    ScrapeJobStarted:
+      type: object
+      properties:
+        success: {type: boolean}
+        id: {type: string}
+        url: {type: string, description: Status URL}
+
+    ScrapeJobStatus:
+      type: object
+      properties:
+        success: {type: boolean}
+        status:
+          type: string
+          enum: [scraping, completed, failed, cancelled]
+        total: {type: integer}
+        completed: {type: integer}
+        expiresAt: {type: string, format: date-time}
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScrapeDocument'
+        next:
+          type: string
+          description: URL of the next page of results (when more than one page is stored)
+
   responses:
     BadRequest:
       description: Invalid request
@@ -779,3 +1153,39 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: "Server not initialized"
+    ScrapeBadRequest:
+      description: Invalid request or URL rejected by the SSRF guard
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScrapeError'
+          example:
+            success: false
+            error: "URL rejected: URL resolves to a private or non-routable address"
+    ScrapeUnauthorized:
+      description: API key required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScrapeError'
+          example:
+            success: false
+            error: "API key required"
+    ScrapeNotFound:
+      description: Job not found or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScrapeError'
+          example:
+            success: false
+            error: "Job not found"
+    ScrapeUpstream:
+      description: Target site or upstream service failed or timed out
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScrapeError'
+          example:
+            success: false
+            error: "Scrape timed out after 30000ms"

@@ -1,0 +1,64 @@
+# Reusable Google Search Console sync for Elixpo sites.
+# Called from site repos via:
+#   uses: elixpo/agent.elixpo/.github/workflows/search-console-reusable.yml@main
+# Thin caller template: distribution/workflows/search-console.yml
+# Setup and quota notes: docs/search-console.md
+
+name: Search Console Sync (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      site-url:
+        description: Public origin of the site, e.g. https://me.elixpo.com
+        required: true
+        type: string
+      property:
+        description: Search Console property; defaults to the SEARCH_CONSOLE_SITE variable, then "<site-url>/"
+        required: false
+        type: string
+        default: ""
+      sitemap-url:
+        description: Sitemap location; defaults to "<site-url>/sitemap.xml"
+        required: false
+        type: string
+        default: ""
+      inspect-limit:
+        description: Maximum URLs to inspect per run, newest lastmod first (shared ~2,000/day quota per property); 0 submits the sitemap only
+        required: false
+        type: number
+        default: 50
+    secrets:
+      google_service_account_json:
+        description: Full Google service-account key JSON; the run is skipped when absent
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Submit sitemap and report index status
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: elixpo/agent.elixpo
+          ref: ${{ vars.ELIXPO_SEARCH_CONSOLE_REF || 'main' }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts/search_console.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sync with Google Search Console
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.google_service_account_json }}
+          SITE_URL: ${{ inputs.site-url }}
+          SEARCH_CONSOLE_SITE: ${{ inputs.property || vars.SEARCH_CONSOLE_SITE }}
+          SITEMAP_URL: ${{ inputs.sitemap-url }}
+          INSPECT_LIMIT: ${{ inputs.inspect-limit }}
+        run: node .github/scripts/search_console.mjs

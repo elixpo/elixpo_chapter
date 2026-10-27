@@ -7,6 +7,7 @@ mod clock;
 mod code_search;
 mod disposable;
 mod github;
+mod github_read;
 mod shell;
 mod stack_detection;
 mod wait;
@@ -28,6 +29,7 @@ pub use clock::register_current_time_tool;
 pub use code_search::{CodeSearchLimits, register_code_search_tool};
 pub use disposable::{DisposableToolConfig, register_disposable_tool};
 pub use github::{GitHubIssueLimits, register_github_issue_tool};
+pub use github_read::{GITHUB, register_github_read_tool};
 pub use shell::{AgentShellConfig, register_shell_tool, register_shell_tool_with_optimizer};
 pub use stack_detection::{
     DetectedStack, LanguageDetection, StackConfidence, StackDetectionLimits,

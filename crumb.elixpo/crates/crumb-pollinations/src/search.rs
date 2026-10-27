@@ -9,6 +9,8 @@ use crumb_agent::{
     CancellationToken, RiskClass, ToolDescriptor, ToolHandler, ToolHost, ToolOutput, ToolTransport,
 };
 use reqwest::Client;
+
+use crate::lazy_client::LazyClient;
 use serde_json::{Value, json};
 
 const DEFAULT_MODEL: &str = "perplexity";
@@ -71,15 +73,13 @@ impl std::fmt::Debug for PollinationsSearchConfig {
 ///
 /// # Errors
 ///
-/// Returns an error when the HTTP client or tool descriptor cannot be created.
+/// Returns an error when the tool descriptor cannot be registered.
 pub fn register_web_search_tool(
     host: &mut ToolHost,
     config: PollinationsSearchConfig,
 ) -> Result<()> {
-    let client = Client::builder()
-        .timeout(config.request_timeout)
-        .build()
-        .context("failed to construct web search client")?;
+    let timeout = config.request_timeout;
+    let client = LazyClient::new(move || Client::builder().timeout(timeout));
     host.register(
         ToolDescriptor {
             name: "web_search".to_owned(),
@@ -106,7 +106,7 @@ pub fn register_web_search_tool(
 
 #[derive(Clone)]
 struct PollinationsSearch {
-    client: Client,
+    client: LazyClient,
     config: PollinationsSearchConfig,
 }
 
@@ -170,6 +170,8 @@ impl PollinationsSearch {
     ) -> Result<Value> {
         let request = self
             .client
+            .get()
+            .context("failed to construct web search client")?
             .post("https://gen.pollinations.ai/v1/chat/completions")
             .bearer_auth(&self.config.api_key)
             .json(&json!({

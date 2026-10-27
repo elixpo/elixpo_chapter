@@ -913,6 +913,42 @@ export default function BlogPreview({
       });
     });
 
+    // ── Heading section copy link buttons (#248) ──
+    const sectionHeadings = root.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
+    sectionHeadings.forEach((heading) => {
+      if (heading.querySelector('.preview-heading-anchor')) return;
+      const id = heading.id;
+      if (!id) return;
+      const linkBtn = document.createElement('button');
+      linkBtn.type = 'button';
+      linkBtn.className = 'preview-heading-anchor';
+      linkBtn.setAttribute('aria-label', `Copy link to ${heading.textContent.trim() || 'section'}`);
+      linkBtn.title = 'Copy link to section';
+      const linkIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+      const checkIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      linkBtn.innerHTML = linkIcon;
+      linkBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = `${window.location.origin}${window.location.pathname}#${id}`;
+        // The hash still lands in the address bar if copying is unavailable or
+        // denied, so the reader can copy it from there; only confirm on success.
+        window.history.replaceState(null, '', `#${id}`);
+        const copy = navigator.clipboard?.writeText
+          ? navigator.clipboard.writeText(url)
+          : Promise.reject(new Error('Clipboard unavailable'));
+        copy.then(() => {
+          linkBtn.innerHTML = checkIcon;
+          linkBtn.style.color = '#4ade80';
+          setTimeout(() => {
+            linkBtn.innerHTML = linkIcon;
+            linkBtn.style.color = '';
+          }, 1500);
+        }).catch(() => {});
+      };
+      heading.appendChild(linkBtn);
+    });
+
     // ── Link preview on hover (use ref to avoid stale closures) ──
     const externalLinks = root.querySelectorAll('a[href^="http"]:not(.mention-chip):not(.preview-toc-link):not(.link-preview-card)');
     const linkHandlers = [];

@@ -1,4 +1,4 @@
-import { getPortfolioPersons } from "@/lib/content";
+import { getContentLastModified, getPortfolioPersons } from "@/lib/content";
 import {
   getAbsoluteUrl,
   getMemberImagePath,
@@ -19,13 +19,18 @@ export default function sitemap() {
     return [
       {
         url: getAbsoluteUrl(`/${person}`),
-        changeFrequency: "monthly",
+        lastModified: getContentLastModified(`content/${person}`, `public/assets/${person}`),
+        changeFrequency: "weekly",
         priority: 0.9,
         images: [getAbsoluteUrl(getMemberImagePath(person))],
       },
       ...sections.map((section) => ({
         url: getAbsoluteUrl(`/${person}/${section}`),
-        changeFrequency: "monthly",
+        lastModified: getContentLastModified(
+          `content/${person}/${section}.json`,
+          `content/${person}/profile.json`,
+        ),
+        changeFrequency: "weekly",
         priority: 0.7,
         images: [getAbsoluteUrl(getMemberSectionImagePath(person, section))],
       })),
@@ -35,7 +40,8 @@ export default function sitemap() {
   return [
     {
       url: `${SITE_URL}/`,
-      changeFrequency: "weekly",
+      lastModified: getContentLastModified("content", "app/page.js", "components/LandingClient.js"),
+      changeFrequency: "daily",
       priority: 1,
       images: [getAbsoluteUrl("/og-image.webp")],
     },

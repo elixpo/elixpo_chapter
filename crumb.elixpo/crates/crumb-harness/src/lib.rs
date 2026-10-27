@@ -1484,7 +1484,7 @@ const WORK_TERMS: [&str; 49] = [
 /// Tools most turns never use, with the words that call for them. Their
 /// schemas are large, so they are offered only when the request mentions
 /// what they are for; every other tool is always offered.
-const SITUATIONAL_TOOLS: [(&str, &[&str]); 12] = [
+const SITUATIONAL_TOOLS: [(&str, &[&str]); 13] = [
     (
         "jev_decide",
         &[
@@ -1552,6 +1552,23 @@ const SITUATIONAL_TOOLS: [(&str, &[&str]); 12] = [
     (
         "github_issue",
         &["issue", "issues", "bug", "report", "github"],
+    ),
+    (
+        "github",
+        &[
+            "github",
+            "repo",
+            "repository",
+            "pr",
+            "prs",
+            "pull",
+            "issues",
+            "release",
+            "releases",
+            "actions",
+            "workflow",
+            "ci",
+        ],
     ),
     ("start_background", BACKGROUND_TERMS),
     ("check_background", BACKGROUND_TERMS),

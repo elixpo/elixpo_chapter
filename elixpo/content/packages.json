@@ -60,7 +60,7 @@
     {
       "slug": "crumb",
       "name": "Crumb",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "status": "maintained",
       "category": "Autonomous agent harness and natural-language terminal",
       "summary": "A self-hosted Rust agent harness and natural-language terminal that keeps execution, permissions, tools, sessions, memory, and supervision under the user's control.",
@@ -70,7 +70,7 @@
       "windowsInstall": "irm https://raw.githubusercontent.com/elixpo/crumb.elixpo/main/install.ps1 | iex",
       "page": "https://crumb.elixpo.com",
       "source": "https://github.com/elixpo/crumb.elixpo",
-      "releases": "https://github.com/elixpo/crumb.elixpo/releases/tag/v1.1.0",
+      "releases": "https://github.com/elixpo/crumb.elixpo/releases/tag/v1.2.0",
       "icon": "https://crumb.elixpo.com/favicon.png",
       "license": "MIT code · CC BY 4.0 assets · reserved Elixpo marks",
       "maintainer": "Elixpo",

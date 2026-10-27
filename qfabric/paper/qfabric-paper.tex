@@ -15,25 +15,26 @@
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \pgfplotsset{compat=1.18}
+\usepackage{dblfloatfix}
+\usepackage[section]{placeins}
 \usepackage[hidelinks]{hyperref}
 
 \input{generated/metrics.tex}
+\input{generated/interconnect-metrics.tex}
+\input{generated/stage12-metrics.tex}
 
 \definecolor{qblue}{RGB}{34,92,150}
 \definecolor{qorange}{RGB}{222,119,38}
 \definecolor{qgreen}{RGB}{52,128,73}
 \definecolor{qred}{RGB}{178,55,55}
 \newcommand{\system}{QFabric\xspace}
-\newcommand{\linuxdom}{Linux}
-\newcommand{\rtdom}{RT}
 \hypersetup{
-  pdftitle={QFabric: Contract-Driven Recovery Across a Linux--RTOS Boundary},
+  pdftitle={QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux--RTOS Board},
   pdfauthor={Ayushman Bhattacharya and Anwesha Chakraborty},
-  pdfsubject={Prepublication manuscript; copyright 2026 Ayushman Bhattacharya and Anwesha Chakraborty; All Rights Reserved},
-  pdfkeywords={heterogeneous embedded systems, Linux, RTOS, timing contracts}
+  pdfkeywords={heterogeneous embedded systems, asymmetric multiprocessing, Linux, RTOS, interconnect characterization, timing contracts}
 }
 
-\title{QFabric: Contract-Driven Recovery Across a Linux--RTOS Boundary}
+\title{QFabric: Guarded Cross-Domain Task Recovery\\and Its Limits on a Linux--RTOS Board}
 
 \author{\IEEEauthorblockN{Ayushman Bhattacharya}
 \IEEEauthorblockA{\textit{Pollinations AI}\\
@@ -46,337 +47,427 @@
 \begin{document}
 \maketitle
 
-\begin{center}
-\footnotesize\textit{Prepublication manuscript. Copyright \textcopyright\ 2026
-Ayushman Bhattacharya and Anwesha Chakraborty. All Rights Reserved.}
-\end{center}
-
 \begin{abstract}
-Heterogeneous embedded boards increasingly combine an application processor
-running Linux with a microcontroller running a real-time operating system.
-Choosing one domain statically is simple, but timing behavior can change after
-deployment, while unconstrained migration can violate program semantics or
-overload the real-time domain. We present \system, a prototype that treats
-placement as a closed-loop recovery problem for empirical soft real-time
-contracts. It profiles the same bounded task in both domains, observes
-end-to-end latency windows, rejects semantically or temporally inadmissible
-moves, switches only at a quiescent epoch boundary, and commits or rolls back
-after a probation window. On an Arduino UNO Q, a Linux--Zephyr platform, direct
-measurements characterize communication, profiling, decision, and
-instrumentation overheads. Deterministic replay of those measured traces over
-four application graphs compares seven policies. In a four-node load-shift
-case, ordinary Linux misses 67.3\% of 80-ms deadlines at a 111.30-ms p95;
-\system recovery reduces p95 by \RecoveryImprovement to 70.61 ms and the miss
-rate to 3.7\%. A tuned \texttt{SCHED\_FIFO} baseline remains substantially
-better at 23.91 ms and zero misses. Thus, the result is not that adaptation
-dominates expert tuning, but that bounded, semantics-aware recovery can salvage
-an untuned deployment when its original contract stops holding. The complete
-source, raw evidence, audits, and manuscript generators are released as a
-reproducible artifact.
+Heterogeneous embedded boards pair a Linux application processor with a
+real-time microcontroller (MCU), which suggests moving a task between the two
+domains when its timing degrades. We present \system, a prototype that treats
+cross-domain placement as guarded recovery from a violated empirical soft
+real-time contract: a bounded task is compiled for both domains, monitored in
+windows with hysteresis, switched only after semantic and capacity admission
+at a quiescent epoch boundary, and committed or rolled back after probation.
+On an Arduino UNO Q (Cortex-A53 Linux and a Cortex-M33 running Zephyr), we
+characterize the stock Bridge RPC interconnect and measure five workloads in
+both domains under idle, CPU-load, and higher-priority \texttt{SCHED\_FIFO}
+contention, with ordinary and real-time callers. Each MCU invocation costs
+about 19~ms of dispatch regardless of compute, the MCU runs the heaviest
+kernel \StageTwelveFirComputeRatio$\times$ slower, and because every call
+traverses Linux userspace, Linux contention inflates the MCU path far more
+than the Linux path (p99 up to \StageTwelveContentionRtPNinetyNine~ms versus
+\StageTwelveContentionLinuxPNinetyNine~ms). Across \StageTwelveCells{} cells
+of a four-node chain, Linux meets every contract within
+\StageTwelveWorstLinuxMiss{} misses and \system correctly never migrates; a
+controller without hysteresis migrates in \StageTwelveAblatedSwitches{} cells,
+raising p95 by up to \StageTwelveAblationWorstRatio$\times$, and probation
+rolls back \StageTwelveAblatedRollbacks{} of those moves. On Linux-dispatched
+heterogeneous boards, migration therefore cannot isolate a task from Linux
+interference, and recovery guards matter chiefly by preventing harmful moves.
+This paper supersedes an earlier artifact release whose reported improvement
+arose from measurement defects that we identify. All source, raw traces, and
+generators are public.
 \end{abstract}
 
 \begin{IEEEkeywords}
-heterogeneous embedded systems, Linux, RTOS, runtime adaptation, timing
-contracts, task migration, empirical evaluation
+heterogeneous embedded systems, asymmetric multiprocessing, Linux, RTOS,
+interconnect characterization, timing contracts, runtime adaptation
 \end{IEEEkeywords}
 
 \section{Introduction}
-Modern embedded platforms often put two distinct execution environments on one
-board: a feature-rich Linux application processor and a resource-constrained
-real-time microcontroller. Linux offers libraries, networking, storage, and
-developer velocity; the microcontroller offers isolation and more predictable
-execution. A task that can execute in either domain therefore faces a placement
-choice whose consequences extend beyond compute time: crossing the boundary
-adds serialization and transport cost, contention changes tail latency, and a
-move may be illegal for a stateful or Linux-only operation.
+\label{sec:intro}
+Embedded platforms increasingly integrate two execution environments on one
+board: a Linux application processor for libraries, networking, and developer
+productivity, and a real-time microcontroller for isolation and predictable
+execution~\cite{arduinoUnoQ,openampProject}. A task that can run in either
+domain faces a placement choice whose consequences extend beyond compute
+time. Crossing the boundary adds serialization and transport, contention
+reshapes tail latency, and a move may be illegal for stateful or
+Linux-specific operations.
 
-Classical heterogeneous schedulers optimize a static directed acyclic graph
-from cost estimates~\cite{topcuoglu2002heft}. Real-time theory provides strong
-admission and schedulability foundations~\cite{liu1973scheduling}, while
-feedback scheduling adapts resources to measured error~\cite{lu2002feedback}.
-Runtime verification and timing contracts make violations observable
-\cite{reinbacher2014runtime,nandi2015contracts}. Yet an engineering gap remains
-on asymmetric Linux--RTOS boards: how should a deployed task recover when an
-empirical timing contract fails, without treating a faster prediction as
-sufficient permission to migrate?
+A natural idea is to treat the microcontroller as a refuge: when a task's
+timing degrades on Linux, move it to the real-time domain. Classical
+heterogeneous scheduling maps task graphs statically from cost
+estimates~\cite{topcuoglu2002heft}; feedback scheduling adapts resources to
+measured error~\cite{lu2002feedback}; and runtime verification makes timing
+violations observable~\cite{reinbacher2014runtime,nandi2015contracts}. What
+remains unclear on asymmetric Linux--RTOS boards is whether such a move can
+actually help, and how a runtime should decide when a faster prediction is not
+sufficient permission to migrate.
 
-\system addresses that gap as a deliberately narrow systems contribution. A
-portable QTask declaration is compiled for both domains. Offline measurements
-seed placement and an empirical contract. At runtime, a monitor applies
-hysteresis to complete observation windows. A recovery controller admits a
-candidate only if its semantics, predicted end-to-end cost, real-time
-utilization, evidence, and cooldown constraints all pass. It then drains
-in-flight work, increments an epoch, switches, and evaluates a probation
-window. The move is committed only if post-switch observations satisfy the
-contract; otherwise it is rolled back.
+We study this question with \system, a deliberately narrow prototype on the
+Arduino UNO Q. A portable task declaration is compiled for both domains,
+profiled in each, and governed by an empirical contract. A recovery controller
+applies hysteresis to complete observation windows, admits a candidate only if
+semantic, capacity, and predicted-cost conditions hold, drains in-flight work
+at an epoch boundary, and commits the move only if post-switch probation
+confirms the contract; otherwise it rolls back.
 
-This paper makes four contributions:
-
+This paper makes the following contributions:
 \begin{itemize}
-  \item a cross-domain QTask interface with an explicitly bounded wire ABI and
-  effect annotations used as migration constraints;
-  \item a closed-loop recovery protocol combining empirical timing contracts,
-  RT admission, quiescent epoch switching, and post-switch verification;
-  \item an evidence chain that distinguishes direct hardware measurements from
-  deterministic application-graph trace replay and machine-checks all reported
-  claims; and
-  \item an evaluation against ordinary Linux, tuned Linux, static and manual
-  placements, a non-adaptive \system policy, recovery, and an offline oracle.
+  \item a \textbf{taxonomy} of cross-domain placement approaches by binding
+  time, trigger, and switch verification, which locates guarded recovery
+  relative to static mapping, partitioning, and mixed-criticality mode
+  changes (Section~\ref{sec:related});
+  \item a \textbf{guarded recovery protocol} combining a bounded wire ABI,
+  effect-based semantic admission, quiescent epoch switching, and
+  probation-based commit or rollback (Section~\ref{sec:design});
+  \item an \textbf{interconnect characterization} of the UNO Q Linux--MCU
+  Bridge across payload size, concurrency, load, and frequency governor
+  (Section~\ref{sec:interconnect});
+  \item a \textbf{matched-load measurement study} of five workloads in both
+  domains under three load conditions and two caller policies, with a
+  per-call decomposition into compute and residual dispatch cost
+  (Section~\ref{sec:percall}); and
+  \item an \textbf{evaluation of controller decisions} on a four-node chain,
+  including an ablation showing that hysteresis and probation prevent harmful
+  migrations (Sections~\ref{sec:chain}--\ref{sec:guards}).
 \end{itemize}
 
-The central result is intentionally qualified. \system improves a failing
-ordinary-Linux deployment, but it does not outperform correctly tuned Linux or
-the oracle in our flagship case. This negative comparison clarifies where the
-prototype is useful: recovery when prior deployment assumptions no longer hold,
-not replacement of platform-specific real-time engineering.
+The central finding is a boundary, not a speedup. On this board the MCU path
+is dominated by a fixed dispatch cost of about 19~ms, and because every MCU
+invocation is issued and relayed by Linux processes, Linux interference
+degrades the MCU path more than the Linux path. Recovery by migration
+therefore never pays off in our measurements, and \system's guards earn their
+place by refusing moves that a naive controller would make. An earlier
+artifact release~\cite{qfabric2026v101} reported a 36.6\% recovery
+improvement; Section~\ref{sec:correction} explains why that result does not
+hold.
 
-\section{Platform and Problem}
+The rest of the paper is organized as follows.
+Section~\ref{sec:background} describes the platform and system model,
+Section~\ref{sec:related} reviews related work through the taxonomy,
+Section~\ref{sec:design} presents the design, Section~\ref{sec:impl} the
+implementation, Section~\ref{sec:method} the methodology,
+Section~\ref{sec:results} the results, and Section~\ref{sec:discussion}
+discusses implications and threats to validity before
+Section~\ref{sec:conclusion} concludes.
+
+\section{Background and System Model}
+\label{sec:background}
 \subsection{Target platform}
 The Arduino UNO Q combines a quad-core Arm Cortex-A53 application processor
 running Debian Linux with an STM32U585 Cortex-M33 microcontroller running
 Zephyr~\cite{arduinoUnoQ}. Arduino's Bridge stack exposes MessagePack remote
-procedure calls in both directions~\cite{arduinoRouterBridge}. Its underlying
-architecture is representative of remote-processor systems built around
-\texttt{remoteproc} and \texttt{rpmsg} abstractions
-\cite{linuxRemoteproc,linuxRpmsg}, but our implementation targets the stock UNO
-Q software stack rather than modifying the transport.
-
-\begin{figure*}[t]
-\centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  node distance=5mm and 8mm,
-  box/.style={draw,rounded corners,minimum width=31mm,minimum height=8mm,align=center},
-  flow/.style={-{Latex[length=2mm]},thick}
-]
-\node[box,fill=qblue!10] (app) {Application graph\\and QTask call sites};
-\node[box,fill=qblue!10,below=of app] (ctl) {Contract monitor\\recovery controller};
-\node[box,fill=qgreen!12,below left=9mm and 1mm of ctl] (linux) {Linux executor\\AArch64 binary};
-\node[box,fill=qorange!14,below right=9mm and 1mm of ctl] (rt) {Zephyr executor\\Cortex-M33 sketch};
-\draw[flow] (app) -- (ctl);
-\draw[flow] (ctl.south west) -- node[left,pos=0.58]{dispatch} (linux.north);
-\draw[flow] (ctl.south east) -- node[right,pos=0.58]{dispatch} (rt.north);
-\draw[flow,<->] (linux) -- node[above,fill=white,inner sep=1pt]{Bridge RPC} (rt);
-\node[draw,dashed,fit=(linux)(rt),inner xsep=4mm,inner ysep=7mm,
-      label={[font=\scriptsize]below:{Arduino UNO Q / bounded ABI}}] {};
-\end{tikzpicture}
-\caption{\system architecture. The policy runs in Linux userspace; task code
-has a native implementation in each domain.}
-\label{fig:architecture}
-\end{figure*}
-
-\subsection{System model}
-An application is a directed graph $G=(V,E)$. Each task $t\in V$ may have a
-Linux implementation, an RT implementation, or both. Its declaration includes
-fixed-width request and response types, a numeric task identifier, and an
-effect class. In this prototype, only pure, bounded tasks are migration
-eligible. Each edge $e\in E$ incurs a measured boundary cost $b_e$ when its
-endpoints occupy different domains.
-
-For task $t$ in domain $d$, profiling yields a latency distribution and its
-empirical 95th percentile $q_{.95}(t,d)$. Given neighboring placements, the
-policy estimates
-\begin{equation}
- \widehat C(t,d)=q_{.95}(t,d)+
- \sum_{e\in E_t}\mathbf{1}[d\ne d_{\mathrm{neighbor}(e)}]b_e .
- \label{eq:cost}
-\end{equation}
-This is a transparent heuristic, not a worst-case execution-time proof. The
-contract deadline $D$ and tolerated miss rate $\epsilon$ likewise describe an
-empirical soft real-time objective.
-
-For a complete window $w$ of $n$ observations with outcome $o_i$ and latency
-$L_i$, the observed miss rate is
-\begin{equation}
- \widehat m_w=\frac{1}{n}\sum_{i=1}^{n}
- \mathbf{1}[o_i\ne\mathrm{ok}\ \lor\ L_i>D].
- \label{eq:miss}
-\end{equation}
-A violation means $\widehat m_w>\epsilon$. Consecutive-window thresholds avoid
-reacting to a single outlier.
-
-\subsection{Research questions}
-The evaluation asks: \textbf{RQ1}, can the controller detect a sustained
-contract failure without false switches? \textbf{RQ2}, can a feasible switch
-improve the violated contract? \textbf{RQ3}, are unsafe or unsupported switches
-rejected? \textbf{RQ4}, how does recovery compare with deployable baselines and
-an oracle? \textbf{RQ5}, what overheads does the mechanism introduce? and
-\textbf{RQ6}, what programmer effort is visible in the prototype?
-
-\section{Related Work}
-HEFT ranks a task graph and maps tasks to heterogeneous processors using
-estimated computation and communication costs~\cite{topcuoglu2002heft}. It is a
-natural static-placement reference, but it does not monitor deployed timing
-contracts. Feedback real-time scheduling instead adjusts resource allocation
-from runtime error~\cite{lu2002feedback}; autonomic computing generalizes the
-monitor--analyze--plan--execute loop~\cite{kephart2003autonomic}. \system uses a
-feedback loop, but its actuator is a guarded cross-domain implementation switch.
-
-Runtime verification can observe real-time behavior with bounded intrusion
-\cite{reinbacher2014runtime}. Stochastic contracts provide empirical runtime
-checks for component systems~\cite{nandi2015contracts}, while formal timing
-contracts and zone-based models support verification and synthesis
-\cite{alkhatib2016timing,camilli2018adaptive}. These works motivate contract
-semantics; our focus is the operational recovery protocol after a violation.
-
-Real-time task migration has been studied for dynamic resource management in
-many-core systems with feasibility analysis~\cite{pourmohseni2020migration}.
-Linux also supplies deadline-aware scheduling mechanisms
-\cite{lelli2016deadline}. \system does not replace either: it combines a simple
-RT utilization guard with empirical cross-domain evidence, and explicitly
-compares against tuned Linux scheduling.
-
-CoMOS provides processor-agnostic tasks and runtime migration across
-heterogeneous processors~\cite{goraczko2006comos}, while YASMIN supports
-functionally equivalent task implementations and user-space real-time mapping
-on heterogeneous COTS platforms~\cite{rouxel2021yasmin}. Awkernel more recently
-brings DAG scheduling into an RTOS and evaluates it on physical
-hardware~\cite{yano2026awkernel}. These systems establish closely related
-programming and scheduling foundations. \system instead focuses on recovery
-after an observed empirical-contract violation across an already deployed
-Linux--RTOS boundary, with semantic admission, a quiescent epoch change, and a
-probation-based commit or rollback.
-
-Table~\ref{tab:related} locates the contribution. A checkmark means the feature
-is central to the cited work, not that it could not be added. To the best of
-our literature search, the combined column pattern---empirical violation,
-semantic guard, RT admission, atomic switch, and post-switch verification on a
-physical Linux--RTOS boundary---is the distinctive part of \system. We do not
-claim novelty for heterogeneous placement, profiling, feedback control, or
-timing contracts individually.
-
-\begin{table*}[t]
-\caption{Qualitative positioning against representative prior work}
-\label{tab:related}
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3.2pt}
-\begin{tabular}{lcccccc}
-\toprule
-Work & Heterogeneous placement & Empirical monitor & Semantic guard & RT admission & Verified switch & Linux--RTOS board \\
-\midrule
-HEFT~\cite{topcuoglu2002heft} & \checkmark & -- & -- & -- & -- & -- \\
-Feedback scheduling~\cite{lu2002feedback} & -- & \checkmark & -- & model-specific & -- & -- \\
-Stochastic contracts~\cite{nandi2015contracts} & -- & \checkmark & -- & -- & -- & -- \\
-RT task migration~\cite{pourmohseni2020migration} & \checkmark & -- & -- & \checkmark & migration protocol & -- \\
-CoMOS~\cite{goraczko2006comos} & \checkmark & -- & -- & -- & migration protocol & -- \\
-YASMIN~\cite{rouxel2021yasmin} & \checkmark & -- & -- & -- & -- & -- \\
-Awkernel~\cite{yano2026awkernel} & \checkmark & \checkmark & -- & -- & -- & -- \\
-Bridge / rpmsg~\cite{arduinoRouterBridge,linuxRpmsg} & transport only & -- & -- & -- & -- & \checkmark \\
-\system & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-\bottomrule
-\end{tabular}
-\end{table*}
-
-\section{QFabric Design}
-\subsection{QTask declaration and bounded ABI}
-A QTask declaration is the single source for Linux and MCU artifacts. The
-generator accepts fixed-size scalars, records, and bounded arrays; it rejects
-pointers, dynamic arrays, recursive types, unsupported effects, and messages
-larger than the 988-byte payload budget. Versioned big-endian headers carry a
-magic value, message kind, task identifier, request identifier, payload length,
-and flags. Golden vectors are checked independently in Python, C++, and on the
-MCU. These restrictions turn serialization bounds and effect eligibility into
-auditable facts rather than conventions.
-
-The current prototype exposes one concrete task, integer addition. That task is
-purposefully small: it isolates placement and communication behavior, but it
-also limits external validity. Section~\ref{sec:threats} treats this directly.
-
-\subsection{Contracts and admission}
-The profiler measures both implementations using warm-up exclusion and retains
-raw observations. A minimum sample count marks an estimator valid; cold-start
-runs remain labeled insufficient rather than silently promoted to evidence.
-The prototype derives its per-node deadline before application replay:
-\begin{equation}
- D=\left\lceil 1.25\max_r p99_r\right\rceil_{5\,\mathrm{ms}}
-   = \DerivedDeadlineMs\,\mathrm{ms},
- \label{eq:deadline}
-\end{equation}
-where $p99_r$ are three idle round-trip repetitions. The derivation is recorded
-as non-post-hoc in the artifact.
-
-A candidate RT move must leave utilization beneath a reserved headroom $h$:
-\begin{equation}
- U'_{RT}=U_{RT}+r_t\,q_{.95}(t,RT)\le 1-h,
- \label{eq:admission}
-\end{equation}
-where $r_t$ is the invocation rate. A switch is admissible only when
-\begin{align}
- A(t,d)={}&E_{\min}\land S_{\mathrm{semantic}}\land
- S_{\mathrm{admission}} \notag\\
- &\land (\widehat C(t,d)\le D)\land S_{\mathrm{cooldown}}.
- \label{eq:admissible}
-\end{align}
-The controller reports a stable rejection code for every failed conjunct.
-
-\subsection{Safe recovery protocol}
-Figure~\ref{fig:state} shows the recovery state machine. Three consecutive
-violating windows trigger analysis. If no candidate is admissible, placement is
-unchanged. Otherwise the dispatcher stops accepting new work, waits until the
-in-flight count is zero, increments a routing epoch, and changes the active
-domain. Six probation windows then provide post-switch evidence. Satisfaction
-commits the move; renewed violation rolls it back to the previous epoch and
-domain. The protocol therefore distinguishes a predicted improvement from a
-verified recovery.
+procedure calls in both directions through a Linux-resident router
+process~\cite{arduinoRouterBridge}. The arrangement resembles
+remote-processor systems built on \texttt{remoteproc} and \texttt{rpmsg}
+\cite{linuxRemoteproc,linuxRpmsg}, but we use the stock UNO Q stack rather
+than modifying the transport. Fig.~\ref{fig:architecture} shows how \system
+sits on this platform: the policy, the dispatcher, and the Bridge router all
+execute in Linux userspace, so every MCU invocation begins and ends there.
 
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
   font=\scriptsize,
-  node distance=5.5mm and 8mm,
+  box/.style={draw,rounded corners,minimum width=28mm,minimum height=7mm,align=center},
+  flow/.style={-{Latex[length=2mm]},thick}
+]
+\node[box,fill=qblue!10] (app) at (0,0) {Application chain\\and QTask call sites};
+\node[box,fill=qblue!10] (ctl) at (0,-12mm) {Contract monitor and\\recovery controller};
+\node[box,fill=qgreen!12] (linux) at (-19mm,-28mm) {Linux executor\\(persistent process)};
+\node[box,fill=gray!8] (router) at (19mm,-28mm) {Bridge router\\(MessagePack RPC)};
+\node[draw,dashed,rounded corners,fit=(app)(ctl)(linux)(router),inner sep=2.5mm,
+      label={[font=\scriptsize]above:{Linux userspace (Cortex-A53)}}] {};
+\node[box,fill=qorange!14] (rt) at (19mm,-48mm) {Zephyr executor};
+\node[draw,rounded corners,fit=(rt),inner sep=2mm,
+      label={[font=\scriptsize,align=right]left:{Microcontroller\\(Cortex-M33)}}] {};
+\draw[flow] (app) -- (ctl);
+\draw[flow] (ctl.west) -| node[left=1mm,pos=0.75]{pipe} (linux.north);
+\draw[flow] (ctl.east) -| node[right=1mm,pos=0.75]{dispatch} (router.north);
+\draw[flow,<->] (router) -- node[right=1mm]{serial link} (rt);
+\end{tikzpicture}
+\caption{\system on the UNO Q. The controller, dispatcher, and Bridge router
+run in Linux userspace; each task has a native implementation in both
+domains.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{System model}
+An application is a chain $G=(V,E)$ of tasks. Each task $v\in V$ may have a
+Linux implementation, an MCU implementation, or both, together with
+fixed-width request and response types, a numeric identifier, and an effect
+class. Only pure, bounded tasks are migration eligible. A placement assigns a
+domain $d(v)\in\{\mathrm{L},\mathrm{M}\}$ to every task.
+
+Every invocation is issued from Linux userspace, so the latency observed for
+task $v$ in domain $d$ decomposes into local compute and a residual that
+captures dispatch, transport, and scheduling delay:
+\begin{equation}
+  L_{v,d} = C_{v,d} + R_{v,d}.
+  \label{eq:decomposition}
+\end{equation}
+For the MCU, $R$ includes MessagePack encoding, the Linux router, the serial
+link, and the return path; for Linux it is the cost of a pipe round trip to a
+persistent executor. A chain observation costs
+$L_G=\sum_{v\in V} L_{v,d(v)}$, and the controller predicts it from profiled
+95th percentiles:
+\begin{equation}
+  \widehat{C}_G(d) = \sum_{v\in V} q_{.95}(v,d(v)).
+  \label{eq:cost}
+\end{equation}
+This is a transparent heuristic, not a worst-case execution-time bound.
+Because each MCU sample already includes its round trip from Linux, no
+separate boundary term is added.
+
+For a window $w$ of $n$ invocations with outcomes $o_i$ and latencies $L_i$,
+the observed miss rate against a deadline $D$ is
+\begin{equation}
+  \widehat{m}_w=\frac{1}{n}\sum_{i=1}^{n}
+  \mathbf{1}\!\left[o_i\ne\mathrm{ok}\ \lor\ L_i>D\right],
+  \label{eq:miss}
+\end{equation}
+and the window violates the contract when $\widehat{m}_w>\epsilon$. The
+contract is an empirical soft real-time objective.
+
+\subsection{Research questions}
+We ask: \textbf{RQ1}, what does the Linux--MCU interconnect cost, and how does
+that cost respond to payload, concurrency, load, and frequency policy?
+\textbf{RQ2}, under matched load conditions, how do the two domains compare
+per call, and where does the time go? \textbf{RQ3}, on a four-node chain, do
+contract violations arise, and does the controller decide correctly against
+deployable baselines and an oracle? \textbf{RQ4}, are hysteresis, admission,
+and probation necessary? \textbf{RQ5}, what does the mechanism itself cost?
+
+\section{Related Work and Taxonomy}
+\label{sec:related}
+We organize prior work along three dimensions that determine how a system
+reacts when timing degrades on a heterogeneous platform: \emph{binding time}
+(when the assignment of software to execution resources is fixed),
+\emph{trigger} (what causes a reassignment), and \emph{switch verification}
+(whether a reassignment must prove its benefit before it is kept).
+Table~\ref{tab:taxonomy} applies this taxonomy to representative work. A mark
+means the property is central to the cited work, not that it could not be
+added.
+
+\begin{table*}[t]
+\caption{Taxonomy of cross-domain placement approaches. ``Semantic guard''
+means effect- or state-based migration eligibility; ``verified switch'' means
+an observed post-switch check decides whether the move is kept.}
+\label{tab:taxonomy}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{llllcccc}
+\toprule
+Work & Binding time & Trigger & Isolation unit & Semantic guard & RT admission & Verified switch & Linux--RTOS board \\
+\midrule
+HEFT~\cite{topcuoglu2002heft} & design time & cost model & processor & -- & -- & -- & -- \\
+Feedback scheduling~\cite{lu2002feedback} & runtime & control error & resource share & -- & model-specific & -- & -- \\
+Stochastic contracts~\cite{nandi2015contracts} & runtime & contract monitor & component & -- & -- & -- & -- \\
+Mode changes~\cite{real2004mode,vestal2007preemptive} & runtime & mode or budget overrun & task set & -- & \checkmark & -- & -- \\
+RT task migration~\cite{pourmohseni2020migration} & runtime & resource management & core & -- & \checkmark & -- & -- \\
+CoMOS~\cite{goraczko2006comos} & runtime & runtime system & processor & -- & -- & -- & -- \\
+YASMIN~\cite{rouxel2021yasmin} & runtime & scheduler & processor & -- & -- & -- & -- \\
+Awkernel~\cite{yano2026awkernel} & runtime & DAG scheduler & core & -- & -- & -- & -- \\
+Jailhouse / Bao~\cite{ramsauer2017jailhouse,martins2020bao} & configuration & -- & partition & -- & -- & -- & -- \\
+OpenAMP / rpmsg~\cite{openampProject,linuxRpmsg} & configuration & -- & core & -- & -- & -- & \checkmark \\
+\system & runtime & contract violation & task & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Static and feedback-driven placement}
+HEFT ranks a task graph and maps it to heterogeneous processors using
+estimated computation and communication costs~\cite{topcuoglu2002heft}. It is
+the natural static reference but does not monitor deployed timing. Real-time
+scheduling theory provides admission and schedulability
+foundations~\cite{liu1973scheduling}, and feedback scheduling adjusts
+resource allocation from runtime error~\cite{lu2002feedback}; autonomic
+computing generalizes the monitor--analyze--plan--execute
+loop~\cite{kephart2003autonomic}. \system uses such a loop, but its actuator
+is a guarded change of execution domain.
+
+\subsection{Timing contracts and runtime verification}
+Runtime verification observes real-time behavior with bounded
+intrusion~\cite{reinbacher2014runtime}. Stochastic contracts provide
+empirical runtime checks for component systems~\cite{nandi2015contracts},
+while formal timing contracts and zone-based models support verification and
+synthesis~\cite{alkhatib2016timing,camilli2018adaptive}. These works motivate
+our contract semantics; our focus is the operational protocol after a
+violation.
+
+\subsection{Asymmetric multiprocessing and partitioning}
+Heterogeneous SoCs that pair application cores with real-time cores are
+commonly run as asymmetric multiprocessing systems, with Linux managing a
+remote RTOS through remoteproc and rpmsg; OpenAMP standardizes these
+interactions~\cite{openampProject} and has been evaluated on real-time
+embedded SoC platforms~\cite{alonso2021openamp}. Measurements on Zynq
+UltraScale+ show that inter-processor signaling can reach sub-microsecond
+latency when shared memory is used directly instead of the OpenAMP
+stack~\cite{coppik2025lowlatency}. An alternative to physically separate cores
+is a static partitioning hypervisor such as Jailhouse~\cite{ramsauer2017jailhouse}
+or Bao~\cite{martins2020bao}; their real-time behavior and interference on Arm
+platforms have been compared empirically~\cite{martins2023partitioning}, and
+hypervisor-based isolation has been combined with programmable-logic memory on
+heterogeneous MPSoCs~\cite{gracioli2019mixed}. In these approaches the
+assignment of software to cores or partitions is fixed at configuration time.
+\system takes the Linux--RTOS split and its transport as given, and changes
+only which side executes a declared task after a contract violation.
+
+\subsection{Timing analysis and mixed criticality}
+\system's contracts are empirical soft real-time bounds, not WCET guarantees.
+Static and measurement-based WCET analysis~\cite{wilhelm2008wcet}, and
+measurement-based probabilistic timing analysis in particular
+\cite{cucugrosjean2012mbpta,davis2019probabilistic}, give principled ways to
+derive bounds from observed executions, under assumptions that our percentile
+thresholds do not establish. The mixed-criticality literature, started by
+Vestal's model of tasks with several execution-time estimates of different
+assurance~\cite{vestal2007preemptive} and surveyed by Burns and
+Davis~\cite{burns2017survey}, also studies runtime adaptation when a
+lower-assurance estimate is exceeded. That reaction is usually a criticality
+mode change, a well-studied class of protocol~\cite{real2004mode}. \system's
+recovery can be read as a narrow, cross-domain instance of this pattern: a
+violated empirical bound triggers a guarded, verified change of placement,
+not a change of criticality mode, and we make no claim of certifiable
+guarantees.
+
+\subsection{Migration across heterogeneous processors}
+Real-time task migration has been studied for dynamic resource management in
+many-core systems with feasibility analysis~\cite{pourmohseni2020migration},
+and Linux supplies deadline-aware scheduling
+mechanisms~\cite{lelli2016deadline}. CoMOS provides processor-agnostic tasks
+and runtime migration across heterogeneous processors~\cite{goraczko2006comos};
+YASMIN supports functionally equivalent task implementations and user-space
+real-time mapping on heterogeneous COTS platforms~\cite{rouxel2021yasmin}; and
+Awkernel brings DAG scheduling into an RTOS evaluated on physical
+hardware~\cite{yano2026awkernel}. \system differs in its trigger (an observed
+empirical-contract violation), its guards (semantic eligibility and capacity
+admission), and its insistence on post-switch verification. To the best of
+our search, this combination on a physical Linux--RTOS boundary is new; we
+claim no novelty for placement, profiling, feedback control, or timing
+contracts individually. Our measurements also bound when the combination can
+help, which prior work on migration typically does not report.
+
+\section{QFabric Design}
+\label{sec:design}
+\subsection{QTask declaration and bounded ABI}
+A QTask declaration is the single source for Linux and MCU artifacts. The
+generator accepts fixed-size scalars, records, and bounded arrays; it rejects
+pointers, dynamic arrays, recursive types, unsupported effects, and messages
+larger than the 988-byte payload budget. Versioned big-endian headers carry a
+magic value, message kind, task identifier, request identifier, payload
+length, and flags. Golden vectors are checked independently in Python, C++,
+and on the MCU, which turns serialization bounds and effect eligibility into
+auditable facts rather than conventions.
+
+\subsection{Contracts and admission}
+Profiles exclude warm-up invocations and retain raw observations; a minimum
+sample count marks an estimator valid. The per-task deadline is fixed by rule
+before any replay, from the idle profiles of both domains with ordinary
+callers:
+\begin{equation}
+  D=\left\lceil 1.25\max_{d\in\{\mathrm{L},\mathrm{M}\}}
+  p99^{\mathrm{idle}}(v,d)\right\rceil_{1\,\mathrm{ms}},\qquad
+  D_G=|V|\,D .
+  \label{eq:deadline}
+\end{equation}
+Taking the slower domain makes the contract feasible for both alternatives at
+idle, so a violation reflects degradation rather than an infeasible target.
+A candidate MCU move must also leave utilization below a reserved headroom $h$:
+\begin{equation}
+  U'_{\mathrm{M}}=U_{\mathrm{M}}+r_v\,q_{.95}(v,\mathrm{M})\le 1-h,
+  \label{eq:admission}
+\end{equation}
+where $r_v$ is the invocation rate. A switch is admissible only when
+\begin{align}
+  A(v,d)={}&E_{\min}\land S_{\mathrm{semantic}}\land
+  S_{\mathrm{admission}} \notag\\
+  &\land \bigl(\widehat{C}_G(d)\le D_G\bigr)\land S_{\mathrm{cooldown}},
+  \label{eq:admissible}
+\end{align}
+and the controller reports a stable rejection code for every failed conjunct.
+
+\subsection{Guarded recovery protocol}
+Fig.~\ref{fig:state} shows the recovery state machine. With windows of
+$n=20$ invocations and tolerance $\epsilon=1\%$, analysis begins only after
+$k$ consecutive violating windows:
+\begin{equation}
+  \mathrm{analyze}\iff \bigwedge_{j=0}^{k-1}\widehat{m}_{w-j}>\epsilon,
+  \qquad k=3.
+  \label{eq:hysteresis}
+\end{equation}
+If no candidate satisfies Eq.~\eqref{eq:admissible}, placement is unchanged.
+Otherwise the dispatcher stops accepting work, waits until no invocation is
+in flight, increments a routing epoch, and changes the active domain. The move
+is committed only if the pooled miss rate over $P=6$ probation windows meets
+the contract,
+\begin{equation}
+  \mathrm{commit}\iff \widehat{m}_{\mathrm{prob}}\le\epsilon,
+  \label{eq:commit}
+\end{equation}
+and is rolled back to the previous epoch and domain otherwise. A prediction
+thus authorizes probation, never commitment.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  node distance=5mm and 7mm,
   state/.style={draw,rounded corners,minimum width=25mm,minimum height=7mm,align=center},
-  outcome/.style={draw,rounded corners,minimum width=20mm,minimum height=6.5mm,align=center},
+  outcome/.style={draw,rounded corners,minimum width=18mm,minimum height=6.5mm,align=center},
   arr/.style={-{Latex[length=1.8mm]},thick}
 ]
 \node[state,fill=qgreen!12] (stable) {Stable};
 \node[state,fill=qorange!13,below=of stable] (viol) {Violation\\hysteresis};
-\node[state,fill=qblue!10,below=of viol] (drain) {Admit candidate\\drain and increment epoch};
-\node[outcome,fill=gray!10,right=of drain] (noswitch) {No switch};
+\node[state,fill=qblue!10,below=of viol] (drain) {Admit candidate,\\drain, new epoch};
+\node[outcome,fill=gray!10,right=11mm of viol] (noswitch) {No switch};
 \node[state,fill=qorange!13,below=of drain] (prob) {Probation};
-\node[outcome,fill=qgreen!12,below left=6mm and 3mm of prob] (commit) {Commit};
-\node[outcome,fill=qred!10,below right=6mm and 3mm of prob] (rollback) {Rollback};
-\draw[arr] (stable) -- node[right,pos=0.5]{3 bad windows} (viol);
-\draw[arr] (viol) -- node[right,pos=0.5]{candidate passes} (drain);
-\draw[arr] (viol.east) -| node[above,pos=0.72]{reject} (noswitch.north);
-\draw[arr] (drain) -- node[right,pos=0.5]{safe boundary} (prob);
-\draw[arr] (prob) -- node[left,pos=0.6]{contract holds} (commit);
-\draw[arr] (prob) -- node[right,pos=0.6]{violation} (rollback);
+\node[outcome,fill=qgreen!12,below left=7mm and 2mm of prob] (commit) {Commit};
+\node[outcome,fill=qred!10,below right=7mm and 2mm of prob] (rollback) {Rollback};
+\draw[arr] (stable) -- node[right=1mm,pos=0.5]{$k$ bad windows} (viol);
+\draw[arr] (viol) -- node[right=1mm,pos=0.5]{$A(v,d)$ holds} (drain);
+\draw[arr] (viol) -- node[below=0.5mm,pos=0.5]{reject} (noswitch);
+\draw[arr] (drain) -- node[right=1mm,pos=0.5]{quiescent} (prob);
+\draw[arr] (prob.west) -| node[above=0.5mm,pos=0.15]{Eq.~\eqref{eq:commit} holds} (commit.north);
+\draw[arr] (prob.east) -| node[above=0.5mm,pos=0.15]{violation} (rollback.north);
 \end{tikzpicture}
-\caption{Contract recovery. Prediction authorizes probation, not commitment;
-each terminal outcome returns the monitor to Stable.}
+\caption{Guarded recovery. Every terminal outcome returns the monitor to
+Stable.}
 \label{fig:state}
 \end{figure}
 
 \section{Implementation}
-The implementation comprises a Python command-line controller and evidence
-pipeline, generated C++ ABI code, an AArch64 Linux executor, and Arduino/Zephyr
-sketches. The policy executes in Linux userspace. Bridge RPC carries task calls
-and diagnostics; the stock router remains responsible for transport. A
-resource probe reports compile-time capacities and explicitly marks runtime
-heap and stack statistics unavailable when the stock firmware cannot expose
-them safely.
+\label{sec:impl}
+The implementation comprises a Python controller and evidence pipeline,
+generated C++ ABI code, an AArch64 Linux executor, and Arduino/Zephyr sketches.
+The Linux executor is a persistent process that receives requests over a pipe
+and reports its own compute time with a monotonic clock. The MCU executor
+answers each request in a single Bridge call that returns both the result and
+the compute time measured with the Zephyr cycle counter, so no diagnostic
+calls fall on the measured path. Requests carry a 64-byte input block encoded
+in base64 (at most 96 characters), inside the 128-byte payload envelope that
+Section~\ref{sec:interconnect} verifies; both executors share one decoder so
+that they perform identical work. Every result is checked against an
+independent Python reference.
 
-Instrumentation is layered. Reduced mode records core timing; full mode adds
-structured observations; disabled mode measures the base call path. An optional
-kernel probe is evaluated separately and is not required for control. LED matrix
-updates have disabled, static, and 10/30/60-Hz refresh profiles, making the
-visual status display an experimentally bounded feature rather than unmeasured
-decoration. All records carry schema versions, run identifiers, monotonic
-timestamps, outcomes, payload sizes, and relevant mode metadata.
-
-The artifact~\cite{qfabric2026} includes command-line audits for each development
-stage. The final audit cross-checks source hashes, sample counts, baseline
-coverage, derived deadlines, negative safety scenarios, direct hardware
-recovery and rollback reports, graph outputs, and headline numbers.
+Instrumentation is layered. Reduced mode records core timing, full mode adds
+structured observations, and disabled mode measures the base call path. An
+optional kernel probe is evaluated separately and is not required for
+control. An LED-matrix status display has disabled, static, and 10/30/60-Hz
+refresh profiles so that its cost is measured rather than assumed. All
+records carry schema versions, run identifiers, monotonic timestamps,
+outcomes, and mode metadata, and command-line audits cross-check source
+hashes, sample counts, derived deadlines, and reported numbers.
 
 \section{Evaluation Methodology}
-\subsection{Testbed and evidence classes}
-Table~\ref{tab:testbed} summarizes the setup. Measurements were collected on a
-single UNO Q using its stock Linux--Zephyr Bridge. Performance campaigns fix the
-Linux CPU governor during a run and restore it afterward. Loaded campaigns use
-controlled CPU contention. Each main evaluation cell retains
-\ObservationsPerCell observations with a fixed recorded seed.
+\label{sec:method}
+\subsection{Testbed and workloads}
+Table~\ref{tab:testbed} summarizes the setup and Fig.~\ref{fig:testbed-photo}
+shows the board. All measurements use one UNO Q with its stock Bridge stack.
+The five workloads span a trivial task and a compute sweep: a signed 32-bit
+addition; a bitwise CRC-32 over the 64-byte block; and a 16-tap triangular
+Q15 FIR filter over 32 samples repeated 1, 64, or 512 times with a
+pass-dependent perturbation, written FIR$\times$1, FIR$\times$64, and
+FIR$\times$512.
 
 \begin{table}[t]
 \caption{Experimental setup}
@@ -388,13 +479,14 @@ controlled CPU contention. Each main evaluation cell retains
 Item & Configuration \\
 \midrule
 Board & Arduino UNO Q \\
-Linux domain & Arm Cortex-A53, Debian, AArch64 \\
-RT domain & STM32U585 Cortex-M33, Zephyr \\
-Transport & Arduino Bridge RPC / MessagePack \\
-Task & Bounded signed 32-bit integer addition \\
-Per-cell evidence & \ObservationsPerCell observations \\
-Per-node deadline & \DerivedDeadlineMs ms, pre-derived \\
-Policy location & Linux userspace \\
+Linux domain & Cortex-A53, Debian, AArch64 \\
+MCU domain & STM32U585 Cortex-M33, Zephyr \\
+Transport & Bridge RPC / MessagePack \\
+Workloads & add, CRC-32, FIR$\times\{1,64,512\}$ \\
+Samples per run & \StageTwelveIterations{} after \StageTwelveWarmup{} warm-up \\
+Load conditions & idle, CPU, RT contention \\
+Caller policies & \texttt{SCHED\_OTHER}, \texttt{SCHED\_FIFO} 50 \\
+Per-task deadline & \StageTwelveMinNodeDeadline--\StageTwelveMaxNodeDeadline{} ms, Eq.~\eqref{eq:deadline} \\
 Claim class & Empirical soft real-time \\
 \bottomrule
 \end{tabular}
@@ -406,169 +498,318 @@ Claim class & Empirical soft real-time \\
   \includegraphics[width=\columnwidth]{figures/testbed.jpg}%
 }{%
   \fbox{\parbox[c][32mm][c]{0.92\columnwidth}{\centering
-  Testbed photograph pending\\[2mm]
-  Add \texttt{paper/figures/testbed.jpg}; see capture instructions.}}%
+  Testbed photograph unavailable in this build.}}%
 }
-\IfFileExists{figures/testbed.jpg}{%
-\caption{Physical testbed displaying audited decision 2: an accepted
-Linux-to-RT transition. Matrix rows encode the Linux source, RPC boundary, and
-RT destination; the single illuminated column is the prototype's one QTask.}%
-}{%
-\caption{Testbed photograph placeholder. The intended capture is audited
-decision 2, an accepted Linux-to-RT transition; no synthetic image is used.}%
-}
+\caption{Physical testbed. The LED matrix shows the controller's state for
+demonstration; it does not participate in decisions.}
 \label{fig:testbed-photo}
 \end{figure}
 
-We keep three evidence classes separate. \emph{Direct measurements} are timing
-observations produced on the board. \emph{Hardware scenarios} exercise the real
-controller and demonstrate one successful commit and one rollback. Finally,
-\emph{measured-trace replay} composes sampled board traces according to a fixed
-application graph, placement, edge cost, and seed. Replay permits paired,
-repeatable comparison across seven policies, but it is not equivalent to
-running four complete application binaries.
+\subsection{Load conditions and callers}
+Three conditions are applied for the whole duration of a run. \emph{Idle}
+applies no load. \emph{CPU load} runs eight \texttt{stress-ng} CPU workers
+under \texttt{SCHED\_OTHER}. \emph{RT contention} runs four \texttt{stress-ng}
+workers at \texttt{SCHED\_FIFO} priority 80 with a 50\% duty cycle in 10-ms
+slices, modeling a co-located higher-priority real-time workload that tuning
+the measured task cannot preempt. Under each condition both domains are
+profiled with an ordinary caller and with the caller and Linux executor at
+\texttt{SCHED\_FIFO} priority 50, giving 12 profile runs and 120{,}000 retained
+invocations.
 
-Application-graph deadlines scale the pre-derived per-node deadline by graph
-size: 60 ms for each three-node graph and 80 ms for the four-node flagship.
-This rule is fixed before replay and is applied uniformly across policies.
+\subsection{Evidence classes}
+We keep three evidence classes separate. \emph{Direct measurements} are the
+per-call latencies above. \emph{Hardware scenarios} exercise the real
+controller on the board and demonstrate one committed switch and one
+rollback. \emph{Ordered trace replay} composes the measured traces into a
+four-node chain: each task visit consumes the next sample of the relevant
+trace in measured order, which preserves autocorrelation and regime changes,
+and \StageTwelveChainObservations{} chain observations are replayed per cell.
+Replay runs the protocol of Section~\ref{sec:design} exactly, including
+Eqs.~\eqref{eq:deadline}--\eqref{eq:commit}. It permits paired comparison
+across policies but is not equivalent to running a complete application.
 
-\subsection{Applications and baselines}
-The four models are a four-node synthetic chain, a three-node signal pipeline,
-a three-node control loop, and a three-node network pipeline. Nodes differ in
-semantic eligibility, including Linux-only operations. The flagship scenario
-is the four-node chain under a Linux load shift with an 80-ms graph deadline.
-
-We compare: (1) ordinary Linux; (2) Linux under \texttt{SCHED\_FIFO}; (3) a
-static MCU-first rule; (4) a declared manual-expert placement; (5) \system's
-static recommendation; (6) \system with recovery; and (7) an offline oracle
-that chooses with future trace knowledge. The oracle is a lower-bound reference,
-not a deployable competitor. Table~\ref{tab:baselines} makes the information
-advantage explicit.
+\subsection{Baselines}
+Table~\ref{tab:baselines} lists the policies. The oracle chooses, for every
+task visit, the faster of the two domains' next measured samples; it is a
+non-causal lower bound, not a competitor.
 
 \begin{table}[t]
-\caption{Baseline roles and information}
+\caption{Policies compared on the four-node chain}
 \label{tab:baselines}
 \centering
 \small
-\begin{tabular}{lp{3.8cm}}
+\begin{tabular}{lp{4.3cm}}
 \toprule
-Baseline & Role \\
+Policy & Role \\
 \midrule
-Ordinary Linux & Default deployment, no RT tuning \\
-Tuned Linux & Deployable expert scheduler configuration \\
-MCU-first & Static preference for eligible RT nodes \\
-Manual expert & Declared per-graph hand placement \\
-\system static & Profile-driven, no online recovery \\
-\system recovery & Causal monitor and guarded switch \\
-Offline oracle & Non-causal future-trace lower bound \\
+Ordinary Linux & All tasks in Linux, default scheduling \\
+Tuned Linux & All tasks in Linux, \texttt{SCHED\_FIFO} caller \\
+MCU-first & All eligible tasks on the MCU \\
+Manual expert & Declared placement L, M, M, L \\
+\system static & Domain with lower idle p95 \\
+\system recovery & Guarded recovery, ordinary caller \\
+\system recovery (tuned) & Guarded recovery, \texttt{SCHED\_FIFO} caller \\
+Offline oracle & Non-causal per-visit minimum \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Metrics and audit}
-Primary metrics are end-to-end p95 latency and deadline-miss rate. We also
-report detection and verification delay in complete windows, false switches,
-rejection coverage, decision cost, traced Python allocation peak,
-communication latency, profiling perturbation, kernel-probe overhead, and LED
-visualization overhead. All percentile calculations and figures originate from
-machine-readable data. The generator records the source SHA-256 in a manifest.
+\subsection{Statistics}
+Primary metrics are p95 latency and deadline-miss rate. For per-call p95 we
+report 95\% confidence intervals from a circular block bootstrap
+(\StageTwelveBootstrapResamples{} resamples, block length
+\StageTwelveBootstrapBlock), which respects the short-range autocorrelation of
+measured traces. All tables, figures, and numbers in the text are generated
+from the raw traces by scripts in the artifact, which record input digests.
+
+\subsection{Relation to the earlier release}
+\label{sec:correction}
+An earlier artifact release~\cite{qfabric2026v101} included a manuscript
+whose flagship result was a 36.6\% p95 reduction from recovery on a
+replayed chain under Linux load. Re-examination found two defects. First,
+its Linux executor was a new process per invocation, so Linux latency was
+dominated by process creation: 8.05~ms p95 for an addition, against
+\StageTwelveIdleLinuxAddP~ms with the persistent executor used here. Second,
+the replay drew MCU latencies from idle traces while drawing Linux latencies
+from loaded traces, although every MCU call is dispatched through Linux and
+is affected by the same load. The present evaluation removes both defects
+and fixes its deadline rule and replay protocol in the repository before any
+new data was collected. Under the corrected method the earlier improvement
+does not hold. The earlier release remains available unchanged for
+transparency.
 
 \section{Results}
-\subsection{RQ1--RQ3: detection, recovery, and safety}
-In the controlled hardware scenario, the sustained violation was detected one
-complete window after onset, with zero false switches. A feasible alternate
-was switched, observed, and verified after four windows. A separate injected
-scenario forced probation failure and produced a rollback. The negative suite
-exercised nine stable rejection reasons: insufficient evidence, unsatisfied
-contract, semantic ineligibility, destination admission failure, MCU headroom,
-predicted deadline miss, higher predicted end-to-end cost, observed miss-rate
-failure, and active cooldown. These are bounded scenario results, not a proof
-that all failures are impossible.
+\label{sec:results}
+\subsection{RQ1: Interconnect characterization}
+\label{sec:interconnect}
+All cross-domain costs in \system originate from the Bridge RPC path between
+Linux and the MCU, so we characterized it before deriving any contract.
+Each point is the mean of three repetition-level percentiles over 1,000
+Linux-observed round trips, recomputed from \IcRawSamplesVerified{} raw samples
+with zero failures. Under the default \texttt{schedutil} governor, an idle
+zero-byte echo has a p50 of \IcZeroByteIdlePfifty{} ms and p95 of
+\IcZeroByteIdlePninetyfive{} ms, sustaining \IcZeroByteIdleCallsPerSec{}
+sequential calls/s; at the largest demonstrated-safe payload,
+\IcMaxPayloadBytes{} bytes, p95 rises to \IcMaxPayloadIdlePninetyfive{} ms and
+the rate falls to \IcMaxPayloadIdleCallsPerSec{} calls/s
+(Fig.~\ref{fig:interconnect}a); latency grows nearly linearly with payload
+size. A 256-byte probe caused sustained loss of MCU RPC service, so we
+make no claim beyond \IcMaxPayloadBytes{} bytes.
 
-\subsection{RQ4: comparative effectiveness}
-Table~\ref{tab:flagship} and Fig.~\ref{fig:flagship} give the central comparison.
-Ordinary Linux and the static \system recommendation have identical failing
-behavior because both keep all four nodes in Linux. Recovery shifts eligible
-work and reduces p95 from 111.30 to 70.61 ms (\RecoveryImprovement), reducing
-misses from 67.3\% to 3.7\%. The offline oracle places all nodes in RT and
-achieves 43.45 ms with no misses.
+Four \texttt{stress-ng} CPU workers lowered several medians but raised p95 by
+\IcSchedutilLoadPninetyfiveMin{}--\IcSchedutilLoadPninetyfiveMax{} across
+Linux-initiated calls. Pinning the \texttt{performance} governor did not remove
+this tail penalty (\IcPerformanceLoadPninetyfiveMin{}--\IcPerformanceLoadPninetyfiveMax{});
+it changed echo p95 by \IcGovernorIdlePninetyfiveMin{} to
+\IcGovernorIdlePninetyfiveMax{} at idle and by \IcGovernorLoadedPninetyfiveMin{}
+to \IcGovernorLoadedPninetyfiveMax{} under load. Frequency policy therefore does
+not explain the loaded tail. With concurrent 8-byte callers, aggregate
+throughput grows sublinearly from \IcConcOneIdleCallsPerSec{} to
+\IcConcEightIdleCallsPerSec{} calls/s (\IcConcScaling$\times$) at one to eight
+workers, while p95 rises from \IcConcOneIdlePninetyfive{} to
+\IcConcEightIdlePninetyfive{} ms (Fig.~\ref{fig:interconnect}b). Load increased
+throughput by \IcConcLoadedGainMin{}--\IcConcLoadedGainMax{} yet produced a
+\IcConcLoadedMaxMs-ms outlier, so contracts must be derived from tails, not
+throughput or medians.
 
-The strongest deployable baseline is tuned Linux: 23.91 ms with no deadline
-misses. Recovery is \RecoveryTunedRatio$\times$ its p95 and
-\RecoveryOracleRatio$\times$ the oracle's. The tuned result is not an anomaly to
-discard; it is the main boundary on our claim. If the workload can remain in
-Linux and the deployment can be correctly configured, scheduler tuning is both
-simpler and faster in this experiment. \system is valuable when the original
-placement is already deployed, its empirical contract degrades, and a tested
-alternate is available.
+\begin{figure*}[t]
+\centering
+\pgfplotstableread{generated/interconnect-payload.dat}\icpayload
+\pgfplotstableread{generated/interconnect-concurrency.dat}\icconc
+\begin{minipage}{0.49\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=\linewidth, height=48mm,
+  xlabel={Payload (bytes)}, ylabel={Round-trip latency (ms)}, ymin=0,
+  symbolic x coords={0,1,8,32,128}, xtick=data,
+  grid=major, enlarge x limits=0.06,
+  legend style={font=\scriptsize, at={(0.02,0.98)}, anchor=north west},
+  legend cell align=left,
+]
+\addplot[qblue, thick, mark=*, mark size=1.4pt]
+  table[x=payload_bytes, y=idle_p95_ms]{\icpayload};
+\addlegendentry{idle p95}
+\addplot[qorange, thick, mark=square*, mark size=1.4pt]
+  table[x=payload_bytes, y=loaded_p95_ms]{\icpayload};
+\addlegendentry{loaded p95}
+\addplot[qblue, dashed, mark=o, mark size=1.4pt, mark options={solid}]
+  table[x=payload_bytes, y=idle_p50_ms]{\icpayload};
+\addlegendentry{idle p50}
+\addplot[qorange, dashed, mark=square, mark size=1.4pt, mark options={solid}]
+  table[x=payload_bytes, y=loaded_p50_ms]{\icpayload};
+\addlegendentry{loaded p50}
+\end{axis}
+\end{tikzpicture}
+
+\small (a) Payload sweep, one sequential caller
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=\linewidth, height=48mm,
+  xlabel={Aggregate throughput (calls/s)}, ylabel={p95 latency (ms)},
+  ymin=0, grid=major,
+  legend style={font=\scriptsize, at={(0.02,0.98)}, anchor=north west},
+  legend cell align=left,
+  nodes near coords, point meta=explicit symbolic,
+  nodes near coords style={font=\scriptsize, anchor=south east},
+]
+\addplot[qblue, thick, mark=*, mark size=1.4pt]
+  table[x=idle_calls_per_s, y=idle_p95_ms, meta=workers]{\icconc};
+\addlegendentry{idle}
+\addplot[qorange, thick, mark=square*, mark size=1.4pt,
+  nodes near coords style={anchor=north west}]
+  table[x=loaded_calls_per_s, y=loaded_p95_ms, meta=workers]{\icconc};
+\addlegendentry{loaded}
+\end{axis}
+\end{tikzpicture}
+
+\small (b) 1/2/4/8 concurrent workers, 8-byte payload
+\end{minipage}
+\caption{Linux$\leftrightarrow$MCU Bridge RPC characterization under the
+\texttt{schedutil} governor. Values are means of three repetition-level
+percentiles; ``loaded'' runs four \texttt{stress-ng} CPU workers. Point labels in
+(b) give the worker count.}
+\label{fig:interconnect}
+\end{figure*}
+
+\subsection{RQ2: Matched-load per-call comparison}
+\label{sec:percall}
+Table~\ref{tab:percall} and Fig.~\ref{fig:percall} compare the domains per
+call. At idle, an MCU addition takes \StageTwelveIdleRtAddP~ms at p95 against
+\StageTwelveIdleLinuxAddP~ms in Linux, a \StageTwelveIdleRatio$\times$ gap.
+Table~\ref{tab:decomposition} decomposes the idle median with
+Eq.~\eqref{eq:decomposition}. The MCU residual stays near 19~ms for every
+workload, so dispatch, not compute, dominates the MCU path; and the MCU
+computes FIR$\times$512 \StageTwelveFirComputeRatio$\times$ more slowly than
+the Cortex-A53, so heavier kernels widen the gap rather than closing it.
 
 \begin{table*}[t]
-\caption{Flagship four-node load-shift result. L denotes Linux and R denotes RT;
-recovery and oracle placements vary over the trace.}
-\label{tab:flagship}
+\caption{Per-call p95 latency (ms) by load and caller policy. Brackets give
+95\% block-bootstrap confidence intervals for the ordinary caller. ``FIFO''
+denotes a \texttt{SCHED\_FIFO} priority-50 caller.}
+\label{tab:percall}
 \centering
-\input{generated/flagship-table.tex}
+\footnotesize
+\input{generated/stage12-percall-table.tex}
 \end{table*}
 
 \begin{figure*}[t]
 \centering
-\pgfplotstableread{generated/flagship.dat}\flagshipdata
-\begin{minipage}{0.49\textwidth}
-\centering
+\pgfplotstableread{generated/stage12-percall.dat}\percalldata
 \begin{tikzpicture}
-\begin{axis}[
-  ybar, width=\linewidth, height=48mm,
-  ylabel={p95 latency (ms)}, ymin=0,
-  symbolic x coords={ordinary-linux,tuned-linux,static-mcu-first,manual-expert,qfabric-static,qfabric-recovery,offline-oracle},
-  xtick=data, x tick label style={rotate=38,anchor=east,font=\scriptsize},
-  nodes near coords, nodes near coords style={font=\tiny,rotate=90,anchor=west},
-  bar width=7pt, enlarge x limits=0.08, grid=major,
-]
-\addplot[fill=qblue!70,draw=qblue] table[x=baseline,y=p95_ms]{\flagshipdata};
+\begin{axis}[ybar, width=0.36\textwidth, height=44mm, ymode=log, log origin=infty,     ymin=0.03, ymax=1000,     symbolic x coords={add,crc32,fir-x1,fir-x64,fir-x512},     xtick=data, xticklabels={add,CRC-32,FIR$\times$1,FIR$\times$64,FIR$\times$512},     x tick label style={rotate=30,anchor=east,font=\scriptsize},     bar width=5pt, enlarge x limits=0.14, grid=major,     legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west}, title={\small Idle}, ylabel={p95 per call (ms)}]
+\addplot[fill=qgreen!70,draw=qgreen] table[x=workload,y=idle_linux]{\percalldata};
+\addplot[fill=qorange!75,draw=qorange] table[x=workload,y=idle_rt]{\percalldata};
+\legend{Linux,MCU}
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[ybar, width=0.36\textwidth, height=44mm, ymode=log, log origin=infty,     ymin=0.03, ymax=1000,     symbolic x coords={add,crc32,fir-x1,fir-x64,fir-x512},     xtick=data, xticklabels={add,CRC-32,FIR$\times$1,FIR$\times$64,FIR$\times$512},     x tick label style={rotate=30,anchor=east,font=\scriptsize},     bar width=5pt, enlarge x limits=0.14, grid=major,     legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west}, title={\small CPU load}, yticklabels={}]
+\addplot[fill=qgreen!70,draw=qgreen] table[x=workload,y=cpu_linux]{\percalldata};
+\addplot[fill=qorange!75,draw=qorange] table[x=workload,y=cpu_rt]{\percalldata};
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[ybar, width=0.36\textwidth, height=44mm, ymode=log, log origin=infty,     ymin=0.03, ymax=1000,     symbolic x coords={add,crc32,fir-x1,fir-x64,fir-x512},     xtick=data, xticklabels={add,CRC-32,FIR$\times$1,FIR$\times$64,FIR$\times$512},     x tick label style={rotate=30,anchor=east,font=\scriptsize},     bar width=5pt, enlarge x limits=0.14, grid=major,     legend style={font=\scriptsize,at={(0.03,0.97)},anchor=north west}, title={\small RT contention}, yticklabels={}]
+\addplot[fill=qgreen!70,draw=qgreen] table[x=workload,y=rtcontention_linux]{\percalldata};
+\addplot[fill=qorange!75,draw=qorange] table[x=workload,y=rtcontention_rt]{\percalldata};
 \end{axis}
 \end{tikzpicture}
-\end{minipage}
-\begin{minipage}{0.49\textwidth}
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-  ybar, width=\linewidth, height=48mm,
-  ylabel={Deadline-miss rate (\%)}, ymin=0,ymax=75,
-  symbolic x coords={ordinary-linux,tuned-linux,static-mcu-first,manual-expert,qfabric-static,qfabric-recovery,offline-oracle},
-  xtick=data, x tick label style={rotate=38,anchor=east,font=\scriptsize},
-  nodes near coords, nodes near coords style={font=\tiny},
-  bar width=7pt, enlarge x limits=0.08, grid=major,
-]
-\addplot[fill=qorange!75,draw=qorange] table[x=baseline,y=miss_rate_pct]{\flagshipdata};
-\end{axis}
-\end{tikzpicture}
-\end{minipage}
-\caption{Flagship end-to-end result from deterministic replay of measured board
-traces. The graph deadline is 80 ms.}
-\label{fig:flagship}
+\caption{Per-call p95 latency with ordinary callers, logarithmic scale. Linux
+contention moves the MCU path more than the Linux path because each MCU call
+is issued and relayed by Linux processes.}
+\label{fig:percall}
 \end{figure*}
 
-Under idle traces, the selected static placement does not improve all-Linux
-execution for these small tasks. For example, the synthetic chain has a
-31.72-ms all-Linux p95, while MCU-first reaches 43.53 ms and the declared manual
-placement 56.04 ms. Boundary and RT invocation costs dominate the trivial
-addition kernel. This reinforces why movement is a recovery action rather than
-a universal optimization.
+\begin{table}[t]
+\caption{Idle per-call decomposition (Eq.~\ref{eq:decomposition}). Compute is
+measured inside each executor; the residual is the difference of medians.}
+\label{tab:decomposition}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\input{generated/stage12-decomposition-table.tex}
+\end{table}
 
-\subsection{RQ5: overhead}
-Table~\ref{tab:overhead} reports measured overhead components. One policy
-decision costs \PolicyCpuP\,$\mu$s CPU time and \PolicyWallP\,$\mu$s wall time
-at p95 over 1,000 in-process evaluations, with a \PolicyPeakBytes-byte peak
-observed by \texttt{tracemalloc}. That memory value excludes the interpreter
-baseline and native allocator, so it is not total process memory.
+Load changes the picture in an instructive way. CPU load raises the
+ordinary Linux p95 to a few milliseconds, which a \texttt{SCHED\_FIFO} caller
+removes almost entirely. Under RT contention, the Linux path keeps a p95
+below 2~ms with occasional stalls, while the MCU path degrades sharply, with
+p99 up to \StageTwelveContentionRtPNinetyNine~ms against
+\StageTwelveContentionLinuxPNinetyNine~ms for Linux. An MCU invocation
+traverses the caller, the Bridge router, and serial-driver activity, all on
+Linux, so it is exposed to the co-runner at several points, whereas a Linux
+invocation needs one runnable core at one point. Moving a task to the MCU
+does not move its dispatch path off Linux.
 
-Communication dominates policy cost: p95 is \LinuxCommP\,ms for the Linux path
-and \RtCommP\,ms for the RT path. Full profiling changes Linux p95 by $-2.41$\%
-and RT p95 by $+1.39$\% relative to disabled mode; the negative Linux delta is
-measurement variation, not a speedup claim. Optional kernel instrumentation
-adds \KernelOverhead at p95. The worst LED visualization delta is
-\VisualizationOverhead. These results support userspace control at the tested
-rate, but not arbitrary high-frequency control.
+\subsection{RQ3: Chain-level outcomes and controller decisions}
+\label{sec:chain}
+Table~\ref{tab:chain} reports the replayed four-node chain. Linux meets the
+contract in every cell: the worst ordinary-Linux p95 is
+\StageTwelveWorstLinuxChainP~ms against graph deadlines of at least
+\the\numexpr4*\StageTwelveMinNodeDeadline\relax~ms, and the worst miss rate
+of either Linux policy is \StageTwelveWorstLinuxMiss. MCU-first is several
+times slower in every cell. The offline oracle coincides with Linux except
+for rare visits in which a stalled Linux sample exceeds the paired MCU sample.
+With the hysteresis of Eq.~\eqref{eq:hysteresis}, \system performs
+\StageTwelveSwitches{} switches across all \StageTwelveCells{} cells, which is
+the correct decision: no admissible alternative would have improved the
+contract.
+
+\begin{table*}[t]
+\caption{Replayed four-node chain (\StageTwelveChainObservations{}
+observations per cell). $D_G$ is the graph deadline of
+Eq.~\eqref{eq:deadline}; ``stay'' means neither recovery variant switched.}
+\label{tab:chain}
+\centering
+\footnotesize
+\input{generated/stage12-chain-table.tex}
+\end{table*}
+
+\subsection{RQ4: Are the guards necessary?}
+\label{sec:guards}
+Two kinds of evidence address the guards. On hardware, a controlled scenario
+detected a sustained violation one complete window after onset with no false
+switch, switched to a feasible alternate, and verified it after four windows;
+a separate injected scenario forced probation failure and produced a
+rollback. A negative suite exercised nine stable rejection reasons:
+insufficient evidence, unsatisfied contract, semantic ineligibility,
+destination admission failure, MCU headroom, predicted deadline miss, higher
+predicted end-to-end cost, observed miss-rate failure, and active cooldown.
+These scenarios demonstrate the protocol's mechanics; their latencies are
+not used as performance evidence.
+
+Table~\ref{tab:ablation} isolates hysteresis on the Stage 12 traces by
+setting $k=1$ in Eq.~\eqref{eq:hysteresis}. The ablated controller reacts to
+isolated Linux stalls under RT contention and switches in
+\StageTwelveAblatedSwitches{} cells, raising p95 by up to
+\StageTwelveAblationWorstRatio$\times$ and increasing miss rates. Probation,
+Eq.~\eqref{eq:commit}, rolls back \StageTwelveAblatedRollbacks{} of these
+moves; the remaining two were still in probation when the trace ended (``open at end'').
+Hysteresis prevents the harmful moves, and probation bounds the damage when
+a move is made anyway.
+
+\begin{table}[t]
+\caption{Hysteresis ablation under RT contention: switching on the first
+violating window ($k=1$) instead of $k=3$.}
+\label{tab:ablation}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\input{generated/stage12-ablation-table.tex}
+\end{table}
+
+\subsection{RQ5: Mechanism overhead}
+Table~\ref{tab:overhead} reports the cost of the mechanism itself. One policy
+decision costs \PolicyCpuP\,$\mu$s of CPU time and \PolicyWallP\,$\mu$s of wall
+time at p95 over 1,000 in-process evaluations, with a \PolicyPeakBytes-byte
+peak observed by \texttt{tracemalloc}; the latter excludes the interpreter
+baseline and is not total process memory. A decision is thus two orders of
+magnitude cheaper than one MCU dispatch. The worst LED-matrix refresh profile
+changes Bridge p95 by \VisualizationOverhead.
 
 \begin{table}[t]
 \caption{Measured mechanism costs}
@@ -579,125 +820,124 @@ rate, but not arbitrary high-frequency control.
 \toprule
 Component & Result \\
 \midrule
-Policy CPU time, p95 & \PolicyCpuP\,$\mu$s \\
-Policy wall time, p95 & \PolicyWallP\,$\mu$s \\
-Policy traced peak & \PolicyPeakBytes\ bytes \\
-Linux communication, p95 & \LinuxCommP\ ms \\
-RT communication, p95 & \RtCommP\ ms \\
-Full profiling delta, Linux & $-2.41$\% \\
-Full profiling delta, RT & $+1.39$\% \\
-Optional kernel probe delta & \KernelOverhead \\
+Policy decision CPU time, p95 & \PolicyCpuP\,$\mu$s \\
+Policy decision wall time, p95 & \PolicyWallP\,$\mu$s \\
+Policy traced peak allocation & \PolicyPeakBytes\ bytes \\
+Linux dispatch, add, idle p95 & \StageTwelveIdleLinuxAddP\ ms \\
+MCU dispatch, add, idle p95 & \StageTwelveIdleRtAddP\ ms \\
 Worst LED display delta & \VisualizationOverhead \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\subsection{RQ6: programmer effort}
-The visible task declaration is a compact header that specifies types, effect,
-and task identifier once. The generated ABI and common command-line workflow
-remove hand-written marshaling from application code. However, the programmer
-must still supply semantically equivalent Linux and RT implementations, choose
-a defensible contract, and state any Linux-only effects. \system shifts effort
-from transport plumbing toward explicit contracts and equivalence; it does not
-eliminate dual-domain implementation or validation.
 
 \begin{table}[t]
 \caption{Answers to the research questions}
 \label{tab:rq}
 \centering
 \small
-\begin{tabular}{lp{5.7cm}}
+\begin{tabular}{lp{6.0cm}}
 \toprule
-RQ & Audited answer \\
+RQ & Answer \\
 \midrule
-RQ1 & Yes, with one-window detection in the controlled scenario and no false switch. \\
-RQ2 & Yes for the tested feasible alternate; p95 improved \RecoveryImprovement. \\
-RQ3 & Yes for nine enumerated negative scenarios plus hardware rollback. \\
-RQ4 & Better than ordinary Linux, but worse than tuned Linux and the oracle. \\
-RQ5 & Policy, transport, profiling, kernel, stabilization, and display costs quantified. \\
-RQ6 & Declaration and generated ABI reduce plumbing; dual implementations remain required. \\
+RQ1 & About 9~ms p95 per zero-byte call, rising with payload; tails grow under load regardless of governor. \\
+RQ2 & Linux is faster in every cell; MCU dispatch is a fixed $\approx$19~ms and Linux contention hurts the MCU path more. \\
+RQ3 & No contract fails on Linux; \system correctly makes \StageTwelveSwitches{} switches in \StageTwelveCells{} cells. \\
+RQ4 & Yes: without hysteresis, \StageTwelveAblatedSwitches{} harmful switches; probation rolls back \StageTwelveAblatedRollbacks. \\
+RQ5 & A decision costs about \PolicyWallP\,$\mu$s, negligible against dispatch. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \section{Discussion}
-The experiment exposes three practical lessons. First, cross-domain placement
-must include communication. The addition kernel is so small that Bridge cost
-dominates, making static migration unattractive under idle conditions. Second,
-recovery and tuning solve different problems. Tuned Linux is the right answer
-when it can be applied reliably; contract recovery is a fallback when observed
-behavior invalidates the current deployment. Third, a predicted faster domain
-is not sufficient. Semantic eligibility, capacity admission, quiescence, and
-post-switch verification are necessary to make adaptive placement operationally
-credible.
+\label{sec:discussion}
+\subsection{When can cross-domain recovery pay off?}
+Equation~\eqref{eq:decomposition} makes the boundary explicit. Migrating task
+$v$ from Linux to the MCU helps only if
+$C_{v,\mathrm{M}}+R_{v,\mathrm{M}} < C_{v,\mathrm{L}}+R_{v,\mathrm{L}}$ under
+the degraded condition. On this board $R_{v,\mathrm{M}}\approx19$~ms at idle,
+$C_{v,\mathrm{M}}$ exceeds $C_{v,\mathrm{L}}$ by more than an order of
+magnitude, and the interference that inflates $R_{v,\mathrm{L}}$ inflates
+$R_{v,\mathrm{M}}$ at least as much, because both residuals are paid in Linux
+userspace. The inequality therefore fails for any task dispatched one call at
+a time from Linux. Three architectural changes could reverse it: a
+lower-latency transport such as shared-memory signaling, which reaches
+sub-microsecond latency on other heterogeneous SoCs~\cite{coppik2025lowlatency};
+a dispatcher outside Linux userspace, for example a kernel driver or a
+partitioned core~\cite{martins2023partitioning}; or MCU-resident chains whose
+release is triggered by an MCU timer so that only inputs and results cross
+the boundary. Each is a direct test of the boundary reported here.
 
-The LED matrix is intentionally peripheral to the novelty. It exposes coarse
-controller state for a physical demonstration, and its refresh cost is measured,
-but it does not participate in scheduling decisions. This keeps presentation
-quality from distorting the research claim.
+\subsection{What the guards contribute}
+Recovery and tuning solve different problems. When the workload can remain in
+Linux, a \texttt{SCHED\_FIFO} caller removes most CPU-load interference and is
+the right first step. The value of \system's guards is that they make
+adaptive placement safe to leave enabled: hysteresis ignores isolated stalls,
+admission rejects moves predicted to miss, and probation reverses moves whose
+benefit does not materialize. Table~\ref{tab:ablation} shows that a plausible
+but unguarded controller would have turned sub-millisecond tails into
+100-ms tails.
 
-\subsection{Threats to validity and limitations}
+\subsection{Programmer effort}
+A task declaration states types, effect, and identifier once, and the
+generated ABI removes hand-written marshaling. The programmer must still
+supply semantically equivalent implementations for both domains, choose a
+defensible contract, and state Linux-only effects; \system shifts effort from
+transport plumbing to contracts and equivalence rather than removing it.
+
+\subsection{Threats to validity}
 \label{sec:threats}
 \textbf{External validity.} Results come from one UNO Q, one software stack,
-one concrete QTask, and a single board instance. Other heterogeneous boards,
-transports, kernels, thermal regimes, or workloads may reverse placement costs.
-The application study replays measured traces over models; full applications
-were not deployed end to end.
+and five small kernels. Boards with faster transports or dispatch outside
+Linux userspace may reverse the inequality above. The chain results replay
+measured traces rather than running a full application.
 
-\textbf{Construct validity.} Empirical p95/p99 and miss rates do not establish
-worst-case execution time or hard real-time guarantees. The RT admission test
-is a conservative utilization gate, not a complete schedulability proof. MCU
-runtime heap and stack watermarks were unavailable on stock firmware and are
-reported as such rather than inferred.
+\textbf{Construct validity.} Percentiles and miss rates do not establish
+worst-case execution time or hard real-time guarantees, and the admission
+test of Eq.~\eqref{eq:admission} is a utilization gate, not a schedulability
+proof. The residual in Table~\ref{tab:decomposition} is a difference of
+medians, not a measured component.
 
-\textbf{Internal validity.} Measurements share a board and may be affected by
-uncontrolled firmware, caching, temperature, and OS activity. Fixed seeds and
-paired trace replay improve repeatability but can underrepresent live
-interactions. The deadline is derived before replay from Stage 1 data, which
-reduces post-hoc bias but does not make it application-specific.
+\textbf{Internal validity.} All runs share one board and may be affected by
+firmware, thermal state, and background activity. Ordered replay preserves
+temporal structure within a trace but cannot represent interactions between
+tasks executing concurrently. The deadline rule and replay protocol were
+committed to the repository before any Stage 12 data was collected.
 
-\textbf{Baseline validity.} \texttt{SCHED\_FIFO} is a strong but not exhaustive
-Linux baseline; \texttt{SCHED\_DEADLINE}, CPU isolation, affinity, and kernel
-tuning warrant future comparison. The manual baseline depends on the declared
-expert mapping, while the oracle has non-causal information. We report both
-roles explicitly.
+\textbf{Baseline and load validity.} \texttt{SCHED\_FIFO} is a strong but not
+exhaustive Linux baseline; \texttt{SCHED\_DEADLINE}~\cite{lelli2016deadline},
+CPU isolation, and affinity warrant comparison. The RT-contention co-runner is
+one synthetic pattern; synchronized or fully saturating interference would
+change magnitudes, though it would burden the MCU dispatch path as well.
 
 \textbf{Safety scope.} Quiescent switching prevents mixed-epoch calls in the
-prototype, and effect annotations reject known-ineligible tasks. This is not a
-formal proof of implementation equivalence. Production use would require
-stronger state-transfer semantics, authentication, fault containment, and
-multi-client concurrency analysis.
-
-\section{Artifact and Reproducibility}
-The public repository~\cite{qfabric2026} contains source, generated code, unit
-tests, board sketches, raw and processed results, campaign logs, negative
-fixtures, SVG outputs, and stage audits. The final evaluation JSON is the source
-of truth for this manuscript's quantitative macros, Table~\ref{tab:flagship},
-and Fig.~\ref{fig:flagship}. Running
-\texttt{make} in the \texttt{paper} directory first regenerates those assets,
-records the input digest, and then builds the PDF. The included testbed
-photograph shows the physical board used for the reported experiments, with
-identifying details redacted; it can be replaced without changing the
-manuscript source.
-
-For archival citation, the latest tagged repository release at manuscript build
-time is \texttt{v1.0.1}. The repository is prepared for deposition in a
-DOI-issuing archive, and its releases retain the audited Stage 11 evidence used
-to generate this manuscript's results.
+prototype and effect annotations reject known-ineligible tasks, but this is
+not a proof of implementation equivalence. Production use would need state
+transfer, authentication, fault containment, and multi-client analysis.
 
 \section{Conclusion}
-\system demonstrates a narrow but useful form of runtime adaptation across a
-Linux--RTOS boundary: empirical contract violations initiate a guarded,
-quiescent switch whose benefit must be observed before commitment. On one UNO Q
-testbed, the mechanism detects controlled degradation, rejects enumerated unsafe
-moves, commits a feasible recovery, and rolls back a failed one. Measured-trace
-replay shows that recovery cuts flagship p95 by \RecoveryImprovement relative
-to failing ordinary Linux, but remains almost \RecoveryTunedRatio$\times$ slower
-than tuned Linux. That result defines the contribution honestly. QFabric is not
-a universal scheduler or a hard-real-time proof; it is an auditable recovery
-layer for deployments whose original empirical timing assumptions can cease to
-hold. Broader tasks, boards, live application graphs, and stronger Linux
-baselines are the next tests of generality.
+\label{sec:conclusion}
+\system demonstrates a guarded form of runtime adaptation across a
+Linux--RTOS boundary: an empirical contract violation can trigger a
+quiescent, admitted switch whose benefit must be observed before it is kept.
+Measured on an Arduino UNO Q with matched load conditions, the Linux--MCU
+path costs about 19~ms per call, the MCU computes up to
+\StageTwelveFirComputeRatio$\times$ more slowly, and Linux interference
+reaches the MCU path through its Linux-resident dispatch. Migration
+consequently never improves a contract in our study, the controller correctly
+declines to migrate, and an unguarded controller would have made harmful
+moves that only probation undoes. The broader lesson for heterogeneous
+embedded architectures is that the isolation offered by a real-time core is
+available only to work whose dispatch also leaves the general-purpose
+domain. Testing faster transports, non-Linux dispatch, and MCU-resident
+chains is the natural next step.
+
+\section*{Artifact Availability}
+The repository~\cite{qfabric2026} contains source, generated code, unit
+tests, board sketches, raw and processed traces, campaign logs, audits, and
+the generators for every number, table, and figure in this paper; running
+\texttt{make} in the \texttt{paper} directory regenerates the assets and
+builds the PDF. The release cited here, \texttt{v1.1.0}, is archived on Zenodo
+with DOI \href{https://doi.org/10.5281/zenodo.23692354}{\texttt{10.5281/zenodo.23692354}}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

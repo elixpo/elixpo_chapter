@@ -1,0 +1,70 @@
+{
+  "hero": {
+    "focusTags": ["Full-Stack", "AI Engineering", "Open Source"],
+    "name": "KRISHNENDU",
+    "headline": "Full Stack Developer & Opensource Contributer  .",
+    "subhead": "AI Intern @ FlyRank AI · Core Member @ Upblit · Contributor @ Elixpo",
+    "intro": "A full-stack developer exploring AI engineering, building practical products, and contributing to open source.",
+    "credentials": [
+      { "label": "AI Intern", "org": "FlyRank AI" },
+      { "label": "Contributor", "org": "Elixpo" }
+    ],
+    "ctas": [
+      { "label": "View Projects", "href": "projects" },
+      { "label": "Connect", "href": "connect" }
+    ],
+    "portrait": "/assets/krishnendu/krishnendu-avatar.jpg"
+  },
+  "intro": {
+    "heroName": "KRISHNENDU",
+    "tagline": "AI &",
+    "taglineSuffix": "FULLSTACK",
+    "description": "I build modern, scalable, and AI-powered web applications with a focus on performance, usability, and clean architecture.",
+    "highlights": [
+      "Full-Stack Web Architecture (React, Next.js, Node.js, Express)",
+      "AI Engineering & LLM APIs",
+      "AI Intern @ FlyRank AI",
+      "Open Source Contributor @ Elixpo & Upblit"
+    ],
+    "images": {
+      "portrait": "/assets/krishnendu/krishnendu-avatar.jpg",
+      "landscape": "/assets/krishnendu/hrz-image1.webp"
+    }
+  },
+  "websiteSection": {
+    "designedBy": "Built as part of the Elixpo Portfolios platform — connecting verified contributions, open projects, and personal engineering across the community.",
+    "futurePlans": "Deepening work in AI engineering, developer tooling, and scalable full-stack web architectures. Continuing active open-source contributions across community ecosystems.",
+    "codeStory": "My engineering philosophy is simple: Build things that work. Understand the systems beneath the abstractions. Keep learning in public. From building real-time communication systems in Whisper to architecting codebase intelligence in StackAtlas and developer utilities in DevMate, I focus on turning complex challenges into clear, reliable systems.",
+    "images": {
+      "owl": "/assets/krishnendu/websiteSection/hz-owl1.webp",
+      "humanThink": "/assets/krishnendu/websiteSection/human-think1.webp",
+      "seal": "/assets/krishnendu/websiteSection/sq-seal1.webp"
+    }
+  },
+  "techSection": {
+    "heading": "TECH STACK",
+    "subheading": "SKILLS",
+    "description": "Technologies and tools I use to build scalable web applications, developer tools, and AI-integrated systems.",
+    "skills": [
+      { "type": "text", "label": "React" },
+      { "type": "text", "label": "Next.js" },
+      { "type": "text", "label": "JavaScript & TypeScript" },
+      { "type": "text", "label": "Node.js & Express" },
+      { "type": "text", "label": "MongoDB" },
+      { "type": "text", "label": "Python" },
+      { "type": "text", "label": "Tailwind CSS" },
+      { "type": "text", "label": "AI & LLM APIs" },
+      { "type": "text", "label": "Git & GitHub" }
+    ],
+    "explore": [
+      { "label": "Projects", "caption": "Repositories & builds", "href": "projects" },
+      { "label": "About", "caption": "Background & direction", "href": "about" },
+      { "label": "Connect", "caption": "Direct channels", "href": "connect" }
+    ],
+    "images": {
+      "wand": "/assets/krishnendu/techTracks/wand-1.webp",
+      "landscape": "/assets/krishnendu/techTracks/karan-sepia.png",
+      "banner": "/assets/krishnendu/hrz-image1.webp"
+    }
+  }
+}

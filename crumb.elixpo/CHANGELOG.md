@@ -5,6 +5,41 @@ release, behavior and interfaces may change without compatibility guarantees.
 
 ## Unreleased
 
+## 1.2.0 - 2026-10-27
+
+### Use Crumb from other agents
+
+- `crumb mcp serve` offers `crumb_agent`: Claude Code, Codex, or any MCP
+  client can hand Crumb a whole task and get back its answer with token
+  usage. Crumb's own tool calls follow the user's configured approvals.
+- Long tool calls report MCP progress every 15 seconds, so clients keep the
+  connection open while a delegated task runs.
+- This repository is a Claude Code plugin marketplace:
+  `/plugin marketplace add elixpo/crumb.elixpo`, then
+  `/plugin install crumb@elixpo`. The plugin connects Crumb's MCP server and
+  adds a `crumb` skill, which other skill-loading agents can use as well.
+
+### Agent
+
+- A new read-only `github` tool reads repositories, issues, pull requests and
+  their changed files, search results, files at a ref, releases, and Actions
+  runs, using existing `gh` or `GH_TOKEN` authentication.
+- `read_file` numbers every line it returns, so reported line numbers are
+  exact.
+- HTTP clients are built on first use, so Crumb's tools register even on a
+  system without CA certificates; only calls that need the network fail.
+
+### Packaging
+
+- Linux binaries now run on glibc 2.31 and newer (Ubuntu 20.04, Debian 11,
+  RHEL 9); 1.1.0 needed glibc 2.39. The Elixpo `.deb` depends on
+  `libc6 (>= 2.31)` to match.
+- Homebrew: `brew tap elixpo/crumb https://github.com/elixpo/crumb.elixpo`,
+  then `brew install elixpo/crumb/crumb`. WinGet manifests are prepared in
+  `packaging/winget/`.
+- Weekly CI installs Crumb from the Elixpo APT repository on Ubuntu and
+  Debian, and agent evals stop once a run reaches its token budget.
+
 ## 1.1.0 - 2026-10-25
 
 ### Agent

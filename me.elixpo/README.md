@@ -60,7 +60,9 @@ No CMS. No database. Just clean, static content that deploys to the edge.
 | <img src="https://github.com/ez-vivek.png" width="30" style="border-radius:50%" /> | **Vivek** | [`me.elixpo.com/vivek`](https://me.elixpo.com/vivek) | Frontend Developer |
 | <img src="https://github.com/karanray06.png" width="30" style="border-radius:50%" /> | **Karan** | [`me.elixpo.com/karan`](https://me.elixpo.com/karan) | Full-Stack & AI Developer |
 | <img src="https://github.com/bhumikasudarshani-cmd.png" width="30" style="border-radius:50%" /> | **Bhumika** | [`me.elixpo.com/bhumika`](https://me.elixpo.com/bhumika) | Open-Source Contributor & Full-Stack Developer |
+| <img src="https://github.com/divyanshuj91.png" width="30" style="border-radius:50%" /> | **Divyanshu** | [`me.elixpo.com/divyanshu`](https://me.elixpo.com/divyanshu) | Open-Source Contributor & Full-Stack Developer |
 | <img src="https://github.com/nihal-gazi.png" width="30" style="border-radius:50%" /> | **Nihal** | [`me.elixpo.com/nihal`](https://me.elixpo.com/nihal) | AI Researcher & Core Maintainer |
+| <img src="https://github.com/dev-krish.png" width="30" style="border-radius:50%" /> | **Krishnendu** | [`me.elixpo.com/krishnendu`](https://me.elixpo.com/krishnendu) | Full Stack Developer, Opensource Contributer, Ai Engineer |
 
 ### Features
 

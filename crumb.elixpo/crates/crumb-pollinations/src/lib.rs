@@ -1,6 +1,7 @@
 //! Pollinations-specific configuration and wire protocol adapter.
 
 mod decisions;
+mod lazy_client;
 mod search;
 mod wire;
 
@@ -18,6 +19,7 @@ use crumb_llm::{
     ModelInfo, ProviderError, ProviderErrorKind, ProviderFuture, ProviderResult,
 };
 use futures_util::{Stream, StreamExt};
+use lazy_client::LazyClient;
 use reqwest::{Client, RequestBuilder, Response, StatusCode};
 use wire::{
     ChatCompletionRequest, SseDecoder, TextModelsResponse, WireEmbeddingRequest,
@@ -147,7 +149,7 @@ impl fmt::Debug for PollinationsConfig {
 /// Pollinations implementation of the provider-neutral model interface.
 pub struct PollinationsProvider {
     config: PollinationsConfig,
-    client: Client,
+    client: LazyClient,
 }
 
 impl PollinationsProvider {
@@ -157,28 +159,30 @@ impl PollinationsProvider {
     ///
     /// Returns an invalid-request error if the HTTP client cannot be built.
     pub fn new(config: PollinationsConfig) -> ProviderResult<Self> {
-        let client = Client::builder()
-            .connect_timeout(config.connect_timeout)
-            .read_timeout(config.stream_idle_timeout)
-            .build()
-            .map_err(|_| {
-                ProviderError::new(
-                    ProviderErrorKind::InvalidRequest,
-                    "failed to construct Pollinations HTTP client",
-                    false,
-                )
-            })?;
+        let (connect, idle) = (config.connect_timeout, config.stream_idle_timeout);
+        let client = LazyClient::new(move || {
+            Client::builder()
+                .connect_timeout(connect)
+                .read_timeout(idle)
+        });
         Ok(Self { config, client })
+    }
+
+    fn client(&self) -> ProviderResult<&Client> {
+        self.client.get().map_err(|_| {
+            ProviderError::new(
+                ProviderErrorKind::InvalidRequest,
+                "failed to construct Pollinations HTTP client",
+                false,
+            )
+        })
     }
 
     async fn list_models_inner(&self) -> ProviderResult<Vec<ModelInfo>> {
         let endpoint = self.config.endpoint("/text/models");
+        let client = self.client()?;
         let response = self
-            .send_with_retry(|| {
-                self.client
-                    .get(&endpoint)
-                    .timeout(self.config.request_timeout)
-            })
+            .send_with_retry(|| client.get(&endpoint).timeout(self.config.request_timeout))
             .await?;
         let payload = response
             .json::<TextModelsResponse>()
@@ -193,14 +197,11 @@ impl PollinationsProvider {
     ) -> ProviderResult<Box<dyn ChatStream>> {
         let endpoint = self.config.endpoint("/v1/chat/completions");
         let body = ChatCompletionRequest::from(request);
+        let client = self.client()?;
         // Retrying is safe: it only happens before any response arrives, and
         // Pollinations documents that resending an identical request is fine.
         let response = self
-            .send_with_retry(|| {
-                self.config
-                    .authorize(self.client.post(&endpoint))
-                    .json(&body)
-            })
+            .send_with_retry(|| self.config.authorize(client.post(&endpoint)).json(&body))
             .await?;
         Ok(Box::new(PollinationsChatStream::new(
             response.bytes_stream(),
@@ -216,7 +217,7 @@ impl PollinationsProvider {
         let response = self
             .send_once(
                 self.config
-                    .authorize(self.client.post(endpoint))
+                    .authorize(self.client()?.post(endpoint))
                     .timeout(self.config.request_timeout)
                     .json(&body),
             )

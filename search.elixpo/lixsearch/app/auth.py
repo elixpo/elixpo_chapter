@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import threading
 import time
 
@@ -17,6 +18,11 @@ from quart import g, jsonify, request
 from commons.auth_context import RequestAuthContext, set_request_auth
 
 _PROTECTED_OPENAI_PATHS = {"/v1/chat/completions", "/v1/responses"}
+# Firecrawl-compatible scraping routes get the same app-level key check
+# (defense in depth behind nginx) but answer with Firecrawl-shaped errors.
+_FIRECRAWL_PATH_RE = re.compile(
+    r"^/v1/(scrape|search|map|extract|crawl(/[^/]+)?|batch/scrape(/[^/]+)?)$"
+)
 _AGENT_PREFIX = "ag_"
 _MAX_AGENT_TTL_SECONDS = 1800
 
@@ -156,8 +162,14 @@ def install_api_auth(app) -> None:
         # Test clients and long-lived workers can reuse an asyncio task. Always
         # clear any prior request context before evaluating this request.
         set_request_auth(None)
-        if request.path not in _PROTECTED_OPENAI_PATHS:
+        firecrawl = bool(_FIRECRAWL_PATH_RE.match(request.path))
+        if request.path not in _PROTECTED_OPENAI_PATHS and not firecrawl:
             return None
+
+        def _fail(message: str, status: int, error_type: str):
+            if firecrawl:
+                return jsonify({"success": False, "error": message}), status
+            return _error(message, status, error_type)
 
         authorization = request.headers.get("Authorization", "")
         bearer = (
@@ -169,7 +181,7 @@ def install_api_auth(app) -> None:
         query_key = request.args.get("key", "").strip()
 
         if header_key.startswith(_AGENT_PREFIX) or query_key.startswith(_AGENT_PREFIX):
-            return _error(
+            return _fail(
                 "Delegated agent tokens must use Authorization: Bearer",
                 401,
                 "authentication_error",
@@ -177,7 +189,7 @@ def install_api_auth(app) -> None:
 
         if bearer.startswith(_AGENT_PREFIX):
             if header_key or query_key:
-                return _error(
+                return _fail(
                     "Delegated agent tokens cannot be combined with another credential",
                     401,
                     "authentication_error",
@@ -185,11 +197,11 @@ def install_api_auth(app) -> None:
             try:
                 context = await asyncio.to_thread(_VALIDATOR.validate, bearer)
             except AgentTokenInvalid:
-                return _error(
+                return _fail(
                     "Invalid or expired delegated token", 401, "authentication_error"
                 )
             except AgentTokenValidationUnavailable:
-                return _error(
+                return _fail(
                     "Delegated-token validation is temporarily unavailable",
                     503,
                     "server_error",
@@ -200,12 +212,12 @@ def install_api_auth(app) -> None:
 
         expected = os.getenv("API_KEY", "")
         if not expected:
-            return _error("API authentication is not configured", 503, "server_error")
+            return _fail("API authentication is not configured", 503, "server_error")
         provided = header_key or bearer or query_key
         if not provided:
-            return _error("API key required", 401, "authentication_error")
+            return _fail("API key required", 401, "authentication_error")
         if not hmac.compare_digest(provided, expected):
-            return _error("Invalid API key", 403, "authentication_error")
+            return _fail("Invalid API key", 403, "authentication_error")
         context = RequestAuthContext(mode="static", principal_id="local")
         g.oreolook_auth = context
         set_request_auth(context)

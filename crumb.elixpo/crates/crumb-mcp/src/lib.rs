@@ -7,7 +7,8 @@ pub use client::{McpDiagnostic, StdioMcpLimits, register_stdio_servers};
 pub use http_client::{StreamableHttpLimits, register_streamable_http_servers};
 
 use std::io::{BufRead, Write};
-use std::sync::Arc;
+use std::sync::{Arc, mpsc};
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, bail};
 use crumb_agent::{
@@ -169,6 +170,21 @@ pub fn serve_stdio(
     writer: &mut dyn Write,
     cancellation: &CancellationToken,
 ) -> Result<()> {
+    serve_stdio_with_heartbeat(dispatcher, reader, writer, cancellation, HEARTBEAT_INTERVAL)
+}
+
+/// How often a running call that carries a progress token reports progress.
+/// Clients such as Claude Code drop a server that stays silent for too long,
+/// and a delegated `crumb_agent` task can run for many minutes.
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(15);
+
+fn serve_stdio_with_heartbeat(
+    dispatcher: &McpDispatcher,
+    reader: &mut dyn BufRead,
+    writer: &mut dyn Write,
+    cancellation: &CancellationToken,
+    heartbeat: Duration,
+) -> Result<()> {
     loop {
         let Some(line) = read_line(reader)? else {
             return Ok(());
@@ -177,13 +193,75 @@ pub fn serve_stdio(
             continue;
         }
         let text = std::str::from_utf8(&line).context("MCP input is not UTF-8")?;
-        if let Some(response) = dispatcher.handle_line(text, cancellation) {
-            writer
-                .write_all(&response)
-                .context("failed to write MCP response")?;
-            writer.flush().context("failed to flush MCP response")?;
+        let response = match progress_token(text) {
+            Some(token) => {
+                handle_with_heartbeat(dispatcher, text, cancellation, &token, heartbeat, writer)?
+            }
+            None => dispatcher.handle_line(text, cancellation),
+        };
+        if let Some(response) = response {
+            write_message(writer, &response)?;
         }
     }
+}
+
+/// The progress token of a `tools/call` request, when the client sent one.
+fn progress_token(line: &str) -> Option<Value> {
+    let request = serde_json::from_str::<Value>(line).ok()?;
+    if request.get("method").and_then(Value::as_str) != Some("tools/call") {
+        return None;
+    }
+    request
+        .pointer("/params/_meta/progressToken")
+        .filter(|token| token.is_string() || token.is_number())
+        .cloned()
+}
+
+/// Runs one request on a worker thread and reports progress until it ends.
+fn handle_with_heartbeat(
+    dispatcher: &McpDispatcher,
+    line: &str,
+    cancellation: &CancellationToken,
+    token: &Value,
+    heartbeat: Duration,
+    writer: &mut dyn Write,
+) -> Result<Option<Vec<u8>>> {
+    std::thread::scope(|scope| {
+        let (done, finished) = mpsc::channel();
+        scope.spawn(move || {
+            let _ = done.send(dispatcher.handle_line(line, cancellation));
+        });
+        let started = Instant::now();
+        let mut beats = 0_u64;
+        loop {
+            match finished.recv_timeout(heartbeat) {
+                Ok(response) => return Ok(response),
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    beats += 1;
+                    let notification = encode(&json!({
+                        "jsonrpc": JSON_RPC_VERSION,
+                        "method": "notifications/progress",
+                        "params": {
+                            "progressToken": token,
+                            "progress": beats,
+                            "message": format!("still working ({}s)", started.elapsed().as_secs())
+                        }
+                    }));
+                    write_message(writer, &notification)?;
+                }
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    bail!("MCP request handler stopped without a response")
+                }
+            }
+        }
+    })
+}
+
+fn write_message(writer: &mut dyn Write, message: &[u8]) -> Result<()> {
+    writer
+        .write_all(message)
+        .context("failed to write MCP response")?;
+    writer.flush().context("failed to flush MCP response")
 }
 
 fn annotations(risk: RiskClass) -> Value {
@@ -336,6 +414,50 @@ mod tests {
         assert!(cancellation.is_cancelled());
     }
 
+    /// Serves `requests` with a short heartbeat and returns every message sent.
+    fn serve(requests: &str) -> Vec<serde_json::Value> {
+        let dispatcher = dispatcher(AgentMode::Auto, RiskClass::ReadOnly);
+        let mut output = Vec::new();
+        super::serve_stdio_with_heartbeat(
+            &dispatcher,
+            &mut requests.as_bytes(),
+            &mut output,
+            &CancellationToken::default(),
+            std::time::Duration::from_millis(20),
+        )
+        .expect("serving succeeds");
+        output
+            .split(|&byte| byte == b'\n')
+            .filter(|line| !line.is_empty())
+            .map(response)
+            .collect()
+    }
+
+    #[test]
+    fn long_calls_with_a_progress_token_report_progress_until_they_finish() {
+        let messages = serve(
+            r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"fixture","arguments":{"sleep_ms":150},"_meta":{"progressToken":"t1"}}}"#,
+        );
+        let (last, progress) = messages.split_last().expect("a response is sent");
+        assert_eq!(last["id"], 7);
+        assert_eq!(last["result"]["content"][0]["text"], "called");
+        assert!(progress.len() >= 2, "{messages:?}");
+        for (index, message) in progress.iter().enumerate() {
+            assert_eq!(message["method"], "notifications/progress");
+            assert_eq!(message["params"]["progressToken"], "t1");
+            assert_eq!(message["params"]["progress"], index as u64 + 1);
+        }
+    }
+
+    #[test]
+    fn calls_without_a_progress_token_send_only_the_response() {
+        let messages = serve(
+            r#"{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"fixture","arguments":{"sleep_ms":60}}}"#,
+        );
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert_eq!(messages[0]["id"], 8);
+    }
+
     fn dispatcher(mode: AgentMode, risk: RiskClass) -> McpDispatcher {
         let mut host = ToolHost::default();
         host.register(
@@ -361,9 +483,15 @@ mod tests {
     impl ToolHandler for FixtureHandler {
         fn call(
             &self,
-            _arguments: &serde_json::Value,
+            arguments: &serde_json::Value,
             _cancellation: &CancellationToken,
         ) -> Result<ToolOutput> {
+            if let Some(millis) = arguments
+                .get("sleep_ms")
+                .and_then(serde_json::Value::as_u64)
+            {
+                std::thread::sleep(std::time::Duration::from_millis(millis));
+            }
             Ok(ToolOutput::text("called"))
         }
     }

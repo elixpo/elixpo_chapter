@@ -158,7 +158,7 @@ flowchart TD
 
 OreoLook is available through [Pollinations.ai](https://pollinations.ai) and can also be self-hosted.
 
-OreoLook exposes an **OpenAI-compatible** API. Keep using `lixsearch` as the model ID for direct and Pollinations-routed requests.
+OreoLook exposes an **OpenAI-compatible** API. Use `oreolook` as the model ID. The legacy `lixsearch` ID is still accepted.
 
 ### Use through Pollinations
 
@@ -167,7 +167,7 @@ curl https://gen.pollinations.ai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $POLLINATIONS_API_KEY" \
   -d '{
-    "model": "lixsearch",
+    "model": "oreolook",
     "messages": [{"role": "user", "content": "What changed in AI today?"}],
     "stream": true
   }'

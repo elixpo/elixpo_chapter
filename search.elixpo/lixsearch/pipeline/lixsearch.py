@@ -29,6 +29,7 @@ import os
 from commons.environment import load_local_environment
 from commons.auth_context import pollinations_auth_headers
 from pipeline.config import *
+from pipeline import jev
 from pipeline.instruction import direct_system_instruction, system_instruction, user_instruction, synthesis_instruction
 from pipeline.optimized_tool_execution import optimized_tool_execution
 from pipeline.utils import format_sse, clean_url, clean_source_list
@@ -215,26 +216,12 @@ def _upstream_error_output(event_id):
 
 
 def _decision_model_stages() -> list[tuple[str, ...]]:
-    """Ordered model stages for decision calls.
-
-    Default: race LLM_DECISION_MODEL against LLM_MODEL_FALLBACK (unchanged).
-    JEV_ENABLED: try jev alone first, then race LLM_MODEL / LLM_MODEL_FALLBACK.
-    """
-    if JEV_ENABLED:
-        return [
-            (LLM_DECISION_MODEL,),
-            tuple(dict.fromkeys((LLM_MODEL, LLM_MODEL_FALLBACK))),
-        ]
+    """Race LLM_DECISION_MODEL against LLM_MODEL_FALLBACK."""
     return [tuple(dict.fromkeys((LLM_DECISION_MODEL, LLM_MODEL_FALLBACK)))]
 
 
 def _llm_model_chain(primary: str) -> tuple[str, ...]:
-    """primary, then LLM_MODEL when primary is the opt-in jev decision model, then fallback."""
-    chain = [primary]
-    if JEV_ENABLED and primary == LLM_DECISION_MODEL:
-        chain.append(LLM_MODEL)
-    chain.append(LLM_MODEL_FALLBACK)
-    return tuple(dict.fromkeys(chain))
+    return tuple(dict.fromkeys((primary, LLM_MODEL_FALLBACK)))
 
 
 async def _race_decision_call(call, label: str):
@@ -268,6 +255,45 @@ async def _race_decision_call(call, label: str):
     raise RuntimeError(f"{label}: every decision attempt failed")
 
 
+_JEV_ROUTE_QUESTIONS = {
+    "mode": jev.choice_question(
+        "Does answering this request need tools?",
+        {
+            "direct": "greetings, casual chat, opinions, explanations, writing, coding, math, stable knowledge",
+            "tools": "live/current facts, web search, URL reading, time zones, images, audio, YouTube, artifact creation, multi-step research",
+        },
+    ),
+    "context": jev.choice_question(
+        "Can the request be interpreted without earlier conversation turns?",
+        {
+            "standalone": "states a complete subject and desired output",
+            "continuation": "refers to or continues earlier content or work",
+        },
+    ),
+    "blocking_clarification": jev.yes_no_question(
+        "Must the assistant ask the user a question before it can respond at all, because the user "
+        "omitted a value only they can supply (their identity, an account, a credential, a private value, "
+        "or an irreversible choice)? Greetings, chit-chat, general questions, and anything answerable "
+        "with a reasonable default are No."
+    ),
+}
+
+
+async def _jev_route(query: str, image_count: int):
+    """Fast first pass. None means fall back to the LLM router.
+
+    jev cannot name blocking fields or write questions, so a yes on
+    blocking_clarification defers to the LLM; otherwise no clarification is needed.
+    """
+    if not JEV_ENABLED:
+        return None
+    result = await asyncio.to_thread(jev.classify, query, _JEV_ROUTE_QUESTIONS, label="router")
+    if result is None or result["blocking_clarification"][0]:
+        return None
+    mode = "tools" if image_count else result["mode"][0]
+    return mode, result["context"][0], ClarificationNeed()
+
+
 async def _decide_request_mode(
     user_query: str,
     image_count: int,
@@ -280,6 +306,11 @@ async def _decide_request_mode(
         query += f"\n[Attached images: {image_count}]"
     if context_excerpt:
         query += f"\n[Available conversation context]\n{context_excerpt[:1200]}"
+
+    fast = await _jev_route(query, image_count)
+    if fast is not None:
+        logger.info(f"[Pipeline] jev route mode={fast[0]} context={fast[1]}")
+        return fast
 
     messages = [
         {"role": "system", "content": _DECISION_INSTRUCTION},
@@ -1051,8 +1082,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                 _direct_messages[0] = {"role": "system", "name": "oreolook-direct-system", "content": direct_prompt}
                 payload = {"model": MODEL, "messages": _direct_messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
             else:
-                # Tool routing/selection is a decision call (jev when enabled).
-                payload = {"model": LLM_DECISION_MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
+                payload = {"model": MODEL, "messages": messages, "seed": random.randint(1000, 9999), "max_tokens": active_max_tokens}
                 # Document export is a final commit owned by the runtime after
                 # synthesis and validation. It is never available during
                 # planning/tool selection.
@@ -1169,8 +1199,6 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
                         break  # success — no need for fallback
                     except (requests.exceptions.RequestException, asyncio.TimeoutError) as e:
                         logger.warning(f"API error with model={_model_attempt} at iteration {current_iteration}: {e}")
-                        if JEV_ENABLED and _model_attempt == LLM_DECISION_MODEL:
-                            logger.warning(f"[Pipeline] decision model {_model_attempt} failed for tool selection; falling back to {MODEL}")
                         if _model_attempt == MODEL_FALLBACK:
                             logger.error(f"Fallback model also failed at iteration {current_iteration}")
                         continue
@@ -1329,7 +1357,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             for tc in tool_calls:
                 fn_name = tc["function"]["name"]
                 logger.info(
-                    "[runtime] tool_selected=%s iteration=%s max_links=%s max_tokens=%s",
+                    "[runtime] tool_selected={} iteration={} max_links={} max_tokens={}",
                     fn_name, current_iteration, active_max_links, active_max_tokens,
                 )
                 if fn_name == "deep_research":
@@ -1534,7 +1562,7 @@ async def run_elixposearch_pipeline(user_query: str, user_image: str, event_id: 
             if usable_fetches:
                 force_synthesis = True
                 logger.info(
-                    "[runtime] synthesis_required reason=fetched_evidence sources=%s",
+                    "[runtime] synthesis_required reason=fetched_evidence sources={}",
                     len(usable_fetches),
                 )
                 if event_id:

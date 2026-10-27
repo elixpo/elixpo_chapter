@@ -1,40 +1,57 @@
 {
   "ayushman": {
-    "title": "Ayushman Bhattacharya — Open Source & DevRel | Elixpo",
-    "description": "Ayushman Bhattacharya is an open-source maintainer and DevRel engineer focused on DevOps, MLOps, release engineering, automation and developer tooling.",
+    "title": "Ayushman Bhattacharya — Developer Relations & Open-Source Maintainer | Elixpo",
+    "description": "Ayushman Bhattacharya works in developer relations at Myceli AI and maintains Pollinations.ai as a GitHub Maintainer Advisory member, focused on DevOps and developer tooling.",
     "givenName": "Ayushman",
     "familyName": "Bhattacharya",
-    "jobTitle": "Open-Source Maintainer and DevRel Engineer",
+    "jobTitle": "Developer Relations & Open-Source Maintainer",
     "aliases": [
       "Ayushman",
       "Circuit-Overtime",
       "elixpo"
     ],
     "keywords": [
-      "open source maintainer",
       "developer relations",
       "DevRel",
+      "open source maintainer",
+      "GitHub Maintainer Advisory",
       "DevOps",
-      "MLOps",
+      "platform engineering",
+      "developer experience",
+      "GitHub Actions",
       "release engineering",
-      "developer tooling",
-      "automation",
+      "Debian packaging",
       "Pollinations AI",
       "Myceli AI"
     ],
     "knowsAbout": [
-      "Open Source",
       "Developer Relations",
+      "Open Source",
       "DevOps",
-      "MLOps",
-      "Release Engineering",
+      "Platform Engineering",
+      "Developer Experience",
+      "GitHub Actions",
       "CI/CD",
-      "Developer Tooling"
+      "Release Engineering",
+      "Debian Packaging",
+      "AI Caching"
     ],
     "affiliations": [
-      "Elixpo",
       "Pollinations AI",
-      "Myceli AI"
+      "GitHub Maintainer Advisory",
+      "Elixpo"
+    ],
+    "worksFor": {
+      "name": "Myceli AI",
+      "url": "https://myceli.ai"
+    },
+    "alumniOf": {
+      "name": "JIS University",
+      "url": "https://www.jisuniversity.ac.in"
+    },
+    "sameAs": [
+      "https://orcid.org/0009-0006-5960-6308",
+      "https://blogs.elixpo.com/elixpohere"
     ]
   },
   "anwesha": {
@@ -262,6 +279,47 @@
       "Pollinations.ai",
       "IEM Kolkata",
       "IEEE EMBS"
+    ]
+  },
+  "krishnendu": {
+    "title": "Krishnendu Dutta — Full Stack Developer & AI Engineer | Elixpo",
+    "description": "Krishnendu Dutta is a full-stack developer, AI engineer, FlyRank AI intern, and open-source contributor building real-time web applications, AI codebase intelligence tools, and developer utilities.",
+    "givenName": "Krishnendu",
+    "familyName": "Dutta",
+    "jobTitle": "Full Stack Developer, Open Source Contributor, and AI Engineer",
+    "aliases": [
+      "Krishnendu",
+      "dev-krish"
+    ],
+    "keywords": [
+      "full-stack developer",
+      "AI engineer",
+      "open source contributor",
+      "FlyRank AI intern",
+      "Upblit core member",
+      "React",
+      "Next.js",
+      "Node.js",
+      "MongoDB",
+      "Python",
+      "Elixpo"
+    ],
+    "knowsAbout": [
+      "Full-Stack Development",
+      "Artificial Intelligence",
+      "Open Source",
+      "React",
+      "Next.js",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "Python",
+      "LLM APIs"
+    ],
+    "affiliations": [
+      "FlyRank AI",
+      "Elixpo",
+      "Upblit"
     ]
   }
 }

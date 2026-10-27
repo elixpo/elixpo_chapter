@@ -231,7 +231,7 @@ Sources: {cache_metadata.get('sources', 'N/A')}"""
 
         elif function_name == "replyFromImage":
             image_url = function_args.get("imageURL")
-            query = function_args.get("query")
+            query = function_args.get("query") or "Describe this image"
             web_event = emit_event_func("INFO", f"<TASK>Analyzing image: '{query[:50]}'</TASK>")
             if web_event:
                 yield web_event

@@ -1,11 +1,11 @@
 {
   "heading": "PROJECTS",
-  "description": "Selected systems across open-source AI, trustworthy developer tooling, release engineering, organization automation, reliability, memory infrastructure, and measured computing research. Star counts are a snapshot from 18 October 2026.",
+  "description": "Every active Elixpo project, service and research record I have built, plus my maintainer work at Pollinations and completed systems research. The full lifecycle-aware directory lives at elixpo.com/projects. Star counts are a snapshot from 27 October 2026.",
   "projects": [
     {
       "name": "pollinations",
       "description": "An open-source generative AI platform where I maintain contributor rewards, triage automation, application workflows, model curation, and developer tooling.",
-      "stars": 5219,
+      "stars": 5247,
       "url": "https://github.com/pollinations/pollinations",
       "owner": "pollinations",
       "ownerLogo": "https://avatars.githubusercontent.com/u/86964862?v=4",
@@ -15,19 +15,19 @@
     {
       "name": "crumb.elixpo",
       "displayName": "Crumb",
-      "description": "A self-hosted Rust terminal agent with explicit permissions, isolated tools, supervised MCP execution, signed skill distribution, rollback, and revocation. Its execution-receipt workflow remains under validation.",
+      "description": "A self-hosted Rust terminal agent with explicit permissions, isolated tools, supervised MCP execution, signed skill distribution, rollback, and revocation. Debian packaging is in progress on Salsa (ITP #1151280); its execution-receipt workflow remains under validation.",
       "stars": 3,
       "url": "https://github.com/elixpo/crumb.elixpo",
       "owner": "elixpo",
       "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
-      "topics": ["rust", "developer-tools", "agent-infrastructure", "security"],
+      "topics": ["rust", "developer-tools", "agent-infrastructure", "security", "debian"],
       "language": "Rust"
     },
     {
       "name": "search.elixpo",
       "displayName": "OreoLook",
       "description": "An OpenAI-compatible web-search and research system with Redis-backed conversational memory, semantic caching, retrieval, MCP tools, streaming responses, citations, and reproducible evaluation artifacts.",
-      "stars": 23,
+      "stars": 24,
       "url": "https://github.com/pollinations/search.elixpo",
       "owner": "pollinations",
       "ownerLogo": "https://avatars.githubusercontent.com/u/86964862?v=4",
@@ -37,7 +37,7 @@
     {
       "name": "packages.elixpo",
       "displayName": "Elixpo Packages",
-      "description": "The source, release, signed APT distribution, and public catalogue for independently versioned Elixpo Linux applications, with candidate deployments and rollback documentation.",
+      "description": "The source, release, signed APT distribution, and public catalogue for independently versioned Elixpo Linux applications, with candidate deployments and rollback documentation. Selected for the XERJ Corpus Hub (in licence review).",
       "stars": 4,
       "url": "https://github.com/elixpo/packages.elixpo",
       "owner": "elixpo",
@@ -77,6 +77,138 @@
       "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
       "topics": ["linux", "zephyr", "real-time-systems", "systems-research"],
       "language": "Python"
+    },
+    {
+      "name": "blogs.elixpo",
+      "displayName": "LixBlogs",
+      "description": "An operated, community-developed publishing platform with real-time collaborative editing, multi-tenant publications, Markdown, SEO, and API and CLI automation on Cloudflare.",
+      "stars": 13,
+      "url": "https://github.com/elixpo/blogs.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["publishing", "collaboration", "cloudflare", "open-source-community"],
+      "language": "JavaScript"
+    },
+    {
+      "name": "sketch.elixpo",
+      "displayName": "LixSketch",
+      "description": "An open SVG whiteboard engine and React canvas with a hand-drawn visual system for sketches, diagrams, documents, and presentations.",
+      "stars": 10,
+      "url": "https://github.com/elixpo/sketch.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["canvas", "svg", "react", "developer-tools"],
+      "language": "JavaScript"
+    },
+    {
+      "name": "accounts.elixpo",
+      "displayName": "Elixpo Accounts",
+      "description": "Shared OAuth 2.0 and OpenID Connect identity infrastructure for Elixpo services, with SSO, passkeys, webhooks, and an edge-safe TypeScript SDK.",
+      "stars": 8,
+      "url": "https://github.com/elixpo/accounts.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["identity", "oidc", "cloudflare", "security"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "oreo",
+      "displayName": "Oreo",
+      "description": "An open hardware badge, operated site, and research platform running OreoOS: a MicroPython OS for an ESP32-S3 with apps, OTA updates, device drivers, KiCad hardware, and a DMA-aware RGB565 video pipeline.",
+      "stars": 8,
+      "url": "https://github.com/elixpo/oreo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["open-hardware", "micropython", "esp32", "embedded"],
+      "language": "Python"
+    },
+    {
+      "name": "lixrl.com",
+      "displayName": "Lixrl",
+      "description": "Short links, managed redirects, analytics, and production-ready QR codes, with custom domains, API access, and a developer CLI.",
+      "stars": 4,
+      "url": "https://github.com/elixpo/lixrl.com",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["url-shortener", "cloudflare", "cli", "analytics"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "mails.elixpo",
+      "displayName": "Elixpo Mails",
+      "description": "Shared email infrastructure for Elixpo services: templates, API- and webhook-triggered sends, delivery logs, and bring-your-own SMTP on Cloudflare's edge.",
+      "stars": 4,
+      "url": "https://github.com/elixpo/mails.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["email", "cloudflare", "webhooks", "infrastructure"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "payouts.elixpo",
+      "displayName": "Elixpo Payouts",
+      "description": "Shared operational tooling for tracked payout workflows across Elixpo programmes.",
+      "stars": 2,
+      "url": "https://github.com/elixpo/payouts.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["payments", "operations", "automation"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "admin.elixpo",
+      "displayName": "Elixpo Admin",
+      "description": "The operational administration surface for inspecting and running the Elixpo service network, with privileged functions kept restricted.",
+      "stars": 0,
+      "url": "https://github.com/elixpo/admin.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["operations", "administration", "infrastructure"],
+      "language": "TypeScript"
+    },
+    {
+      "name": "me.elixpo",
+      "displayName": "Elixpo Members",
+      "description": "Standalone, JSON-driven portfolios for people whose work forms part of Elixpo, statically exported to the edge.",
+      "stars": 3,
+      "url": "https://github.com/elixpo/me.elixpo",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["portfolio", "nextjs", "static-site", "community"],
+      "language": "JavaScript"
+    },
+    {
+      "name": "monodiffuse",
+      "displayName": "MonoDiffuse",
+      "description": "Controlled experiments in one-bit diffusion: native binary-weight training, PTQ/QAT ablations, calibrated evaluation, packed checkpoints, and runnable ONNX artifacts.",
+      "stars": 0,
+      "url": "https://github.com/elixpo/monodiffuse",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["research", "diffusion", "binary-networks", "edge-ai"],
+      "language": "Python"
+    },
+    {
+      "name": "octabit",
+      "displayName": "OctaBit",
+      "description": "A programmable RISC-style 8-bit computer built and documented on breadboards, with transistor and TTL logic, EEPROM microcode, and schematics.",
+      "stars": 3,
+      "url": "https://github.com/elixpo/octabit",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["open-hardware", "computer-architecture", "ttl", "eeprom"],
+      "language": "C++"
+    },
+    {
+      "name": "wozformer",
+      "displayName": "WozFormer",
+      "description": "Active research into language-model inference on a 1 MHz 6502 under severe SRAM and EEPROM constraints.",
+      "stars": 1,
+      "url": "https://github.com/elixpo/wozformer",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["research", "6502", "inference", "constrained-hardware"],
+      "language": "Jupyter Notebook"
     }
   ]
 }

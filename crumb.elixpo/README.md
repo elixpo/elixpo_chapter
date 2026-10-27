@@ -37,6 +37,13 @@ Windows PowerShell:
 irm https://raw.githubusercontent.com/elixpo/crumb.elixpo/main/install.ps1 | iex
 ```
 
+Homebrew (macOS and Linux):
+
+```bash
+brew tap elixpo/crumb https://github.com/elixpo/crumb.elixpo
+brew install elixpo/crumb/crumb
+```
+
 The installer downloads the matching GitHub Release asset, verifies its
 SHA-256 checksum, and installs `crumb` into a user-owned directory. See the
 [release process](docs/development/release-process.md) for version pinning,

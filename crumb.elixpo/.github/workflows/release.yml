@@ -110,7 +110,34 @@ jobs:
         with:
           key: release-${{ matrix.target }}
       - name: Build locked release binary
+        if: runner.os != 'Linux'
         run: cargo build --locked --release -p crumb-cli --target ${{ matrix.target }}
+      # Linux binaries are built on Debian 11 so they need only glibc 2.31 and
+      # run on Ubuntu 20.04, Debian 11, RHEL 9, and newer. The runner's own
+      # glibc would raise that floor to whatever the runner ships.
+      - name: Build locked release binary on Debian 11
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cargo/registry"
+          docker run --rm \
+            -v "$PWD:/src" -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
+            -w /src -e CARGO_TERM_COLOR=always rust:bullseye \
+            bash -c 'cargo build --locked --release -p crumb-cli --target "$1" && chown -R "$2" target /usr/local/cargo/registry' \
+            build "${{ matrix.target }}" "$(id -u):$(id -g)"
+      - name: Check the glibc floor
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          newest=$(objdump -T "target/${{ matrix.target }}/release/${{ matrix.binary }}" \
+            | grep -o 'GLIBC_[0-9.]*' | sort -Vu | tail -1)
+          echo "newest glibc symbol: $newest"
+          if [ "$(printf '%s\nGLIBC_2.31\n' "$newest" | sort -V | tail -1)" != GLIBC_2.31 ]; then
+            echo "::error::the Linux binary needs $newest; the release promises glibc 2.31"
+            exit 1
+          fi
       - name: Assemble release files
         shell: pwsh
         run: |

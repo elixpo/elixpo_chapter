@@ -85,7 +85,10 @@ async def test_stateless_initialize_and_tool_catalog(monkeypatch):
                 json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
             )
             names = {tool["name"] for tool in _sse_payload(listed)["result"]["tools"]}
-            assert names == {"search_web", "fetch_pages", "research_web", "deep_research", "export_research_pdf"}
+            assert names == {
+                "search_web", "fetch_pages", "research_web", "deep_research", "export_research_pdf",
+                "scrape_url", "map_site", "crawl_site", "crawl_status", "extract",
+            }
             assert listed.headers.get("mcp-session-id") is None
 
 

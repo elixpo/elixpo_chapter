@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use QFabric or its evaluation artifact, please cite this software and the accompanying paper."
-title: "QFabric: Contract-Driven Cross-Domain Task Recovery"
+title: "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board"
 type: software
 authors:
   - family-names: "Bhattacharya"
@@ -9,13 +9,15 @@ authors:
   - family-names: "Chakraborty"
     given-names: "Anwesha"
     email: "anwesha.elixpo@gmail.com"
-version: 1.0.2
-date-released: 2026-10-09
+version: 1.1.0
+date-released: 2026-10-28
+doi: "10.5281/zenodo.23692354"
 repository-code: "https://github.com/elixpo/qfabric"
 url: "https://github.com/elixpo/qfabric"
 abstract: >-
-  A research prototype and reproducibility artifact for empirical timing-contract
-  recovery across Linux and RTOS execution domains on the Arduino UNO Q.
+  A research prototype and reproducibility artifact for guarded timing-contract
+  recovery across Linux and RTOS execution domains on the Arduino UNO Q, with a
+  matched-load measurement study of when cross-domain migration can pay off.
 preferred-citation:
   type: software
   authors:
@@ -25,7 +27,8 @@ preferred-citation:
     - family-names: "Chakraborty"
       given-names: "Anwesha"
       email: "anwesha.elixpo@gmail.com"
-  title: "QFabric: Contract-Driven Cross-Domain Task Recovery"
+  title: "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board"
   year: 2026
-  version: "v1.0.2"
+  version: "v1.1.0"
+  doi: "10.5281/zenodo.23692354"
   repository-code: "https://github.com/elixpo/qfabric"

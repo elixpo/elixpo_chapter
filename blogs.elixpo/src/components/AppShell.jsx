@@ -608,7 +608,14 @@ export default function AppShell({ children, showSidebar = true }) {
               ))}
             </div>
             {user ? (
-              <Link href="/profile" className="block px-3 py-3 rounded-xl transition-colors cursor-pointer" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+              <Link
+                href={user.username ? `/${encodeURIComponent(user.username)}` : '/profile'}
+                className="block px-3 py-3 rounded-xl transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg-surface)'; }}
+                aria-label={`View ${user.display_name || user.username || 'user'}'s public profile`}
+              >
                 <div className="flex items-center gap-2.5">
                   <UserAvatar src={user.avatar_url} name={user.display_name || user.username} size={32} className="flex-shrink-0" />
                   <div className="min-w-0">

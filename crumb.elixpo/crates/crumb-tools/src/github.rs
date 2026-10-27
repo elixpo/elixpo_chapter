@@ -156,7 +156,7 @@ fn issue_reference(owner: &str, repository: &str, number: &str) -> Result<IssueR
     })
 }
 
-fn valid_slug(value: &str) -> bool {
+pub(crate) fn valid_slug(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 100
         && value
@@ -240,7 +240,7 @@ async fn fetch_issue(
     })
 }
 
-fn github_token(cancellation: &CancellationToken) -> Option<String> {
+pub(crate) fn github_token(cancellation: &CancellationToken) -> Option<String> {
     for name in ["GH_TOKEN", "GITHUB_TOKEN"] {
         if let Ok(token) = env::var(name)
             && !token.trim().is_empty()
