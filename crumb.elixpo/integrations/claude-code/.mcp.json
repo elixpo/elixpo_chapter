@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "crumb": {
+      "command": "crumb",
+      "args": ["mcp", "serve"]
+    }
+  }
+}

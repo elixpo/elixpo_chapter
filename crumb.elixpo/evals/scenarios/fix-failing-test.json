@@ -1,0 +1,12 @@
+{
+  "category": "coding",
+  "prompt": "The tests in this project fail. Find the bug, fix it, and make the tests pass.",
+  "files": {
+    "calc.py": "def average(values):\n    return sum(values) / len(values) + 1\n",
+    "test_calc.py": "import unittest\nfrom calc import average\n\n\nclass AverageTest(unittest.TestCase):\n    def test_average(self):\n        self.assertEqual(average([2, 4, 6]), 4)\n\n\nif __name__ == '__main__':\n    unittest.main()\n"
+  },
+  "commands_succeed": [
+    "python3 -m unittest -q test_calc"
+  ],
+  "max_tokens": 120000
+}
