@@ -8,6 +8,7 @@ import AppShell from '../../components/AppShell';
 import TabBar from '../../components/TabBar';
 import Link from 'next/link';
 import TopicPreferences from '../../components/TopicPreferences';
+import { PAID_PLANS_ENABLED } from '../../../lib/paidPlans';
 
 const TABS = [
   { label: 'Account', icon: 'person-outline' },
@@ -17,7 +18,8 @@ const TABS = [
   { label: 'Integrations', icon: 'git-network-outline' },
   { label: 'API', icon: 'key-outline' },
   { label: 'Media', icon: 'images-outline' },
-  { label: 'Subscription', icon: 'diamond-outline' },
+  // Same index either way; only the label changes while paid plans are off.
+  { label: PAID_PLANS_ENABLED ? 'Subscription' : 'Usage', icon: PAID_PLANS_ENABLED ? 'diamond-outline' : 'speedometer-outline' },
 ];
 
 function Toggle({ checked, onChange, disabled = false }) {
@@ -1030,7 +1032,7 @@ function OrganizationTab({ user }) {
               onClick={() => !atLimit && setShowCreateModal(true)}
               disabled={atLimit}
               className="px-4 py-2 text-[13px] font-medium text-[var(--text-primary)] bg-[#9b7bf7] hover:bg-[#b69aff] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title={atLimit ? `Free plan allows ${orgLimit} organization. Upgrade for more.` : ''}
+              title={atLimit ? (PAID_PLANS_ENABLED ? `Free plan allows ${orgLimit} organization. Upgrade for more.` : `You can own up to ${orgLimit} organization(s).`) : ''}
             >
               Create Organization
             </button>
@@ -1131,7 +1133,8 @@ function SubscriptionTab({ user }) {
 
   return (
     <div>
-      {/* Plan header */}
+      {/* Plan header (hidden while paid plans are off) */}
+      {PAID_PLANS_ENABLED && <>
       <div className="flex items-center justify-between py-6 mb-2">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-[#9b7bf714] flex items-center justify-center">
@@ -1159,6 +1162,7 @@ function SubscriptionTab({ user }) {
       </div>
 
       <div className="h-px bg-[var(--bg-elevated)]" />
+      </>}
 
       {/* Usage section */}
       <SectionHeader title="Usage" />
@@ -1205,7 +1209,7 @@ function SubscriptionTab({ user }) {
       )}
 
       {/* Limits breakdown */}
-      <SectionHeader title="Plan Limits" />
+      <SectionHeader title={PAID_PLANS_ENABLED ? 'Plan Limits' : 'Limits'} />
 
       <div className="rounded-xl border border-[var(--border-default)] overflow-hidden">
         {[
@@ -1230,7 +1234,7 @@ function SubscriptionTab({ user }) {
         ))}
       </div>
 
-      {currentTier === 'free' && (
+      {PAID_PLANS_ENABLED && currentTier === 'free' && (
         <div className="mt-6 p-4 rounded-xl text-center" style={{ background: 'rgba(155,123,247,0.06)', border: '1px solid rgba(155,123,247,0.15)' }}>
           <p className="text-[13px] text-[var(--text-muted)] mb-3">
             Need more storage, AI requests, or co-authors?

@@ -8,6 +8,7 @@ import ImageCropModal from '../components/ImageCropModal';
 import FollowListModal from '../components/FollowListModal';
 import Link from 'next/link';
 import BadgeManager from '../components/BadgeManager';
+import { PAID_PLANS_ENABLED } from '../../lib/paidPlans';
 import { generatePixelAvatar, generateProfileBanner } from '../utils/pixelAvatar';
 
 function UsageBar({ label, used, limit, unit, color = '#9b7bf7' }) {
@@ -445,8 +446,8 @@ export default function ProfilePage() {
             </div>
           ) : usage ? (
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 space-y-5">
-              {/* Tier badge */}
-              <div className="flex items-center justify-between">
+              {/* Tier badge (hidden while paid plans are off) */}
+              {PAID_PLANS_ENABLED && <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
                     className="px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wide"
@@ -461,7 +462,7 @@ export default function ProfilePage() {
                     Upgrade
                   </button>
                 )}
-              </div>
+              </div>}
 
               {/* AI usage */}
               <UsageBar

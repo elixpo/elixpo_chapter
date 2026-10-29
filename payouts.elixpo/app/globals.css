@@ -121,3 +121,28 @@ html.lenis, html.lenis body {
 .lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Skip link: hidden until focused, then shown above the navbar. */
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2000;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--app-ink);
+  color: var(--app-on-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+#main-content:focus {
+  outline: none;
+}

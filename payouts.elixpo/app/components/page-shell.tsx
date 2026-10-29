@@ -49,7 +49,11 @@ export default function PageShell({
             <Box sx={{ position: "relative", zIndex: 1 }}>
                 <Navbar />
                 {/* Clear the floating navbar */}
-                <Box component="main" sx={{ pt: { xs: 10, md: 16 } }}>
+                <Box
+                    component="main"
+                    id="main-content"
+                    tabIndex={-1}
+                    sx={{ pt: { xs: 10, md: 16 } }}>
                     {children}
                 </Box>
                 <Footer />

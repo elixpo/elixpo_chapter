@@ -1,4 +1,5 @@
 import { blogPosts } from "@/content/blog";
+import { PAID_PLANS_ENABLED } from "@/lib/featureFlags";
 
 export default async function sitemap() {
     const baseUrl = "https://sketch.elixpo.com";
@@ -7,7 +8,7 @@ export default async function sitemap() {
     const staticRoutes = [
         "",
         "/docs",
-        "/pricing",
+        ...(PAID_PLANS_ENABLED ? ["/pricing"] : []),
         "/teams",
         "/resources/blog",
         "/resources/community",

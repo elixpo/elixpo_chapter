@@ -55,3 +55,20 @@ contact:
 # fixing a typo.
 version: "v1.4.119"
 date-released: "2026-09-30"
+preferred-citation:
+  type: article
+  title: "RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems"
+  authors:
+    - family-names: Bhattacharya
+      given-names: Ayushman
+      affiliation: Pollinations AI
+    - family-names: Chakraborty
+      given-names: Anwesha
+      affiliation: "Department of Computer Science and Engineering, JIS University"
+  year: 2026
+  journal: "arXiv preprint"
+  identifiers:
+    - type: other
+      value: "arXiv:2610.35935"
+      description: "arXiv identifier"
+  url: "https://arxiv.org/abs/2610.35935"

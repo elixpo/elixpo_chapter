@@ -39,7 +39,7 @@ license:
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: ''
-  test_cmd: ''
+  test_cmd: python3 -m unittest discover -s tests -v
   build_cmd: ''
 maintainers:
 - github: Circuit-Overtime
@@ -48,6 +48,11 @@ maintainers:
   - embedded systems
   - open hardware
   lead: true
+- github: ez-vivek
+  skills:
+  - OreoOS
+  - Python
+  lead: false
 governance:
   model: maintainer-led
   document: GOVERNANCE.md

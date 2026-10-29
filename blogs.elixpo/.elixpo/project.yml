@@ -57,6 +57,12 @@ maintainers:
   - github: Circuit-Overtime
     skills: [frontend, nextjs, ui, cloudflare, d1]
     lead: true
+  - github: divyanshuj91
+    skills: [nextjs, d1, api, cli]
+    lead: false
+  - github: ez-vivek
+    skills: [frontend, nextjs]
+    lead: false
 
 governance:
   model: maintainer-led

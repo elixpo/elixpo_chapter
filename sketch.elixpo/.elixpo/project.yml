@@ -35,7 +35,7 @@ license:
   current_file: LICENSE
   notice_file: LICENSES/NOTICE
   migration_status: review-required
-  target_code_license: not-designated
+  target_code_license: MIT
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: ''
@@ -49,6 +49,17 @@ maintainers:
   - SVG
   - Cloudflare
   lead: true
+- github: ez-vivek
+  skills:
+  - JavaScript
+  - Accessibility
+  - Next.js
+  lead: false
+- github: divyanshuj91
+  skills:
+  - JavaScript
+  - Next.js
+  lead: false
 governance:
   model: maintainer-led
   document: GOVERNANCE.md

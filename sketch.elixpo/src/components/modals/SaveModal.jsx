@@ -7,6 +7,7 @@ import { getSessionID } from '@/hooks/useSessionID'
 import { generateKey, encrypt } from '@/utils/encryption'
 import { WORKER_URL } from '@/lib/env'
 import usePlanEntitlements from '@/hooks/usePlanEntitlements'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
 import useAuthStore from '@/store/useAuthStore'
 import useSketchStore from '@/store/useSketchStore'
 import { triggerCloudSync } from '@/hooks/useAutoSave'
@@ -370,7 +371,7 @@ export default function SaveModal() {
     if (!limits.pdfExport) {
       const toast = document.getElementById('save-toast')
       if (toast) {
-        toast.innerHTML = '<i class="bx bxs-lock-alt text-[#b99be9] mr-1.5"></i>PDF export is available on Pro'
+        toast.innerHTML = '<i class="bx bxs-lock-alt text-[#b99be9] mr-1.5"></i>' + (PAID_PLANS_ENABLED ? 'PDF export is available on Pro' : 'PDF export is not available on this account')
         toast.classList.remove('hidden')
         setTimeout(() => toast.classList.add('hidden'), 3500)
       }
@@ -543,12 +544,12 @@ export default function SaveModal() {
               </button>
               <button
                 onClick={handleExportPDF}
-                title={limits.pdfExport ? 'Export PDF' : 'PDF export is available on Pro'}
+                title={limits.pdfExport ? 'Export PDF' : (PAID_PLANS_ENABLED ? 'PDF export is available on Pro' : 'PDF export is not available on this account')}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
               >
                 <i className="bx bxs-file-pdf text-sm" />
                 PDF Document
-                {!limits.pdfExport && <span className="ml-auto rounded bg-accent-blue/15 px-1.5 py-0.5 text-[8px] uppercase text-accent-blue">Pro</span>}
+                {PAID_PLANS_ENABLED && !limits.pdfExport && <span className="ml-auto rounded bg-accent-blue/15 px-1.5 py-0.5 text-[8px] uppercase text-accent-blue">Pro</span>}
               </button>
               <button
                 onClick={handleExportLixjson}

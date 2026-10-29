@@ -49,6 +49,11 @@ maintainers:
   - Terminal engineering
   - Next.js
   lead: true
+- github: ez-vivek
+  skills:
+  - Rust
+  - Agent systems
+  lead: false
 governance:
   model: maintainer-led
   document: GOVERNANCE.md

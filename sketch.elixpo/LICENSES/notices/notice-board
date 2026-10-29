@@ -3,7 +3,8 @@ THIRD-PARTY NOTICES
 
 This repository depends on third-party components, each distributed under its
 own license. The application code in this repository is licensed under the
-Elixpo standard (MIT for code, CC-BY-4.0 for assets); see ../../LICENSE.
+MIT (code) and CC-BY-4.0
+(visual assets); see ../../LICENSE.
 
 Primary runtime dependencies (see package.json for the authoritative list and
 versions):
@@ -43,8 +44,8 @@ Bundled brand fonts (LixSketch custom typefaces, under src/, public/, and the
 packages' fonts/ directories):
 
   * lixDefault, lixFont, lixFancy,
-    lixCode, lixDocs                 - Elixpo brand fonts (CC-BY-4.0 WITH
-                                       Oreo-trademarks; see ../NOTICE)
+    lixCode, lixDocs                 - Elixpo brand fonts (CC-BY-4.0;
+                                       see ../../TRADEMARKS.md)
 
 If you believe a component is missing from this list, please open an issue or
 email hello@elixpo.com.

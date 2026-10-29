@@ -24,6 +24,9 @@
   ],
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@blocknote/core": "^0.47.1",
     "@blocknote/mantine": "^0.47.1",

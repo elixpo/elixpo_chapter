@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import useAuthStore from '@/store/useAuthStore'
 import { useTranslation } from '@/hooks/useTranslation'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
 
 function OpenCanvasButton({ className }) {
   const router = useRouter()
@@ -58,7 +59,7 @@ const accountSections = [
       { href: '/profile?tab=personal', label: 'Personal details', detail: 'Identity and public profile', icon: 'bx-user' },
       { href: '/profile?tab=integrations', label: 'Integrations', detail: 'Cloudinary and Pollinations', icon: 'bx-plug' },
       { href: '/profile?tab=usage', label: 'Usage & limits', detail: 'Storage and collaboration', icon: 'bx-bar-chart-alt-2' },
-      { href: '/profile?tab=billing', label: 'Billing & plan', detail: 'Plan and entitlements', icon: 'bx-credit-card' },
+      ...(PAID_PLANS_ENABLED ? [{ href: '/profile?tab=billing', label: 'Billing & plan', detail: 'Plan and entitlements', icon: 'bx-credit-card' }] : []),
     ],
   },
   {
@@ -292,7 +293,7 @@ export default function LandingNav() {
   }, [])
 
   const primaryLinks = [
-    { href: '/pricing', label: t('landing.nav.pricing') },
+    ...(PAID_PLANS_ENABLED ? [{ href: '/pricing', label: t('landing.nav.pricing') }] : []),
     { href: '/teams', label: t('landing.nav.teams') },
     { href: '/templates', label: t('landing.nav.templates') },
     { href: '/docs', label: t('landing.resources.docs') },

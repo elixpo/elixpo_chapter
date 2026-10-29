@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
 import useAuth from '@/hooks/useAuth'
 import {
   clearRememberedCanvasId,
@@ -390,7 +391,7 @@ export default function LandingPage() {
             <i className="bx bx-palette" />
             Launch Canvas
           </Link>
-          <Link href="/pricing" className="lx-btn">See pricing</Link>
+          {PAID_PLANS_ENABLED && <Link href="/pricing" className="lx-btn">See pricing</Link>}
         </div>
       </StandardBand>
     </SiteShell>

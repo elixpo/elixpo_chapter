@@ -566,6 +566,8 @@ export default function DashboardLayout({
 
                     <Box
                         component="main"
+                        id="main-content"
+                        tabIndex={-1}
                         sx={{
                             maxWidth: "1280px",
                             mx: "auto",

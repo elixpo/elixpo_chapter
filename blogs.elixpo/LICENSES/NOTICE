@@ -1,50 +1,48 @@
-NOTICE - the Elixpo notice board
-================================
+NOTICE
+======
 
-This repository is licensed under the Elixpo License (see ../LICENSE). This
-NOTICE file is the "notice board": it records reservations and product-specific
-terms that sit ON TOP of the base license for this repository. Read it together
-with LICENSE and LICENSES/exceptions/Oreo-trademarks.
+The code in this repository is licensed under the MIT License (see
+`../LICENSE` and `preferred/MIT`). Visual assets are licensed under CC-BY-4.0
+(see `preferred/CC-BY-4.0`). Brand rules - names, mascot, logos, domains and
+official listings - are separate and documented in `../TRADEMARKS.md`.
+
+This notice adds no copyright restriction on top of those licences.
 
 REPOSITORY
 ----------
 
   Name:        lixblogs (blogs.elixpo.com)
-  What it is:  LixBlogs (Elixpo Blogs) - a modern blogging platform with a rich
+  What it is:  LixBlogs (Elixpo Blogs) - an open-source blogging platform with a rich
                block editor, AI writing tools, real-time collaboration, and
                organizations, deployed on Cloudflare's edge. A monorepo that
                also ships the LixEditor packages.
 
-EXCLUSIVE ARTIFACTS IN THIS REPOSITORY
---------------------------------------
+OFFICIAL NAMES AND LISTINGS
+---------------------------
 
-  npm package
-    @elixpo/lixeditor is published from this repository (packages/lixeditor/).
-    The published package name @elixpo/lixeditor on the npm registry is reserved
-    to Elixpo; forks must publish under a different name (the MIT-licensed source
-    may of course be reused).
+The following identify official Elixpo releases and are covered by
+`../TRADEMARKS.md`, not by an extra copyright term:
 
-  CLI package
-    lixblogs-cli is published from this repository (packages/lixblogs-cli/).
-    The published package name lixblogs-cli on the npm registry is reserved to
-    Elixpo; forks must publish under a different name.
+  - the npm package names @elixpo/lixeditor and lixblogs-cli
+  - the VS Code Marketplace listing elixpo.lixeditor and the "elixpo"
+    publisher identity
+  - the official deployment at blogs.elixpo.com
 
-  VS Code extension
-    elixpo.lixeditor on the VS Code Marketplace - publisher "elixpo", extension
-    "lixeditor" (packages/vscode-lixeditor/) - is reserved to Elixpo. The
-    extension source is MIT; the Marketplace listing and the "elixpo" publisher
-    identity are not transferred.
+Forks are welcome under MIT; please use your own product, package, listing
+and domain names and do not imply Elixpo endorsement.
 
-  Hosted SaaS
-    blogs.elixpo.com is the official hosted LixBlogs deployment. The brand, the
-    hosted deployment, and the operational data are reserved; the source is MIT.
+VISUAL ASSETS
+-------------
 
-BRAND ASSETS
-------------
+  The brand and visual asset files listed in `README.md` (in this
+  directory) are CC-BY-4.0. Reusing them as files only
+  requires the attribution CC-BY-4.0 asks for; using the Elixpo or Oreo names
+  or mascot as your own branding is covered by `../TRADEMARKS.md`.
 
-  The brand assets under public/ (logos, mascot marks, og-image, and the Lix*
-  brand fonts) are provided under CC-BY-4.0 WITH Oreo-trademarks. The Oreo
-  mascot, the chest E-badge, and the Elixpo / Oreo names and palette remain
-  reserved (see LICENSES/exceptions/Oreo-trademarks).
+THIRD-PARTY MATERIAL
+--------------------
+
+  Third-party components keep their own licences. See
+  `notices/notice-board` for the attribution list.
 
 Contact: hello@elixpo.com

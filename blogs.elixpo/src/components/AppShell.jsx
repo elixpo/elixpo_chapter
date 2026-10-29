@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { PAID_PLANS_ENABLED } from '../../lib/paidPlans';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { generatePixelAvatar } from '../utils/pixelAvatar';
@@ -407,7 +408,9 @@ function ProfileDropdown({ user, logout }) {
 
           <div className="py-1.5">
             <DropdownItem href="/help" onClick={() => setOpen(false)} icon="help-circle-outline" faint>Help</DropdownItem>
-            <DropdownItem href="/pricing" onClick={() => setOpen(false)} icon="diamond-outline" faint>Pricing</DropdownItem>
+            {PAID_PLANS_ENABLED && (
+              <DropdownItem href="/pricing" onClick={() => setOpen(false)} icon="diamond-outline" faint>Pricing</DropdownItem>
+            )}
           </div>
 
           <div style={{ height: '1px', backgroundColor: 'var(--divider)' }} />

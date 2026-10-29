@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { docsNavFlat } from '../src/config/docsNav';
 import { kvCache, PUBLIC_SITEMAP_CACHE_KEY } from '../lib/cache';
+import { PAID_PLANS_ENABLED } from '../lib/paidPlans';
 
 const SITE_URL = 'https://blogs.elixpo.com';
 
@@ -30,7 +31,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/`, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/explore`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.8 },
+    ...(PAID_PLANS_ENABLED ? [{ url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.8 }] : []),
     { url: `${SITE_URL}/docs`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/help`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/badges`, changeFrequency: 'monthly', priority: 0.6 },

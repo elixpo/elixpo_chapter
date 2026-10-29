@@ -12,6 +12,7 @@ every Elixpo repository.
 - **Design & brand** - icons, illustrations, and assets (see `brand/MASCOT.md`).
 - **Triage** - reproduce issues, suggest labels, help others in Discussions.
 - **Ideas** - propose features in [GitHub Discussions](https://github.com/orgs/elixpo/discussions).
+- **Google Summer of Code 2027** - Elixpo is applying as a mentoring organisation; see the proposed ideas at [gsoc.elixpo.com](https://gsoc.elixpo.com).
 
 ## Before you start
 

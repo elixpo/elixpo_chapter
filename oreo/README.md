@@ -60,7 +60,7 @@ A 2-inch full-colour LCD running at 33 fps with PWM-dimmed backlight. Every app 
 <td width="33%" valign="top">
 
 ### 🐼 Built-in app SDK
-`class App(oreoOS.App):` with three methods is all it takes. Copy `templates/example_app/`, edit, deploy. Your icon shows up in the launcher.
+`class App(oreoOS.App):` with three methods is all it takes. Copy [`app_templates/`](app_templates/), edit, deploy. Your icon shows up in the launcher.
 
 </td>
 <td width="33%" valign="top">
@@ -133,7 +133,7 @@ store.uninstall("pet")
 
 The Market is the right home for: games, themed sketches, hardware demos, hackathon entries. **Contribute one** by dropping a folder into `apps_market/<your_app>/` with the usual `main.py + manifest.json + __init__.py + assets/` shape; the deploy script picks it up automatically and the market tile lists it on next boot. Anything in `apps_market/` is **opt-in by default** — that's how you keep flash + drawer real estate tight for everyone else.
 
-Want yours to be **always-installed**? Drop it in `apps/` instead. Copy [`templates/example_app/`](templates/example_app/) as a starting point.
+Want yours to be **always-installed**? Drop it in `apps/` instead. Copy [`app_templates/`](app_templates/) as a starting point.
 
 ---
 
@@ -148,6 +148,37 @@ python tools/deploy.py /dev/ttyACM0      # flash to a connected board
 ```
 
 For step-by-step app-writing + OS internals, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Host tools need Python 3.9 or newer on Linux, macOS, or Windows via WSL. The
+badge itself runs MicroPython 1.28.
+
+### Warm-up (no badge, no keys)
+
+<!-- Command matches .github/workflows/tests.yml (Python 3.11, standard library only). -->
+
+```bash
+git clone https://github.com/elixpo/oreo
+cd oreo
+python3 -m unittest discover -s tests -v
+```
+
+**What works:** the hardware-free unit tests for pure helpers (colour packing in
+`oreoOS/api.py`, `.env` parsing in `oreoOS/config.py`). They use only the
+Python standard library, so no `pip install`, badge or key is needed.
+**What is skipped:** running OreoOS apps needs an ESP32-S3 badge; there is no
+desktop simulator yet. With a badge, `tools/deploy.py` runs without keys and writes blank
+WiFi and weather values when `.env.local` is missing. **Expected result:**
+`OK` at the end of the run. If something asks you for a secret, open an issue
+instead of working around it.
+
+### Configuration and access
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: setup, tests and warm-up tasks run locally without decrypting
+configuration. Once accepted, contributors receive SOPS access scoped to their
+work (for example integration tests or staging), revoked when the programme
+ends. Do not try to decrypt or commit configuration; if setup asks for a
+secret, open an issue.
 
 ---
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import LinkPreviewTooltip, { useLinkPreview } from './LinkPreviewTooltip';
+import { PAID_PLANS_ENABLED } from '../../../lib/paidPlans';
 import { readTimeFromWords } from '../../../lib/readTime';
 import { escapeHtmlAttribute, normalizeCssColor, normalizeImageUrl, normalizeUrl } from '../../utils/linkHelper';
 import { normalizeMermaidSource } from '../../utils/mermaidConfig';
@@ -1274,10 +1275,14 @@ export default function BlogPreview({
              <ion-icon name="lock-closed" style={{ fontSize: '24px', color: 'var(--accent)' }} />
           </div>
           <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>This story is for members only.</h3>
-          <p className="text-[14px] mb-6" style={{ color: 'var(--text-muted)' }}>Sign up for a member tier to read the full story and support the author.</p>
-          <a href="/pricing" className="inline-block px-6 py-2.5 rounded-full text-[14px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, #9b7bf7 0%, #8b6ae6 100%)' }}>
-            View Plans
-          </a>
+          {PAID_PLANS_ENABLED && (
+            <>
+              <p className="text-[14px] mb-6" style={{ color: 'var(--text-muted)' }}>Sign up for a member tier to read the full story and support the author.</p>
+              <a href="/pricing" className="inline-block px-6 py-2.5 rounded-full text-[14px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, #9b7bf7 0%, #8b6ae6 100%)' }}>
+                View Plans
+              </a>
+            </>
+          )}
         </div>
       )}
 

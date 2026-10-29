@@ -45,25 +45,17 @@ to unverified remote installation or silently store credentials elsewhere.
 
 ## Dependency boundary
 
-The Debian profile uses 29 external crates across the complete dependency
-graph. The audit on 19 October 2026 found 28 represented by compatible
-packages in unstable and one missing crate:
-
-```text
-reedline 0.52.1
-```
-
-Run the recorded boundary check with:
+Every external crate in the Debian profile is packaged in unstable at a
+compatible version; the last missing one, `reedline`, entered unstable on
+24 October 2026. Run the boundary check with:
 
 ```bash
 python3 scripts/check-debian-dependencies.py
 ```
 
-The check fails if a second dependency disappears, becomes incompatible, or
-if the expected `reedline` blocker changes without an intentional update.
-Once `librust-reedline-dev` is available in unstable, change
-`EXPECTED_MISSING` to an empty set. Do not vendor the crate in the Crumb
-source package to bypass Debian review.
+It fails if any dependency goes missing from Debian or becomes incompatible.
+Do not vendor a crate in the Crumb source package to bypass Debian review;
+package it through the Debian Rust Team instead.
 
 ## reedline
 
@@ -81,14 +73,16 @@ in `docs/development/debian-itp.txt` for packaging history. Further ITP
 correspondence belongs at `1151280@bugs.debian.org`. The sponsorship request
 in `docs/development/debian-rfs.txt` was filed as
 [#1152019](https://bugs.debian.org/1152019). Simon Quigley sponsored 1.1.0-1,
-which entered the NEW queue on 26 October 2026; the ITP closes when NEW accepts
-the package.
+which ftpmaster accepted from NEW into unstable on 28 October 2026, closing
+the ITP. Simon also sponsored 1.1.0-3, accepted the same day.
 
-1.1.0-2 answers the review of 1.1.0-1: `debian/copyright` lists the Sigstore
+1.1.0-3 answers the review of 1.1.0-1: `debian/copyright` lists the Sigstore
 test fixtures (Apache-2.0), limits CC-BY-4.0 to the website images, and
 credits the Pollinations logo; the package moves to debhelper compat 14 and a
 version 5 watch file; and the autopkgtests now run the upstream test suite
-against Debian's crates and exercise the installed binary offline.
+against Debian's crates and exercise the installed binary offline. It also
+build-depends on `ca-certificates` for minimal build environments and adds
+Salsa CI.
 
 ## Archive submission sequence
 
@@ -101,7 +95,9 @@ against Debian's crates and exercise the installed binary offline.
 4. Run `lintian`, `autopkgtest`, `piuparts`, and `sbuild`.
 5. Upload the signed source package to `mentors.debian.net` and file an RFS
    against `sponsorship-requests` (done: #1152019, sponsored).
-6. Respond to sponsor and FTP NEW review (in progress).
+6. Respond to sponsor and FTP NEW review (done: 1.1.0-1 accepted 28 October
+   2026).
 
-Do not announce Crumb as being in Debian until the package clears Debian's NEW
-queue and appears in the official archive.
+Crumb is in Debian unstable (https://tracker.debian.org/pkg/crumb). Later
+releases follow the same route: import the release, build and test, upload to
+mentors, and ask the sponsor to upload.

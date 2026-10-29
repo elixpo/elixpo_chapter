@@ -66,6 +66,9 @@ function LoginInner() {
 
     return (
         <Box
+            component="main"
+            id="main-content"
+            tabIndex={-1}
             sx={{
                 position: "relative",
                 minHeight: "100vh",

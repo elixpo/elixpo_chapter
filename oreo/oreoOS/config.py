@@ -10,7 +10,13 @@ def _load_env():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, _, v = line.partition("=")
-                env[k.strip()] = v.strip()
+                v = v.strip()
+                # The committed .env is SOPS-encrypted. Without a key every
+                # value is an `ENC[...]` string; treat it as unset rather than
+                # flashing ciphertext as a WiFi name or API key.
+                if v.startswith("ENC["):
+                    continue
+                env[k.strip()] = v
     return env
 
 _env = _load_env()

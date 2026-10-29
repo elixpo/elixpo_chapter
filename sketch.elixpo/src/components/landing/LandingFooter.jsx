@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
 
 const columns = [
   {
     title: 'Product',
     links: [
-      { href: '/pricing', label: 'Pricing' },
+      ...(PAID_PLANS_ENABLED ? [{ href: '/pricing', label: 'Pricing' }] : []),
       { href: '/teams', label: 'Teams' },
       { href: '/templates', label: 'Templates' },
       { href: 'https://www.npmjs.com/package/@elixpo/lixsketch', label: 'NPM Package', icon: 'bx bxl-nodejs', external: true },

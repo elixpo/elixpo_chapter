@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '../../../lib/auth';
 import { pricingForCountry, PLANS } from '../../../lib/pricing';
 import { payoutsBase } from '../../../lib/checkout-handoff';
+import { PAID_PLANS_ENABLED } from '../../../lib/paidPlans';
 
 // GET /api/checkout?plan=member
 //
@@ -12,6 +13,11 @@ import { payoutsBase } from '../../../lib/checkout-handoff';
 // catalog — we no longer sign an amount, so there's nothing to tamper with and
 // no shared handoff secret to distribute.
 export async function GET(request) {
+  // Paid plans hidden: no new checkouts start from this app. The Elixpo Pay
+  // webhook (/api/billing/grant) is intentionally left untouched.
+  if (!PAID_PLANS_ENABLED) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
   const url = new URL(request.url);
   const plan = (url.searchParams.get('plan') || '').toLowerCase();
 

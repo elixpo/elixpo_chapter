@@ -2,6 +2,7 @@
   "name": "elixpoblogs-collab",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "yjs": "^13.6.29",

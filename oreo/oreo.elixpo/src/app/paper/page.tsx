@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/seo";
 
 // Set to the arXiv identifier (e.g. "2610.01234") once the paper is announced;
 // the status, links, and citation switch over automatically.
-const ARXIV_ID: string | null = null;
+const ARXIV_ID: string | null = "2610.35935";
 const ZENODO_DOI = "10.5281/zenodo.23543367";
 const TITLE =
   "RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems";
@@ -145,7 +145,7 @@ export default function PaperPage() {
         <aside className="self-start rounded-[1.4rem] border border-border bg-card p-6">
           <p className="eyebrow">Status</p>
           <dl className="space-y-4 text-sm">
-            <div><dt className="text-xs text-muted">Venue</dt><dd className="font-semibold">arXiv preprint · cs.AR (cs.PF, cs.MM)</dd></div>
+            <div><dt className="text-xs text-muted">Venue</dt><dd className="font-semibold">arXiv preprint · cs.AR (cs.MM, cs.PF, eess.IV)</dd></div>
             <div><dt className="text-xs text-muted">Review</dt><dd className="font-semibold">{ARXIV_ID ? "Announced; not peer reviewed" : "Submitted; awaiting moderation"}</dd></div>
             <div><dt className="text-xs text-muted">Artifact</dt><dd><a href={`https://doi.org/${ZENODO_DOI}`} target="_blank" rel="noreferrer" className="font-semibold underline decoration-border underline-offset-4 hover:decoration-text">doi:{ZENODO_DOI}</a></dd></div>
             <div><dt className="text-xs text-muted">Workload</dt><dd className="font-semibold">Big Buck Bunny (CC BY 3.0), Blender Foundation</dd></div>

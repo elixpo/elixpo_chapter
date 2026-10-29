@@ -1,4 +1,6 @@
+import { notFound } from 'next/navigation';
 import PricingPage from '../../src/views/PricingPage';
+import { PAID_PLANS_ENABLED } from '../../lib/paidPlans';
 import { staticPageMeta } from '../../lib/pageMeta';
 
 export const metadata = staticPageMeta({
@@ -8,5 +10,6 @@ export const metadata = staticPageMeta({
 });
 
 export default function Pricing() {
+  if (!PAID_PLANS_ENABLED) notFound();
   return <PricingPage />;
 }

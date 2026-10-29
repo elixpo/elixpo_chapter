@@ -15,7 +15,7 @@ real-time collaboration, and organizations — all on the edge.
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/elixpo/blogs.elixpo)
 [![npm](https://img.shields.io/npm/v/@elixpo/lixeditor?style=for-the-badge&color=cb3837&logo=npm&logoColor=white&label=@elixpo/lixeditor)](https://www.npmjs.com/package/@elixpo/lixeditor)
 [![VS Code](https://img.shields.io/badge/VS_Code-Extension-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=elixpo.lixeditor)
-[![License](https://img.shields.io/badge/License-See_repository_terms-6b7280?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-6b7280?style=for-the-badge)](LICENSE)
 
 [![Next.js](https://img.shields.io/badge/Next.js_15-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
@@ -279,18 +279,56 @@ graph TB
 
 <br />
 
-## Running locally
+## Warm-up (no keys)
 
-Copy [`.env.example`](.env.example) to `.env.local` and fill in the values
-before starting the app. Only the **Auth** block is needed to sign in locally;
-every other section is marked optional and only affects its own feature.
-It is the single source for local secrets used by both Next.js and the
-Cloudflare platform proxy. Do not create `.dev.vars`; Wrangler gives that file
-precedence and it can silently shadow `.env.local` with stale values.
+<!-- Commands match .github/workflows/pr-tests.yml (Node 22, npm ci, npm test). -->
+
+You need Node.js 22 (see [`.nvmrc`](.nvmrc)) on Linux, macOS, or Windows via
+WSL. No Elixpo keys, accounts or `.env.local` are needed.
 
 ```bash
-cp .env.example .env.local
-npm install
+npm ci
+npm test
+```
+
+**What works:** installing from the lockfile and the full unit suite
+(`node --test`). Tests set their own throwaway values, so they never read
+configuration. **Expected result:** the summary at the end reports `fail 0`.
+
+**Optional, not yet part of PR CI:** the CLI package has its own suite.
+
+```bash
+cd packages/lixblogs-cli && npm ci && npm test
+```
+
+**Starting the app without keys:** `npm run dev` also starts without
+`.env.local`. It prints a "no keys" warning and ignores the encrypted values in
+the committed `.env`. Public pages are expected to render; sign-in, uploads,
+email and AI features stay off because they need keys. If something asks you
+for a secret, open an issue instead of working around it.
+
+## Configuration and access
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: setup, tests and warm-up tasks run locally without decrypting
+configuration. Once accepted, contributors receive SOPS access scoped to their
+work (for example integration tests or staging), revoked when the programme
+ends. Do not try to decrypt or commit configuration; if setup asks for a
+secret, open an issue.
+
+## Running locally
+
+`npm run dev` works without any configuration (see
+[Warm-up (no keys)](#warm-up-no-keys)). To sign in locally, copy
+[`.env.example`](.env.example) to `.env.local` and fill in the **Auth** block
+with your own Elixpo Accounts OAuth client; every other section is optional
+and only affects its own feature. `.env.local` is the single source for local
+values used by both Next.js and the Cloudflare platform proxy. Do not create
+`.dev.vars`; Wrangler gives that file precedence and it can silently shadow
+`.env.local` with stale values.
+
+```bash
+npm ci
 npm run dev
 ```
 
@@ -325,6 +363,40 @@ provide the evidence for individual contributions. See
 **[CONTRIBUTING.md](CONTRIBUTING.md)**, **[GOVERNANCE.md](GOVERNANCE.md)**, and
 our **[Code of Conduct](CODE_OF_CONDUCT.md)** before participating.
 
+## Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code
+2027. Google has not announced the 2027 programme yet, and Elixpo has not been
+accepted. LixBlogs hosts two proposed project ideas:
+
+| Idea | Size | Difficulty | Mentors (primary / backup) |
+| --- | --- | --- | --- |
+| [LixBlogs read-access policy and offline conformance harness](https://gsoc.elixpo.com/ideas/lixblogs-read-access-policy/) | 175 h | Hard | [Divyanshu](https://github.com/divyanshuj91) / [Vivek Yadav](https://github.com/ez-vivek) |
+| [LixBlogs CLI automation contract v1](https://gsoc.elixpo.com/ideas/lixblogs-cli-contract/) | 90 h | Easy | [Divyanshu](https://github.com/divyanshuj91) / [Ayushman Bhattacharya](https://github.com/Circuit-Overtime) |
+
+**How to start**
+
+1. Read the idea page and the programme site at [gsoc.elixpo.com](https://gsoc.elixpo.com).
+2. Run LixBlogs locally by following [Running locally](#running-locally).
+   No keys are needed for this; see "Configuration and access" below.
+3. Read [CONTRIBUTING.md](CONTRIBUTING.md), then pick a small issue from the
+   [issue tracker](https://github.com/elixpo/blogs.elixpo/issues) to learn the
+   codebase and review process.
+
+**Configuration and access**
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: the warm-up tasks and the core of the idea run locally without
+decrypting configuration. Once accepted, contributors receive SOPS access
+scoped to their project (for example for integration tests or staging), which
+is revoked when the programme ends.
+
+Questions go to **gsoc@elixpo.com**. GitHub Discussions for GSoC open once
+Google announces the 2027 dates.
+
+_Google Summer of Code is a programme of Google LLC; Elixpo is applying as a
+mentoring organisation and is not affiliated with or endorsed by Google._
+
 ## Get involved
 
 - 💬 **Join the conversation** in [GitHub Discussions](https://github.com/orgs/elixpo/discussions).
@@ -358,17 +430,18 @@ mascot marks, `og-image`, and the Lix\* brand fonts under
 
 ## Licensing and official distributions
 
-Read [`LICENSE`](LICENSE), the repository [notice board](LICENSES/NOTICE), and
-applicable third-party notices before reuse. Elixpo is separating future code,
-content, hardware, and trademark policies; this repository must not be treated
-as evidence that every Elixpo project uses one universal license.
+The code is licensed under the [MIT License](LICENSE). Brand and visual assets
+are licensed under [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and
+Oreo names, mascot, E-badge, and elixpo.com domains are covered by
+[`TRADEMARKS.md`](TRADEMARKS.md), not by either licence. See also the repository
+[notice board](LICENSES/NOTICE) and third-party notices.
 
 Copyright permissions do not grant permission to impersonate Elixpo or present
 another deployment as the official service. This repository currently ships:
 
-- **npm package `@elixpo/lixeditor`** (from [`packages/lixeditor/`](packages/lixeditor/)) — the published package name on the npm registry is reserved to Elixpo; reuse of the source is governed by this repository's current license and notice.
-- **VS Code Marketplace extension `elixpo.lixeditor`** (publisher `elixpo`, from [`packages/vscode-lixeditor/`](packages/vscode-lixeditor/)) — the Marketplace listing and the `elixpo` publisher identity are reserved to Elixpo; source reuse remains subject to this repository's current terms.
-- **Hosted service `blogs.elixpo.com`** — the official LixBlogs deployment; the brand, deployment, and operational data are reserved, while source reuse is governed by this repository's current terms.
+- **npm package `@elixpo/lixeditor`** (from [`packages/lixeditor/`](packages/lixeditor/)) — the published package name on the npm registry is reserved to Elixpo; the source is MIT and may be reused.
+- **VS Code Marketplace extension `elixpo.lixeditor`** (publisher `elixpo`, from [`packages/vscode-lixeditor/`](packages/vscode-lixeditor/)) — the Marketplace listing and the `elixpo` publisher identity are reserved to Elixpo; the source is MIT.
+- **Hosted service `blogs.elixpo.com`** — the official LixBlogs deployment; the brand, deployment, and operational data are reserved, while the source is MIT.
 
 Developers can use **[`@elixpo/lixeditor`](https://www.npmjs.com/package/@elixpo/lixeditor)** (npm) and the **[LixEditor VS Code extension](https://marketplace.visualstudio.com/items?itemName=elixpo.lixeditor)** in their own projects under MIT.
 

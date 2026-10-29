@@ -44,6 +44,15 @@ brew tap elixpo/crumb https://github.com/elixpo/crumb.elixpo
 brew install elixpo/crumb/crumb
 ```
 
+Debian unstable:
+
+```bash
+sudo apt install crumb
+```
+
+The Debian package is built by Debian from source against Debian's own Rust
+crates, so it can trail the latest release.
+
 The installer downloads the matching GitHub Release asset, verifies its
 SHA-256 checksum, and installs `crumb` into a user-owned directory. See the
 [release process](docs/development/release-process.md) for version pinning,
@@ -97,6 +106,39 @@ Claude Code, Codex, and other agents can hand Crumb a whole task. In Claude Code
 ```
 
 Other agents can use the [Crumb skill and MCP server](integrations/claude-code/README.md) directly.
+
+## Build from source and warm-up (no keys)
+
+<!-- Commands match .github/workflows/ci.yml (jobs "quality" and "test"). -->
+
+You need stable Rust 1.95 or newer with clippy and rustfmt (see
+[`rust-toolchain.toml`](rust-toolchain.toml)). CI runs the tests
+on Linux, macOS and Windows; `scripts/test-install.sh` needs a POSIX shell
+(use WSL or Git Bash on Windows). No Elixpo keys or AI provider account are
+needed.
+
+```bash
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+scripts/test-install.sh
+cargo test --workspace --all-targets
+```
+
+**What works:** formatting, lints, the installer test and the full workspace
+test suite. Tests use the built-in mock LLM provider, so they never call a
+model. **What is skipped:** `evals/` needs a provider key and is not part of
+the warm-up; the website in `crumb.elixpo/` is not needed. **Expected
+result:** every command exits with status 0. If something asks you for a
+secret, open an issue instead of working around it.
+
+## Configuration and access
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: setup, tests and warm-up tasks run locally without decrypting
+configuration. Once accepted, contributors receive SOPS access scoped to their
+work (for example integration tests or staging), revoked when the programme
+ends. Do not try to decrypt or commit configuration; if setup asks for a
+secret, open an issue.
 
 <p align="center">
   <img src="crumb.elixpo/public/icon-192.png" width="96" height="96" alt="Crumb app icon" />

@@ -484,6 +484,17 @@ def write_secrets_local():
             del _sys.modules[k]
     from oreoOS import config as _cfg
 
+    # Secrets come from .env / .env.local. Without them (no file, or only the
+    # SOPS-encrypted .env, whose values config.py ignores) the secret fields
+    # are written blank: secrets.py must still exist because apps import it.
+    missing = [n for n in ("WIFI_SSID", "OWM_API_KEY")
+               if not getattr(_cfg, n, "")]
+    if missing:
+        print("  note: no value for %s in .env or .env.local (missing or "
+              "SOPS-encrypted); writing them blank, so WiFi and weather stay "
+              "off until you set your own values in .env.local."
+              % ", ".join(missing))
+
     fields = (
         # name              python repr formatter
         # WIFI_SSID / WIFI_PASSWORD remain (as the FIRST entry from

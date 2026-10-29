@@ -1,5 +1,17 @@
 import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
 
+// The committed `.env` is SOPS-encrypted for maintainers. Next.js loads it
+// before this file runs, so without a key every value in it arrives as an
+// `ENC[...]` string. Outside production, drop those values so each feature
+// falls back to its default instead of receiving ciphertext.
+if (process.env.NODE_ENV !== 'production') {
+  for (const [key, value] of Object.entries(process.env)) {
+    if (typeof value === 'string' && value.startsWith('ENC[')) {
+      Reflect.deleteProperty(process.env, key);
+    }
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -28,11 +40,16 @@ if (process.env.NODE_ENV === 'development') {
   const localEnv = config({ path: '.env.local', override: true, quiet: true });
 
   if (localEnv.error) {
-    throw new Error(
-      'Local development requires .env.local. Copy the local secret template or request the development secrets before starting Next.js.',
-      { cause: localEnv.error },
+    // "No keys" mode: public pages work without .env.local. Sign-in and
+    // features that need a key stay off until their values are set.
+    console.warn(
+      '[next.config] No .env.local found; starting in "no keys" mode. Sign-in and features that need keys are disabled. See README "Warm-up (no keys)".',
     );
   }
+
+  // Wrangler's platform proxy would otherwise read the encrypted `.env` as
+  // local variables. process.env (forwarded below) already holds .env.local.
+  process.env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV ??= 'false';
 
   // setupDevPlatform uses Wrangler's platform proxy for D1/KV. Forward the
   // already-loaded .env.local values so Cloudflare bindings and process.env

@@ -175,6 +175,37 @@ open source with security and transparency.
 
 <img width="1861" height="863" alt="LixSketch docs" src="https://github.com/user-attachments/assets/03130310-9ebb-4916-b0af-ee1c3c78ec60" />
 
+## Warm-up (no keys)
+
+<!-- Commands match .github/workflows/quality-gate.yml, which reads ci.test_cmd and ci.build_cmd from .elixpo/project.yml and uses Node 20. -->
+
+You need Node.js 20 (see [`.nvmrc`](.nvmrc)) on Linux, macOS, or Windows via
+WSL. No Elixpo keys, accounts or `.env.local` are needed.
+
+```bash
+npm ci
+npm test
+npm run build
+```
+
+**What works:** installing from the lockfile, the engine's unit tests (Vitest)
+and MCP tests (`node --test`), and the production build. `npm run dev` then
+starts the canvas at [http://localhost:3000](http://localhost:3000) and the
+local collaboration worker on port 8787; encrypted values in the committed
+`.env` are ignored. **What is skipped:** sign-in and anything that needs an
+Elixpo Accounts client or another key. **Expected result:** every test passes
+and the build finishes without errors. If something asks you for a secret,
+open an issue instead of working around it.
+
+## Configuration and access
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: setup, tests and warm-up tasks run locally without decrypting
+configuration. Once accepted, contributors receive SOPS access scoped to their
+work (for example integration tests or staging), revoked when the programme
+ends. Do not try to decrypt or commit configuration; if setup asks for a
+secret, open an issue.
+
 ## Running this project locally
 
 ```bash
@@ -210,6 +241,41 @@ know from the [Issues Tab](https://github.com/elixpo/sketch.elixpo/issues).
 Elixpo has taken part in and been supported by **GSSOC**, **Hacktoberfest**,
 **Pollinations.AI**, **MS Startup Foundations**, and **OSCI**.
 
+### Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code
+2027. Google has not announced the 2027 programme yet, and Elixpo has not been
+accepted. LixSketch hosts one proposed project idea:
+
+| Idea | Size | Difficulty | Mentors (primary / backup) |
+| --- | --- | --- | --- |
+| [Accessible LixSketch canvas](https://gsoc.elixpo.com/ideas/accessible-lixsketch-canvas/) | 175 h | Intermediate | [Vivek Yadav](https://github.com/ez-vivek) / [Divyanshu](https://github.com/divyanshuj91) |
+
+**How to start**
+
+1. Read the idea page and the programme site at [gsoc.elixpo.com](https://gsoc.elixpo.com).
+2. Run LixSketch locally by following
+   [Running this project locally](#running-this-project-locally); no keys
+   are needed for the local canvas (see "Configuration and access" below).
+3. Read [CONTRIBUTING.md](CONTRIBUTING.md) (including how to run the tests),
+   then try the canvas with only a keyboard and note what you cannot do.
+4. Pick a small issue from the [issue tracker](https://github.com/elixpo/sketch.elixpo/issues)
+   to learn the codebase and review process.
+
+**Configuration and access**
+
+This repository keeps configuration encrypted with SOPS. Applicants do not need
+any keys: the warm-up tasks and the core of the idea run locally without
+decrypting configuration. Once accepted, contributors receive SOPS access
+scoped to their project (for example for integration tests or staging), which
+is revoked when the programme ends.
+
+Questions go to **gsoc@elixpo.com**. GitHub Discussions for GSoC open once
+Google announces the 2027 dates.
+
+_Google Summer of Code is a programme of Google LLC; Elixpo is applying as a
+mentoring organisation and is not affiliated with or endorsed by Google._
+
 ## Get involved
 
 - 💬 **Join the conversation** in [GitHub Discussions](https://github.com/orgs/elixpo/discussions).
@@ -225,14 +291,12 @@ kit is at **[elixpo.com/assets](https://elixpo.com/assets)**.
 
 ## License
 
-Elixpo uses one **licensing standard** across every repository:
+- **Code** - [MIT](LICENSE).
+- **Brand & visual assets** - [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0).
 
-- **Code** - [MIT](LICENSES/preferred/MIT) (with the [Oreo-trademarks exception](LICENSES/exceptions/Oreo-trademarks)).
-- **Brand & visual assets** - [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0) (with the same exception).
-
-The Oreo mascot, the chest E-badge, and the "Elixpo" and "Oreo" names, domains,
-and palette are reserved - this protects the brand and its royalties while
-keeping the code and assets free. See [`LICENSE`](LICENSE) and the per-product
+The "Elixpo" and "Oreo" names, the Oreo mascot, the E-badge mark, and the
+elixpo.com domains are trademarks of the Elixpo project and are not licensed by
+MIT or CC-BY-4.0. See [`TRADEMARKS.md`](TRADEMARKS.md) and the per-product
 notice board, [`NOTICE`](LICENSES/NOTICE).
 
 ## Exclusive

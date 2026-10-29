@@ -417,6 +417,8 @@ export default function DocsLayout({
                         {/* Main Docs Content */}
                         <Box
                             component="main"
+                            id="main-content"
+                            tabIndex={-1}
                             sx={{
                                 flexGrow: 1,
                                 minWidth: 0,

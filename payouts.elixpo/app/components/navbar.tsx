@@ -341,7 +341,9 @@ const Navbar = () => {
                         {/* Hamburger Button (Mobile / Tablet) */}
                         <IconButton
                             color="inherit"
-                            aria-label="open drawer"
+                            aria-label="Open navigation menu"
+                            aria-expanded={mobileOpen}
+                            aria-controls="mobile-navigation"
                             edge="end"
                             onClick={handleDrawerToggle}
                             sx={{
@@ -371,6 +373,7 @@ const Navbar = () => {
                     keepMounted: true,
                 }}
                 PaperProps={{
+                    id: "mobile-navigation",
                     sx: {
                         width: 280,
                         background: "var(--app-ink)", // Ink Black

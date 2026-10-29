@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import useUIStore from '@/store/useUIStore'
 import useAuthStore from '@/store/useAuthStore'
 import { WORKER_URL } from '@/lib/env'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
 
 // The real mermaid library renders the diagram types LixSketch has no
 // native shapes for (and reports Mermaid's own syntax errors). It is only
@@ -531,7 +532,7 @@ export default function AIModal() {
 
     // Check quota before generating
     if (aiQuota.remaining !== Infinity && aiQuota.remaining <= 0) {
-      setToast({ status: 'error', message: `Daily AI limit reached (${aiQuota.used}/${aiQuota.limit}). Upgrade for more.` })
+      setToast({ status: 'error', message: `Daily AI limit reached (${aiQuota.used}/${aiQuota.limit}).${PAID_PLANS_ENABLED ? ' Upgrade for more.' : ''}` })
       return
     }
 
@@ -561,7 +562,7 @@ export default function AIModal() {
       }
       if (!res.ok || data.error) {
         if (data.quotaExceeded) {
-          setToast({ status: 'error', message: `Daily AI limit reached (${data.used}/${data.limit}). Upgrade for more.` })
+          setToast({ status: 'error', message: `Daily AI limit reached (${data.used}/${data.limit}).${PAID_PLANS_ENABLED ? ' Upgrade for more.' : ''}` })
         } else {
           setToast({ status: 'error', message: data.error || `Failed (${res.status})` })
         }
@@ -624,7 +625,7 @@ export default function AIModal() {
     if (!researchPrompt.trim()) return
 
     if (aiQuota.remaining !== Infinity && aiQuota.remaining <= 0) {
-      setToast({ status: 'error', message: `Daily AI limit reached (${aiQuota.used}/${aiQuota.limit}). Upgrade for more.` })
+      setToast({ status: 'error', message: `Daily AI limit reached (${aiQuota.used}/${aiQuota.limit}).${PAID_PLANS_ENABLED ? ' Upgrade for more.' : ''}` })
       return
     }
 
@@ -654,7 +655,7 @@ export default function AIModal() {
       }
       if (!res.ok || data.error) {
         if (data.quotaExceeded) {
-          setToast({ status: 'error', message: `Daily AI limit reached (${data.used}/${data.limit}). Upgrade for more.` })
+          setToast({ status: 'error', message: `Daily AI limit reached (${data.used}/${data.limit}).${PAID_PLANS_ENABLED ? ' Upgrade for more.' : ''}` })
         } else {
           setToast({ status: 'error', message: data.error || `Failed (${res.status})` })
         }

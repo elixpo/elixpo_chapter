@@ -7,7 +7,7 @@ import json
 import subprocess
 import sys
 
-EXPECTED_MISSING = {("reedline", "0.52.1")}
+EXPECTED_MISSING: set[tuple[str, str]] = set()
 
 
 def main() -> int:
@@ -57,7 +57,7 @@ def main() -> int:
         print(f"Incompatible Debian crate versions: {sorted(incompatible)}", file=sys.stderr)
         return 1
 
-    print("No incompatible crates; reedline is the only expected archive blocker.")
+    print("Every external crate is packaged in Debian at a compatible version.")
     return 0
 
 

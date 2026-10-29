@@ -1,3 +1,6 @@
+import { notFound } from 'next/navigation'
+import { PAID_PLANS_ENABLED } from '@/lib/featureFlags'
+
 export const metadata = {
   title: 'Pricing in India | LixSketch',
   description:
@@ -25,5 +28,6 @@ export const metadata = {
 }
 
 export default function PricingLayout({ children }) {
+  if (!PAID_PLANS_ENABLED) notFound()
   return children
 }

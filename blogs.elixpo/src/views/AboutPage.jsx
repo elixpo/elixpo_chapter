@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AppShell from '../components/AppShell';
+import { PAID_PLANS_ENABLED } from '../../lib/paidPlans';
 
 const FEATURES = [
   {
@@ -254,7 +255,7 @@ export default function AboutPage() {
               { label: 'Home', href: '/' },
               { label: 'Explore', href: '/explore' },
               { label: 'Docs', href: '/docs' },
-              { label: 'Pricing', href: '/pricing' },
+              ...(PAID_PLANS_ENABLED ? [{ label: 'Pricing', href: '/pricing' }] : []),
               { label: 'Privacy', href: '/privacy' },
               { label: 'Terms', href: '/terms' },
             ].map((l) => (

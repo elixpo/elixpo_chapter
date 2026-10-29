@@ -814,6 +814,9 @@ function Centered({ children }: { children: ReactNode }) {
 function Shell({ children, split }: { children: ReactNode; split: boolean }) {
     return (
         <Box
+            component="main"
+            id="main-content"
+            tabIndex={-1}
             sx={{
                 position: "relative",
                 minHeight: "100vh",

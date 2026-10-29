@@ -3,7 +3,8 @@ THIRD-PARTY NOTICES
 
 This repository depends on third-party components, each distributed under its
 own license. The application code in this repository is licensed under the
-Elixpo standard (MIT for code, CC-BY-4.0 for assets); see ../../LICENSE.
+MIT (code) and CC-BY-4.0
+(visual assets); see ../../LICENSE.
 
 Primary runtime dependencies (see package.json for the authoritative list and
 versions):
@@ -21,7 +22,7 @@ versions):
   * cropperjs                             - MIT
   * Tailwind CSS, autoprefixer, postcss   - MIT
 
-Workspace packages (this monorepo, licensed under the Elixpo standard / MIT):
+Workspace packages (this monorepo, licensed under MIT):
 
   * @elixpo/lixeditor   (packages/lixeditor)        - the LixEditor npm package
   * lixeditor           (packages/vscode-lixeditor)  - the VS Code extension
@@ -30,8 +31,7 @@ Workspace packages (this monorepo, licensed under the Elixpo standard / MIT):
 Fonts:
 
   * KaTeX math fonts (bundled with KaTeX)            - SIL OFL 1.1
-  * Lix brand fonts (public/fonts/lix*.*)            - CC-BY-4.0 WITH
-                                                       Oreo-trademarks
+  * Lix brand fonts (public/fonts/lix*.*)            - CC-BY-4.0
   * Google Fonts loaded via the Fonts API
     (Inter, Onest, Funnel Display, et al.)           - SIL OFL 1.1
 

@@ -13,7 +13,7 @@ import PollinationsIntegrationCard from '@/components/profile/PollinationsIntegr
 import PersonalDetailsCard from '@/components/profile/PersonalDetailsCard'
 import { SiteShell } from '@/components/site/Site'
 import McpWorkspaceAccessModal from '@/components/profile/McpWorkspaceAccessModal'
-import { REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
+import { PAID_PLANS_ENABLED, REMOTE_MCP_ENABLED } from '@/lib/featureFlags'
 
 function reconcileActiveWorkspaceName(workspaces) {
   if (typeof window === 'undefined' || !Array.isArray(workspaces)) return workspaces || []
@@ -227,7 +227,7 @@ const PROFILE_TABS = [
   { id: 'integrations', label: 'Integrations', icon: 'bx-plug', description: 'Connect private storage providers and control where new media is uploaded.' },
   { id: 'usage', label: 'Usage', icon: 'bx-bar-chart-alt-2', description: 'Track workspace capacity, managed media, collaboration, and export access.' },
   { id: 'billing', label: 'Billing', icon: 'bx-credit-card', description: 'Review the current plan, included limits, and billing availability.' },
-]
+].filter((tab) => PAID_PLANS_ENABLED || tab.id !== 'billing')
 
 function profileTabFromLocation() {
   if (typeof window === 'undefined') return 'personal'
@@ -487,7 +487,7 @@ export default function ProfilePage() {
                 <MetricCard icon="bx-grid-alt" label="Workspace slots" value={`${workspaceRemaining} left`} detail={`${workspaces.length} of ${workspaceLimit} currently used`} color="#8B88E8" />
                 <MetricCard icon="bx-data" label="Managed storage" value={`${managedStorageRemainingMB} MB`} detail={`${managedStorageUsedMB} MB used account-wide`} color="#2ECC71" />
                 <MetricCard icon="bx-group" label="Live collaboration" value={`${maxCollaborators} people`} detail="Maximum participants in one realtime room" color="#D99BF0" />
-                <MetricCard icon="bx-file" label="PDF export" value={pdfExport ? 'Included' : 'Pro only'} detail={pdfExport ? 'Available on the current plan' : 'Canvas image exports remain available'} color="#F2C94C" />
+                <MetricCard icon="bx-file" label="PDF export" value={pdfExport ? 'Included' : (PAID_PLANS_ENABLED ? 'Pro only' : 'Not included')} detail={pdfExport ? 'Available on the current plan' : 'Canvas image exports remain available'} color="#F2C94C" />
               </div>
               <RoughCard color="#8B88E8">
                 <div className="p-5">
@@ -512,7 +512,7 @@ export default function ProfilePage() {
                     showRemaining
                   />
 
-                  {tier !== 'pro' && tier !== 'team' && (
+                  {PAID_PLANS_ENABLED && tier !== 'pro' && tier !== 'team' && (
                     <Link
                       href="/pricing"
                       className="inline-flex items-center gap-1.5 mt-2 text-lx-blue text-xs hover:underline"
@@ -662,12 +662,14 @@ export default function ProfilePage() {
                         >
                           Sign in for free
                         </button>
-                        <Link
-                          href="/pricing"
-                          className="px-4 py-2 rounded-lg text-xs text-text-dim border border-line hover:border-ink/30 hover:text-text-secondary transition-all"
-                        >
-                          View plans
-                        </Link>
+                        {PAID_PLANS_ENABLED && (
+                          <Link
+                            href="/pricing"
+                            className="px-4 py-2 rounded-lg text-xs text-text-dim border border-line hover:border-ink/30 hover:text-text-secondary transition-all"
+                          >
+                            View plans
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -690,7 +692,7 @@ export default function ProfilePage() {
               </RoughCard>
             )}
 
-            {activeTab === 'billing' && (
+            {PAID_PLANS_ENABLED && activeTab === 'billing' && (
               <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard icon="bx-grid-alt" label="Workspaces" value={workspaceLimit} detail={`${workspaces.length} currently in use`} />

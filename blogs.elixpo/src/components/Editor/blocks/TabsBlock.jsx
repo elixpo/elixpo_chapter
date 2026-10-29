@@ -3,6 +3,7 @@
 import { createReactBlockSpec } from '@blocknote/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { confirmSubpageDelete } from '../../../utils/subpageDelete';
+import { PAID_PLANS_ENABLED } from '../../../../lib/paidPlans';
 
 export const TabsBlock = createReactBlockSpec(
   {
@@ -146,7 +147,7 @@ export const TabsBlock = createReactBlockSpec(
             </div>
             {gateError && (
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', paddingLeft: '4px' }}>
-                {gateError} <a href="/pricing" style={{ color: '#9b7bf7', fontWeight: 600 }}>Upgrade →</a>
+                {gateError}{PAID_PLANS_ENABLED && <> <a href="/pricing" style={{ color: '#9b7bf7', fontWeight: 600 }}>Upgrade →</a></>}
               </div>
             )}
           </div>

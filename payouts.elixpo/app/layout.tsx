@@ -133,6 +133,9 @@ export default function RootLayout({
             <body
                 className={`${sofiaSans.variable} ${geistMono.variable} antialiased`}
             >
+                <a href="#main-content" className="skip-link">
+                    Skip to content
+                </a>
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
