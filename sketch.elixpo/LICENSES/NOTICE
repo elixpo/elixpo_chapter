@@ -1,0 +1,47 @@
+NOTICE
+======
+
+The code in this repository is licensed under the MIT License (see
+`../LICENSE` and `preferred/MIT`). Visual assets are licensed under CC-BY-4.0
+(see `preferred/CC-BY-4.0`). Brand rules - names, mascot, logos, domains and
+official listings - are separate and documented in `../TRADEMARKS.md`.
+
+This notice adds no copyright restriction on top of those licences.
+
+REPOSITORY
+----------
+
+  Name:        sketch.elixpo (sketch.elixpo.com)
+  What it is:  The source for LixSketch - an infinite-canvas, hand-drawn style
+               whiteboard with a Notion-like docs editor. A monorepo that also
+               builds the npm engine and the VS Code extension.
+
+OFFICIAL NAMES AND LISTINGS
+---------------------------
+
+The following identify official Elixpo releases and are covered by
+`../TRADEMARKS.md`, not by an extra copyright term:
+
+  - the npm package name @elixpo/lixsketch
+  - the VS Code Marketplace listing elixpo.lixsketch and the "elixpo"
+    publisher identity
+  - the official deployment at sketch.elixpo.com
+
+Forks are welcome under MIT; please use your own product, package, listing
+and domain names and do not imply Elixpo endorsement.
+
+VISUAL ASSETS
+-------------
+
+  The brand and visual asset files listed in `README.md` (in this
+  directory) are CC-BY-4.0. Reusing them as files only
+  requires the attribution CC-BY-4.0 asks for; using the Elixpo or Oreo names
+  or mascot as your own branding is covered by `../TRADEMARKS.md`.
+
+THIRD-PARTY MATERIAL
+--------------------
+
+  Third-party components keep their own licences. See
+  `notices/notice-board` for the attribution list.
+
+Contact: hello@elixpo.com
