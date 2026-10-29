@@ -1,9 +1,0 @@
-{
-  "category": "budget",
-  "prompt": "thanks!",
-  "files": {
-    "README.md": "scratch\n"
-  },
-  "no_new_files": true,
-  "max_tokens": 3000
-}
