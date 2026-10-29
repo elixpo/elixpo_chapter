@@ -1,4 +1,4 @@
-import { getResearchRecord, RESEARCH_RECORDS } from "@/lib/research";
+import { getResearchRecord, RESEARCH_RECORDS, researchRecordPath } from "@/lib/research";
 import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -56,7 +56,7 @@ export async function GET(
     ...(firstPage && lastPage ? [["pages", `${firstPage}--${lastPage}`]] : []),
     ...(institution ? [["institution", institution]] : []),
     ...(reportNumber ? [["number", reportNumber]] : []),
-    ["note", `Elixpo record: ${absoluteUrl(`/research/${record.slug}`)}. Review status: ${record.reviewStatus.replaceAll("-", " ")}.`],
+    ["note", `Elixpo record: ${absoluteUrl(researchRecordPath(record))}. Review status: ${record.reviewStatus.replaceAll("-", " ")}.`],
   ];
   const type = journal ? "article" : record.researchStatus === "technical-report" || institution ? "techreport" : "misc";
   const body = `@${type}{${citationKey(record.slug, record.authors, record.releasedAt)},\n${fields.map(([key, value]) => `  ${key} = {${bibValue(value)}},`).join("\n")}\n}\n`;

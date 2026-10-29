@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/research.schema.json",
   "schemaVersion": 1,
-  "lastVerified": "2026-10-17",
+  "lastVerified": "2026-10-28",
   "statusOwner": "elixpo",
   "entries": {
     "octabit": {
@@ -155,6 +155,54 @@
       "licenses": [{ "artifact": "source code and repository research artifacts", "license": "MIT", "url": "https://github.com/elixpo/wozformer/blob/main/LICENSE" }],
       "reproducibility": { "status": "partial", "summary": "The repository publishes progressive notebooks, implementation code, exported models, reference paths, empirical findings, and hardware documentation. The complete 6502 hardware result and formal paper release are still in progress." },
       "citation": null,
+      "metadataCompleteness": "verified"
+    },
+    "oreo": {
+      "slug": "oreo",
+      "title": "RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems",
+      "abstract": "RV565 stores every video frame in the display's native RGB565 format and decodes frames independently on the ESP32-S3 behind Oreo. A dual-core pipeline that decompresses the next frame during the current SPI DMA transfer reaches 24 FPS with no missed frames on both evaluated clips, leaving the display link as the bottleneck; inside OreoOS, firmware decompression alone reaches 12.2 FPS.",
+      "authors": [
+        {
+          "name": "Ayushman Bhattacharya",
+          "affiliation": null
+        },
+        {
+          "name": "Anwesha Chakraborty",
+          "affiliation": null
+        }
+      ],
+      "researchStatus": "preprint",
+      "reviewStatus": "not-peer-reviewed",
+      "releasedAt": "2026-10-22",
+      "paperUrl": "https://arxiv.org/abs/2610.35935",
+      "doi": "10.48550/arXiv.2610.35935",
+      "technicalReportInstitution": null,
+      "technicalReportNumber": null,
+      "codeUrl": "https://github.com/elixpo/oreo",
+      "artifacts": [
+        {
+          "kind": "evaluation",
+          "label": "RV565 firmware, measurements and analysis scripts",
+          "url": "https://doi.org/10.5281/zenodo.23543367",
+          "license": null
+        }
+      ],
+      "liveDemos": [],
+      "licenses": [
+        {
+          "artifact": "paper",
+          "license": "CC BY 4.0",
+          "url": "https://arxiv.org/abs/2610.35935"
+        }
+      ],
+      "reproducibility": {
+        "status": "documented",
+        "summary": "The paper, its LaTeX source in elixpo/oreo/paper, and the Zenodo artifact with firmware, measurements and analysis scripts are public; results were measured on one ESP32-S3 board with two 10-second clips."
+      },
+      "citation": {
+        "text": "Bhattacharya and Chakraborty. RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems. arXiv:2610.35935 (2026).",
+        "cffUrl": null
+      },
       "metadataCompleteness": "verified"
     }
   }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Github } from "lucide-react";
 import { ProjectMark } from "@/components/ProjectMark";
 import { getDirectoryEntries } from "@/lib/directory";
-import { LIVE_RESEARCH_DEMOS, RESEARCH_LAST_VERIFIED, RESEARCH_RECORDS } from "@/lib/research";
+import { LIVE_RESEARCH_DEMOS, RESEARCH_LAST_VERIFIED, RESEARCH_RECORDS, researchRecordPath } from "@/lib/research";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
 import people from "../../../content/people.json";
 
@@ -28,8 +28,8 @@ const research = [...getDirectoryEntries("research")].sort((left, right) => {
   return (leftRank === -1 ? 99 : leftRank) - (rightRank === -1 ? 99 : rightRank);
 });
 const leadingResearch = leadingResearchSlugs.map((slug) => research.find((entry) => entry.slug === slug)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-const researchByAuthor = new Map<string, { slug: string; title: string }[]>();
-for (const record of RESEARCH_RECORDS) for (const author of record.authors) researchByAuthor.set(author.name, [...(researchByAuthor.get(author.name) ?? []), { slug: record.slug, title: record.title }]);
+const researchByAuthor = new Map<string, { slug: string; title: string; path: string }[]>();
+for (const record of RESEARCH_RECORDS) for (const author of record.authors) researchByAuthor.set(author.name, [...(researchByAuthor.get(author.name) ?? []), { slug: record.slug, title: record.title, path: researchRecordPath(record) }]);
 const teamResearchers = people.currentTeam.flatMap((person) => {
   const records = researchByAuthor.get(person.name);
   return records?.length ? [{ ...person, records }] : [];
@@ -38,7 +38,7 @@ const researchContributors = people.researchContributors.map((person) => ({
   ...person,
   records: person.relatedResearch.flatMap((slug) => {
     const record = RESEARCH_RECORDS.find((entry) => entry.slug === slug);
-    return record ? [{ slug: record.slug, title: record.title }] : [];
+    return record ? [{ slug: record.slug, title: record.title, path: researchRecordPath(record) }] : [];
   }),
 }));
 const researchPeople = [...teamResearchers, ...researchContributors];
@@ -103,7 +103,7 @@ export default function ResearchPage() {
 
     <section className="research-people section-wrap" aria-labelledby="research-people">
       <div className="section-heading split"><div><p className="eyebrow">Research people</p><h2 id="research-people">The people connecting research to implementation.</h2></div><p>Each person appears through a verified Elixpo research role, authorship record, or attributable repository work. This is a public record of contribution, not a ranking of researchers.</p></div>
-      <div className="research-people-grid">{researchPeople.map((person, index) => <article key={person.handle}><div className={`research-person-mark research-person-mark-${index + 1}`} aria-hidden="true"><Image src={`https://github.com/${person.handle}.png`} alt="" width={128} height={128} unoptimized /><i/><i/></div><div className="research-person-copy"><p className="eyebrow">{person.role}</p><h3>{person.name}</h3><p>{person.summary}</p><div className="research-person-work"><span>Related research</span>{person.records.map((record) => <Link href={`/research/${record.slug}`} key={record.slug}>{record.title} <ArrowRight size={13}/></Link>)}</div><div className="research-person-links">{person.portfolio && <a href={person.portfolio}>Portfolio <ArrowUpRight size={13}/></a>}<a href={person.github}>GitHub <ArrowUpRight size={13}/></a></div></div></article>)}</div>
+      <div className="research-people-grid">{researchPeople.map((person, index) => <article key={person.handle}><div className={`research-person-mark research-person-mark-${index + 1}`} aria-hidden="true"><Image src={`https://github.com/${person.handle}.png`} alt="" width={128} height={128} unoptimized /><i/><i/></div><div className="research-person-copy"><p className="eyebrow">{person.role}</p><h3>{person.name}</h3><p>{person.summary}</p><div className="research-person-work"><span>Related research</span>{person.records.map((record) => <Link href={record.path} key={record.slug}>{record.title} <ArrowRight size={13}/></Link>)}</div><div className="research-person-links">{person.portfolio && <a href={person.portfolio}>Portfolio <ArrowUpRight size={13}/></a>}<a href={person.github}>GitHub <ArrowUpRight size={13}/></a></div></div></article>)}</div>
     </section>
 
     <section className="research-spaces section-wrap" aria-labelledby="live-experiments">
@@ -121,7 +121,7 @@ export default function ResearchPage() {
             <ul>{space.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>
             <div className="space-actions">
               <a href={space.url} target="_blank" rel="noreferrer">Launch on Hugging Face <ArrowUpRight size={16} /></a>
-              <Link href={`/research/${space.relatedSlug}`}>View research record <ArrowRight size={15} /></Link>
+              <Link href={space.relatedPath}>View research record <ArrowRight size={15} /></Link>
             </div>
           </div>
         </article>)}

@@ -664,10 +664,14 @@ if (npmPackageNames.has("@elixpo/claudeops")) {
 const researchRepositoryNames = new Set(
   repositories.entries.filter((entry) => entry.disposition === "public-entry" && entry.publicClass === "research").map((entry) => entry.name),
 );
+// Projects may also carry a research record (for example, a paper about Oreo).
+const researchHostNames = new Set(
+  repositories.entries.filter((entry) => entry.disposition === "public-entry" && ["research", "project"].includes(entry.publicClass)).map((entry) => entry.name),
+);
 const researchSlugs = new Set();
 for (const [repositoryName, record] of Object.entries(research.entries ?? {})) {
   const location = `research.entries.${repositoryName}`;
-  if (!researchRepositoryNames.has(repositoryName)) addError(location, "does not map to a research repository");
+  if (!researchHostNames.has(repositoryName)) addError(location, "does not map to a research or project repository");
   if (researchSlugs.has(record.slug)) addError(`${location}.slug`, "duplicate research slug");
   researchSlugs.add(record.slug);
   if (directory.entries?.[repositoryName]?.slug !== record.slug) addError(`${location}.slug`, "must match the public directory slug");
