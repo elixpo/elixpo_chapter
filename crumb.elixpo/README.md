@@ -131,6 +131,14 @@ the warm-up; the website in `crumb.elixpo/` is not needed. **Expected
 result:** every command exits with status 0. If something asks you for a
 secret, open an issue instead of working around it.
 
+## Development notes
+
+- [docs/development/mcp-boundary.md](docs/development/mcp-boundary.md)
+- [docs/development/account-connector.md](docs/development/account-connector.md)
+- [docs/development/provider-configuration.md](docs/development/provider-configuration.md)
+- [docs/development/agent-foundation.md](docs/development/agent-foundation.md)
+- [docs/development/release-process.md](docs/development/release-process.md)
+
 ## Configuration and access
 
 This repository keeps configuration encrypted with SOPS. Applicants do not need
