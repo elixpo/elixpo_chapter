@@ -21,6 +21,7 @@ RESAMPLES = 2000
 BLOCK = 50
 SEED = 20261028
 LOAD_LABEL = {"idle": "Idle", "cpu": "CPU load", "rt-contention": "RT contention"}
+SHORT_LOAD_LABEL = {"idle": "Idle", "cpu": "CPU", "rt-contention": "RT"}
 WORKLOAD_LABEL = {
     "add": "add",
     "crc32": "CRC-32",
@@ -80,13 +81,11 @@ def main() -> int:
     evaluation = stage12.evaluate_stage12(CAMPAIGN)
     rows = {(r["workload"], r["load"], r["baseline"]): r for r in evaluation["results"]}
 
-    # Per-call table: p95 with 95% block-bootstrap CI, ordinary and SCHED_FIFO callers.
+    # Per-call table: ordinary-caller p95 with 95% block-bootstrap CI (single column).
     lines = [
-        "\\begin{tabular}{llrrrr}",
+        "\\begin{tabular}{llrr}",
         "\\toprule",
-        " & & \\multicolumn{2}{c}{Linux p95 (ms)} & \\multicolumn{2}{c}{MCU p95 (ms)} \\\\",
-        "\\cmidrule(lr){3-4}\\cmidrule(lr){5-6}",
-        "Load & Workload & Ordinary [95\\% CI] & FIFO & Ordinary [95\\% CI] & FIFO \\\\",
+        "Load & Workload & Linux p95 [95\\% CI] & MCU p95 [95\\% CI] \\\\",
         "\\midrule",
     ]
     dat = [
@@ -112,8 +111,7 @@ def main() -> int:
                 ordinary = traces[load, "other", domain, workload]
                 low, high = block_bootstrap_p95(ordinary, rng)
                 cells.append(f"{ms(percentile(ordinary, 95))} [{ms(low)}, {ms(high)}]")
-                cells.append(ms(percentile(traces[load, "fifo", domain, workload], 95)))
-            label = LOAD_LABEL[load] if index == 0 else ""
+            label = SHORT_LOAD_LABEL[load] if index == 0 else ""
             lines.append(f"{label} & {WORKLOAD_LABEL[workload]} & " + " & ".join(cells) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}"]
     (OUTPUT / "stage12-percall-table.tex").write_text("\n".join(lines) + "\n", "utf-8")
@@ -159,12 +157,12 @@ def main() -> int:
 
     # Four-node chain results.
     chain = [
-        "\\begin{tabular}{llrrrrrrl}",
+        "\\begin{tabular}{llrrrrrr}",
         "\\toprule",
         " & & & \\multicolumn{2}{c}{Ordinary Linux} & \\multicolumn{2}{c}{Tuned Linux}"
-        " & MCU-first & \\system \\\\",
-        "\\cmidrule(lr){4-5}\\cmidrule(lr){6-7}\\cmidrule(lr){8-8}\\cmidrule(lr){9-9}",
-        "Load & Workload & $D_G$ (ms) & p95 & miss & p95 & miss & p95 & decision \\\\",
+        " & MCU-first \\\\",
+        "\\cmidrule(lr){4-5}\\cmidrule(lr){6-7}\\cmidrule(lr){8-8}",
+        "Load & Workload & $D_G$ & p95 & miss (\\%) & p95 & miss (\\%) & p95 \\\\",
         "\\midrule",
     ]
     switches = 0
@@ -183,13 +181,14 @@ def main() -> int:
                 rows[workload, load, b]["recovery"]["switch_window"] is not None
                 for b in ("qfabric-recovery", "qfabric-recovery-tuned")
             )
-            decision = "stay" if outcomes == {"none"} else ",".join(sorted(outcomes))
-            label = LOAD_LABEL[load] if index == 0 else ""
+            if outcomes != {"none"}:
+                raise RuntimeError(f"recovery switched for {workload} under {load}: {outcomes}")
+            label = SHORT_LOAD_LABEL[load] if index == 0 else ""
             chain.append(
                 f"{label} & {WORKLOAD_LABEL[workload]} & {ms(ordinary['graph_deadline_ns'], 0)} & "
-                f"{ms(ordinary['p95_ns'])} & {ordinary['miss_rate_pct']:.1f}\\% & "
-                f"{ms(tuned['p95_ns'])} & {tuned['miss_rate_pct']:.1f}\\% & "
-                f"{ms(mcu['p95_ns'], 1)} & {decision} \\\\"
+                f"{ms(ordinary['p95_ns'])} & {ordinary['miss_rate_pct']:.1f} & "
+                f"{ms(tuned['p95_ns'])} & {tuned['miss_rate_pct']:.1f} & "
+                f"{ms(mcu['p95_ns'], 1)} \\\\"
             )
     chain += ["\\bottomrule", "\\end{tabular}"]
     (OUTPUT / "stage12-chain-table.tex").write_text("\n".join(chain) + "\n", "utf-8")

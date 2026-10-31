@@ -22,4 +22,4 @@ arxiv: qfabric-paper.pdf
 	tar -czf qfabric-arxiv.tar.gz qfabric-paper.tex qfabric-paper.bbl references.bib \
 		generated/metrics.tex generated/interconnect-metrics.tex \
 		generated/interconnect-payload.dat generated/interconnect-concurrency.dat \
-		generated/stage12-*.tex generated/stage12-percall.dat figures/testbed.jpg
+		generated/stage12-*.tex generated/stage12-percall.dat

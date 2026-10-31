@@ -16,8 +16,19 @@
 \usepackage{pgfplotstable}
 \pgfplotsset{compat=1.18}
 \usepackage{dblfloatfix}
-\usepackage[section]{placeins}
+\usepackage{placeins}
 \usepackage[hidelinks]{hyperref}
+
+% Spread floats: at most one two-column float and one column float per page top,
+% and keep at least a third of each column for text.
+\setcounter{dbltopnumber}{1}
+\setcounter{topnumber}{1}
+\setcounter{bottomnumber}{1}
+\renewcommand{\topfraction}{0.6}
+\renewcommand{\dbltopfraction}{0.6}
+\renewcommand{\textfraction}{0.3}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\dblfloatpagefraction}{0.75}
 
 \input{generated/metrics.tex}
 \input{generated/interconnect-metrics.tex}
@@ -110,40 +121,46 @@ semantic, capacity, and predicted-cost conditions hold, drains in-flight work
 at an epoch boundary, and commits the move only if post-switch probation
 confirms the contract; otherwise it rolls back.
 
-This paper makes the following contributions:
-\begin{itemize}
-  \item a \textbf{taxonomy} of cross-domain placement approaches by binding
-  time, trigger, and switch verification, which locates guarded recovery
-  relative to static mapping, partitioning, and mixed-criticality mode
-  changes (Section~\ref{sec:related});
-  \item a \textbf{guarded recovery protocol} combining a bounded wire ABI,
-  effect-based semantic admission, quiescent epoch switching, and
-  probation-based commit or rollback (Section~\ref{sec:design});
-  \item an \textbf{interconnect characterization} of the UNO Q Linux--MCU
-  Bridge across payload size, concurrency, load, and frequency governor
-  (Section~\ref{sec:interconnect});
-  \item a \textbf{matched-load measurement study} of five workloads in both
-  domains under three load conditions and two caller policies, with a
-  per-call decomposition into compute and residual dispatch cost
-  (Section~\ref{sec:percall}); and
-  \item an \textbf{evaluation of controller decisions} on a four-node chain,
-  including an ablation showing that hysteresis and probation prevent harmful
-  migrations (Sections~\ref{sec:chain}--\ref{sec:guards}).
-\end{itemize}
-
-The central finding is a boundary, not a speedup. On this board the MCU path
-is dominated by a fixed dispatch cost of about 19~ms, and because every MCU
+The central finding is a boundary, not a speedup. On this board every MCU
+invocation pays a fixed dispatch cost of about 19~ms, and because that
 invocation is issued and relayed by Linux processes, Linux interference
-degrades the MCU path more than the Linux path. Recovery by migration
-therefore never pays off in our measurements, and \system's guards earn their
-place by refusing moves that a naive controller would make. An earlier
-artifact release~\cite{qfabric2026v101} reported a 36.6\% recovery
-improvement; Section~\ref{sec:correction} explains why that result does not
-hold.
+degrades the MCU path more than the Linux path. Migration therefore never
+improves a contract in our measurements; \system's guards earn their place by
+refusing the moves that a naive controller would make. An earlier artifact
+release~\cite{qfabric2026v101} reported a 36.6\% improvement from recovery;
+Section~\ref{sec:correction} identifies the measurement defects behind that
+result and shows that it does not hold.
+
+\textbf{Contributions.} This paper makes four contributions. First, it
+presents a guarded recovery protocol that combines a bounded wire ABI,
+effect-based semantic admission, quiescent epoch switching, and
+probation-based commit or rollback (Section~\ref{sec:design}). Second, it
+characterizes the UNO Q Linux--MCU interconnect across payload size,
+concurrency, load, and frequency governor (Section~\ref{sec:interconnect}).
+Third, it reports a matched-load measurement study of five workloads in both
+domains under three load conditions and two caller policies, decomposing each
+call into compute and residual dispatch cost (Section~\ref{sec:percall}).
+Fourth, it evaluates the controller's decisions on a four-node chain and shows
+through an ablation that hysteresis and probation prevent harmful migrations
+(Sections~\ref{sec:chain}--\ref{sec:guards}).
+
+\textbf{Positioning.} Approaches to cross-domain placement differ in when the
+assignment of software to execution resources is fixed, what triggers a
+reassignment, and whether a reassignment must prove its benefit before it is
+kept. Static mapping binds at design time~\cite{topcuoglu2002heft};
+asymmetric-multiprocessing frameworks and partitioning hypervisors bind at
+configuration time~\cite{openampProject,ramsauer2017jailhouse,martins2020bao};
+and feedback scheduling, mode-change protocols, and migration runtimes rebind
+at runtime but keep a move once it is made
+\cite{lu2002feedback,real2004mode,goraczko2006comos,rouxel2021yasmin}.
+\system rebinds at runtime only after an observed contract violation, and
+keeps a move only after observing that it helped.
+Table~\ref{tab:related} in Section~\ref{sec:related} compares these
+approaches in detail.
 
 The rest of the paper is organized as follows.
 Section~\ref{sec:background} describes the platform and system model,
-Section~\ref{sec:related} reviews related work through the taxonomy,
+Section~\ref{sec:related} reviews and compares related work,
 Section~\ref{sec:design} presents the design, Section~\ref{sec:impl} the
 implementation, Section~\ref{sec:method} the methodology,
 Section~\ref{sec:results} the results, and Section~\ref{sec:discussion}
@@ -237,22 +254,19 @@ contract violations arise, and does the controller decide correctly against
 deployable baselines and an oracle? \textbf{RQ4}, are hysteresis, admission,
 and probation necessary? \textbf{RQ5}, what does the mechanism itself cost?
 
-\section{Related Work and Taxonomy}
+\section{Related Work}
 \label{sec:related}
-We organize prior work along three dimensions that determine how a system
-reacts when timing degrades on a heterogeneous platform: \emph{binding time}
-(when the assignment of software to execution resources is fixed),
-\emph{trigger} (what causes a reassignment), and \emph{switch verification}
-(whether a reassignment must prove its benefit before it is kept).
-Table~\ref{tab:taxonomy} applies this taxonomy to representative work. A mark
-means the property is central to the cited work, not that it could not be
-added.
+We review five lines of work that bear on cross-domain recovery and compare
+representative systems in Table~\ref{tab:related}. Its first three columns
+follow the dimensions introduced in Section~\ref{sec:intro}: binding time,
+trigger, and the unit of isolation; the remaining columns record whether a
+property is central to the cited work, not whether it could be added.
 
 \begin{table*}[t]
-\caption{Taxonomy of cross-domain placement approaches. ``Semantic guard''
-means effect- or state-based migration eligibility; ``verified switch'' means
-an observed post-switch check decides whether the move is kept.}
-\label{tab:taxonomy}
+\caption{Comparison of \system with related work. ``Semantic guard'' means
+effect- or state-based migration eligibility; ``verified switch'' means an
+observed post-switch check decides whether the move is kept.}
+\label{tab:related}
 \centering
 \scriptsize
 \setlength{\tabcolsep}{3.2pt}
@@ -349,6 +363,12 @@ help, which prior work on migration typically does not report.
 
 \section{QFabric Design}
 \label{sec:design}
+Section~\ref{sec:background} showed that every invocation, in either domain,
+begins in Linux userspace and that a predicted improvement is only an
+estimate. \system's design therefore treats a migration as a hypothesis: it
+is attempted only when the evidence and the guards allow it, and kept only
+when observation confirms it.
+
 \subsection{QTask declaration and bounded ABI}
 A QTask declaration is the single source for Linux and MCU artifacts. The
 generator accepts fixed-size scalars, records, and bounded arrays; it rejects
@@ -460,9 +480,13 @@ hashes, sample counts, derived deadlines, and reported numbers.
 
 \section{Evaluation Methodology}
 \label{sec:method}
+The evaluation asks whether the protocol of Section~\ref{sec:design} ever has
+a beneficial move to make on real hardware, and what it does when it does
+not. This section describes how we measured both domains under matched
+conditions so that the answer is not an artifact of the measurement.
+
 \subsection{Testbed and workloads}
-Table~\ref{tab:testbed} summarizes the setup and Fig.~\ref{fig:testbed-photo}
-shows the board. All measurements use one UNO Q with its stock Bridge stack.
+Table~\ref{tab:testbed} summarizes the setup. All measurements use one UNO Q with its stock Bridge stack.
 The five workloads span a trivial task and a compute sweep: a signed 32-bit
 addition; a bitwise CRC-32 over the 64-byte block; and a 16-tap triangular
 Q15 FIR filter over 32 samples repeated 1, 64, or 512 times with a
@@ -492,18 +516,6 @@ Claim class & Empirical soft real-time \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\IfFileExists{figures/testbed.jpg}{%
-  \includegraphics[width=\columnwidth]{figures/testbed.jpg}%
-}{%
-  \fbox{\parbox[c][32mm][c]{0.92\columnwidth}{\centering
-  Testbed photograph unavailable in this build.}}%
-}
-\caption{Physical testbed. The LED matrix shows the controller's state for
-demonstration; it does not participate in decisions.}
-\label{fig:testbed-photo}
-\end{figure}
 
 \subsection{Load conditions and callers}
 Three conditions are applied for the whole duration of a run. \emph{Idle}
@@ -580,6 +592,11 @@ transparency.
 
 \section{Results}
 \label{sec:results}
+We answer the research questions in the order of the argument: first what it
+costs to cross the boundary (RQ1), then whether migration can recover that
+cost per call (RQ2) or per chain (RQ3), and finally whether the guards matter
+(RQ4) and what they cost (RQ5).
+
 \subsection{RQ1: Interconnect characterization}
 \label{sec:interconnect}
 All cross-domain costs in \system originate from the Bridge RPC path between
@@ -675,27 +692,6 @@ percentiles; ``loaded'' runs four \texttt{stress-ng} CPU workers. Point labels i
 \label{fig:interconnect}
 \end{figure*}
 
-\subsection{RQ2: Matched-load per-call comparison}
-\label{sec:percall}
-Table~\ref{tab:percall} and Fig.~\ref{fig:percall} compare the domains per
-call. At idle, an MCU addition takes \StageTwelveIdleRtAddP~ms at p95 against
-\StageTwelveIdleLinuxAddP~ms in Linux, a \StageTwelveIdleRatio$\times$ gap.
-Table~\ref{tab:decomposition} decomposes the idle median with
-Eq.~\eqref{eq:decomposition}. The MCU residual stays near 19~ms for every
-workload, so dispatch, not compute, dominates the MCU path; and the MCU
-computes FIR$\times$512 \StageTwelveFirComputeRatio$\times$ more slowly than
-the Cortex-A53, so heavier kernels widen the gap rather than closing it.
-
-\begin{table*}[t]
-\caption{Per-call p95 latency (ms) by load and caller policy. Brackets give
-95\% block-bootstrap confidence intervals for the ordinary caller. ``FIFO''
-denotes a \texttt{SCHED\_FIFO} priority-50 caller.}
-\label{tab:percall}
-\centering
-\footnotesize
-\input{generated/stage12-percall-table.tex}
-\end{table*}
-
 \begin{figure*}[t]
 \centering
 \pgfplotstableread{generated/stage12-percall.dat}\percalldata
@@ -724,7 +720,29 @@ is issued and relayed by Linux processes.}
 \label{fig:percall}
 \end{figure*}
 
-\begin{table}[t]
+\subsection{RQ2: Matched-load per-call comparison}
+\label{sec:percall}
+Table~\ref{tab:percall} and Fig.~\ref{fig:percall} compare the domains per
+call. At idle, an MCU addition takes \StageTwelveIdleRtAddP~ms at p95 against
+\StageTwelveIdleLinuxAddP~ms in Linux, a \StageTwelveIdleRatio$\times$ gap.
+Table~\ref{tab:decomposition} decomposes the idle median with
+Eq.~\eqref{eq:decomposition}. The MCU residual stays near 19~ms for every
+workload, so dispatch, not compute, dominates the MCU path; and the MCU
+computes FIR$\times$512 \StageTwelveFirComputeRatio$\times$ more slowly than
+the Cortex-A53, so heavier kernels widen the gap rather than closing it.
+
+\begin{table}[!tb]
+\caption{Per-call p95 latency (ms) with ordinary callers. Brackets give 95\%
+block-bootstrap confidence intervals.}
+\label{tab:percall}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\input{generated/stage12-percall-table.tex}
+\end{table}
+
+
+\begin{table}[!tb]
 \caption{Idle per-call decomposition (Eq.~\ref{eq:decomposition}). Compute is
 measured inside each executor; the residual is the difference of medians.}
 \label{tab:decomposition}
@@ -736,7 +754,7 @@ measured inside each executor; the residual is the difference of medians.}
 
 Load changes the picture in an instructive way. CPU load raises the
 ordinary Linux p95 to a few milliseconds, which a \texttt{SCHED\_FIFO} caller
-removes almost entirely. Under RT contention, the Linux path keeps a p95
+removes almost entirely (Table~\ref{tab:chain}, tuned Linux). Under RT contention, the Linux path keeps a p95
 below 2~ms with occasional stalls, while the MCU path degrades sharply, with
 p99 up to \StageTwelveContentionRtPNinetyNine~ms against
 \StageTwelveContentionLinuxPNinetyNine~ms for Linux. An MCU invocation
@@ -759,15 +777,17 @@ With the hysteresis of Eq.~\eqref{eq:hysteresis}, \system performs
 the correct decision: no admissible alternative would have improved the
 contract.
 
-\begin{table*}[t]
-\caption{Replayed four-node chain (\StageTwelveChainObservations{}
-observations per cell). $D_G$ is the graph deadline of
-Eq.~\eqref{eq:deadline}; ``stay'' means neither recovery variant switched.}
+\begin{table}[!tb]
+\caption{Replayed four-node chain, \StageTwelveChainObservations{}
+observations per cell; latencies in ms. $D_G$ is the graph deadline of
+Eq.~\eqref{eq:deadline}. Neither \system recovery variant switched in any
+cell.}
 \label{tab:chain}
 \centering
-\footnotesize
+\scriptsize
+\setlength{\tabcolsep}{2.6pt}
 \input{generated/stage12-chain-table.tex}
-\end{table*}
+\end{table}
 
 \subsection{RQ4: Are the guards necessary?}
 \label{sec:guards}
@@ -792,7 +812,7 @@ moves; the remaining two were still in probation when the trace ended (``open at
 Hysteresis prevents the harmful moves, and probation bounds the damage when
 a move is made anyway.
 
-\begin{table}[t]
+\begin{table}[!tb]
 \caption{Hysteresis ablation under RT contention: switching on the first
 violating window ($k=1$) instead of $k=3$.}
 \label{tab:ablation}
@@ -803,34 +823,17 @@ violating window ($k=1$) instead of $k=3$.}
 \end{table}
 
 \subsection{RQ5: Mechanism overhead}
-Table~\ref{tab:overhead} reports the cost of the mechanism itself. One policy
+The mechanism itself is inexpensive. One policy
 decision costs \PolicyCpuP\,$\mu$s of CPU time and \PolicyWallP\,$\mu$s of wall
 time at p95 over 1,000 in-process evaluations, with a \PolicyPeakBytes-byte
 peak observed by \texttt{tracemalloc}; the latter excludes the interpreter
 baseline and is not total process memory. A decision is thus two orders of
-magnitude cheaper than one MCU dispatch. The worst LED-matrix refresh profile
+magnitude cheaper than one MCU dispatch (\StageTwelveIdleRtAddP~ms at p95 for
+an idle addition). The worst LED-matrix refresh profile
 changes Bridge p95 by \VisualizationOverhead.
 
-\begin{table}[t]
-\caption{Measured mechanism costs}
-\label{tab:overhead}
-\centering
-\small
-\begin{tabular}{lr}
-\toprule
-Component & Result \\
-\midrule
-Policy decision CPU time, p95 & \PolicyCpuP\,$\mu$s \\
-Policy decision wall time, p95 & \PolicyWallP\,$\mu$s \\
-Policy traced peak allocation & \PolicyPeakBytes\ bytes \\
-Linux dispatch, add, idle p95 & \StageTwelveIdleLinuxAddP\ ms \\
-MCU dispatch, add, idle p95 & \StageTwelveIdleRtAddP\ ms \\
-Worst LED display delta & \VisualizationOverhead \\
-\bottomrule
-\end{tabular}
-\end{table}
 
-\begin{table}[t]
+\begin{table}[!tb]
 \caption{Answers to the research questions}
 \label{tab:rq}
 \centering
@@ -914,6 +917,7 @@ prototype and effect annotations reject known-ineligible tasks, but this is
 not a proof of implementation equivalence. Production use would need state
 transfer, authentication, fault containment, and multi-client analysis.
 
+\FloatBarrier
 \section{Conclusion}
 \label{sec:conclusion}
 \system demonstrates a guarded form of runtime adaptation across a
