@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- shared-mime-info definition for RV565 video.
+     Install for one user:
+       mkdir -p ~/.local/share/mime/packages
+       cp rv565.xml ~/.local/share/mime/packages/
+       update-mime-database ~/.local/share/mime
+     Specification: https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="video/x-rv565">
+    <comment>RV565 video</comment>
+    <acronym>RV565</acronym>
+    <expanded-acronym>RGB565 frame-independent video</expanded-acronym>
+    <generic-icon name="video-x-generic"/>
+    <magic priority="50">
+      <match type="string" value="RV5\x06" offset="0"/>
+    </magic>
+    <glob pattern="*.rv565"/>
+  </mime-type>
+</mime-info>
