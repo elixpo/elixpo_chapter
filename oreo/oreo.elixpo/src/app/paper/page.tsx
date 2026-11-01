@@ -101,6 +101,9 @@ export default function PaperPage() {
           <Link href="/rv565/convert/" className="btn-ghost">
             Convert a video <ArrowRight className="h-4 w-4" />
           </Link>
+          <a href="https://pypi.org/project/rv565/" target="_blank" rel="noreferrer" className="btn-ghost">
+            pip install rv565 <ArrowUpRight className="h-4 w-4" />
+          </a>
           <Link href="/docs/video-architecture/" className="btn-ghost">
             Architecture notes <ArrowRight className="h-4 w-4" />
           </Link>

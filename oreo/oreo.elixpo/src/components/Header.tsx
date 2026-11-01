@@ -13,6 +13,7 @@ const NAV = [
   { href: "/apps/",        label: "Apps" },
   { href: "/docs/",        label: "Docs" },
   { href: "/paper/",       label: "Paper" },
+  { href: "/rv565/convert/", label: "Convert" },
   { href: "/hacks/",       label: "Hacks" },
   { href: "/contribute/",  label: "Contribute" },
 ];

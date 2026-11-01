@@ -20,7 +20,7 @@ export const metadata = pageMetadata({
 
 const STEPS = [
   ["Convert", "Drop a video here. Pick the frame size and frame rate; the page writes an .rv565 file and a clip.h for Arduino."],
-  ["Install RV565", "Arduino IDE → Library Manager → search “RV565”, or arduino-cli lib install RV565. ESP-IDF and the Pico SDK are supported too."],
+  ["Install RV565", "Arduino IDE → Library Manager → search “RV565”, or arduino-cli lib install RV565. ESP-IDF and the Pico SDK are supported too; on a computer, pip install rv565 gives the same tools."],
   ["Play", "Open the ESP32S3_Player example, replace clip.h with yours, and upload. Large clips can live in a flash partition instead."],
 ];
 
@@ -47,7 +47,7 @@ const FAQ = [
   },
   {
     q: "Can I convert without a browser?",
-    a: "Yes: pip install rv565, then rv565 encode input.mp4 clip.rv565 --size 180x135 --fps 24, and rv565 c-array clip.rv565 clip.h for Arduino.",
+    a: "Yes. The rv565 package is published on PyPI: pip install rv565, then rv565 encode input.mp4 clip.rv565 --size 180x135 --fps 24, and rv565 c-array clip.rv565 clip.h for Arduino. With pip install \"rv565[pillow]\", Pillow's Image.open reads .rv565 files too.",
   },
 ];
 
@@ -69,7 +69,7 @@ export default function ConvertPage() {
                 "Converts MP4 and WebM video to RV565 RGB565 video and Arduino C headers for ST7789 displays on ESP32 and Raspberry Pi Pico, entirely in the browser.",
               isAccessibleForFree: true,
               author: { "@type": "Organization", name: "Elixpo", url: "https://elixpo.com" },
-              sameAs: ["https://github.com/elixpo/rv565"],
+              sameAs: ["https://github.com/elixpo/rv565", "https://pypi.org/project/rv565/"],
             },
             {
               "@type": "FAQPage",
@@ -93,6 +93,11 @@ export default function ConvertPage() {
           SPI panels. Play it with the open-source RV565 library on ESP32-S3, other ESP32 chips or the Raspberry Pi
           Pico 2. No upload, no account.
         </p>
+        <ul className="mt-8 flex flex-wrap gap-3 text-sm">
+          <li className="chip">Arduino · Library Manager → RV565</li>
+          <li><a href="https://pypi.org/project/rv565/" target="_blank" rel="noreferrer" className="chip hover:text-text">Python · pip install rv565</a></li>
+          <li><a href="https://github.com/elixpo/rv565" target="_blank" rel="noreferrer" className="chip hover:text-text">GitHub · elixpo/rv565</a></li>
+        </ul>
       </header>
 
       <section className="container-page border-b border-border py-14">
@@ -116,6 +121,9 @@ export default function ConvertPage() {
         <div className="mt-10 flex flex-wrap gap-3">
           <a href="https://github.com/elixpo/rv565" target="_blank" rel="noreferrer" className="btn-primary">
             RV565 library on GitHub <ArrowUpRight className="h-4 w-4" />
+          </a>
+          <a href="https://pypi.org/project/rv565/" target="_blank" rel="noreferrer" className="btn-ghost">
+            pip install rv565 <ArrowUpRight className="h-4 w-4" />
           </a>
           <Link href="/paper/" className="btn-ghost">
             Read the paper <ArrowRight className="h-4 w-4" />

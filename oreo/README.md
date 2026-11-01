@@ -436,6 +436,18 @@ Cutting a release takes one command: `python tools/release.py`. Details in [`CON
 
 ---
 
+## 🎞 RV565 — the badge's video format, for any project
+
+The Gallery's video playback grew into **RV565**, a standalone library and file format for smooth video on ESP32 SPI displays (24 FPS with zero missed frames on the ESP32-S3; [arXiv:2610.35935](https://arxiv.org/abs/2610.35935)). It lives in its own repository, [elixpo/rv565](https://github.com/elixpo/rv565), and installs from the official channels:
+
+| Where | How |
+|---|---|
+| Arduino | Library Manager → **RV565**, or `arduino-cli lib install RV565` |
+| Python (desktop) | `pip install rv565` — [on PyPI](https://pypi.org/project/rv565/), with a Pillow plugin via `pip install "rv565[pillow]"` |
+| Browser | [oreo.elixpo.com/rv565/convert](https://oreo.elixpo.com/rv565/convert/) — convert a video with no install and no upload |
+
+---
+
 ## 📚 Reading order
 
 | | |
