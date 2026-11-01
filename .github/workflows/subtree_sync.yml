@@ -76,6 +76,7 @@ jobs:
             "monodiffuse https://github.com/elixpo/monodiffuse"
             "wozformer https://github.com/elixpo/wozformer"
             "nano28C64 https://github.com/elixpo/nano28C64"
+            "rv565 https://github.com/elixpo/rv565"
           )
 
           STATE_DIR=.github/.sync-state
