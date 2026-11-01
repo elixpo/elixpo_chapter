@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    name: Host tests (core + player)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Version numbers agree
+        run: python3 -I tools/check_version.py
+      - name: Build and run
+        run: make -C tests
+      - name: CLI round trip
+        run: |
+          python3 -I tools/rv565.py testpattern /tmp/tp.rv565
+          cmp /tmp/tp.rv565 tests/data/testpattern.rv565 || echo "zlib version differs from the committed vector; decode check below is authoritative"
+          python3 -I tools/rv565.py verify tests/data/testpattern.rv565
+          python3 -I tools/rv565.py info tests/data/testpattern.rv565
+
+  python:
+    name: Python package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Tests without Pillow
+        run: python3 -m unittest discover -s python/tests -v
+      - name: Build, install with Pillow, test again
+        run: |
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install --quiet build
+          /tmp/venv/bin/python -m build python --outdir /tmp/dist
+          /tmp/venv/bin/pip install --quiet "$(ls /tmp/dist/*.whl)[pillow]"
+          cd /tmp && /tmp/venv/bin/rv565 info "$GITHUB_WORKSPACE/tests/data/testpattern.rv565"
+          /tmp/venv/bin/python -m unittest discover -s "$GITHUB_WORKSPACE/python/tests" -v
+
+  arduino-lint:
+    name: Arduino Library Manager lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: arduino/arduino-lint-action@e9a30879471dcbf7d9fe3481b26e60b652cca297 # v1
+        with:
+          # RV565 is in the Library Manager index, so lint as an update.
+          library-manager: update
+          compliance: strict
+
+  arduino-compile:
+    name: Arduino (${{ matrix.board.name }})
+    # compile-sketches installs Python 3.12.4, which has no build for the
+    # newer ubuntu-latest image; 24.04 has it.
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - name: ESP32-S3
+            fqbn: esp32:esp32:esp32s3
+            platform: esp32:esp32
+            url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+            sketch: examples/ESP32S3_Player
+          - name: Pico 2
+            fqbn: rp2040:rp2040:rpipico2
+            platform: rp2040:rp2040
+            url: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+            sketch: examples/Pico2_Player
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: arduino/compile-sketches@d7af6619a62e765d91f0a4d65b40cf061537a15d # v1
+        with:
+          fqbn: ${{ matrix.board.fqbn }}
+          platforms: |
+            - name: ${{ matrix.board.platform }}
+              source-url: ${{ matrix.board.url }}
+          libraries: |
+            - source-path: ./
+          sketch-paths: |
+            - ${{ matrix.board.sketch }}
+          enable-warnings-report: true
+
+  arduino-display-libs:
+    name: Arduino with ${{ matrix.example.library }} (ESP32-S3)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - library: TFT_eSPI
+            sketch: examples/TFT_eSPI_Player
+            # TFT_eSPI reads its configuration from build flags or User_Setup.h.
+            flags: >-
+              -DUSER_SETUP_LOADED=1 -DST7789_DRIVER=1 -DTFT_WIDTH=240 -DTFT_HEIGHT=320
+              -DTFT_MOSI=11 -DTFT_SCLK=12 -DTFT_CS=14 -DTFT_DC=15 -DTFT_RST=16
+              -DTFT_BL=17 -DTFT_BACKLIGHT_ON=HIGH -DSPI_FREQUENCY=40000000
+          - library: LovyanGFX
+            sketch: examples/LovyanGFX_Player
+            flags: ""
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: arduino/compile-sketches@d7af6619a62e765d91f0a4d65b40cf061537a15d # v1
+        with:
+          fqbn: esp32:esp32:esp32s3
+          platforms: |
+            - name: esp32:esp32
+              source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          libraries: |
+            - source-path: ./
+            - name: ${{ matrix.example.library }}
+          sketch-paths: |
+            - ${{ matrix.example.sketch }}
+          cli-compile-flags: |
+            - --build-property
+            - compiler.cpp.extra_flags=${{ matrix.example.flags }}
+          enable-warnings-report: true
+
+  platformio:
+    name: PlatformIO (ESP32-S3, Arduino)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build the example through library.json
+        run: |
+          python3 -m venv /tmp/pio
+          /tmp/pio/bin/pip install --quiet platformio
+          /tmp/pio/bin/pio ci examples/ESP32S3_Player --lib=. \
+            --board=esp32-s3-devkitc-1 --project-option="framework=arduino"
+
+  esp-idf:
+    name: ESP-IDF example (esp32s3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: espressif/esp-idf-ci-action@9d38657f3d789ca759b2b37aaf5ceffbc42c4f0d # v1
+        with:
+          esp_idf_version: v5.5.1
+          target: esp32s3
+          path: examples_idf/player
+
+  pico-sdk:
+    name: Pico SDK example (pico2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi
+      - name: Fetch Pico SDK
+        run: git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git "$RUNNER_TEMP/pico-sdk"
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ runner.temp }}/pico-sdk
+        run: |
+          cmake -S examples_pico/player -B build-pico -DPICO_BOARD=pico2
+          cmake --build build-pico -j
