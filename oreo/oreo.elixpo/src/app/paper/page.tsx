@@ -98,6 +98,9 @@ export default function PaperPage() {
           <a href={`https://doi.org/${ZENODO_DOI}`} target="_blank" rel="noreferrer" className="btn-ghost">
             Artifact on Zenodo <ArrowUpRight className="h-4 w-4" />
           </a>
+          <Link href="/rv565/convert/" className="btn-ghost">
+            Convert a video <ArrowRight className="h-4 w-4" />
+          </Link>
           <Link href="/docs/video-architecture/" className="btn-ghost">
             Architecture notes <ArrowRight className="h-4 w-4" />
           </Link>
