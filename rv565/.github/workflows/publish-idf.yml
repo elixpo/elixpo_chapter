@@ -1,0 +1,20 @@
+name: Publish to ESP Component Registry
+
+# Manual until the `elixpo` namespace is approved by Espressif. After that,
+# add `push: tags: ["v*"]` so each release tag publishes automatically.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # OIDC authentication with the registry
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: espressif/upload-components-ci-action@355b0bb4d41e94edbec03d08c0ba0c11bbc4834d # v2
+        with:
+          components: "rv565: ."
+          namespace: elixpo

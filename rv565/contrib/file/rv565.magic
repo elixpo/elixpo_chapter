@@ -1,0 +1,23 @@
+
+#------------------------------------------------------------------------------
+# rv565:  file(1) magic for RV565 frame-independent RGB565 video
+#
+# RV565 is a container for microcontroller displays: a 12-byte little-endian
+# header, then per frame a u32 length and a zlib stream that inflates to
+# width*height big-endian RGB565 pixels.
+# Specification: https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md
+# Paper: https://arxiv.org/abs/2610.35935
+#
+# The 3-byte magic is short, so also require version 6, a frame rate of
+# 1-30, and a zlib header (0x78) on the first frame.
+0	string		RV5
+>3	byte		6
+>>8	ubyte		>0
+>>>8	ubyte		<31
+>>>>16	ubyte		0x78		RV565 video
+!:mime	video/x-rv565
+!:ext	rv565
+>>>>>4		uleshort	x		\b, %u
+>>>>>6		uleshort	x		\bx%u
+>>>>>8		ubyte		x		\b, %u fps
+>>>>>10		uleshort	x		\b, %u frames
