@@ -1,0 +1,15 @@
+{
+  "category": "background",
+  "prompt": "Start `sleep 3 && echo built > build.log` as a background job. While it runs, create status.md containing the word waiting. Then wait for the job to finish and tell me what build.log contains.",
+  "files": {
+    "README.md": "scratch\n"
+  },
+  "file_contains": {
+    "build.log": "built",
+    "status.md": "waiting"
+  },
+  "answer_contains": [
+    "built"
+  ],
+  "max_tokens": 100000
+}

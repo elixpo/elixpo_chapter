@@ -1,0 +1,14 @@
+{
+  "category": "precision",
+  "prompt": "How many lines do all the .txt files in data/ have in total? Give the exact number.",
+  "files": {
+    "data/a.txt": "a0\na1\na2\na3\na4\na5\na6\na7\na8\na9\na10\na11\na12\na13\na14\na15\na16\n",
+    "data/b.txt": "b0\nb1\nb2\nb3\nb4\nb5\nb6\nb7\nb8\nb9\nb10\nb11\nb12\nb13\nb14\nb15\nb16\nb17\nb18\nb19\nb20\nb21\nb22\nb23\nb24\n",
+    "data/c.md": "c0\nc1\nc2\nc3\nc4\nc5\nc6\nc7\nc8\n"
+  },
+  "answer_matches": [
+    "\\b42\\b"
+  ],
+  "no_new_files": true,
+  "max_tokens": 60000
+}
