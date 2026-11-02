@@ -1,7 +1,7 @@
 # RV565 roadmap after 1.0
 
-1.0 put RV565 in the Arduino Library Manager (ESP-IDF pending namespace
-approval). The next goal is users and files in the wild, because that is what
+1.0 put RV565 in the Arduino Library Manager; 1.1 added the ESP Component
+Registry, PyPI and PlatformIO. The next goal is users and files in the wild, because that is what
 FFmpeg and everything built on it (VLC, mpv, Kodi, ImageMagick) ask for before
 adding a format.
 

@@ -35,7 +35,7 @@ license:
   current_file: LICENSE
   notice_file: LICENSES/NOTICE
   migration_status: current
-  target_code_license: MIT WITH Oreo-trademarks
+  target_code_license: MIT
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: cargo fmt --all --check

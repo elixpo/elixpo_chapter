@@ -22,6 +22,7 @@ export interface DirectoryEntry {
   featured?: boolean;
   icon?: string;
   evidence?: { label: string; url: string }[];
+  programmes?: { label: string; url: string }[];
   licenseEvidence: {
     detection: string;
     classification: "spdx-recognized" | "external-spdx" | "custom-mixed" | "missing";

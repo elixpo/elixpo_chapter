@@ -10,9 +10,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 IDF_VERSION="5.5.1"
 MICROPY_VERSION="1.28.0"
-BOARD="ESP32_GENERIC_S3"
-BOARD_VARIANT="SPIRAM_OCT"
-BUILD_NAME="build-oreoos-s3-v55"
+# Out-of-tree MicroPython board: ESP32_GENERIC_S3 + SPIRAM_OCT configuration
+# with the Oreo Badge identity (USB names, board name, hostname).
+BOARD_DIR="$REPO_ROOT/firmware/boards/OREO_BADGE"
+BUILD_NAME="build-oreo-badge-v55"
 
 ESP_ROOT="${OREO_ESP_ROOT:-${HOME}/esp}"
 IDF_DIR="${OREO_IDF_DIR:-${ESP_ROOT}/esp-idf-v${IDF_VERSION}}"
@@ -208,22 +209,21 @@ make -C "$MICROPY_DIR/mpy-cross" -j"$JOBS"
 
 printf 'Preparing ESP32-only submodules...\n'
 make -C "$MICROPY_DIR/ports/esp32" submodules \
-  BOARD="$BOARD" \
-  BOARD_VARIANT="$BOARD_VARIANT" \
+  BOARD_DIR="$BOARD_DIR" \
   BUILD="$BUILD_NAME"
 
-if $CLEAN && [[ -d "$MICROPY_DIR/ports/esp32/$BUILD_NAME" ]]; then
+# Only a configured build can be cleaned; a fresh directory holds just the
+# submodule step above, which idf.py refuses to "fullclean".
+if $CLEAN && [[ -f "$MICROPY_DIR/ports/esp32/$BUILD_NAME/CMakeCache.txt" ]]; then
   printf 'Cleaning %s...\n' "$BUILD_NAME"
   make -C "$MICROPY_DIR/ports/esp32" clean \
-    BOARD="$BOARD" \
-    BOARD_VARIANT="$BOARD_VARIANT" \
+    BOARD_DIR="$BOARD_DIR" \
     BUILD="$BUILD_NAME"
 fi
 
 printf 'Building OreoOS firmware...\n'
 make -C "$MICROPY_DIR/ports/esp32" \
-  BOARD="$BOARD" \
-  BOARD_VARIANT="$BOARD_VARIANT" \
+  BOARD_DIR="$BOARD_DIR" \
   BUILD="$BUILD_NAME" \
   USER_C_MODULES="$USER_MODULES" \
   -j"$JOBS"
@@ -237,23 +237,27 @@ strings "$MICROPY_IMAGE" | grep '_oreo_ir' >/dev/null || fail \
   "native _oreo_ir module is missing from the image"
 strings "$MICROPY_IMAGE" | grep '_oreo_rv565' >/dev/null || fail \
   "native _oreo_rv565 module is missing from the image"
+strings "$MICROPY_IMAGE" | grep -F 'Oreo Badge' >/dev/null || fail \
+  "Oreo Badge board identity is missing from the image"
 
 printf 'Verified native module: _oreo_ir\n'
 printf 'Verified native module: _oreo_rv565\n'
+printf 'Verified board identity: Oreo Badge (USB: Elixpo / Oreo Badge)\n'
 printf 'Built: %s\n' "$FIRMWARE_IMAGE"
 
 if $COPY_IMAGE; then
-  shopt -s nullglob
-  firmware_targets=(
-    "$REPO_ROOT"/oreoWare/firmware/ESP32_GENERIC_S3-SPIRAM_OCT-*.bin
-  )
-  shopt -u nullglob
-  ((${#firmware_targets[@]} == 1)) || fail \
-    "expected exactly one deployable firmware image, found ${#firmware_targets[@]}"
-  TARGET_IMAGE="${firmware_targets[0]}"
+  # One deployable image, named after the board. Older builds were named after
+  # MicroPython's generic board; replace them so deploy finds exactly one.
+  TARGET_IMAGE="$REPO_ROOT/oreoWare/firmware/OREO_BADGE-v$MICROPY_VERSION.bin"
   TEMP_IMAGE="${TARGET_IMAGE}.new"
   trap 'rm -f "$TEMP_IMAGE"' EXIT
   install -m 0644 "$FIRMWARE_IMAGE" "$TEMP_IMAGE"
+  shopt -s nullglob
+  for old in "$REPO_ROOT"/oreoWare/firmware/ESP32_GENERIC_S3-SPIRAM_OCT-*.bin \
+             "$REPO_ROOT"/oreoWare/firmware/OREO_BADGE-*.bin; do
+    [[ "$old" == "$TARGET_IMAGE" ]] || rm -f "$old"
+  done
+  shopt -u nullglob
   mv "$TEMP_IMAGE" "$TARGET_IMAGE"
   trap - EXIT
   printf 'Updated: %s\n' "$TARGET_IMAGE"

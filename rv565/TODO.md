@@ -11,15 +11,13 @@ plan after 1.0, with every 🙋 item that needs you, is in `docs/ROADMAP.md`.
   frames, colour bars scroll.
 - Arduino Library Manager: accepted (arduino/library-registry#9534).
 - Repository description and topics set.
-- Espressif `elixpo` namespace requested (2026-10-31).
+- Espressif `elixpo` namespace approved (2026-11-01); 1.1.0 published to the
+  ESP Component Registry.
 
 ## Open
 
-1. Espressif: when the namespace is approved, create component `rv565`
-   under `elixpo` on components.espressif.com, add the trusted uploader
-   (`elixpo/rv565`, workflow `publish-idf.yml`), then run
-   `gh workflow run publish-idf.yml --ref v1.0.0`. Afterwards add the tag
-   trigger noted in the workflow.
+1. Espressif: done. `elixpo/rv565` 1.1.0 is on the ESP Component Registry
+   (namespace approved 2026-11-01); new release tags publish automatically.
 2. Arduino: confirm the index shows 1.0.0 (`arduino-cli lib search RV565`).
 3. Optional: play a real clip by replacing `examples_idf/player/main/clip.rv565`
    with one from `tools/rv565.py encode`.

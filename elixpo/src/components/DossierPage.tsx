@@ -49,6 +49,7 @@ export function DossierPage({ entry }: { entry: DirectoryEntry }) {
               <a href={discussionUrl(entry)} target="_blank" rel="noreferrer"><MessageCircle size={16} /> Discuss this {entry.family}</a>
             </div>
             {entry.evidence && <div className="evidence-links"><p className="eyebrow">Research record</p>{entry.evidence.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.label} <ArrowUpRight size={13} /></a>)}</div>}
+            {entry.programmes && <div className="evidence-links"><p className="eyebrow">Programmes</p>{entry.programmes.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.label} <ArrowUpRight size={13} /></a>)}</div>}
             <div className="evidence-links"><p className="eyebrow">License evidence</p><p>{entry.licenseEvidence.summary}</p>{entry.licenseEvidence.evidenceUrl && <a href={entry.licenseEvidence.evidenceUrl} target="_blank" rel="noreferrer">Open controlling license <ArrowUpRight size={13} /></a>}<small>License checked {entry.licenseEvidence.verifiedAt} · registry status checked {entry.statusVerifiedAt}</small><Link href="/resources">How registry evidence works <ArrowUpRight size={13} /></Link></div>
           </aside>
         </section>

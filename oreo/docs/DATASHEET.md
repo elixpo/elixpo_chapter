@@ -78,7 +78,7 @@ collapses the rail below the 2.7 V brownout threshold.
 | Radio | WiFi 802.11 b/g/n + BLE 5.0 |
 | USB | Native USB 1.1 OTG (data) + CP2102N (debug UART) |
 | GPIOs available | 21 of 45 used (see § 6) |
-| OS firmware | MicroPython 1.28 (ESP32_GENERIC_S3 + SPIRAM_OCT) |
+| OS firmware | MicroPython 1.28, board `OREO_BADGE` (`firmware/boards/`: ESP32_GENERIC_S3 + SPIRAM_OCT configuration; USB "Elixpo / Oreo Badge") |
 
 ---
 

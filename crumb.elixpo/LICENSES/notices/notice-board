@@ -1,7 +1,7 @@
 THIRD-PARTY NOTICES
 ===================
 
-The Crumb source code is licensed under the Elixpo standard. Third-party
+The Crumb source code is licensed under MIT (see ../../LICENSE). Third-party
 components retain their own licences.
 
 The authoritative Rust and web dependency versions are recorded in Cargo.lock
