@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in the library, tools or file format does not behave as documented.
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: RV565 version
+      placeholder: e.g. 1.1.0 (Arduino), elixpo/rv565 1.1.0 (ESP-IDF), rv565 1.1.0 (PyPI)
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Board, framework and display
+      placeholder: e.g. ESP32-S3, Arduino-ESP32 3.3.8, ST7789 320x240
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: Minimal sketch or commands
+  - type: textarea
+    id: clip
+    attributes:
+      label: Clip details
+      description: Output of `rv565 info your-clip.rv565` (pip install rv565), if a clip is involved.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: text

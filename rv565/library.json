@@ -1,0 +1,55 @@
+{
+  "name": "RV565",
+  "version": "1.1.0",
+  "description": "Frame-independent RGB565 video on ESP32-S3 and RP2350 SPI displays (ST7789), with a dual-core decode and DMA pipeline. 24 FPS with zero missed frames on the ESP32-S3; decode time predictable from the file.",
+  "keywords": "video, rgb565, st7789, display, dma, esp32, esp32s3, rp2350, pico, tft",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elixpo/rv565.git"
+  },
+  "authors": [
+    {
+      "name": "Ayushman Bhattacharya",
+      "email": "ayushman.elixpo@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/elixpo/rv565",
+  "frameworks": ["arduino", "espidf"],
+  "platforms": ["espressif32", "raspberrypi"],
+  "headers": "RV565.h",
+  "export": {
+    "exclude": [
+      "benchmarks",
+      "contrib",
+      "ports",
+      "python",
+      "tests",
+      "tools",
+      ".github"
+    ]
+  },
+  "examples": [
+    {
+      "name": "ESP32-S3 player",
+      "base": "examples/ESP32S3_Player",
+      "files": ["ESP32S3_Player.ino", "clip.h"]
+    },
+    {
+      "name": "TFT_eSPI player",
+      "base": "examples/TFT_eSPI_Player",
+      "files": ["TFT_eSPI_Player.ino", "clip.h"]
+    },
+    {
+      "name": "LovyanGFX player",
+      "base": "examples/LovyanGFX_Player",
+      "files": ["LovyanGFX_Player.ino", "clip.h"]
+    },
+    {
+      "name": "Pico 2 player",
+      "base": "examples/Pico2_Player",
+      "files": ["Pico2_Player.ino", "clip.h"]
+    }
+  ]
+}
