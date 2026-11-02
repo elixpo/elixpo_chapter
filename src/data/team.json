@@ -1,0 +1,31 @@
+{
+  "headline": "Community & Contributors",
+  "subheadline": "A global community of developers, creators, and enthusiasts building the future of open-source AI tools together.",
+  "cta": {
+    "label": "Join the Community",
+    "href": "https://github.com/elixpo/elixpo_chapter"
+  },
+  "founder": {
+    "name": "Ayushman Bhattacharya",
+    "role": "Founder, Lead Maintainer and Developer",
+    "github": "Circuit-Overtime"
+  },
+  "coreTeam": [
+    { "name": "Vivek Yadav", "role": "Lead Developer and Co-Founder", "github": "ez-vivek" },
+    { "name": "Anwesha Chakraborty", "role": "Program & Research Manager", "github": "anwe-ch" },
+    { "name": "Divyanshu Jha", "role": "Core Contributor", "github": "divyanshuj91" }
+  ],
+  "programs": [
+    { "name": "GSSOC", "description": "GirlScript Summer of Code" },
+    { "name": "Hacktoberfest", "description": "2024 & 2025 Active Participant" },
+    { "name": "Pollinations.AI", "description": "Infrastructure Partner" },
+    { "name": "MS Startup Foundations", "description": "Funded in 2024" },
+    { "name": "OSCI", "description": "Open Source Community Initiative" }
+  ],
+  "values": [
+    "100% Open Source - MIT & CC-BY-4.0",
+    "Completely Free - No paywalls ever",
+    "AI-Powered - Intelligence at the core",
+    "Community-Driven - Built by contributors worldwide"
+  ]
+}
