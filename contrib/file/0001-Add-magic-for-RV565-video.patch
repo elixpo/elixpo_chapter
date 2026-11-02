@@ -1,0 +1,104 @@
+From f4696dcfde0621254516b8fa94d821df96472583 Mon Sep 17 00:00:00 2001
+From: Ayushman Bhattacharya <ayushman.elixpo@gmail.com>
+Date: Sun, 1 Nov 2026 13:14:34 +0530
+Subject: [PATCH] Add magic for RV565 video
+
+RV565 is a frame-independent RGB565 video container for microcontroller
+displays: a 12-byte little-endian header followed by length-prefixed zlib
+frames. Specification:
+https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md
+
+Adds a test file (a 24-frame synthetic test pattern).
+---
+ magic/Magdir/animation |  23 +++++++++++++++++++++++
+ tests/Makefile.am      |   2 ++
+ tests/rv565.result     |   1 +
+ tests/rv565.testfile   | Bin 0 -> 6322 bytes
+ 4 files changed, 26 insertions(+)
+ create mode 100644 tests/rv565.result
+ create mode 100644 tests/rv565.testfile
+
+diff --git a/magic/Magdir/animation b/magic/Magdir/animation
+index 4a73e72..b7cec57 100644
+--- a/magic/Magdir/animation
++++ b/magic/Magdir/animation
+@@ -1251,3 +1251,26 @@
+ >14	belong	!0	\b, XOR obfuscation key %d
+ !:mime	application/x-cubism-archive
+ !:ext	cmo3/can3
++
++#------------------------------------------------------------------------------
++# rv565:  file(1) magic for RV565 frame-independent RGB565 video
++#
++# RV565 is a container for microcontroller displays: a 12-byte little-endian
++# header, then per frame a u32 length and a zlib stream that inflates to
++# width*height big-endian RGB565 pixels.
++# Specification: https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md
++# Paper: https://arxiv.org/abs/2610.35935
++#
++# The 3-byte magic is short, so also require version 6, a frame rate of
++# 1-30, and a zlib header (0x78) on the first frame.
++0	string		RV5
++>3	byte		6
++>>8	ubyte		>0
++>>>8	ubyte		<31
++>>>>16	ubyte		0x78		RV565 video
++!:mime	video/x-rv565
++!:ext	rv565
++>>>>>4		uleshort	x		\b, %u
++>>>>>6		uleshort	x		\bx%u
++>>>>>8		ubyte		x		\b, %u fps
++>>>>>10		uleshort	x		\b, %u frames
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 5079b3a..4dbd40d 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -160,6 +160,8 @@ rpm-v3.0-bin-x86_64.result \
+ rpm-v3.0-bin-x86_64.testfile \
+ rpm-v3.0-src.result \
+ rpm-v3.0-src.testfile \
++rv565.result \
++rv565.testfile \
+ searchbug.magic \
+ searchbug.result \
+ searchbug.testfile \
+diff --git a/tests/rv565.result b/tests/rv565.result
+new file mode 100644
+index 0000000..7dc1ed6
+--- /dev/null
++++ b/tests/rv565.result
+@@ -0,0 +1 @@
++RV565 video, 180x135, 24 fps, 24 frames
+\ No newline at end of file
+diff --git a/tests/rv565.testfile b/tests/rv565.testfile
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2758934b7d22737ff312ba90c181761f8ad529b
+GIT binary patch
+literal 6322
+zcmds*;ZGBH9LBE{BxVi53_~MKP2aH9NIGOfot7q>q|9`S5g96!Nf|m5X5iX$i{nB_
+z<}lOwW?5P(GV2R1Xk|AiD{+T|O+;GTWTjKq9a#-r3T?AoH*!$#_G`;E(()Jla=GO9
+z`pNV8KHuki@Nn6>ACPm%Ch#F51Ud6G=#q<&ZIZFdH+3^qP4n&im!2EnEj)%Da!^I}
+zOt`y&@pk8Y?Chy%pPe+8w!rdG8ajIS5NffYK_0R#H&d<v8sxu0zq&qp=YXN;TEHDr
+z%062Je`KpnasB&pxHPC}=l)<bnobhxj1?KS11scastV;ab$-*(0}Ho{m~OQ88u&W*
+zF!(L}2X56jzd~e#xT~2eXTjSegjyt+L4<729ji>3;pd|}{+v>Fcd6Uv!iOl9x&eT=
+zv9r1W8WIGsNqxuq5TVWzM94$rlFUK0GmjgP`1hPs{pRIPeA{VX`X@x2cr#swo9RBM
+zm4$6ERPfVm#>_oJow*{!cfbu2z(lhPuYJv5?;7gio&+21OP^w>gV#h%qy~Mz#d8*x
+z!6?|Fhktffbh&L66|tE3abkq*pJ)^(V!~G)Vq2<g?5V13-$1VxIy2x4QRK8cor*62
+z6&X_V=*)vS71sIXQa%Kj2m&S)Our?mA}kMXkP-h~oJPg5i9Y^TvA7^I9H#>4V8k)N
+zgaI&NW<74`48f1Hq9$@pDr7ogdD5F%ECGdn%BU@JKo^*Iof|x_tWAYPTK`Lu3O`}-
+zM(<d<S`R<AZSgU%z>wU8xx0+`z^=8aIJhn+Nd@!7eTsYPR_*Se^Iix+n3)e*5%F>w
+z6^TlLu4Kg(O}tCk>&kG7Hc`-xhFDe<52jPm`60-P(Igf2rR6fb26Z_U%;JT8%<xtC
+zr~p|}b0&?7!scrrE2IJyKnD}~x`O`5%r5W0!q&r?75~+&LB;Q+OeauLYh(MbcC}6!
+z$xk9iDj&+Mkjhf2kYll4v5E?RY(CCUYIiS9hQZ|lJ}N*~{PcAy75B^I8`KL_w1XY;
+zvVPXK<@4Fai?`s+ifJFAUVVNVX&ryDR|Knb>~(u_AKi-^P)7-L<qDji(rbkr+b|lf
+z%i3>$tLrP91C(v+e244d5r*7&Z#E390O2~VT!@O*t~4lyN~F)RcQ%(d_}fgNY+L8|
+z(Yl)~1&)zel{XqV0i7SVwsE5K!PKY#P+Z4r$Az-3&+-k#nAppssKa(KxrM^=V2{pa
+zH!Y+dWe3BTI)Mm%;_ON7Bb`@eZ7>gb@E+QOKc)lPQpK0>9HkSPH%FRFOqWuRviGsE
+nK3sNurqZ7{%KoL93Me&^0NH~6Yuj8j23^N|&slI1bj<$&N#b1!
+
+literal 0
+HcmV?d00001
+
+-- 
+2.53.0
+
