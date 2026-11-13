@@ -148,6 +148,32 @@ work (for example integration tests or staging), revoked when the programme
 ends. Do not try to decrypt or commit configuration; if setup asks for a
 secret, open an issue.
 
+## License
+
+Crumb's code is licensed under the [MIT License](LICENSE). Visual assets under
+`crumb.elixpo/public/` are licensed under [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0).
+The Elixpo and Oreo names and marks are covered by [`TRADEMARKS.md`](TRADEMARKS.md).
+## Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code 2027. Google has not announced the 2027 programme yet, and Elixpo has not been accepted. Crumb hosts one proposed project idea:
+
+| Idea | Size | Difficulty | Mentors (primary / backup) |
+| --- | --- | --- | --- |
+| [Crumb connector contract and offline conformance kit](https://gsoc.elixpo.com/ideas/crumb-connector-contract/) | 175 h | Hard | [Ayushman Bhattacharya](https://github.com/Circuit-Overtime) / [Vivek Yadav](https://github.com/ez-vivek) |
+
+**How to start**
+
+1. Read the idea page and the programme site at [gsoc.elixpo.com](https://gsoc.elixpo.com).
+2. Build Crumb from source and run the checks in [Build from source and warm-up](#build-from-source-and-warm-up-no-keys).
+3. Read [Input namespaces and connectors](docs/product/input-namespaces-and-connectors.md) and the [MCP boundary](docs/development/mcp-boundary.md), plus the connector planning issues [#29](https://github.com/elixpo/crumb.elixpo/issues/29), [#30](https://github.com/elixpo/crumb.elixpo/issues/30) and [#31](https://github.com/elixpo/crumb.elixpo/issues/31).
+4. Pick a small issue from the [issue tracker](https://github.com/elixpo/crumb.elixpo/issues) to learn the codebase and review process.
+
+**Configuration and access:** no keys are needed to apply; see [Configuration and access](#configuration-and-access) above.
+
+Questions go to **gsoc@elixpo.com**. GitHub Discussions for GSoC open once Google announces the 2027 dates.
+
+_Google Summer of Code is a programme of Google LLC; Elixpo is applying as a mentoring organisation and is not affiliated with or endorsed by Google._
+
 <p align="center">
   <img src="crumb.elixpo/public/icon-192.png" width="96" height="96" alt="Crumb app icon" />
 </p>

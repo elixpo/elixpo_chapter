@@ -180,13 +180,14 @@ if $FULL_BOARD; then
   # a future second image cannot silently flash the wrong hardware variant.
   shopt -s nullglob
   firmware_images=(
-    "$SCRIPT_DIR"/oreoWare/firmware/ESP32_GENERIC_S3-SPIRAM_OCT-*.bin
+    "$SCRIPT_DIR"/oreoWare/firmware/OREO_BADGE-*.bin
+    "$SCRIPT_DIR"/oreoWare/firmware/ESP32_GENERIC_S3-SPIRAM_OCT-*.bin  # before the Oreo Badge board
   )
   shopt -u nullglob
   ((${#firmware_images[@]} > 0)) || \
-    fail "no ESP32-S3 octal-PSRAM firmware found in oreoWare/firmware/"
+    fail "no Oreo Badge firmware found in oreoWare/firmware/ (run ./build-firmware)"
   ((${#firmware_images[@]} == 1)) || \
-    fail "multiple ESP32-S3 firmware images found; keep exactly one"
+    fail "multiple firmware images in oreoWare/firmware/; keep exactly one"
   FIRMWARE="${firmware_images[0]}"
 
   # Preflight every tool before erase-flash. A missing mpremote discovered

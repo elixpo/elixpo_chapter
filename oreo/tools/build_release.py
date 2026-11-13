@@ -46,6 +46,7 @@ SHIP_PATTERNS = [
     "oreoOS/api.py",
     "oreoOS/app.py",
     "oreoOS/cache.py",
+    "oreoOS/github.py",
     "oreoOS/font.py",
     "oreoOS/gestures.py",
     "oreoOS/home.py",

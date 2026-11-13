@@ -1,7 +1,7 @@
 """Badge — GitHub identity card.
 
-Reads GITHUB_USER from secrets.py. Live-fetches the public profile JSON over
-WiFi and renders a centred identity card:
+Reads GITHUB_USER from secrets.py and renders a centred identity card from
+the profile cached on flash, so it opens instantly with or without WiFi:
 
   ╔════════════════════╗
   ║       (avatar)     ║
@@ -14,40 +14,21 @@ WiFi and renders a centred identity card:
 
 The avatar is stamped at deploy time by tools/fetch_avatar.py (committed as
 apps/badge/assets/optimized/avatar.py) so it renders on-device without WiFi.
+When the cached profile is older than oreoOS.github.PROFILE_TTL_S and WiFi
+is connected, the app refreshes it after the first frame, with a SYNCING
+label over the card instead of a blank loading screen.
 
 Controls:
-  A      refresh stats
+  A      refresh now
   HOME   apps drawer
 """
 
 import oreoOS
-from oreoOS import api
+from oreoOS import api, github
 from oreoOS import theme, widgets
 
 SW = api.SCREEN_W
 SH = api.SCREEN_H
-
-
-def _fetch_profile(username):
-    try:
-        import urequests
-        r = urequests.get("https://api.github.com/users/" + username,
-                          headers={"User-Agent": "OreoBadge"})
-        if r.status_code != 200:
-            r.close()
-            return None
-        data = r.json(); r.close()
-        return {
-            "name":      data.get("name") or data.get("login") or username,
-            "login":     data.get("login", username),
-            "bio":       (data.get("bio") or "")[:60],
-            "location":  (data.get("location") or "")[:24],
-            "followers": data.get("followers", 0),
-            "following": data.get("following", 0),
-            "repos":     data.get("public_repos", 0),
-        }
-    except Exception:
-        return None
 
 
 def _try_avatar():
@@ -92,79 +73,32 @@ def _wrap(text, max_chars):
 
 class App(oreoOS.App):
     name         = "Badge"
-    SHOW_LOADING = True
-
-    # Cache the GitHub profile to flash for one hour. On entry we render
-    # the cached profile instantly (no spinner) then attempt a background
-    # refresh — if it succeeds we swap in the fresh data + re-save.
-    CACHE_PATH = "apps/badge/cache.txt"
-    CACHE_TTL  = 3600        # seconds (1 hour)
+    SHOW_LOADING = False      # the cached card is drawn immediately
 
     def on_enter(self, os):
         self._os = os
-        try:
-            from secrets import GITHUB_USER
-            self._user = GITHUB_USER
-        except Exception:
-            self._user = "octocat"
+        self._user = github.user("octocat")
         self._avatar = _try_avatar()
-
-        # 1) Load whatever's on disk so the card renders immediately.
-        cached, age = self._load_cache()
-        self._profile  = cached
-        self._fresh_ts = age          # age (sec) of what we're showing; None = miss
-
-        # 2) Hit the network ONLY if the cache is missing or stale.
-        if cached is None or (age is not None and age > self.CACHE_TTL):
-            fresh = _fetch_profile(self._user)
-            if fresh:
-                self._profile  = fresh
-                self._fresh_ts = 0
-                self._save_cache(fresh)
+        self._profile, age = github.cached_profile(self._user)
+        # 0 idle, 1 SYNCING label requested, 2 label drawn: fetch now.
+        self._sync = 1 if (github.stale(age, github.PROFILE_TTL_S)
+                           and github.online()) else 0
         self._dirty = True
 
     def on_button_press(self, btn):
-        if btn == api.BTN_A:
-            # Manual refresh: bypass TTL, always hit GitHub.
-            new = _fetch_profile(self._user)
-            if new:
-                self._profile  = new
-                self._fresh_ts = 0
-                self._save_cache(new)
+        if btn == api.BTN_A and self._sync == 0:
+            self._sync = 1
             self._dirty = True
 
-    # ── cache helpers (use oreoOS.cache for TTL-bookkeeping) ────────────
-    def _load_cache(self):
-        try:
-            from oreoOS import cache
-            payload, age = cache.load(self.CACHE_PATH)
-        except Exception:
-            return None, None
-        if not payload:
-            return None, None
-        # Coerce types — cache stores everything as strings.
-        try:
-            return {
-                "name":      payload.get("name", ""),
-                "login":     payload.get("login", self._user),
-                "bio":       payload.get("bio", ""),
-                "location":  payload.get("location", ""),
-                "followers": int(payload.get("followers", 0)),
-                "following": int(payload.get("following", 0)),
-                "repos":     int(payload.get("repos", 0)),
-            }, age
-        except Exception:
-            return None, None
-
-    def _save_cache(self, profile):
-        try:
-            from oreoOS import cache
-            cache.save(self.CACHE_PATH, profile)
-        except Exception:
-            pass
-
     def update(self, dt):
-        pass
+        if self._sync == 1:
+            self._sync = 2          # let draw() paint the SYNCING label first
+        elif self._sync == 2:
+            fresh = github.fetch_profile(self._user)
+            if fresh:
+                self._profile = fresh
+            self._sync = 0
+            self._dirty = True
 
     # ── render ───────────────────────────────────────────────────────────
     def draw(self, d):
@@ -176,6 +110,7 @@ class App(oreoOS.App):
 
         if self._profile is None:
             self._draw_offline(d)
+            self._draw_sync(d)
             self._dirty = False
             return
 
@@ -235,7 +170,18 @@ class App(oreoOS.App):
             d.text(num, mx - len(num) * 8, stats_y, theme.PRIMARY, scale=2)
             d.text(lbl, mx - len(lbl) * 4, stats_y + 22, theme.MUTED)
 
+        self._draw_sync(d)
         self._dirty = False
+
+    def _draw_sync(self, d):
+        if not self._sync:
+            return
+        label = "SYNCING"
+        w = len(label) * 8 + 12
+        x = SW - w - 8
+        y = widgets.HEADER_H + 4
+        d.rect(x, y, w, 12, theme.PRIMARY, fill=True)
+        d.text(label, x + 6, y + 2, api.WHITE)
 
     def _draw_offline(self, d):
         cw, ch = SW - 32, SH - widgets.HEADER_H - widgets.HINT_H - 32
@@ -245,7 +191,7 @@ class App(oreoOS.App):
         d.rect(cx,     cy,     cw,  2, theme.PRIMARY, fill=True)
         d.text("offline", (SW - 7 * 16) // 2, cy + 14, theme.PRIMARY, scale=2)
         for i, line in enumerate([
-                "Couldn't reach GitHub.",
+                "No GitHub data yet.",
                 "",
                 "set on your laptop:",
                 "",

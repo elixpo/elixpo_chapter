@@ -154,6 +154,7 @@ DEPLOY = [
     ("oreoOS/timeutil.py",      "oreoOS/timeutil.py"),
     ("oreoOS/widgets.py",       "oreoOS/widgets.py"),
     ("oreoOS/cache.py",         "oreoOS/cache.py"),
+    ("oreoOS/github.py",        "oreoOS/github.py"),
     ("oreoOS/ota.py",           "oreoOS/ota.py"),
     ("oreoOS/storage.py",       "oreoOS/storage.py"),
     ("oreoOS/store.py",         "oreoOS/store.py"),

@@ -45,7 +45,7 @@ subset.
 - [x] `idf_component.yml` (target esp32s3) and `examples_idf/player`; compiles locally with ESP-IDF 5.5.1.
 - [x] Flash the example and confirm playback on the badge (180x135 @ 24 FPS, 0 predicted late frames).
 - [x] Request the `elixpo` namespace (submitted 2026-10-31, under review).
-- [ ] Run the publish workflow once the namespace is approved.
+- [x] Run the publish workflow once the namespace is approved (1.1.0 published 2026-11-02; tags publish automatically).
 - [ ] Developer Portal article (discussion first in `espressif/developer-portal`; Hugo, WebP images).
 - [ ] Test and list further targets (esp32 dual-core; single-core chips use the serial path).
 

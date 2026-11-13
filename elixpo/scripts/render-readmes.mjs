@@ -116,6 +116,7 @@ const shared = replaceTokens(sharedTemplate, {
   PEOPLE_URL: portalUrl("people"),
   CONTRIBUTORS_URL: portalUrl("contributors"),
   HISTORY_URL: portalUrl("history"),
+  GSOC_URL: activeUrl("gsoc"),
 });
 
 const sharedHash = createHash("sha256").update(shared).digest("hex");

@@ -2,6 +2,7 @@
   "name": "@crumb/crumb.elixpo",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -34,8 +35,7 @@
     "sharp": "0.35.5",
     "undici": "7.30.1",
     "body-parser": "2.4.0",
-    "@node-minify/core": {
-      "glob": "10.5.0"
-    }
+    "minimatch": "11.0.1",
+    "glob": "14.0.2"
   }
 }

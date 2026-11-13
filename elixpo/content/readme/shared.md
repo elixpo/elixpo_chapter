@@ -77,6 +77,15 @@ through reviewable pull requests. They do not maintain independent
 organization directories, silently change lifecycle status, or replace the
 owning repository as the source of technical evidence.
 
+## Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code
+2027; the application has not been accepted, and Google has not yet announced
+the 2027 programme. Project ideas, mentors, and ways to get involved are at
+[gsoc.elixpo.com]({{GSOC_URL}}). Questions: [gsoc@elixpo.com](mailto:gsoc@elixpo.com).
+
+Google Summer of Code and the GSoC logo are trademarks of Google LLC.
+
 ## Participate
 
 - **Contribute to a project:** use the owning repository's contribution guide,

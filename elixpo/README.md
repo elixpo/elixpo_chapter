@@ -16,7 +16,7 @@ data, sitemaps, shared README content, and future standalone surfaces should
 consume or validate against that registry rather than maintain independent
 lists.
 
-<!-- BEGIN ELIXPO SHARED · sha256:82a5ec278abe8ffebefc5578778b994935162b45ad0e771ebaf7ad394d1a3760 · generated from elixpo/elixpo -->
+<!-- BEGIN ELIXPO SHARED · sha256:163ef1d1bb1eb47e349b472336f664cf44c555966ae5b2826b7e754e40b9f7ef · generated from elixpo/elixpo -->
 
 ## What Elixpo is
 
@@ -138,6 +138,15 @@ The specialized sites must consume the shared schema or synchronize changes
 through reviewable pull requests. They do not maintain independent
 organization directories, silently change lifecycle status, or replace the
 owning repository as the source of technical evidence.
+
+## Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code
+2027; the application has not been accepted, and Google has not yet announced
+the 2027 programme. Project ideas, mentors, and ways to get involved are at
+[gsoc.elixpo.com](https://gsoc.elixpo.com). Questions: [gsoc@elixpo.com](mailto:gsoc@elixpo.com).
+
+Google Summer of Code and the GSoC logo are trademarks of Google LLC.
 
 ## Participate
 

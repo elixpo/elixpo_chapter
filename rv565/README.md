@@ -2,6 +2,7 @@
 
 [![Arduino Library Manager](https://www.ardu-badge.com/badge/RV565.svg)](https://www.ardu-badge.com/RV565)
 [![PyPI](https://img.shields.io/pypi/v/rv565.svg)](https://pypi.org/project/rv565/)
+[![ESP Component Registry](https://components.espressif.com/components/elixpo/rv565/badge.svg)](https://components.espressif.com/components/elixpo/rv565)
 [![arXiv](https://img.shields.io/badge/arXiv-2610.35935-b31b1b.svg)](https://arxiv.org/abs/2610.35935)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23543367-blue.svg)](https://doi.org/10.5281/zenodo.23543367)
 
@@ -30,7 +31,7 @@ MicroPython-Class ESP32-S3 Systems*
 
 | Platform | Install | Status |
 | --- | --- | --- |
-| ESP32-S3, ESP-IDF | `idf.py add-dependency "elixpo/rv565"` | Measured in the paper |
+| ESP32-S3, ESP-IDF | `idf.py add-dependency "elixpo/rv565"` ([registry](https://components.espressif.com/components/elixpo/rv565)) | Measured in the paper |
 | ESP32-S3, Arduino | Library Manager → *RV565* | Same code as ESP-IDF |
 | RP2350 (Pico 2), Arduino-Pico | Library Manager → *RV565* | Experimental, not yet measured |
 | RP2350 (Pico 2), Pico SDK | `add_subdirectory(rv565)` | Experimental, not yet measured |
@@ -38,9 +39,10 @@ MicroPython-Class ESP32-S3 Systems*
 | Browser | [Online converter](https://oreo.elixpo.com/rv565/convert/) | No install, no upload |
 
 Arduino: install *RV565* from the Library Manager, or run
-`arduino-cli lib install RV565`. The ESP Component Registry listing is
-pending; until then, clone this repository into your project's `components/`
-folder (ESP-IDF).
+`arduino-cli lib install RV565`. ESP-IDF: the component is on the
+[ESP Component Registry](https://components.espressif.com/components/elixpo/rv565);
+start from its example with
+`idf.py create-project-from-example "elixpo/rv565^1.1.0:player"`.
 
 ## Panels
 
@@ -162,6 +164,18 @@ make -C tests CLIPS="w90.rv565 w360.rv565"       # plus your own containers
 
 CI builds the Arduino sketches for ESP32-S3 and Pico 2, the ESP-IDF example,
 and the Pico SDK example, and lints the library for the Arduino Library Manager.
+
+## Community
+
+- **Tried RV565 on a board or display?** Tell us how it went, working or not:
+  [report your hardware](https://github.com/elixpo/rv565/issues/new?template=hardware-report.yml).
+  Only the ESP32-S3 with a 320x240 ST7789 is verified so far, so every report
+  helps.
+- **Questions, ideas and projects** go to Elixpo's community discussions:
+  [Q&A](https://github.com/elixpo/elixpo/discussions/categories/q-a),
+  [Ideas](https://github.com/elixpo/elixpo/discussions/categories/ideas),
+  [Show and tell](https://github.com/elixpo/elixpo/discussions/categories/show-and-tell).
+- **Bugs:** [open an issue](https://github.com/elixpo/rv565/issues/new?template=bug-report.yml).
 
 ## Citation
 

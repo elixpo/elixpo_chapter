@@ -224,7 +224,7 @@ jobs:
     environment: production-release
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           pattern: release-*
           path: release-assets

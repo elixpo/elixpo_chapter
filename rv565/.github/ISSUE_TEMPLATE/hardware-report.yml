@@ -1,0 +1,88 @@
+name: Report your board or panel
+description: Tell us how RV565 ran on your hardware, whether it worked or not.
+title: "[Hardware] <board> + <panel>"
+labels: ["hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing RV565. Reports from other boards and displays are how
+        we find out what works beyond the boards we own, so failures are just as
+        useful as successes.
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board / chip
+      options:
+        - ESP32-S3
+        - ESP32 (original, dual core)
+        - ESP32-S2 / C3 / C6 (single core)
+        - Raspberry Pi Pico 2 (RP2350)
+        - Raspberry Pi Pico (RP2040)
+        - Other (describe below)
+    validations:
+      required: true
+  - type: input
+    id: board-model
+    attributes:
+      label: Exact board
+      placeholder: e.g. ESP32-S3-DevKitC-1 N16R8, Pico 2 W, LilyGO T-Display S3
+  - type: dropdown
+    id: panel
+    attributes:
+      label: Display
+      options:
+        - ST7789 320x240 (2.0")
+        - ST7789 240x320 (portrait)
+        - ST7789 240x240 (1.3" / 1.54")
+        - ST7789 135x240 (1.14")
+        - Other ST7789 size (give size and offsets below)
+        - Other controller, through TFT_eSPI or LovyanGFX
+    validations:
+      required: true
+  - type: dropdown
+    id: route
+    attributes:
+      label: How you used RV565
+      multiple: true
+      options:
+        - Arduino IDE / arduino-cli
+        - PlatformIO
+        - ESP-IDF component
+        - Pico SDK
+        - TFT_eSPI example
+        - LovyanGFX example
+        - Python package / converter only
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RV565 version
+      placeholder: e.g. 1.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Works, plays smoothly
+        - Works, but drops frames or stutters
+        - Image wrong (colours, offset, rotation)
+        - Nothing on screen / crashes
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: |
+        Clip size and frame rate, panel settings (size, offsets, MADCTL, inversion),
+        SPI clock, and anything you changed. Serial output helps a lot.
+      render: text
+  - type: input
+    id: proof
+    attributes:
+      label: Photo or video (optional)
+      placeholder: Link to a photo or short clip of it running
