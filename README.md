@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with the Oreo panda mascot" />
+  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with Lumi, the panda mascot" />
 </p>
 
 <h1 align="center">Elixpo Chapter</h1>
@@ -20,7 +20,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and the
 classifications and custody decisions are published from the canonical registry
 maintained by `elixpo/elixpo`.
 
-<!-- BEGIN ELIXPO SHARED · sha256:1ec1527050779049c81d824931d3595a5af5741dc1ee1814a109326bb3b01103 · generated from elixpo/elixpo -->
+<!-- BEGIN ELIXPO SHARED · sha256:ca794f7bb636827ace1d19f1589344e1c0cfadd5cdf3aa45086be078811748f7 · generated from elixpo/elixpo -->
 
 ## What Elixpo is
 
@@ -90,7 +90,7 @@ Feature placement is editorial and does not change these records.
 | [`elixpo_chapter`](https://github.com/elixpo/elixpo_chapter) | Active | Core |
 | [`flappy6502`](https://github.com/elixpo/flappy6502) | Active | Core |
 | [`Kareixo`](https://github.com/elixpo/Kareixo) | Active | Member |
-| [`oreo`](https://github.com/elixpo/oreo) | Active | Core |
+| [`oreo`](https://github.com/elixpo/falera) | Active | Core |
 | [`packages.elixpo`](https://github.com/elixpo/packages.elixpo) | Active | Core |
 | [`sketch.elixpo`](https://github.com/elixpo/sketch.elixpo) | Active | Core |
 | [`Nano28C64`](https://github.com/elixpo/Nano28C64) | Maintenance | Core |

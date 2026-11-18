@@ -20,7 +20,7 @@ and orientation.
 
 We pledge to act and interact in ways that contribute to an open, welcoming,
 diverse, inclusive, and healthy community - the warm, celebratory spirit that
-Oreo, our mascot, stands for.
+Lumi, our mascot, stands for.
 
 ## Our standards
 
