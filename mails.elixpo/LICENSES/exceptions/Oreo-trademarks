@@ -1,11 +1,11 @@
-Oreo-trademarks exception
+Lumi-trademarks exception
 =========================
 
-SPDX-Exception-Identifier: Oreo-trademarks
+SPDX-Exception-Identifier: Lumi-trademarks
 SPDX-Licenses: MIT, CC-BY-4.0
 
 This exception qualifies the MIT and CC-BY-4.0 grants used across the Elixpo
-ecosystem. It is referenced via `WITH Oreo-trademarks` in the
+ecosystem. It is referenced via `WITH Lumi-trademarks` in the
 SPDX-License-Identifier of affected files and in the root LICENSE.
 
 WHAT IS RESERVED
@@ -14,8 +14,8 @@ WHAT IS RESERVED
 The following are reserved trademarks and brand property of the Elixpo project
 and are NOT licensed by the MIT or CC-BY-4.0 grants:
 
-  * The names "Elixpo" and "Oreo".
-  * The Oreo mascot character (the kawaii pixel-art panda) and the mandatory
+  * The names "Elixpo" and "Lumi".
+  * The Lumi mascot character (the kawaii pixel-art panda) and the mandatory
     chest "E-badge".
   * The Elixpo brand palette and identity rules defined in brand/MASCOT.md.
   * The domain identifiers elixpo.com and any *.elixpo.com subdomain.
@@ -38,10 +38,10 @@ WHAT YOU MAY NOT DO (royalty protection)
 
 Without prior written permission from Elixpo, you may NOT:
 
-  1. Use the "Elixpo" or "Oreo" names, the Oreo mascot, or the E-badge to
+  1. Use the "Elixpo" or "Lumi" names, the Lumi mascot, or the E-badge to
      brand, market, or imply endorsement of any product or service that is not
      an official Elixpo project.
-  2. Offer a competing hosted product or service under the Elixpo or Oreo
+  2. Offer a competing hosted product or service under the Elixpo or Lumi
      brand, or under a confusingly similar name or palette.
   3. Register or attempt to register trademarks, domains, package names, or
      marketplace listings that are identical or confusingly similar to the

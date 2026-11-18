@@ -1,6 +1,6 @@
 # Elixpo trademark policy
 
-The Elixpo and Oreo names, the Oreo panda mascot, the chest E-badge, Elixpo
+The Elixpo and Lumi names, the Lumi panda mascot, the chest E-badge, Elixpo
 domains, and official product identifiers are trademarks and source
 identifiers of the Elixpo project.
 

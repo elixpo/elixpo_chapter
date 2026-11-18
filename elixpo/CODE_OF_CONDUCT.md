@@ -57,7 +57,7 @@ Examples of unacceptable behavior:
   records, or presenting another person's work as one's own.
 * Using project access, reviewer status, sponsorship, or organizational roles
   to pressure someone for personal, academic, financial, or professional gain.
-* Misusing the Elixpo or Oreo brand to impersonate the project or deceive
+* Misusing the Elixpo or Lumi brand to impersonate the project or deceive
   others.
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting.

@@ -25,7 +25,7 @@ notices/      Third-party attributions (the upstream credit list).
 | `preferred/MIT`                 | `MIT`              | All source code in the repository.                   |
 | `preferred/CC-BY-4.0`           | `CC-BY-4.0`        | Brand and visual assets (sprites, icons, mascot art).|
 | `preferred/Apache-2.0`          | `Apache-2.0`       | Reference copy - covers upstream ESP-IDF components shipped in the firmware image. |
-| `exceptions/Oreo-trademarks`    | `Oreo-trademarks`  | Reserves Elixpo/Oreo names, mascot, and royalties.   |
+| `exceptions/Lumi-trademarks`    | `Lumi-trademarks`  | Reserves Elixpo/Lumi names, mascot, and royalties.   |
 
 The Apache-2.0 file is included as a reference because firmware images
 distributed from this repository contain ESP-IDF binary components, and

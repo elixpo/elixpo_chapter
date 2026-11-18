@@ -72,7 +72,7 @@ available and the page explicitly withholds an operational conclusion.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Oreo** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
 | 🧪 **Elixpo Research** | Papers, artifacts, source, and reproducibility records | [research.elixpo.com](https://research.elixpo.com) |
 | 📦 **Elixpo Packages** | Signed Linux applications and developer packages | [packages.elixpo.com](https://packages.elixpo.com) |
 
@@ -169,10 +169,10 @@ browsable kit are at **[elixpo.com/assets](https://elixpo.com/assets)**.
 
 Elixpo uses one **licensing standard** across every repository:
 
-- **Code** - [MIT](LICENSES/preferred/MIT) (with the [Oreo-trademarks exception](LICENSES/exceptions/Oreo-trademarks)).
+- **Code** - [MIT](LICENSES/preferred/MIT) (with the [Lumi-trademarks exception](LICENSES/exceptions/Lumi-trademarks)).
 - **Brand & visual assets** - [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0) (with the same exception).
 
-The Oreo mascot, the chest E-badge, and the "Elixpo" and "Oreo" names, domains,
+The Lumi mascot, the chest E-badge, and the "Elixpo" and "Lumi" names, domains,
 and palette are reserved - this protects the brand and its royalties while
 keeping the code and assets free. See [`LICENSE`](LICENSE) and the per-product
 notice board, [`NOTICE`](LICENSES/NOTICE).

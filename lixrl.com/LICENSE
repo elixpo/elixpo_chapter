@@ -16,7 +16,7 @@ CODE
 All source code in this repository (application code, scripts, tooling,
 configuration, and CI) is provided under:
 
-	SPDX-License-Identifier: MIT WITH Oreo-trademarks
+	SPDX-License-Identifier: MIT WITH Lumi-trademarks
 
 Being under the terms of the MIT License, as set out in:
 
@@ -29,7 +29,7 @@ All visual and brand assets and their prompts (everything under brand/ and
 public/brand/, plus any banner, splash, sticker, icon or mascot art) is
 provided under:
 
-	SPDX-License-Identifier: CC-BY-4.0 WITH Oreo-trademarks
+	SPDX-License-Identifier: CC-BY-4.0 WITH Lumi-trademarks
 
 Being under the terms of the Creative Commons Attribution 4.0 International
 License, as set out in:
@@ -41,14 +41,14 @@ EXCEPTION (names, mascot, and royalties)
 
 Both grants above carry an explicit trademark, naming, and royalty exception:
 
-	LICENSES/exceptions/Oreo-trademarks
+	LICENSES/exceptions/Lumi-trademarks
 
-The Oreo mascot character, the chest "E-badge", the "Elixpo" and "Oreo" names,
+The Lumi mascot character, the chest "E-badge", the "Elixpo" and "Lumi" names,
 the elixpo.com and *.elixpo.com identifiers, and the brand palette in
 brand/MASCOT.md are reserved trademarks of the Elixpo project. The licenses
 above grant rights to the code and asset files as files. They do NOT grant
-rights to the Elixpo or Oreo brand, nor the right to offer a competing
-product or service under the Elixpo or Oreo name. This is what protects the
+rights to the Elixpo or Lumi brand, nor the right to offer a competing
+product or service under the Elixpo or Lumi name. This is what protects the
 ecosystem's royalties while keeping the code and assets free and open. See the
 exception for the full terms (including permitted referential use).
 
@@ -82,4 +82,4 @@ have the right to submit it. The Developer Certificate of Origin
 a CLA.
 
 Copyright (c) 2023 Elixpo and the Elixpo contributors.
-SPDX-License-Identifier: MIT WITH Oreo-trademarks
+SPDX-License-Identifier: MIT WITH Lumi-trademarks
