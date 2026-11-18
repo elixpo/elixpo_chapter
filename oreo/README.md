@@ -165,7 +165,7 @@ python3 -m unittest discover -s tests -v
 **What works:** the hardware-free unit tests for pure helpers (colour packing in
 `oreoOS/api.py`, `.env` parsing in `oreoOS/config.py`). They use only the
 Python standard library, so no `pip install`, badge or key is needed.
-**What is skipped:** running OreoOS apps needs an ESP32-S3 badge; there is no
+**What is skipped:** running FaleraOS apps needs an ESP32-S3 badge; there is no
 desktop simulator yet. With a badge, `tools/deploy.py` runs without keys and writes blank
 WiFi and weather values when `.env.local` is missing. **Expected result:**
 `OK` at the end of the run. If something asks you for a secret, open an issue
@@ -199,7 +199,7 @@ Press **C** (or **HOME**) again to dismiss — the underlying app keeps its stat
 
 ## 🧰 Built-in libraries
 
-OreoOS ships a small batteries-included SDK that every app imports
+FaleraOS ships a small batteries-included SDK that every app imports
 from `oreoOS`. Three of those are worth a quick tour:
 
 ### Drawing — `d.rect`, `d.pixel`, `d.text`, `d.blit`, `d.clear`
@@ -310,7 +310,7 @@ someone sideloaded over BT. New files appear in the picker within
 
 ### Wireless networking and Bluetooth
 
-OreoOS leans on MicroPython's stock networking stack; the OreoOS
+FaleraOS leans on MicroPython's stock networking stack; the FaleraOS
 wrappers (`oreoWare.wifi`, `oreoWare.bt`) add config handling and
 power capping on top.
 
@@ -326,7 +326,7 @@ power capping on top.
   capped by `BT_ADV_INTERVAL_MS` to keep average current draw down.
 
 ```python
-# WiFi via the OreoOS wrapper — auto-applies power caps from config
+# WiFi via the FaleraOS wrapper — auto-applies power caps from config
 from oreoWare import wifi
 wifi.connect_from_config()
 print(wifi.ip())
@@ -374,7 +374,7 @@ step. The ones you'll actually reach for on badge work:
 `framebuf`, `vfs`, `ntptime`, `requests`, `urequests`, `asyncio`,
 `aioble`, `websocket`, `umqtt`, `webrepl`.
 
-On top of those, OreoOS ships its own helper packages: `oreoOS.*`
+On top of those, FaleraOS ships its own helper packages: `oreoOS.*`
 (font, sprite, cache, theme, widgets, ota, power…) and `oreoWare.*`
 (display, buttons, wifi, bt, imu, ir, battery, pins). Import them from
 any app — they're on the device boot path.
@@ -457,7 +457,7 @@ The Gallery's video playback grew into **RV565**, a standalone library and file 
 | 🔌 **Building your own PCB?** | [`docs/DATASHEET.md`](docs/DATASHEET.md) + [`oreoWare/pins.py`](oreoWare/pins.py) |
 | 🤝 **Joining the community?** | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) + [`SUPPORT.md`](SUPPORT.md) |
 | 🛡 **Found a vulnerability?** | [`SECURITY.md`](SECURITY.md) |
-| 📖 **Citing OreoOS or RV565?** | [`CITATION.cff`](CITATION.cff) + [`paper/`](paper/) |
+| 📖 **Citing FaleraOS or RV565?** | [`CITATION.cff`](CITATION.cff) + [`paper/`](paper/) |
 
 A docs index lives at [`docs/README.md`](docs/README.md).
 
@@ -489,7 +489,7 @@ of AI and developer tools, built by a global community of 45+ contributors.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Oreo** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
 
 ## Built by the community
 
@@ -516,18 +516,18 @@ Elixpo has taken part in and been supported by **GSSOC**, **Hacktoberfest**,
 
 ## Brand assets
 
-The Oreo mascot, badge sprites, and app icons live under
-[`assets/`](assets/). They are CC-BY-4.0, but the Oreo mascot, the chest
-E-badge, and the "Elixpo"/"Oreo" names and palette are reserved - see the
-[Oreo-trademarks exception](LICENSES/exceptions/Oreo-trademarks). A browsable
+The Lumi mascot, badge sprites, and app icons live under
+[`assets/`](assets/). They are CC-BY-4.0, but the Lumi mascot, the chest
+E-badge, and the "Elixpo"/"Lumi" names and palette are reserved - see the
+[Lumi-trademarks exception](LICENSES/exceptions/Lumi-trademarks). A browsable
 brand kit is at **[elixpo.com/assets](https://elixpo.com/assets)**.
 
 ## License
 
 Oreo Badge uses the Elixpo **licensing standard**:
 
-- **Code** (OreoOS, oreoWare, apps, tooling) - [MIT](LICENSES/preferred/MIT)
-  (with the [Oreo-trademarks exception](LICENSES/exceptions/Oreo-trademarks)).
+- **Code** (FaleraOS, oreoWare, apps, tooling) - [MIT](LICENSES/preferred/MIT)
+  (with the [Lumi-trademarks exception](LICENSES/exceptions/Lumi-trademarks)).
 - **Brand & visual assets** (mascot, sprites, icons) -
   [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0) (with the same exception).
 - **Upstream firmware components** - the firmware image incorporates
@@ -536,8 +536,8 @@ Oreo Badge uses the Elixpo **licensing standard**:
   compiled firmware must retain those licenses. See
   [`LICENSES/notices/notice-board`](LICENSES/notices/notice-board).
 
-The Oreo mascot, the chest E-badge, the "Elixpo", "Oreo", "Oreo Badge", and
-"OreoOS" names, domains, and palette are reserved - this protects the brand and
+The Lumi mascot, the chest E-badge, the "Elixpo", "Lumi", "Oreo Badge", and
+"FaleraOS" names, domains, and palette are reserved - this protects the brand and
 its royalties while keeping the code and assets free. See [`LICENSE`](LICENSE)
 and the per-product notice board, [`LICENSES/NOTICE`](LICENSES/NOTICE).
 
@@ -553,7 +553,7 @@ MIT / CC-BY-4.0 grant (full text in [`LICENSES/NOTICE`](LICENSES/NOTICE)):
   as brand-reserved product identity.
 
 You may build, modify, and redistribute boards and firmware from the open
-source - just not under the reserved Elixpo / Oreo names or mascot.
+source - just not under the reserved Elixpo / Lumi names or mascot.
 
 ---
 

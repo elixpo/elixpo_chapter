@@ -71,7 +71,7 @@ standard (**MIT** for code, **CC-BY-4.0** for assets) and that you have the
 right to submit it. The
 [Developer Certificate of Origin](https://developercertificate.org) applies to
 every commit. We do not require a CLA. See [LICENSE](LICENSE) and
-[NOTICE](LICENSES/NOTICE) for details, including the reserved Elixpo/Oreo brand.
+[NOTICE](LICENSES/NOTICE) for details, including the reserved Elixpo/Lumi brand.
 
 ## Questions?
 

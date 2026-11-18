@@ -4,7 +4,7 @@ NOTICE - the Elixpo notice board
 This repository is licensed under the Elixpo License (see ../LICENSE). This
 NOTICE file is the "notice board": it records reservations and product-specific
 terms that sit ON TOP of the base license for this repository. Read it together
-with LICENSE and LICENSES/exceptions/Oreo-trademarks.
+with LICENSE and LICENSES/exceptions/Lumi-trademarks.
 
 REPOSITORY
 ----------
@@ -28,8 +28,8 @@ BRAND ASSETS
 ------------
 
   The brand assets under public/ (logos, icons, og-images, mascot artwork) are
-  provided under CC-BY-4.0 WITH Oreo-trademarks. The Oreo mascot, the chest
-  E-badge, and the Elixpo / Oreo names and palette remain reserved
-  (see LICENSES/exceptions/Oreo-trademarks).
+  provided under CC-BY-4.0 WITH Lumi-trademarks. The Lumi mascot, the chest
+  E-badge, and the Elixpo / Lumi names and palette remain reserved
+  (see LICENSES/exceptions/Lumi-trademarks).
 
 Contact: hello@elixpo.com

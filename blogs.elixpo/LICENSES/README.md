@@ -6,7 +6,7 @@ exception attached to it. Brand and visual assets are licensed under
 **CC-BY-4.0**. The structure of this directory mirrors the Linux kernel's
 `LICENSES/` tree.
 
-Rules for the Elixpo and Oreo names, the Oreo mascot, the E-badge mark, and the
+Rules for the Elixpo and Lumi names, the Lumi mascot, the E-badge mark, and the
 elixpo.com domains live in [`TRADEMARKS.md`](../TRADEMARKS.md). That is a
 trademark policy, not a licence condition: it does not limit the MIT or
 CC-BY-4.0 permissions.
@@ -17,7 +17,7 @@ CC-BY-4.0 permissions.
 preferred/    Licence texts used in this repository.
               Code is MIT; brand/visual assets are CC-BY-4.0.
 
-exceptions/   Legacy. `exceptions/Oreo-trademarks` is superseded by
+exceptions/   Legacy. `exceptions/Lumi-trademarks` is superseded by
               ../TRADEMARKS.md and is no longer applied to any file.
 
 notices/      Third-party attributions (the upstream credit list).

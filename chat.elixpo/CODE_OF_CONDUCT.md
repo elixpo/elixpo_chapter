@@ -20,7 +20,7 @@ and orientation.
 
 We pledge to act and interact in ways that contribute to an open, welcoming,
 diverse, inclusive, and healthy community - the warm, celebratory spirit that
-Oreo, our mascot, stands for.
+Lumi, our mascot, stands for.
 
 ## Our standards
 
@@ -43,7 +43,7 @@ Examples of unacceptable behavior:
 * Public or private harassment.
 * Publishing others' private information, such as a physical or email address,
   without their explicit permission.
-* Misusing the Elixpo or Oreo brand to impersonate the project or deceive
+* Misusing the Elixpo or Lumi brand to impersonate the project or deceive
   others.
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting.

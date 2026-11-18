@@ -12,7 +12,7 @@ site).
 | File | Purpose | Per-repo edits |
 | --- | --- | --- |
 | `LICENSE` | The generic Elixpo License (pointer). | None - copy verbatim. |
-| `LICENSES/` | `preferred/MIT`, `preferred/CC-BY-4.0`, `exceptions/Oreo-trademarks`, `README.md`, `notices/notice-board`. | `notices/notice-board` lists that repo's own deps. |
+| `LICENSES/` | `preferred/MIT`, `preferred/CC-BY-4.0`, `exceptions/Lumi-trademarks`, `README.md`, `notices/notice-board`. | `notices/notice-board` lists that repo's own deps. |
 | `LICENSES/NOTICE` | The **notice board** - per-product reservations. | Declare exclusive artifacts (npm pkg, VS Code ext, SaaS, paid tier) or state "None". |
 | `CODE_OF_CONDUCT.md` | Ecosystem-wide CoC. | None - copy verbatim. |
 | `CONTRIBUTING.md` | Contribution standard. | None - copy verbatim. |
@@ -21,8 +21,8 @@ site).
 ## 2. LICENSE
 
 - **Code** is MIT; **brand/visual assets** are CC-BY-4.0; both carry the
-  **Oreo-trademarks** exception (`LICENSES/exceptions/Oreo-trademarks`).
-- The Oreo mascot, the E-badge, the "Elixpo"/"Oreo" names, `*.elixpo.com`, and
+  **Lumi-trademarks** exception (`LICENSES/exceptions/Lumi-trademarks`).
+- The Lumi mascot, the E-badge, the "Elixpo"/"Lumi" names, `*.elixpo.com`, and
   the palette are reserved (royalty protection).
 - Per-product reservations go in `LICENSES/NOTICE`, never in the LICENSE.
 

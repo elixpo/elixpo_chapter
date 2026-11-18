@@ -337,4 +337,4 @@ ElixpoURL is open source under MIT. You can deploy your own instance to Cloudfla
 
 ## Updates & Branding
 - **Updates**: Pull upstream, run migrations, and rebuild/redeploy. Migrations are gapless.
-- **License**: MIT. However, Elixpo branding (wordmark, Oreo mascot, brand palette) is excluded (see `LICENSES/exceptions/Oreo-trademarks`). You must customize the branding for self-hosted instances.
+- **License**: MIT. However, Elixpo branding (wordmark, Lumi mascot, brand palette) is excluded (see `LICENSES/exceptions/Lumi-trademarks`). You must customize the branding for self-hosted instances.

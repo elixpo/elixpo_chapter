@@ -49,8 +49,8 @@ npm run db:migrate:remote`}</CodeBlock>
 
       <h2 id="license-and-branding">License and branding</h2>
       <p>
-        Code is MIT. The Elixpo wordmark, the Oreo mascot, and the brand palette stay with us — see{' '}
-        <code>LICENSES/exceptions/Oreo-trademarks</code> in the repo. Self-hosted instances should ship with your own
+        Code is MIT. The Elixpo wordmark, the Lumi mascot, and the brand palette stay with us — see{' '}
+        <code>LICENSES/exceptions/Lumi-trademarks</code> in the repo. Self-hosted instances should ship with your own
         brand.
       </p>
     </DocPage>

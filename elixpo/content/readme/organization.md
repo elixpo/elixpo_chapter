@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with the Oreo panda mascot" />
+  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with the Lumi panda mascot" />
 </p>
 
 <h1 align="center">Elixpo</h1>

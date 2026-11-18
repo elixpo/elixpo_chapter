@@ -111,7 +111,7 @@ short anatomy clause **before** the style suffix, so the model can't
 drift:
 
 ```
-featuring the Oreo panda mascot: warm cream-white fur rgb(240,238,232),
+featuring the Lumi panda mascot: warm cream-white fur rgb(240,238,232),
 dark patches rgb(38,38,48), rosy pink cheeks rgb(255,93,104), and a
 red E-badge rgb(220,60,50) on the chest
 ```
@@ -130,7 +130,7 @@ Example (sticker):
 
 ```
 Oreo the panda waving hello with both paws raised in celebration,
-featuring the Oreo panda mascot: warm cream-white fur rgb(240,238,232),
+featuring the Lumi panda mascot: warm cream-white fur rgb(240,238,232),
 dark patches rgb(38,38,48), rosy pink cheeks rgb(255,93,104), and a
 red E-badge rgb(220,60,50) on the chest,
 pixel art cartoon style, thick dark outline, vibrant warm celebration

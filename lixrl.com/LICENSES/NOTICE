@@ -4,7 +4,7 @@ NOTICE - the Elixpo notice board
 This repository is licensed under the Elixpo License (see ../LICENSE). This
 NOTICE file is the "notice board": it records reservations and product-specific
 terms that sit ON TOP of the base license for this repository. Read it together
-with LICENSE and LICENSES/exceptions/Oreo-trademarks.
+with LICENSE and LICENSES/exceptions/Lumi-trademarks.
 
 REPOSITORY
 ----------
@@ -23,7 +23,7 @@ EXCLUSIVE ARTIFACTS IN THIS REPOSITORY
     does NOT make it any less reserved: the lixrl.com domain, the "lixrl" /
     "lixrl.com" name and wordmark, and the official hosted deployment (and its
     operational data) are reserved to Elixpo, in addition to the *.elixpo.com
-    identifiers listed in LICENSES/exceptions/Oreo-trademarks. The source is
+    identifiers listed in LICENSES/exceptions/Lumi-trademarks. The source is
     MIT and may be reused; forks must run under a different name and domain and
     may not present themselves as the official lixrl service.
 
@@ -36,8 +36,8 @@ BRAND ASSETS
 ------------
 
   The brand assets under public/ (logos, icons, og-image) are provided under
-  CC-BY-4.0 WITH Oreo-trademarks. The Oreo mascot, the chest E-badge, and the
-  Elixpo / Oreo names and palette remain reserved
-  (see LICENSES/exceptions/Oreo-trademarks).
+  CC-BY-4.0 WITH Lumi-trademarks. The Lumi mascot, the chest E-badge, and the
+  Elixpo / Lumi names and palette remain reserved
+  (see LICENSES/exceptions/Lumi-trademarks).
 
 Contact: hello@elixpo.com
