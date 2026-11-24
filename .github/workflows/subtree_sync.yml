@@ -91,12 +91,32 @@ jobs:
             --description "Automated aggregate subtree synchronization" \
             2>/dev/null || true
 
-          pending_pr=$(gh pr list --repo "$REPO_FULL" --state open --label "$SYNC_LABEL" \
-            --limit 1 --json url --jq '.[0].url // empty')
-          if [ -n "$pending_pr" ]; then
-            echo "A subtree synchronization PR is already open: $pending_pr"
-            echo "Refusing to create a duplicate wave."
-            exit 0
+          # An open wave normally auto-merges within hours. A wave that is stuck (failed
+          # checks, merge conflicts, or older than 24 hours) is closed and replaced, so one
+          # blocked PR can never silently stop every later synchronization.
+          pending=$(gh pr list --repo "$REPO_FULL" --state open --label "$SYNC_LABEL" \
+            --limit 1 --json number,createdAt,mergeable,headRefName,statusCheckRollup)
+          if [ "$(jq 'length' <<<"$pending")" -gt 0 ]; then
+            number=$(jq -r '.[0].number' <<<"$pending")
+            created=$(jq -r '.[0].createdAt' <<<"$pending")
+            mergeable=$(jq -r '.[0].mergeable' <<<"$pending")
+            head_ref=$(jq -r '.[0].headRefName' <<<"$pending")
+            failed=$(jq '[.[0].statusCheckRollup[]? | (.conclusion // .state // "") | ascii_upcase
+              | select(. == "FAILURE" or . == "ERROR" or . == "CANCELLED" or . == "TIMED_OUT" or . == "ACTION_REQUIRED")] | length' <<<"$pending")
+            age_hours=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
+            reason=""
+            [ "$failed" -gt 0 ] && reason="$failed failed check(s)"
+            [ "$mergeable" = "CONFLICTING" ] && reason="${reason:+$reason, }merge conflicts with main"
+            [ "$age_hours" -ge 24 ] && reason="${reason:+$reason, }open for ${age_hours}h"
+            if [ -z "$reason" ]; then
+              echo "::notice::Subtree sync PR #$number is still in review (opened ${age_hours}h ago); not starting a duplicate wave."
+              exit 0
+            fi
+            echo "::warning::Superseding stuck subtree sync PR #$number: $reason."
+            gh api "repos/$REPO_FULL/issues/$number/comments" \
+              -f body="Superseded by a fresh synchronization wave ($reason). Each subtree is recomputed from its upstream, so nothing here is lost." >/dev/null || true
+            gh api -X PATCH "repos/$REPO_FULL/pulls/$number" -f state=closed >/dev/null
+            gh api -X DELETE "repos/$REPO_FULL/git/refs/heads/$head_ref" >/dev/null 2>&1 || true
           fi
 
           git checkout -b "$BRANCH" origin/main
