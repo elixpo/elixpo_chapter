@@ -20,7 +20,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and the
 classifications and custody decisions are published from the canonical registry
 maintained by `elixpo/elixpo`.
 
-<!-- BEGIN ELIXPO SHARED · sha256:fb4c996f969251a48910db725bbc56497b9661cf65a57465a711bedc1c2fc974 · generated from elixpo/elixpo -->
+<!-- BEGIN ELIXPO SHARED · sha256:6085d483d26ae8f591ad96d1eaa4878f79b4f148dcd0c844c564a6505b190bb1 · generated from elixpo/elixpo -->
 
 ## What Elixpo is
 
@@ -92,6 +92,7 @@ Feature placement is editorial and does not change these records.
 | [`Kareixo`](https://github.com/elixpo/Kareixo) | Active | Member |
 | [`falera`](https://github.com/elixpo/falera) | Active | Core |
 | [`packages.elixpo`](https://github.com/elixpo/packages.elixpo) | Active | Core |
+| [`plumlang`](https://github.com/plumlang/plumlang) | Active | Connected |
 | [`sketch.elixpo`](https://github.com/elixpo/sketch.elixpo) | Active | Core |
 | [`Nano28C64`](https://github.com/elixpo/Nano28C64) | Maintenance | Core |
 | [`oreoPI`](https://github.com/elixpo/oreoPI) | Paused | Core |
