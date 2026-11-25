@@ -1,0 +1,9 @@
+{
+  "sourceRepository": "https://github.com/elixpo/elixpo",
+  "sourcePaths": [
+    "content/packages.json",
+    "content/schemas/packages.schema.json"
+  ],
+  "sourceCommit": "6c7ef5e9e30b0b8043923184a251a2fbde077049",
+  "sourceCommittedAt": "2026-11-21T17:22:48Z"
+}
