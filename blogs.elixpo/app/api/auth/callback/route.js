@@ -131,6 +131,10 @@ export async function GET(request) {
         const { tryReserveName } = await import('../../../../lib/namespace');
         await tryReserveName(db, username, 'user', userId);
       } catch { /* namespace table may not exist in local dev */ }
+      try {
+        const { recordActivationMilestone } = await import('../../../../lib/activation');
+        await recordActivationMilestone(db, userId, 'signup');
+      } catch {}
     } else {
       // Get username for deterministic avatar path
       const existingData = await db.prepare('SELECT username FROM users WHERE id = ?').bind(userId).first();

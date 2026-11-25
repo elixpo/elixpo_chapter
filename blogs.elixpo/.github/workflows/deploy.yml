@@ -102,6 +102,10 @@ jobs:
             printf '%s=%s\n' "$output" "${!output}" >> "$GITHUB_OUTPUT"
           done
 
+  # Stays local: publish-npm.yml publishes the checked-out version only, while this job
+  # bumps versions first, attests and publishes the exact packed tarballs to npm and
+  # GitHub Packages, then commits the bump, tags and writes GitHub releases with
+  # ELIXPOO_GITHUB_AGENTIC_TOKEN.
   packages:
     name: npm and GitHub Packages
     needs: changes
@@ -239,6 +243,9 @@ jobs:
             publish_release "lixblogs-cli-v$version" .release/packages/lixblogs-cli "@elixpo/lixblogs-cli $version"
           fi
 
+  # Stays local: publish-vscode.yml publishes the checked-out version only, while this
+  # job bumps the extension on every run, attests the .vsix and commits the bump with
+  # ELIXPOO_GITHUB_AGENTIC_TOKEN.
   vscode:
     name: VS Code Marketplace
     needs: [changes, packages]
@@ -278,27 +285,33 @@ jobs:
           git commit -m "chore(release): bump VS Code package [skip deploy]" || true
           git push origin HEAD:main
 
+  # Collab Worker through the shared Elixpo workflow. Today's job deployed it with the
+  # repository root's wrangler (`--config worker/collab/wrangler.toml`), so the same
+  # locked version is installed into worker/collab before the bundle check and deploy;
+  # worker/collab's own lockfile still pins wrangler 3. The cron Worker stays off in CI:
+  # deploy.sh only ships it when the encrypted .env greps as ENABLE_WEEKLY_DIGEST=true,
+  # which it never does in CI.
   worker:
     name: Cloudflare Workers
     needs: changes
     if: needs.changes.outputs.worker == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: production
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm ci --prefix worker/collab
-      - name: Build and deploy Workers
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ./deploy.sh --worker build deploy
+    permissions:
+      contents: read
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-worker.yml@main
+    with:
+      working-directory: worker/collab
+      pre-build-command: >-
+        npm install --no-save --no-audit --no-fund
+        "wrangler@$(node -p "require('../../package-lock.json').packages['node_modules/wrangler'].version")"
+      build-command: npx wrangler deploy --dry-run --outdir .wrangler/deploy/collab
+      environment: production
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+  # Pages through the shared Elixpo workflow: npm ci, the OAuth client-id check, the
+  # next-on-pages build, D1 migrations on lixblogs, then `wrangler pages deploy`.
+  # Runtime Pages secrets were never pushed from CI, so none are synced here.
   pages:
     name: Cloudflare Pages
     needs: [changes, worker]
@@ -306,50 +319,32 @@ jobs:
       always() && needs.changes.result == 'success' &&
       needs.changes.outputs.pages == 'true' &&
       (needs.worker.result == 'success' || needs.worker.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment: production
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Validate Pages configuration
-        env:
-          NEXT_PUBLIC_ELIXPO_CLIENT_ID: ${{ vars.NEXT_PUBLIC_ELIXPO_CLIENT_ID }}
-        run: |
-          if [ -z "$NEXT_PUBLIC_ELIXPO_CLIENT_ID" ]; then
-            echo "::error::NEXT_PUBLIC_ELIXPO_CLIENT_ID is required for the production OAuth build"
-            exit 1
-          fi
-      - name: Build Pages
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          NEXT_TELEMETRY_DISABLED: '1'
-          NEXT_PUBLIC_URL: https://blogs.elixpo.com
-          NEXT_PUBLIC_ELIXPO_CLIENT_ID: ${{ vars.NEXT_PUBLIC_ELIXPO_CLIENT_ID }}
-          NEXT_PUBLIC_COLLAB_URL: ${{ vars.NEXT_PUBLIC_COLLAB_URL }}
-          NEXT_PUBLIC_LIXSKETCH_EMBED_URL: ${{ vars.NEXT_PUBLIC_LIXSKETCH_EMBED_URL }}
-        run: ./deploy.sh --pages build
-      - name: Apply D1 migrations
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler d1 migrations apply lixblogs --remote
-      - name: Deploy Pages
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          NEXT_TELEMETRY_DISABLED: '1'
-          NEXT_PUBLIC_URL: https://blogs.elixpo.com
-          NEXT_PUBLIC_ELIXPO_CLIENT_ID: ${{ vars.NEXT_PUBLIC_ELIXPO_CLIENT_ID }}
-          NEXT_PUBLIC_COLLAB_URL: ${{ vars.NEXT_PUBLIC_COLLAB_URL }}
-          NEXT_PUBLIC_LIXSKETCH_EMBED_URL: ${{ vars.NEXT_PUBLIC_LIXSKETCH_EMBED_URL }}
-        run: ./deploy.sh --pages deploy
+    permissions:
+      contents: read
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: lixblogs
+      build-command: npm run pages:build
+      output-directory: .vercel/output/static
+      branch: main
+      build-env: |
+        NEXT_TELEMETRY_DISABLED=1
+        NEXT_PUBLIC_URL=https://blogs.elixpo.com
+        NEXT_PUBLIC_ELIXPO_CLIENT_ID=${{ vars.NEXT_PUBLIC_ELIXPO_CLIENT_ID }}
+        NEXT_PUBLIC_COLLAB_URL=${{ vars.NEXT_PUBLIC_COLLAB_URL }}
+        NEXT_PUBLIC_LIXSKETCH_EMBED_URL=${{ vars.NEXT_PUBLIC_LIXSKETCH_EMBED_URL }}
+      pre-build-command: |
+        if [ -z "${NEXT_PUBLIC_ELIXPO_CLIENT_ID:-}" ]; then
+          echo "::error::NEXT_PUBLIC_ELIXPO_CLIENT_ID is required for the production OAuth build"
+          exit 1
+        fi
+      d1-database: lixblogs
+      environment: production
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+  # Stays local: needs ELIXPO_PAY_API_KEY.
   catalog:
     name: Sync pricing catalog
     needs: [changes, pages]

@@ -72,7 +72,21 @@ export async function GET(request, { params }) {
                         WHERE author_id = ?
                           AND status IN ('published', 'unlisted')
                           AND secret = 0
+                          AND COALESCE(member_only, 0) = 0
+                          AND deleted_at IS NULL
                           AND published_at >= ?
+                          AND (
+                            published_as IS NULL
+                            OR published_as = 'personal'
+                            OR (
+                              published_as LIKE 'org:%'
+                              AND EXISTS (
+                                SELECT 1 FROM orgs o
+                                WHERE o.id = substr(blogs.published_as, 5)
+                                  AND LOWER(COALESCE(o.visibility, 'public')) != 'private'
+                              )
+                            )
+                          )
                           AND published_at IS NOT NULL
                         ORDER BY published_at
                     `)

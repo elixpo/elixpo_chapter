@@ -10,6 +10,8 @@ import {
     safeJsonLd,
 } from "../../src/utils/seoContent";
 import { getCloudinaryUrl } from "../../lib/cloudinary";
+import { isIndexableBlog } from "../../lib/indexability";
+import { publicBlogPath } from "../../lib/sitemapData";
 import CatchAllClient from "./client";
 
 export const dynamic = "force-dynamic";
@@ -144,7 +146,7 @@ export async function generateMetadata({ params, searchParams }) {
         // so the byline, avatar and tier hint would fall away on their own — but assert
         // it explicitly here too. A share card is the one artifact that outlives the page,
         // and it must never carry the author of an anonymous post.
-        const blogMeta = (b, url) => {
+        const blogMeta = (b, url, org) => {
             const secret = !!b.secret;
             const title = b.title || "Untitled";
             const primary = secret
@@ -210,12 +212,13 @@ export async function generateMetadata({ params, searchParams }) {
                               })),
                       ],
                 alternates: { canonical: url },
-                // Keep secret blogs out of search engines: an indexed anonymous post is a
-                // permanent, crawlable artifact its author can never fully retract.
-                // Historical revision views (?rev=) are never indexed on their own.
-                ...(secret || b.status !== "published" || sp.rev
-                    ? { robots: { index: false, follow: false } }
-                    : {}),
+                // Keep non-indexable articles out of search engines: an indexed anonymous
+                // post is a permanent crawlable artifact, and private-org/deleted rows must
+                // follow the same policy as the sitemaps. Historical revision views (?rev=)
+                // are never indexed on their own.
+                ...(isIndexableBlog(b, { org, isRevision: !!sp.rev })
+                    ? {}
+                    : { robots: { index: false, follow: false } }),
                 openGraph: {
                     type: "article",
                     title,
@@ -344,7 +347,7 @@ export async function generateMetadata({ params, searchParams }) {
             // Short link /[slugid] — resolve falls back to a blog when the name matches no
             // namespace. This is the only path that serves a secret blog.
             if (data.type === "blog" && data.blog) {
-                return blogMeta(data.blog, url);
+                return blogMeta(data.blog, url, data.owner?.type === "org" ? data.owner : null);
             }
             return {};
         }
@@ -453,8 +456,8 @@ export async function generateMetadata({ params, searchParams }) {
 
         // Normal blog → mark + title + author list (small). Secret blogs never reach
         // here — resolve 404s them on author-namespaced paths — but blogMeta is
-        // secret-safe regardless.
-        return blogMeta(b, url);
+        // secret-safe regardless. Eligibility uses the resolver's actual org row.
+        return blogMeta(b, url, data.owner?.type === "org" ? data.owner : null);
     } catch {
         return {};
     }
@@ -463,9 +466,10 @@ export async function generateMetadata({ params, searchParams }) {
 // Structured data for rich results. Emitted server-side so crawlers get it without
 // running JS. resolvePublicPage shares the route lookup with metadata and rendering.
 //
-// Secret posts get NO structured data at all. They're already noindex, and JSON-LD
-// exists to describe authorship — exactly what an anonymous post must never publish.
-async function buildJsonLd(path, origin) {
+// Secret and otherwise ineligible posts get NO structured data. Secret posts are
+// already noindex, and JSON-LD exists to describe authorship — exactly what an
+// anonymous post must never publish.
+async function buildJsonLd(path, origin, { isRevision = false } = {}) {
     const name = (path?.[0] || "").toLowerCase();
     const len = path?.length || 0;
     if (!name) return null;
@@ -525,18 +529,15 @@ async function buildJsonLd(path, origin) {
             const dn = u.display_name || u.username || name;
             const url = `${origin}/${name}`;
             const profileStories = (data.blogs || []).slice(0, 20).map((blog) => {
-                const owner = blog.org_slug || blog.author_username || name;
-                const parts = [owner];
-                if (blog.org_slug && blog.collection_slug)
-                    parts.push(blog.collection_slug);
-                parts.push(blog.slug);
+                const blogPath = publicBlogPath(blog);
+                if (!blogPath) return null;
                 return {
                     "@type": "BlogPosting",
-                    "@id": `${origin}/${parts.map(encodeURIComponent).join("/")}#article`,
-                    url: `${origin}/${parts.map(encodeURIComponent).join("/")}`,
+                    "@id": `${origin}${blogPath}#article`,
+                    url: `${origin}${blogPath}`,
                     headline: blog.title || "Untitled",
                 };
-            });
+            }).filter(Boolean);
             return {
                 "@context": "https://schema.org",
                 "@graph": [
@@ -602,7 +603,11 @@ async function buildJsonLd(path, origin) {
 
         if (data.type === "blog" && data.blog) {
             const b = data.blog;
-            if (b.secret) return null; // never describe the authorship of an anonymous post
+            const orgOwner = data.owner?.type === "org" ? data.owner : null;
+            // Same eligibility policy as the sitemaps: ineligible rows (secret,
+            // unlisted, deleted, private/dangling org, revision views) never
+            // publish article structured data.
+            if (!isIndexableBlog(b, { org: orgOwner, isRevision })) return null;
             const url = `${origin}/${path.join("/")}`;
             const authors = [
                 {
@@ -616,7 +621,6 @@ async function buildJsonLd(path, origin) {
                     designation: c.designation,
                 })),
             ].filter((author) => author.name);
-            const orgOwner = data.owner?.type === "org" ? data.owner : null;
             const fallbackImage = `${origin}/api/og?${new URLSearchParams({ type: "blog", title: b.title || "Untitled", seed: b.id || b.slugid || b.slug || url })}`;
             const articleSummary = blogSearchDescription(b, 240) || blogExcerpt(b, 240);
             const coverImage = seoMediaUrl(
@@ -731,8 +735,9 @@ async function buildJsonLd(path, origin) {
     }
 }
 
-export default async function CatchAllHandle({ params }) {
+export default async function CatchAllHandle({ params, searchParams }) {
     const { path } = await params;
+    const sp = searchParams ? await searchParams : {};
     const h = await headers();
     const origin = `${h.get("x-forwarded-proto") || "https"}://${h.get("host")}`;
     const rawName = path?.[0] || "";
@@ -753,7 +758,7 @@ export default async function CatchAllHandle({ params }) {
     if (initialData?.type === "notFound" && !isReadingList) notFound();
     const jsonLd =
         initialData && initialData.type !== "notFound"
-            ? await buildJsonLd(path, origin)
+            ? await buildJsonLd(path, origin, { isRevision: !!sp.rev })
             : null;
 
     if (initialData?.type === "redirect" && initialData.location) {

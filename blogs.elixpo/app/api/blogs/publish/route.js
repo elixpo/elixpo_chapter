@@ -265,14 +265,24 @@ export async function POST(request) {
     if (compressedContent && targetStatus !== 'draft') {
       try { const { snapshotVersion } = await import('../../../../lib/blogVersions'); await snapshotVersion(db, slugid, compressedContent, { label: 'published', userId: session.userId }); } catch {}
     }
+    if (targetStatus === 'published' || targetStatus === 'unlisted') {
+      try {
+        const { recordActivationMilestone } = await import('../../../../lib/activation');
+        await recordActivationMilestone(db, session.userId, 'first_publication');
+      } catch {}
+    }
 
     // Refresh both reader-facing discovery caches and the sitemap. This runs for
     // publish, update, unlist, and draft transitions handled by this endpoint.
     try {
       const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
       const { kvInvalidate, mediaInventoryCacheKey } = await import('../../../../lib/cache');
+      let author = null;
+      try {
+        author = await db.prepare('SELECT username, timezone FROM users WHERE id = ?').bind(session.userId).first();
+      } catch {}
       await Promise.all([
-        invalidateBlogLifecycleCaches(slugid),
+        invalidateBlogLifecycleCaches(slugid, author),
         kvInvalidate(mediaInventoryCacheKey(session.userId)),
       ]);
     } catch {}

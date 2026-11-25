@@ -31,7 +31,7 @@ export default function robots() {
         '/auth-error',
       ],
     },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/blog-sitemap.xml`],
     host: SITE_URL,
   };
 }

@@ -57,7 +57,11 @@ export async function DELETE(request, { params }) {
     } catch {}
     try {
       const { invalidateBlogLifecycleCaches } = await import('../../../../lib/api/v1/blogCache');
-      await invalidateBlogLifecycleCaches(slugid);
+      let author = null;
+      try {
+        author = await db.prepare('SELECT username, timezone FROM users WHERE id = ?').bind(blog.author_id).first();
+      } catch {}
+      await invalidateBlogLifecycleCaches(slugid, author);
     } catch {}
     if (publicUrl) {
       const { notifySearchDiscovery } = await import('../../../../lib/searchDiscovery');

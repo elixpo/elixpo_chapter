@@ -14,7 +14,7 @@ const APP_ROUTES = new Set([
   'sign-in', 'sign-up', 'stats', 'stories', 'org',
   'help', 'docs', 'privacy', 'terms',
   'tag', 'auth-error',
-  'feed.xml', 'sitemap.xml', 'robots.txt',
+  'feed.xml', 'sitemap.xml', 'blog-sitemap.xml', 'robots.txt',
   '_next', 'favicon.ico', 'logo.png', 'logo-dark.png', 'logo-light.png', 'base-logo.png',
 ]);
 

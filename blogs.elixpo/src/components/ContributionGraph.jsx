@@ -273,6 +273,7 @@ export default function ContributionGraph({ username, timezone }) {
                     height={svgHeight}
                     viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                     preserveAspectRatio="xMinYMid meet"
+                    role="img"
                     aria-label={`Publishing activity: ${total} post${total !== 1 ? "s" : ""} in the last year`}
                     style={{ display: "block", minWidth: `${svgWidth}px` }}
                 >
@@ -357,7 +358,7 @@ export default function ContributionGraph({ username, timezone }) {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-2 mt-3 text-[10px] text-[var(--text-faint)]">
+            <div className="flex items-center gap-2 mt-3 text-[10px] text-[var(--text-faint)]" aria-label="Activity intensity legend">
                 <span>Less</span>
                 {LEVELS.map((level, i) => (
                     <span
@@ -369,6 +370,7 @@ export default function ContributionGraph({ username, timezone }) {
                             backgroundColor: isDark ? level.dark : level.light,
                         }}
                         title={level.label}
+                        aria-label={level.label}
                     />
                 ))}
                 <span>More</span>
