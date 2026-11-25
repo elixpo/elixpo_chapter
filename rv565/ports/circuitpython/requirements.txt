@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Ayushman Bhattacharya
+# SPDX-License-Identifier: MIT
+#
+# Runtime dependencies for pip installs (Blinka). On a CircuitPython board the
+# library needs only the built-in zlib, displayio and bitmaptools modules.
+Adafruit-Blinka

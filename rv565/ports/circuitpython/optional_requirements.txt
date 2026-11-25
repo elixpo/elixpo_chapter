@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Ayushman Bhattacharya
+# SPDX-License-Identifier: MIT
+#
+# Used only by the examples that drive an external ST7789.
+adafruit-circuitpython-st7789
