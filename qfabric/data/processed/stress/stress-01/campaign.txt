@@ -1,0 +1,5 @@
+campaign_id=stress-01
+router_bin=/home/arduino/arduino-router-seriallink
+stress_image=/home/arduino/seriallink-stress
+kernel=6.16.7-g0dd6551ae96b
+git_commit=e41fca143021f22e66036201bd9e498c35dce38a

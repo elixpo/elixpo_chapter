@@ -1,0 +1,8 @@
+campaign_id=baud-probe-01
+bauds=921600 2000000
+iterations=100
+warmup=10
+timeout_s=0.5
+router=
+kernel=6.16.7-g0dd6551ae96b
+git_commit=fcedda9cd7b539a4e7383e90cd3fd23b046a20da

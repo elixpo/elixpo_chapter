@@ -1,0 +1,16 @@
+stress-ng: info:  [1104] defaulting to a 1 day run per stressor
+stress-ng: info:  [1104] dispatching hogs: 4 cpu
+stress-ng: info:  [1104] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: info:  [1104] note: boost is disabled and this may impact top performance; setting /sys/devices/system/cpu/cpufreq/boost to 1 may improve performance.
+stress-ng: info:  [1106] cpu: for stable load results, select a specific cpu stress method with --cpu-method other than 'all'
+stress-ng: info:  [1107] cpu: for stable load results, select a specific cpu stress method with --cpu-method other than 'all'
+stress-ng: info:  [1108] cpu: for stable load results, select a specific cpu stress method with --cpu-method other than 'all'
+stress-ng: info:  [1109] cpu: for stable load results, select a specific cpu stress method with --cpu-method other than 'all'
+stress-ng: metrc: [1104] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s
+stress-ng: metrc: [1104]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: metrc: [1104] cpu                 900      5.27     10.71      0.03       170.66          83.76
+stress-ng: info:  [1104] skipped: 0
+stress-ng: info:  [1104] passed: 4: cpu (4)
+stress-ng: info:  [1104] failed: 0
+stress-ng: info:  [1104] metrics untrustworthy: 0
+stress-ng: info:  [1104] successful run completed in 5.38 secs
