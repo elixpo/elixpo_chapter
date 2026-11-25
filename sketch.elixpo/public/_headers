@@ -1,6 +1,0 @@
-# Cloudflare Pages static asset headers.
-# Icon SVGs and their search index change only on deploy; let browsers reuse
-# them for a day and revalidate in the background, so the icon tool's index
-# and thumbnails are served from cache after the first visit.
-/icons/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
