@@ -1,0 +1,96 @@
+name: Bug report
+description: Something on the badge, in an app or in the falera CLI does not work as it should.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. The commands below run on the computer the
+        badge is plugged into ([falera-cli](https://falera.elixpo.com/docs/cli/)).
+        A photo of the screen helps. Security problems go to a
+        [private advisory](https://github.com/elixpo/falera/security/advisories/new), not here.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where is the bug?
+      options:
+        - An app on the badge
+        - FaleraOS (home screen, drawer, notifications, updates, Wi-Fi)
+        - The falera CLI
+        - Transfer (falera transfer / the Transfer app)
+        - Firmware or hardware drivers
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: FaleraOS version
+      description: The first lines of `falera info` (or the About app on the badge).
+      placeholder: "e.g. FaleraOS v2.0.0 (2026-11-01), MicroPython 1.28.0"
+    validations:
+      required: true
+
+  - type: input
+    id: cli_version
+    attributes:
+      label: falera-cli version and computer
+      description: "`falera --version`, and your OS (Linux, macOS, Windows/WSL). Skip if the CLI is not involved."
+      placeholder: "e.g. falera-cli 1.0.0 on Ubuntu 24.04"
+
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: Hardware
+      options:
+        - ESP32-S3-DevKitC-1 N16R8 on a breadboard (reference build)
+        - Falera PCB
+        - Other or not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened, and what did you expect?
+      placeholder: |
+        Opened Racer, tilted right, the car drove left.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a freshly started badge.
+      placeholder: |
+        1. Open the apps drawer, then Racer
+        2. Press A to start
+        3. Tilt the badge right
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`falera doctor` output"
+      description: Checks the cable, port, permissions and firmware. Paste it as is.
+      render: shell
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output (optional)
+      description: "`falera logs --restart`, then reproduce the bug. For a crash, also `falera pull /crash.log` and paste the end of it."
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow the project's [Code of Conduct](https://github.com/elixpo/falera/blob/main/CODE_OF_CONDUCT.md).
+          required: true

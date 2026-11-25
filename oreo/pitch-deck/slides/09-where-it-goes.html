@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>11 / 17 · Where it goes · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* A road in four stages, left to right: where we are, what this funding
+       does, what follows, and where the system is heading. The chevrons
+       darken towards the goal. Plan: EMAILS_BATCH2.md (FOSS United
+       milestones); events from SPONSORS.md; Bluetooth and the mobile app are
+       the last items on the roadmap (#101, #103, #124). */
+    .road { margin-top: 32px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 1648px; }
+    .chev {
+      height: 78px; display: flex; align-items: center; padding-left: 46px;
+      font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 50%, calc(100% - 34px) 100%, 0 100%, 34px 50%);
+    }
+    .road > div:first-child .chev { clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 50%, calc(100% - 34px) 100%, 0 100%); padding-left: 28px; }
+    .c1 { background: #e4e7e3; color: var(--dim); }
+    .c2 { background: #f1c9cc; color: #8c1f27; }
+    .c3 { background: #e38a91; color: #fff; }
+    .c4 { background: var(--red); color: #fff; }
+
+    .card { margin-top: 16px; padding: 22px 24px 20px; border-radius: 20px; background: var(--card); flex: 1; }
+    .road > div { display: flex; flex-direction: column; }
+    .goal .card { background: #fff; border: 2px solid var(--red); }
+    .card .what { font-size: 33px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .card ul { margin: 14px 0 0; padding: 0; list-style: none; }
+    .card li { position: relative; padding-left: 24px; font-size: 25px; line-height: 1.35; color: var(--text); margin-top: 10px; }
+    .card li::before { content: ""; position: absolute; left: 0; top: 13px; width: 9px; height: 9px; border-radius: 50%; background: var(--red); }
+    .count { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 5px; width: 220px; }
+    .count i { width: 16px; height: 22px; border-radius: 4px; background: var(--ink); opacity: 0.85; }
+    .count .lbl { width: 100%; margin-top: 6px; font-family: var(--mono); font-size: 20px; color: var(--muted); }
+    .tag { display: inline-block; margin: 0 0 12px; padding: 6px 14px; border-radius: 10px; background: var(--red);
+           color: #fff; font-family: var(--mono); font-size: 20px; font-weight: 700; }
+    .stat { margin-top: auto; padding-top: 16px; font-size: 22px; color: var(--muted); }
+    .stat b { font-family: var(--mono); font-size: 44px; color: var(--red); margin-right: 8px; }
+    .card { display: flex; flex-direction: column; }
+    .vision {
+      margin-top: 22px; width: 1648px; padding: 16px 26px; border-radius: 16px;
+      background: var(--card); border-left: 5px solid var(--red);
+      color: var(--dim); font-size: 28px; line-height: 1.35;
+      display: flex; align-items: center; gap: 22px;
+    }
+    .vision img { width: 64px; height: 64px; object-fit: contain; }
+    .vision b { color: var(--red); }
+    .foot { margin-top: 16px; font-size: 20px; color: var(--muted); width: 1648px; }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <img class="mark" src="../assets/lumi-badge.webp" alt="">
+  <div class="body">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>Where it goes</span>
+    </div>
+
+    <h2 class="title" style="max-width: 1560px">
+      Here’s where we’re taking it: <em>from one badge to a badge every event can hand out.</em>
+    </h2>
+
+    <div class="road">
+      <div>
+        <div class="chev c1">Today</div>
+        <div class="card">
+          <div class="what">A working system</div>
+          <ul>
+            <li>FaleraOS, the App Store and the CLI, working today</li>
+            <li>The first five PCBs ordered</li>
+          </ul>
+          <div class="stat"><b>5</b> boards</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="chev c2">4 months · the ask</div>
+        <div class="card">
+          <div class="what">In people’s hands</div>
+          <ul>
+            <li>The final version 2 board</li>
+            <li>10 badges built and tested on it</li>
+            <li>Two workshops: build a badge, publish an app</li>
+          </ul>
+          <div class="stat"><b>10</b> final badges</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="chev c3">2027</div>
+        <div class="card">
+          <div class="what">Badges at events</div>
+          <ul>
+            <li>Badges with each event’s own app</li>
+            <li>We plan to approach IndiaFOSS and FOSSASIA 2027</li>
+            <li>Applying to Google Summer of Code 2027</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="goal">
+        <div class="chev c4">Where we’re heading</div>
+        <div class="card">
+          <div class="what">An open platform</div>
+          <ul>
+            <li>Any event orders badges and loads its own app</li>
+            <li>An App Store filled by the people who wear them</li>
+            <li>Bluetooth and a phone app, last</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="vision">
+      <img src="../assets/lumi-badge.webp" alt="">
+      <div>The direction: one open badge and OS that <b>any event can hand out</b> and <b>every attendee keeps building on</b>.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">11 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>

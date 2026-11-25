@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>5 / 17 · The hardware · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Left: cost bar and a key to the numbered dots on the photo.
+       Right: the PCB photo with numbered dots.
+       Figures: circuit/elixpo/BOM_COST.md (one badge, ₹4,171.70), in dollars
+       at ₹93.96, the rate charged on the 17 Nov 2026 orders. */
+    .sub { margin-top: 20px; font-size: 29px; line-height: 1.35; color: var(--dim); max-width: 1120px; }
+    .sub b { color: var(--red); }
+
+    .bar { margin-top: 34px; display: flex; width: 1120px; gap: 5px; }
+    .seg { min-width: 0; }
+    .seg .fill { height: 60px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); }
+    .seg.chip .fill { background: var(--red); border-color: var(--red); }
+    .seg .label { margin-top: 12px; padding-right: 8px; }
+    .seg .what { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+    .seg .cost { margin-top: 4px; font-family: var(--mono); font-size: 19px; color: var(--muted); }
+    .seg .usd { font-family: var(--mono); font-size: 17px; color: var(--muted); opacity: 0.8; }
+    .seg.chip .cost, .seg.chip .usd { color: var(--red); font-weight: 700; }
+
+    .key-title {
+      margin-top: 30px;
+      font-family: var(--mono); font-size: 19px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .key {
+      margin-top: 16px; width: 1120px;
+      display: grid; grid-template-columns: 1fr 1fr; column-gap: 36px; row-gap: 8px;
+    }
+    .key div { display: flex; gap: 14px; align-items: baseline; font-size: 22px; color: var(--text); }
+    .dot {
+      flex: 0 0 24px; height: 24px; border-radius: 50%;
+      background: var(--red); color: #fff;
+      font-family: var(--mono); font-size: 19px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      position: relative; top: 4px;
+    }
+    .front { margin-top: 14px; font-size: 21px; color: var(--dim); width: 1120px; }
+    .front b { color: var(--ink); }
+
+    .oshw-card {
+      margin-top: 20px; width: 1120px; padding: 12px 26px;
+      display: flex; align-items: center; gap: 32px;
+    }
+    .oshw-card img { height: 44px; }
+
+    .photo { position: absolute; right: 136px; top: 210px; width: 430px; margin: 0; }
+    .photo .frame { position: relative; width: 430px; height: 666px; }
+    .photo img {
+      width: 430px; height: 666px; display: block; border-radius: 20px;
+    }
+    /* Dots sit on the photo; positions are in the photo's own pixels. */
+    .photo .dot {
+      position: absolute; transform: translate(-50%, -50%); top: 10px;
+      width: 30px; height: 30px; font-size: 21px;
+      border: 3px solid #fff;
+    }
+    .photo figcaption { margin-top: 14px; font-size: 19px; }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <img class="mark" src="../assets/lumi-badge.webp" alt="">
+  <div class="body">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>The hardware</span>
+    </div>
+
+    <h2 class="title" style="max-width: 1180px">
+      We started with the hardware: <em>₹4,172 ($44) in parts.</em>
+    </h2>
+
+    <p class="sub">The ESP32-S3 is only <b>₹507 ($5.40)</b> of it. The rest turns a chip into a device.</p>
+
+    <!-- Segment widths are each group's share of ₹4,172. -->
+    <div class="bar">
+      <div class="seg chip" style="flex: 507"><div class="fill"></div>
+        <div class="label"><div class="what">ESP32-S3</div><div class="cost">₹507</div><div class="usd">$5.40</div></div></div>
+      <div class="seg" style="flex: 824"><div class="fill"></div>
+        <div class="label"><div class="what">4-layer board</div><div class="cost">₹824</div><div class="usd">$8.77</div></div></div>
+      <div class="seg" style="flex: 842"><div class="fill"></div>
+        <div class="label"><div class="what">Battery, charging</div><div class="cost">₹842</div><div class="usd">$8.96</div></div></div>
+      <div class="seg" style="flex: 629"><div class="fill"></div>
+        <div class="label"><div class="what">Touch screen</div><div class="cost">₹629</div><div class="usd">$6.69</div></div></div>
+      <div class="seg" style="flex: 884"><div class="fill"></div>
+        <div class="label"><div class="what">Motion, IR, sound, SD</div><div class="cost">₹884</div><div class="usd">$9.40</div></div></div>
+      <div class="seg" style="flex: 486"><div class="fill"></div>
+        <div class="label"><div class="what">Buttons, parts</div><div class="cost">₹486</div><div class="usd">$5.16</div></div></div>
+    </div>
+
+    <!-- Key to the numbered dots on the photo. -->
+    <div class="key-title">On the back of the board</div>
+    <div class="key">
+      <div><span class="dot">1</span>ESP32-S3: Wi-Fi, Bluetooth LE 5, 8 MB PSRAM</div>
+      <div><span class="dot">2</span>Qwiic and a 4-GPIO expansion header</div>
+      <div><span class="dot">3</span>microSD card slot</div>
+      <div><span class="dot">4</span>2000 mAh LiPo battery holder</div>
+      <div><span class="dot">5</span>USB-C for charging and the falera CLI</div>
+    </div>
+    <p class="front"><b>On the front:</b> a 2.8″ 320×240 touch screen, eight buttons, a speaker, IR send and receive, and a motion sensor.</p>
+
+    <div class="card oshw-card">
+      <img src="../assets/oshw_mark.png" alt="Certified open source hardware, OSHWA IN000107">
+      <p class="small" style="font-size: 18px; line-height: 1.35">
+        4-layer board, 88 × 133.5 mm. Prices paid on 17 Nov 2026 for the first five boards, at ₹93.96
+        to the dollar; customs duty, tools and labour not included.
+      </p>
+    </div>
+
+    <!-- PCB photo with numbered dots -->
+    <figure class="photo">
+      <div class="frame">
+        <img src="../assets/pcb_back.jpg" alt="Back of the Falera Badge PCB">
+        <span class="dot" style="left: 216px; top: 78px">1</span>
+        <span class="dot" style="left: 396px; top: 236px">2</span>
+        <span class="dot" style="left: 380px; top: 468px">3</span>
+        <span class="dot" style="left: 210px; top: 548px">4</span>
+        <span class="dot" style="left: 213px; top: 612px">5</span>
+      </div>
+      <figcaption class="small">
+        The back of the first boards, made before the rename from Oreo.
+      </figcaption>
+    </figure>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">5 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"name": "Color", "slug": "color_picker", "description": "Colour picker: arrows pick, B switches RGB/HSL/CMYK/palette/presets, A saves, C shows the colour on the badge's LED.", "type": "app", "version": "0.4", "icon": "color_icon.png", "author": "Circuit-Overtime"}
