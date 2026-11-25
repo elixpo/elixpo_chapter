@@ -1,0 +1,12 @@
+{
+  "category": "precision",
+  "prompt": "What is the total of the amount column in sales.csv? Give the exact number.",
+  "files": {
+    "sales.csv": "date,item,amount\n2026-01-02,tea,12.50\n2026-01-03,coffee,7.25\n2026-01-03,cake,30.00\n2026-01-04,tea,12.50\n2026-01-05,juice,8.75\n"
+  },
+  "answer_matches": [
+    "\\b71(\\.0+)?\\b"
+  ],
+  "no_new_files": true,
+  "max_tokens": 60000
+}

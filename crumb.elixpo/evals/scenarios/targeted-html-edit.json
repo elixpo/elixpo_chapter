@@ -1,0 +1,17 @@
+{
+  "category": "coding",
+  "prompt": "Change the page title in index.html to 'Crumb Docs'. Do not change anything else.",
+  "files": {
+    "index.html": "<!doctype html>\n<html>\n<head>\n  <title>Old Site</title>\n  <meta charset=\"utf-8\">\n</head>\n<body>\n  <h1>Welcome</h1>\n  <p id=\"keep\">Keep this paragraph exactly.</p>\n</body>\n</html>\n"
+  },
+  "file_contains": {
+    "index.html": "<title>Crumb Docs</title>"
+  },
+  "commands_succeed": [
+    "grep -q '<p id=\"keep\">Keep this paragraph exactly.</p>' index.html",
+    "grep -q '<h1>Welcome</h1>' index.html",
+    "! grep -q 'Old Site' index.html",
+    "test $(wc -l < index.html) -eq 11"
+  ],
+  "max_tokens": 60000
+}
