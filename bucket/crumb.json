@@ -1,0 +1,26 @@
+{
+    "version": "1.5.2",
+    "description": "Self-hosted agent harness and natural-language terminal",
+    "homepage": "https://crumb.elixpo.com",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/elixpo/crumb.elixpo/releases/download/v1.5.2/crumb-windows-x86_64.zip",
+            "hash": "ecae07f127e985ba47fb20e3b0c48ff48d5b484e8878c8b678a02bfc7d83a316"
+        }
+    },
+    "bin": "crumb.exe",
+    "checkver": {
+        "github": "https://github.com/elixpo/crumb.elixpo"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/elixpo/crumb.elixpo/releases/download/v$version/crumb-windows-x86_64.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

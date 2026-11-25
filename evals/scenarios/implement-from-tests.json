@@ -1,0 +1,13 @@
+{
+  "category": "coding",
+  "prompt": "Implement is_palindrome in text.py so the existing tests pass. Ignore case and spaces.",
+  "files": {
+    "text.py": "def is_palindrome(value):\n    raise NotImplementedError\n",
+    "test_text.py": "import unittest\nfrom text import is_palindrome\n\n\nclass PalindromeTest(unittest.TestCase):\n    def test_simple(self):\n        self.assertTrue(is_palindrome('level'))\n\n    def test_case_and_spaces(self):\n        self.assertTrue(is_palindrome('Never odd or even'))\n\n    def test_not(self):\n        self.assertFalse(is_palindrome('crumb'))\n\n\nif __name__ == '__main__':\n    unittest.main()\n"
+  },
+  "commands_succeed": [
+    "python3 -m unittest -q test_text",
+    "! grep -q NotImplementedError text.py"
+  ],
+  "max_tokens": 100000
+}

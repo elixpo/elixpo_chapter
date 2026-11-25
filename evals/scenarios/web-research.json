@@ -1,0 +1,13 @@
+{
+  "category": "research",
+  "prompt": "What is the latest stable version of the Rust programming language? Cite the source URL.",
+  "files": {
+    "README.md": "scratch\n"
+  },
+  "answer_matches": [
+    "1\\.\\d{2,}",
+    "https?://"
+  ],
+  "no_new_files": true,
+  "max_tokens": 80000
+}

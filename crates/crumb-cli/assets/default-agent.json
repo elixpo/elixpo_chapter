@@ -1,0 +1,313 @@
+{
+  "harness": {
+    "kind": "native"
+  },
+  "providers": {
+    "pollinations": {
+      "display_name": "Pollinations",
+      "protocol": "open_ai_completions",
+      "base_url": "https://gen.pollinations.ai/v1",
+      "headers": {},
+      "models": [
+        {
+          "id": "nova-fast",
+          "display_name": null,
+          "input": [
+            "text"
+          ],
+          "tool_calling": true,
+          "context_window": 128000,
+          "max_output_tokens": 8192,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "nova",
+          "display_name": null,
+          "input": [
+            "text",
+            "image"
+          ],
+          "tool_calling": true,
+          "context_window": 1048576,
+          "max_output_tokens": 8192,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "qwen-coder",
+          "display_name": null,
+          "input": [
+            "text"
+          ],
+          "tool_calling": true,
+          "context_window": 262144,
+          "max_output_tokens": 8192,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "Circuit-Overtime/OreoLook",
+          "display_name": null,
+          "input": [
+            "text",
+            "image"
+          ],
+          "tool_calling": true,
+          "context_window": 256000,
+          "max_output_tokens": 8192,
+          "reasoning_efforts": {
+            "high": "high",
+            "low": "low",
+            "medium": "medium"
+          },
+          "compatibility": {
+            "flags": {
+              "reasoning_effort": true
+            },
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "perplexity",
+          "display_name": null,
+          "input": [
+            "text"
+          ],
+          "tool_calling": false,
+          "context_window": 200000,
+          "max_output_tokens": 8192,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "flux",
+          "display_name": null,
+          "input": [
+            "image"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "klein",
+          "display_name": null,
+          "input": [
+            "image"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "wan-fast",
+          "display_name": null,
+          "input": [
+            "video"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "elevenflash",
+          "display_name": null,
+          "input": [
+            "audio"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "trellis-2",
+          "display_name": null,
+          "input": [
+            "three_d"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "whisper",
+          "display_name": null,
+          "input": [
+            "transcription"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        },
+        {
+          "id": "openai-3-small",
+          "display_name": null,
+          "input": [
+            "embeddings"
+          ],
+          "tool_calling": false,
+          "context_window": null,
+          "max_output_tokens": null,
+          "reasoning_efforts": {},
+          "compatibility": {
+            "flags": {},
+            "max_tokens_field": null,
+            "thinking_format": null,
+            "cache_control_format": null
+          }
+        }
+      ],
+      "default_input": [],
+      "default_context_window": null,
+      "default_max_output_tokens": null,
+      "compatibility": {
+        "flags": {},
+        "max_tokens_field": null,
+        "thinking_format": null,
+        "cache_control_format": null
+      },
+      "reasoning": null,
+      "thinking_budgets": {},
+      "cache_retention": null,
+      "transport": null,
+      "timeout_ms": null,
+      "websocket_connect_timeout_ms": null,
+      "stream_idle_timeout_ms": null,
+      "max_request_image_bytes": null,
+      "retry": {
+        "max_retries": 0,
+        "base_delay_ms": 0,
+        "max_delay_ms": 0
+      },
+      "pricing": {},
+      "optimizer": null
+    }
+  },
+  "models": {
+    "text": [
+      {
+        "provider": "pollinations",
+        "model": "nova-fast",
+        "effort": null
+      },
+      {
+        "provider": "pollinations",
+        "model": "qwen-coder",
+        "effort": null
+      }
+    ],
+    "image": [
+      {
+        "provider": "pollinations",
+        "model": "flux",
+        "effort": null
+      },
+      {
+        "provider": "pollinations",
+        "model": "klein",
+        "effort": null
+      }
+    ],
+    "video": [
+      {
+        "provider": "pollinations",
+        "model": "wan-fast",
+        "effort": null
+      }
+    ],
+    "audio": [
+      {
+        "provider": "pollinations",
+        "model": "elevenflash",
+        "effort": null
+      }
+    ],
+    "three_d": [
+      {
+        "provider": "pollinations",
+        "model": "trellis-2",
+        "effort": null
+      }
+    ],
+    "transcription": [
+      {
+        "provider": "pollinations",
+        "model": "whisper",
+        "effort": null
+      }
+    ],
+    "embeddings": [
+      {
+        "provider": "pollinations",
+        "model": "openai-3-small",
+        "effort": null
+      }
+    ]
+  },
+  "active_model_pack": "balanced"
+}

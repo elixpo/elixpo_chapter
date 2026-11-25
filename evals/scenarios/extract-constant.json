@@ -1,0 +1,15 @@
+{
+  "category": "coding",
+  "prompt": "The tax rate 0.18 is hard-coded in shop.py and report.py. Move it into a TAX_RATE constant in config.py, use it in both files, and keep the output the same.",
+  "files": {
+    "shop.py": "def price_with_tax(price):\n    return round(price * (1 + 0.18), 2)\n",
+    "report.py": "from shop import price_with_tax\n\n\ndef tax_on(price):\n    return round(price * 0.18, 2)\n\n\nprint(price_with_tax(100), tax_on(50))\n"
+  },
+  "commands_succeed": [
+    "test \"$(python3 report.py)\" = '118.0 9.0'",
+    "grep -q 'TAX_RATE *= *0.18' config.py",
+    "! grep -n '0\\.18' shop.py report.py",
+    "grep -q TAX_RATE shop.py && grep -q TAX_RATE report.py"
+  ],
+  "max_tokens": 120000
+}

@@ -1,0 +1,11 @@
+{
+  "category": "coding",
+  "prompt": "Change the server port in config.json to 8080 and enable debug. Keep everything else as it is.",
+  "files": {
+    "config.json": "{\n  \"name\": \"shop\",\n  \"server\": {\n    \"host\": \"0.0.0.0\",\n    \"port\": 3000\n  },\n  \"debug\": false,\n  \"features\": [\"cart\", \"search\"]\n}\n"
+  },
+  "commands_succeed": [
+    "python3 -c \"import json; c=json.load(open('config.json')); assert c['server']=={'host':'0.0.0.0','port':8080}, c; assert c['debug'] is True; assert c['name']=='shop'; assert c['features']==['cart','search']\""
+  ],
+  "max_tokens": 60000
+}
