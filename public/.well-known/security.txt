@@ -1,0 +1,6 @@
+# Elixpo Pay — security contact (RFC 9116)
+Contact: https://github.com/elixpo/payouts.elixpo/security/advisories/new
+Policy: https://github.com/elixpo/payouts.elixpo/blob/main/SECURITY.md
+Preferred-Languages: en
+Canonical: https://payouts.elixpo.com/.well-known/security.txt
+Expires: 2027-11-18T00:00:00.000Z

@@ -1,0 +1,31 @@
+# Deploys Elixpo Pay (next-on-pages) through the shared Elixpo deploy workflow.
+# Mirrors deploy.sh: runtime secrets come from the sops-encrypted .env, except
+# build-time NEXT_PUBLIC_* values (two are read server-side and still synced),
+# ENVIRONMENT/NODE_ENV/RAZORPAY_MODE (from wrangler.toml), and CLOUDFLARE_*.
+# D1 migrations for elixpo_pay are applied before each deploy.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - docs/**
+      - "**/*.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: elixpo-pay
+      build-command: npm run pages:build
+      output-directory: .vercel/output/static
+      sops-file: .env
+      secret-keys: "* NEXT_PUBLIC_ELIXPO_CLIENT_ID NEXT_PUBLIC_ACCOUNTS_URL"
+      secret-exclude: "NEXT_PUBLIC_* ENVIRONMENT NODE_ENV RAZORPAY_MODE"
+      d1-database: elixpo_pay
+    secrets: inherit
