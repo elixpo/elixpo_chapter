@@ -1,0 +1,5 @@
+# The sdist carries everything needed to rebuild the wheel and run the
+# host tests (fake.py and helpers.py are not picked up by default; the
+# installers are tested by tests/test_release.py).
+include README.md CHANGELOG.md LICENSE install.sh install.ps1
+include tests/*.py
