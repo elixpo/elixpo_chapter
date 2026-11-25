@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Elixpo editorial design system (shared with research.elixpo.com):
+   paper canvas, green-black ink, hairline rules, blue eyebrows, green links,
+   Arial display type with Georgia italics, mono labels, geometric art.
+   Surfaces reference --app-* tokens (never a hardcoded hex) so the light/dark
+   toggle works; `data-theme` on <html> flips them.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --font-sofia-sans: Arial, Helvetica, sans-serif;
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --radius-card: 1.4rem;
+  --radius-panel: 1.1rem;
+}
+
+@theme inline {
+  --color-background: var(--app-bg);
+  --color-foreground: var(--app-fg);
+  --font-sans: var(--font-sofia-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root,
+html[data-theme="light"] {
+  --app-bg: #fbfbf8;           /* paper */
+  --app-bg-2: #f5f6f2;
+  --app-surface: #ffffff;
+  --app-surface-2: #eff1ed;    /* paper-deep */
+  --app-fg: #142018;           /* ink */
+  --app-fg-muted: #5f6962;
+  --app-fg-faint: #7e8680;
+  --app-border: #d7dbd6;       /* line */
+  --app-overlay: rgba(20, 32, 24, 0.045);
+  --app-accent: #3a65c7;       /* blue */
+  --app-accent-2: #2c4fa3;
+  --app-accent-soft: #dce7ff;  /* blue-wash */
+  --app-link: #0b623c;         /* green */
+  --app-orange: #e76043;
+  --app-yellow: #f0ad16;
+  --app-success: #0b623c;
+  --app-danger: #b3361c;
+  --app-warn: #9a5b00;
+  --app-ink: #142018;
+  --app-on-ink: #ffffff;
+  --app-on-ink-muted: #b5c0b8;
+  --app-shadow: 0 18px 48px rgba(20, 32, 24, 0.09);
+  --app-art-1: #f1c64f;
+  --app-art-2: #cbdcff;
+  --app-art-3: #dfd0f3;
+  --app-art-4: #d4eadf;
+  --app-art-line: rgba(20, 32, 24, 0.26);
+  color-scheme: light;
+}
+
+/* Dark: the same system after hours — deep ink canvas, paper text. */
+html[data-theme="dark"] {
+  --app-bg: #0e1511;
+  --app-bg-2: #111a14;
+  --app-surface: #152019;
+  --app-surface-2: #1a271f;
+  --app-fg: #eef1ec;
+  --app-fg-muted: #a3ada6;
+  --app-fg-faint: #7e8680;
+  --app-border: rgba(238, 241, 236, 0.13);
+  --app-overlay: rgba(238, 241, 236, 0.05);
+  --app-accent: #79a7ff;
+  --app-accent-2: #a5c3ff;
+  --app-accent-soft: rgba(121, 167, 255, 0.14);
+  --app-link: #6fd3a0;
+  --app-orange: #f0876e;
+  --app-yellow: #f3c04a;
+  --app-success: #6fd3a0;
+  --app-danger: #ff8f78;
+  --app-warn: #f3c04a;
+  --app-ink: #eef1ec;
+  --app-on-ink: #0e1511;
+  --app-on-ink-muted: #3d4a41;
+  --app-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  --app-art-1: #8a6f22;
+  --app-art-2: #2d4478;
+  --app-art-3: #4a3b63;
+  --app-art-4: #24493a;
+  --app-art-line: rgba(238, 241, 236, 0.22);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-fg);
+  font-family: var(--font-sofia-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--app-accent-soft); color: var(--app-fg); }
+
+/* ── Editorial building blocks ─────────────────────────────────────────── */
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--app-accent);
+  font: 700 0.68rem/1.4 var(--font-geist-mono);
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+.display {
+  margin: 0;
+  font-weight: 510;
+  line-height: 0.92;
+  letter-spacing: -0.068em;
+  text-wrap: balance;
+}
+.display em, .serif-em { font-family: var(--font-serif); font-style: italic; font-weight: 400; }
+.mono-label {
+  color: var(--app-fg-muted);
+  font: 600 0.65rem/1.4 var(--font-geist-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Pill action row (hero CTAs, thank-you pages). */
+.actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2rem; }
+.actions a {
+  min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.8rem 1.15rem; border: 1px solid var(--app-ink); border-radius: 999px;
+  color: var(--app-fg); font-size: 0.78rem; font-weight: 700; text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+.actions a:first-child { background: var(--app-ink); color: var(--app-on-ink); }
+.actions a:hover { opacity: 0.8; }
+
+/* Geometric art panel (rings, discs, pills) — research's signature motif. */
+.geo { position: relative; overflow: hidden; isolation: isolate; background: var(--geo-bg, var(--app-art-2)); }
+.geo::before {
+  content: ""; position: absolute; z-index: -1; inset: 0; opacity: 0.3;
+  background-image: radial-gradient(circle at center, var(--app-art-line) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(90deg, #000, transparent 72%);
+}
+.geo i { position: absolute; display: block; transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.geo .g-ring { width: 330px; height: 330px; right: -60px; top: -140px; border: 1px solid var(--app-art-line); border-radius: 50%; }
+.geo .g-disc { width: 120px; height: 120px; right: 22%; top: 38%; border-radius: 48% 52% 35% 65%; background: var(--geo-accent, var(--app-yellow)); transform: rotate(21deg); box-shadow: 0 25px 60px rgba(20, 32, 24, 0.13); }
+.geo .g-pill { width: 78px; height: 240px; left: 30%; bottom: -150px; border: 1px solid var(--app-art-line); border-radius: 999px; background: rgba(255, 255, 255, 0.35); transform: rotate(45deg); }
+.geo .g-tile { width: 96px; height: 96px; left: 8%; bottom: -24px; border-radius: 18% 82% 61% 39%; background: var(--geo-ink, var(--app-accent)); transform: rotate(-13deg); }
+.geo:hover .g-disc { transform: rotate(31deg) translate(-8px, -5px); }
+.geo:hover .g-tile { transform: rotate(-6deg) translate(7px, -6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* Skip link: hidden until focused, then shown above the navbar. */
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2000;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--app-ink);
+  color: var(--app-on-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+/* ── Site header (floating pill) ───────────────────────────────────────── */
+.site-header {
+  position: sticky; z-index: 1000; top: 14px;
+  width: min(calc(100% - 2rem), 1510px); min-height: 72px;
+  margin: 14px auto 0; padding: 10px 12px 10px 18px;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  border: 1px solid color-mix(in srgb, var(--app-fg) 14%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-bg) 90%, transparent);
+  box-shadow: var(--app-shadow);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.site-header .brand { display: flex; align-items: center; gap: 0.7rem; color: var(--app-fg); text-decoration: none; }
+.site-header .brand img { width: 32px; height: 32px; object-fit: contain; }
+.site-header .brand > span { display: flex; align-items: baseline; gap: 0.45rem; }
+.site-header .brand b { font-size: 1rem; }
+.site-header .brand small { color: var(--app-fg-muted); font-size: 0.72rem; }
+.site-header nav { display: flex; align-items: center; gap: 1.6rem; font-size: 0.78rem; font-weight: 650; }
+.site-header nav a { color: var(--app-fg); text-decoration: none; transition: opacity 0.2s ease; }
+.site-header nav a:hover { opacity: 0.55; }
+.site-header nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.site-header .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+.pill-link {
+  display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px;
+  padding: 0.75rem 1.1rem; border-radius: 999px;
+  border: 1px solid var(--app-ink); background: var(--app-ink); color: var(--app-on-ink) !important;
+  font-size: 0.76rem; font-weight: 700; text-decoration: none; white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+.pill-link:hover { opacity: 0.85 !important; }
+.pill-link.ghost { background: transparent; color: var(--app-fg) !important; border-color: var(--app-border); }
+.pill-link.ghost:hover { border-color: var(--app-fg); opacity: 1 !important; }
+.menu-toggle { display: none; }
+.mobile-menu { display: none; }
+
+@media (max-width: 960px) {
+  .site-header nav.primary-nav, .site-header .gh-stars { display: none; }
+  .menu-toggle {
+    display: inline-grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid var(--app-border); border-radius: 999px; background: transparent; color: var(--app-fg); cursor: pointer;
+  }
+  .mobile-menu[data-open="true"] {
+    display: grid; position: fixed; z-index: 999; top: 96px; left: 1rem; right: 1rem;
+    padding: 0.5rem 1.25rem 1.25rem; border: 1px solid var(--app-border); border-radius: var(--radius-card);
+    background: var(--app-bg); box-shadow: var(--app-shadow);
+  }
+  .mobile-menu a { padding: 1rem 0; border-bottom: 1px solid var(--app-border); color: var(--app-fg); font-weight: 650; text-decoration: none; }
+  .mobile-menu a:last-child { border-bottom: 0; }
+}
+@media (max-width: 760px) {
+  .site-header { top: 8px; margin-top: 8px; min-height: 62px; padding: 8px 8px 8px 14px; }
+  .site-header .brand small { display: none; }
+  .mobile-menu[data-open="true"] { top: 80px; }
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.site-footer {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 3rem 4rem;
+  padding: 3.5rem max(1rem, calc((100% - 1450px) / 2)) 2rem;
+  background: var(--app-surface); border-top: 1px solid var(--app-border); color: var(--app-fg);
+}
+.footer-brand { display: flex; align-items: flex-start; gap: 1rem; }
+.footer-brand p { max-width: 340px; margin: 0.35rem 0 0.8rem; color: var(--app-fg-muted); line-height: 1.6; }
+.footer-mail { color: var(--app-link); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
+.footer-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+.footer-cols nav { display: grid; align-content: start; gap: 0.7rem; }
+.footer-cols nav .mono-label { margin-bottom: 0.3rem; }
+.footer-cols a { color: var(--app-fg); font-size: 0.86rem; text-decoration: none; }
+.footer-cols a:hover { color: var(--app-link); }
+.footer-base {
+  grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding-top: 1.5rem; border-top: 1px solid var(--app-border); color: var(--app-fg-muted); font-size: 0.78rem;
+}
+.footer-base a { color: inherit; text-decoration: underline; text-decoration-color: var(--app-border); text-underline-offset: 2px; }
+.footer-base a:hover { color: var(--app-fg); }
+@media (max-width: 860px) {
+  .site-footer { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .footer-cols { grid-template-columns: 1fr 1fr; }
+}
