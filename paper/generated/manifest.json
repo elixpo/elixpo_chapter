@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "source": "data/processed/stage11/stage11-evaluation-01/evaluation.json",
+  "source_sha256": "3975e0a343e0bece56eb83f043c472f0632283dc1d4af3269cd2c85dcfbdb03e",
+  "outputs": [
+    "flagship-ci.dat",
+    "flagship-ci.tex",
+    "flagship-table.tex",
+    "flagship.dat",
+    "idle-applications.dat",
+    "interconnect-concurrency.dat",
+    "interconnect-manifest.json",
+    "interconnect-metrics.tex",
+    "interconnect-payload.dat",
+    "metrics.tex",
+    "stage12-ablation-table.tex",
+    "stage12-chain-table.tex",
+    "stage12-decomposition-table.tex",
+    "stage12-manifest.json",
+    "stage12-metrics.tex",
+    "stage12-percall-table.tex",
+    "stage12-percall.dat"
+  ]
+}

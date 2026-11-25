@@ -1,0 +1,18 @@
+115200 add: p95 19.043 ms, failures 0
+115200 crc32: p95 19.797 ms, failures 0
+115200 fir-x1: p95 20.144 ms, failures 0
+115200 fir-x64: p95 23.072 ms, failures 0
+115200 fir-x512: p95 45.964 ms, failures 0
+115200 Stage 12 profile: data/processed/baud/baud-sweep-01/baud-115200.json
+230400 add: p95 12.956 ms, failures 0
+230400 crc32: p95 13.606 ms, failures 0
+230400 fir-x1: p95 12.940 ms, failures 0
+230400 fir-x64: p95 16.027 ms, failures 0
+230400 fir-x512: p95 38.935 ms, failures 0
+230400 Stage 12 profile: data/processed/baud/baud-sweep-01/baud-230400.json
+460800 add: p95 8.877 ms, failures 0
+460800 crc32: p95 9.450 ms, failures 0
+460800 fir-x1: p95 8.977 ms, failures 0
+460800 fir-x64: p95 12.399 ms, failures 0
+460800 fir-x512: p95 35.371 ms, failures 0
+460800 Stage 12 profile: data/processed/baud/baud-sweep-01/baud-460800.json

@@ -1,0 +1,14 @@
+campaign_id=stage12-kernels-01
+iterations=2000
+warmup=100
+seed=12012026
+load_workers=8
+contention=workers:4,load:50%,slice:10ms,SCHED_FIFO:80
+measured_fifo_priority=50
+router_policy=pid 549's current scheduling policy: SCHED_OTHER
+governor=schedutil
+kernel=6.16.7-g0dd6551ae96b
+architecture=aarch64
+python=Python 3.13.5
+git_commit=a6f98f6d37071e3ed6c29e59d25c02c79108427b
+command=sudo -E env PATH="$PATH" bash scripts/run-stage12-campaign.sh stage12-kernels-01
