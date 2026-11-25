@@ -1,0 +1,28 @@
+# Deploys status.elixpo.com (next-on-pages) through the shared Elixpo deploy workflow.
+# Mirrors deploy.sh: every key in the sops-encrypted .env becomes a runtime secret
+# (notably the scoped CF_API_TOKEN / CF_ACCOUNT_ID the page reads analytics with);
+# CLOUDFLARE_* deploy credentials are never pushed.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - docs/**
+      - "**/*.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: status
+      build-command: npm run pages:build
+      output-directory: .vercel/output/static
+      sops-file: .env
+      secret-keys: all
+    secrets: inherit
