@@ -1,0 +1,39 @@
+name: Elixpoo v2 reusable mention responder
+
+on:
+  workflow_call:
+    secrets:
+      agentic_token:
+        required: true
+      pollinations_key:
+        required: true
+      project_token:
+        required: false
+
+jobs:
+  respond:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: elixpo/agent.elixpo
+          ref: ${{ vars.ELIXPOO_RUNTIME_REF || 'v2' }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e .
+      - name: Answer or perform one authorized metadata action
+        env:
+          ELIXPOO_GITHUB_AGENTIC_TOKEN: ${{ secrets.agentic_token }}
+          ELIXPOO_GITHUB_PROJECT_TOKEN: ${{ secrets.project_token }}
+          ELIXPO_GITHUB_PROJECT_OWNER: ${{ vars.ELIXPO_GITHUB_PROJECT_OWNER }}
+          ELIXPO_GITHUB_PROJECT_NUMBER: ${{ vars.ELIXPO_GITHUB_PROJECT_NUMBER }}
+          ELIXPO_POLLINATIONS_API_KEY: ${{ secrets.pollinations_key }}
+        run: python -m agents.elixpoo_v2 mention
