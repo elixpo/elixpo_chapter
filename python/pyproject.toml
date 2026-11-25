@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rv565"
+dynamic = ["version"]
+description = "Read, write and check RV565 frame-independent RGB565 video files; Pillow plugin included."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Ayushman Bhattacharya", email = "ayushman.elixpo@gmail.com" }]
+requires-python = ">=3.9"
+dependencies = []
+keywords = ["rgb565", "video", "esp32", "st7789", "microcontroller", "pillow", "arduino"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Software Development :: Embedded Systems",
+]
+
+[project.optional-dependencies]
+pillow = ["Pillow>=10.1"]
+
+[project.scripts]
+rv565 = "rv565.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/elixpo/rv565"
+Documentation = "https://github.com/elixpo/rv565/tree/main/python#readme"
+Paper = "https://arxiv.org/abs/2610.35935"
+Issues = "https://github.com/elixpo/rv565/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "rv565.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

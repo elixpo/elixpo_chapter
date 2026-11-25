@@ -1,0 +1,8 @@
+/* Embeds the RV565 clip in flash (read-only data, executed in place). */
+    .section .rodata.rv565_video, "a"
+    .balign 4
+    .global rv565_video_start
+rv565_video_start:
+    .incbin "@RV565_VIDEO@"
+    .global rv565_video_end
+rv565_video_end:

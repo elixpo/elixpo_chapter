@@ -1,0 +1,6 @@
+dependencies:
+  elixpo/rv565:
+    version: "*"
+    # Build against this checkout; the registry copy is used when the
+    # example is created with `idf.py create-project-from-example`.
+    override_path: "../../../"

@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question
+    url: https://github.com/elixpo/elixpo/discussions/categories/q-a
+    about: Usage questions and help go to Elixpo's community discussions (Q&A).
+  - name: Show what you built
+    url: https://github.com/elixpo/elixpo/discussions/categories/show-and-tell
+    about: Made something with RV565? Share it in Show and tell.
+  - name: Suggest an idea
+    url: https://github.com/elixpo/elixpo/discussions/categories/ideas
+    about: Feature ideas start as a discussion before becoming an issue.

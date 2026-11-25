@@ -1,0 +1,5 @@
+# Only the MJPEG baseline build (-DRV565_CODEC=1) calls into esp_new_jpeg;
+# the RV565 build links none of it.
+dependencies:
+  idf: ">=5.5"
+  espressif/esp_new_jpeg: "1.0.2"

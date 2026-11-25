@@ -1,0 +1,8 @@
+# The Falera Badge's own layout (elixpo/falera firmware/boards/OREO_BADGE), so this
+# benchmark only writes the app partition and leaves the FaleraOS filesystem
+# ("vfs") untouched. The app, clip included, must fit in 0x240000 bytes.
+# Name,   Type, SubType, Offset,   Size,     Flags
+nvs,      data, nvs,     0x9000,   0x6000,
+phy_init, data, phy,     0xf000,   0x1000,
+factory,  app,  factory, 0x10000,  0x240000,
+vfs,      data, fat,     0x250000, 0xdb0000,

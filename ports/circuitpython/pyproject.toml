@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Ayushman Bhattacharya
+# SPDX-License-Identifier: MIT
+#
+# Laid out like the Adafruit CircuitPython cookiecutter so the library can move
+# to its own CircuitPython_RV565 repository for the Community Bundle unchanged.
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circuitpython-rv565"
+description = "Play RV565 video files (format versions 6, 7 and 8) on CircuitPython displays."
+version = "3.0.0"
+readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Ayushman Bhattacharya", email = "ayushman.elixpo@gmail.com" }]
+requires-python = ">=3.9"
+keywords = ["circuitpython", "rv565", "video", "rgb565", "grayscale", "displayio", "st7789"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Hardware",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: MicroPython",
+]
+dynamic = ["dependencies", "optional-dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/elixpo/rv565/tree/main/ports/circuitpython"
+Format = "https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md"
+Paper = "https://arxiv.org/abs/2610.35935"
+Issues = "https://github.com/elixpo/rv565/issues"
+
+[tool.setuptools]
+py-modules = ["circuitpython_rv565"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies = { optional = { file = ["optional_requirements.txt"] } }
