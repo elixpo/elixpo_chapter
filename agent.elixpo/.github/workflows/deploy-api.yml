@@ -1,0 +1,25 @@
+# Deploys the read-only agent-elixpo-api Worker through the shared Worker workflow.
+# Its ELIXPO_DASHBOARD_GITHUB_TOKEN secret lives on the Worker and is never overwritten here.
+
+name: Deploy agent.elixpo API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - workers/dashboard-api/**
+      - .github/workflows/deploy-api.yml
+      - .github/workflows/deploy-cloudflare-worker.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    uses: ./.github/workflows/deploy-cloudflare-worker.yml
+    with:
+      working-directory: workers/dashboard-api
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
