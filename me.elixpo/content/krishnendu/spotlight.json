@@ -1,0 +1,16 @@
+{
+  "heading": "SPOTLIGHT",
+  "subheading": "RECOGNITION",
+  "items": [
+    {
+      "title": "FlyRank AI Internship",
+      "description": "AI internship working on applied machine learning pipelines and modern developer tooling.",
+      "image": "/assets/krishnendu/spotlight/flyrank.png"
+    },
+    {
+      "title": "Elixpo Open Source Contributor",
+      "description": "Active contributor across Elixpo services and collaborative community repositories.",
+      "image": "/assets/krishnendu/spotlight/elixpo-home.png"
+    }
+  ]
+}
