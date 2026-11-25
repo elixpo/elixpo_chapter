@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "@mui/material";
-import { Code, DocH2, DocLead, DocList, DocP, DocTitle } from "@/components/docs-prose";
+import { Code, DocH2, DocLead, DocList, DocP, DocTitle, DocActions } from "@/components/docs-prose";
 
 export default function PayoutsDocs() {
     return (
@@ -12,6 +12,7 @@ export default function PayoutsDocs() {
                 merchant you can connect your own bank so your app's revenue is split
                 to you automatically on every payment — minus a small platform fee.
             </DocLead>
+            <DocActions actions={[{ label: "Connect your bank", href: "/dashboard/payouts", hint: "Razorpay verifies you once; payments then reach your bank.", primary: true }]} />
 
             <DocH2>How it works (Razorpay Route)</DocH2>
             <DocList

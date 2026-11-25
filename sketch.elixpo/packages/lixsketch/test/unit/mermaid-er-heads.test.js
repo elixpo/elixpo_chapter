@@ -4,10 +4,10 @@ import { crowfootForCardinality, parseERDiagram, renderEROnCanvas } from '../../
 describe("ER cardinalities → crow's-foot heads", () => {
   it('maps every Mermaid cardinality token', () => {
     expect(crowfootForCardinality('||')).toBe('crowfoot_one')
-    expect(crowfootForCardinality('|o')).toBe('crowfoot_one') // zero or one → closest
-    expect(crowfootForCardinality('o|')).toBe('crowfoot_one')
-    expect(crowfootForCardinality('}o')).toBe('crowfoot_many') // zero or more
-    expect(crowfootForCardinality('o{')).toBe('crowfoot_many')
+    expect(crowfootForCardinality('|o')).toBe('crowfoot_zero_or_one')
+    expect(crowfootForCardinality('o|')).toBe('crowfoot_zero_or_one')
+    expect(crowfootForCardinality('}o')).toBe('crowfoot_zero_or_many')
+    expect(crowfootForCardinality('o{')).toBe('crowfoot_zero_or_many')
     expect(crowfootForCardinality('}|')).toBe('crowfoot_one_or_many')
     expect(crowfootForCardinality('|{')).toBe('crowfoot_one_or_many')
   })
@@ -28,12 +28,13 @@ describe("ER cardinalities → crow's-foot heads", () => {
     afterEach(() => { delete globalThis.window })
 
     it('draws each relationship as one arrow with a crow’s foot at each entity', () => {
-      const diagram = parseERDiagram('erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER }|..|{ LINE : contains')
+      const diagram = parseERDiagram('erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER }|..|{ LINE : contains\n  USER ||--|o PROFILE : has')
       expect(renderEROnCanvas(diagram)).toBe(true)
       const arrows = created.filter(c => c.kind === 'arrow')
-      expect(arrows).toHaveLength(2)
-      expect(arrows[0].options).toMatchObject({ startArrowhead: 'crowfoot_one', endArrowhead: 'crowfoot_many', label: 'places' })
+      expect(arrows).toHaveLength(3)
+      expect(arrows[0].options).toMatchObject({ startArrowhead: 'crowfoot_one', endArrowhead: 'crowfoot_zero_or_many', label: 'places' })
       expect(arrows[1].options).toMatchObject({ startArrowhead: 'crowfoot_one_or_many', endArrowhead: 'crowfoot_one_or_many' })
+      expect(arrows[2].options).toMatchObject({ startArrowhead: 'crowfoot_one', endArrowhead: 'crowfoot_zero_or_one', label: 'has' })
     })
   })
 })

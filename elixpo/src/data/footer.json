@@ -20,6 +20,7 @@
       "title": "Resources",
       "links": [
         { "label": "About", "href": "/about" },
+        { "label": "Elixpo Wiki", "href": "/wiki" },
         { "label": "Open Source", "href": "/resources" },
         { "label": "Hacktoberfest", "href": "https://hacktoberfest.com" },
         { "label": "Funding Policy", "href": "https://github.com/elixpo/elixpo/blob/main/docs/policies/sponsorship.md" }

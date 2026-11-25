@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
+import { isPlatformMerchant } from "@/lib/merchant";
 import { getSession } from "@/lib/session";
 
 /** GET /api/auth/me — current dashboard session + merchant. */
@@ -29,5 +30,7 @@ export async function GET(request: NextRequest) {
         name: session.name || session.email,
         avatar: session.avatar ?? null,
         merchant: { id: session.merchantId, name: merchantName },
+        // Platform owner = Elixpo admin (fundraiser moderation).
+        is_admin: isPlatformMerchant(session.merchantId),
     });
 }

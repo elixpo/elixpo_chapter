@@ -244,6 +244,39 @@ pub trait LlmProvider: Send + Sync {
 }
 
 /// Deterministic provider used by downstream unit and integration tests.
+///
+/// # Examples
+///
+/// List canned models without network access or API keys:
+///
+/// ```
+/// use crumb_llm::{EmbeddingResponse, LlmProvider, MockProvider, ModelCapability, ModelInfo};
+/// # use std::{future::Future, task::{Context, Poll, Waker}};
+/// # let example = async {
+///
+/// let model = ModelInfo {
+///     id: "mock-chat".to_owned(),
+///     display_name: "Mock Chat".to_owned(),
+///     capabilities: vec![ModelCapability::Chat],
+///     context_window: Some(8_192),
+/// };
+/// let provider = MockProvider::new(
+///     vec![model.clone()],
+///     Vec::new(),
+///     EmbeddingResponse {
+///         vectors: Vec::new(),
+///         usage: Default::default(),
+///     },
+/// );
+///
+/// let models = provider.list_models().await?;
+/// assert_eq!(models, vec![model]);
+/// # Ok::<(), crumb_llm::ProviderError>(())
+/// # };
+/// # // Mock futures resolve immediately, so one poll executes the whole example.
+/// # let mut context = Context::from_waker(Waker::noop());
+/// # assert!(matches!(std::pin::pin!(example).poll(&mut context), Poll::Ready(Ok(()))));
+/// ```
 #[derive(Clone, Debug)]
 pub struct MockProvider {
     models: Vec<ModelInfo>,

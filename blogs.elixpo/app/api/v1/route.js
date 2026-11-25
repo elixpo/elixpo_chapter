@@ -44,6 +44,7 @@ export async function GET() {
       collaborators: '/api/v1/blogs/{id}/collaborators',
       collaborationInvitations: '/api/v1/collaboration/invitations',
       analytics: '/api/v1/analytics',
+      notifications: '/api/v1/notifications',
     },
   });
 }

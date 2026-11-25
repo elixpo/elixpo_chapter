@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
-import { getCloudinaryUrl } from '../../../../lib/cloudinary';
+import { getBannerUrl, getCloudinaryUrl } from '../../../../lib/cloudinary';
 
 // Serve a stored media reference (Cloudinary public_id) by redirecting to its
 // CDN delivery URL. Profile banners/avatars are stored as `*_r2_key` public_ids
@@ -23,7 +23,9 @@ export async function GET(request, { params }) {
   }
 
   const version = new URL(request.url).searchParams.get('v');
-  const url = getCloudinaryUrl(publicId) + (version ? `?v=${encodeURIComponent(version)}` : '');
+  const isBanner = publicId.endsWith('/banner');
+  const url = (isBanner ? getBannerUrl(publicId) : getCloudinaryUrl(publicId)) +
+    (version ? `?v=${encodeURIComponent(version)}` : '');
   return NextResponse.redirect(url, {
     status: 302,
     headers: {

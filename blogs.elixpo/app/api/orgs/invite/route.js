@@ -190,7 +190,16 @@ export async function DELETE(request) {
     const myRole = await db.prepare('SELECT role FROM org_members WHERE org_id = ? AND user_id = ?').bind(orgId, session.userId).first();
 
     if (!isOwner && myRole?.role !== 'admin') {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+      if (myRole?.role !== 'maintain') {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+      }
+      // Maintainers revoke the invites they could create: everything but admin.
+      // Only an owner or admin can hand out the admin role, so only they revoke it.
+      const invite = await db.prepare('SELECT role FROM org_invites WHERE id = ? AND org_id = ?')
+        .bind(inviteId, orgId).first();
+      if (invite?.role === 'admin') {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+      }
     }
 
     await db.prepare('DELETE FROM org_invites WHERE id = ? AND org_id = ?').bind(inviteId, orgId).run();

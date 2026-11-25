@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arm and capture an integrated OreoOS Gallery RV565 benchmark."""
+"""Arm and capture an integrated FaleraOS Gallery RV565 benchmark."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ FRAME_COLUMNS = (
 
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Capture 720 frames from the real OreoOS Gallery loop."
+        description="Capture 720 frames from the real FaleraOS Gallery loop."
     )
     parser.add_argument("--port", default="/dev/ttyACM0")
     parser.add_argument("--baud", type=int, default=115200)

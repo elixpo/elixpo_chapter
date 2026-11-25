@@ -3,10 +3,11 @@
 ## Routine checks
 
 1. Run `python -m agents.rollout_audit` and resolve missing or stale callers by reviewable human PRs.
-2. Confirm triage events produce allowed labels and one Project V2 item.
-3. Mention `@elixpoo` once and verify one disclosure-bearing response.
-4. Synchronize a test PR and verify at most one COMMENT review per head SHA.
-5. Merge a test PR and verify one schema-v2 Gist record.
+2. Run `python -m agents.repository_standard` and review metadata and branch-ruleset drift. Use `--apply-settings` only for the declared repository metadata; rulesets remain a human-reviewed operation so repository-specific required checks cannot be erased.
+3. Confirm triage events produce allowed labels and one Project V2 item.
+4. Mention `@elixpoo` once and verify one disclosure-bearing response.
+5. Synchronize a test PR and verify at most one COMMENT review per head SHA.
+6. Merge a test PR and verify one schema-v2 Gist record.
 
 ## Incident response
 

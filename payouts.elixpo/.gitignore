@@ -19,3 +19,6 @@ next-env.d.ts
 # Local env (secrets) — never commit
 .env.local
 .env*.local
+
+# e2e bundles (scripts/e2e.mjs)
+/.e2e-out

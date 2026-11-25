@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 
@@ -5,6 +6,11 @@ export default function NotFound() {
   return <main className="not-found-page">
     <div className="not-found-geometry" aria-hidden="true"><span/><span/><span/><span/></div>
     <div className="not-found-code" aria-hidden="true">404</div>
+    <div className="not-found-oreo" aria-hidden="true" data-oreo-scene>
+      <p className="oreo-speech">I ate this page. Sorry. <s>Not sorry.</s></p>
+      <Image src="/logos/logo.webp" alt="" width={190} height={190} />
+      <div className="not-found-crumbs"><i /><i /><i /><i /><i /></div>
+    </div>
     <div className="not-found-copy">
       <p className="eyebrow">Record not found</p>
       <h1>This route is outside the <em>public record.</em></h1>

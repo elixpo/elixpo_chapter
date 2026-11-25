@@ -29,6 +29,7 @@
     "lint": "eslint",
     "registry:check": "node scripts/validate-registry.mjs",
     "registry:links": "node scripts/check-registry-links.mjs",
+    "favicons:sync": "python3 scripts/sync-site-favicons.py",
     "repository:check": "python3 scripts/check-repository-conformance.py",
     "repository:migrate": "python3 scripts/prepare-repository-migrations.py",
     "audit:public": "python3 scripts/audit-public-surfaces.py --json audit/public-surfaces.json --markdown audit/public-surfaces.md",

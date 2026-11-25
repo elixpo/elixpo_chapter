@@ -6,7 +6,7 @@ export type ResearchRecord = (typeof research.entries)[keyof typeof research.ent
 export const RESEARCH_RECORDS = Object.entries(research.entries).map(([repository, record]) => ({ repository, ...record }));
 export const RESEARCH_LAST_VERIFIED = research.lastVerified;
 export const getResearchRecord = (slug: string) => RESEARCH_RECORDS.find((record) => record.slug === slug);
-// A project (e.g. Oreo) may carry a paper; its record links to the project dossier.
+// A project (e.g. Falera) may carry a paper; its record links to the project dossier.
 export const researchRecordPath = (record: { repository: string; slug: string }) =>
   `${familyPath(DIRECTORY_ENTRIES.find((entry) => entry.repository === record.repository)?.family ?? "research")}/${record.slug}`;
 export const LIVE_RESEARCH_DEMOS = RESEARCH_RECORDS.flatMap((record) => record.liveDemos.map((demo) => ({ ...demo, relatedSlug: record.slug, relatedPath: researchRecordPath(record) })));

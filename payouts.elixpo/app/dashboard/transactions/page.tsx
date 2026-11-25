@@ -125,18 +125,18 @@ export default function TransactionsPage() {
                                             : "var(--app-fg-muted)",
                                     background:
                                         statusFilter === s
-                                            ? "#7c5cff"
+                                            ? "var(--app-accent)"
                                             : "var(--app-overlay)",
                                     border:
                                         statusFilter === s
-                                            ? "1px solid #7c5cff"
+                                            ? "1px solid var(--app-accent)"
                                             : "1px solid var(--app-border)",
                                     "&:hover": {
                                         background:
                                             statusFilter === s
-                                                ? "#8a6dff"
-                                                : "rgba(155,123,247,0.1)",
-                                        borderColor: "rgba(155,123,247,0.4)",
+                                                ? "var(--app-accent-2)"
+                                                : "color-mix(in srgb, var(--app-accent) 10%, transparent)",
+                                        borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)",
                                         color: "var(--app-fg)",
                                     },
                                 }}
@@ -151,7 +151,7 @@ export default function TransactionsPage() {
             <GlassCard>
                 {loading ? (
                     <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
-                        <CircularProgress sx={{ color: "#9b7bf7" }} />
+                        <CircularProgress sx={{ color: "var(--app-accent)" }} />
                     </Box>
                 ) : rows.length === 0 ? (
                     <Box sx={{ py: 6, textAlign: "center" }}>
@@ -185,7 +185,7 @@ export default function TransactionsPage() {
                                             px: 1,
                                             fontSize: "0.72rem",
                                             textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
+                                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                             color: "var(--app-fg-faint)",
                                             fontWeight: 600,
                                         },
@@ -217,7 +217,7 @@ export default function TransactionsPage() {
                                         <td>
                                             <Box
                                                 component="span"
-                                                sx={{ color: "#c4b5fd" }}
+                                                sx={{ color: "var(--app-accent)" }}
                                             >
                                                 {t.app_slug}
                                             </Box>
@@ -284,8 +284,8 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
 };

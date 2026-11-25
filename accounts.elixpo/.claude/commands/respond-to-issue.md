@@ -28,6 +28,7 @@ gh issue comment <n> --body "<your answer>"
 **Within this invocation, stop after one successful comment.** The command returns empty/short stdout on success — that IS success. Do NOT retry, do NOT post a second comment "to add more", do NOT follow up with another `gh` call. If the user wants more, they'll ping `@elixpoo` again — each new trigger is a fresh invocation.
 
 Answer rules:
+
 - Bullets over paragraphs. <150 words.
 - Link specific files/lines (`src/lib/jwt.ts:42`) instead of describing.
 - No "I think" / "maybe". Either it's true or it's not.
@@ -44,6 +45,7 @@ gh pr list --search "linked:issue-<n>" --state open --json number,headRefName,ti
 ### 4a. Open PR exists
 
 Someone (possibly you, earlier) already has a PR open for this issue.
+
 - `git fetch origin && git checkout <headRefName> && git pull`
 - Make changes on that branch.
 - Follow `.claude/commands/commit-push-pr.md` Step 2 (commit + push). **Do NOT open a new PR.**
@@ -52,6 +54,7 @@ Someone (possibly you, earlier) already has a PR open for this issue.
 ### 4b. Merged PR exists (no open one)
 
 Prior attempt merged. Cut a fresh branch.
+
 - `git pr diff <merged-pr>` — read the old diff for context.
 - New branch: `elixpo/issue-<n>-$(openssl rand -hex 2)`.
 - In the PR body add a line: `Supersedes #<merged-pr>.`

@@ -14,7 +14,7 @@ async function readJson(relativePath) {
   }
 }
 
-const [organization, taxonomy, repositories, directory, packages, research, licensing, repositoryLicenses, sponsorship, contributors, people, history, brand, discussions, recognition, brandProvenance] = await Promise.all([
+const [organization, taxonomy, repositories, directory, packages, research, licensing, repositoryLicenses, sponsorship, contributors, people, history, brand, discussions, recognition, brandProvenance, siteFavicons] = await Promise.all([
   readJson("content/organization.json"),
   readJson("content/taxonomy.json"),
   readJson("content/repositories.json"),
@@ -31,6 +31,7 @@ const [organization, taxonomy, repositories, directory, packages, research, lice
   readJson("content/discussions.json"),
   readJson("content/recognition.json"),
   readJson("brand/provenance.json"),
+  readJson("content/site-favicons.json"),
 ]);
 
 const errors = [];
@@ -56,6 +57,7 @@ const declaredSchemaRecords = [
   ["content/discussions.json", discussions],
   ["content/recognition.json", recognition],
   ["brand/provenance.json", brandProvenance],
+  ["content/site-favicons.json", siteFavicons],
 ];
 const declaredSchemaPaths = new Set(declaredSchemaRecords.map(([recordPath]) => recordPath));
 for (const entry of await readdir(resolve(root, "content"), { withFileTypes: true })) {
@@ -664,7 +666,7 @@ if (npmPackageNames.has("@elixpo/claudeops")) {
 const researchRepositoryNames = new Set(
   repositories.entries.filter((entry) => entry.disposition === "public-entry" && entry.publicClass === "research").map((entry) => entry.name),
 );
-// Projects may also carry a research record (for example, a paper about Oreo).
+// Projects may also carry a research record (for example, a paper about FaleraOS).
 const researchHostNames = new Set(
   repositories.entries.filter((entry) => entry.disposition === "public-entry" && ["research", "project"].includes(entry.publicClass)).map((entry) => entry.name),
 );
@@ -704,6 +706,12 @@ for (const [index, record] of (recognition.records ?? []).entries()) {
   else validateFreshness(`${location}.issuedAt`, record.issuedAt);
   if (record.recordUrl.startsWith("http")) validateUrl(`${location}.recordUrl`, record.recordUrl);
   else if (!record.recordUrl.startsWith("/")) addError(`${location}.recordUrl`, "expected an absolute URL or root-relative public record");
+}
+
+for (const [repository, favicon] of Object.entries(siteFavicons.entries)) {
+  const location = `content/site-favicons.json.entries.${repository}`;
+  if (!directory.entries[repository]?.website) addError(location, "favicon has no directory entry with a website");
+  await validatePublicAsset(`${location}.path`, favicon.path);
 }
 
 if (errors.length > 0) {

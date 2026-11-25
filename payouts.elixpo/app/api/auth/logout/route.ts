@@ -1,18 +1,29 @@
 export const runtime = "edge";
 
-import { NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
+import { getSession, SESSION_COOKIE } from "@/lib/session";
+import { revokeSessions } from "@/lib/session-revocation";
 
-function clear() {
-    const res = NextResponse.json({ ok: true });
+function clearSession(res: NextResponse) {
     res.cookies.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
     return res;
 }
 
-export async function POST() {
-    return clear();
+/**
+ * POST /api/auth/logout — signs out everywhere: clears this cookie and revokes
+ * every session the user holds server-side, so a copied cookie stops working.
+ */
+export async function POST(request: NextRequest) {
+    const session = await getSession(request);
+    if (session) await revokeSessions(session.uid);
+    return clearSession(NextResponse.json({ ok: true }));
 }
 
-export async function GET() {
-    return clear();
+/**
+ * GET is not a logout (a cross-site link or image must not be able to sign
+ * someone out). It just sends the visitor to the dashboard, where the sign-out
+ * button POSTs.
+ */
+export async function GET(request: NextRequest) {
+    return NextResponse.redirect(`${request.nextUrl.origin}/dashboard`);
 }

@@ -24,20 +24,32 @@ _env = _load_env()
 # OS version. tools/deploy.py auto-bumps the PATCH number on every push.
 # The literal MUST stay on its own line as `VERSION = "vN.N.N"` — the
 # deploy regex relies on that exact format to rewrite in place.
-VERSION           = "v1.4.127"
+VERSION           = "v2.0.1"
 # ISO-date stamp of the current VERSION. Updated by tools/release.py
 # (or by hand for hot-fix builds). Shown on the Updates page as the
 # "Latest stable as of …" line when no newer release is available.
-RELEASE_DATE      = "2026-05-16"
+RELEASE_DATE      = "2026-11-07"
 
-GITHUB_USER       = "Circuit-Overtime"
-DISPLAY_NAME      = "Ayushman Bhattacharya"
-DESIGNATION       = "OSS Maintainer @pollinations"
-WEATHER_LAT       = 22.57
-WEATHER_LON       = 88.36
-WEATHER_NAME      = ""
+def _float_or_none(s):
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+# The owner's profile. Blank by default so a badge never shows someone
+# else's GitHub, name, location or clock. Set them in .env.local (see
+# .env.example) before deploying, or on the badge in /profile.json, which
+# wins over these (oreoOS/profile.py; docs/PROFILE.md).
+GITHUB_USER       = _env.get("GITHUB_USER", "")
+DISPLAY_NAME      = _env.get("DISPLAY_NAME", "")
+# .env.local names it DISPLAY_DESIGNATION; DESIGNATION is the older name.
+DESIGNATION       = _env.get("DISPLAY_DESIGNATION") or _env.get("DESIGNATION", "")
+WEATHER_LAT       = _float_or_none(_env.get("WEATHER_LAT"))
+WEATHER_LON       = _float_or_none(_env.get("WEATHER_LON"))
+WEATHER_NAME      = _env.get("WEATHER_NAME", "")
 BT_AUTO_ENABLE    = False
-TIMEZONE_OFFSET   = 5.5
+TIMEZONE_OFFSET   = _float_or_none(_env.get("TIMEZONE_OFFSET")) or 0
 
 def _split_csv(s):
     """Comma-separated env value → trimmed list. Empty entries dropped."""
@@ -81,9 +93,9 @@ WIFI_TX_DBM       = 11
 WIFI_POWERSAVE    = True
 BT_ADV_INTERVAL_MS = 500
 APP_CATEGORIES = (
-    ("Games",  "cat_games",  ("flappy", "snake", "racer", "pet")),
-    ("GitHub", "cat_github", ("badge",  "identity", "commits")),
+    ("Games",  "cat_games",  ("flappy", "snake", "racer", "pet", "patakha")),
+    ("GitHub", "cat_github", ("badge", "commits")),
     ("Utils",  "cat_utils",  ("weather",)),
-    ("Tools",  "cat_tools",  ("gallery", "color_picker", "gamepad", "quest")),
+    ("Tools",  "cat_tools",  ("gallery", "transfer", "color_picker", "gamepad", "quest")),
     ("System", "cat_system", ("settings", "about")),
 )

@@ -560,10 +560,8 @@ async function buildJsonLd(path, origin) {
                             : undefined,
                         description: u.bio || undefined,
                         image: [
-                            img(u.avatar_url),
-                            u.banner_r2_key
-                                ? img(`/api/media/${u.banner_r2_key}`)
-                                : undefined,
+                            seoMediaUrl(u.avatar_url || u.avatar_r2_key, u.updated_at, "f_jpg,q_auto:eco,w_256,h_256,c_fill,g_face") || undefined,
+                            seoMediaUrl(u.banner_r2_key, u.updated_at, "f_jpg,q_auto:eco,w_1200,h_630,c_fill") || undefined,
                         ].filter(Boolean),
                         url,
                         jobTitle: u.designation || undefined,

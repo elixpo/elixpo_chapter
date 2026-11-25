@@ -66,7 +66,7 @@ export default function RotateDialog({
                 sx: {
                     bgcolor: "var(--app-surface)",
                     border: "1px solid var(--app-border)",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-panel)",
                     color: "var(--app-fg)",
                     backgroundImage: "none",
                 },
@@ -87,9 +87,9 @@ export default function RotateDialog({
                             borderRadius: "10px",
                             display: "grid",
                             placeItems: "center",
-                            color: "#c4b5fd",
-                            background: "rgba(155,123,247,0.1)",
-                            border: "1px solid rgba(155,123,247,0.25)",
+                            color: "var(--app-accent)",
+                            background: "color-mix(in srgb, var(--app-accent) 10%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
                         }}
                     >
                         <AutorenewIcon sx={{ fontSize: 22 }} />
@@ -128,11 +128,11 @@ export default function RotateDialog({
                                     cursor: busy ? "default" : "pointer",
                                     p: 1.3,
                                     borderRadius: "12px",
-                                    border: `1px solid ${on ? (danger ? "rgba(248,113,113,0.6)" : "rgba(155,123,247,0.6)") : "var(--app-border)"}`,
+                                    border: `1px solid ${on ? (danger ? "color-mix(in srgb, var(--app-danger) 60%, transparent)" : "color-mix(in srgb, var(--app-accent) 60%, transparent)") : "var(--app-border)"}`,
                                     background: on
                                         ? danger
-                                            ? "rgba(248,113,113,0.08)"
-                                            : "rgba(155,123,247,0.08)"
+                                            ? "color-mix(in srgb, var(--app-danger) 8%, transparent)"
+                                            : "color-mix(in srgb, var(--app-accent) 8%, transparent)"
                                         : "var(--app-overlay)",
                                     transition:
                                         "border-color .15s, background .15s",
@@ -149,7 +149,7 @@ export default function RotateDialog({
                                             height: 16,
                                             borderRadius: "50%",
                                             flexShrink: 0,
-                                            border: `2px solid ${on ? (danger ? "#f87171" : "#9b7bf7") : "var(--app-border)"}`,
+                                            border: `2px solid ${on ? (danger ? "var(--app-danger)" : "var(--app-accent)") : "var(--app-border)"}`,
                                             display: "grid",
                                             placeItems: "center",
                                         }}
@@ -161,8 +161,8 @@ export default function RotateDialog({
                                                     height: 8,
                                                     borderRadius: "50%",
                                                     background: danger
-                                                        ? "#f87171"
-                                                        : "#9b7bf7",
+                                                        ? "var(--app-danger)"
+                                                        : "var(--app-accent)",
                                                 }}
                                             />
                                         )}
@@ -210,12 +210,12 @@ export default function RotateDialog({
                         fontWeight: 700,
                         color: "#fff",
                         px: 2.4,
-                        borderRadius: "10px",
+                        borderRadius: "999px",
                         background:
-                            "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                            "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                         "&:hover": {
                             background:
-                                "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                         },
                         "&.Mui-disabled": { opacity: 0.5, color: "#fff" },
                     }}

@@ -1,4 +1,4 @@
-"""Asset optimizer for Oreo Badge.
+"""Asset optimizer for Falera Badge.
 
 Top-level icons (32×32):
   assets/icons/raw/{name}.{png,jpg,jpeg}   →   assets/icons/optimized/{name}.py
@@ -44,7 +44,7 @@ STATUS_BG      = (248, 0, 248)   # magenta → RGB565 0xF81F → blit chroma-key
 # pixel matching this value is treated as transparent by display.blit().
 CHROMA_KEY = (248, 0, 248)
 
-SPLASH_LOGO_SOURCE = Path("oreo.elixpo/public/favicon.ico")
+SPLASH_LOGO_SOURCE = Path("falera.elixpo/public/favicon.ico")
 SPLASH_LOGO_OUT    = Path("assets/sprites/optimized/favicon_logo.py")
 SPLASH_LOGO_SIZE   = 72
 

@@ -5,6 +5,7 @@
  * grid. Phase 1 is read-only (SELECT/WITH/EXPLAIN/PRAGMA), enforced server-side.
  */
 
+import { C } from "@/components/ui";
 import { PlayArrow } from "@mui/icons-material";
 import {
     Box,
@@ -88,12 +89,13 @@ export default function QueryConsole({
                             sx={{
                                 height: 24,
                                 fontSize: "0.72rem",
-                                fontFamily: "var(--font-geist-mono), monospace",
-                                color: "#86efac",
-                                bgcolor: "rgba(134,239,172,0.1)",
-                                border: "1px solid rgba(134,239,172,0.25)",
+                                fontFamily: C.mono,
+                                color: C.green,
+                                bgcolor: C.successBg,
+                                border: `1px solid ${C.line}`,
+                                borderRadius: "999px",
                                 cursor: "pointer",
-                                "&:hover": { bgcolor: "rgba(134,239,172,0.2)" },
+                                "&:hover": { bgcolor: C.paperDeep },
                             }}
                         />
                     ))}
@@ -116,19 +118,26 @@ export default function QueryConsole({
                     resize: "vertical",
                     p: 1.5,
                     borderRadius: "12px",
-                    bgcolor: "rgba(0,0,0,0.35)",
-                    color: "#f5f5f4",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    fontFamily: "var(--font-geist-mono), monospace",
+                    boxSizing: "border-box",
+                    bgcolor: C.panel,
+                    color: C.text,
+                    border: `1px solid ${C.line}`,
+                    fontFamily: C.mono,
                     fontSize: "0.85rem",
                     lineHeight: 1.6,
                     outline: "none",
-                    "&:focus": { borderColor: "#9b7bf7" },
+                    "&:focus": { borderColor: C.ink },
                 }}
             />
 
             <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1.5 }}
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 2,
+                    mt: 1.5,
+                }}
             >
                 <Button
                     onClick={run}
@@ -137,18 +146,14 @@ export default function QueryConsole({
                     sx={{
                         textTransform: "none",
                         fontWeight: 700,
-                        color: "#fff",
+                        color: C.panel,
                         px: 2.5,
-                        borderRadius: "10px",
-                        background:
-                            "linear-gradient(180deg, #a98cff 0%, #7c5cff 100%)",
-                        "&:hover": {
-                            background:
-                                "linear-gradient(180deg, #b69aff 0%, #8b6cff 100%)",
-                        },
+                        borderRadius: "999px",
+                        bgcolor: C.ink,
+                        "&:hover": { bgcolor: C.textDim },
                         "&.Mui-disabled": {
-                            color: "rgba(255,255,255,0.5)",
-                            background: "rgba(255,255,255,0.08)",
+                            color: C.textMuted,
+                            bgcolor: C.paperDeep,
                         },
                     }}
                 >
@@ -156,7 +161,7 @@ export default function QueryConsole({
                 </Button>
                 <Typography
                     sx={{
-                        color: "rgba(255,255,255,0.35)",
+                        color: C.textMuted,
                         fontSize: "0.72rem",
                     }}
                 >
@@ -166,7 +171,8 @@ export default function QueryConsole({
                 {result?.meta && (
                     <Typography
                         sx={{
-                            color: "rgba(255,255,255,0.45)",
+                            color: C.textMuted,
+                            fontFamily: C.mono,
                             fontSize: "0.72rem",
                             ml: "auto",
                         }}
@@ -183,10 +189,10 @@ export default function QueryConsole({
                         mt: 2,
                         p: 1.5,
                         borderRadius: "10px",
-                        bgcolor: "rgba(239,68,68,0.1)",
-                        border: "1px solid rgba(239,68,68,0.3)",
-                        color: "#f87171",
-                        fontFamily: "var(--font-geist-mono), monospace",
+                        bgcolor: C.errorBg,
+                        border: `1px solid ${C.error}33`,
+                        color: C.error,
+                        fontFamily: C.mono,
                         fontSize: "0.8rem",
                         whiteSpace: "pre-wrap",
                     }}
@@ -201,7 +207,8 @@ export default function QueryConsole({
                         mt: 2,
                         maxHeight: 460,
                         borderRadius: "12px",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: `1px solid ${C.line}`,
+                        bgcolor: C.panel,
                     }}
                 >
                     <Table size="small" stickyHeader>
@@ -211,14 +218,12 @@ export default function QueryConsole({
                                     <TableCell
                                         key={c}
                                         sx={{
-                                            bgcolor: "rgba(20,24,18,0.95)",
-                                            color: "#9b7bf7",
+                                            bgcolor: C.paperDeep,
+                                            color: C.textDim,
                                             fontWeight: 700,
                                             fontSize: "0.78rem",
-                                            borderBottom:
-                                                "1px solid rgba(255,255,255,0.1)",
-                                            fontFamily:
-                                                "var(--font-geist-mono), monospace",
+                                            borderBottom: `1px solid ${C.line}`,
+                                            fontFamily: C.mono,
                                         }}
                                     >
                                         {c}
@@ -232,7 +237,7 @@ export default function QueryConsole({
                                     key={i}
                                     sx={{
                                         "&:hover": {
-                                            bgcolor: "rgba(155,123,247,0.04)",
+                                            bgcolor: C.panelHover,
                                         },
                                     }}
                                 >
@@ -240,12 +245,10 @@ export default function QueryConsole({
                                         <TableCell
                                             key={c}
                                             sx={{
-                                                color: "rgba(245,245,244,0.85)",
+                                                color: C.text,
                                                 fontSize: "0.78rem",
-                                                borderBottom:
-                                                    "1px solid rgba(255,255,255,0.05)",
-                                                fontFamily:
-                                                    "var(--font-geist-mono), monospace",
+                                                borderBottom: `1px solid ${C.line}`,
+                                                fontFamily: C.mono,
                                                 maxWidth: 360,
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
@@ -266,7 +269,7 @@ export default function QueryConsole({
                 <Typography
                     sx={{
                         mt: 2,
-                        color: "rgba(255,255,255,0.4)",
+                        color: C.textMuted,
                         fontSize: "0.85rem",
                     }}
                 >

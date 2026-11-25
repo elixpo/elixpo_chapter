@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { appFromApiKey } from "@/lib/api-auth";
 import { getDatabase } from "@/lib/d1-client";
 import { getEnv } from "@/lib/env";
+import { notifyBuyer } from "@/lib/mail-notify";
 import { razorpayFromEnv } from "@/lib/providers/razorpay";
 
 /**
@@ -206,6 +207,30 @@ export async function POST(request: NextRequest) {
                 "[v1/subscriptions/cancel] inline notify failed (non-fatal): %s",
                 err instanceof Error ? err.message : String(err),
             );
+        }
+
+        // Cancellation confirmation email to the buyer (Elixpo Mails).
+        // Skipped when the sub was already cancelled before this call.
+        if (sub.status !== "cancelled") {
+            const full = (await db
+                .prepare(
+                    "SELECT tier, product_id, current_period_end FROM subscriptions WHERE id = ?",
+                )
+                .bind(sub.id)
+                .first()) as {
+                tier: string;
+                product_id: string | null;
+                current_period_end: string | null;
+            } | null;
+            await notifyBuyer(db, {
+                appId: app.id,
+                event: "subscription.cancelled",
+                externalUid: uid,
+                ref: `${sub.id}:${full?.current_period_end ?? ""}`,
+                tier: full?.tier,
+                productId: full?.product_id,
+                periodEnd: cancelAtCycleEnd ? full?.current_period_end : null,
+            });
         }
 
         return NextResponse.json({

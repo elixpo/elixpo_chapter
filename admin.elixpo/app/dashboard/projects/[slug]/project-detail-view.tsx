@@ -5,6 +5,7 @@ import ExpandableGlobe from "@/components/expandable-globe";
 import MetricChart from "@/components/metric-chart";
 import {
     C,
+    CHART,
     Empty,
     KpiTile,
     PageHeader,
@@ -12,6 +13,7 @@ import {
     SectionError,
     StatusChip,
     TopList,
+    eyebrow,
     fmt,
     fmtBytes,
     trend,
@@ -21,6 +23,7 @@ import type { MetricSeries, ZoneBreakdown } from "@/lib/metrics";
 import { Launch, Storage, ViewList } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
 import Link from "next/link";
+import { ServiceLink } from "../projects-view";
 
 export interface BindingMetric {
     binding: string;
@@ -59,21 +62,44 @@ export default function ProjectDetailView({
                 action={
                     detail.productionDomain ? (
                         <Box
-                            component="a"
-                            href={`https://${detail.productionDomain}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             sx={{
-                                display: "inline-flex",
+                                display: "flex",
                                 alignItems: "center",
-                                gap: 0.5,
-                                color: C.accentLight,
-                                textDecoration: "none",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
+                                flexWrap: "wrap",
+                                gap: 1,
                             }}
                         >
-                            Open site <Launch sx={{ fontSize: "0.95rem" }} />
+                            {!detail.productionDomain.endsWith(
+                                ".pages.dev",
+                            ) && (
+                                <ServiceLink
+                                    host={detail.productionDomain}
+                                    label="Service dashboard"
+                                />
+                            )}
+                            <Box
+                                component="a"
+                                href={`https://${detail.productionDomain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    px: 1.25,
+                                    py: 0.45,
+                                    borderRadius: "999px",
+                                    bgcolor: C.ink,
+                                    color: C.panel,
+                                    textDecoration: "none",
+                                    fontSize: "0.74rem",
+                                    fontWeight: 700,
+                                    "&:hover": { bgcolor: C.textDim },
+                                }}
+                            >
+                                Open site{" "}
+                                <Launch sx={{ fontSize: "0.85rem" }} />
+                            </Box>
                         </Box>
                     ) : undefined
                 }
@@ -89,7 +115,7 @@ export default function ProjectDetailView({
                 }}
             >
                 <KpiTile
-                    label="Requests · 24h"
+                    label="Requests"
                     value={
                         traffic?.available
                             ? fmt(traffic.totals.requests || 0)
@@ -100,31 +126,31 @@ export default function ProjectDetailView({
                     color={C.accent}
                 />
                 <KpiTile
-                    label="Bandwidth · 24h"
+                    label="Bandwidth"
                     value={
                         traffic?.available
                             ? fmtBytes(traffic.totals.bytes || 0)
                             : "—"
                     }
                     spark={bytSpark}
-                    color={C.accentLight}
+                    color={C.green}
                 />
                 <KpiTile
                     label="D1 databases"
                     value={d1.length}
-                    color="#86efac"
+                    color={C.green}
                 />
                 <KpiTile
                     label="KV namespaces"
                     value={kv.length}
-                    color="#5fb6ff"
+                    color={C.blue}
                 />
             </Box>
 
             {/* traffic over time */}
             {traffic && (
                 <Box sx={{ mb: 1.5 }}>
-                    <Panel title="Requests over time · 24h">
+                    <Panel title="Requests over time">
                         {traffic.available ? (
                             <MetricChart
                                 points={traffic.points}
@@ -137,7 +163,7 @@ export default function ProjectDetailView({
                                     {
                                         key: "bytes",
                                         label: "Bytes",
-                                        color: C.accentLight,
+                                        color: C.green,
                                     },
                                 ]}
                                 height={200}
@@ -213,15 +239,17 @@ export default function ProjectDetailView({
                 <Box
                     sx={{
                         display: "grid",
-                        gridTemplateColumns:
-                            "repeat(auto-fit, minmax(340px, 1fr))",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            md: "repeat(auto-fit, minmax(340px, 1fr))",
+                        },
                         gap: 1.5,
                         mb: 1.5,
                     }}
                 >
                     <Panel title="Top paths">
                         <TopList
-                            color="#86efac"
+                            color={C.green}
                             items={breakdown.path.slice(0, 10).map((p) => ({
                                 label: p.label,
                                 value: p.count,
@@ -240,22 +268,29 @@ export default function ProjectDetailView({
             )}
 
             {/* bindings — D1 */}
-            <Typography
-                sx={{
-                    color: C.text,
-                    fontWeight: 700,
-                    fontSize: "0.95rem",
-                    mt: 2,
-                    mb: 1,
-                }}
-            >
-                Bindings
-            </Typography>
+            <Box sx={{ mt: 3, mb: 1.25 }}>
+                <Typography sx={eyebrow}>Resources</Typography>
+                <Typography
+                    sx={{
+                        color: C.text,
+                        fontWeight: 650,
+                        fontSize: "1.5rem",
+                        letterSpacing: "-0.045em",
+                        lineHeight: 1.1,
+                        mt: 0.5,
+                    }}
+                >
+                    Bindings
+                </Typography>
+            </Box>
 
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                    gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(auto-fit, minmax(300px, 1fr))",
+                    },
                     gap: 1.5,
                     mb: 1.5,
                 }}
@@ -281,7 +316,7 @@ export default function ProjectDetailView({
                             >
                                 <Storage
                                     sx={{
-                                        color: "#86efac",
+                                        color: C.green,
                                         fontSize: "1.1rem",
                                     }}
                                 />
@@ -327,12 +362,12 @@ export default function ProjectDetailView({
                                             {
                                                 key: "readQueries",
                                                 label: "Reads",
-                                                color: "#86efac",
+                                                color: C.green,
                                             },
                                             {
                                                 key: "writeQueries",
                                                 label: "Writes",
-                                                color: C.accentLight,
+                                                color: CHART[0],
                                             },
                                         ]}
                                         height={120}
@@ -366,7 +401,7 @@ export default function ProjectDetailView({
                             >
                                 <ViewList
                                     sx={{
-                                        color: "#5fb6ff",
+                                        color: C.blue,
                                         fontSize: "1.1rem",
                                     }}
                                 />
@@ -384,7 +419,7 @@ export default function ProjectDetailView({
                                 <>
                                     <Box sx={{ mb: 1 }}>
                                         <Metric
-                                            label="Operations · 24h"
+                                            label="Operations"
                                             value={fmt(
                                                 sumTotals(b.metrics.totals),
                                             )}
@@ -417,7 +452,10 @@ export default function ProjectDetailView({
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                    gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(auto-fit, minmax(300px, 1fr))",
+                    },
                     gap: 1.5,
                 }}
             >
@@ -449,17 +487,19 @@ function Metric({ label, value }: { label: string; value: string }) {
     return (
         <Box>
             <Typography
-                sx={{
-                    color: C.textMuted,
-                    fontSize: "0.66rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                }}
+                sx={{ ...eyebrow, color: C.textMuted, fontSize: "0.6rem" }}
             >
                 {label}
             </Typography>
             <Typography
-                sx={{ color: C.text, fontSize: "1rem", fontWeight: 700 }}
+                sx={{
+                    color: C.text,
+                    fontSize: "1.3rem",
+                    fontWeight: 650,
+                    letterSpacing: "-0.045em",
+                    lineHeight: 1.15,
+                    fontVariantNumeric: "tabular-nums",
+                }}
             >
                 {value}
             </Typography>
@@ -471,7 +511,12 @@ function ChipRow({ label, items }: { label: string; items: string[] }) {
     return (
         <Box sx={{ mb: 1.25 }}>
             <Typography
-                sx={{ color: C.textMuted, fontSize: "0.7rem", mb: 0.5 }}
+                sx={{
+                    ...eyebrow,
+                    color: C.textMuted,
+                    fontSize: "0.6rem",
+                    mb: 0.6,
+                }}
             >
                 {label}
             </Typography>

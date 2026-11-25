@@ -97,6 +97,34 @@
           }
         }
       }
+    },
+    "registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "authority",
+        "number",
+        "verifyUrl"
+      ],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority": {
+          "type": "string",
+          "minLength": 1
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^UDYAM-[A-Z]{2}-\\d{2}-\\d{7}$"
+        },
+        "verifyUrl": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
     }
   }
 }

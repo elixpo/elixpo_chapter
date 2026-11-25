@@ -40,18 +40,21 @@ export interface EmailFooter {
     quote?: string | null;
     /** Per-recipient unsubscribe link (added at send for non-transactional mail). */
     unsubscribeUrl?: string | null;
+    /** Platform app origin override (e.g. for preview/dev). */
+    appUrl?: string | null;
 }
 
 export function renderTemplate(
     template: RenderableTemplate,
     vars: Record<string, any> = {},
     footer?: EmailFooter | null,
+    origin?: string | null,
 ): RenderedEmail {
     const subject = substituteVariables(template.subject || "", vars);
     const content = substituteVariables(template.content_html || "", vars);
     return {
         subject,
-        html: wrapEmailHtml(content, template.background_color, footer),
+        html: wrapEmailHtml(content, template.background_color, footer, origin),
         text: htmlToText(content),
     };
 }
@@ -61,6 +64,7 @@ export function wrapEmailHtml(
     content: string,
     bgColor?: string | null,
     footer?: EmailFooter | null,
+    origin?: string | null,
 ): string {
     const bg = sanitizeColor(bgColor) || DEFAULT_BG_COLOR;
     return `<!doctype html>
@@ -94,7 +98,7 @@ export function wrapEmailHtml(
 ${content || '<p style="color:#9aa0a6">(empty)</p>'}
 </td></tr>
 </table>
-${renderFooter(footer)}
+${renderFooter(footer, origin)}
 </td></tr>
 </table>
 </body>
@@ -110,10 +114,26 @@ function esc(s: string): string {
 }
 
 /** Email-safe brand footer below the content card (muted, on the canvas). */
-function renderFooter(footer?: EmailFooter | null): string {
+function renderFooter(footer?: EmailFooter | null, origin?: string | null): string {
     const f = footer || {};
-    const logo = f.logoUrl
-        ? `<img src="${esc(f.logoUrl)}" alt="${esc(f.name || "")}" height="28" style="height:28px;width:auto;margin:0 auto 8px;display:block;">`
+    const baseOrigin =
+        origin?.trim().replace(/\/$/, "") ||
+        f.appUrl?.trim().replace(/\/$/, "") ||
+        (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL
+            ? process.env.NEXT_PUBLIC_APP_URL.trim().replace(/\/$/, "")
+            : "") ||
+        (typeof window !== "undefined" && window.location?.origin
+            ? window.location.origin.replace(/\/$/, "")
+            : "") ||
+        "https://mails.elixpo.com";
+
+    const resolvedLogoUrl = f.logoUrl
+        ? f.logoUrl.startsWith("/")
+            ? `${baseOrigin}${f.logoUrl}`
+            : f.logoUrl
+        : "";
+    const logo = resolvedLogoUrl
+        ? `<img src="${esc(resolvedLogoUrl)}" alt="${esc(f.name || "")}" height="28" style="height:28px;width:auto;margin:0 auto 8px;display:block;">`
         : "";
     const name = f.name
         ? `<div style="font-weight:700;color:#6b7280;margin-bottom:2px;">${esc(f.name)}</div>`
@@ -147,7 +167,7 @@ function renderFooter(footer?: EmailFooter | null): string {
     // Platform attribution: a small inline Elixpo Mails mark + copyright (subtle,
     // so it doesn't compete with the sender's own brand above).
     const platform = `<div style="margin-top:16px;padding-top:13px;border-top:1px solid #e8e8ee;color:#b6bcc4;font-size:11px;">
-<img src="https://mails.elixpo.com/logo.png" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:middle;opacity:0.65;margin-right:6px;">Sent with <a href="https://mails.elixpo.com" style="color:#9aa0a6;text-decoration:none;font-weight:700;">Elixpo Mails</a> &nbsp;·&nbsp; © ${years} Elixpo Mails
+<img src="${baseOrigin}/mark.png" alt="" width="14" height="14" style="width:14px;height:14px;vertical-align:middle;opacity:0.65;margin-right:6px;">Sent with <a href="${baseOrigin}" style="color:#9aa0a6;text-decoration:none;font-weight:700;">Elixpo Mails</a> &nbsp;·&nbsp; © ${years} Elixpo Mails
 </div>`;
     return `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
 <tr><td style="padding:18px 24px 16px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#9aa0a6;font-size:12px;line-height:1.6;">

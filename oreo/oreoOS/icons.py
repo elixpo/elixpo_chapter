@@ -1,9 +1,11 @@
 """Icon loading for app launcher tiles.
 
 Priority:
-  1. assets/icons/raw/{icon_filename}   — PNG decoded via PIL
-  2. assets/icons/optimized/{stem}.py   — pre-baked RGB565 module
-  3. None                               — caller draws letter fallback
+  1. assets/icons/raw/{icon_filename}   — PNG decoded via PIL (host only)
+  2. assets/icons/optimized/{stem}.py   — pre-baked module shipped with the OS
+  3. apps/{app_dir}/assets/optimized/{stem}.py — the app's own icon, which
+     is how App Store apps bring theirs (the OS doesn't ship it)
+  4. None                               — caller draws letter fallback
 
 Generate .py modules with `python tools/optimize_assets.py [name]`.
 """
@@ -61,6 +63,19 @@ def load(app_dir: str, icon_filename: str | None = None) -> tuple | None:
         for mod_name in [stem, "%s_icon" % app_dir]:
             try:
                 mod = __import__("assets.icons.optimized.%s" % mod_name,
+                                 None, None, ["DATA", "W", "H"])
+                result = (mod.DATA, mod.W, mod.H)
+                break
+            except (ImportError, AttributeError):
+                continue
+
+    # 3. The app's own icon (App Store installs carry it in their folder)
+    if result is None and app_dir:
+        stem = (icon_filename or "%s_icon" % app_dir).rsplit(".", 1)[0]
+        stem = stem.replace("-", "_")
+        for mod_name in [stem, "%s_icon" % app_dir]:
+            try:
+                mod = __import__("apps.%s.assets.optimized.%s" % (app_dir, mod_name),
                                  None, None, ["DATA", "W", "H"])
                 result = (mod.DATA, mod.W, mod.H)
                 break

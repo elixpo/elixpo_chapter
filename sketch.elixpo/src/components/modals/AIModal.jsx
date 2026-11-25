@@ -13,6 +13,10 @@ function registerMermaidLoader() {
   if (typeof window === 'undefined' || window.__lixsketchMermaidLoader) return
   window.__lixsketchMermaidLoader = () => import('mermaid').then((m) => m.default || m)
 }
+// Register up front (only the loader function; nothing downloads until a
+// diagram is rendered) so every Mermaid path — the Mermaid tab, AI text to
+// diagram, and placing a preview — lays out with Mermaid like mermaid.live.
+registerMermaidLoader()
 
 export function formatMermaidErrors(errors) {
   if (!errors?.length) return 'Invalid Mermaid syntax'
@@ -116,16 +120,16 @@ function AIToast({ status, message, onDismiss }) {
         )}
         {status === 'success' && (
           <>
-            <i className="bx bx-check-circle text-green-400 text-lg" />
+            <i className="bx bx-check-circle text-green-400 text-lg" aria-hidden="true" />
             <span className="text-text-primary text-sm">Placed on canvas</span>
           </>
         )}
         {status === 'error' && (
           <>
-            <i className="bx bx-error-circle text-red-400 text-lg" />
+            <i className="bx bx-error-circle text-red-400 text-lg" aria-hidden="true" />
             <span className="text-red-300 text-sm">{message}</span>
-            <button onClick={onDismiss} className="text-text-dim hover:text-text-primary ml-1">
-              <i className="bx bx-x text-base" />
+            <button onClick={onDismiss} aria-label="Dismiss" className="text-text-dim hover:text-text-primary ml-1">
+              <i className="bx bx-x text-base" aria-hidden="true" />
             </button>
           </>
         )}
@@ -217,9 +221,9 @@ function DiagramPreview({ svgMarkup, className }) {
         onMouseDown={handleMouseDown}
       />
       <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-surface-card border border-border-light shadow-md rounded-lg px-1.5 py-0.5" style={{ zIndex: 2 }}>
-        <button onClick={() => setZoom(z => Math.max(0.3, z * 0.8))} className="text-text-secondary hover:text-text-primary text-xs px-1">-</button>
+        <button onClick={() => setZoom(z => Math.max(0.3, z * 0.8))} className="text-text-secondary hover:text-text-primary text-xs px-1" aria-label="Zoom out">-</button>
         <span className="text-text-secondary text-[10px] w-8 text-center">{Math.round(zoom * 100)}%</span>
-        <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="text-text-secondary hover:text-text-primary text-xs px-1">+</button>
+        <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="text-text-secondary hover:text-text-primary text-xs px-1" aria-label="Zoom in">+</button>
         <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }) }} className="text-text-secondary hover:text-text-primary text-[10px] px-1 border-l border-border-light ml-0.5 pl-1.5">Reset</button>
       </div>
     </div>
@@ -933,8 +937,9 @@ export default function AIModal() {
                     onClick={isGraphMode ? resetGraph : resetPreview}
                     className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200"
                     title="Back"
+                    aria-label="Go Back"
                   >
-                    <i className="bx bx-arrow-back text-lg" />
+                    <i className="bx bx-arrow-back text-lg" aria-hidden="true" />
                   </button>
                 )}
 
@@ -990,8 +995,8 @@ export default function AIModal() {
                 </div>
               </div>
 
-              <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200">
-                <i className="bx bx-x text-2xl" />
+              <button onClick={handleClose} aria-label="Close" className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200">
+                <i className="bx bx-x text-2xl" aria-hidden="true" />
               </button>
             </div>
 
@@ -1028,7 +1033,7 @@ export default function AIModal() {
                   {/* AI Prompt Input */}
                   <div className="mb-3">
                     <p className="text-text-muted text-xs uppercase tracking-wider mb-2">
-                      <i className="bx bx-bot mr-1" />Describe Architecture
+                      <i className="bx bx-bot mr-1" aria-hidden="true" />Describe Architecture
                     </p>
                     <div className="flex gap-2">
                       <input
@@ -1049,8 +1054,9 @@ export default function AIModal() {
                         <button
                           onClick={() => { abortRef.current?.abort(); setIsGenerating(false) }}
                           className="px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 bg-red-500/80 text-white hover:bg-red-500"
+                          aria-label="Stop"
                         >
-                          <i className="bx bx-stop text-base" />
+                          <i className="bx bx-stop text-base" aria-hidden="true" />
                         </button>
                       ) : (
                         <button
@@ -1059,8 +1065,9 @@ export default function AIModal() {
                           className={`px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 ${
                             !researchPrompt.trim() ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-[#9B59B6] text-white hover:bg-[#9B59B6]/80'
                           }`}
+                          aria-label="Send"
                         >
-                          <i className="bx bx-send text-base" />
+                          <i className="bx bx-send text-base" aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -1140,7 +1147,7 @@ export default function AIModal() {
                           !researchPreviewSVG || researchErrors.length > 0 ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-[#9B59B6] text-white hover:bg-[#9B59B6]/80'
                         }`}
                       >
-                        <i className="bx bx-check text-base" />
+                        <i className="bx bx-check text-base" aria-hidden="true" />
                         Place on Canvas
                       </button>
                     </div>
@@ -1157,7 +1164,7 @@ export default function AIModal() {
                   ) : researchErrors.length > 0 ? (
                     <div className="flex-1 flex flex-col rounded-xl bg-[#111] border border-white/[0.06] p-4 overflow-y-auto">
                       <div className="flex items-center gap-2 mb-3">
-                        <i className="bx bx-error-circle text-red-400 text-lg" />
+                        <i className="bx bx-error-circle text-red-400 text-lg" aria-hidden="true" />
                         <span className="text-red-400 text-sm font-medium">{researchErrors.length} error{researchErrors.length > 1 ? 's' : ''}</span>
                       </div>
                       {researchErrors.map((err, i) => (
@@ -1238,7 +1245,7 @@ export default function AIModal() {
                           !mermaidPreviewSVG ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-accent-blue text-white hover:bg-accent-blue/80'
                         }`}
                       >
-                        <i className="bx bx-check text-base" />
+                        <i className="bx bx-check text-base" aria-hidden="true" />
                         Place on Canvas
                       </button>
                     </div>
@@ -1277,7 +1284,7 @@ export default function AIModal() {
               <div className="h-[calc(100%-100px)] flex items-center justify-center">
                 <div className="w-full max-w-xl rounded-2xl border border-border bg-surface-card px-8 py-10 text-center">
                   <div className="mx-auto mb-5 w-12 h-12 rounded-xl bg-[#7667a8]/12 border border-[#7667a8]/25 flex items-center justify-center">
-                    <i className="bx bx-plug text-2xl text-[#7667a8]" />
+                    <i className="bx bx-plug text-2xl text-[#7667a8]" aria-hidden="true"/>
                   </div>
                   <span className="inline-flex px-2.5 py-1 rounded-full bg-accent-blue/10 text-accent-blue text-[10px] font-semibold uppercase tracking-wider">Coming soon</span>
                   <h3 className="mt-4 text-xl text-text-primary">LixScript MCP</h3>
@@ -1295,7 +1302,7 @@ export default function AIModal() {
                   {!AI_DISABLED && (
                   <div className="mb-3">
                     <p className="text-text-muted text-xs uppercase tracking-wider mb-2">
-                      <i className="bx bx-bot mr-1" />Describe with AI
+                      <i className="bx bx-bot mr-1" aria-hidden="true" />Describe with AI
                     </p>
                     <div className="flex gap-2">
                       <input
@@ -1316,8 +1323,9 @@ export default function AIModal() {
                         <button
                           onClick={() => { abortRef.current?.abort(); setIsGenerating(false) }}
                           className="px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 bg-red-500/80 text-white hover:bg-red-500"
+                          aria-label="Stop"
                         >
-                          <i className="bx bx-stop text-base" />
+                          <i className="bx bx-stop text-base" aria-hidden="true" />
                         </button>
                       ) : (
                         <button
@@ -1326,8 +1334,9 @@ export default function AIModal() {
                           className={`px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 ${
                             !prompt.trim() ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-accent-blue text-white hover:bg-accent-blue/80'
                           }`}
+                          aria-label="Send"
                         >
-                          <i className="bx bx-send text-base" />
+                          <i className="bx bx-send text-base" aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -1353,7 +1362,7 @@ export default function AIModal() {
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-text-muted text-xs uppercase tracking-wider">LixScript Code</p>
                     <a href="/docs" target="_blank" rel="noopener noreferrer" className="text-accent-blue/70 hover:text-accent-blue text-[10px] flex items-center gap-1 transition-colors">
-                      <i className="bx bx-book-open text-xs" />Learn LixScript syntax
+                      <i className="bx bx-book-open text-xs" aria-hidden="true" />Learn LixScript syntax
                     </a>
                   </div>
                   <textarea
@@ -1406,7 +1415,7 @@ export default function AIModal() {
                           !lixPreviewSVG || lixErrors.length > 0 ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-accent-blue text-white hover:bg-accent-blue/80'
                         }`}
                       >
-                        <i className="bx bx-check text-base" />
+                        <i className="bx bx-check text-base"  aria-hidden="true"/>
                         Place on Canvas
                       </button>
                     </div>
@@ -1423,7 +1432,7 @@ export default function AIModal() {
                   ) : lixErrors.length > 0 ? (
                     <div className="flex-1 flex flex-col rounded-xl bg-[#111] border border-white/[0.06] p-4 overflow-y-auto">
                       <div className="flex items-center gap-2 mb-3">
-                        <i className="bx bx-error-circle text-red-400 text-lg" />
+                        <i className="bx bx-error-circle text-red-400 text-lg" aria-hidden="true" />
                         <span className="text-red-400 text-sm font-medium">{lixErrors.length} error{lixErrors.length > 1 ? 's' : ''}</span>
                       </div>
                       {lixErrors.map((err, i) => (
@@ -1474,8 +1483,9 @@ export default function AIModal() {
                         <button
                           onClick={() => removeEquation(eq.id)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-text-dim hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+                          aria-label="Remove equation"
                         >
-                          <i className="bx bx-x text-lg" />
+                          <i className="bx bx-x text-lg" aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -1485,7 +1495,7 @@ export default function AIModal() {
                     onClick={addEquation}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-text-dim text-xs hover:text-text-secondary hover:bg-white/[0.04] transition-all border border-dashed border-white/[0.08] hover:border-white/[0.15]"
                   >
-                    <i className="bx bx-plus text-sm" />
+                    <i className="bx bx-plus text-sm" aria-hidden="true" />
                     Add equation
                   </button>
 
@@ -1566,7 +1576,7 @@ export default function AIModal() {
                           !hasValidEquations ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-accent-blue text-white hover:bg-accent-blue/80'
                         }`}
                       >
-                        <i className="bx bx-check text-base" />
+                        <i className="bx bx-check text-base" aria-hidden="true" />
                         {editingFrame ? 'Update Graph' : 'Place on Canvas'}
                       </button>
                     </div>
@@ -1625,10 +1635,11 @@ export default function AIModal() {
                           className={`px-4 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                             !editPrompt.trim() || isGenerating ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-surface-active text-text-primary hover:bg-white/[0.12]'
                           }`}
+                          aria-label="Apply edit"
                         >
                           {isGenerating ? (
                             <div className="relative w-4 h-4"><div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin" /></div>
-                          ) : <i className="bx bx-refresh text-base" />}
+                          ) : <i className="bx bx-refresh text-base" aria-hidden="true" />}
                         </button>
                       </div>
                     </div>
@@ -1654,7 +1665,7 @@ export default function AIModal() {
                         onClick={handlePlace}
                         className="px-6 py-2.5 rounded-xl text-sm font-medium bg-accent-blue text-white hover:bg-accent-blue/80 transition-all duration-200 flex items-center gap-2"
                       >
-                        <i className="bx bx-check text-base" />
+                        <i className="bx bx-check text-base"  aria-hidden="true"/>
                         {isFrameEdit ? 'Replace Frame' : 'Place on Canvas'}
                       </button>
                     )}

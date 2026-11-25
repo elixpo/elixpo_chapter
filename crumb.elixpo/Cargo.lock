@@ -70,7 +70,7 @@ dependencies = [
  "objc2-foundation",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
  "wl-clipboard-rs",
  "x11rb",
 ]
@@ -578,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "chrono",
  "serde",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a-exchanges"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -599,7 +599,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a-inbound"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-a2a",
@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a-local"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-a2a",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a-runtime"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-a2a",
@@ -644,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-a2a-tasks"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -655,7 +655,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-agent"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -667,7 +667,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-auth"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "keyring",
  "zeroize",
@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-cli"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "arboard",
@@ -724,11 +724,11 @@ dependencies = [
 
 [[package]]
 name = "crumb-core"
-version = "1.2.0"
+version = "1.5.2"
 
 [[package]]
 name = "crumb-graph"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -738,7 +738,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-harness"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-agent",
@@ -751,7 +751,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-harness-cli"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-agent",
@@ -762,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-harness-dsh"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-agent",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-history"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-platform",
@@ -783,7 +783,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-instance"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "getrandom 0.4.3",
@@ -794,14 +794,14 @@ dependencies = [
 
 [[package]]
 name = "crumb-llm"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "crumb-marketplace"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-mcp"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-agent",
@@ -829,7 +829,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-memory"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "directories",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-native"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-platform",
@@ -850,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-optimize"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "crumb-agent",
@@ -859,11 +859,11 @@ dependencies = [
 
 [[package]]
 name = "crumb-platform"
-version = "1.2.0"
+version = "1.5.2"
 
 [[package]]
 name = "crumb-pollinations"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-profile"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "directories",
@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-pty"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "portable-pty",
@@ -898,7 +898,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-repl"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "crumb-core",
  "crumb-platform",
@@ -906,7 +906,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-tools"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -917,6 +917,7 @@ dependencies = [
  "crumb-instance",
  "crumb-optimize",
  "getrandom 0.4.3",
+ "landlock",
  "regex",
  "reqwest",
  "rustix",
@@ -931,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "crumb-ui"
-version = "1.2.0"
+version = "1.5.2"
 dependencies = [
  "crumb-platform",
 ]
@@ -1069,7 +1070,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1165,7 +1166,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1985,6 +1986,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "landlock"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cca98e95f35b29d469dade6724c6f96cec9236640f745a0e99b0334ec320ab1"
+dependencies = [
+ "enumflags2",
+ "libc",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2157,7 +2169,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2340,7 +2352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2596,7 +2608,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2807,22 +2819,22 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "1.1.5"
+version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d"
+checksum = "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa"
 dependencies = [
  "bitflags 2.13.1",
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
 name = "rustls"
-version = "0.23.45"
+version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
+checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "aws-lc-rs",
  "once_cell",
@@ -2872,7 +2884,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3137,9 +3149,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-bundle"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ec07aba431df2345a4f703218e442f1f80ac192bf64f19777d9fb4ad1259851"
+checksum = "98819125d96663ca27bc1b4fa06673da03de760f6b4d24596efd175e66ac3857"
 dependencies = [
  "jiff",
  "sigstore-types",
@@ -3148,9 +3160,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-crypto"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf3186b87f0bfbe7e2968e844d5e8053d36e9106601a0fe988aa5be928c314a"
+checksum = "1c6164a3fe384de936dbf73c7141f56c017a3fe02ec7107e67297e61b235fdd9"
 dependencies = [
  "aws-lc-rs",
  "const-oid",
@@ -3166,9 +3178,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-merkle"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a73aee6f9218b08736804d848d70971297d8a1842860bb2db3c16ca1c53c98b"
+checksum = "90821ce3bed8dec1862a4283848b724aba892b5af02155f1c0d8052c925726e1"
 dependencies = [
  "sigstore-crypto",
  "sigstore-types",
@@ -3177,9 +3189,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-rekor"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7944b186fea86436f865540901f0afbd7fa48568ff5f2f4e8b9e27ae758771fc"
+checksum = "9abc878eed02e46c130bf5c2a48633144eb0a95ec93d47124bf51b931cf20e1f"
 dependencies = [
  "base64 0.23.1",
  "hex",
@@ -3193,9 +3205,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-trust-root"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28c383bc3d087db8c7bad0fbc04b4e6744f9c08adabb233eb7c8166caa6a9fb2"
+checksum = "6111e00e097bb764b6fe9e6205bce3d582c3594512450ee69837753f759c55e2"
 dependencies = [
  "jiff",
  "serde",
@@ -3208,9 +3220,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-tsa"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51d5bafa5abd35c60e99249a954d7092376114b02d9b9acaa355e130a87c24e"
+checksum = "34e319615ab084c5a5e29ab451a6f717d989db4ce2d68a1c116f5038d33f448b"
 dependencies = [
  "cms",
  "const-oid",
@@ -3228,9 +3240,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-tuf"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eccbde8af5f8f613444a0c9d83a9ff8df2bd0c180215f69d9d40169344d1dca3"
+checksum = "0ef81a8257fcb3873e1e85f29d33d642f962c9faa7d69a05ac2c754dcd460301"
 dependencies = [
  "glob",
  "hex",
@@ -3248,9 +3260,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-types"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24f58ba2ce9de6e912d5e4043eeb8baa1aeee7ddf9ea19c950a20ee6e0973979"
+checksum = "b4f0e9a87bcaf654b5d3b8540eaf78040cae72eb59157bb1765f56684fb0e3e9"
 dependencies = [
  "base64 0.23.1",
  "hex",
@@ -3263,9 +3275,9 @@ dependencies = [
 
 [[package]]
 name = "sigstore-verify"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d81887abe3161d7f0d04f224236e14390f782ce6f3b5e2717819ef2d7b452cb"
+checksum = "cea78eadb03e9ddb079e6af3d464f2e0a98a84fa2b6fa5522bc1e5da88f688b2"
 dependencies = [
  "base64 0.23.1",
  "const-oid",
@@ -3471,7 +3483,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4064,7 +4076,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

@@ -31,11 +31,26 @@ BTN_DOWN   = 5
 BTN_LEFT   = 6
 BTN_RIGHT  = 7
 
-# ----- Corner LEDs (LEDC PWM via 470Ω) -----
-LED_TL = 38   # top-left
-LED_TR = 39   # top-right
-LED_BL = 40   # bottom-left
-LED_BR = 41   # bottom-right
+# ----- microSD (SDMMC host, 1-bit, the host's own DMA) -----
+# Breadboard: a plain 3.3 V microSD breakout (no level shifter; the blue
+# 5 V SPI modules buffer the lines one way and cannot do SDMMC). CMD and D0
+# need 10 kΩ pull-ups to 3V3 (most breakouts have them). Its own bus, so the
+# card never shares the display's SPI bus. These pins were the corner LEDs,
+# which were never wired or driven; they move to the I2C expander or the PCB
+# (#102).
+SD_CLK = 38
+SD_CMD = 39
+SD_D0  = 40
+
+# ----- I2S speaker amplifier (MAX98357A) -----
+# BCLK/LRCLK/DIN only; the amp's SD pin to VIN (always on, L+R mix), GAIN
+# floating (9 dB). VIN from the 5 V rail, not the 3.3 V regulator.
+# GPIO46 is a boot-strapping pin: it must read low at reset and while
+# flashing. The amp's DIN is a high-impedance input and the pin's internal
+# pull-down keeps it low until I2S starts, so add no pull-up on this line.
+I2S_BCLK  = 41
+I2S_LRCLK = 21
+I2S_DOUT  = 46
 
 # ----- Status NeoPixel (onboard WS2812) -----
 LED_STATUS = 48
@@ -61,24 +76,8 @@ I2C_SCL   = 47
 # board so pitch = front/back tilt, roll = side-to-side tilt, yaw = twist.
 IMU_INT   = 3      # RTC_GPIO3 — wakes from deep sleep on a motion interrupt
 
-# ----- TTP223 (planned v2 — NOT wired in v1 firmware) -----
-# v2 hardware exposes TWO capacitive pads so apps + accessories can wire
-# in independent touch interfaces (e.g. front-panda chest + back-cover
-# secondary, or a paired-badge handshake). v1 firmware doesn't read
-# either; button-only wake covers v1. Pins reserved here so v2 work
-# doesn't have to re-pick GPIOs.
-#
-# Module jumper set to active-HIGH, momentary (no toggle).
-#
-# Pin selection:
-#   TOUCH_OUT_1 = 21  RTC GPIO → wake-from-deep-sleep capable. Use this
-#                     pad as the primary wake source on v2.
-#   TOUCH_OUT_2 = 33  Non-RTC. Edge-poll only in firmware (no deep-sleep
-#                     wake). Non-strapping, not on PSRAM lines for the
-#                     N16R8 module, not a USB-OTG pad. Free in our map.
-#
-# Back-compat: `TOUCH_OUT` aliases TOUCH_OUT_1 so existing references in
-# documentation / external sketches keep resolving.
-TOUCH_OUT_1 = 21
-TOUCH_OUT_2 = 33
-TOUCH_OUT   = TOUCH_OUT_1
+# ----- TTP223 touch pads (not fitted) -----
+# The planned pads were never wired or read. Their pins went elsewhere:
+# GPIO21 is I2S LRCLK, and GPIO33 is not on the DevKit header at all (inside
+# the N16R8 module it belongs to the octal PSRAM bus). Pick new pins for
+# touch on the expander or the PCB (#102).

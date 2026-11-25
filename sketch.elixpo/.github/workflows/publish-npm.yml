@@ -1,3 +1,7 @@
+# Kept local instead of elixpo/agent.elixpo's shared publish-npm.yml: the shared
+# workflow publishes only an unpublished package.json version, while this one
+# auto-bumps from the registry state, retries over staged versions, mirrors to
+# GitHub Packages and tags lixsketch-v<version>.
 name: Publish @elixpo/lixsketch to NPM
 
 on:

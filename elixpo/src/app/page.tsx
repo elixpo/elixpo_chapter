@@ -9,7 +9,7 @@ export const metadata = createPageMetadata({
 });
 
 const jsonLd = { "@context": "https://schema.org", "@graph": [
-  { "@type": "Organization", "@id": "https://elixpo.com/#organization", name: "Elixpo", url: "https://elixpo.com", logo: "https://elixpo.com/logos/logo.webp", description: organization.fullDescription, sameAs: ["https://github.com/elixpo", "https://github.com/elixpo/elixpo_chapter", "https://huggingface.co/Elixpo"] },
+  { "@type": "Organization", "@id": "https://elixpo.com/#organization", name: "Elixpo", url: "https://elixpo.com", logo: "https://elixpo.com/logos/logo.webp", description: organization.fullDescription, identifier: { "@type": "PropertyValue", propertyID: "Udyam Registration Number", value: organization.registration.number, url: organization.registration.verifyUrl }, sameAs: ["https://github.com/elixpo", "https://github.com/elixpo/elixpo_chapter", "https://huggingface.co/Elixpo"], subjectOf: { "@type": "WebSite", name: "Elixpo · Google Summer of Code 2027", url: organization.urls.gsoc.url } },
   { "@type": "WebSite", "@id": "https://elixpo.com/#website", name: "Elixpo", url: "https://elixpo.com", description: organization.oneLineDescription, publisher: { "@id": "https://elixpo.com/#organization" }, inLanguage: "en" },
 ] };
 

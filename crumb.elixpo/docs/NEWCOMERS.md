@@ -21,6 +21,19 @@ check for.
 - **Python 3** only if you run the agent evals (you usually should not; see
   below).
 
+### Windows prerequisites
+
+On Windows, install Visual Studio Build Tools with the **Desktop development
+with C++** workload. The workspace also needs these executables on `PATH`:
+
+- **NASM**, verified with `nasm -v`. The `aws-lc-sys` dependency uses it while
+  building the workspace.
+- **PowerShell 7**, verified with `pwsh -v`. The Windows native-shell
+  integration test starts `pwsh`.
+
+After installing a tool or changing `PATH`, close and reopen your terminal and
+editor before running the checks below.
+
 You do not need the committed `.env` file. It is encrypted with SOPS (see
 `.sops.yaml`) and is only used by maintainer deployment scripts. Do not try to
 decrypt it, and never commit a plaintext one.

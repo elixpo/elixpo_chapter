@@ -3,6 +3,7 @@
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import PageShell from "../components/page-shell";
+import { CONTACT_EMAIL, LEGAL_COUNTRY, LEGAL_ENTITY, UDYAM_NUMBER, UDYAM_VERIFY_URL } from "@/lib/legal";
 
 const BLOCKS: { title: string; body: string; category: string }[] = [
     {
@@ -22,7 +23,7 @@ const BLOCKS: { title: string; body: string; category: string }[] = [
     },
     {
         title: "Razorpay now, Stripe soon",
-        body: "Use your own Razorpay account today. Stripe for international payments is coming soon — and you can switch or add providers without changing your code.",
+        body: "No gateway account needed: Elixpo Pay collects through Razorpay for you today. Stripe for international payments is on the roadmap, behind the same API, so your code won't change.",
         category: "ROUTING",
     },
     {
@@ -81,15 +82,14 @@ export default function AboutPage() {
                     sx={{ mb: { xs: 6, md: 10 } }}
                 >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "#CF4500" }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "var(--app-accent)" }} />
                         <Typography
                             sx={{
                                 fontSize: "14px",
                                 fontWeight: 700,
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 color: "var(--app-fg-muted)",
                                 textTransform: "uppercase",
-                                fontFamily: "var(--font-sofia-sans)",
                             }}
                         >
                             THE PLATFORM
@@ -99,9 +99,8 @@ export default function AboutPage() {
                         variant="h2"
                         sx={{
                             fontWeight: 500,
-                            fontSize: { xs: "32px", md: "48px" },
-                            letterSpacing: "-2%",
-                            lineHeight: 1.1,
+                            fontSize: { xs: "2.7rem", md: "4.6rem" }, lineHeight: 0.96,
+                            letterSpacing: "-0.055em",
                             color: "var(--app-fg)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -139,10 +138,10 @@ export default function AboutPage() {
                             key={b.title}
                             sx={{
                                 p: { xs: 3.5, md: 4 },
-                                borderRadius: "24px",
+                                borderRadius: "var(--radius-card)",
                                 background: "var(--app-bg-2)", // Lifted Cream
                                 border: "1.5px solid var(--app-overlay)",
-                                boxShadow: "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                                boxShadow: "rgba(20, 32, 24, 0.04) 0px 4px 24px 0px",
                             }}
                         >
                             <Stack
@@ -156,7 +155,7 @@ export default function AboutPage() {
                                         width: 6,
                                         height: 6,
                                         borderRadius: "50%",
-                                        background: "#CF4500", // Signal Orange eyebrow dot
+                                        background: "var(--app-accent)", // Signal Orange eyebrow dot
                                     }}
                                 />
                                 <Typography
@@ -177,7 +176,7 @@ export default function AboutPage() {
                                 sx={{
                                     fontWeight: 500,
                                     fontSize: "22px",
-                                    letterSpacing: "-1%",
+                                    letterSpacing: "-0.035em",
                                     color: "var(--app-fg)",
                                     mb: 1.5,
                                     fontFamily: "var(--font-sofia-sans)",
@@ -206,8 +205,8 @@ export default function AboutPage() {
                     sx={{
                         textAlign: "center",
                         fontWeight: 500,
-                        fontSize: { xs: "28px", md: "36px" },
-                        letterSpacing: "-2%",
+                        fontSize: { xs: "2.2rem", md: "3.2rem" }, lineHeight: 1,
+                        letterSpacing: "-0.055em",
                         color: "var(--app-fg)",
                         mb: { xs: 4, md: 6 },
                         fontFamily: "var(--font-sofia-sans)",
@@ -225,10 +224,10 @@ export default function AboutPage() {
                             spacing={4}
                             sx={{
                                 p: { xs: 3.5, md: 4 },
-                                borderRadius: "24px",
+                                borderRadius: "var(--radius-card)",
                                 background: "var(--app-bg-2)", // Lifted Cream
                                 border: "1.5px solid var(--app-overlay)",
-                                boxShadow: "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                                boxShadow: "rgba(20, 32, 24, 0.04) 0px 4px 24px 0px",
                             }}
                         >
                             <Stack
@@ -241,7 +240,7 @@ export default function AboutPage() {
                                     sx={{
                                         fontSize: "18px",
                                         fontWeight: 700,
-                                        color: r.done ? "#CF4500" : "var(--app-fg-muted)",
+                                        color: r.done ? "var(--app-accent)" : "var(--app-fg-muted)",
                                         fontFamily: "var(--font-sofia-sans)",
                                     }}
                                 >
@@ -284,7 +283,7 @@ export default function AboutPage() {
                                             fontWeight: 700,
                                             textTransform: "uppercase",
                                             color: "#FFFFFF",
-                                            background: "#CF4500", // Signal Orange for compliance/consents
+                                            background: "var(--app-accent)", // Signal Orange for compliance/consents
                                             border: "none",
                                             fontFamily: "var(--font-sofia-sans)",
                                         }}
@@ -296,6 +295,50 @@ export default function AboutPage() {
                         </Stack>
                     ))}
                 </Stack>
+
+                {/* Who runs this */}
+                <Box
+                    component="section"
+                    aria-labelledby="about-who"
+                    sx={{
+                        maxWidth: 720,
+                        mx: "auto",
+                        mb: { xs: 8, md: 12 },
+                        textAlign: "center",
+                        fontFamily: "var(--font-sofia-sans)",
+                    }}
+                >
+                    <Typography
+                        id="about-who"
+                        sx={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            letterSpacing: "0.14em",
+                            fontFamily: "var(--font-geist-mono)",
+                            color: "var(--app-fg-muted)",
+                            textTransform: "uppercase",
+                            mb: 1,
+                        }}
+                    >
+                        Who runs this
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: "var(--app-fg)",
+                            fontSize: "15px",
+                            lineHeight: 1.6,
+                            fontFamily: "var(--font-sofia-sans)",
+                            fontWeight: 450,
+                            "& a": { color: "var(--app-link)", fontWeight: 600 },
+                        }}
+                    >
+                        Elixpo Pay is run by {LEGAL_ENTITY}, a{" "}
+                        <a href={UDYAM_VERIFY_URL} target="_blank" rel="noopener noreferrer">
+                            Udyam-registered MSME
+                        </a>{" "}
+                        ({UDYAM_NUMBER}), {LEGAL_COUNTRY}. Contact <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+                    </Typography>
+                </Box>
 
                 {/* Call to Action (CTA) */}
                 <Stack
@@ -314,7 +357,7 @@ export default function AboutPage() {
                         sx={{
                             fontWeight: 500,
                             fontSize: { xs: "24px", md: "32px" },
-                            letterSpacing: "-2%",
+                            letterSpacing: "-0.055em",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
@@ -341,7 +384,7 @@ export default function AboutPage() {
                                 background: "var(--app-on-ink)", // Light pill on ink slab
                                 color: "var(--app-ink)", // Ink text
                                 border: "1.5px solid var(--app-on-ink)",
-                                borderRadius: "20px",
+                                borderRadius: "999px",
                                 px: 4,
                                 py: 1.5,
                                 fontSize: "16px",
@@ -365,7 +408,7 @@ export default function AboutPage() {
                             sx={{
                                 color: "var(--app-on-ink)",
                                 border: "1.5px solid var(--app-on-ink-muted)",
-                                borderRadius: "20px",
+                                borderRadius: "999px",
                                 px: 4,
                                 py: 1.5,
                                 fontSize: "16px",
@@ -374,7 +417,7 @@ export default function AboutPage() {
                                 fontFamily: "var(--font-sofia-sans)",
                                 "&:hover": {
                                     borderColor: "var(--app-on-ink)",
-                                    background: "rgba(255, 255, 255, 0.05)",
+                                    background: "color-mix(in srgb, var(--app-fg) 5%, transparent)",
                                 },
                             }}
                         >

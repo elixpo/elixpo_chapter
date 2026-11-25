@@ -19,14 +19,22 @@
  * is responsible for catching this and prompting for explicit opt-in.
  */
 
-import { Entry } from "@napi-rs/keyring";
+let KeyringEntry = null;
+try {
+  ({ Entry: KeyringEntry } = await import("@napi-rs/keyring"));
+} catch {
+  KeyringEntry = null;
+}
 import { CredentialStore } from "./CredentialStore.js";
 
 const SERVICE_NAME = "lixblogs-cli";
 const PROBE_PROFILE_ID = "__lixblogs_availability_probe__";
 
 function entryFor(profileId) {
-  return new Entry(SERVICE_NAME, profileId);
+  if (!KeyringEntry) {
+    throw new Error("OS keychain module @napi-rs/keyring is not available in this environment.");
+  }
+  return new KeyringEntry(SERVICE_NAME, profileId);
 }
 
 /**

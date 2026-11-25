@@ -21,3 +21,21 @@ export function contributionDateKey(epoch, timeZone = 'UTC') {
     return date.toISOString().slice(0, 10);
   }
 }
+
+
+export function normalizeTimezone(timezone) {
+    if (typeof timezone !== "string") return "UTC";
+
+    const tz = timezone.trim();
+
+    if (!/^[A-Za-z][A-Za-z0-9_+\-/]{0,63}$/.test(tz)) {
+        return "UTC";
+    }
+    try {
+        return new Intl.DateTimeFormat("en-US", {
+            timeZone: tz,
+        }).resolvedOptions().timeZone;
+    } catch {
+        return "UTC";
+    }
+}

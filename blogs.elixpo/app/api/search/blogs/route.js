@@ -40,6 +40,7 @@ export async function GET(request) {
       JOIN users au ON au.id = b.author_id
       LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
       WHERE ${where}
+        AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
       ORDER BY ${orderBy}
       LIMIT ?
     `).bind(...binds, limit).all();

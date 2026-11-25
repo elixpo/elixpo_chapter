@@ -1,6 +1,7 @@
 # QFabric manuscript
 
-The manuscript is a two-column IEEEtran paper prepared for arXiv (cs.AR),
+The manuscript is published as [arXiv:2611.01598](https://arxiv.org/abs/2611.01598)
+(cs.AR). It is a two-column IEEEtran paper
 backed by the Stage 12 matched-load campaign and the Stage 1 interconnect
 evidence. Every quantitative table, figure, and macro is generated from raw
 traces by `scripts/generate-*-assets.py`, never copied by hand.

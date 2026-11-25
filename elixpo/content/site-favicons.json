@@ -1,0 +1,67 @@
+{
+  "$schema": "./schemas/site-favicons.schema.json",
+  "schemaVersion": 1,
+  "lastVerified": "2026-11-24",
+  "entries": {
+    "accounts.elixpo": {
+      "path": "/brand/favicons/accounts.elixpo.webp",
+      "source": "https://accounts.elixpo.com/icon1.png"
+    },
+    "admin.elixpo": {
+      "path": "/brand/favicons/admin.elixpo.webp",
+      "source": "https://admin.elixpo.com/icon-512.png"
+    },
+    "agent.elixpo": {
+      "path": "/brand/favicons/agent.elixpo.webp",
+      "source": "https://agent.elixpo.com/icon.png"
+    },
+    "blogs.elixpo": {
+      "path": "/brand/favicons/blogs.elixpo.webp",
+      "source": "https://blogs.elixpo.com/icon-512.png"
+    },
+    "crumb.elixpo": {
+      "path": "/brand/favicons/crumb.elixpo.webp",
+      "source": "https://crumb.elixpo.com/favicon.png"
+    },
+    "diwali.elixpo": {
+      "path": "/brand/favicons/diwali.elixpo.webp",
+      "source": "https://diwali.elixpo.com/icon-192.png"
+    },
+    "lixrl.com": {
+      "path": "/brand/favicons/lixrl.com.webp",
+      "source": "https://lixrl.com/icon1.png"
+    },
+    "me.elixpo": {
+      "path": "/brand/favicons/me.elixpo.webp",
+      "source": "https://me.elixpo.com/icon.png"
+    },
+    "search.elixpo": {
+      "path": "/brand/favicons/search.elixpo.webp",
+      "source": "https://search.elixpo.com/favicon.png"
+    },
+    "oreo": {
+      "path": "/brand/favicons/oreo.webp",
+      "source": "https://falera.elixpo.com/icon-512.png"
+    },
+    "packages.elixpo": {
+      "path": "/brand/favicons/packages.elixpo.webp",
+      "source": "https://packages.elixpo.com/favicon.png"
+    },
+    "payouts.elixpo": {
+      "path": "/brand/favicons/payouts.elixpo.webp",
+      "source": "https://payouts.elixpo.com/icon-512.png"
+    },
+    "plumlang": {
+      "path": "/brand/favicons/plumlang.webp",
+      "source": "https://plum.elixpo.com/apple-icon.png"
+    },
+    "sketch.elixpo": {
+      "path": "/brand/favicons/sketch.elixpo.webp",
+      "source": "https://sketch.elixpo.com/icon.png"
+    },
+    "status.elixpo": {
+      "path": "/brand/favicons/status.elixpo.webp",
+      "source": "https://status.elixpo.com/icon-192.png"
+    }
+  }
+}

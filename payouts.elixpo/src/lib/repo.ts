@@ -4,7 +4,7 @@
  */
 
 import type { D1Database } from "@cloudflare/workers-types";
-import { isoDaysFromNow, newId, nowIso } from "./ids";
+import { addInterval, newId, nowIso, parseSqlTime } from "./ids";
 
 export interface AppRow {
     id: string;
@@ -52,12 +52,16 @@ export interface ProductRow {
     tier: string;
 }
 
-/** Resolve the product (by tier) + a matching active price (by currency). */
+/**
+ * Resolve the product (by tier) + a matching active price (by currency and,
+ * when given, billing interval — so a tier can sell monthly AND yearly).
+ */
 export async function resolveProductAndPrice(
     db: D1Database,
     appId: string,
     tier: string,
     currency: string,
+    interval?: string | null,
 ): Promise<{ product: ProductRow; price: PriceRow | null } | null> {
     const product = (await db
         .prepare(
@@ -67,12 +71,21 @@ export async function resolveProductAndPrice(
         .first()) as ProductRow | null;
     if (!product) return null;
 
-    const price = (await db
-        .prepare(
-            "SELECT * FROM prices WHERE product_id = ? AND currency = ? AND active = 1 ORDER BY created_at LIMIT 1",
-        )
-        .bind(product.id, currency)
-        .first()) as PriceRow | null;
+    const price = (
+        interval
+            ? await db
+                  .prepare(
+                      "SELECT * FROM prices WHERE product_id = ? AND currency = ? AND interval = ? AND active = 1 ORDER BY created_at LIMIT 1",
+                  )
+                  .bind(product.id, currency, interval)
+                  .first()
+            : await db
+                  .prepare(
+                      "SELECT * FROM prices WHERE product_id = ? AND currency = ? AND active = 1 ORDER BY created_at LIMIT 1",
+                  )
+                  .bind(product.id, currency)
+                  .first()
+    ) as PriceRow | null;
 
     return { product, price };
 }
@@ -263,6 +276,30 @@ export async function recordTransaction(
     }
 
     const id = newId("transaction");
+    try {
+        await insertTransaction(db, id, input);
+    } catch (err) {
+        // Lost a race with the other fulfillment path (client handback vs
+        // webhook) on the unique payment index — the winner owns this charge.
+        if (input.providerPaymentId && /UNIQUE/i.test(String(err))) {
+            const winner = (await db
+                .prepare(
+                    "SELECT id FROM transactions WHERE provider = 'razorpay' AND provider_payment_id = ?",
+                )
+                .bind(input.providerPaymentId)
+                .first()) as { id: string } | null;
+            if (winner) return { id: winner.id, created: false };
+        }
+        throw err;
+    }
+    return { id, created: true };
+}
+
+async function insertTransaction(
+    db: D1Database,
+    id: string,
+    input: RecordTransactionInput,
+): Promise<void> {
     await db
         .prepare(
             `INSERT INTO transactions
@@ -283,7 +320,6 @@ export async function recordTransaction(
             input.raw ? JSON.stringify(input.raw) : null,
         )
         .run();
-    return { id, created: true };
 }
 
 /** Write a minimal balanced ledger pair for a captured charge. */
@@ -294,23 +330,27 @@ export async function recordRevenueLedger(
     currency: string,
     amount: number,
 ): Promise<void> {
+    // Idempotent: a resumed fulfillment must not post the revenue twice.
+    const existing = await db
+        .prepare(
+            "SELECT id FROM ledger_entries WHERE transaction_id = ? AND account = 'platform_revenue' LIMIT 1",
+        )
+        .bind(transactionId)
+        .first();
+    if (existing) return;
+
     const group = newId("ledgerGroup");
-    const credit = newId("ledger");
-    const debit = newId("ledger");
-    await db
-        .prepare(
-            `INSERT INTO ledger_entries (id, app_id, transaction_id, account, direction, currency, amount, group_id)
-             VALUES (?, ?, ?, 'customer_paid', 'debit', ?, ?, ?)`,
-        )
-        .bind(debit, appId, transactionId, currency, amount, group)
-        .run();
-    await db
-        .prepare(
-            `INSERT INTO ledger_entries (id, app_id, transaction_id, account, direction, currency, amount, group_id)
-             VALUES (?, ?, ?, 'platform_revenue', 'credit', ?, ?, ?)`,
-        )
-        .bind(credit, appId, transactionId, currency, amount, group)
-        .run();
+    const insert = `INSERT INTO ledger_entries (id, app_id, transaction_id, account, direction, currency, amount, group_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    // Both legs in one batch (atomic in D1) so the books always balance.
+    await db.batch([
+        db
+            .prepare(insert)
+            .bind(newId("ledger"), appId, transactionId, "customer_paid", "debit", currency, amount, group),
+        db
+            .prepare(insert)
+            .bind(newId("ledger"), appId, transactionId, "platform_revenue", "credit", currency, amount, group),
+    ]);
 }
 
 /** Upsert a one-time subscription, rolling current_period_end forward. */
@@ -322,18 +362,33 @@ export async function upsertOneTimeSubscription(
         productId: string | null;
         priceId: string | null;
         tier: string;
-        periodDays: number;
+        interval: string;
+        intervalCount: number;
     },
 ): Promise<{ id: string; periodEnd: string }> {
     const periodStart = nowIso();
-    const periodEnd = isoDaysFromNow(params.periodDays);
 
     const existing = (await db
         .prepare(
-            "SELECT id FROM subscriptions WHERE app_id = ? AND customer_id = ? AND tier = ?",
+            "SELECT id, status, current_period_end FROM subscriptions WHERE app_id = ? AND customer_id = ? AND tier = ?",
         )
         .bind(params.appId, params.customerId, params.tier)
-        .first()) as { id: string } | null;
+        .first()) as {
+        id: string;
+        status: string;
+        current_period_end: string | null;
+    } | null;
+
+    // Extend from the later of now and the paid-through date, so renewing
+    // early (or an autopay charge landing just before period end) never
+    // forfeits days the buyer already paid for.
+    const now = new Date();
+    const currentEnd =
+        existing && existing.status !== "expired"
+            ? parseSqlTime(existing.current_period_end)
+            : null;
+    const base = currentEnd && currentEnd > now ? currentEnd : now;
+    const periodEnd = addInterval(base, params.interval, params.intervalCount);
 
     if (existing) {
         await db
@@ -598,4 +653,123 @@ export async function recordProviderEvent(
         )
         .run();
     return { alreadySeen: false };
+}
+
+/**
+ * Once a NEW autopay subscription activates, cancel any other live recurring
+ * subscription the same buyer has for this app (plan change / re-subscribe),
+ * so they're never billed twice. Immediate (not end-of-cycle) because the new
+ * plan replaces the old one now. Best-effort per row.
+ */
+export async function cancelSupersededSubscriptions(
+    db: D1Database,
+    provider: { cancelSubscription(id: string, atCycleEnd: boolean): Promise<unknown> } | null,
+    appId: string,
+    customerId: string,
+    keepProviderSubscriptionId: string,
+): Promise<number> {
+    const stale = ((
+        await db
+            .prepare(
+                `SELECT id, provider_subscription_id FROM subscriptions
+                 WHERE app_id = ? AND customer_id = ?
+                   AND billing_mode = 'recurring'
+                   AND status IN ('active','past_due')
+                   AND provider_subscription_id IS NOT NULL
+                   AND provider_subscription_id != ?`,
+            )
+            .bind(appId, customerId, keepProviderSubscriptionId)
+            .all()
+    ).results ?? []) as { id: string; provider_subscription_id: string }[];
+
+    for (const s of stale) {
+        try {
+            await provider?.cancelSubscription(s.provider_subscription_id, false);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (!/already cancel/i.test(msg)) {
+                console.warn("[subs] couldn't cancel superseded %s upstream: %s", s.provider_subscription_id, msg);
+            }
+        }
+        await db
+            .prepare(
+                "UPDATE subscriptions SET status='cancelled', cancel_at=datetime('now'), updated_at=datetime('now') WHERE id = ?",
+            )
+            .bind(s.id)
+            .run();
+    }
+    return stale.length;
+}
+
+/** A product transaction by its Razorpay payment id (refund / dispute lookups). */
+export async function getTransactionByPaymentId(
+    db: D1Database,
+    providerPaymentId: string,
+): Promise<any | null> {
+    return db
+        .prepare(
+            "SELECT * FROM transactions WHERE provider = 'razorpay' AND provider_payment_id = ?",
+        )
+        .bind(providerPaymentId)
+        .first();
+}
+
+/**
+ * Record one refund / lost dispute against a transaction in the `refunds`
+ * table. De-duplicated on provider_refund_id (rfnd_… / disp_…), so a replayed
+ * event never writes a second row. Returns whether a row was written.
+ */
+export async function recordRefund(
+    db: D1Database,
+    input: {
+        transactionId: string;
+        appId: string;
+        providerRefundId: string | null;
+        currency: string;
+        amount: number;
+        reason: string;
+    },
+): Promise<{ created: boolean }> {
+    if (input.providerRefundId) {
+        const existing = await db
+            .prepare(
+                "SELECT id FROM refunds WHERE provider = 'razorpay' AND provider_refund_id = ?",
+            )
+            .bind(input.providerRefundId)
+            .first();
+        if (existing) return { created: false };
+    }
+    await db
+        .prepare(
+            `INSERT INTO refunds (id, transaction_id, app_id, provider, provider_refund_id, currency, amount, reason, status)
+             VALUES (?, ?, ?, 'razorpay', ?, ?, ?, ?, 'processed')`,
+        )
+        .bind(
+            newId("refund"),
+            input.transactionId,
+            input.appId,
+            input.providerRefundId,
+            input.currency,
+            input.amount,
+            input.reason,
+        )
+        .run();
+    return { created: true };
+}
+
+/**
+ * Flip a transaction to 'refunded' (fully refunded or dispute lost).
+ * Conditional, so only the first caller sees changed=true — replays no-op.
+ */
+export async function markTransactionRefunded(
+    db: D1Database,
+    transactionId: string,
+): Promise<{ changed: boolean }> {
+    const res = await db
+        .prepare(
+            "UPDATE transactions SET status = 'refunded', updated_at = datetime('now') WHERE id = ? AND status != 'refunded'",
+        )
+        .bind(transactionId)
+        .run();
+    return { changed: !!res.meta?.changes };
 }

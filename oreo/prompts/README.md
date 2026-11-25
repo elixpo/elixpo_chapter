@@ -1,6 +1,6 @@
 # Asset Prompts
 
-Each `.md` file in this folder defines one asset for the Oreo Badge.
+Each `.md` file in this folder defines one asset for the Falera Badge.
 
 ## How to generate an asset
 

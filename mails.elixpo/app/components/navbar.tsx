@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DashboardNavLinks } from "./dashboard-nav";
+import ThemeToggle from "./theme-toggle";
 
 interface Me {
     name: string;
@@ -250,6 +251,10 @@ const Navbar = () => {
                         </Box>
                     )}
 
+                    <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center" }}>
+                        <ThemeToggle size={18} />
+                    </Box>
+
                     {me === undefined ? (
                         // Placeholder while we resolve the session — avoids flashing
                         // "Sign in" to an already-signed-in user.
@@ -404,13 +409,16 @@ const Navbar = () => {
                             </Box>
                         </Typography>
                     </Stack>
-                    <IconButton
-                        onClick={() => setDrawerOpen(false)}
-                        aria-label="Close menu"
-                        sx={{ color: "var(--fg-muted)" }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                        <ThemeToggle size={18} />
+                        <IconButton
+                            onClick={() => setDrawerOpen(false)}
+                            aria-label="Close menu"
+                            sx={{ color: "var(--fg-muted)" }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
                 </Stack>
 
                 {me ? (

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with the Lumi panda mascot" />
+  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/banners/lumi-built-in-the-open.webp" width="100%" alt="Lumi, the Elixpo panda, relaxing on a beach beside a sign reading built in the open" />
 </p>
 
 <h1 align="center">Elixpo Chapter</h1>

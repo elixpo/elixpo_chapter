@@ -256,7 +256,15 @@ export function shapeBounds(shape) {
     const xs = shape.points.map((p) => p[0]), ys = shape.points.map((p) => p[1]);
     return { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
   }
-  if (shape.type === 'text') return { x: finite(shape.x), y: finite(shape.y), width: 160, height: 32 };
+  if (shape.type === 'text') {
+    const fontSize = positive(shape.mcpFontSize, 20);
+    const rawText = typeof shape.mcpText === 'string' ? shape.mcpText : extractText(shape.groupHTML);
+    const lines = rawText.split('\n');
+    const maxLineLength = Math.max(1, ...lines.map((line) => line.length));
+    const width = Math.ceil(maxLineLength * fontSize * 0.6);
+    const height = Math.ceil(lines.length * fontSize * 1.2);
+    return { x: finite(shape.x), y: finite(shape.y), width, height };
+  }
   return { x: finite(shape.x), y: finite(shape.y), width: positive(shape.width), height: positive(shape.height) };
 }
 

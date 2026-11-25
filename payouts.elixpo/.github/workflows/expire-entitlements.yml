@@ -6,12 +6,12 @@ concurrency:
   group: expire-entitlements
   cancel-in-progress: false
 
-# Daily sweep that downgrades lapsed memberships and fires the
-# entitlement.updated webhook to the consuming app. Hits the protected
-# Elixpo Pay cron endpoint with the shared CRON_SECRET.
+# Hourly sweep: downgrades lapsed memberships (firing entitlement.updated to
+# the consuming app) and re-sends any fundraiser receipt emails that never went
+# out. Hits the protected Elixpo Pay cron endpoint with the shared CRON_SECRET.
 on:
   schedule:
-    - cron: "17 2 * * *" # 02:17 UTC daily
+    - cron: "17 * * * *" # hourly, at :17
   workflow_dispatch: {} # allow manual runs from the Actions tab
 
 jobs:

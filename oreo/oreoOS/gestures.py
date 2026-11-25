@@ -1,4 +1,4 @@
-"""Gesture detection for the Oreo Badge.
+"""Gesture detection for the Falera Badge.
 
 Reads the MPU6050 accelerometer and emits high-level events:
     TAP         single sharp accel spike

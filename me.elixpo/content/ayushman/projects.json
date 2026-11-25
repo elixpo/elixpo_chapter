@@ -1,6 +1,6 @@
 {
   "heading": "PROJECTS",
-  "description": "Every active Elixpo project, service and research record I have built, plus my maintainer work at Pollinations and completed systems research. The full lifecycle-aware directory lives at elixpo.com/projects. Star counts are a snapshot from 27 October 2026.",
+  "description": "Every active Elixpo project, service and research record I have built, plus my maintainer work at Pollinations and completed systems research. The full lifecycle-aware directory lives at elixpo.com/projects. Star counts are a snapshot from 28 October 2026.",
   "projects": [
     {
       "name": "pollinations",
@@ -113,10 +113,10 @@
     },
     {
       "name": "oreo",
-      "displayName": "Oreo",
-      "description": "An open hardware badge, operated site, and research platform running OreoOS: a MicroPython OS for an ESP32-S3 with apps, OTA updates, device drivers, KiCad hardware, and a DMA-aware RGB565 video pipeline.",
+      "displayName": "Falera",
+      "description": "An open hardware badge, operated site, and research platform running FaleraOS: a MicroPython OS for an ESP32-S3 with apps, OTA updates, device drivers, KiCad hardware, and a DMA-aware RGB565 video pipeline. Its RV565 video pipeline is described in arXiv:2610.35935.",
       "stars": 8,
-      "url": "https://github.com/elixpo/oreo",
+      "url": "https://github.com/elixpo/falera",
       "owner": "elixpo",
       "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
       "topics": ["open-hardware", "micropython", "esp32", "embedded"],
@@ -186,6 +186,17 @@
       "owner": "elixpo",
       "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
       "topics": ["research", "diffusion", "binary-networks", "edge-ai"],
+      "language": "Python"
+    },
+    {
+      "name": "flappy6502",
+      "displayName": "Flappy6502",
+      "description": "Flappy Bird on a breadboard 6502 (R6502, 28C64, 32K SRAM, 74LS logic) driving an ST7789 SPI LCD by bit-banging, in hand-tuned ca65 assembly with a py65 simulator. Listed in 6502.org's Homebuilt Projects.",
+      "stars": 2,
+      "url": "https://github.com/elixpo/flappy6502",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["6502", "open-hardware", "assembly", "retrocomputing"],
       "language": "Python"
     },
     {

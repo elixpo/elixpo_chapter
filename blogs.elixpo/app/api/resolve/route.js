@@ -319,7 +319,7 @@ export async function GET(request) {
             const user = await db
                 .prepare(`
         SELECT id, username, display_name, designation, bio, avatar_url, banner_r2_key,
-          location, timezone, pronouns, website, company, links, tier, created_at, updated_at
+          location, timezone, pronouns, website, company, links, tier, account_status, created_at, updated_at
         FROM users WHERE id = ?
       `)
                 .bind(ownerId)
@@ -330,6 +330,12 @@ export async function GET(request) {
                     { error: "User not found" },
                     { status: 404 },
                 );
+            if (["disabled", "removed"].includes(String(user.account_status || "active").toLowerCase())) {
+                return NextResponse.json(
+                    { error: "User unavailable", type: null },
+                    { status: 404 },
+                );
+            }
 
             // If slug requested, find the blog
             if (slug) {

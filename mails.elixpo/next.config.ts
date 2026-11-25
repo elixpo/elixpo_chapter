@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
+    async redirects() {
+        return [
+            { source: "/tos", destination: "/terms", permanent: true },
+            { source: "/legal", destination: "/terms", permanent: true },
+        ];
+    },
     async headers() {
         const securityHeaders = [
             { key: "X-Content-Type-Options", value: "nosniff" },

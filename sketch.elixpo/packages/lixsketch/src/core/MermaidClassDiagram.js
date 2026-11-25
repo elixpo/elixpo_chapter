@@ -18,7 +18,7 @@
 
 import { layeredLayout } from './MermaidLayout.js';
 import { parseStyleList } from './MermaidFlowchartParser.js';
-import { beginDiagram, contrastText, escapeXml, nextGroupId } from './MermaidCanvas.js';
+import { beginDiagram, contrastText, escapeXml, nextGroupId, routeCurve } from './MermaidCanvas.js';
 
 const REL_RE = /^([\p{L}\p{N}_.~-]+)\s*(?:"([^"]*)"\s*)?(<\||\*|o|<)?(--|\.\.)(\|>|\*|o|>)?\s*(?:"([^"]*)"\s*)?([\p{L}\p{N}_.~-]+)\s*(?::\s*(.*))?$/u;
 
@@ -176,8 +176,39 @@ function rankEdge(r) {
     return rightParent ? { from: r.to, to: r.from } : { from: r.from, to: r.to };
 }
 
+/**
+ * Positions from Mermaid's own layout (MermaidNativeLayout): class boxes take
+ * Mermaid's box; header / attribute / method bands keep their proportions.
+ */
+function layoutFromMermaid(diagram, sizes) {
+    const G = diagram.mermaidGeometry;
+    const classes = diagram.classes.map(c => {
+        const own = sizes.get(c.id);
+        const box = G.classes.get(c.id);
+        const k = box.height / Math.max(1, own.height);
+        return {
+            ...c, ...own, ...box,
+            headerH: own.headerH * k, attrsH: own.attrsH * k, methodsH: box.height - own.headerH * k - own.attrsH * k,
+        };
+    });
+    const notes = diagram.notes.map((n, i) => {
+        const id = `__note_${i}`;
+        const size = { width: Math.max(120, Math.max(...n.text.split('\n').map(l => l.length)) * 7 + 24), height: n.text.split('\n').length * 16 + 20 };
+        return { id, ...n, ...size, ...(G.notes.get(id) || {}), route: G.noteRoutes?.[i] || null };
+    });
+    return {
+        width: G.width,
+        height: G.height,
+        classes,
+        notes,
+        namespaces: diagram.namespaces.filter(ns => G.namespaces.has(ns.id)).map(ns => ({ ...ns, ...G.namespaces.get(ns.id) })),
+        relations: diagram.relations.map((r, i) => ({ ...r, route: G.relationRoutes?.[i] || null })),
+    };
+}
+
 export function layoutClassDiagram(diagram) {
     const sizes = new Map(diagram.classes.map(c => [c.id, classBoxSize(c)]));
+    if (diagram.mermaidGeometry) return layoutFromMermaid(diagram, sizes);
     const noteNodes = diagram.notes.map((n, i) => ({ id: `__note_${i}`, ...n, width: Math.max(120, Math.max(...n.text.split('\n').map(l => l.length)) * 7 + 24), height: n.text.split('\n').length * 16 + 20 }));
     const layout = layeredLayout({
         direction: diagram.direction,
@@ -254,8 +285,8 @@ export function renderClassPreviewSVG(diagram, opts = { width: 620, height: 450 
         if (!a || !b) continue;
         const ac = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
         const bc = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-        const p1 = boundary(a, bc);
-        const p2 = boundary(b, ac);
+        const p1 = r.route ? r.route[0] : boundary(a, bc);
+        const p2 = r.route ? r.route[r.route.length - 1] : boundary(b, ac);
         const ms = r.leftMarker ? ` marker-start="url(#${markerId[r.leftMarker]})"` : '';
         const me = r.rightMarker ? ` marker-end="url(#${markerId[r.rightMarker]})"` : '';
         s += `<g data-cd-type="relation" data-cd-kind="${r.kind}"><line x1="${X(p1.x)}" y1="${Y(p1.y)}" x2="${X(p2.x)}" y2="${Y(p2.y)}" stroke="${T.line}" stroke-width="1.3"${r.dashed ? ' stroke-dasharray="5 3"' : ''}${ms}${me}/>`;
@@ -323,8 +354,9 @@ export function renderClassOnCanvas(diagram) {
         const note = placement.add(new window.Rectangle(x, y, n.width, n.height, { stroke: T.line, strokeWidth: 1, fill: T.note, fillStyle: 'solid', roughness: 0.6, label: n.text, labelColor: T.noteText, labelFontSize: 12 }));
         const target = n.for && outlines.get(n.for);
         if (target) {
-            const p1 = boundary({ x, y, width: n.width, height: n.height }, { x: target.box.x + target.box.width / 2, y: target.box.y + target.box.height / 2 });
-            const p2 = boundary(target.box, { x: x + n.width / 2, y: y + n.height / 2 });
+            const noteCurve = routeCurve(n.route?.map(p => ({ x: p.x + ox, y: p.y + oy })));
+            const p1 = noteCurve ? noteCurve.start : boundary({ x, y, width: n.width, height: n.height }, { x: target.box.x + target.box.width / 2, y: target.box.y + target.box.height / 2 });
+            const p2 = noteCurve ? noteCurve.end : boundary(target.box, { x: x + n.width / 2, y: y + n.height / 2 });
             placement.add(new window.Line(p1, p2, { stroke: T.line, strokeWidth: 1, strokeDasharray: '3 3', roughness: 0 }));
         }
         if (!first) first = note;
@@ -335,8 +367,10 @@ export function renderClassOnCanvas(diagram) {
         if (!a || !b) continue;
         const ac = { x: a.box.x + a.box.width / 2, y: a.box.y + a.box.height / 2 };
         const bc = { x: b.box.x + b.box.width / 2, y: b.box.y + b.box.height / 2 };
-        const pa = boundary(a.box, bc);
-        const pb = boundary(b.box, ac);
+        const curve = routeCurve(r.route?.map(p => ({ x: p.x + ox, y: p.y + oy })));
+        const pa = curve ? curve.start : boundary(a.box, bc);
+        const pb = curve ? curve.end : boundary(b.box, ac);
+        const curved = curve && curve.kind !== 'straight';
         const label = [r.fromCardinality, r.label, r.toCardinality].filter(Boolean).join('   ');
         const opts = { stroke: T.line, strokeWidth: 1.5, roughness: 0.6, strokeDasharray: r.dashed ? '5 3' : '', label, labelColor: T.muted, labelBg: false };
         const parent = a.ns && a.ns === b.ns ? frames.get(a.ns) : placement.frame;
@@ -345,13 +379,20 @@ export function renderClassOnCanvas(diagram) {
                 // One arrow from `from` to `to`; each end carries its own marker.
                 const arrow = placement.add(new window.Arrow(pa, pb, {
                     ...opts,
+                    ...(curved ? { arrowCurved: 'curved', controlPoint1: { ...curve.c1 }, controlPoint2: { ...curve.c2 } } : {}),
                     startArrowhead: r.leftMarker ? (CLASS_MARKER_HEAD[r.leftMarker] || 'arrow') : 'none',
                     endArrowhead: r.rightMarker ? (CLASS_MARKER_HEAD[r.rightMarker] || 'arrow') : 'none',
                 }), parent);
                 placement.bind(arrow, a.shape, true, pa);
                 placement.bind(arrow, b.shape, false, pb);
             } else {
-                placement.add(new window.Line(pa, pb, opts), parent);
+                const line = new window.Line(pa, pb, opts);
+                if (curved) {
+                    line.isCurved = true;
+                    line.controlPoint = { ...curve.control };
+                    if (typeof line.draw === 'function') line.draw();
+                }
+                placement.add(line, parent);
             }
         } catch (err) {
             console.warn('[ClassDiagram] relation failed:', r, err);

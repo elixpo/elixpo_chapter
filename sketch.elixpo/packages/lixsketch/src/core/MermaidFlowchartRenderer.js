@@ -17,7 +17,9 @@
  * Subgraphs → nested Frames that contain their nodes.
  */
 
-import { beginDiagram, contrastText, escapeXml, nextGroupId } from './MermaidCanvas.js';
+import { beginDiagram, contrastText, curveMidpoint, escapeXml, nextGroupId, routeCurve } from './MermaidCanvas.js';
+
+export { routeCurve } from './MermaidCanvas.js';
 
 const FONT_FAMILY = 'lixFont, sans-serif';
 const PREVIEW_MARGIN = 40;
@@ -176,7 +178,14 @@ export function renderFlowchartSVG(diagram, opts = {}) {
         let mx;
         let my;
         svg += `<g data-fc-type="edge" data-fc-from="${escapeXml(e.from)}" data-fc-to="${escapeXml(e.to)}">`;
-        if (e.from === e.to) {
+        const curve = routeCurve(e.points?.map(p => ({ x: X(p.x), y: Y(p.y) })));
+        if (curve) {
+            const d = curve.kind === 'straight'
+                ? `M ${curve.start.x} ${curve.start.y} L ${curve.end.x} ${curve.end.y}`
+                : `M ${curve.start.x} ${curve.start.y} C ${curve.c1.x} ${curve.c1.y}, ${curve.c2.x} ${curve.c2.y}, ${curve.end.x} ${curve.end.y}`;
+            svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${v.strokeWidth * scale}"${dash}${me}${ms} />`;
+            ({ x: mx, y: my } = curveMidpoint(curve));
+        } else if (e.from === e.to) {
             const loop = selfLoopPoints({ x: f.x, y: f.y, width: f.w, height: f.h });
             svg += `<path d="M ${loop.start.x} ${loop.start.y} Q ${loop.control.x} ${loop.control.y} ${loop.end.x} ${loop.end.y}" fill="none" stroke="${color}" stroke-width="${v.strokeWidth * scale}"${dash}${me}${ms} />`;
             mx = loop.control.x - 10; my = loop.control.y + 10;
@@ -317,6 +326,37 @@ function createNodeShapes(n, x, y) {
     }
 }
 
+/**
+ * Place an edge along a Mermaid route: an Arrow (cubic, any heads) or, for
+ * head-less links, a Line (quadratic). Arrows stay bound to their nodes.
+ */
+function placeRoutedEdge(e, curve, opts, from, to, parent, placement) {
+    const heads = {
+        startArrowhead: e.startHead ? (ARROWHEAD_FOR[e.startHead] || 'arrow') : 'none',
+        endArrowhead: e.endHead ? (ARROWHEAD_FOR[e.endHead] || 'arrow') : 'none',
+    };
+    if (!e.endHead && !e.startHead) {
+        const line = new window.Line(curve.start, curve.end, opts);
+        if (curve.kind !== 'straight') {
+            line.isCurved = true;
+            line.controlPoint = { ...curve.control };
+            if (typeof line.draw === 'function') line.draw();
+        }
+        placement.add(line, parent);
+        return;
+    }
+    const arrow = new window.Arrow(curve.start, curve.end, {
+        ...opts,
+        ...heads,
+        ...(curve.kind === 'straight'
+            ? {}
+            : { arrowCurved: 'curved', controlPoint1: { ...curve.c1 }, controlPoint2: { ...curve.c2 } }),
+    });
+    placement.add(arrow, parent);
+    placement.bind(arrow, from.shape, true, curve.start);
+    placement.bind(arrow, to.shape, false, curve.end);
+}
+
 export function renderFlowchartOnCanvas(diagram) {
     if (!diagram || !diagram.nodes || diagram.nodes.length === 0) return false;
     if (!window.svg || !window.Rectangle || !window.Frame) {
@@ -381,6 +421,11 @@ export function renderFlowchartOnCanvas(diagram) {
         };
         const parent = frameFor(lca(from.node.subgraph, to.node.subgraph));
         try {
+            const curve = routeCurve(e.points?.map(p => ({ x: p.x + ox, y: p.y + oy })));
+            if (curve) {
+                placeRoutedEdge(e, curve, opts, from, to, parent, placement);
+                continue;
+            }
             if (e.from === e.to) {
                 const loop = selfLoopPoints(from.node);
                 const arrow = new window.Arrow(loop.start, loop.end, {

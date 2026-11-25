@@ -8,3 +8,10 @@ compatibility_date = "2025-06-26"
 # next-on-pages runs the app on the Workers runtime; Node built-ins must resolve.
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
+
+# admin-cache KV namespace (shared with admin.elixpo.com). Without this binding
+# the cache fell back to the REST API, so every cache read/write cost an extra
+# Pages Functions subrequest and cold renders exceeded the 50-subrequest limit.
+[[kv_namespaces]]
+binding = "KV"
+id = "92aaca7caf75412e82f749549971e3c8"

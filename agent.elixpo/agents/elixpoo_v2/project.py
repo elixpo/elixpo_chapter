@@ -9,6 +9,10 @@ class ProjectRecordError(RuntimeError):
     pass
 
 
+# The Project field types Elixpoo writes: free text and single-select options.
+WRITABLE_TYPES = frozenset({"TEXT", "SINGLE_SELECT"})
+
+
 class ProjectRecords:
     """Add one issue/PR to a configured Project and update managed fields."""
 
@@ -102,7 +106,14 @@ class ProjectRecords:
             if not field:
                 unavailable.append(name)
                 continue
-            if str(field.get("dataType")) == "SINGLE_SELECT":
+            data_type = str(field.get("dataType"))
+            if data_type not in WRITABLE_TYPES:
+                # Built-in fields such as Repository, Assignees or Labels share
+                # names with managed values but can't be set through
+                # updateProjectV2ItemFieldValue; GitHub fills them itself.
+                unavailable.append(f"{name} ({data_type.lower()})")
+                continue
+            if data_type == "SINGLE_SELECT":
                 option = next(
                     (
                         option

@@ -1,4 +1,4 @@
-"""oreoOS — the Python OS layer for the Oreo conference badge.
+"""oreoOS — the Python OS layer for the Falera conference badge.
 
 Apps subclass `oreoOS.App` and import services from this package:
 

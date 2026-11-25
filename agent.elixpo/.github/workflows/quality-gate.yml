@@ -16,7 +16,9 @@ jobs:
     steps:
       # ── Checkout the calling repo ──────────────────────────────────
       - name: Checkout calling repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       # ── Install yq for YAML parsing ───────────────────────────────
       - name: Install yq
@@ -67,7 +69,7 @@ jobs:
       # ── Node.js setup (nextjs) ─────────────────────────────────────
       - name: Setup Node.js
         if: steps.manifest.outputs.exists == 'true' && steps.manifest.outputs.stack == 'nextjs'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ steps.manifest.outputs.node_version }}
           cache: npm
@@ -79,7 +81,7 @@ jobs:
       # ── Python setup ───────────────────────────────────────────────
       - name: Setup Python
         if: steps.manifest.outputs.exists == 'true' && steps.manifest.outputs.stack == 'python'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.11"
 

@@ -16,6 +16,6 @@ jobs:
       pull-requests: write
     uses: elixpo/agent.elixpo/.github/workflows/elixpoo-triage-reusable.yml@v2
     secrets:
-      github_token: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+      agentic_token: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
       pollinations_key: ${{ secrets.ELIXPO_POLLINATIONS_API_KEY }}
       project_token: ${{ secrets.ELIXPOO_GITHUB_PROJECT_TOKEN }}

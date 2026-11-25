@@ -30,7 +30,7 @@ export default function CodeBlock({
                 position: "relative",
                 my: 2.5,
                 borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid color-mix(in srgb, var(--app-fg) 10%, transparent)",
                 background: "var(--app-ink)",
                 overflow: "hidden",
             }}
@@ -40,12 +40,11 @@ export default function CodeBlock({
                     sx={{
                         px: 2,
                         py: 0.8,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: "1px solid color-mix(in srgb, var(--app-fg) 6%, transparent)",
                         fontSize: "0.72rem",
-                        letterSpacing: "0.06em",
+                        letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                         textTransform: "uppercase",
                         color: "var(--app-on-ink-muted)",
-                        fontFamily: "var(--font-geist-mono)",
                     }}
                 >
                     {language}
@@ -59,10 +58,10 @@ export default function CodeBlock({
                         position: "absolute",
                         top: 6,
                         right: 6,
-                        color: copied ? "#86efac" : "var(--app-on-ink-muted)",
+                        color: copied ? "var(--app-success)" : "var(--app-on-ink-muted)",
                         "&:hover": {
                             color: "var(--app-on-ink)",
-                            background: "rgba(255,255,255,0.06)",
+                            background: "color-mix(in srgb, var(--app-fg) 6%, transparent)",
                         },
                     }}
                 >

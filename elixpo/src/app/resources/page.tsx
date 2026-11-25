@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { PageStructuredData } from "@/components/PageStructuredData";
 import { createPageMetadata } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({ title: "Open-source resources and policies", description: "Find Elixpo's canonical repository, discussions, contribution route, licensing policy, event partnership policy, code of conduct, and brand assets.", path: "/resources" });
 
@@ -20,7 +21,7 @@ const resources = [
 export default function ResourcesPage() {
   return <main className="page-shell">
     <PageStructuredData name="Elixpo resources and policies" description="Canonical repositories, contribution routes, licensing, brand, consent, partnership, conduct, and contributor-record policies." path="/resources" type="CollectionPage" />
-    <header className="page-intro"><p className="eyebrow">Resources</p><h1>The public operating<br/>surface of Elixpo.</h1><p className="lede">The important links should explain who owns a decision, where the current policy lives, and which repository carries the work.</p></header>
+    <header className="page-intro"><Sparks chips={["open source ✓", "fork me ↗", "docs ✓"]} /><p className="eyebrow">Resources</p><h1>The public operating<br/>surface of Elixpo.</h1><p className="lede">The important links should explain who owns a decision, where the current policy lives, and which repository carries the work.</p></header>
     <section className="directory-grid">{resources.map((resource,index)=><article className="directory-card" key={resource.title}><div className="card-topline"><span>{String(index+1).padStart(2,"0")}</span></div><div><h3>{resource.title}</h3><p>{resource.text}</p></div><div className="card-actions"><a href={resource.href} target={resource.href.startsWith("http")?"_blank":undefined} rel={resource.href.startsWith("http")?"noreferrer":undefined}>Open resource <ArrowUpRight size={14}/></a></div></article>)}</section>
   </main>;
 }

@@ -1,0 +1,18 @@
+{
+  "category": "coding",
+  "prompt": "Make git ignore the build/ folder and all .log files, but keep tracking keep.log.",
+  "files": {
+    "src/main.py": "print('hi')\n",
+    "build/out.bin": "x\n",
+    "debug.log": "noise\n",
+    "keep.log": "important\n"
+  },
+  "commands_succeed": [
+    "git check-ignore -q --no-index build/out.bin",
+    "git check-ignore -q --no-index debug.log",
+    "git check-ignore -q --no-index other/run.log",
+    "! git check-ignore -q --no-index keep.log",
+    "! git check-ignore -q --no-index src/main.py"
+  ],
+  "max_tokens": 60000
+}

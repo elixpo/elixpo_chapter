@@ -12,6 +12,8 @@ import oreoOS
 from oreoOS import api, theme, widgets
 from oreoOS import storage
 
+REFRESH_CARD_MS = 120
+
 
 SW = api.SCREEN_W
 SH = api.SCREEN_H
@@ -68,11 +70,8 @@ class App(oreoOS.App):
     name         = "Storage"
     author       = "Circuit-Overtime"
     # storage.usage() does a full os.listdir+stat walk of the flash —
-    # ~hundreds of ms on a populated 16 MB filesystem. Without the
-    # loading splash the user stares at a frozen previous-app frame
-    # until the walk returns. Same applies on every A-refresh, but
-    # the splash only covers the initial on_enter; refresh is fast
-    # enough on a re-walk that the brief stutter is acceptable.
+    # ~hundreds of ms on a populated 16 MB filesystem. On enter the OS's
+    # LOADING panel covers it; an A-refresh shows a busy card.
     SHOW_LOADING = True
 
     def on_enter(self, os):
@@ -97,7 +96,15 @@ class App(oreoOS.App):
         if btn == api.BTN_HOME:
             self._os.quit()
         elif btn == api.BTN_A:
-            self._refresh()
+            # The walk can take a second on a full filesystem: show a
+            # card if it is not done within REFRESH_CARD_MS.
+            try:
+                from oreoOS import busy
+                with busy.show("Storage", "Counting files",
+                               delay_ms=REFRESH_CARD_MS):
+                    self._refresh()
+            except ImportError:
+                self._refresh()
 
     def draw(self, d):
         if not self._dirty:

@@ -1,4 +1,4 @@
-"""IMU / I2C bus diagnostic for the Oreo Badge.
+"""IMU / I2C bus diagnostic for the Falera Badge.
 
 Run this when the racer game says "no IMU" or the bus scan turns up
 empty. Drives a sequence of probes against the ESP32-S3 over USB-CDC

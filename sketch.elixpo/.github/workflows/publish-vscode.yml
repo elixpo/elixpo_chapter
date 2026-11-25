@@ -1,3 +1,7 @@
+# Kept local instead of elixpo/agent.elixpo's shared publish-vscode.yml: the
+# shared workflow publishes only a version that differs from the Marketplace,
+# while this one auto-bumps from the Marketplace version, commits the bump back
+# to main and tags vscode-lixsketch-v<version>.
 name: Publish VS Code Extension to Marketplace
 
 on:

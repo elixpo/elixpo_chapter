@@ -79,9 +79,9 @@ Biome is the single linter/formatter (eslint-config-next is vestigial). The wrap
 - Test files live in `src/**/__tests__/*.test.ts`. Current coverage is pure-logic only (`webcrypto.ts`). Tests run under Node (vitest default) — Web Crypto is available on Node 20+, which is what CI uses.
 - For tests that need Cloudflare bindings (D1, KV) later, switch to `@cloudflare/vitest-pool-workers` (already installed) and add a `wrangler.toml` + pool config. Don't introduce that until a test actually needs it.
 - For API/edge changes not covered by tests, the manual loop is still:
-  1. `npm run dev`, then `curl -X POST http://localhost:3000/api/...`
-  2. Check DB state via `wrangler d1 execute elixpo_auth --local --command "SELECT ..."`
-  3. `npm run pages:build` to catch edge-runtime incompatibilities (Web Crypto / cf bindings).
+    1. `npm run dev`, then `curl -X POST http://localhost:3000/api/...`
+    2. Check DB state via `wrangler d1 execute elixpo_auth --local --command "SELECT ..."`
+    3. `npm run pages:build` to catch edge-runtime incompatibilities (Web Crypto / cf bindings).
 - Never add tests that import Node-only packages — they must remain compatible with edge runtime.
 
 ## Git & PR Workflow

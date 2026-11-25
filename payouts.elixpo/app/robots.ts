@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
             userAgent: "*",
             allow: "/",
             // Auth/transactional/API surfaces shouldn't be indexed.
-            disallow: ["/dashboard", "/api/", "/checkout", "/v1/"],
+            // Fundraiser pages (/f/<slug>) are public; their thank-you receipts aren't.
+            disallow: ["/dashboard", "/api/", "/checkout", "/v1/", "/f/*/thanks"],
         },
         sitemap: "https://payouts.elixpo.com/sitemap.xml",
         host: "https://payouts.elixpo.com",

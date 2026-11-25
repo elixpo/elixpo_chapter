@@ -47,6 +47,8 @@ struct TurnApprovals {
     configured: ConfiguredApprovals,
     interactive: InteractiveApprovalBroker,
     approved: Mutex<BTreeSet<(String, String)>>,
+    /// When the turn started; long turns notify before asking.
+    started: std::time::Instant,
 }
 
 struct TurnResources {
@@ -94,6 +96,9 @@ impl ApprovalBroker for TurnApprovals {
         {
             return ApprovalDecision::AllowOnce;
         }
+        if self.started.elapsed() >= crate::notify::NOTIFY_AFTER {
+            crate::notify::notify("Crumb needs your approval");
+        }
         let decision = self.interactive.decide(request, arguments, cancellation);
         if decision == ApprovalDecision::AllowOnce {
             self.approved
@@ -103,6 +108,38 @@ impl ApprovalBroker for TurnApprovals {
         }
         decision
     }
+}
+
+/// Adds the post-edit check and user hooks configured for this workspace.
+fn with_turn_checks(
+    mut harness: NativeHarness,
+    config: &AgentConfig,
+    workspace: &Path,
+) -> NativeHarness {
+    if let Some(verifier) = crate::post_edit_check::verifier_for(workspace, &config.checks) {
+        harness = harness.with_verifier(verifier);
+    }
+    if !config.hooks.is_empty() {
+        harness = harness.with_hooks(Arc::new(crate::hooks::CommandHooks::new(
+            config.hooks.clone(),
+            workspace.to_path_buf(),
+        )));
+    }
+    harness
+}
+
+/// Builds a write helper's tools rooted at its own worktree. Helpers get the
+/// workspace tools but no peer (A2A) runtime.
+fn helper_tool_factory(config: &AgentConfig) -> crumb_harness::WriteToolFactory {
+    let config = config.clone();
+    Arc::new(move |root: &Path| {
+        crate::workspace_read_host(
+            root,
+            &config,
+            crate::configured_pollinations_runtime_key(&config),
+            None,
+        )
+    })
 }
 
 fn configured_approvals(config: &AgentConfig) -> ConfiguredApprovals {
@@ -124,6 +161,7 @@ fn turn_approvals(
             configured,
             interactive,
             approved: Mutex::new(BTreeSet::new()),
+            started: std::time::Instant::now(),
         }),
         None => Arc::new(configured),
     }
@@ -133,6 +171,22 @@ fn turn_approvals(
 /// applying its configured request timeout, stream idle timeout, and retry
 /// policy. Pollinations falls back to the signed-in key; other providers need
 /// a configured credential unless they run on this machine.
+/// Runtime for one native turn.
+///
+/// Helper agents (`spawn_agents`) share the turn's provider and its pooled
+/// HTTP connections, and the turn blocks while they run. A pooled connection
+/// is driven by the runtime that opened it, so on a single-threaded runtime a
+/// helper reusing the turn's connection waits forever. Two worker threads
+/// keep connection I/O moving while the turn itself is blocked.
+fn native_turn_runtime() -> Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .thread_name("crumb-turn")
+        .enable_all()
+        .build()
+        .context("failed to start native Harness runtime")
+}
+
 fn native_chat_provider(
     name: &str,
     provider_config: &crumb_agent::ProviderConfig,
@@ -2137,6 +2191,7 @@ impl AgentRuntime {
         );
         crumb_agent::register_update_tasks_tool(&mut tools, tasks.clone())?;
         let harness_limits = native_harness_limits(config)?;
+        let project_instructions = crate::project_instructions::load(&workspace);
         register_parallel_agent_tool(
             &mut tools,
             Arc::clone(&provider),
@@ -2149,10 +2204,15 @@ impl AgentRuntime {
                 team_limits,
                 approvals: Some(Arc::clone(&approvals)),
                 registry: Some(self.team.clone()),
+                project_instructions: project_instructions.clone(),
+                write_tools_for: Some(helper_tool_factory(config)),
             },
         )?;
-        let harness =
-            NativeHarness::new(provider, tools, approvals, harness_limits).with_task_board(tasks);
+        let harness = with_turn_checks(
+            NativeHarness::new(provider, tools, approvals, harness_limits).with_task_board(tasks),
+            config,
+            &workspace,
+        );
         let conversation = self
             .native_conversation
             .get_or_insert_with(|| harness.conversation());
@@ -2165,16 +2225,14 @@ impl AgentRuntime {
                 provider_config.max_request_image_bytes,
             )?,
             persona: persona.map(str::to_owned),
+            project_instructions,
             static_context: static_context.to_vec(),
             selected_skills: selected_skills.to_vec(),
             trusted_context: trusted_context.to_vec(),
             max_output_tokens,
         };
         let mut events = NativeEventBridge::new(on_activity);
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .context("failed to start native Harness runtime")?;
+        let runtime = native_turn_runtime()?;
         // Saved state lets an interrupted session resume where it stopped.
         let save = config.sessions.save_conversation;
         let folder = session_root(&workspace).join(session_id);
@@ -2458,6 +2516,7 @@ fn execute_isolated_peer_turn(
         user_message: claimed.projection().as_str().to_owned(),
         images: Vec::new(),
         persona: None,
+        project_instructions: Vec::new(),
         static_context: Vec::new(),
         selected_skills: Vec::new(),
         trusted_context: Vec::new(),
@@ -3223,7 +3282,7 @@ fn context_token_budget(config: &AgentConfig, route: &crumb_agent::ModelRoute) -
     })
 }
 
-fn session_root(workspace: &Path) -> PathBuf {
+pub(crate) fn session_root(workspace: &Path) -> PathBuf {
     workspace.join(".crumb").join("sessions").join("crumb")
 }
 
@@ -3356,6 +3415,71 @@ fn new_session_id() -> Result<SessionId> {
 
 #[cfg(test)]
 mod tests {
+    /// Serves keep-alive HTTP/1.1 responses until the test ends.
+    fn keep_alive_server() -> String {
+        use std::io::{BufRead, BufReader, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        std::thread::spawn(move || {
+            for stream in listener.incoming().flatten() {
+                std::thread::spawn(move || {
+                    let mut reader = BufReader::new(stream.try_clone().expect("clone"));
+                    let mut stream = stream;
+                    loop {
+                        let mut line = String::new();
+                        // Read one request head, then answer and keep the connection.
+                        loop {
+                            line.clear();
+                            if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                                return;
+                            }
+                            if line == "\r\n" {
+                                break;
+                            }
+                        }
+                        let _ = stream.write_all(
+                            b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\nok",
+                        );
+                    }
+                });
+            }
+        });
+        format!("http://{address}/")
+    }
+
+    #[test]
+    fn helpers_can_reuse_the_turns_connections_while_the_turn_blocks() {
+        let url = keep_alive_server();
+        let client = reqwest::Client::new();
+        let runtime = super::native_turn_runtime().expect("runtime");
+        let helper_result = runtime.block_on(async {
+            // The turn opens a pooled connection...
+            let first = client.get(&url).send().await.expect("turn request");
+            assert!(first.status().is_success());
+            let _ = first.text().await;
+            // ...then blocks while a helper on its own runtime reuses it.
+            let (client, url) = (client.clone(), url.clone());
+            std::thread::spawn(move || {
+                let helper = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .expect("helper runtime");
+                helper.block_on(async {
+                    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                        client.get(&url).send().await?.text().await
+                    })
+                    .await
+                })
+            })
+            .join()
+            .expect("helper thread")
+        });
+        let body = helper_result
+            .expect("the helper's request must not hang")
+            .expect("helper request");
+        assert_eq!(body, "ok");
+    }
+
     use std::collections::BTreeMap;
     use std::num::NonZeroUsize;
     use std::path::{Path, PathBuf};

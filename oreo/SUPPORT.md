@@ -4,10 +4,10 @@ A quick map of where to take what:
 
 | You want to… | Go here |
 |---|---|
-| Report a bug | [New bug report issue](https://github.com/elixpo/oreo/issues/new?template=bug_report.yml) |
-| Suggest a feature / new app | [New feature request issue](https://github.com/elixpo/oreo/issues/new?template=feature_request.yml) |
+| Report a bug | [New bug report issue](https://github.com/elixpo/falera/issues/new?template=bug_report.yml) |
+| Suggest a feature / new app | [New feature request issue](https://github.com/elixpo/falera/issues/new?template=feature_request.yml) |
 | Read the docs | [README](README.md) → [HARDWARE.md](docs/HARDWARE.md) → [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Disclose a security issue | [Security policy](SECURITY.md) |
+| Disclose a security issue | [Security policy](docs/SECURITY.md) |
 | Ask a general question | Email **hello@elixpo.com** |
 | Propose a non-monetary event partnership | Read the [Elixpo partnership policy](https://elixpo.com/partnerships), then email **hello@elixpo.com** |
 | Read the rules | [Code of Conduct](CODE_OF_CONDUCT.md) |

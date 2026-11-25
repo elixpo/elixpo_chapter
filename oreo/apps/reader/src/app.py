@@ -23,6 +23,8 @@ import os
 import oreoOS
 from oreoOS import api, theme, widgets
 
+OPEN_CARD_MS = 120
+
 
 SW = api.SCREEN_W
 SH = api.SCREEN_H
@@ -544,7 +546,18 @@ class App(oreoOS.App):
     def _open(self, entry):
         name, path = entry
         self._title  = name
-        self._blocks = _layout(_read_lines(path))
+        # Reading, inflating and wrapping a long document takes seconds:
+        # a card shows unless it is done within OPEN_CARD_MS.
+        try:
+            from oreoOS import busy
+            card = busy.show("Opening", name, delay_ms=OPEN_CARD_MS)
+        except ImportError:
+            card = None
+        if card is None:
+            self._blocks = _layout(_read_lines(path))
+        else:
+            with card:
+                self._blocks = _layout(_read_lines(path))
         self._total_h = sum(b[2] for b in self._blocks)
         self._scroll  = 0
         self._mode    = "view"
@@ -740,11 +753,5 @@ class App(oreoOS.App):
             y_cursor += h
 
         # Right-edge scroll thumb when content overflows.
-        if self._total_h > play_h:
-            track_x = SW - 3
-            track_y = play_top
-            track_h = play_h
-            thumb_h = max(12, int(track_h * play_h / self._total_h))
-            max_scroll = max(1, self._total_h - play_h)
-            thumb_y = track_y + (track_h - thumb_h) * self._scroll // max_scroll
-            d.rect(track_x, thumb_y, 2, thumb_h, theme.PRIMARY, fill=True)
+        widgets.draw_scrollbar(d, SW - 3, play_top, play_h,
+                               self._total_h, play_h, self._scroll)

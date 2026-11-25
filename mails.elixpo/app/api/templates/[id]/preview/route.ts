@@ -50,6 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         { subject, content_html: contentHtml, background_color: bgColor },
         vars,
         footer,
+        request.nextUrl.origin,
     );
     return NextResponse.json({ ok: true, ...rendered });
 }

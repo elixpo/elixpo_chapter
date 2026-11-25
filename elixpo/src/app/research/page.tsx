@@ -6,6 +6,7 @@ import { getDirectoryEntries } from "@/lib/directory";
 import { LIVE_RESEARCH_DEMOS, RESEARCH_LAST_VERIFIED, RESEARCH_RECORDS, researchRecordPath } from "@/lib/research";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
 import people from "../../../content/people.json";
+import { Sparks } from "@/components/Sparks";
 
 const pageMetadata = createPageMetadata({
   title: "Open research, experiments, and reproducibility",
@@ -72,7 +73,7 @@ export default function ResearchPage() {
   return <main className="research-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
 
-    <header className="research-hero">
+    <header className="research-hero"><Sparks chips={["arXiv ✓", "reproducible ↗", "open data"]} />
       <div className="research-hero-copy">
         <p className="eyebrow">Elixpo Research</p>
         <h1>We publish research with its code, evidence, and <em>current status.</em></h1>
@@ -89,7 +90,7 @@ export default function ResearchPage() {
     </header>
 
     <section className="leading-research section-wrap" aria-labelledby="leading-research">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Leading research</p><h2 id="leading-research">Current work with the strongest public record.</h2></div>
         <p>These records currently lead the Elixpo research program. They combine a defined research question with public implementation evidence, publication material, or runnable artifacts.</p>
       </div>
@@ -102,12 +103,12 @@ export default function ResearchPage() {
     </section>
 
     <section className="research-people section-wrap" aria-labelledby="research-people">
-      <div className="section-heading split"><div><p className="eyebrow">Research people</p><h2 id="research-people">The people connecting research to implementation.</h2></div><p>Each person appears through a verified Elixpo research role, authorship record, or attributable repository work. This is a public record of contribution, not a ranking of researchers.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Research people</p><h2 id="research-people">The people connecting research to implementation.</h2></div><p>Each person appears through a verified Elixpo research role, authorship record, or attributable repository work. This is a public record of contribution, not a ranking of researchers.</p></div>
       <div className="research-people-grid">{researchPeople.map((person, index) => <article key={person.handle}><div className={`research-person-mark research-person-mark-${index + 1}`} aria-hidden="true"><Image src={`https://github.com/${person.handle}.png`} alt="" width={128} height={128} unoptimized /><i/><i/></div><div className="research-person-copy"><p className="eyebrow">{person.role}</p><h3>{person.name}</h3><p>{person.summary}</p><div className="research-person-work"><span>Related research</span>{person.records.map((record) => <Link href={record.path} key={record.slug}>{record.title} <ArrowRight size={13}/></Link>)}</div><div className="research-person-links">{person.portfolio && <a href={person.portfolio}>Portfolio <ArrowUpRight size={13}/></a>}<a href={person.github}>GitHub <ArrowUpRight size={13}/></a></div></div></article>)}</div>
     </section>
 
     <section className="research-spaces section-wrap" aria-labelledby="live-experiments">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Live experiments</p><h2 id="live-experiments">Run the public demonstrations.</h2></div>
         <p>These Hugging Face Spaces provide interactive access to current Elixpo research. Each demonstration links back to its project record and underlying artifacts.</p>
       </div>
@@ -130,7 +131,7 @@ export default function ResearchPage() {
     </section>
 
     <section className="research-directory section-wrap" aria-labelledby="research-index">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Research index</p><h2 id="research-index">All research records and their current lifecycle.</h2><a className="text-link" href="/research/feed.xml">Subscribe to the research feed <ArrowUpRight size={14}/></a></div>
         <p>The directory includes active investigations, completed studies, paused work, and historical experiments. Lifecycle labels describe the present state rather than the importance of the work.</p>
       </div>

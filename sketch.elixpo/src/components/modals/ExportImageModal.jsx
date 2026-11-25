@@ -108,8 +108,9 @@ export default function ExportImageModal() {
           <button
             onClick={toggleModal}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all duration-200"
+            aria-label="Close modal"
           >
-            <i className="bx bx-x text-xl" />
+            <i className="bx bx-x text-xl" aria-hidden="true"/>
           </button>
         </div>
 
@@ -156,7 +157,7 @@ export default function ExportImageModal() {
                         : 'text-text-muted hover:bg-surface-hover'
                     }`}
                   >
-                    <i className={`bx ${opt.icon} text-xs`} />
+                    <i className={`bx ${opt.icon} text-xs`} aria-hidden="true"/>
                     {opt.label}
                   </button>
                 ))}
@@ -194,14 +195,14 @@ export default function ExportImageModal() {
                 onClick={handleExportPNG}
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-accent-blue hover:bg-accent-blue-hover text-text-primary text-xs transition-all duration-200"
               >
-                <i className="bx bx-image text-sm" />
+                <i className="bx bx-image text-sm" aria-hidden="true" />
                 Export as PNG
               </button>
               <button
                 onClick={handleExportSVG}
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary text-xs transition-all duration-200"
               >
-                <i className="bx bx-code-alt text-sm" />
+                <i className="bx bx-code-alt text-sm" aria-hidden="true" />
                 Export as SVG
               </button>
             </div>
@@ -214,14 +215,14 @@ export default function ExportImageModal() {
                 onClick={handleCopyPNG}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-text-secondary text-xs hover:bg-surface-hover border border-border transition-all duration-200"
               >
-                <i className="bx bx-clipboard text-sm" />
+                <i className="bx bx-clipboard text-sm" aria-hidden="true" />
                 Copy as PNG
               </button>
               <button
                 onClick={handleCopySVG}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-text-secondary text-xs hover:bg-surface-hover border border-border transition-all duration-200"
               >
-                <i className="bx bx-copy text-sm" />
+                <i className="bx bx-copy text-sm" aria-hidden="true" />
                 Copy as SVG
               </button>
             </div>

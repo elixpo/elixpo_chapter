@@ -3,7 +3,7 @@
 **Asset name:** `badge`
 **Output size:** 1024×1024
 **Target file:** `stickers/04_badge.png`
-**Vibe:** hero shot — panda holding up the Oreo Badge like a trophy.
+**Vibe:** hero shot — panda holding up the Falera Badge like a trophy.
 
 ## Prompt
 

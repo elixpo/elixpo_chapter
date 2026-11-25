@@ -4,6 +4,7 @@ import type { DirectoryEntry } from "@/lib/directory";
 import { discussionUrl, familyPath, RELATIONSHIP_DESCRIPTIONS, RELATIONSHIP_LABELS } from "@/lib/directory";
 import { serializeJsonLd } from "@/lib/seo";
 import { ProjectMark } from "@/components/ProjectMark";
+import { Sparks } from "@/components/Sparks";
 
 export function DossierPage({ entry }: { entry: DirectoryEntry }) {
   const path = familyPath(entry.family);
@@ -17,7 +18,7 @@ export function DossierPage({ entry }: { entry: DirectoryEntry }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <Link className="back-link" href={path}><ArrowLeft size={15} /> Back to {entry.family}</Link>
       <article>
-        <header className="dossier-hero">
+        <header className="dossier-hero"><Sparks chips={[`${entry.lifecycle} ✓`, "README ↗"]} />
           <div>
             <ProjectMark seed={entry.slug} icon={entry.icon} size="large" />
             <p className="eyebrow">{entry.family} dossier · {RELATIONSHIP_LABELS[entry.relationship]}</p>
@@ -28,7 +29,7 @@ export function DossierPage({ entry }: { entry: DirectoryEntry }) {
             <div><dt>Lifecycle</dt><dd><span className={`status-pill status-${entry.lifecycle}`}>{entry.lifecycle}</span></dd></div>
             <div><dt>Relationship</dt><dd>{RELATIONSHIP_LABELS[entry.relationship]}</dd></div>
             <div><dt>Registry state</dt><dd>{entry.verificationState.replaceAll("-", " ")}</dd></div>
-            <div><dt>Repository</dt><dd>{entry.repository}</dd></div>
+            <div><dt>Repository</dt><dd>{entry.repositoryUrl?.replace(/\/$/, "").split("/").pop() ?? entry.repository}</dd></div>
             <div><dt>Repository license</dt><dd>{entry.licenseEvidence.spdxId ?? entry.licenseEvidence.classification.replaceAll("-", " ")}</dd></div>
           </dl>
         </header>
@@ -49,6 +50,7 @@ export function DossierPage({ entry }: { entry: DirectoryEntry }) {
               <a href={discussionUrl(entry)} target="_blank" rel="noreferrer"><MessageCircle size={16} /> Discuss this {entry.family}</a>
             </div>
             {entry.evidence && <div className="evidence-links"><p className="eyebrow">Research record</p>{entry.evidence.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.label} <ArrowUpRight size={13} /></a>)}</div>}
+            {entry.programmes && <div className="evidence-links"><p className="eyebrow">Programmes</p>{entry.programmes.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.label} <ArrowUpRight size={13} /></a>)}</div>}
             <div className="evidence-links"><p className="eyebrow">License evidence</p><p>{entry.licenseEvidence.summary}</p>{entry.licenseEvidence.evidenceUrl && <a href={entry.licenseEvidence.evidenceUrl} target="_blank" rel="noreferrer">Open controlling license <ArrowUpRight size={13} /></a>}<small>License checked {entry.licenseEvidence.verifiedAt} · registry status checked {entry.statusVerifiedAt}</small><Link href="/resources">How registry evidence works <ArrowUpRight size={13} /></Link></div>
           </aside>
         </section>

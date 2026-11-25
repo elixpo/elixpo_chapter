@@ -1,4 +1,4 @@
-"""Build an OreoOS OTA release manifest + bundle for GitHub Releases.
+"""Build a FaleraOS OTA release manifest + bundle for GitHub Releases.
 
 Usage:
     python tools/build_release.py                  # builds the current VERSION
@@ -6,8 +6,18 @@ Usage:
 
 Output (default into ./dist/<version>/):
     manifest.json     - listing of every shipped file, with sha256 + size
-    files/<path>      - copy of each shipped file (mirrors device layout)
+                        (plain .py; what every FaleraOS release can install)
+    manifest-mpy.json - the same release with the modules tools/mpy_build.py
+                        selects precompiled to .mpy, and a "remove" list of
+                        the .py files they replace (manifest_format 2; only
+                        an ota.py that knows the format asks for it)
+    files/<path>      - copy of each shipped file (mirrors device layout),
+                        plus the compiled .mpy files
     bundle.tar        - everything in one tarball (alternative single-asset upload)
+
+--mpy require (CI) fails the build unless mpy-cross is MicroPython 1.28.0's;
+--mpy auto (default) builds manifest-mpy.json when it is, and warns and
+skips it when not; --mpy off never builds it.
 
 The CI workflow attaches `manifest.json` (and individually-named files,
 or `bundle.tar`) to the GitHub Release. The badge's OTA client downloads
@@ -19,6 +29,9 @@ Everything `tools/deploy.py` would push to a badge EXCEPT:
   * secrets.py (generated on the fly from .env at deploy time)
   * any per-user caches (apps/*/cache.txt, apps/*/state.txt)
   * pycache, .deploy_hashes.json, raw assets
+  * NEVER_SHIP: personal files a checkout may still hold, such as the
+    avatar module older tools/fetch_avatar.py wrote (the owner's avatar
+    is /avatar.bin on the badge, made by `falera setup`, #133)
 
 i.e. exactly what the runtime needs to boot the next version cleanly.
 """
@@ -33,19 +46,25 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mpy_build  # noqa: E402
+
+MPY_MANIFEST_NAME = "manifest-mpy.json"
 
 
 # Mirrors tools/deploy.py's DEPLOY list — these are the files that
-# constitute a full OreoOS install. Kept in sync by hand for now; in a
+# constitute a full FaleraOS install. Kept in sync by hand for now; in a
 # future tidy we can have deploy.py import this module.
 SHIP_PATTERNS = [
     # OS + drivers
     "oreoOS/__init__.py",
     "oreoOS/_http.py",
+    "oreoOS/tls_roots.py",
     "oreoOS/config.py",
     "oreoOS/api.py",
     "oreoOS/app.py",
     "oreoOS/cache.py",
+    "oreoOS/github.py",
     "oreoOS/font.py",
     "oreoOS/gestures.py",
     "oreoOS/home.py",
@@ -54,18 +73,33 @@ SHIP_PATTERNS = [
     "oreoOS/ota.py",
     "oreoOS/storage.py",
     "oreoOS/store.py",
+    "oreoOS/store_io.py",
     "oreoOS/notifications.py",
     "oreoOS/notif_panel.py",
     "oreoOS/pair_prompt.py",
-    "oreoOS/http_server.py",
     "oreoOS/pixelfont.py",
     "oreoOS/power.py",
     "oreoOS/splash.py",
+    "oreoOS/splash.bin",
+    "oreoOS/splash.rv565",
+    "oreoOS/wallpaper.bin",
     "oreoOS/sprite.py",
     "oreoOS/theme.py",
     "oreoOS/timeutil.py",
     "oreoOS/widgets.py",
     "oreoOS/entry.py",
+    "oreoOS/netsvc.py",
+    "oreoOS/perf.py",
+    "oreoOS/bonds.py",
+    "oreoOS/state.py",
+    "oreoOS/profile.py",
+    "oreoOS/crashlog.py",
+    "oreoOS/geo.py",
+    "oreoOS/busy.py",
+    "oreoOS/opening.py",
+    "oreoOS/hostui.py",
+    "oreoOS/usbhost.py",
+    "oreoOS/mascot.png",
     "oreoWare/__init__.py",
     "oreoWare/_st7789.py",
     "oreoWare/battery.py",
@@ -97,6 +131,10 @@ SHIP_GLOBS = [
     "apps/*/main.py",
     "apps/*/manifest.json",
     "apps/*/__init__.py",
+    # Modular apps keep their code in src/ (main.py is only a shim), so an
+    # OTA that skipped src/ would ship a new shim over stale code.
+    "apps/*/src/**/*.py",
+    "apps/*/src/**/*.mpy",
     "apps/reader/assets/*.md",
     "apps/reader/assets/*.txt",
     "apps/*/assets/__init__.py",
@@ -105,13 +143,19 @@ SHIP_GLOBS = [
 ]
 
 
+# Never in a release, even when a checkout still has them on disk.
+NEVER_SHIP = frozenset((
+    "apps/badge/assets/optimized/avatar.py",
+))
+
+
 def _collect_paths():
     """Return [(local_path, remote_path)] for every shipping file, sorted."""
     seen = set()
     out  = []
     def _add(p):
-        rel = str(p.relative_to(REPO_ROOT))
-        if rel in seen:
+        rel = p.relative_to(REPO_ROOT).as_posix()
+        if rel in seen or rel in NEVER_SHIP:
             return
         seen.add(rel)
         out.append((p, rel))
@@ -123,7 +167,8 @@ def _collect_paths():
 
     for g in SHIP_GLOBS:
         for p in sorted(REPO_ROOT.glob(g)):
-            if p.is_file() and "__pycache__" not in p.parts:
+            if p.is_file() and "__pycache__" not in p.parts \
+                    and "tests" not in p.parts[2:]:
                 _add(p)
 
     out.sort(key=lambda t: t[1])
@@ -150,7 +195,45 @@ def _read_version():
     return VERSION
 
 
-def main():
+def _entry(dest, remote, base_url):
+    """Manifest entry for the file at `dest` shipped as `remote`."""
+    # GitHub Releases assets are stored at one URL per file, named to
+    # avoid path collisions. We flatten slashes to '_' for the download
+    # URL while keeping the original `path` in the manifest.
+    flat_name = remote.replace("/", "_")
+    return {
+        "path":   remote,
+        "url":    (base_url + flat_name) if base_url else flat_name,
+        "size":   dest.stat().st_size,
+        "sha256": _sha256(dest),
+    }
+
+
+def build_mpy_manifest(manifest, files_dir, mpy_cross, base_url=""):
+    """manifest-mpy.json's dict: `manifest` with every module
+    mpy_build.should_compile() picks replaced by its .mpy (compiled into
+    files_dir), and the replaced .py paths under "remove"."""
+    files = []
+    remove = []
+    for e in manifest["files"]:
+        remote = e["path"]
+        if not mpy_build.should_compile(remote):
+            files.append(dict(e))
+            continue
+        mremote = mpy_build.mpy_path(remote)
+        dest = mpy_build.compile_file(mpy_cross, files_dir / remote,
+                                      files_dir / mremote, remote)
+        files.append(_entry(dest, mremote, base_url))
+        remove.append(remote)
+    out = dict(manifest)
+    out["files"] = files
+    out["remove"] = remove
+    out["manifest_format"] = 2
+    out["mpy"] = mpy_build.MPY_ABI
+    return out
+
+
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", help="override the version string (default: read config.py)")
     ap.add_argument("--channel", default="stable",
@@ -164,7 +247,12 @@ def main():
                          "set this so OTA clients can find them. Empty = placeholder.")
     ap.add_argument("--out",     default="dist",
                     help="output directory root (default: dist/)")
-    args = ap.parse_args()
+    ap.add_argument("--mpy", choices=("auto", "require", "off"), default="auto",
+                    help="build manifest-mpy.json with precompiled modules "
+                         "(require: fail without MicroPython 1.28.0's mpy-cross)")
+    ap.add_argument("--mpy-cross", default=None,
+                    help="path to mpy-cross (default: $MPY_CROSS, PATH, ~/esp)")
+    args = ap.parse_args(argv)
 
     version  = args.version or _read_version()
     out_root = REPO_ROOT / args.out / version
@@ -190,20 +278,7 @@ def main():
         if dest.stat().st_size == 0:
             dest.write_bytes(b"\n")
 
-        sha  = _sha256(dest)
-        size = dest.stat().st_size
-
-        # GitHub Releases assets are stored at one URL per file, named to
-        # avoid path collisions. We flatten slashes to '_' for the
-        # download URL while keeping the original `path` in the manifest.
-        flat_name = remote.replace("/", "_")
-        url = (args.asset_base_url + flat_name) if args.asset_base_url else flat_name
-        files.append({
-            "path":   remote,
-            "url":    url,
-            "size":   size,
-            "sha256": sha,
-        })
+        files.append(_entry(dest, remote, args.asset_base_url))
 
     manifest = {
         "version":  version,
@@ -216,6 +291,25 @@ def main():
 
     manifest_path = out_root / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2))
+
+    mpy_path = out_root / MPY_MANIFEST_NAME
+    if mpy_path.exists():
+        mpy_path.unlink()
+    if args.mpy != "off":
+        tool = args.mpy_cross or mpy_build.find_mpy_cross()
+        try:
+            print("mpy-cross:", mpy_build.check(tool))
+            mpy_manifest = build_mpy_manifest(manifest, files_dir, tool,
+                                              args.asset_base_url)
+        except mpy_build.MpyError as e:
+            if args.mpy == "require":
+                sys.exit("build_release: %s" % e)
+            print("warning: %s; %s not built (badges install the .py "
+                  "release)" % (e, MPY_MANIFEST_NAME))
+        else:
+            mpy_path.write_text(json.dumps(mpy_manifest, indent=2))
+            print("  %s: %d modules precompiled"
+                  % (MPY_MANIFEST_NAME, len(mpy_manifest["remove"])))
 
     # Convenience tarball.
     bundle_path = out_root / "bundle.tar"

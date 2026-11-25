@@ -8,7 +8,7 @@
   "visualDirection": {
     "name": "Open Field",
     "approvalStatus": "approved",
-    "principle": "Warm institutional clarity with the Oreo mascot used as a human signal, not as decoration on every surface.",
+    "principle": "Warm institutional clarity with Lumi, the mascot, used as a human signal, not as decoration on every surface.",
     "palette": [
       { "name": "Paper", "hex": "#F6F5F0" },
       { "name": "Ink", "hex": "#142018" },
@@ -30,7 +30,7 @@
     "mascotUsage": {
       "useFor": ["Primary organization identity", "Community invitations", "Events", "Sticker artwork", "Friendly onboarding moments"],
       "avoidFor": ["Default research-paper decoration", "Dense technical documentation", "Infrastructure status surfaces", "Every package or project card"],
-      "rule": "Oreo is a recognizable human signal. Keep the approved proportions and marks, and do not let the mascot replace evidence, diagrams or project identity."
+      "rule": "Lumi is a recognizable human signal. Keep the approved proportions and marks, and do not let the mascot replace evidence, diagrams or project identity."
     },
     "motion": [
       "Prefer short opacity and transform transitions that explain hierarchy or state.",

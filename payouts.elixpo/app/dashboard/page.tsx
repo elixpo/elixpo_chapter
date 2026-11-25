@@ -47,7 +47,7 @@ export default function OverviewPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -92,12 +92,12 @@ export default function OverviewPage() {
                         color: "#fff",
                         px: 2.4,
                         py: 1,
-                        borderRadius: "10px",
+                        borderRadius: "999px",
                         background:
-                            "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                            "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                         "&:hover": {
                             background:
-                                "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                         },
                     }}
                 >
@@ -106,7 +106,7 @@ export default function OverviewPage() {
             </Stack>
 
             {data?.counts.products === 0 && (
-                <GlassCard sx={{ mb: 3, border: "1px solid rgba(155,123,247,0.3)" }}>
+                <GlassCard sx={{ mb: 3, border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)" }}>
                     <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>
                         Get set up in 3 steps
                     </Typography>
@@ -146,7 +146,7 @@ export default function OverviewPage() {
                                 sx={{ p: 1.6, borderRadius: "12px", border: "1px solid var(--app-border)", background: "var(--app-overlay)" }}
                             >
                                 <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-                                    <Box sx={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: "0.85rem", color: "#c4b5fd", background: "rgba(155,123,247,0.12)", border: "1px solid rgba(155,123,247,0.3)" }}>
+                                    <Box sx={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: "0.85rem", color: "var(--app-accent)", background: "color-mix(in srgb, var(--app-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)" }}>
                                         {s.n}
                                     </Box>
                                     <Box sx={{ minWidth: 0 }}>
@@ -157,7 +157,7 @@ export default function OverviewPage() {
                                 <Button
                                     component={Link}
                                     href={s.href}
-                                    sx={{ flexShrink: 0, textTransform: "none", fontWeight: 600, color: "#c4b5fd", border: "1px solid rgba(155,123,247,0.3)", borderRadius: "10px", px: 1.8, whiteSpace: "nowrap", "&:hover": { borderColor: "rgba(155,123,247,0.6)", background: "rgba(155,123,247,0.06)" } }}
+                                    sx={{ flexShrink: 0, textTransform: "none", fontWeight: 600, color: "var(--app-accent)", border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)", borderRadius: "999px", px: 1.8, whiteSpace: "nowrap", "&:hover": { borderColor: "color-mix(in srgb, var(--app-accent) 60%, transparent)", background: "color-mix(in srgb, var(--app-accent) 6%, transparent)" } }}
                                 >
                                     {s.cta}
                                 </Button>
@@ -190,25 +190,25 @@ export default function OverviewPage() {
                             ? `+${data.revenue.length - 1} more currency`
                             : "captured payments"
                     }
-                    accent="#86efac"
+                    accent="var(--app-success)"
                 />
                 <StatCard
                     label="Active members"
                     value={String(data?.counts.activeEntitlements ?? 0)}
                     sub="entitlements live now"
-                    accent="#9b7bf7"
+                    accent="var(--app-accent)"
                 />
                 <StatCard
                     label="Paid txns"
                     value={String(data?.counts.paidTransactions ?? 0)}
                     sub="lifetime captured"
-                    accent="#fbbf24"
+                    accent="var(--app-warn)"
                 />
                 <StatCard
                     label="Products"
                     value={String(data?.counts.products ?? 0)}
                     sub={`${data?.counts.apps ?? 0} app${data?.counts.apps === 1 ? "" : "s"}`}
-                    accent="#c4b5fd"
+                    accent="var(--app-accent)"
                 />
             </Box>
 
@@ -273,7 +273,7 @@ export default function OverviewPage() {
                         component={Link}
                         href="/dashboard/transactions"
                         sx={{
-                            color: "#9b7bf7",
+                            color: "var(--app-accent)",
                             textDecoration: "none",
                             fontSize: "0.85rem",
                             fontWeight: 600,
@@ -320,7 +320,7 @@ export default function OverviewPage() {
                                             px: 1,
                                             fontSize: "0.72rem",
                                             textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
+                                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                             color: "var(--app-fg-faint)",
                                             fontWeight: 600,
                                         },
@@ -351,7 +351,7 @@ export default function OverviewPage() {
                                         <td>
                                             <Box
                                                 component="span"
-                                                sx={{ color: "#c4b5fd" }}
+                                                sx={{ color: "var(--app-accent)" }}
                                             >
                                                 {t.app_slug}
                                             </Box>

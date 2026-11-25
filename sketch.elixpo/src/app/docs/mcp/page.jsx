@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { SiteShell } from '@/components/site/Site'
 import { MCP_CONNECTION_TEST_PROMPT } from '@/lib/mcpClientConfig'
+import ComingSoon from '@/components/landing/ComingSoon'
+import { MCP_ENABLED } from '@/lib/featureFlags'
 
 const CLIENT_CONFIG = `{
   "mcpServers": {
@@ -135,6 +137,19 @@ function DocSection({ id, title, children }) {
 }
 
 export default function McpDocsPage() {
+  if (!MCP_ENABLED) {
+    return (
+      <ComingSoon
+        title="The LixSketch MCP connector"
+        description="Connect AI agents to your canvases for structured edits, previews and template imports. The connector is being finalized and will be documented here when it is released."
+        icon="bx bx-plug"
+      />
+    )
+  }
+  return <McpDocsContent />
+}
+
+function McpDocsContent() {
   return (
     <SiteShell>
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 pt-8 sm:px-6">

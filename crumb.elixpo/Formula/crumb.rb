@@ -2,28 +2,28 @@
 class Crumb < Formula
   desc "Self-hosted agent harness and natural-language terminal"
   homepage "https://crumb.elixpo.com"
-  version "1.2.0"
+  version "1.5.2"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.2.0/crumb-macos-aarch64.tar.gz"
-      sha256 "e39d4a5fcfeb3eba35d4dc2c70dab90a77cb10461e6552796bea925d0eb314e5"
+      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.5.2/crumb-macos-aarch64.tar.gz"
+      sha256 "61922e66cca80eea3bf24342eba76be49eadb169cbc091e7f86827601df389c5"
     end
     on_intel do
-      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.2.0/crumb-macos-x86_64.tar.gz"
-      sha256 "136b57de547c6ba230d2c2a3d1c1d5762be713f76895c7a9c1a34f35555ae61a"
+      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.5.2/crumb-macos-x86_64.tar.gz"
+      sha256 "b3afd8a25508ea9dfd2880da70ee223c866db7ad73185522a6efcae5f7b221fb"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.2.0/crumb-linux-aarch64.tar.gz"
-      sha256 "ca8c7c8a1b6e4609fdc436dc5ebe33c67e515b5d26d8c94d0fdbf3dfb20b76a7"
+      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.5.2/crumb-linux-aarch64.tar.gz"
+      sha256 "cbdb5e18671f88fd4acb6f39efbe8cdcdb8d175c48b9f58cb3465ae456cedb85"
     end
     on_intel do
-      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.2.0/crumb-linux-x86_64.tar.gz"
-      sha256 "c103a59062bb4ee57ce3bf799a4b35d52ffe206118bde9228ee59c46bc656782"
+      url "https://github.com/elixpo/crumb.elixpo/releases/download/v1.5.2/crumb-linux-x86_64.tar.gz"
+      sha256 "80c91984fb30218dc64be7e45386d62f9ddb50a40ece3207e1a608dbf76f8d8e"
     end
   end
 

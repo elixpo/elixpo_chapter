@@ -4,9 +4,14 @@
 //! files and run commands in its own scope; every such action goes through
 //! the parent's approval broker, so the user approves helpers the same way
 //! they approve the main agent.
+//!
+//! In a git repository, and when a [`WriteToolFactory`] is configured, each
+//! write helper works in its own git worktree. Its changes are applied to the
+//! workspace as soon as it finishes, so siblings cannot overwrite each other;
+//! changes that no longer apply are saved as a patch and reported.
 
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, SyncSender};
@@ -22,7 +27,11 @@ use crumb_agent::{
 use crumb_llm::LlmProvider;
 use serde_json::{Value, json};
 
+use crate::worktree::{HelperWorktree, MergeOutcome};
 use crate::{EventSink, HarnessEvent, HarnessLimits, HarnessTurn, NativeHarness, TeamRegistry};
+
+/// Builds the write tool set rooted at a helper's own worktree.
+pub type WriteToolFactory = Arc<dyn Fn(&Path) -> Result<ToolHost> + Send + Sync>;
 
 const SPAWN_AGENTS: &str = "spawn_agents";
 const NAMES: [&str; 8] = ["Koi", "Nyx", "Rune", "Echo", "Lux", "Mica", "Rook", "Zed"];
@@ -76,6 +85,11 @@ pub struct ParallelAgentConfig {
     pub approvals: Option<Arc<dyn ApprovalBroker>>,
     /// Live helper status for the agent map.
     pub registry: Option<TeamRegistry>,
+    /// The parent's project instruction files, shared with every helper.
+    pub project_instructions: Vec<String>,
+    /// Tools for a write helper's worktree. Without it, write helpers share
+    /// the workspace.
+    pub write_tools_for: Option<WriteToolFactory>,
 }
 
 /// Adds a non-recursive `spawn_agents` tool backed by independent native Harness turns.
@@ -172,16 +186,25 @@ fn run_team(
     };
     let team = team_id();
     let assignments = request.assignments;
+    let mut isolation = if request.write {
+        HelperIsolation::prepare(&tool.config, &team, assignments.len(), progress)
+    } else {
+        HelperIsolation::default()
+    };
     let (activity_tx, activity_rx) = mpsc::sync_channel(64);
     let mut workers = Vec::with_capacity(assignments.len());
     for (index, assignment) in assignments.iter().cloned().enumerate() {
         let provider = Arc::clone(&tool.provider);
-        let child_tools = if request.write {
-            tool.write_tools.clone()
-        } else {
-            tool.child_tools.clone()
+        let mut config = tool.config.clone();
+        let child_tools = match isolation.workdir(index) {
+            Some(workdir) => {
+                config.workspace = workdir.to_path_buf();
+                isolation.tools(index, &tool.config)?
+            }
+            None if request.write => tool.write_tools.clone(),
+            None => tool.child_tools.clone(),
         };
-        let config = tool.config.clone();
+        let isolated = isolation.workdir(index).is_some();
         let helper = config.registry.clone().map(|registry| {
             let id = registry.begin(
                 &assignment.name,
@@ -203,51 +226,31 @@ fn run_team(
             tools: child_tools,
             approvals: Arc::clone(&approvals),
             write: request.write,
+            isolated,
             helper,
             config,
             cancellation: cancellation.clone(),
             activity: activity_tx.clone(),
         };
-        workers.push(
+        workers.push(Some(
             thread::Builder::new()
                 .name(format!("crumb-{}", worker.name.to_ascii_lowercase()))
                 .spawn(move || run_worker(worker))
                 .context("failed to start parallel agent")?,
-        );
+        ));
     }
     drop(activity_tx);
 
-    let total = workers.len();
-    let mut reported_active = None;
-    loop {
-        let active = workers
-            .iter()
-            .filter(|worker| !worker.is_finished())
-            .count();
-        if reported_active != Some(active) {
-            progress(&team_progress_label(active, total));
-            reported_active = Some(active);
-        }
-        if active == 0 {
-            break;
-        }
-        match activity_rx.recv_timeout(Duration::from_millis(40)) {
-            Ok(label) => progress(&label),
-            Err(mpsc::RecvTimeoutError::Timeout) => {}
-            Err(mpsc::RecvTimeoutError::Disconnected) => break,
-        }
-    }
-    while let Ok(label) = activity_rx.try_recv() {
-        progress(&label);
-    }
-    let mut findings = Vec::with_capacity(workers.len());
-    for worker in workers {
-        findings.push(
-            worker
-                .join()
-                .map_err(|_| anyhow::anyhow!("parallel agent worker panicked"))??,
-        );
-    }
+    let findings = collect_findings(
+        workers,
+        &activity_rx,
+        &mut isolation,
+        &tool.config.journal_root,
+        &team,
+        cancellation,
+        progress,
+    )?;
+    drop(isolation);
     ensure_active(cancellation)?;
     Ok(team_report(
         &team,
@@ -257,16 +260,73 @@ fn run_team(
     ))
 }
 
+/// Waits for the helpers, merging each one's worktree as soon as it finishes,
+/// and returns their findings in roster order.
+fn collect_findings(
+    mut workers: Vec<Option<thread::JoinHandle<Result<Finding>>>>,
+    activity_rx: &mpsc::Receiver<String>,
+    isolation: &mut HelperIsolation,
+    journal_root: &Path,
+    team: &str,
+    cancellation: &CancellationToken,
+    progress: &mut dyn FnMut(&str),
+) -> Result<Vec<Finding>> {
+    let total = workers.len();
+    let mut findings: Vec<Option<Finding>> = workers.iter().map(|_| None).collect();
+    let mut reported_active = None;
+    loop {
+        // Each helper is merged as soon as it finishes, so the parent and
+        // later helpers' reports see its changes on the go.
+        for (index, slot) in workers.iter_mut().enumerate() {
+            if slot.as_ref().is_some_and(thread::JoinHandle::is_finished)
+                && let Some(handle) = slot.take()
+            {
+                let mut finding = handle
+                    .join()
+                    .map_err(|_| anyhow::anyhow!("parallel agent worker panicked"))??;
+                if !cancellation.is_cancelled()
+                    && let Some(outcome) = isolation.merge(index, journal_root, team)
+                {
+                    progress(&format!(
+                        "{} {} · {}",
+                        finding.logo,
+                        finding.name,
+                        outcome.short_label()
+                    ));
+                    finding.merge = Some(outcome);
+                }
+                findings[index] = Some(finding);
+            }
+        }
+        let active = workers.iter().filter(|worker| worker.is_some()).count();
+        if reported_active != Some(active) {
+            progress(&team_progress_label(active, total));
+            reported_active = Some(active);
+        }
+        if active == 0 {
+            break;
+        }
+        match activity_rx.recv_timeout(Duration::from_millis(40)) {
+            Ok(label) => progress(&label),
+            Err(mpsc::RecvTimeoutError::Timeout | mpsc::RecvTimeoutError::Disconnected) => {}
+        }
+    }
+    while let Ok(label) = activity_rx.try_recv() {
+        progress(&label);
+    }
+    Ok(findings.into_iter().flatten().collect())
+}
+
 /// The bounded report the parent reconciles: each agent's finding and the
 /// files it changed.
 fn team_report(team: &str, objective: &str, findings: &[Finding], limit: usize) -> ToolOutput {
     let reports = findings
         .iter()
         .map(|finding| {
-            let changed = if finding.changed_files.is_empty() {
-                String::new()
-            } else {
-                format!("\nchanged files: {}", finding.changed_files.join(", "))
+            let changed = match &finding.merge {
+                Some(outcome) => format!("\n{}", outcome.summary()),
+                None if finding.changed_files.is_empty() => String::new(),
+                None => format!("\nchanged files: {}", finding.changed_files.join(", ")),
             };
             format!(
                 "{} {} [{}]:\n{}{changed}",
@@ -297,6 +357,7 @@ fn team_report(team: &str, objective: &str, findings: &[Finding], limit: usize) 
                 "status": if finding.failed { "failed" } else { "complete" },
                 "finding": finding.text,
                 "changed_files": finding.changed_files,
+                "merge": finding.merge.as_ref().map(MergeOutcome::summary),
             })).collect::<Vec<_>>()
         })),
         is_error: findings.iter().any(|finding| finding.failed),
@@ -310,6 +371,103 @@ struct Finding {
     text: String,
     failed: bool,
     changed_files: Vec<String>,
+    /// What happened to the helper's changes when it worked in a worktree.
+    merge: Option<MergeOutcome>,
+}
+
+/// Worktrees for one write team. Any left over (cancellation, errors) are
+/// removed when this is dropped.
+#[derive(Default)]
+struct HelperIsolation {
+    worktrees: Vec<Option<HelperWorktree>>,
+    /// The team's folder under the temp directory, removed at the end.
+    folder: Option<PathBuf>,
+}
+
+impl HelperIsolation {
+    /// Creates one worktree per helper when the workspace is a git
+    /// repository and a tool factory is configured; otherwise helpers share
+    /// the workspace as before.
+    fn prepare(
+        config: &ParallelAgentConfig,
+        team: &str,
+        count: usize,
+        progress: &mut dyn FnMut(&str),
+    ) -> Self {
+        let Some(top) = config
+            .write_tools_for
+            .as_ref()
+            .and_then(|_| crate::worktree::repository_top(&config.workspace))
+        else {
+            return Self::default();
+        };
+        crate::worktree::prune(&top);
+        let parent = std::env::temp_dir().join("crumb-helpers").join(team);
+        let mut isolation = Self {
+            worktrees: Vec::new(),
+            folder: Some(parent.clone()),
+        };
+        for index in 0..count {
+            match HelperWorktree::create(
+                &config.workspace,
+                &top,
+                &parent,
+                &format!("agent-{}", index + 1),
+            ) {
+                Ok(worktree) => isolation.worktrees.push(Some(worktree)),
+                Err(error) => {
+                    progress(&format!(
+                        "Helpers share the workspace (no worktree: {error})"
+                    ));
+                    return Self::default();
+                }
+            }
+        }
+        isolation
+    }
+
+    fn workdir(&self, index: usize) -> Option<&Path> {
+        self.worktrees
+            .get(index)
+            .and_then(Option::as_ref)
+            .map(|worktree| worktree.workdir.as_path())
+    }
+
+    fn tools(&self, index: usize, config: &ParallelAgentConfig) -> Result<ToolHost> {
+        let workdir = self.workdir(index).context("helper worktree is missing")?;
+        let factory = config
+            .write_tools_for
+            .as_ref()
+            .context("helper tool factory is missing")?;
+        Ok(factory(workdir)?.without(&PARENT_ONLY_TOOLS))
+    }
+
+    /// Applies helper `index`'s changes to the workspace now.
+    fn merge(&mut self, index: usize, journal_root: &Path, team: &str) -> Option<MergeOutcome> {
+        let worktree = self.worktrees.get_mut(index)?.take()?;
+        let patch = journal_root.join(format!("{team}-agent-{}.patch", index + 1));
+        Some(
+            worktree
+                .merge_into_workspace(&patch)
+                .unwrap_or_else(|error| MergeOutcome::Conflict {
+                    files: Vec::new(),
+                    patch,
+                    reason: error.to_string(),
+                }),
+        )
+    }
+}
+
+impl Drop for HelperIsolation {
+    fn drop(&mut self) {
+        for worktree in self.worktrees.iter_mut().filter_map(Option::take) {
+            worktree.remove();
+        }
+        // Only removes the folder once it is empty, never helper work.
+        if let Some(folder) = self.folder.take() {
+            let _ = std::fs::remove_dir(folder);
+        }
+    }
 }
 
 struct WorkerSpec {
@@ -324,6 +482,8 @@ struct WorkerSpec {
     tools: ToolHost,
     approvals: Arc<dyn ApprovalBroker>,
     write: bool,
+    /// The helper works in its own worktree.
+    isolated: bool,
     helper: Option<(TeamRegistry, u64)>,
     config: ParallelAgentConfig,
     cancellation: CancellationToken,
@@ -343,6 +503,7 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         tools,
         approvals,
         write,
+        isolated,
         helper,
         config,
         cancellation,
@@ -374,7 +535,9 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         })
         .collect::<Vec<_>>()
         .join("\n");
-    let role = if write {
+    let role = if write && isolated {
+        "a member of a Crumb agent team supervised by the parent Harness. You work in your own copy of the workspace; your file changes are applied to the user's workspace as soon as you finish, so keep to your assignment's scope and leave files a sibling owns alone. Verify your changes (build or test) before reporting. The user approves each action. Report what you changed and how you verified it."
+    } else if write {
         "a member of a Crumb agent team supervised by the parent Harness. You may edit files and run commands, but only inside your assignment's scope: never touch files a sibling owns, and verify your changes (build or test) before reporting. The user approves each action. Report what you changed and how you verified it."
     } else {
         "one read-only member of a Crumb agent team supervised by the parent Harness. Do not request mutations."
@@ -386,6 +549,7 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         ),
         images: Vec::new(),
         persona: None,
+        project_instructions: config.project_instructions,
         static_context: Vec::new(),
         selected_skills: Vec::new(),
         trusted_context: Vec::new(),
@@ -425,6 +589,7 @@ fn run_worker(worker: WorkerSpec) -> Result<Finding> {
         text,
         failed,
         changed_files: events.changed_files,
+        merge: None,
     })
 }
 
@@ -848,6 +1013,8 @@ mod tests {
                 team_limits: ParallelAgentLimits::default(),
                 approvals,
                 registry: None,
+                project_instructions: Vec::new(),
+                write_tools_for: None,
             },
         )
         .expect("parallel tool registers");
@@ -882,6 +1049,146 @@ mod tests {
         );
         assert!(output.text.contains("[complete]:"), "{}", output.text);
         assert!(output.text.contains("note written"), "{}", output.text);
+    }
+
+    /// Writes `note-<worktree name>.txt` in the root it was built for.
+    struct RootNoteWrite(std::path::PathBuf);
+
+    impl crumb_agent::ToolHandler for RootNoteWrite {
+        fn call(
+            &self,
+            _arguments: &serde_json::Value,
+            _cancellation: &CancellationToken,
+        ) -> anyhow::Result<crumb_agent::ToolOutput> {
+            let name = self
+                .0
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            std::fs::write(self.0.join(format!("note-{name}.txt")), "note\n")?;
+            Ok(crumb_agent::ToolOutput::text("note written"))
+        }
+    }
+
+    fn git(dir: &std::path::Path, arguments: &[&str]) -> String {
+        let output = std::process::Command::new("git")
+            .args(arguments)
+            .current_dir(dir)
+            .output()
+            .expect("git runs");
+        assert!(output.status.success(), "git {arguments:?} failed");
+        String::from_utf8_lossy(&output.stdout).into_owned()
+    }
+
+    /// Helper team folders this test process left under the temp directory.
+    fn team_folders_left() -> usize {
+        let prefix = format!("{}-", std::process::id());
+        std::fs::read_dir(std::env::temp_dir().join("crumb-helpers")).map_or(0, |entries| {
+            entries
+                .flatten()
+                .filter(|entry| entry.file_name().to_string_lossy().starts_with(&prefix))
+                .count()
+        })
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_helpers_in_a_repository_get_worktrees_merged_as_they_finish() {
+        let workspace = TempDir::new().expect("workspace");
+        let journal = TempDir::new().expect("journal");
+        let root = std::fs::canonicalize(workspace.path()).expect("canonical");
+        git(&root, &["init", "--quiet"]);
+        std::fs::write(root.join("README.md"), "seed\n").expect("seed");
+        git(&root, &["add", "-A"]);
+        git(
+            &root,
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "--quiet",
+                "-m",
+                "seed",
+            ],
+        );
+        let factory: super::WriteToolFactory = Arc::new(|root: &std::path::Path| {
+            let mut host = ToolHost::default();
+            host.register(
+                crumb_agent::ToolDescriptor {
+                    name: "note_write".to_owned(),
+                    description: "write a note".to_owned(),
+                    input_schema: json!({"type": "object"}),
+                    risk: crumb_agent::RiskClass::WriteWorkspace,
+                    transport: crumb_agent::ToolTransport::Native,
+                },
+                Arc::new(RootNoteWrite(root.to_path_buf())),
+            )?;
+            Ok(host)
+        });
+        let approved = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let mut host = ToolHost::default();
+        register_parallel_agent_tool(
+            &mut host,
+            Arc::new(ToolThenAnswer),
+            ParallelAgentConfig {
+                workspace: root.clone(),
+                journal_root: journal.path().to_path_buf(),
+                model: "fixture".to_owned(),
+                max_output_tokens: Some(128),
+                harness_limits: HarnessLimits {
+                    turn_timeout: Duration::from_secs(5),
+                    ..HarnessLimits::default()
+                },
+                team_limits: ParallelAgentLimits::default(),
+                approvals: Some(Arc::new(CountingApprovals(Arc::clone(&approved)))),
+                registry: None,
+                write_tools_for: Some(factory),
+                project_instructions: Vec::new(),
+            },
+        )
+        .expect("parallel tool registers");
+        let mut progress = Vec::new();
+
+        let output = host
+            .call_with_progress(
+                "spawn_agents",
+                &json!({"access": "write", "objective": "write notes", "tasks": ["note a", "note b"]}),
+                AgentMode::Auto,
+                &ConfiguredApprovals::new(BTreeSet::from(["spawn_agents".to_owned()])),
+                &CancellationToken::default(),
+                &mut |label: &str| progress.push(label.to_owned()),
+            )
+            .expect("write team runs");
+
+        assert!(!output.is_error, "{}", output.text);
+        assert!(root.join("note-agent-1.txt").is_file());
+        assert!(root.join("note-agent-2.txt").is_file());
+        assert_eq!(
+            output
+                .text
+                .matches("changes applied to the workspace")
+                .count(),
+            2,
+            "{}",
+            output.text
+        );
+        assert_eq!(
+            progress
+                .iter()
+                .filter(|label| label.ends_with("Changes applied"))
+                .count(),
+            2,
+            "{progress:?}"
+        );
+        assert_eq!(approved.load(std::sync::atomic::Ordering::Relaxed), 2);
+        assert_eq!(
+            git(&root, &["worktree", "list"]).lines().count(),
+            1,
+            "helper worktrees are removed"
+        );
+        assert_eq!(team_folders_left(), 0, "the team's temp folder is removed");
     }
 
     #[test]
@@ -1024,6 +1331,8 @@ mod tests {
                 team_limits: ParallelAgentLimits::default(),
                 approvals: None,
                 registry: None,
+                project_instructions: Vec::new(),
+                write_tools_for: None,
             },
         )
         .expect("parallel tool registers");

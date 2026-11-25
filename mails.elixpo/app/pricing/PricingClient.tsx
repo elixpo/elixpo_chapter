@@ -1,11 +1,17 @@
 "use client";
 
-import type { SvgIconComponent } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import BusinessIcon from "@mui/icons-material/Business";
 import Check from "@mui/icons-material/Check";
-import CheckIcon from "@mui/icons-material/Check";
 import { Box, Button, Chip, Container, Stack, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
+import {
+    type BillingCycle,
+    type Currency,
+    PLANS,
+    type PlanId,
+    getYearlySavingsBadge,
+} from "../../src/lib/plans";
 import PageShell from "../components/page-shell";
 import PricingFaq, { type Faq } from "../components/pricing-faq";
 
@@ -42,105 +48,77 @@ const OUTLINE_BTN = {
     "&:hover": { background: "var(--overlay)", borderColor: "var(--fg)" },
 };
 
-interface Tier {
-    name: string;
-    price: string;
-    cadence: string;
-    blurb: string;
-    features: string[];
-    cta: string;
-    popular?: boolean;
-}
-
-const TIERS: Tier[] = [
-    {
-        name: "Starter",
-        price: "$0",
-        cadence: "/mo",
-        blurb: "Everything you need to ship your first transactional emails.",
-        features: [
-            "1 product",
-            "5 templates",
-            "1 sender",
-            "1,000 sends / month",
-            "7-day delivery logs",
-            "Community support",
-        ],
-        cta: "Get started",
-    },
-    {
-        name: "Pro",
-        price: "$19",
-        cadence: "/mo",
-        blurb: "For growing teams sending real transactional volume.",
-        features: [
-            "10 products",
-            "Unlimited templates",
-            "5 senders",
-            "25,000 sends / month",
-            "30-day delivery logs",
-            "Secret rotation",
-            "Email support",
-        ],
-        cta: "Start Pro",
-        popular: true,
-    },
-    {
-        name: "Scale",
-        price: "$99",
-        cadence: "/mo",
-        blurb: "High-volume sending with priority support and an SLA.",
-        features: [
-            "Unlimited products",
-            "Unlimited senders",
-            "250,000 sends / month",
-            "90-day delivery logs",
-            "Priority support",
-            "Uptime SLA",
-        ],
-        cta: "Start Scale",
-    },
-];
-
 const FAQS: Faq[] = [
     {
-        q: "Do I bring my own sender?",
-        a: "Yes. You connect your own mailbox — an email address and an app password — and we send through it. Your domain, your reputation. Credentials are encrypted at rest and never returned to the dashboard.",
+        q: "What payment methods and currencies are supported?",
+        a: "Billing runs on Elixpo Pay, the payments layer of the Elixpo ecosystem. Pay in INR with UPI AutoPay, cards, or net banking (RBI e-mandate compliant), or in USD with international credit and debit cards. Receipts land in your inbox after every charge.",
     },
     {
-        q: "What counts as a send?",
-        a: "Each successful delivery to a single recipient triggered through a webhook counts as one send. Failed sends that never leave our system are not counted against your monthly allowance.",
+        q: "How does the yearly discount work?",
+        a: "Yearly subscriptions include approximately 2 months free (~17% discount compared to monthly billing). You pay once per year and receive full sending allowances every month.",
     },
     {
-        q: "Can I change plans?",
-        a: "You can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades apply at the start of your next billing cycle so you keep what you've paid for. (Billing is launching soon.)",
+        q: "What happens if I reach my monthly send limit?",
+        a: "On the free Starter plan, sends are blocked once you reach 1,000 deliveries until your next billing cycle resets or you upgrade to Pro. On paid plans (Pro & Scale), we provide advance usage notices and allow seamless plan upgrades.",
     },
     {
-        q: "Is there a free tier?",
-        a: "Yes — the Starter plan is free forever and includes 1,000 sends a month, one product, one sender, and five templates. No card required to get started.",
+        q: "Can I switch plans or cancel anytime?",
+        a: "Yes. You can upgrade, downgrade, or cancel from your dashboard billing settings. When you cancel, your plan remains active until the end of your prepaid billing period without further auto-debit.",
     },
     {
-        q: "What if I need more volume?",
-        a: "Reach out about Enterprise. We offer custom send volumes, dedicated support, and tailored terms for high-scale and regulated workloads.",
+        q: "Do I bring my own sender mailbox?",
+        a: "Yes. You connect your own mailbox — an email address and an app password — and we relay through it. Your domain, your sender reputation. Credentials are encrypted at rest with AES-GCM.",
+    },
+    {
+        q: "What if I need custom send volume or dedicated SLA?",
+        a: "Reach out about Enterprise. We offer custom high-volume send allowances, dedicated Slack support, SOC 2 compliance reports, and tailored terms.",
     },
 ];
 
-function TierCard({ tier }: { tier: Tier }) {
+interface TierDisplayProps {
+    planId: PlanId;
+    cycle: BillingCycle;
+    currency: Currency;
+}
+
+function TierCard({ planId, cycle, currency }: TierDisplayProps) {
+    const plan = PLANS[planId];
+    const pricing = plan.pricing[currency];
+    const isYearly = cycle === "yearly";
+
+    let displayPrice = pricing.formattedMonthly;
+    let billedText = "";
+
+    if (planId === "starter") {
+        displayPrice = pricing.formattedMonthly;
+    } else if (isYearly) {
+        displayPrice = pricing.effectiveMonthly;
+        billedText = `Billed ${pricing.formattedYearly}/yr`;
+    }
+
+    const ctaHref =
+        planId === "starter"
+            ? "/api/auth/login"
+            : `/dashboard/billing?plan=${planId}&cycle=${cycle}&currency=${currency}`;
+
+    const ctaText =
+        planId === "starter" ? "Get started" : planId === "pro" ? "Start Pro" : "Start Scale";
+
     return (
         <Box
             sx={{
                 position: "relative",
                 display: "flex",
                 flexDirection: "column",
-                borderRadius: "16px", // md radius token
+                borderRadius: "16px",
                 p: { xs: 3.5, md: 4 },
                 background: "var(--surface)",
-                border: tier.popular ? `2px solid ${INK}` : `1px solid ${HAIRLINE}`,
+                border: plan.popular ? `2px solid ${INK}` : `1px solid ${HAIRLINE}`,
                 boxShadow: "none",
                 height: "100%",
             }}
         >
-            {tier.popular && (
+            {plan.popular && (
                 <Chip
                     label="Popular"
                     size="small"
@@ -168,7 +146,7 @@ function TierCard({ tier }: { tier: Tier }) {
                     fontFamily: "var(--font-display)",
                 }}
             >
-                {tier.name}
+                {plan.name}
             </Typography>
             <Stack direction="row" alignItems="baseline" spacing={0.6} sx={{ mt: 2 }}>
                 <Typography
@@ -181,36 +159,51 @@ function TierCard({ tier }: { tier: Tier }) {
                         fontFamily: "var(--font-display)",
                     }}
                 >
-                    {tier.price}
+                    {displayPrice}
                 </Typography>
                 <Typography sx={{ color: SLATE, fontSize: "0.95rem", fontWeight: 500 }}>
-                    {tier.cadence}
+                    /mo
                 </Typography>
             </Stack>
+            {billedText ? (
+                <Typography
+                    sx={{
+                        color: "var(--accent)",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        mt: 0.6,
+                        fontFamily: "var(--font-mono)",
+                    }}
+                >
+                    {billedText}
+                </Typography>
+            ) : (
+                <Box sx={{ height: "1.25rem", mt: 0.6 }} />
+            )}
             <Typography
                 sx={{
                     color: SLATE,
                     fontSize: "0.9rem",
                     lineHeight: 1.55,
-                    mt: 2.2,
-                    minHeight: { md: 50 },
+                    mt: 1.5,
+                    minHeight: { md: 48 },
                 }}
             >
-                {tier.blurb}
+                {plan.blurb}
             </Typography>
 
             <Button
                 component="a"
-                href="/api/auth/login"
+                href={ctaHref}
                 endIcon={<ArrowForwardIcon sx={{ fontSize: "1rem !important" }} />}
                 fullWidth
-                sx={{ ...(tier.popular ? PRIMARY_BTN : OUTLINE_BTN), mt: 3.5, py: 1.2 }}
+                sx={{ ...(plan.popular ? PRIMARY_BTN : OUTLINE_BTN), mt: 3.5, py: 1.2 }}
             >
-                {tier.cta}
+                {ctaText}
             </Button>
 
             <Stack spacing={1.6} sx={{ mt: 4.5, borderTop: `1px solid ${HAIRLINE}`, pt: 3.5 }}>
-                {tier.features.map((f) => (
+                {plan.features.map((f) => (
                     <Stack key={f} direction="row" spacing={1.5} alignItems="flex-start">
                         <Check sx={{ fontSize: 16, color: CORAL, mt: "2px", flexShrink: 0 }} />
                         <Typography sx={{ color: INK, fontSize: "0.88rem", lineHeight: 1.5 }}>
@@ -224,6 +217,41 @@ function TierCard({ tier }: { tier: Tier }) {
 }
 
 export default function PricingClient() {
+    const [cycle, setCycle] = useState<BillingCycle>("monthly");
+    const [currency, setCurrency] = useState<Currency>("USD");
+
+    // Persist and auto-detect currency by region/locale
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem("elixpo_billing_currency");
+            if (saved === "INR" || saved === "USD") {
+                setCurrency(saved);
+                return;
+            }
+
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+            const lang = typeof navigator !== "undefined" ? navigator.language : "";
+            if (
+                tz.toLowerCase().includes("kolkata") ||
+                tz.toLowerCase().includes("calcutta") ||
+                lang.toLowerCase().includes("-in")
+            ) {
+                setCurrency("INR");
+            }
+        } catch {
+            // fallback USD
+        }
+    }, []);
+
+    const handleCurrencyChange = (newCur: Currency) => {
+        setCurrency(newCur);
+        try {
+            localStorage.setItem("elixpo_billing_currency", newCur);
+        } catch {
+            /* ignore */
+        }
+    };
+
     return (
         <PageShell variant="default">
             <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 12 }, pb: { xs: 6, md: 10 } }}>
@@ -232,7 +260,7 @@ export default function PricingClient() {
                     alignItems="center"
                     textAlign="center"
                     spacing={2.5}
-                    sx={{ mb: { xs: 6, md: 9 } }}
+                    sx={{ mb: { xs: 5, md: 7 } }}
                 >
                     <Typography
                         sx={{
@@ -250,11 +278,11 @@ export default function PricingClient() {
                         component="h1"
                         sx={{
                             fontWeight: 510,
-                            fontSize: { xs: "3rem", md: "clamp(4rem,6.5vw,6.4rem)" },
+                            fontSize: { xs: "3rem", md: "clamp(3.8rem,6vw,5.8rem)" },
                             letterSpacing: "-0.068em",
                             lineHeight: 0.93,
                             color: INK,
-                            maxWidth: 760,
+                            maxWidth: 780,
                             fontFamily: "var(--font-display)",
                         }}
                     >
@@ -262,16 +290,164 @@ export default function PricingClient() {
                     </Typography>
                     <Typography
                         sx={{
-                            maxWidth: 560,
+                            maxWidth: 580,
                             color: SLATE,
                             fontSize: { xs: "1rem", md: "1.12rem" },
                             lineHeight: 1.65,
                         }}
                     >
                         Start free, bring your own sender, and only pay as your transactional volume
-                        grows. No mail infra to build, no lock-in.
+                        grows. Auto-pay in USD and INR with zero hassle.
                     </Typography>
                 </Stack>
+
+                {/* Switchers: Billing Cycle + Currency */}
+                <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    justifyContent="center"
+                    alignItems="center"
+                    sx={{ mb: { xs: 5, md: 7 } }}
+                >
+                    {/* Monthly / Yearly cycle toggle */}
+                    <Box
+                        sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            p: "4px",
+                            borderRadius: "32px",
+                            background: "var(--surface)",
+                            border: `1px solid ${HAIRLINE}`,
+                        }}
+                    >
+                        <Button
+                            onClick={() => setCycle("monthly")}
+                            sx={{
+                                textTransform: "none",
+                                borderRadius: "28px",
+                                px: 2.2,
+                                py: 0.6,
+                                fontSize: "0.86rem",
+                                fontWeight: cycle === "monthly" ? 600 : 500,
+                                color: cycle === "monthly" ? "var(--bg)" : SLATE,
+                                background: cycle === "monthly" ? INK : "transparent",
+                                "&:hover": {
+                                    background: cycle === "monthly" ? INK : "var(--overlay)",
+                                },
+                            }}
+                        >
+                            Monthly
+                        </Button>
+                        <Button
+                            onClick={() => setCycle("yearly")}
+                            sx={{
+                                textTransform: "none",
+                                borderRadius: "28px",
+                                px: 2,
+                                py: 0.6,
+                                fontSize: "0.86rem",
+                                fontWeight: cycle === "yearly" ? 600 : 500,
+                                color: cycle === "yearly" ? "var(--bg)" : SLATE,
+                                background: cycle === "yearly" ? INK : "transparent",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.8,
+                                "&:hover": {
+                                    background: cycle === "yearly" ? INK : "var(--overlay)",
+                                },
+                            }}
+                        >
+                            Yearly
+                            <Box
+                                component="span"
+                                sx={{
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                    px: 0.9,
+                                    py: 0.2,
+                                    borderRadius: "12px",
+                                    bgcolor:
+                                        cycle === "yearly"
+                                            ? "rgba(255,255,255,0.25)"
+                                            : "var(--accent-tint)",
+                                    color: cycle === "yearly" ? "var(--bg)" : "var(--accent)",
+                                }}
+                            >
+                                -17%
+                            </Box>
+                        </Button>
+                    </Box>
+
+                    {/* Currency toggle: USD / INR */}
+                    <Box
+                        sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            p: "4px",
+                            borderRadius: "32px",
+                            background: "var(--surface)",
+                            border: `1px solid ${HAIRLINE}`,
+                        }}
+                    >
+                        <Button
+                            onClick={() => handleCurrencyChange("USD")}
+                            sx={{
+                                textTransform: "none",
+                                borderRadius: "28px",
+                                px: 2,
+                                py: 0.6,
+                                fontSize: "0.86rem",
+                                fontWeight: currency === "USD" ? 600 : 500,
+                                color: currency === "USD" ? "var(--bg)" : SLATE,
+                                background: currency === "USD" ? INK : "transparent",
+                                "&:hover": {
+                                    background: currency === "USD" ? INK : "var(--overlay)",
+                                },
+                            }}
+                        >
+                            USD ($)
+                        </Button>
+                        <Button
+                            onClick={() => handleCurrencyChange("INR")}
+                            sx={{
+                                textTransform: "none",
+                                borderRadius: "28px",
+                                px: 2,
+                                py: 0.6,
+                                fontSize: "0.86rem",
+                                fontWeight: currency === "INR" ? 600 : 500,
+                                color: currency === "INR" ? "var(--bg)" : SLATE,
+                                background: currency === "INR" ? INK : "transparent",
+                                "&:hover": {
+                                    background: currency === "INR" ? INK : "var(--overlay)",
+                                },
+                            }}
+                        >
+                            INR (₹)
+                        </Button>
+                    </Box>
+                </Stack>
+
+                {/* Savings announcement banner if yearly selected */}
+                {cycle === "yearly" && (
+                    <Box sx={{ textAlign: "center", mb: 3 }}>
+                        <Typography
+                            sx={{
+                                display: "inline-block",
+                                fontSize: "0.82rem",
+                                fontWeight: 600,
+                                color: "var(--accent)",
+                                background: "var(--accent-tint)",
+                                px: 2,
+                                py: 0.5,
+                                borderRadius: "16px",
+                                border: "1px solid var(--accent-border)",
+                            }}
+                        >
+                            🎉 {getYearlySavingsBadge()} applied across all plans
+                        </Typography>
+                    </Box>
+                )}
 
                 {/* Tier cards */}
                 <Box
@@ -280,12 +456,12 @@ export default function PricingClient() {
                         gap: 3.5,
                         gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
                         alignItems: "stretch",
-                        mt: 2,
+                        mt: 1,
                     }}
                 >
-                    {TIERS.map((t) => (
-                        <TierCard key={t.name} tier={t} />
-                    ))}
+                    <TierCard planId="starter" cycle={cycle} currency={currency} />
+                    <TierCard planId="pro" cycle={cycle} currency={currency} />
+                    <TierCard planId="scale" cycle={cycle} currency={currency} />
                 </Box>
             </Container>
 
@@ -293,7 +469,7 @@ export default function PricingClient() {
             <Container maxWidth="lg" sx={{ pb: { xs: 6, md: 8 } }}>
                 <Box
                     sx={{
-                        borderRadius: "22px", // lg radius token
+                        borderRadius: "22px",
                         border: `1px solid ${HAIRLINE}`,
                         background: "var(--surface-3)",
                         p: { xs: 3.5, md: 5 },
@@ -314,8 +490,8 @@ export default function PricingClient() {
                                 placeItems: "center",
                                 flexShrink: 0,
                                 color: CORAL,
-                                background: "rgba(58, 101, 199, 0.08)",
-                                border: "1px solid rgba(58, 101, 199, 0.2)",
+                                background: "var(--accent-tint)",
+                                border: "1px solid var(--accent-border)",
                             }}
                         >
                             <BusinessIcon sx={{ fontSize: 24 }} />
@@ -388,7 +564,6 @@ export default function PricingClient() {
                     </Typography>
                 </Stack>
 
-                {/* Embedded custom styling on FAQ rows for rule-separated look */}
                 <PricingFaq items={FAQS} />
             </Container>
         </PageShell>

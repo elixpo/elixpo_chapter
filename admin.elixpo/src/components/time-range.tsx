@@ -25,10 +25,12 @@ export default function TimeRange() {
                 display: "flex",
                 alignItems: "center",
                 gap: 0.25,
-                p: 0.25,
-                borderRadius: "8px",
-                bgcolor: "rgba(255,255,255,0.04)",
-                border: `1px solid ${C.border}`,
+                p: 0.4,
+                borderRadius: "999px",
+                bgcolor: C.paper,
+                border: `1px solid ${C.line}`,
+                maxWidth: "100%",
+                overflowX: "auto",
             }}
         >
             {RANGES.map((r) => {
@@ -41,19 +43,19 @@ export default function TimeRange() {
                         sx={{
                             border: "none",
                             cursor: "pointer",
-                            px: 1.1,
-                            py: 0.4,
-                            borderRadius: "6px",
-                            fontSize: "0.74rem",
-                            fontWeight: 600,
-                            fontFamily: "inherit",
-                            color: active ? "#fff" : C.textMuted,
-                            bgcolor: active ? C.accent : "transparent",
+                            px: 1.3,
+                            py: 0.5,
+                            borderRadius: "999px",
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            fontFamily: C.mono,
+                            whiteSpace: "nowrap",
+                            color: active ? C.panel : C.textMuted,
+                            bgcolor: active ? C.ink : "transparent",
+                            transition: "background 0.15s, color 0.15s",
                             "&:hover": {
-                                color: active ? "#fff" : C.text,
-                                bgcolor: active
-                                    ? C.accent
-                                    : "rgba(255,255,255,0.06)",
+                                color: active ? C.panel : C.text,
+                                bgcolor: active ? C.ink : C.paperDeep,
                             },
                         }}
                     >

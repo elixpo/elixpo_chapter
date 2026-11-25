@@ -48,6 +48,7 @@
         "pages:build": "npx @cloudflare/next-on-pages",
         "start": "next start",
         "lint": "biome check .",
+        "typecheck": "tsc --noEmit",
         "format": "biome check --write .",
         "db:create": "wrangler d1 create elixpo_mail",
         "db:migrate": "wrangler d1 migrations apply elixpo_mail --remote",
@@ -56,7 +57,8 @@
         "db:query:remote": "wrangler d1 execute elixpo_mail --remote",
         "db:tables": "wrangler d1 execute elixpo_mail --remote --command \"SELECT name FROM sqlite_master WHERE type='table';\"",
         "queues:create": "wrangler queues create elixpo-mail-send && wrangler queues create elixpo-mail-send-retry",
-        "worker:deploy": "cd workers/smtp-sender && wrangler deploy"
+        "worker:deploy": "cd workers/smtp-sender && wrangler deploy",
+        "pay:sync": "node scripts/sync-pay-catalog.mjs"
     },
     "dependencies": {
         "@blocknote/core": "^0.51.4",

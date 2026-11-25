@@ -1,9 +1,9 @@
-"""Over-the-air update client for OreoOS.
+"""Over-the-air update client for FaleraOS.
 
 Update model
 ============
 A "release" is a versioned manifest file pinned to a GitHub release of
-the OreoOS repo. The manifest lists every file in the OS tree along
+the FaleraOS repo. The manifest lists every file in the OS tree along
 with its size and SHA-256, plus URLs to download each file.
 
 CI publishes the release. The badge:
@@ -76,11 +76,16 @@ except ImportError:
 
 # ── tunables ────────────────────────────────────────────────────────────────
 
-OTA_REPO       = "elixpo/oreo"      # owner/repo on GitHub
+OTA_REPO       = "elixpo/falera"      # owner/repo on GitHub
 STAGE_DIR      = "/_ota"
 MANIFEST_NAME  = "manifest.json"
+# The same release with modules precompiled to .mpy (tools/mpy_build.py)
+# and a "remove" list of the .py files they replace. Only this ota.py and
+# later ask for it; older ones keep installing manifest.json.
+MPY_MANIFEST_NAME = "manifest-mpy.json"
+PREFER_MPY     = True
 DEFAULT_CHANNEL = "stable"
-USER_AGENT     = "OreoBadge-OTA"
+USER_AGENT     = "FaleraBadge-OTA"
 
 # Chunk size for download writes. Big enough to amortise FS overhead but
 # small enough not to OOM the heap when downloading a 100 KB sprite.
@@ -101,8 +106,15 @@ SMALL_PATCH_BYTES = 80 * 1024     # 80 KB
 T_GH_API       = 8         # GitHub releases API listing (per_page=10 keeps
                            # the body in the low single-KB range; 8 s is
                            # the slow-WiFi + SSL handshake headroom)
-T_MANIFEST     = 4         # manifest.json download (tiny)
-T_FILE         = 25        # individual file download (user-triggered)
+T_MANIFEST     = 20        # manifest.json (~55 KB: two TLS handshakes,
+                           # github.com then its asset CDN, plus the body;
+                           # 4 s cut it short on a slow link)
+T_FILE         = 20        # per file: each connect and each wait for data
+MIN_RATE_BPS   = 4096      # a file's whole-request budget is
+                           # T_FILE + size / MIN_RATE_BPS: the 400-490 KB
+                           # assets needed 16-20 KB/s within a flat 25 s
+FILE_TRIES     = 3         # attempts per file before the update gives up
+SPACE_RESERVE  = 128 * 1024  # flash left free after staging (as falera-cli)
 
 # Don't auto-probe in the first minute of boot — gives the UI time to
 # settle, lets the user open the home screen / press a button without
@@ -116,7 +128,102 @@ _OTA_BOOT_GRACE_S = 15 * 60   # 15 min — boot finishes in seconds, but
                               # unaffected.
 
 
+# ── errors in plain words ───────────────────────────────────────────────────
+#
+# The Updates app (and falera-cli) used to say only "download failed". Every
+# failing step now records what it was doing, on which file, and why (the
+# host and reason come from oreoOS._http): last_error() for code,
+# error_text() for a screen.
+
+_err = None
+
+STEP_WORDS = {
+    "check":    "Checking for updates",
+    "manifest": "Reading the release",
+    "space":    "Not enough storage",
+    "download": "Downloading",
+    "seal":     "Saving the update",
+    "apply":    "Installing",
+}
+
+
+def _fail(step, reason, path=""):
+    global _err
+    _err = {"step": step, "path": path or "", "reason": reason or "failed"}
+    try:
+        print("[ota] %s %s: %s" % (step, path, reason))
+    except Exception:
+        pass
+    return None
+
+
+def clear_error():
+    global _err
+    _err = None
+
+
+def last_error():
+    """{'step', 'path', 'reason'} of the last failure, or None."""
+    return _err
+
+
+def error_text(e=None):
+    """The last failure as one plain line, e.g. 'Downloading
+    oreoOS/splash.rv565: release-assets.githubusercontent.com: timed out'."""
+    e = e or _err
+    if not e:
+        return ""
+    head = STEP_WORDS.get(e.get("step"), e.get("step") or "Update")
+    if e.get("path"):
+        head += " " + e["path"]
+    return head + ": " + (e.get("reason") or "failed")
+
+
+def _http_mark(h):
+    try:
+        return h.error_mark()
+    except Exception:
+        return None
+
+
+def _http_reason(h, mark, fallback):
+    if mark is None:
+        return fallback
+    try:
+        return h.error_since(mark) or fallback
+    except Exception:
+        return fallback
+
+
+def _reason_of(e):
+    try:
+        from oreoOS import _http as _httpx
+        return _httpx._reason(e)
+    except Exception:
+        return str(e) or repr(e)
+
+
+def _free_bytes(path="/"):
+    """Free bytes on the filesystem holding `path`; None if unknown."""
+    try:
+        st = _os.statvfs(path)
+        return (st[1] or st[0]) * st[4]
+    except Exception:
+        return None
+
+
+def _file_size(p):
+    try:
+        return _os.stat(p)[6]
+    except OSError:
+        return -1
+
+
 # ── helpers ─────────────────────────────────────────────────────────────────
+
+# One reusable buffer for hashing local files (peek) and the copy fallback
+# in apply, instead of a fresh bytes object per 4 KB read.
+_COPY_BUF = None
 
 def _ensure_dir(path):
     """mkdir -p equivalent for MicroPython's tiny os module."""
@@ -162,14 +269,18 @@ def _sha256_file(path):
     """SHA-256 of a file, hex-encoded. None if the file is missing."""
     if _hashlib is None:
         return None
+    global _COPY_BUF
+    if _COPY_BUF is None:
+        _COPY_BUF = bytearray(CHUNK_BYTES * 2)
+    mv = memoryview(_COPY_BUF)
     try:
         h = _hashlib.sha256()
         with open(path, "rb") as f:
             while True:
-                chunk = f.read(CHUNK_BYTES)
-                if not chunk:
+                n = f.readinto(_COPY_BUF)
+                if not n:
                     break
-                h.update(chunk)
+                h.update(mv[:n])
         return _hex(h.digest())
     except OSError:
         return None
@@ -233,41 +344,57 @@ def latest_version(channel=DEFAULT_CHANNEL, on_progress=None):
 
     Used by the Updates page to decide BETA / LTS / OUTDATED.
     """
+    clear_error()
     if _json is None:
         return None, None
     try:
         from oreoOS import _http as _httpx
     except Exception:
+        _fail("check", "network module missing")
         return None, None
+    mark = _http_mark(_httpx)
     body = _httpx.get_url(
         "https://api.github.com/repos/%s/tags?per_page=10" % OTA_REPO,
         accept="application/vnd.github+json", timeout_s=T_GH_API,
         on_progress=on_progress)
     if body is None:
+        _fail("check", _http_reason(_httpx, mark, "no answer from GitHub"))
         return None, None
     try:
         data = _json.loads(body.decode("utf-8"))
     except Exception:
+        _fail("check", "GitHub sent an unreadable answer")
         return None, None
     if not isinstance(data, list):
+        _fail("check", "GitHub sent an unexpected answer")
         return None, None
+    # The newest version on the channel, by number: GitHub's own order is
+    # not a promise (a string sort puts v2.0.9 above v2.0.13).
     prefix = channel + "/"
+    best = None
     for t in data:
-        tag = t.get("name", "")
-        if not (tag == channel or tag.startswith(prefix)):
+        tag = t.get("name", "") if isinstance(t, dict) else ""
+        if not tag.startswith(prefix):
             continue
-        ver = tag[len(prefix):] if tag.startswith(prefix) else tag
-        manifest_url = (
-            "https://github.com/%s/releases/download/%s/%s"
-            % (OTA_REPO, tag, MANIFEST_NAME))
-        return ver, {
-            "version":      ver,
-            "notes":        "",
-            "manifest_url": manifest_url,
-            "tag":          tag,
-            "major":        _is_major_bump(ver, _current_version()),
-        }
-    return None, None
+        ver = tag[len(prefix):]
+        if _parse_version(ver) == (0, 0, 0):
+            continue
+        if best is None or _parse_version(ver) > _parse_version(best[0]):
+            best = (ver, tag)
+    if best is None:
+        _fail("check", "no %s release found" % channel)
+        return None, None
+    ver, tag = best
+    manifest_url = (
+        "https://github.com/%s/releases/download/%s/%s"
+        % (OTA_REPO, tag, MANIFEST_NAME))
+    return ver, {
+        "version":      ver,
+        "notes":        "",
+        "manifest_url": manifest_url,
+        "tag":          tag,
+        "major":        _is_major_bump(ver, _current_version()),
+    }
 
 
 def _is_major_bump(new_ver, cur_ver):
@@ -338,22 +465,28 @@ def peek(release, on_progress=None):
     manifest itself is a few KB. The expensive part (file-by-file
     download) lives in download().
     """
+    clear_error()
     if not release or _json is None:
         return None
     try:
         from oreoOS import _http as _httpx
     except Exception:
-        return None
-    body = _httpx.get_url(release["manifest_url"], timeout_s=T_MANIFEST,
-                          on_progress=on_progress)
-    if body is None:
-        return None
-    try:
-        manifest = _json.loads(body.decode("utf-8"))
-    except Exception:
-        return None
-    if not isinstance(manifest, dict):
-        return None
+        return _fail("manifest", "network module missing")
+    url = release["manifest_url"]
+    manifest = None
+    # The precompiled (.mpy) variant first, when this firmware loads it;
+    # a release without one (or an unreadable one) falls back to the
+    # plain .py manifest every FaleraOS can install.
+    if PREFER_MPY and url.endswith("/" + MANIFEST_NAME) and _mpy_ok("6"):
+        murl = url[:-len(MANIFEST_NAME)] + MPY_MANIFEST_NAME
+        manifest, _r = _get_manifest(_httpx, murl, on_progress)
+        if manifest is not None and not _mpy_ok(manifest.get("mpy", "")):
+            manifest = None
+    if manifest is None:
+        manifest, reason = _get_manifest(_httpx, url, on_progress)
+        if manifest is None:
+            return _fail("manifest", reason)
+    gc.collect()
 
     changed   = []
     unchanged = 0
@@ -373,6 +506,7 @@ def peek(release, on_progress=None):
 
     return {
         "manifest":  manifest,
+        "notes":     manifest.get("notes", "") or "",
         "changed":   changed,
         "unchanged": unchanged,
         "bytes":     total_b,
@@ -382,75 +516,267 @@ def peek(release, on_progress=None):
     }
 
 
-def download(peeked, on_progress=None):
+_dl_active = False
+
+
+def _get_manifest(h, url, on_progress=None, tries=2):
+    """(manifest dict, None) or (None, reason). A 404 is not retried."""
+    reason = "no answer"
+    for _try in range(tries):
+        mark = _http_mark(h)
+        body = h.get_url(url, timeout_s=T_MANIFEST, on_progress=on_progress)
+        if body is None:
+            reason = _http_reason(h, mark, "no answer")
+            if "HTTP 404" in reason:
+                break
+            continue
+        try:
+            m = _json.loads(body.decode("utf-8"))
+        except Exception:
+            reason = "release manifest unreadable"
+            continue
+        if isinstance(m, dict):
+            return m, None
+        reason = "release manifest unreadable"
+    return None, reason
+
+
+def _mpy_ok(abi):
+    """True when this firmware loads bytecode .mpy files of `abi`
+    ('6' or '6.3'): the major mpy version must match; a bytecode-only
+    .mpy does not depend on the sub-version."""
+    try:
+        import sys
+        v = sys.implementation._mpy
+    except Exception:
+        return False        # not MicroPython, or a build without .mpy
+    try:
+        return (v & 0xFF) == int(str(abi).split(".")[0])
+    except (TypeError, ValueError):
+        return False
+
+
+# Paths a release may remove (never anything outside the OS and the
+# built-in apps, and never the boot files).
+_REMOVABLE = ("oreoOS/", "oreoWare/", "apps/")
+
+
+def _removals(manifest):
+    """Files to delete once a release's files are in place: its "remove"
+    list (the .py files its .mpy replace), plus, for every module it
+    ships, the other form left by an earlier release (x.py next to a new
+    x.mpy would win the import; a stale x.mpy next to a new x.py is dead
+    weight). Never a path the release itself ships."""
+    paths = set()
+    for e in manifest.get("files", ()):
+        p = e.get("path", "")
+        if p:
+            paths.add(p)
+    out = []
+    for p in manifest.get("remove", ()) or ():
+        if isinstance(p, str):
+            out.append(p)
+    for p in paths:
+        if p.endswith(".mpy"):
+            out.append(p[:-4] + ".py")
+        elif p.endswith(".py"):
+            out.append(p[:-3] + ".mpy")
+    res = []
+    for p in out:
+        if (p and p not in paths and p not in res and ".." not in p
+                and not p.startswith("/") and p.startswith(_REMOVABLE)
+                and not p.endswith("/main.py")):
+            res.append(p)
+    return res
+
+
+def _apply_removals(manifest):
+    n = 0
+    for p in _removals(manifest):
+        try:
+            _os.remove(p)
+            n += 1
+        except OSError:
+            pass            # already gone
+    return n
+
+
+def download_busy():
+    """True while download() runs (e.g. on a worker the Updates app left)."""
+    return _dl_active
+
+
+def download(peeked, on_progress=None, on_bytes=None, cancel=None):
+    """See _download(): the same, with download_busy() True meanwhile."""
+    global _dl_active
+    if _dl_active:
+        _fail("download", "another download is still running")
+        return False
+    _dl_active = True
+    try:
+        return _download(peeked, on_progress, on_bytes, cancel)
+    finally:
+        _dl_active = False
+
+
+def _download(peeked, on_progress=None, on_bytes=None, cancel=None):
     """Stage 3 — download only the changed files into /_ota.
 
     `peeked` is the dict returned by peek(). Pre-passing it means the
     expensive SHA scan only happens once (during peek), not again here.
 
-    on_progress(file_index, total_files, path) lets the UI render a
-    progress bar. Every HTTP call is timeout-bounded so a hung server
-    can't freeze the OS loop — the worst case is total = T_FILE * len(changed).
+    on_progress(file_index, total_files, path) after each file;
+    on_bytes(bytes_done, bytes_total, path) as data arrives. Every request
+    is bounded (T_FILE per stall, plus a size-based budget per file); a
+    file that fails is retried (FILE_TRIES) on fresh connections before
+    the update gives up. Free space is checked first. On failure
+    last_error() / error_text() say which file, host and reason. Returns
+    True when the update is staged and sealed (manifest written last).
+    cancel() is asked between files; True stops the download (nothing is
+    sealed, so nothing is installed).
     """
     if not peeked:
         return False
+    clear_error()
     _rm_tree(STAGE_DIR)
+
+    changed = peeked["changed"]
+    total_b = int(peeked.get("bytes", 0) or 0)
+    need = total_b + SPACE_RESERVE
+    free = _free_bytes("/")
+    if free is not None and free < need:
+        _fail("space", "need %d KB, %d KB free"
+              % (need // 1024, free // 1024))
+        return False
+
     try:
         _os.mkdir(STAGE_DIR)
     except OSError:
         pass
 
-    changed = peeked["changed"]
-    total   = len(changed)
-    for i, entry in enumerate(changed):
-        path = entry.get("path", "")
-        url  = entry.get("url", "")
-        want = entry.get("sha256", "")
-        if not (path and url):
-            return False
-        if not _download_file(url, path, want):
-            return False
-        if on_progress:
-            try:
-                on_progress(i + 1, total, path)
-            except Exception:
-                pass
+    total = len(changed)
+    done_b = 0
+    try:
+        for i, entry in enumerate(changed):
+            path = entry.get("path", "")
+            if cancel is not None and cancel():
+                _fail("download", "stopped", path)
+                return False
+            if not (path and entry.get("url", "")):
+                _fail("download", "release lists a file without a URL", path)
+                return False
+            cb = None
+            if on_bytes is not None:
+                def cb(got, _exp, _base=done_b, _path=path):
+                    try:
+                        on_bytes(_base + got, total_b, _path)
+                    except Exception:
+                        pass
+            if not fetch_file(entry, STAGE_DIR, cb):
+                return False
+            done_b += int(entry.get("size", 0) or 0)
+            if on_progress:
+                try:
+                    on_progress(i + 1, total, path)
+                except Exception:
+                    pass
+    finally:
+        # Files above reuse one kept-alive TLS connection per host.
+        try:
+            from oreoOS import _http as _httpx
+            _httpx.close_pool()
+        except Exception:
+            pass
 
     # Manifest written LAST as the all-good marker. Until this file
-    # exists, apply_pending() won't promote anything from staging.
+    # exists, apply_pending() won't promote anything from staging. It is
+    # written beside its real name and renamed, so a power cut mid-write
+    # cannot leave a half-written marker.
+    final = STAGE_DIR + "/" + MANIFEST_NAME
+    tmp = final + ".tmp"
     try:
-        with open(STAGE_DIR + "/" + MANIFEST_NAME, "w") as f:
+        with open(tmp, "w") as f:
             _json.dump(peeked["manifest"], f)
-    except Exception:
+        _os.rename(tmp, final)
+    except Exception as e:
+        _fail("seal", _reason_of(e))
         return False
     return True
 
 
-def _download_file(url, dest_remote, expected_sha=None):
-    """Download into the staging area mirroring the eventual remote path."""
-    stage_path = STAGE_DIR + "/" + dest_remote
+def fetch_file(entry, stage=STAGE_DIR, on_data=None, tries=FILE_TRIES):
+    """Download one manifest entry to <stage>/<path>, verified against its
+    SHA-256 and size, retrying on fresh connections. True on success; on
+    failure last_error() names the file, host and reason. Also used by
+    tools/ota_probe.py with a scratch `stage`."""
+    path = entry.get("path", "")
+    url = entry.get("url", "")
+    want = entry.get("sha256", "") or None
+    size = int(entry.get("size", 0) or 0)
+    try:
+        from oreoOS import _http as _httpx
+    except Exception:
+        _fail("download", "network module missing", path)
+        return False
+    reason = "failed"
+    for attempt in range(max(1, tries)):
+        if attempt:
+            # A fresh start: drop kept-alive connections (one may be what
+            # broke) and give the link a moment.
+            _httpx.close_pool()
+            gc.collect()
+            try:
+                time.sleep_ms(300 * attempt)
+            except AttributeError:
+                time.sleep(0.3 * attempt)
+        mark = _http_mark(_httpx)
+        try:
+            ok = _download_file(url, path, want, size, stage, on_data)
+        except Exception as e:      # e.g. the flash filling up mid-write
+            ok = False
+            reason = _reason_of(e)
+        else:
+            if not ok:
+                reason = _http_reason(_httpx, mark, "failed")
+        if ok:
+            if size and _file_size(stage + "/" + path) != size:
+                reason = "size mismatch"
+            else:
+                return True
+        if "TLS:" in reason or "HTTP 404" in reason:
+            break               # retrying cannot fix these
+    _fail("download", reason, path)
+    return False
+
+
+def _download_file(url, dest_remote, expected_sha=None, size=0,
+                   stage=STAGE_DIR, on_data=None):
+    """Download into the staging area mirroring the eventual remote path.
+
+    Streams to flash through _http.download_to_file: flat RAM use, SHA-256
+    checked on the fly, and the TLS connections to github.com and its
+    asset CDN are reused across every file of the patch instead of two
+    fresh handshakes per file. A file that fails the hash is removed.
+    """
+    stage_path = stage + "/" + dest_remote
     parent = stage_path.rsplit("/", 1)[0]
     _ensure_dir(parent)
     try:
         from oreoOS import _http as _httpx
     except Exception:
         return False
-    body = _httpx.get_url(url, timeout_s=T_FILE)
-    if body is None:
-        return False
+    cap = (size + 64 * 1024) if size else 4 * 1024 * 1024
+    budget = T_FILE + size // MIN_RATE_BPS
     try:
-        with open(stage_path, "wb") as f:
-            f.write(body)
-    except Exception:
-        return False
-    if expected_sha and _hashlib is not None:
-        if _hex(_hashlib.sha256(body).digest()) != expected_sha:
-            try:
-                _os.remove(stage_path)
-            except Exception:
-                pass
-            return False
-    return True
+        return _httpx.download_to_file(url, stage_path,
+                                       expected_sha or None,
+                                       timeout_s=T_FILE, max_bytes=cap,
+                                       total_s=budget, on_data=on_data)
+    except TypeError:
+        # An oreoOS._http from before total_s / on_data (mixed install).
+        return _httpx.download_to_file(url, stage_path,
+                                       expected_sha or None,
+                                       timeout_s=budget, max_bytes=cap)
 
 
 def is_pending():
@@ -496,15 +822,21 @@ def apply_pending(on_progress=None):
             _ensure_dir(parent)
         try:
             _copy_file(src, dst)
-        except Exception:
+        except Exception as e:
             # Half-applied state is the worst case; the manifest still
             # exists so apply_pending() will retry on the next boot.
+            _fail("apply", _reason_of(e), path)
             return None
         if on_progress:
             try:
                 on_progress(index + 1, path)
             except Exception:
                 pass
+
+    # Every new file is in place: now delete the files they replace (an
+    # x.py would shadow the new x.mpy). Before the marker is retired, so
+    # a power cut here repeats this step at the next boot.
+    _apply_removals(manifest)
 
     # All files are in place. Retire the ready marker first so even an
     # unexpected failure while removing the remaining staging tree cannot
@@ -528,12 +860,35 @@ def apply_pending(on_progress=None):
 
 
 def _copy_file(src, dst):
+    """Move a staged file into place.
+
+    /_ota lives on the same littlefs volume, so a rename is a metadata
+    update: no data is copied and no flash pages are rewritten. If the
+    destination blocks the rename it is removed first; a power cut in
+    between leaves the staged file and the manifest, so the next boot
+    finishes the job. Falls back to a buffered copy if rename fails.
+    """
+    try:
+        _os.rename(src, dst)
+        return
+    except OSError:
+        pass
+    try:
+        _os.remove(dst)
+        _os.rename(src, dst)
+        return
+    except OSError:
+        pass
+    global _COPY_BUF
+    if _COPY_BUF is None:
+        _COPY_BUF = bytearray(CHUNK_BYTES * 2)
+    mv = memoryview(_COPY_BUF)
     with open(src, "rb") as fi, open(dst, "wb") as fo:
         while True:
-            chunk = fi.read(CHUNK_BYTES)
-            if not chunk:
+            n = fi.readinto(_COPY_BUF)
+            if not n:
                 break
-            fo.write(chunk)
+            fo.write(mv[:n])
 
 
 def discard_pending():
@@ -545,39 +900,34 @@ def discard_pending():
     _rm_tree(STAGE_DIR)
 
 
-def background_check(os_obj, min_interval_s=6 * 3600):
-    """Cheap periodic version probe — runs in the OS run-loop tail.
+# The background probe's network part runs on its own thread (a
+# cache.Refresh job): check() is a DNS lookup, a TLS handshake and a
+# GitHub GET, up to T_GH_API plus DNS. The run loop only starts the job
+# and, on a later frame, applies the result. Settings and notifications
+# are written on the UI thread only, in _bg_apply().
+_bg_job = None
+# Foreground apps that already use the network (or the radio) heavily:
+# a probe does not start while one is open. The other direction is held
+# by the apps: their automatic fetches and the Updates app's check wait
+# while netsvc.fetch_busy() (this probe, or the clock sync) is True. A
+# user's A press in Commits, Weather or the Store does not wait, so a
+# manual fetch can still overlap a probe that started on Home.
+BG_SKIP_APPS = ("Updates", "App Store", "Commits", "Weather", "WiFi")
+# A probe result that lands while one of these is in the foreground is
+# dropped: the Updates app ran its own, newer check and owns ota_status.
+BG_DROP_APPS = ("Updates",)
 
-    Behaviour:
-      * Disabled by default (see DISABLE flag below). The MicroPython
-        urequests build on this firmware does NOT honour `timeout=` for
-        the response body read — only the connect. When GitHub's edge
-        keeps the socket open but never returns data, r.json() hangs
-        FOREVER, freezing the OS run loop. Until we replace urequests
-        with a raw-socket implementation that wraps settimeout() around
-        every recv(), background probing is opt-in only via the
-        `ota_bg_check` setting.
-      * The manual "Check Update" row in Settings calls check() directly
-        and remains available regardless of this flag.
-      * Skips if WiFi isn't up.
-      * Skips inside the boot grace window (_OTA_BOOT_GRACE_S).
-      * Skips if a check ran in the last `min_interval_s` (6 h default).
-      * On result, stashes flags on the OS settings dict.
 
-    Returns True iff a new release was discovered this call.
-    """
-    # _http is the raw-socket helper at module scope; nothing to gate
-    # on here since it lazy-imports inside check()/peek()/download().
-
-    # Opt-out gate. Default ON because the boot-grace + 4 s API timeout
-    # + 6 h rate-limit cap the worst-case freeze at 4 s once every 6 h,
-    # which is tolerable. Users on a flaky GitHub edge can flip this off
-    # via Settings if the cap turns out to leak through.
+def _bg_gate(os_obj, min_interval_s):
+    """Cheap UI-thread checks. Returns the wall-clock now (int) when a
+    probe may start, else None."""
+    # Opt-out gate. Default ON; users on a flaky GitHub edge can turn it
+    # off from Settings.
     try:
         if not os_obj.settings_get("ota_bg_check", True):
-            return False
+            return None
     except Exception:
-        return False
+        return None
     last = 0
     try:
         last = int(os_obj.settings_get("ota_last_check_s", 0) or 0)
@@ -586,58 +936,47 @@ def background_check(os_obj, min_interval_s=6 * 3600):
     try:
         now = int(time.time())
     except Exception:
-        return False
+        return None
 
-    # Boot-grace: never probe in the first _OTA_BOOT_GRACE_S of uptime,
-    # even if the persisted timestamp is missing or zero. Without this,
-    # the very first frame after boot fires a synchronous HTTP GET and
-    # the user sees "press A, stuck for 4 s" because the exiting frame
-    # has to finish background_check before the next app loads.
+    # Boot-grace: never probe in the first _OTA_BOOT_GRACE_S of uptime.
+    # Wall-clock, so the launcher also gates on netsvc.background_ok()
+    # (ticks), which a first clock sync cannot cut short.
     try:
         boot_ts = getattr(os_obj, "_boot_ts_s", None)
         if boot_ts is not None and (now - boot_ts) < _OTA_BOOT_GRACE_S:
-            return False
+            return None
     except Exception:
         pass
 
     if now - last < min_interval_s:
-        return False
+        return None
 
-    # Only probe when there's a working network connection — silently
-    # skips when offline so the boot is never gated on DNS. Also skip
-    # entirely when the current SSID is flagged metered in /wifi.json,
-    # so a phone hotspot or tethered connection isn't billed for
-    # background traffic.
+    # Only probe on a working link, and never on a metered one (a phone
+    # hotspot isn't billed for background traffic).
     try:
         from oreoWare import wifi
         if not wifi.is_connected():
-            return False
+            return None
         try:
             if wifi.is_metered():
-                return False
+                return None
         except Exception:
             pass
     except Exception:
-        return False
+        return None
+    return now
 
-    try:
-        os_obj.settings_set("ota_last_check_s", now)
-    except Exception:
-        pass
 
-    try:
-        rel = check()
-    except Exception:
-        rel = None
+def _bg_apply(os_obj, rel):
+    """UI thread: record a finished probe. True iff it found a release."""
     if not rel:
         try:
             os_obj.settings_set("ota_status", "up-to-date")
         except Exception:
             pass
         return False
-
-    # New release found — surface it. The home-screen + launcher tile dot
-    # render off these flags; the warn popup fires once per `version`.
+    # New release found: the home-screen and launcher tile dot render off
+    # these flags; the warn popup fires once per `version`.
     try:
         os_obj.settings_set("ota_status",            "needs-confirm")
         os_obj.settings_set("ota_pending_version",   rel.get("version", ""))
@@ -651,6 +990,85 @@ def background_check(os_obj, min_interval_s=6 * 3600):
         pass
     push_update_notification(rel.get("version", ""))
     return True
+
+
+def background_busy():
+    """True while a background probe's GET is in flight."""
+    return _bg_job is not None and _bg_job.busy()
+
+
+def background_check(os_obj, min_interval_s=6 * 3600, foreground=None):
+    """Periodic version probe, called from the OS run-loop tail every
+    frame. Never blocks on the network (#118 follow-up):
+
+      * a finished probe is collected and applied first (UI thread),
+        unless Updates is open (BG_DROP_APPS): that app's own check is
+        newer, so the probe's result is dropped;
+      * otherwise the cheap gates run: the `ota_bg_check` setting, the
+        boot grace, the 6 h rate limit, Wi-Fi up and not metered, no
+        network-heavy app in the foreground, the clock-sync worker idle;
+      * then check() starts on its own thread and this returns at once.
+
+    The manual "Check Update" flow in the Updates app calls check()
+    directly and is unaffected.
+
+    Returns True on the frame that applies a probe which found a new
+    release.
+    """
+    global _bg_job
+    job = _bg_job
+    if job is not None:
+        if job.busy():
+            return False
+        if job.poll():
+            _bg_job = None
+            if foreground in BG_DROP_APPS:
+                return False
+            return _bg_apply(os_obj, job.result)
+        _bg_job = None
+
+    if foreground in BG_SKIP_APPS:
+        return False
+    now = _bg_gate(os_obj, min_interval_s)
+    if now is None:
+        return False
+    try:
+        from oreoOS import netsvc
+        if netsvc.worker_busy():
+            return False            # one network thread at a time
+        if not netsvc.has_threads():
+            # The job would run inline and freeze a frame for the GET:
+            # leave the probe to the Updates app's manual check.
+            return False
+    except Exception:
+        pass
+    try:
+        from oreoOS import cache
+        from oreoOS import _http    # noqa: F401  import here, not on the thread
+    except Exception:
+        return False
+
+    # Stamp before the GET so a probe that fails is not retried every
+    # frame; a failure waits for the next interval like a success.
+    try:
+        os_obj.settings_set("ota_last_check_s", now)
+    except Exception:
+        pass
+    job = cache.Refresh(_bg_fetch)
+    if not job.start() or not job.threaded:
+        # No thread could be created: the job would run inside poll() on
+        # the UI thread. Drop it; the next interval tries again.
+        return False
+    _bg_job = job
+    return False
+
+
+def _bg_fetch():
+    # Worker thread: network only, no settings, no drawing.
+    try:
+        return check()
+    except Exception:
+        return None
 
 
 def push_update_notification(version):

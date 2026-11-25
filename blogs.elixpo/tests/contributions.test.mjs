@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contributionDateKey } from '../lib/contributions.js';
+import { contributionDateKey,normalizeTimezone } from '../lib/contributions.js';
 
 const epoch = (iso) => Math.floor(new Date(iso).getTime() / 1000);
 
@@ -34,4 +34,38 @@ test('invalid input and unknown zones fall back safely', () => {
   assert.equal(contributionDateKey(null), null);
   assert.equal(contributionDateKey(undefined), null);
   assert.equal(contributionDateKey(epoch('2026-03-15T12:00:00Z'), 'Invalid/Zone'), '2026-03-15');
+});
+
+
+test('accepts valid IANA timezones', () => {
+    assert.equal(normalizeTimezone('America/New_York'), 'America/New_York');
+    assert.equal(normalizeTimezone('UTC'), 'UTC');
+
+    const kolkata = normalizeTimezone('Asia/Kolkata');
+    assert.notEqual(kolkata, 'UTC');
+    assert.equal(normalizeTimezone(kolkata), kolkata);
+    const ts = epoch('2026-06-15T10:00:00Z');
+    assert.equal(
+        contributionDateKey(ts, kolkata),
+        contributionDateKey(ts, 'Asia/Kolkata'),
+    );
+});
+
+test('canonicalizes case and aliases to one value', () => {
+    const variants = ['Asia/Kolkata', 'asia/kolkata', 'ASIA/KOLKATA', 'Asia/Calcutta'];
+    assert.equal(new Set(variants.map(normalizeTimezone)).size, 1);
+    assert.equal(normalizeTimezone('utc'), 'UTC');
+});
+
+test('falls back to UTC for invalid timezones', () => {
+    assert.equal(normalizeTimezone('Invalid/Timezone'), 'UTC');
+    assert.equal(normalizeTimezone('random-string'), 'UTC');
+    assert.equal(normalizeTimezone(''), 'UTC');
+    assert.equal(normalizeTimezone(undefined), 'UTC');
+});
+
+test('rejects numeric offsets and excessively long timezone values', () => {
+    assert.equal(normalizeTimezone('+05:30'), 'UTC');
+    assert.equal(normalizeTimezone('-08:00'), 'UTC');
+    assert.equal(normalizeTimezone('A'.repeat(65)), 'UTC');
 });

@@ -34,7 +34,7 @@ export default function ConfirmDialog({
     onConfirm: () => void;
     onClose: () => void;
 }) {
-    const accent = destructive ? "#f87171" : "#9b7bf7";
+    const accent = destructive ? "var(--app-danger)" : "var(--app-accent)";
     return (
         <Dialog
             open={open}
@@ -45,7 +45,7 @@ export default function ConfirmDialog({
                 sx: {
                     bgcolor: "var(--app-surface)",
                     border: "1px solid var(--app-border)",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-panel)",
                     color: "var(--app-fg)",
                     backgroundImage: "none",
                 },
@@ -62,8 +62,8 @@ export default function ConfirmDialog({
                             display: "grid",
                             placeItems: "center",
                             color: accent,
-                            background: `${accent}1a`,
-                            border: `1px solid ${accent}40`,
+                            background: `color-mix(in srgb, ${accent} 10%, transparent)`,
+                            border: `1px solid color-mix(in srgb, ${accent} 25%, transparent)`,
                         }}
                     >
                         <WarningAmberIcon sx={{ fontSize: 22 }} />
@@ -109,14 +109,14 @@ export default function ConfirmDialog({
                         fontWeight: 700,
                         color: "#fff",
                         px: 2.4,
-                        borderRadius: "10px",
+                        borderRadius: "999px",
                         background: destructive
-                            ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
-                            : "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                            ? "linear-gradient(135deg, var(--app-danger) 0%, var(--app-danger) 100%)"
+                            : "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                         "&:hover": {
                             background: destructive
-                                ? "linear-gradient(135deg, #f87171 0%, #ef4444 100%)"
-                                : "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                ? "linear-gradient(135deg, var(--app-danger) 0%, var(--app-danger) 100%)"
+                                : "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                         },
                         "&.Mui-disabled": { opacity: 0.5, color: "#fff" },
                     }}

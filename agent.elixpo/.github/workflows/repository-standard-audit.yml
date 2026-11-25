@@ -1,0 +1,47 @@
+name: Repository standard audit
+
+on:
+  schedule:
+    - cron: "19 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Optional repository name without owner
+        type: string
+        required: false
+      apply_settings:
+        description: Reconcile repository metadata; rulesets remain read-only
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-standard-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e .
+      - name: Audit repository settings and branch rules
+        env:
+          ELIXPOO_GITHUB_ROLLOUT_TOKEN: ${{ secrets.ELIXPOO_GITHUB_ROLLOUT_TOKEN }}
+          REPOSITORY: ${{ inputs.repository }}
+          APPLY_SETTINGS: ${{ inputs.apply_settings }}
+        run: |
+          args=(--concurrency 5)
+          if [[ -n "$REPOSITORY" ]]; then args+=(--repo "$REPOSITORY"); fi
+          if [[ "$APPLY_SETTINGS" == "true" ]]; then args+=(--apply-settings); fi
+          python -m agents.repository_standard "${args[@]}"

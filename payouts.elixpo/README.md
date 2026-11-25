@@ -1,24 +1,17 @@
-<!--
-  ELIXPO README - follows the Elixpo standard template (see STANDARDS.md §4).
-  Section order is shared across the ecosystem; the About and product sections
-  are repo-specific.
--->
-
 <p align="center">
-  <img src="public/og-image.png" alt="Elixpo Pay - payments & membership for the Elixpo ecosystem" width="100%" />
+  <img src="public/og-image.png" alt="Elixpo Pay - Payments and payouts for the Elixpo ecosystem" width="100%" />
 </p>
 
 <h1 align="center">Elixpo Pay</h1>
 
 <p align="center">
-  <strong>The payments and membership layer for the Elixpo ecosystem - and for any app that wants to charge for access.</strong><br/>
-  Free and open source, built by a global community of 45+ contributors.
+  <strong>Hosted checkout, subscriptions, and access control for your app, with one API key and one webhook.</strong><br/>
+  Shared payments infrastructure for the open Elixpo ecosystem of AI and developer tools.
 </p>
 
 <p align="center">
   <a href="https://payouts.elixpo.com">payouts.elixpo.com</a> ·
-  <a href="https://payouts.elixpo.com/docs">Docs</a> ·
-  <a href="https://elixpo.com">Elixpo</a> ·
+  <a href="https://payouts.elixpo.com/docs">Documentation</a> ·
   <a href="https://github.com/orgs/elixpo/discussions">Discussions</a> ·
   <a href="https://github.com/elixpo/elixpo_chapter">Monorepo</a>
 </p>
@@ -27,95 +20,72 @@
 
 ## About
 
-> This repository is the source for **Elixpo Pay** ([payouts.elixpo.com](https://payouts.elixpo.com)) -
-> the multi-tenant payments & payouts SaaS for the Elixpo ecosystem. It is a
-> shared platform service: a hosted, branded checkout, a unified ledger,
-> entitlement grants with signed webhooks, per-app API credentials, code-managed
-> pricing catalogs, and creator payouts - built edge-native on Cloudflare Pages,
-> D1 & KV, with Razorpay (INR) and Elixpo Accounts SSO.
+**Elixpo Pay** is the multi-tenant payments and payouts service for the Elixpo
+ecosystem, and for any developer who wants to charge for access. Your server
+starts a checkout, the buyer pays on a hosted page, and Elixpo Pay records what
+they bought and tells your app to **switch them on**. When the paid period
+ends, it tells your app to **switch them off**.
 
-Elixpo Pay lets an app **charge people and unlock membership** without building a payments system from scratch.
+No card data reaches your app. You don't need to build a subscription database.
+You never send an amount: prices come from a catalog that you manage in code.
+Merchants sign in with **Elixpo Accounts** (SSO). Within the ecosystem, Elixpo
+Pay handles billing for the other Elixpo products.
 
-Think of it as the money side of Elixpo Accounts (which handles sign-in). Your app sends a buyer to a secure, hosted checkout page; Elixpo Pay collects the payment, remembers what the person bought, and tells your app to switch them on. When the membership runs out, it tells your app to switch them back off.
+> This repository is the source for the **payouts.elixpo.com** hosted service.
 
-You never touch card numbers, and you never have to track who paid for what - Elixpo Pay does both.
+### Who it's for
 
-> **Live today:** first-party billing for [blogs.elixpo.com](https://blogs.elixpo.com), powered by Razorpay (INR). It's built as a multi-tenant SaaS, so other apps can plug in the same way.
+Developers and businesses who want one-time purchases or recurring memberships
+in their app without building a payments system themselves. This includes
+Elixpo's own products and outside apps.
 
-### Why use it?
+### Why it's different
 
-- 🔒 **No card data, ever.** Payments happen on a hosted page secured by the payment provider. Your app only ever sees "this person is now a member."
-- 🧾 **Memberships, handled.** Elixpo Pay tracks each buyer's plan and expiry, and downgrades them automatically when it lapses.
-- 🌍 **Fair regional pricing.** Show India one price and the rest of the world another - the price a buyer actually pays always comes from your own price list, so it can't be tampered with.
-- 🔔 **Your app stays in sync.** The moment something changes, we notify your app (and you can also ask us at any time).
-- 🎨 **A checkout that looks the part.** A polished, branded payment page with your product name, plan, and total - not a bare form.
-- 🧩 **One key, one webhook.** Each app gets its own secret key and signing secret. No shared passwords to pass around.
+- **🔒 No card data, ever.** Payments happen on a hosted checkout. Your app only
+  learns "this buyer now has tier X until date Y."
+- **🔁 One-time and autopay.** One-time purchases go through Razorpay Orders.
+  Recurring tiers use Razorpay autopay (UPI AutoPay and card e-mandates under
+  RBI rules). The same API call handles both, and the price type decides which
+  flow runs.
+- **🧾 Pricing as code.** You declare your products and regional prices in JSON
+  and push them with `POST /v1/sync`. The amount a buyer pays is looked up from
+  your catalog, so nobody can tamper with it.
+- **🔔 Signed webhooks.** `entitlement.updated` fires on every grant, renewal,
+  cancellation, and expiry. `payment.captured` is optional. Both are
+  HMAC-signed, and your app can also read entitlements whenever it needs to.
+- **🔑 Key rotation without downtime.** Each app gets a secret key (`lix_pay_…`)
+  and a webhook signing secret. When you rotate one, you can keep the old value
+  valid for a short grace window, and webhooks are signed with both secrets
+  during that window.
+- **📬 Buyer emails included.** Receipts, cancellation notices, failed-renewal
+  alerts, and expiry notices go out through
+  [Elixpo Mails](https://mails.elixpo.com), from your own mailbox.
+- **🏦 Connected payouts.** You can connect your bank so that your share of
+  each payment is routed to you (Razorpay Route).
 
-### How it works
+### How it works — in four steps
 
-```mermaid
-sequenceDiagram
-    participant App as Your app
-    participant Pay as Elixpo Pay
-    participant Buyer
-    participant Provider as Payment provider
+1. **Create a product.** Sign in with Elixpo Accounts and create a product in
+   the dashboard. You get a secret key and a webhook signing secret.
+2. **Sync your catalog.** Push your tiers and prices from code with
+   `POST /v1/sync`.
+3. **Start a checkout.** When a user upgrades, your server calls
+   `POST /v1/checkout/sessions` and redirects the buyer to the hosted checkout
+   URL that comes back.
+4. **Receive the webhook.** Once the payment is confirmed, Elixpo Pay grants
+   the entitlement, sends `entitlement.updated` to your app, and returns the
+   buyer to your `success_url`.
 
-    App->>Pay: 1. Start a checkout (buyer + plan)
-    Pay-->>App: Secure hosted checkout link
-    App->>Buyer: Redirect to checkout
-    Buyer->>Provider: 2. Pays on the hosted page
-    Provider-->>Pay: Payment confirmed
-    Pay->>App: 3. Webhook — "this user is now a member"
-    Pay->>Buyer: Redirect back to your site
-```
-
-1. **Start checkout.** Your app asks Elixpo Pay to open a checkout for a buyer and a plan. We hand back a secure link.
-2. **Buyer pays.** They complete payment on the hosted page. No card details ever reach your app.
-3. **Access is granted.** Elixpo Pay records the membership and pings your app so it can unlock the right features - instantly.
-
-### The dashboard
-
-Sign in with **Elixpo Accounts** and you get a merchant dashboard to:
-
-- Create a **product** and review its **pricing tiers** (defined in code - see below).
-- Grab your **secret key** and **webhook signing secret**.
-- Point your **webhook** at your app and choose which events you want (membership changes, payment notifications).
-- Watch **revenue, active members, and transactions** at a glance.
-- **Archive** a product to pause payments, and **unarchive** to resume.
-
-### For developers
-
-Everything is one hosted checkout plus a small REST API. The full guide lives at **[payouts.elixpo.com/docs](https://payouts.elixpo.com/docs)**:
-
-- **Quickstart** - create a session, receive the webhook, read entitlements.
-- **Catalog sync** - manage products & prices from a JSON file with `POST /v1/sync`.
-- **Checkout sessions** - `POST /v1/checkout/sessions` with your secret key.
-- **Webhooks** - verify signed `entitlement.updated` / `payment.captured` events.
-- **Entitlements API** - read a buyer's current plan any time.
-
-```js
-// Start a checkout from your server:
-const res = await fetch("https://payouts.elixpo.com/v1/checkout/sessions", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer " + process.env.ELIXPO_PAY_API_KEY,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    tier: "member",
-    currency: "INR",
-    customer: { uid: user.id, email: user.email },
-    success_url: "https://yourapp.com/settings",
-  }),
-});
-
-const { url } = await res.json();
-redirect(url); // send the buyer to hosted checkout
-```
+After that, renewals, cancellations, and expiry keep your app in sync through
+the same webhook.
 
 ### Built on
 
-Next.js (App Router) · Cloudflare Pages, D1 & KV (edge runtime) · MUI · Razorpay. Sign-in via Elixpo Accounts (OAuth).
+Elixpo Pay runs entirely on **Cloudflare's edge**: Next.js 15 on Cloudflare
+Pages (edge runtime), with **D1** for the relational ledger and **KV** for
+idempotency, handoff, and replay protection. Payments go through **Razorpay**
+(INR). Stripe for international payments is coming soon. Merchants sign in
+through **Elixpo Accounts** (SSO), and buyer emails go through **Elixpo Mails**.
 
 ## The ecosystem
 
@@ -127,13 +97,173 @@ Next.js (App Router) · Cloudflare Pages, D1 & KV (edge runtime) · MUI · Razor
 | 💬 **Elixpo Chat** | A fluid, real-time AI chat experience _(under dev)_ | [chat.elixpo.com](https://chat.elixpo.com) |
 | 🔎 **Elixpo Search** | Fast, AI-assisted search | [search.elixpo.com](https://search.elixpo.com) |
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
+| 📬 **Elixpo Mails** | Branded transactional email, triggered by your product's events | [mails.elixpo.com](https://mails.elixpo.com) |
+| 💳 **Elixpo Pay** | Payments, subscriptions, and payouts _(this repo)_ | [payouts.elixpo.com](https://payouts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Falera** | The open conference badge and FaleraOS | [falera.elixpo.com](https://falera.elixpo.com) |
 
 Developers can drop our editors into their own projects with the
 **`@elixpo/lixsketch`** and **`@elixpo/lixeditor`** packages, on npm and as VS
 Code extensions.
+
+## Architecture
+
+Everything runs on **Cloudflare**. Three shared platform services back the
+ecosystem, and products are either **SSO-backed SaaS**, **standalone**, or our
+**flagship**:
+
+- **`accounts.elixpo`** - single sign-on / identity
+- **`mails.elixpo`** - shared mailing infrastructure
+- **`payouts.elixpo`** - shared payments / payouts
+
+SaaS products (Blogs, Art, Chat, Sketch, Search) and the flagship **lixrl.com**
+all authenticate through Accounts (SSO) and share the Mail and Payouts infra.
+The public, login-free surfaces (**elixpo.com**, **falera.elixpo**, **me.elixpo**)
+are standalone. **admin.elixpo** is the operations dashboard and
+**status.elixpo** is monitoring.
+
+```mermaid
+graph TB
+  classDef shared fill:#1d1d1d,stroke:#DEDBC8,color:#E1E0CC;
+  classDef saas fill:#141414,stroke:#9a9a9a,color:#E1E0CC;
+  classDef flag fill:#2a2410,stroke:#FFBE1E,color:#ffffff;
+  classDef solo fill:#141414,stroke:#00B4A5,color:#E1E0CC;
+  classDef ops fill:#141414,stroke:#FF5D68,color:#E1E0CC;
+
+  subgraph SHARED["Shared platform"]
+    ACC["accounts.elixpo<br/>SSO / Identity"]:::shared
+    MAIL["mails.elixpo<br/>Mail infra"]:::shared
+    PAY["payouts.elixpo<br/>Payments"]:::shared
+  end
+
+  subgraph PRODUCTS["SaaS products - require login"]
+    BLOGS["blogs.elixpo"]:::saas
+    ART["art.elixpo (under dev)"]:::saas
+    CHAT["chat.elixpo (under dev)"]:::saas
+    SKETCH["sketch.elixpo"]:::saas
+    SEARCH["search.elixpo"]:::saas
+  end
+
+  LIXRL["lixrl.com<br/>URL shortener · flagship"]:::flag
+
+  subgraph SOLO["Standalone - no login"]
+    HOME["elixpo.com"]:::solo
+    OREO["falera.elixpo"]:::solo
+    ME["me.elixpo"]:::solo
+  end
+
+  subgraph OPS["Operations"]
+    ADMIN["admin.elixpo<br/>Dashboard"]:::ops
+    STATUS["status.elixpo<br/>Monitoring"]:::ops
+  end
+
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> ACC
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> MAIL
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> PAY
+  ADMIN -.- ACC
+  STATUS -.- MAIL
+```
+
+A rendered, interactive version lives at **[elixpo.com/architecture](https://elixpo.com/architecture)**.
+
+## For developers
+
+The full guide lives at **[payouts.elixpo.com/docs](https://payouts.elixpo.com/docs)**.
+It covers the quickstart, catalog sync, checkout sessions, webhooks, the
+entitlements API, buyer emails, and connected payouts.
+
+### Integration quickstart
+
+Start a checkout from your server with your app's secret key:
+
+```bash
+curl -X POST https://payouts.elixpo.com/v1/checkout/sessions \
+  -H "Authorization: Bearer $ELIXPO_PAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tier": "member",
+    "currency": "INR",
+    "interval": "month",
+    "customer": { "uid": "u_123", "email": "buyer@example.com" },
+    "success_url": "https://yourapp.com/settings"
+  }'
+```
+
+The response includes a hosted checkout `url` (`https://payouts.elixpo.com/checkout?session=cs_…`).
+Redirect the buyer to that URL. `interval` is optional and only needed when a
+tier is sold both monthly and yearly. `success_url` must be an absolute
+`https://` URL. Sessions expire after 30 minutes.
+
+The API at a glance (all calls are authenticated with `Authorization: Bearer lix_pay_…`):
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/checkout/sessions` | Create a checkout session and get back a hosted checkout URL |
+| `GET /v1/entitlements?app=<slug>&uid=<uid>` | Read a buyer's current tier, status, and expiry |
+| `POST /v1/sync` | Sync your whole product and price catalog from code |
+| `POST /v1/products` | Sync a single product and its tiers |
+| `POST /v1/subscriptions/cancel` | Cancel autopay. By default the buyer keeps access until the end of the paid period |
+| `GET /v1/catalog?app=<slug>` | Public, read-only catalog for rendering your pricing page (no key needed) |
+
+**Webhooks.** Elixpo Pay sends `POST` requests to your endpoint with the
+`X-Elixpo-Pay-Event`, `X-Elixpo-Pay-Timestamp`, and `X-Elixpo-Pay-Signature`
+headers. To verify a request, compute `HMAC_SHA256(signing_secret, "<timestamp>.<raw body>")`
+and accept it if the result matches **any** of the comma-separated
+`sha256=…` values in the signature header. During a secret rotation, the
+header carries signatures from both the current and the previous secret.
+
+**Buyer emails.** In the dashboard, go to your product → *Buyer emails ·
+Elixpo Mails* and paste a Mails trigger URL for each event: `payment.receipt`,
+`subscription.cancelled`, `payment.failed`, and `access.expired`. Include the
+buyer's `email` when you create checkout sessions. That address is where these
+emails are sent.
+
+### Running locally
+
+```bash
+npm install
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+Useful scripts (see `package.json` for the full list):
+
+```bash
+npm run build              # Production build
+npm run pages:build        # Build for Cloudflare Pages (@cloudflare/next-on-pages)
+npm run lint               # Biome check
+npm run format             # Biome check --write
+npm run typecheck          # tsc --noEmit
+npm run db:migrate         # Apply D1 migrations (remote)
+npm run db:migrate:local   # Apply D1 migrations (local)
+./biome.sh ci              # Strict Biome check, the same one CI runs
+```
+
+D1 migrations live in `src/workers/migrations/`, and the bindings (`DB`, `KV`)
+are declared in `wrangler.toml`.
+
+### Configuration & deployment
+
+Runtime configuration is read from `.env.local` in development and from
+Cloudflare Pages secrets in production. The committed `.env` is
+sops-encrypted. Run `./sops-reencrypt.sh --decrypt` to get a plaintext
+`.env.local`. The main groups of variables are:
+
+- **Elixpo Accounts SSO:** `NEXT_PUBLIC_ELIXPO_CLIENT_ID`, `ELIXPO_CLIENT_SECRET`, `NEXT_PUBLIC_ACCOUNTS_URL`, `ACCOUNTS_WEBHOOK_SECRET`
+- **App & sessions:** `NEXT_PUBLIC_APP_URL`, `ELIXPO_PAY_SESSION_SECRET`, `ELIXPO_PAY_HANDOFF_SECRET`, `CRON_SECRET`
+- **Razorpay:** `RAZORPAY_MODE` (`test` / `live`) plus `RAZORPAY_{TEST,LIVE}_KEY_ID`, `…_KEY_SECRET`, `…_WEBHOOK_SECRET`
+- **Local only:** `CLOUDFLARE_*` credentials for the D1/KV REST fallback (production uses bindings)
+
+Merging to `main` deploys through the shared Elixpo Cloudflare Pages workflow
+(`.github/workflows/deploy.yml`). That workflow applies the D1 migrations,
+syncs secrets from the encrypted `.env`, and runs `npm run pages:build`.
+[`deploy.sh`](deploy.sh) does the same steps by hand
+(`./deploy.sh [secrets] [build] [deploy]`). `NEXT_PUBLIC_*` values are
+included in the build at build time, so make sure they hold production values
+before you build. A daily GitHub Action calls `/api/cron/expire-entitlements`
+to downgrade memberships that have lapsed.
 
 ## Built by the community
 
@@ -158,23 +288,22 @@ Elixpo has taken part in and been supported by **GSSOC**, **Hacktoberfest**,
 - 🚀 **Submit your project** to be featured across the ecosystem.
 - 🛠️ **Contribute** - browse good first issues in the [monorepo](https://github.com/elixpo/elixpo_chapter).
 
+For security issues, please report them privately as described in
+[SECURITY.md](SECURITY.md) instead of opening a public issue.
+
 ## Brand assets
 
-Brand marks and icons for this product live under [`public/`](public/), and the
-brand source of truth (mascot, palette, rules) is documented on the main site.
-A browsable kit is at **[elixpo.com/assets](https://elixpo.com/assets)**.
+Brand-ready marks and icons live under [`public/`](public/). The ecosystem brand
+source of truth (mascot, palette, rules) is at
+**[elixpo.com/assets](https://elixpo.com/assets)**.
 
 ## License
 
-Elixpo uses one **licensing standard** across every repository:
-
-- **Code** - [MIT](LICENSES/preferred/MIT) (with the [Lumi-trademarks exception](LICENSES/exceptions/Lumi-trademarks)).
-- **Brand & visual assets** - [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0) (with the same exception).
-
-The Lumi mascot, the chest E-badge, and the "Elixpo" and "Lumi" names, domains,
-and palette are reserved - this protects the brand and its royalties while
-keeping the code and assets free. See [`LICENSE`](LICENSE) and the per-product
-notice board, [`NOTICE`](LICENSES/NOTICE).
+The code is licensed under the [MIT License](LICENSE). Brand and visual assets
+are licensed under [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and
+Lumi names, the Lumi mascot, the E-badge mark, and elixpo.com domains are covered by
+[`TRADEMARKS.md`](TRADEMARKS.md), not by either licence. See also the repository
+[notice board](LICENSES/NOTICE) and [third-party notices](LICENSES/notices/notice-board).
 
 ## Exclusive
 
@@ -190,29 +319,4 @@ source is MIT - forks must operate under a different name.
 
 ---
 
-## Running locally
-
-```bash
-npm install
-npm run dev
-```
-
-Then open [http://localhost:3000](http://localhost:3000).
-
-Useful scripts:
-
-```bash
-npm run lint            # Biome check
-npm run format          # Biome check --write
-npm run pages:build     # Build for Cloudflare Pages (@cloudflare/next-on-pages)
-npm run db:migrate      # Apply D1 migrations (remote)
-npm run db:migrate:local # Apply D1 migrations (local)
-```
-
-Deployment is driven by [`deploy.sh`](deploy.sh) onto Cloudflare Pages.
-
-<div align="center">
-
-Made with 🐼 by **[Elixpo](https://github.com/elixpo)**
-
-</div>
+<p align="center"><sub>Made in the open, together. © 2026 Elixpo Pay · Paid with care.</sub></p>

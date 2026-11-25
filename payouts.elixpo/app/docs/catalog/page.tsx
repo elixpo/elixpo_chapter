@@ -8,6 +8,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 import CodeBlock from "../../components/code-block";
 
@@ -85,6 +86,7 @@ export default function CatalogDocs() {
                 same across environments. The dashboard shows the result
                 read-only.
             </DocLead>
+            <DocActions actions={[{ label: "Create an app & get your secret key", href: "/dashboard/products", hint: "Dashboard → Products → New app. Shown once; roll it any time.", primary: true }]} />
 
             <DocH2>1. Declare your catalog</DocH2>
             <DocP>

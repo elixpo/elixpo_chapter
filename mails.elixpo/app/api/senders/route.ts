@@ -1,5 +1,6 @@
 export const runtime = "edge";
 
+import { assertCanCreateSender } from "@/lib/billing";
 import { getDatabase } from "@/lib/d1-client";
 import { createSender, listSenders, toPublic } from "@/lib/senders";
 import { getSession } from "@/lib/session";
@@ -55,6 +56,14 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase();
+    const canCreate = await assertCanCreateSender(db, session.tenantId);
+    if (!canCreate.allowed) {
+        return NextResponse.json(
+            { error: "plan_limit_reached", message: canCreate.reason },
+            { status: 403 },
+        );
+    }
+
     try {
         const row = await createSender(db, session.tenantId, {
             email,

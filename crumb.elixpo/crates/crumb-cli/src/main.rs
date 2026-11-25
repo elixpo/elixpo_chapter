@@ -98,6 +98,7 @@ use reedline::{
 };
 use sha2::{Digest, Sha256};
 
+mod acp;
 mod agent_runtime;
 mod agent_tool;
 mod bundled_skills;
@@ -106,6 +107,10 @@ mod completion;
 mod composer_artifacts;
 mod context;
 mod device_auth;
+mod hooks;
+mod notify;
+mod post_edit_check;
+mod project_instructions;
 mod provider_discovery;
 mod provider_projection;
 mod session_resume;
@@ -143,6 +148,14 @@ const MARKETPLACE_CATALOG_SIGNER: &str =
 const SIGSTORE_GITHUB_ACTIONS_ISSUER: &str = "https://token.actions.githubusercontent.com";
 
 fn main() -> Result<()> {
+    // Agent commands are started through this hidden subcommand to confine
+    // them; it must run before anything else starts a thread.
+    if std::env::args_os()
+        .nth(1)
+        .is_some_and(|argument| argument == crumb_tools::SANDBOX_EXEC_ARG)
+    {
+        return sandbox_exec(std::env::args_os().skip(2).collect());
+    }
     let resume_session = resume_session_argument()?;
     if resume_session.is_none() && run_command_line_action()? {
         return Ok(());
@@ -152,6 +165,30 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Applies the agent command sandbox to this process, then becomes the
+/// requested program.
+fn sandbox_exec(arguments: Vec<std::ffi::OsString>) -> Result<()> {
+    let exec = crumb_tools::parse_sandbox_exec(arguments).map_err(anyhow::Error::msg)?;
+    crumb_tools::restrict_current_thread(&exec.writable)
+        .map_err(|error| anyhow::anyhow!("could not apply the agent command sandbox: {error}"))?;
+    let mut command = std::process::Command::new(&exec.program);
+    command.args(&exec.arguments);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // exec only returns on failure.
+        let error = command.exec();
+        Err(error).context("failed to start the sandboxed command")
+    }
+    #[cfg(not(unix))]
+    {
+        let status = command
+            .status()
+            .context("failed to start the sandboxed command")?;
+        std::process::exit(status.code().unwrap_or(1));
+    }
 }
 
 fn resume_session_argument() -> Result<Option<String>> {
@@ -174,15 +211,113 @@ fn parse_resume_session_argument(arguments: &[String]) -> Result<Option<String>>
     }
 }
 
+/// `crumb --version` or `crumb -V`.
+fn is_version_request(arguments: &[std::ffi::OsString]) -> bool {
+    matches!(arguments, [flag] if flag == "--version" || flag == "-V")
+}
+
+/// `crumb --help`, `crumb -h` or `crumb help`.
+fn is_help_request(arguments: &[std::ffi::OsString]) -> bool {
+    matches!(arguments, [flag] if flag == "--help" || flag == "-h" || flag == "help")
+}
+
+/// What `crumb --help` prints.
+fn help_text() -> String {
+    format!(
+        "{version}
+Your terminal, with an AI agent built in.
+
+Usage:
+  crumb                         Start the interactive terminal
+  crumb --resume <session-id>   Resume a saved session
+  crumb exec [options] <request>
+                                Run one agent request and exit
+  crumb skill <operation>       List, install and run skills
+  crumb auth login|status|logout
+                                Sign in to your crumb.elixpo account
+  crumb acp                     Run as an Agent Client Protocol agent (for editors)
+  crumb mcp serve               Run Crumb as an MCP server (stdio)
+  crumb review export <id|all>  Export edit checkpoints for review
+  crumb completions <shell>     Print a completion script (bash, zsh, fish, powershell)
+  crumb jobs list|tick|run <id> Manage scheduled jobs
+  crumb --version, -V           Print the version
+  crumb --help, -h              Print this help
+
+exec options:
+  --json | --stream-json        Machine-readable output
+  --resume <session-id>         Continue a saved session
+  --model <provider>/<model>    Use a configured model for this turn
+  --approvals always-ask|sensitive-only|full-access
+
+Project settings live in .crumb/agent.json; Crumb also follows AGENTS.md.
+Docs and issues: https://github.com/elixpo/crumb.elixpo
+",
+        version = version_line()
+    )
+}
+
+/// The line `crumb --version` prints, for example `crumb 1.5.0`.
+fn version_line() -> String {
+    format!("crumb {}", env!("CARGO_PKG_VERSION"))
+}
+
+/// `--approvals` values accepted by `crumb exec` and `crumb acp`.
+fn parse_approval_flag(value: &str) -> Option<ApprovalMode> {
+    match value {
+        "always-ask" => Some(ApprovalMode::AlwaysAsk),
+        "sensitive-only" => Some(ApprovalMode::SensitiveOnly),
+        "full-access" => Some(ApprovalMode::FullAccess),
+        _ => None,
+    }
+}
+
+const ACP_USAGE: &str = "usage: crumb acp [--approvals always-ask|sensitive-only|full-access]";
+
+/// `crumb acp [--approvals <mode>]`.
+#[derive(Debug, PartialEq, Eq)]
+struct AcpCommand {
+    approvals: Option<ApprovalMode>,
+}
+
+/// Parses `crumb acp`; `None` when the command is something else.
+fn parse_acp_command(arguments: &[std::ffi::OsString]) -> Result<Option<AcpCommand>> {
+    let Some((command, rest)) = arguments.split_first() else {
+        return Ok(None);
+    };
+    if command != "acp" {
+        return Ok(None);
+    }
+    match rest {
+        [] => Ok(Some(AcpCommand { approvals: None })),
+        [flag, value] if flag == "--approvals" => value
+            .to_str()
+            .and_then(parse_approval_flag)
+            .map(|mode| {
+                Some(AcpCommand {
+                    approvals: Some(mode),
+                })
+            })
+            .with_context(|| format!("unknown approval mode; {ACP_USAGE}")),
+        _ => bail!("{ACP_USAGE}"),
+    }
+}
+
 fn run_command_line_action() -> Result<bool> {
     let arguments = std::env::args_os().skip(1).collect::<Vec<_>>();
-    if let Some((json, request)) = parse_exec_request(&arguments)? {
-        run_agent_exec(
-            &current_process_dir()?,
-            &request,
-            json,
-            &mut io::stdout().lock(),
-        )?;
+    if is_version_request(&arguments) {
+        writeln!(io::stdout().lock(), "{}", version_line())?;
+        return Ok(true);
+    }
+    if is_help_request(&arguments) {
+        write!(io::stdout().lock(), "{}", help_text())?;
+        return Ok(true);
+    }
+    if let Some(exec) = parse_exec_request(&arguments)? {
+        run_agent_exec(&current_process_dir()?, &exec, &mut io::stdout().lock())?;
+        return Ok(true);
+    }
+    if let Some(command) = parse_acp_command(&arguments)? {
+        acp::serve(command.approvals)?;
         return Ok(true);
     }
     if matches!(arguments.as_slice(), [group, action] if group == "mcp" && action == "serve") {
@@ -259,7 +394,7 @@ fn run_command_line_action() -> Result<bool> {
         [group, action] if group == "auth" && action == "logout" => AuthAction::Logout,
         _ => {
             return Err(anyhow!(
-                "usage: crumb [exec [--json] <request> | skill <operation> | auth <login|status|logout> | mcp serve | review export <id|all> | completions <shell> | jobs <list|run <id>|tick>]"
+                "usage: crumb [--help | --version | exec [options] <request> | skill <operation> | auth <login|status|logout> | acp | mcp serve | review export <id|all> | completions <shell> | jobs <list|run <id>|tick>]"
             ));
         }
     };
@@ -267,35 +402,120 @@ fn run_command_line_action() -> Result<bool> {
     Ok(true)
 }
 
-fn parse_exec_request(arguments: &[OsString]) -> Result<Option<(bool, String)>> {
+/// How `crumb exec` reports its turn.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ExecOutput {
+    /// The final answer as plain text.
+    Text,
+    /// One JSON object with the answer, session, finish reason and usage.
+    Json,
+    /// Newline-delimited JSON events while the turn runs, ending with the
+    /// same object `Json` prints, tagged `"type": "result"`.
+    StreamJson,
+}
+
+const EXEC_USAGE: &str = "usage: crumb exec [--json | --stream-json] [--resume <session-id>] \
+                          [--model <provider>/<model>] \
+                          [--approvals always-ask|sensitive-only|full-access] [--] <request>";
+
+/// Environment variables that point `crumb exec` at an OpenAI-compatible
+/// endpoint for one turn, as harness runners do with a local relay. The key
+/// is referenced by name, so it is never copied into config, sessions or logs.
+const EXEC_BASE_URL_ENV: &str = "CRUMB_EXEC_BASE_URL";
+const EXEC_API_KEY_ENV: &str = "CRUMB_EXEC_API_KEY";
+const EXEC_PROTOCOL_ENV: &str = "CRUMB_EXEC_PROTOCOL";
+/// The provider id `--model` names to use that endpoint.
+const EXEC_PROVIDER_ID: &str = "exec";
+
+/// A parsed `crumb exec` command line.
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ExecRequest {
+    output: ExecOutput,
+    /// Continue this saved session instead of starting a new one.
+    resume: Option<String>,
+    /// Use this `<provider>/<model>` for the turn, without changing the config.
+    model: Option<(String, String)>,
+    /// The approval mode for this turn, set by whoever launches Crumb.
+    approvals: Option<ApprovalMode>,
+    request: String,
+}
+
+fn parse_exec_request(arguments: &[OsString]) -> Result<Option<ExecRequest>> {
     let Some(command) = arguments.first() else {
         return Ok(None);
     };
     if command != "exec" {
         return Ok(None);
     }
-    let mut request = &arguments[1..];
-    let json = request.first().is_some_and(|argument| argument == "--json");
-    if json {
-        request = &request[1..];
-    }
-    // `--` ends the options, after `--json` too, and is not part of the request.
-    if request.first().is_some_and(|argument| argument == "--") {
-        request = &request[1..];
-    }
-    if request.is_empty() {
-        bail!("usage: crumb exec [--json] <request>");
+    let mut output = ExecOutput::Text;
+    let mut resume = None;
+    let mut model = None;
+    let mut approvals = None;
+    let mut rest = arguments[1..].iter();
+    let mut request = Vec::new();
+    while let Some(argument) = rest.next() {
+        let argument = argument
+            .to_str()
+            .context("exec request arguments must be UTF-8")?;
+        // `--option=value` is the same as `--option value`.
+        let (argument, inline_value) = match argument.split_once('=') {
+            Some((option @ ("--resume" | "--model" | "--approvals"), value)) => {
+                (option, Some(value))
+            }
+            _ => (argument, None),
+        };
+        match argument {
+            "--json" => output = ExecOutput::Json,
+            "--stream-json" => output = ExecOutput::StreamJson,
+            "--resume" | "--model" | "--approvals" => {
+                let value = inline_value
+                    .or_else(|| rest.next().and_then(|value| value.to_str()))
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                    .with_context(|| format!("{argument} requires a value; {EXEC_USAGE}"))?;
+                if argument == "--resume" {
+                    resume = Some(value.to_owned());
+                } else if argument == "--approvals" {
+                    approvals = Some(parse_approval_flag(value).with_context(|| {
+                        format!("unknown approval mode `{value}`; {EXEC_USAGE}")
+                    })?);
+                } else {
+                    let (provider, name) = value
+                        .split_once('/')
+                        .filter(|(provider, name)| !provider.is_empty() && !name.is_empty())
+                        .with_context(|| {
+                            format!("--model expects <provider>/<model>; {EXEC_USAGE}")
+                        })?;
+                    model = Some((provider.to_owned(), name.to_owned()));
+                }
+            }
+            // `--` ends the options and is not part of the request.
+            "--" => {
+                request.extend(rest.by_ref().map(|argument| argument.to_str()));
+                break;
+            }
+            _ => {
+                request.push(Some(argument));
+                request.extend(rest.by_ref().map(|argument| argument.to_str()));
+                break;
+            }
+        }
     }
     let request = request
-        .iter()
-        .map(|argument| {
-            argument
-                .to_str()
-                .context("exec request arguments must be UTF-8")
-        })
-        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
+        .context("exec request arguments must be UTF-8")?
         .join(" ");
-    Ok(Some((json, request)))
+    if request.trim().is_empty() {
+        bail!(EXEC_USAGE);
+    }
+    Ok(Some(ExecRequest {
+        output,
+        resume,
+        model,
+        approvals,
+        request,
+    }))
 }
 
 /// A runtime for one non-interactive turn, as `crumb exec` and the
@@ -311,11 +531,19 @@ fn exec_runtime(cwd: &Path) -> Result<AgentRuntime> {
     Ok(runtime)
 }
 
-fn run_agent_exec(cwd: &Path, request: &str, json: bool, writer: &mut dyn Write) -> Result<()> {
-    let config = read_agent_config(cwd)?;
+fn run_agent_exec(cwd: &Path, exec: &ExecRequest, writer: &mut dyn Write) -> Result<()> {
+    let output = exec.output;
+    let request = exec.request.as_str();
+    let mut config = read_agent_config(cwd)?;
+    apply_exec_overrides(&mut config, exec, &|name| std::env::var(name).ok())?;
     let mut runtime = exec_runtime(cwd)?;
+    if let Some(session) = &exec.resume {
+        runtime
+            .resume(cwd, session)
+            .with_context(|| format!("session `{session}` could not be resumed"))?;
+    }
     let cancellation = CancellationToken::default();
-    let mut progress = ExecProgress::new(json);
+    let mut progress = ExecProgress::new(output);
     let result =
         runtime.run_local_job_with_events(request, &config, cwd, &cancellation, |event| {
             progress.handle(&event, writer).map_err(Into::into)
@@ -325,32 +553,149 @@ fn run_agent_exec(cwd: &Path, request: &str, json: bool, writer: &mut dyn Write)
         progress.end_line(writer)?;
         return Ok(());
     }
-    if json {
-        serde_json::to_writer(
-            &mut *writer,
-            &serde_json::json!({
-                "session_id": result.session_id,
-                "response": response,
-                "finish_reason": result.finish_reason,
-                "usage": {
-                    "input_tokens": result.input_tokens,
-                    "cached_input_tokens": result.cached_input_tokens,
-                    "output_tokens": result.output_tokens,
-                    "context_tokens": result.context_tokens,
-                }
-            }),
-        )?;
-        writeln!(writer)?;
-    } else {
-        writeln!(writer, "{response}")?;
+    let mut summary = serde_json::json!({
+        "session_id": result.session_id,
+        "response": response,
+        "finish_reason": result.finish_reason,
+        "usage": {
+            "input_tokens": result.input_tokens,
+            "cached_input_tokens": result.cached_input_tokens,
+            "output_tokens": result.output_tokens,
+            "context_tokens": result.context_tokens,
+        }
+    });
+    match output {
+        ExecOutput::Text => writeln!(writer, "{response}")?,
+        ExecOutput::Json => {
+            serde_json::to_writer(&mut *writer, &summary)?;
+            writeln!(writer)?;
+        }
+        ExecOutput::StreamJson => {
+            summary["type"] = serde_json::Value::from("result");
+            write_stream_event(writer, &summary)?;
+        }
     }
     Ok(())
 }
 
+/// Applies a `crumb exec` turn's overrides to an in-memory copy of the
+/// config: the environment endpoint, the model, and the approval mode.
+fn apply_exec_overrides(
+    config: &mut AgentConfig,
+    exec: &ExecRequest,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<()> {
+    let base_url = env(EXEC_BASE_URL_ENV).filter(|url| !url.trim().is_empty());
+    let exec_model = exec
+        .model
+        .as_ref()
+        .filter(|(provider, _)| provider == EXEC_PROVIDER_ID)
+        .map(|(_, model)| model.as_str());
+    match (base_url, exec_model) {
+        (Some(base_url), Some(model)) => {
+            let protocol = match env(EXEC_PROTOCOL_ENV).as_deref() {
+                None | Some("" | "openai_completions") => ProviderProtocol::OpenAiCompletions,
+                Some("openai_responses") => ProviderProtocol::OpenAiResponses,
+                Some(other) => bail!(
+                    "{EXEC_PROTOCOL_ENV} must be openai_completions or openai_responses, not `{other}`"
+                ),
+            };
+            let mut provider = ProviderConfig::new("Exec endpoint", protocol, base_url.trim());
+            provider.credential =
+                env(EXEC_API_KEY_ENV)
+                    .is_some()
+                    .then(|| CredentialReference::Environment {
+                        name: EXEC_API_KEY_ENV.to_owned(),
+                    });
+            let mut entry = ProviderModel::new(model);
+            entry.input.insert(Modality::Text);
+            entry.tool_calling = true;
+            provider.models.push(entry);
+            config
+                .providers
+                .insert(EXEC_PROVIDER_ID.to_owned(), provider);
+        }
+        (Some(_), None) => bail!(
+            "{EXEC_BASE_URL_ENV} is set; choose its model with --model {EXEC_PROVIDER_ID}/<model>"
+        ),
+        (None, Some(_)) => bail!(
+            "--model {EXEC_PROVIDER_ID}/<model> needs {EXEC_BASE_URL_ENV} to point at an endpoint"
+        ),
+        (None, None) => {}
+    }
+    if let Some((provider, model)) = &exec.model {
+        select_text_model(config, provider, model)?;
+    }
+    if let Some(mode) = exec.approvals {
+        config.permissions.mode = mode;
+    }
+    Ok(())
+}
+
+/// One line of `crumb exec --stream-json`.
+fn write_stream_event(writer: &mut dyn Write, event: &serde_json::Value) -> io::Result<()> {
+    serde_json::to_writer(&mut *writer, event)?;
+    writeln!(writer)?;
+    writer.flush()
+}
+
+/// The `--stream-json` form of a harness event. Tool output is reported by
+/// size only: like the terminal activity channel, the stream never carries
+/// tool output contents.
+fn stream_event(event: &HarnessActivity) -> serde_json::Value {
+    use serde_json::json;
+    match event {
+        HarnessActivity::RequestAccepted => json!({"type": "started"}),
+        HarnessActivity::ResponseDelta { text } => json!({"type": "text", "text": text}),
+        HarnessActivity::ReasoningDelta { text } => json!({"type": "reasoning", "text": text}),
+        HarnessActivity::ResponseRevised => json!({"type": "text_revised"}),
+        HarnessActivity::ResponseCorrected { text } => {
+            json!({"type": "text_corrected", "text": text})
+        }
+        HarnessActivity::Usage {
+            input_tokens,
+            output_tokens,
+        } => json!({
+            "type": "usage",
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+        }),
+        HarnessActivity::Status { state } => json!({"type": "status", "state": state}),
+        HarnessActivity::ToolStarted { name, detail } => {
+            json!({"type": "tool_started", "name": name, "detail": detail})
+        }
+        HarnessActivity::ApprovalRequired { name } => {
+            json!({"type": "approval_required", "name": name})
+        }
+        HarnessActivity::ToolOutput { name, bytes, .. } => {
+            json!({"type": "tool_output", "name": name, "bytes": bytes})
+        }
+        HarnessActivity::ToolFinished { name, success } => {
+            json!({"type": "tool_finished", "name": name, "success": success})
+        }
+        HarnessActivity::FileChanged {
+            path,
+            additions,
+            deletions,
+        } => json!({
+            "type": "file_changed",
+            "path": path,
+            "additions": additions,
+            "deletions": deletions,
+        }),
+        HarnessActivity::Completed { reason } => json!({"type": "completed", "reason": reason}),
+        HarnessActivity::Failed { reason } => json!({"type": "failed", "reason": reason}),
+        HarnessActivity::Cancelled => json!({"type": "cancelled"}),
+        HarnessActivity::Progress { label } => json!({"type": "progress", "label": label}),
+    }
+}
+
 /// Live progress for `crumb exec`. Model text streams to stdout only when it
 /// is a terminal, so piped stdout still receives just the final answer; tool
-/// steps go to stderr when it is a terminal. `--json` stays silent.
+/// steps go to stderr when it is a terminal. `--json` stays silent, and
+/// `--stream-json` writes every event to stdout as one JSON line.
 struct ExecProgress {
+    stream_json: bool,
     targets: ExecTargets,
     streamed: bool,
     mid_line: bool,
@@ -363,12 +708,14 @@ struct ExecTargets {
 }
 
 impl ExecProgress {
-    fn new(json: bool) -> Self {
+    fn new(output: ExecOutput) -> Self {
         use std::io::IsTerminal as _;
+        let text = output == ExecOutput::Text;
         Self {
+            stream_json: output == ExecOutput::StreamJson,
             targets: ExecTargets {
-                stream_text: !json && io::stdout().is_terminal(),
-                show_steps: !json && io::stderr().is_terminal(),
+                stream_text: text && io::stdout().is_terminal(),
+                show_steps: text && io::stderr().is_terminal(),
             },
             streamed: false,
             mid_line: false,
@@ -376,6 +723,9 @@ impl ExecProgress {
     }
 
     fn handle(&mut self, event: &HarnessActivity, writer: &mut dyn Write) -> io::Result<()> {
+        if self.stream_json {
+            return write_stream_event(writer, &stream_event(event));
+        }
         match event {
             HarnessActivity::ResponseDelta { text } if self.targets.stream_text => {
                 write!(writer, "{text}")?;
@@ -969,16 +1319,42 @@ fn shell_tool_config(config: &AgentConfig, max_output_bytes: usize) -> AgentShel
         path: disposable.path,
         command_rewriter: Some(PathBuf::from("rtk")),
         inherit_environment: config.permissions.mode == ApprovalMode::FullAccess,
+        sandbox: sandbox_launcher(config),
         max_output_bytes: disposable.max_output_bytes,
         timeout: Duration::from_secs(config.limits.max_shell_command_seconds),
     }
+}
+
+/// Crumb's own executable, used to start sandboxed agent commands. Only Linux
+/// has an OS sandbox today; full access and `permissions.sandbox = false` run
+/// commands unconfined.
+fn sandbox_launcher(config: &AgentConfig) -> Option<PathBuf> {
+    let wanted = cfg!(target_os = "linux")
+        && config.permissions.sandbox
+        && config.permissions.mode != ApprovalMode::FullAccess;
+    wanted.then(std::env::current_exe).and_then(Result::ok)
+}
+
+/// Crumb runs inline by default, in the terminal's normal scrollback, so the
+/// terminal's own scrolling, search and selection work. `CRUMB_FULLSCREEN=1`
+/// opts into the alternate-screen view; `CRUMB_INLINE` always wins.
+fn fullscreen_requested(env: &dyn Fn(&str) -> Option<String>) -> bool {
+    let on = |value: Option<String>| {
+        value.is_some_and(|value| {
+            !matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "" | "0" | "off" | "false" | "no"
+            )
+        })
+    };
+    env("CRUMB_INLINE").is_none() && on(env("CRUMB_FULLSCREEN"))
 }
 
 fn run_managed_repl(resume_session: Option<&str>) -> Result<ReplOutcome> {
     let (started_at, stdin, stdout) = (Instant::now(), io::stdin(), io::stdout());
     let interactive = stdin.is_terminal() && stdout.is_terminal();
     let renderer = Renderer::new(UiSettings::from_environment(interactive));
-    let fullscreen = interactive && std::env::var_os("CRUMB_INLINE").is_none();
+    let fullscreen = interactive && fullscreen_requested(&|name| std::env::var(name).ok());
     let screen = AlternateScreenGuard::enter(fullscreen)?;
     let (platform, initial_cwd) = (Platform::current(), current_process_dir()?);
     if interactive && !confirm_folder_trust(renderer, &initial_cwd, fullscreen)? {
@@ -1264,6 +1640,32 @@ fn show_agent_map_panel(context: &mut InputContext<'_>) -> Result<()> {
         &config,
         runtime.token_usage().0,
     ));
+    if !run_agent_map_dialog(&map, context.renderer, context.fullscreen)? {
+        writeln!(
+            context.writer,
+            "◆ Agent map · {} · no helpers or background jobs yet",
+            map.view().main
+        )?;
+    }
+    if context.fullscreen {
+        // The panel drew over the bottom of the screen.
+        let state = context
+            .transcript
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        render_transcript_view(&state, context.renderer, context.header_rows)?;
+    }
+    Ok(())
+}
+
+/// The agent map as a modal dialog: helpers and background jobs to pick
+/// from, Enter for one's details, Esc to close. Each opening shows a fresh
+/// snapshot. Returns `false` when there is nothing to show.
+fn run_agent_map_dialog(
+    map: &agent_runtime::AgentMapSource,
+    renderer: Renderer,
+    fullscreen: bool,
+) -> Result<bool> {
     loop {
         let view = map.view();
         let mut entries = Vec::new();
@@ -1296,12 +1698,7 @@ fn show_agent_map_panel(context: &mut InputContext<'_>) -> Result<()> {
             entries.push(format!("job {}", job.id));
         }
         if rows.is_empty() {
-            writeln!(
-                context.writer,
-                "◆ Agent map · {} · no helpers or background jobs yet",
-                view.main
-            )?;
-            return Ok(());
+            return Ok(false);
         }
         let notes = vec![view.main.clone()];
         let dialog = choice_dialog::ChoiceDialog {
@@ -1310,14 +1707,9 @@ fn show_agent_map_panel(context: &mut InputContext<'_>) -> Result<()> {
             hint: "↑/↓ choose · Enter or click for details · Esc close",
             actions: &[],
         };
-        let outcome = choice_dialog::run_choice_dialog(
-            context.renderer,
-            &dialog,
-            &mut rows,
-            context.fullscreen,
-        )?;
+        let outcome = choice_dialog::run_choice_dialog(renderer, &dialog, &mut rows, fullscreen)?;
         let choice_dialog::DialogOutcome::Chosen(index) = outcome else {
-            break;
+            return Ok(true);
         };
         let detail = map.detail(&entries[index]);
         let lines = detail
@@ -1336,22 +1728,8 @@ fn show_agent_map_panel(context: &mut InputContext<'_>) -> Result<()> {
             hint: "Enter or Esc to go back",
             actions: &[],
         };
-        choice_dialog::run_choice_dialog(
-            context.renderer,
-            &detail_dialog,
-            &mut back,
-            context.fullscreen,
-        )?;
+        choice_dialog::run_choice_dialog(renderer, &detail_dialog, &mut back, fullscreen)?;
     }
-    if context.fullscreen {
-        // The panel drew over the bottom of the screen.
-        let state = context
-            .transcript
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        render_transcript_view(&state, context.renderer, context.header_rows)?;
-    }
-    Ok(())
 }
 
 /// `41s` or `3m 50s`.
@@ -1905,6 +2283,8 @@ struct FullscreenStatusWriter {
     transcript: Arc<Mutex<TranscriptState>>,
     header_rows: u16,
     pending: Vec<u8>,
+    /// A `\r`-prefixed progress line is shown and updated in place.
+    live: bool,
 }
 
 impl FullscreenStatusWriter {
@@ -1914,7 +2294,27 @@ impl FullscreenStatusWriter {
             transcript,
             header_rows,
             pending: Vec::new(),
+            live: false,
         }
+    }
+
+    /// Shows `line` as the live progress line, replacing the previous one.
+    fn render_live(&mut self, line: &str) -> io::Result<()> {
+        let line = line.trim_start_matches('\r').replace("\x1b[K", "");
+        let line = line.trim();
+        if line.is_empty() {
+            return Ok(());
+        }
+        let rendered = self
+            .renderer
+            .status_line(status_tone_for_output(line), line);
+        let mut state = self
+            .transcript
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.set_live_block(&rendered);
+        self.live = true;
+        render_transcript_view(&state, self.renderer, self.header_rows)
     }
 
     fn render_pending(&mut self) -> io::Result<()> {
@@ -1939,6 +2339,10 @@ impl FullscreenStatusWriter {
             .transcript
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if std::mem::take(&mut self.live) {
+            // Keep the last progress line and continue below it.
+            state.close_live_block();
+        }
         state.append(&rendered);
         render_transcript_view(&state, self.renderer, self.header_rows)
     }
@@ -1946,7 +2350,12 @@ impl FullscreenStatusWriter {
 
 impl Write for FullscreenStatusWriter {
     fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
-        self.pending.extend_from_slice(buffer);
+        if buffer.first() == Some(&b'\r') {
+            self.render_pending()?;
+            self.render_live(&String::from_utf8_lossy(buffer))?;
+        } else {
+            self.pending.extend_from_slice(buffer);
+        }
         Ok(buffer.len())
     }
 
@@ -3225,6 +3634,18 @@ fn write_bounded_response_delta_for_width(
     Ok(())
 }
 
+/// Activity capacity, steering message count and steering bytes as `usize`.
+fn agent_sequence_limits(config: &AgentConfig) -> Result<(usize, usize, usize)> {
+    Ok((
+        usize::try_from(config.limits.max_activity_events)
+            .context("max_activity_events exceeds this platform's address space")?,
+        usize::try_from(config.limits.max_steering_messages)
+            .context("max_steering_messages exceeds this platform's address space")?,
+        usize::try_from(config.limits.max_steering_bytes)
+            .context("max_steering_bytes exceeds this platform's address space")?,
+    ))
+}
+
 fn execute_agent_sequence(
     initial_request: String,
     config: &AgentConfig,
@@ -3234,12 +3655,7 @@ fn execute_agent_sequence(
     writer: &mut dyn Write,
     terminal: &AgentTerminal,
 ) -> Result<()> {
-    let activity_capacity = usize::try_from(config.limits.max_activity_events)
-        .context("max_activity_events exceeds this platform's address space")?;
-    let steering_messages = usize::try_from(config.limits.max_steering_messages)
-        .context("max_steering_messages exceeds this platform's address space")?;
-    let steering_bytes = usize::try_from(config.limits.max_steering_bytes)
-        .context("max_steering_bytes exceeds this platform's address space")?;
+    let (activity_capacity, steering_messages, steering_bytes) = agent_sequence_limits(config)?;
     let mut steering = SteeringQueue::new(steering_messages, steering_bytes)?;
     let mut request = initial_request;
     let mut active_runtime = runtime.take().context("agent runtime is unavailable")?;
@@ -3248,6 +3664,7 @@ fn execute_agent_sequence(
         let session_id = active_runtime.prepare_local_job(config.mode, workspace)?;
         let persisted_request = request.clone();
         let initial_activity = initial_agent_activity(&persisted_request, config);
+        let turn_started = std::time::Instant::now();
         let mut task = active_runtime.spawn_turn(
             request,
             config.clone(),
@@ -3298,6 +3715,7 @@ fn execute_agent_sequence(
         };
         active_runtime = returned_runtime;
         live_context_tokens = active_runtime.token_usage().0;
+        notify::turn_finished(turn_started, result.is_ok());
         match finish_agent_turn(
             &result,
             interruption,
@@ -4498,7 +4916,7 @@ fn trusted_tool_detail(name: &str, arguments: &serde_json::Value) -> Option<Stri
         return Some(crumb_agent::task_summary(&tasks));
     }
     let field = match name {
-        "run_shell" | "start_background" => "command",
+        "run_shell" | "run_shell_outside_sandbox" | "start_background" => "command",
         "web_search" => "query",
         "web_fetch" => "url",
         "search_code" => "pattern",
@@ -4524,6 +4942,7 @@ fn trusted_tool_detail(name: &str, arguments: &serde_json::Value) -> Option<Stri
     }
     Some(match name {
         "run_shell" => format!("$ {detail}"),
+        "run_shell_outside_sandbox" => format!("outside the sandbox: $ {detail}"),
         "web_search" => format!("search: {detail}"),
         "web_fetch" => format!("fetch: {detail}"),
         "github_issue" | "github" => format!("GitHub: {detail}"),
@@ -4749,12 +5168,20 @@ impl SteeringInput {
         if input == "/agents" || input.starts_with("/agents ") {
             self.buffer.clear();
             self.clear_line(writer)?;
-            writeln!(
-                writer,
-                "{}",
-                agent_map_text(task.agent_map(), &input, self.renderer)
-            )?;
+            // The map opens as a modal; `/agents N` still prints one entry.
+            if input == "/agents" {
+                if !run_agent_map_dialog(task.agent_map(), self.renderer, self.fullscreen)? {
+                    writeln!(writer, "◆ No helpers or background jobs yet")?;
+                }
+            } else {
+                writeln!(
+                    writer,
+                    "{}",
+                    agent_map_text(task.agent_map(), &input, self.renderer)
+                )?;
+            }
             writer.flush()?;
+            self.redraw(writer)?;
             return Ok(SteeringInputAction::Continue);
         }
         if input == "/background" {
@@ -5420,6 +5847,9 @@ fn visible_tool_activity(name: &str, detail: Option<&str>) -> String {
         ("wait", Some(detail)) => format!("Waiting · {detail}"),
         ("wait", None) => "Waiting".to_owned(),
         ("run_shell", Some(command)) => format!("Running command · $ {command}"),
+        ("run_shell_outside_sandbox", Some(command)) => {
+            format!("Running outside the sandbox · $ {command}")
+        }
         ("write_file", Some(path)) => format!("Editing file · {path}"),
         ("web_search", Some(query)) => format!("Searching web · {query}"),
         ("jev_decide", _) => "Asking Jev to weigh the options".to_owned(),
@@ -5446,6 +5876,8 @@ fn finished_tool_activity(
     let verb = match (name, success) {
         ("run_shell", true) => "Ran command",
         ("run_shell", false) => "Command failed",
+        ("run_shell_outside_sandbox", true) => "Ran outside the sandbox",
+        ("run_shell_outside_sandbox", false) => "Command outside the sandbox failed",
         ("web_search", true) => "Searched the web",
         ("web_search", false) => "Web search failed",
         ("jev_decide", true) => "Jev weighed the options",
@@ -5469,7 +5901,9 @@ fn finished_tool_activity(
     };
     let elapsed = format_activity_elapsed(elapsed);
     match (name, detail) {
-        ("run_shell", Some(command)) => format!("{verb} · {elapsed} · $ {command}"),
+        ("run_shell" | "run_shell_outside_sandbox", Some(command)) => {
+            format!("{verb} · {elapsed} · $ {command}")
+        }
         (_, Some(detail)) => format!("{verb} · {elapsed} · {detail}"),
         (_, None) => format!("{verb} · {elapsed} · {name}"),
     }
@@ -7818,31 +8252,36 @@ fn set_text_model(command: &str, cwd: &Path, writer: &mut dyn Write) -> Result<(
         .filter(|(provider, model)| !provider.is_empty() && !model.is_empty())
         .context("usage: /model use <provider>/<model>")?;
     update_agent_config(cwd, |config| {
-        let provider = config
-            .providers
-            .get(provider_id)
-            .with_context(|| format!("provider `{provider_id}` is not configured"))?;
-        provider
-            .models
-            .iter()
-            .find(|model| model.id == model_id)
-            .with_context(|| {
-                format!("model `{model_id}` is not configured for provider `{provider_id}`")
-            })?;
-        let routes = config.models.entry(Modality::Text).or_default();
-        routes.retain(|route| route.provider != provider_id || route.model != model_id);
-        routes.insert(
-            0,
-            ModelRoute {
-                provider: provider_id.to_owned(),
-                model: model_id.to_owned(),
-                reasoning_effort: None,
-            },
-        );
-        config.active_model_pack = None;
-        Ok(())
+        select_text_model(config, provider_id, model_id)
     })?;
     writeln!(writer, "◆ Text model · {provider_id}/{model_id}")?;
+    Ok(())
+}
+
+/// Makes `provider_id/model_id` the first text route, as `/model use` and
+/// `crumb exec --model` do. The provider and model must be configured.
+fn select_text_model(config: &mut AgentConfig, provider_id: &str, model_id: &str) -> Result<()> {
+    let provider = config
+        .providers
+        .get(provider_id)
+        .with_context(|| format!("provider `{provider_id}` is not configured"))?;
+    provider
+        .models
+        .iter()
+        .find(|model| model.id == model_id)
+        .with_context(|| {
+            format!("model `{model_id}` is not configured for provider `{provider_id}`")
+        })?;
+    promote_model_route(
+        &mut config.models,
+        Modality::Text,
+        ModelRoute {
+            provider: provider_id.to_owned(),
+            model: model_id.to_owned(),
+            reasoning_effort: None,
+        },
+    );
+    config.active_model_pack = None;
     Ok(())
 }
 
@@ -14235,7 +14674,9 @@ fn relay_output(reader: &mut dyn Read, writer: &mut dyn Write) -> io::Result<()>
     Ok(())
 }
 
-struct RawModeGuard;
+struct RawModeGuard {
+    restore: bool,
+}
 
 struct KeyboardEnhancementGuard;
 
@@ -14291,9 +14732,12 @@ impl Drop for AlternateScreenGuard {
 }
 
 impl RawModeGuard {
+    /// Enables raw mode, and on drop restores the previous state, so a
+    /// dialog opened while raw mode is already on (mid-turn) leaves it on.
     fn enable() -> io::Result<Self> {
+        let restore = !crossterm::terminal::is_raw_mode_enabled()?;
         enable_raw_mode()?;
-        Ok(Self)
+        Ok(Self { restore })
     }
 }
 
@@ -14318,7 +14762,9 @@ impl Drop for KeyboardEnhancementGuard {
 
 impl Drop for RawModeGuard {
     fn drop(&mut self) {
-        let _ = disable_raw_mode();
+        if self.restore {
+            let _ = disable_raw_mode();
+        }
     }
 }
 
@@ -14339,43 +14785,74 @@ mod tests {
         OptimizerConfig, ProviderConfig, ProviderHeader, ProviderModel, ProviderProtocol,
         RiskClass, SkillConfig,
     };
+    use crumb_harness_dsh::HarnessActivity;
     use crumb_marketplace::UpdateStatus;
     use crumb_memory::{MemoryScope, MemorySet, MemoryStore};
     use crumb_profile::{ProfileSelectionStore, ProfileStore};
 
     use super::{
-        ArtifactModalAction, ArtifactModalBounds, COMPOSER_PLACEHOLDER, CaptureOutcome,
-        ComposerDock, CrumbEditMode, CrumbHighlighter, CrumbPrompt, DiscoverySource, ExitGesture,
-        MarketplaceContent, PausedSubmission, PendingComposerArtifacts, Renderer,
-        SessionCommandContext, SteeringAction, TerminalModeTracker, TranscriptCapture,
+        AcpCommand, ArtifactModalAction, ArtifactModalBounds, COMPOSER_PLACEHOLDER, CaptureOutcome,
+        ComposerDock, CrumbEditMode, CrumbHighlighter, CrumbPrompt, DiscoverySource, ExecOutput,
+        ExecRequest, ExitGesture, MarketplaceContent, PausedSubmission, PendingComposerArtifacts,
+        Renderer, SessionCommandContext, SteeringAction, TerminalModeTracker, TranscriptCapture,
         TranscriptLine, TranscriptScroll, TranscriptState, UiSettings, active_scroll_direction,
         agent_config_location, aligned_composer_prompt, apply_builtin_model_packs,
-        artifact_modal_action, bundled_catalog, compact_folder, completion_footer_frame,
-        completion_menu_composer_frame, completion_overlay_rows, composer_anchor_row,
-        composer_anchor_sequence, composer_placeholder_for, composer_visual_rows,
-        configure_permissions, configure_plugin, crumb_keybindings, effort_display_name,
-        effort_wire_name, ensure_single_release_skill_install, exact_skill_manifest_url,
-        exact_skill_run_config, failed_command_recovery, finished_tool_activity,
-        fixed_footer_frame, follow_up_composer_row, follow_up_cursor_sequence,
-        format_peer_discarded_file, format_peer_imported_file, format_peer_inbox,
-        format_peer_inspection, format_peer_quarantined_file, format_peer_task,
-        handle_skill_command, initial_agent_activity, install_marketplace_package,
-        load_exact_skill_manifest, marketplace_update_blocker, normalize_bundled_skill_install,
-        openrouter_preset, parse_cli_skill_run, parse_credential_reference, parse_exec_request,
+        apply_exec_overrides, artifact_modal_action, builtin_agent_config, bundled_catalog,
+        compact_folder, completion_footer_frame, completion_menu_composer_frame,
+        completion_overlay_rows, composer_anchor_row, composer_anchor_sequence,
+        composer_placeholder_for, composer_visual_rows, configure_permissions, configure_plugin,
+        crumb_keybindings, effort_display_name, effort_wire_name,
+        ensure_single_release_skill_install, exact_skill_manifest_url, exact_skill_run_config,
+        failed_command_recovery, finished_tool_activity, fixed_footer_frame,
+        follow_up_composer_row, follow_up_cursor_sequence, format_peer_discarded_file,
+        format_peer_imported_file, format_peer_inbox, format_peer_inspection,
+        format_peer_quarantined_file, format_peer_task, handle_skill_command,
+        initial_agent_activity, install_marketplace_package, load_exact_skill_manifest,
+        marketplace_update_blocker, normalize_bundled_skill_install, openrouter_preset,
+        parse_acp_command, parse_cli_skill_run, parse_credential_reference, parse_exec_request,
         parse_interactive_skill_run, parse_paused_submission, parse_provider_header,
         parse_resume_session_argument, read_agent_config, read_bounded_response,
         register_local_skill, render_skill_discovery_search, resolve_memory_keep,
         sanitize_completion_menu_body, sanitize_transcript_output, select_discovery_skill,
-        set_skill_enabled, shell_blast_radius, shell_tool_config, should_auto_enable_rtk,
-        show_graph, show_instance, show_marketplace, show_memory, show_profile_with_stores,
-        status_tone_for_output, suggestion_width, transcript_activity_row, unregister_local_skill,
-        validate_marketplace_path, validate_marketplace_response, visible_tool_activity,
-        workspace_read_host, write_bounded_response_delta_for_width,
+        select_text_model, set_skill_enabled, shell_blast_radius, shell_tool_config,
+        should_auto_enable_rtk, show_graph, show_instance, show_marketplace, show_memory,
+        show_profile_with_stores, status_tone_for_output, stream_event, suggestion_width,
+        transcript_activity_row, unregister_local_skill, validate_marketplace_path,
+        validate_marketplace_response, visible_tool_activity, workspace_read_host,
+        write_bounded_response_delta_for_width, write_stream_event,
     };
     use crate::agent_runtime::{
         PeerDeliveryInspection, PeerDiscardedFile, PeerImportedFile, PeerInboxSummary,
         PeerInspectionKind, PeerInspectionPart, PeerQuarantinedFile, PeerTaskSummary,
     };
+
+    #[test]
+    fn crumb_runs_inline_unless_fullscreen_is_requested() {
+        let env = |vars: &'static [(&'static str, &'static str)]| {
+            move |name: &str| {
+                vars.iter()
+                    .find(|(key, _)| *key == name)
+                    .map(|(_, value)| (*value).to_owned())
+            }
+        };
+        assert!(!super::fullscreen_requested(&env(&[])));
+        assert!(super::fullscreen_requested(&env(&[(
+            "CRUMB_FULLSCREEN",
+            "1"
+        )])));
+        assert!(!super::fullscreen_requested(&env(&[(
+            "CRUMB_FULLSCREEN",
+            "0"
+        )])));
+        assert!(!super::fullscreen_requested(&env(&[(
+            "CRUMB_FULLSCREEN",
+            "off"
+        )])));
+        assert!(!super::fullscreen_requested(&env(&[
+            ("CRUMB_FULLSCREEN", "1"),
+            ("CRUMB_INLINE", "1")
+        ])));
+    }
 
     #[test]
     fn resume_argument_accepts_the_handoff_command() {
@@ -14389,44 +14866,278 @@ mod tests {
     }
 
     #[test]
-    fn exec_arguments_support_plain_json_and_flag_like_requests() {
-        let parsed = parse_exec_request(&[
-            OsString::from("exec"),
-            OsString::from("--json"),
-            OsString::from("inspect"),
-            OsString::from("this workspace"),
-        ])
-        .expect("valid exec request")
-        .expect("exec action");
-        assert_eq!(parsed, (true, "inspect this workspace".to_owned()));
+    fn help_flag_lists_every_command() {
+        for flag in ["--help", "-h", "help"] {
+            assert!(super::is_help_request(&[OsString::from(flag)]));
+        }
+        assert!(!super::is_help_request(&[OsString::from("exec")]));
+        let help = super::help_text();
+        assert!(help.starts_with(&super::version_line()));
+        for command in [
+            "crumb exec",
+            "crumb skill",
+            "crumb auth",
+            "crumb acp",
+            "crumb mcp serve",
+            "crumb review export",
+            "crumb completions",
+            "crumb jobs",
+            "--version",
+            "--resume",
+        ] {
+            assert!(help.contains(command), "help lacks {command}");
+        }
+    }
 
-        let escaped = parse_exec_request(&[
-            OsString::from("exec"),
-            OsString::from("--"),
-            OsString::from("--json is part of this request"),
-        ])
-        .expect("escaped exec request")
-        .expect("exec action");
+    #[test]
+    fn version_flag_prints_the_package_version() {
+        assert!(super::is_version_request(&[OsString::from("--version")]));
+        assert!(super::is_version_request(&[OsString::from("-V")]));
+        assert!(!super::is_version_request(&[]));
+        assert!(!super::is_version_request(&[
+            OsString::from("--version"),
+            OsString::from("extra")
+        ]));
         assert_eq!(
-            escaped,
-            (false, "--json is part of this request".to_owned())
+            super::version_line(),
+            format!("crumb {}", env!("CARGO_PKG_VERSION"))
         );
-        let json_then_separator = parse_exec_request(&[
-            OsString::from("exec"),
-            OsString::from("--json"),
-            OsString::from("--"),
-            OsString::from("count the lines"),
-        ])
-        .expect("json then separator")
-        .expect("exec action");
-        assert_eq!(json_then_separator, (true, "count the lines".to_owned()));
+    }
 
-        assert!(parse_exec_request(&[OsString::from("exec")]).is_err());
-        assert!(
-            parse_exec_request(&[OsString::from("auth"), OsString::from("status")])
-                .expect("non-exec arguments")
-                .is_none()
+    #[test]
+    fn stream_json_events_are_typed_and_never_carry_tool_output() {
+        assert_eq!(
+            stream_event(&HarnessActivity::RequestAccepted),
+            serde_json::json!({"type": "started"})
         );
+        assert_eq!(
+            stream_event(&HarnessActivity::ResponseDelta {
+                text: "hi".to_owned()
+            }),
+            serde_json::json!({"type": "text", "text": "hi"})
+        );
+        let output = stream_event(&HarnessActivity::ToolOutput {
+            name: "run_command".to_owned(),
+            bytes: Some(42),
+            content: Some("TOKEN=secret".to_owned()),
+        });
+        assert_eq!(
+            output,
+            serde_json::json!({"type": "tool_output", "name": "run_command", "bytes": 42})
+        );
+        assert!(!output.to_string().contains("secret"));
+
+        let mut buffer = Vec::new();
+        write_stream_event(&mut buffer, &stream_event(&HarnessActivity::Cancelled))
+            .expect("event is written");
+        assert_eq!(buffer, b"{\"type\":\"cancelled\"}\n");
+    }
+
+    #[test]
+    fn acp_arguments_take_only_an_approval_override() {
+        fn parse(arguments: &[&str]) -> anyhow::Result<Option<AcpCommand>> {
+            parse_acp_command(&arguments.iter().map(OsString::from).collect::<Vec<_>>())
+        }
+        assert_eq!(
+            parse(&["acp"]).unwrap(),
+            Some(AcpCommand { approvals: None })
+        );
+        assert_eq!(
+            parse(&["acp", "--approvals", "sensitive-only"]).unwrap(),
+            Some(AcpCommand {
+                approvals: Some(ApprovalMode::SensitiveOnly)
+            })
+        );
+        assert!(parse(&["acp", "--approvals", "yolo"]).is_err());
+        assert!(parse(&["acp", "--approvals"]).is_err());
+        assert!(parse(&["acp", "extra"]).is_err());
+        assert_eq!(parse(&["exec", "acp"]).unwrap(), None);
+        assert_eq!(parse(&[]).unwrap(), None);
+    }
+
+    #[test]
+    fn exec_arguments_support_plain_json_and_flag_like_requests() {
+        fn parse(arguments: &[&str]) -> anyhow::Result<Option<ExecRequest>> {
+            parse_exec_request(&arguments.iter().map(OsString::from).collect::<Vec<_>>())
+        }
+        let request = |output, resume: Option<&str>, model: Option<(&str, &str)>, text: &str| {
+            Some(ExecRequest {
+                output,
+                resume: resume.map(str::to_owned),
+                model: model.map(|(provider, name)| (provider.to_owned(), name.to_owned())),
+                approvals: None,
+                request: text.to_owned(),
+            })
+        };
+        assert_eq!(
+            parse(&["exec", "--json", "inspect", "this workspace"]).unwrap(),
+            request(ExecOutput::Json, None, None, "inspect this workspace")
+        );
+        assert_eq!(
+            parse(&["exec", "--", "--json is part of this request"]).unwrap(),
+            request(
+                ExecOutput::Text,
+                None,
+                None,
+                "--json is part of this request"
+            )
+        );
+        assert_eq!(
+            parse(&["exec", "--json", "--", "count the lines"]).unwrap(),
+            request(ExecOutput::Json, None, None, "count the lines")
+        );
+        assert_eq!(
+            parse(&["exec", "--stream-json", "fix", "the test"]).unwrap(),
+            request(ExecOutput::StreamJson, None, None, "fix the test")
+        );
+        assert_eq!(
+            parse(&[
+                "exec",
+                "--resume",
+                "crumb-1",
+                "--stream-json",
+                "--model",
+                "pollinations/openai",
+                "--",
+                "and now the docs",
+            ])
+            .unwrap(),
+            request(
+                ExecOutput::StreamJson,
+                Some("crumb-1"),
+                Some(("pollinations", "openai")),
+                "and now the docs"
+            )
+        );
+        // Options only count before the request; later words are the request.
+        assert_eq!(
+            parse(&["exec", "explain", "--resume", "flag"]).unwrap(),
+            request(ExecOutput::Text, None, None, "explain --resume flag")
+        );
+
+        let full = parse(&["exec", "--approvals", "full-access", "task"])
+            .unwrap()
+            .expect("exec action");
+        assert_eq!(full.approvals, Some(ApprovalMode::FullAccess));
+        assert!(parse(&["exec", "--approvals", "yolo", "task"]).is_err());
+
+        // `--option=value` sets the option instead of starting the request.
+        let inline = parse(&[
+            "exec",
+            "--approvals=always-ask",
+            "--resume=crumb-1",
+            "--model=pollinations/openai",
+            "task",
+        ])
+        .unwrap()
+        .expect("exec action");
+        assert_eq!(inline.approvals, Some(ApprovalMode::AlwaysAsk));
+        assert_eq!(inline.resume.as_deref(), Some("crumb-1"));
+        assert_eq!(
+            inline.model,
+            Some(("pollinations".to_owned(), "openai".to_owned()))
+        );
+        assert_eq!(inline.request, "task");
+        assert!(parse(&["exec", "--approvals=yolo", "task"]).is_err());
+        assert!(parse(&["exec", "--resume=", "task"]).is_err());
+        assert_eq!(
+            parse(&["exec", "explain", "--resume=x"]).unwrap(),
+            request(ExecOutput::Text, None, None, "explain --resume=x")
+        );
+
+        assert!(parse(&["exec"]).is_err());
+        assert!(parse(&["exec", "--json"]).is_err());
+        assert!(parse(&["exec", "--resume"]).is_err());
+        assert!(parse(&["exec", "--model", "no-slash", "task"]).is_err());
+        assert!(parse(&["exec", "--model", "/model", "task"]).is_err());
+        assert!(parse(&["auth", "status"]).unwrap().is_none());
+    }
+
+    #[test]
+    fn exec_endpoint_comes_from_the_environment_and_never_stores_the_key() {
+        let exec = |model: Option<(&str, &str)>, approvals| ExecRequest {
+            output: ExecOutput::Json,
+            resume: None,
+            model: model.map(|(provider, name)| (provider.to_owned(), name.to_owned())),
+            approvals,
+            request: "task".to_owned(),
+        };
+        let env = |name: &str| match name {
+            "CRUMB_EXEC_BASE_URL" => Some("http://127.0.0.1:9/v1".to_owned()),
+            "CRUMB_EXEC_API_KEY" => Some("relay-placeholder-secret".to_owned()),
+            _ => None,
+        };
+        let mut config = builtin_agent_config();
+        apply_exec_overrides(
+            &mut config,
+            &exec(
+                Some(("exec", "any/model-id")),
+                Some(ApprovalMode::FullAccess),
+            ),
+            &env,
+        )
+        .expect("endpoint and model apply");
+        let provider = &config.providers["exec"];
+        assert_eq!(provider.base_url, "http://127.0.0.1:9/v1");
+        assert_eq!(
+            provider.credential,
+            Some(CredentialReference::Environment {
+                name: "CRUMB_EXEC_API_KEY".to_owned()
+            })
+        );
+        let first = &config.models[&Modality::Text][0];
+        assert_eq!(
+            (first.provider.as_str(), first.model.as_str()),
+            ("exec", "any/model-id")
+        );
+        assert_eq!(config.permissions.mode, ApprovalMode::FullAccess);
+        let stored = serde_json::to_string(&config).expect("config serializes");
+        assert!(!stored.contains("relay-placeholder-secret"));
+
+        let no_env = |_: &str| None;
+        let mut config = builtin_agent_config();
+        assert!(
+            apply_exec_overrides(&mut config, &exec(Some(("exec", "m")), None), &no_env).is_err()
+        );
+        let mut config = builtin_agent_config();
+        assert!(apply_exec_overrides(&mut config, &exec(None, None), &env).is_err());
+        let bad_protocol = |name: &str| match name {
+            "CRUMB_EXEC_PROTOCOL" => Some("grpc".to_owned()),
+            other => env(other),
+        };
+        let mut config = builtin_agent_config();
+        assert!(
+            apply_exec_overrides(&mut config, &exec(Some(("exec", "m")), None), &bad_protocol)
+                .is_err()
+        );
+        let mut config = builtin_agent_config();
+        let before = config.permissions.mode;
+        apply_exec_overrides(&mut config, &exec(None, None), &no_env).expect("no overrides");
+        assert_eq!(config.permissions.mode, before);
+    }
+
+    #[test]
+    fn exec_model_override_needs_a_configured_provider_and_model() {
+        let mut config = builtin_agent_config();
+        assert!(select_text_model(&mut config, "nobody", "model").is_err());
+        let (provider, model) = config
+            .providers
+            .iter()
+            .find_map(|(id, provider)| {
+                provider
+                    .models
+                    .last()
+                    .map(|model| (id.clone(), model.id.clone()))
+            })
+            .expect("the built-in config has a provider with models");
+        assert!(select_text_model(&mut config, &provider, "no-such-model").is_err());
+        select_text_model(&mut config, &provider, &model).expect("configured model is accepted");
+        let first = &config.models[&Modality::Text][0];
+        assert_eq!(
+            (first.provider.as_str(), first.model.as_str()),
+            (provider.as_str(), model.as_str())
+        );
+        assert_eq!(config.active_model_pack, None);
     }
 
     #[test]

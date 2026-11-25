@@ -1,6 +1,6 @@
 # Media ingestion and storage boundary
 
-OreoOS never transfers arbitrary source media directly to badge storage. Both
+FaleraOS never transfers arbitrary source media directly to badge storage. Both
 the badge-hosted web page and `tools/media_ingest.py` use the same sequence:
 
 1. detect the source as image, video, Markdown, or text;
@@ -16,6 +16,10 @@ the badge-hosted web page and `tools/media_ingest.py` use the same sequence:
 | video | `.rv565` / RV565 v6 | independent zlib RGB565 frames |
 | Markdown | `.mdz` / ODZ v1 | UTF-8 + zlib |
 | text | `.txtz` / ODZ v1 | UTF-8 + zlib |
+
+Videos stay on RV565 v6. RV565 format version 7 (the RV565 2.0 library: more
+pixel formats, delta and repeat frames) is not read by the Gallery or the
+firmware's `_oreo_rv565` module until the firmware moves to the 2.0 C library.
 
 Independent video frames provide bounded decode time and make the same file
 streamable from memory-mapped internal flash or an SD card. SD support changes

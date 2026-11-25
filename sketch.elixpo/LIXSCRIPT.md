@@ -112,7 +112,8 @@ arrow <id> from <source> to <target> {
   strokeWidth: <number>     // line thickness (default: 2)
   style: <lineStyle>        // solid | dashed | dotted
   startHead: <head>         // none (default) | arrow | bar | dot | circle | triangle | triangle_outline
-                            // | diamond | diamond_outline | crowfoot_one | crowfoot_many | crowfoot_one_or_many | cross
+                            // | diamond | diamond_outline | crowfoot_one | crowfoot_many | crowfoot_one_or_many
+                            // | crowfoot_zero_or_one | crowfoot_zero_or_many | cross
   endHead: <head>           // same values (default: arrow); `head:` is the legacy name for endHead
   curve: <curveMode>        // straight | curved | elbow
   curveAmount: <number>     // curve intensity (default: 50)

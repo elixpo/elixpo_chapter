@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyScenePatch, createEmptyScene, mergeTemplateScene, validateScene } from '../src/mcp/scene.js';
+import { applyScenePatch, createEmptyScene, mergeTemplateScene, shapeBounds, validateScene } from '../src/mcp/scene.js';
 import { createLixSketchMcpServer } from '../src/mcp/server.js';
 import { MemorySceneStore } from '../src/mcp/store.js';
 
@@ -55,4 +55,25 @@ test('MCP server exposes scene reads and dry-run patches', async () => {
   assert.equal(result.isError, undefined);
   assert.equal(result.structuredContent.dryRun, true);
   assert.equal((await store.read()).shapes.length, 0);
+});
+
+test('estimates MCP text bounds for one-line, multi-line, and large-font text', () => {
+  const { scene } = applyScenePatch(createEmptyScene(), [
+    { op: 'add', shape: { type: 'text', shapeID: 'short-text', x: 10, y: 20, text: 'Hi', fontSize: 20 } },
+    { op: 'add', shape: { type: 'text', shapeID: 'long-text', x: 10, y: 20, text: 'A much longer single-line diagram label', fontSize: 20 } },
+    { op: 'add', shape: { type: 'text', shapeID: 'multi-text', x: 10, y: 20, text: 'Line 1\nSecond longer line\nLine 3', fontSize: 20 } },
+    { op: 'add', shape: { type: 'text', shapeID: 'large-text', x: 10, y: 20, text: 'Hi', fontSize: 60 } },
+  ]);
+  const byId = Object.fromEntries(scene.shapes.map((s) => [s.shapeID, shapeBounds(s)]));
+
+  assert.equal(byId['short-text'].x, 10);
+  assert.equal(byId['short-text'].y, 20);
+  assert.ok(byId['long-text'].width > byId['short-text'].width);
+  assert.equal(byId['long-text'].height, byId['short-text'].height);
+
+  assert.ok(byId['multi-text'].height > byId['short-text'].height * 2);
+  assert.ok(byId['multi-text'].width > byId['short-text'].width);
+
+  assert.ok(byId['large-text'].width > byId['short-text'].width * 2);
+  assert.ok(byId['large-text'].height > byId['short-text'].height * 2);
 });

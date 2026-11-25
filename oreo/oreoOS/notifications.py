@@ -1,4 +1,4 @@
-"""In-memory notification ring for OreoOS.
+"""In-memory notification ring for FaleraOS.
 
 Anything that wants to surface a transient event to the user calls
 `push(kind, title, body, target=None)`. The launcher renders the panel

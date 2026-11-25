@@ -1,6 +1,6 @@
 "use client";
 
-import { C, TopList } from "@/components/ui";
+import { C, TopList, eyebrow } from "@/components/ui";
 import type { Dim } from "@/lib/metrics";
 import { Fullscreen } from "@mui/icons-material";
 import { Box, Dialog, IconButton, Typography } from "@mui/material";
@@ -27,7 +27,7 @@ export default function ExpandableGlobe({
                         right: -4,
                         zIndex: 2,
                         color: C.textMuted,
-                        "&:hover": { color: C.accentLight },
+                        "&:hover": { color: C.ink },
                     }}
                 >
                     <Fullscreen fontSize="small" />
@@ -43,20 +43,26 @@ export default function ExpandableGlobe({
                 slotProps={{
                     paper: {
                         sx: {
-                            bgcolor: "rgba(15,17,26,0.98)",
-                            backdropFilter: "blur(18px)",
+                            bgcolor: C.panel,
                             border: `1px solid ${C.border}`,
-                            borderRadius: "16px",
+                            borderRadius: "22px",
+                            boxShadow: "0 18px 48px rgba(20,32,24,.09)",
+                            m: { xs: 1.5, sm: 4 },
+                            width: { xs: "calc(100% - 24px)", sm: undefined },
                         },
                     },
                 }}
             >
-                <Box sx={{ p: 3 }}>
+                <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography sx={{ ...eyebrow, mb: 0.75 }}>
+                        Geography
+                    </Typography>
                     <Typography
                         sx={{
                             color: C.text,
-                            fontWeight: 700,
-                            fontSize: "1rem",
+                            fontWeight: 650,
+                            fontSize: "1.5rem",
+                            letterSpacing: "-0.04em",
                             mb: 2,
                         }}
                     >

@@ -49,7 +49,7 @@ export default function ChangeIdDialog({
                 sx: {
                     bgcolor: "var(--app-surface)",
                     border: "1px solid var(--app-border)",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-panel)",
                     color: "var(--app-fg)",
                     backgroundImage: "none",
                 },
@@ -70,9 +70,9 @@ export default function ChangeIdDialog({
                             borderRadius: "10px",
                             display: "grid",
                             placeItems: "center",
-                            color: "#fbbf24",
-                            background: "rgba(251,191,36,0.1)",
-                            border: "1px solid rgba(251,191,36,0.25)",
+                            color: "var(--app-warn)",
+                            background: "color-mix(in srgb, var(--app-warn) 10%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--app-warn) 25%, transparent)",
                         }}
                     >
                         <WarningAmberIcon sx={{ fontSize: 22 }} />
@@ -118,10 +118,10 @@ export default function ChangeIdDialog({
                                 borderColor: "var(--app-border)",
                             },
                             "&:hover fieldset": {
-                                borderColor: "rgba(155,123,247,0.4)",
+                                borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)",
                             },
                             "&.Mui-focused fieldset": {
-                                borderColor: "#9b7bf7",
+                                borderColor: "var(--app-accent)",
                             },
                         },
                         "& .MuiInputLabel-root": {
@@ -141,7 +141,7 @@ export default function ChangeIdDialog({
                 </Typography>
                 {error && (
                     <Typography
-                        sx={{ color: "#f87171", fontSize: "0.82rem", mt: 1 }}
+                        sx={{ color: "var(--app-danger)", fontSize: "0.82rem", mt: 1 }}
                     >
                         {error}
                     </Typography>
@@ -166,12 +166,12 @@ export default function ChangeIdDialog({
                         fontWeight: 700,
                         color: "#fff",
                         px: 2.4,
-                        borderRadius: "10px",
+                        borderRadius: "999px",
                         background:
-                            "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                            "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                         "&:hover": {
                             background:
-                                "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                         },
                         "&.Mui-disabled": { opacity: 0.45, color: "#fff" },
                     }}

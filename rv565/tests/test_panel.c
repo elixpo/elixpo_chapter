@@ -95,6 +95,29 @@ int main(void)
         check_window(presets[i].name, presets[i].panel);
     }
 
+    /* Row windows for partial updates: the full height reproduces the init
+     * RASET, and a band lands at the panel's row offset. */
+    for (size_t i = 0; i < sizeof(presets) / sizeof(presets[0]); ++i) {
+        const rv565_panel_t *p = &presets[i].panel;
+        rv565_st7789_step_t steps[RV565_ST7789_STEPS];
+        const size_t n = rv565_st7789_sequence(p, steps);
+        const rv565_st7789_step_t *raset = find(steps, n, RV565_ST7789_RASET);
+        uint8_t rows[4];
+        rv565_st7789_rows(p, 0, p->height, rows);
+        CHECK(raset != NULL && memcmp(rows, raset->data, 4) == 0, "%s: full row window", presets[i].name);
+        rv565_st7789_rows(p, 10, 5, rows);
+        CHECK(word(rows) == p->y_offset + 10u && word(rows + 2) == p->y_offset + 14u,
+              "%s: rows 10-14 window", presets[i].name);
+        /* Column windows for region updates, the same way. */
+        const rv565_st7789_step_t *caset = find(steps, n, RV565_ST7789_CASET);
+        uint8_t cols[4];
+        rv565_st7789_columns(p, 0, p->width, cols);
+        CHECK(caset != NULL && memcmp(cols, caset->data, 4) == 0, "%s: full column window", presets[i].name);
+        rv565_st7789_columns(p, 7, 3, cols);
+        CHECK(word(cols) == p->x_offset + 7u && word(cols + 2) == p->x_offset + 9u,
+              "%s: columns 7-9 window", presets[i].name);
+    }
+
     const rv565_panel_t no_invert = { 240, 240, 0, 80, 0xC0, 0 };
     check_window("custom, no inversion", no_invert);
 

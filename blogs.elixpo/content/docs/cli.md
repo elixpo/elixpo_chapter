@@ -40,6 +40,10 @@ LIXBLOGS_TOKEN_FILE=/run/secrets/lixblogs lixblogs whoami --json --no-input
 
 Credential resolution is deterministic: `--token-file`, then `LIXBLOGS_TOKEN`, then `LIXBLOGS_TOKEN_FILE`, then the active device-login profile. Direct tokens are not persisted locally. The API remains authoritative for their scopes and personal or organization boundary.
 
+### Automated PR blog drafts
+
+Repository workflows can generate technical drafts from merged pull requests using `LIXBLOGS_PAT` (`lixblogs:blog:read`, `lixblogs:blog:write`). The workflow uses deterministic idempotency keys and safe updates on rerun. See [PR Blog Draft Documentation](/docs/pr-blog-draft) for required scopes, secrets, and failure recovery.
+
 ## Profiles and scopes
 
 ```bash

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import contributors from "../../../content/contributors.json";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 const featuredContributors = [...contributors.featured].sort((a, b) => b.observedContributions - a.observedContributions);
 const coverage = Math.round(featuredContributors.length / contributors.selectionPolicy.eligibleContributorCount * 1000) / 10;
@@ -18,7 +19,7 @@ export default function ContributorsPage() {
 
   return <main className="page-shell evidence-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="contributor-hero">
+    <header className="contributor-hero"><Sparks chips={["+1 contributor", "merged ✓", "credited ♥"]} />
       <div><p className="eyebrow">People / evidence-led recognition</p><h1>Credit the work.<br />Explain the <em>impact.</em></h1><p className="lede">This edition features the highest-contributing eligible people in the Elixpo Chapter record. Leads and automation are excluded before the coverage threshold is calculated.</p></div>
       <dl><div><dt>Featured people</dt><dd>{featuredContributors.length}</dd></div><div><dt>Eligible contributors</dt><dd>{contributors.selectionPolicy.eligibleContributorCount}</dd></div><div><dt>Coverage</dt><dd>{coverage}%</dd></div><div><dt>Required floor</dt><dd>{contributors.selectionPolicy.minimumCoveragePercent}%</dd></div></dl>
     </header>

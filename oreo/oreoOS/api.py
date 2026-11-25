@@ -47,6 +47,14 @@ BTN_LEFT  = 6
 BTN_RIGHT = 7
 BUTTONS = (BTN_HOME, BTN_A, BTN_B, BTN_C, BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT)
 
+# Logical names for what the buttons mean across FaleraOS. They are the same
+# numbers, so `btn == api.BTN_SELECT` and `btn == api.BTN_A` are equivalent;
+# use whichever reads better. HOME always leaves the app (the OS handles
+# it). C opens the notification panel unless the app sets CAPTURES_C.
+BTN_SELECT = BTN_A   # confirm, open, fire, jump
+BTN_BACK   = BTN_B   # cancel, go up one level, close a dialog
+BTN_PANEL  = BTN_C   # notification panel (or the app's own action)
+
 
 # ---------- Corner LED identifiers ----------
 LED_TL = 0
@@ -111,6 +119,43 @@ class Display(ABC):
                     b = int(b + (bb  - b) * dim)
                 self.rect(x + col * scale, y + row * scale,
                           scale, scale, rgb(r, g, b), fill=True)
+
+    def blit_mono(self, mask, x, y, w, h, color):
+        """Stamp a 1-bit MONO_HLSB mask (rows padded to whole bytes, MSB is
+        the leftmost pixel) in `color`; clear bits stay transparent.
+
+        Backends override this with a native framebuf blit. The portable
+        fallback emits one rect per horizontal run of set bits.
+        """
+        stride = (w + 7) >> 3
+        for row in range(h):
+            base = row * stride
+            run = -1
+            for col in range(w + 1):
+                on = col < w and (mask[base + (col >> 3)] & (0x80 >> (col & 7)))
+                if on and run < 0:
+                    run = col
+                elif not on and run >= 0:
+                    self.rect(x + run, y + row, col - run, 1, color, fill=True)
+                    run = -1
+
+    def copy_rows(self, y, h):
+        """Return a copy of full-width framebuffer rows y..y+h as RGB565
+        big-endian bytes, or None when the backend cannot read pixels back.
+
+        Lets animations snapshot a static backdrop once and restore just
+        the band they repaint, instead of redrawing the whole scene.
+        """
+        return None
+
+    def blit_rows(self, src, y, h, src_y=0):
+        """Copy h opaque full-width rows from a full-width RGB565 big-endian
+        buffer (starting at its row src_y) to screen rows y..y+h. Backends
+        override this with an opaque memcpy; this portable fallback goes
+        through blit(), so it still honours the chroma key."""
+        stride = SCREEN_W * 2
+        start = src_y * stride
+        self.blit(bytearray(src[start:start + h * stride]), 0, y, SCREEN_W, h)
 
     @abstractmethod
     def present(self):

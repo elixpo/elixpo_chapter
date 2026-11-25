@@ -1650,7 +1650,7 @@ function HandlePageInner({ path, initialData = null }) {
 
         const bannerSrc = u.banner_r2_key
             ? `/api/media/${u.banner_r2_key}?v=${encodeURIComponent(u.updated_at || "")}`
-            : generateProfileBanner(u.username || u.id, u.avatar_url);
+            : null;
         const avatarSrc = u.avatar_url || generatePixelAvatar(u.username || u.id);
 
         return (
@@ -1660,14 +1660,16 @@ function HandlePageInner({ path, initialData = null }) {
                     <div className="relative mb-16">
                         <div
                             className="w-full rounded-xl bg-[var(--bg-elevated)] overflow-hidden"
-                            style={{ aspectRatio: "4 / 1" }}
+                            style={{ aspectRatio: "16 / 5" }}
                         >
-	                            <img
-	                                src={bannerSrc}
-	                                alt=""
-	                                className="w-full h-full object-cover"
-	                                loading="eager"
-	                            />
+                            {bannerSrc && (
+                                <img
+                                    src={bannerSrc}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    loading="eager"
+                                />
+                            )}
                             {/* Gradient overlay for text contrast on banner */}
                             {bannerSrc && (
                                 <div

@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import people from "../../../content/people.json";
 import contributors from "../../../content/contributors.json";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "People, maintainers, and contributors",
@@ -33,7 +34,7 @@ export default function PeoplePage() {
 
   return <main className="people-page evidence-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="people-hero">
+    <header className="people-hero"><Sparks chips={["maintainer ✓", "+1 human", "say hi ↗"]} />
       <div className="people-hero-geometry" aria-hidden="true"><span/><span/><span/><span/><span/></div>
       <div className="people-hero-copy"><p className="eyebrow">People / responsibility and public evidence</p><h1>Roles describe <em>accountability.</em></h1><p className="lede">Elixpo separates current organization responsibility from project maintenance and contributor recognition. A public GitHub identity is not treated as employment, permanent membership, or consent for a private biography.</p><Link className="text-link" href="/contributors">Explore contributor records <ArrowRight size={15}/></Link></div>
       <dl className="people-hero-facts"><div><dt>Current team</dt><dd>{people.currentTeam.length}</dd></div><div><dt>Featured contributors</dt><dd>{contributors.featured.length}</dd></div><div><dt>Published alumni</dt><dd>{people.alumni.length}</dd></div><div><dt>Published advisors</dt><dd>{people.advisors.length}</dd></div></dl>

@@ -7,19 +7,44 @@ import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/ids";
 import { isPlatformMerchant, PLATFORM_COMMISSION_BPS } from "@/lib/merchant";
 import { razorpayFromEnv } from "@/lib/providers/razorpay";
+import {
+    fetchActivation,
+    onboardLinkedAccount,
+    PAN_RE,
+    PHONE_RE,
+    PIN_RE,
+    type PayoutPurpose,
+    setSettlementAccount,
+    statusFor,
+} from "@/lib/route-onboarding";
 
 /**
  * Connected payout account (Razorpay Route) for the signed-in merchant.
  *
  *   GET    → current connection + status + routable revenue summary
- *   PUT    → connect / update bank details { beneficiary_name, account_number, ifsc, razorpay_account_id? }
- *   DELETE → disconnect
+ *   PUT    → connect (full KYC) or change the settlement bank account
+ *   DELETE → pause payouts (keeps the Razorpay account so reconnecting reuses it)
  *
- * Foundation stage: stores the connection and shows status. The live Razorpay
- * linked-account creation + split `transfers` are wired in a follow-up; until
- * the merchant's `razorpay_account_id` is set + active, funds keep settling to
- * the Elixpo platform account.
+ * Onboarding runs Razorpay Route's v2 flow (src/lib/route-onboarding.ts). Splits
+ * only happen once Razorpay activates the account (status 'active'); GET polls
+ * the activation status while it is pending. PUT and DELETE need a sign-in from
+ * the last REAUTH_SECONDS, since they decide where money goes.
  */
+
+const REAUTH_SECONDS = 15 * 60;
+
+function needsReauth(session: { iat: number }): boolean {
+    return Math.floor(Date.now() / 1000) - session.iat > REAUTH_SECONDS;
+}
+
+const reauth = () =>
+    NextResponse.json(
+        {
+            error: "reauth_required",
+            error_description: "For your security, sign in again to change where your payouts go.",
+        },
+        { status: 401 },
+    );
 
 const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
@@ -38,7 +63,11 @@ function view(row: any | null) {
         bank_last4: row.bank_last4,
         razorpay_account_id: row.razorpay_account_id,
         commission_bps: row.commission_bps,
-        status: row.status, // pending | active | disabled
+        status: row.status, // pending | active | disabled | self
+        activation_status: row.activation_status ?? null,
+        activation_note: row.activation_note ?? null,
+        // True once KYC is submitted: later updates only need bank details.
+        kyc_submitted: !!(row.razorpay_account_id && row.razorpay_product_id),
     };
 }
 
@@ -47,7 +76,28 @@ export async function GET(request: NextRequest) {
     if (ctx instanceof NextResponse) return ctx;
     const { db, merchantId } = ctx;
 
-    const row = await getAccount(db, merchantId);
+    let row = await getAccount(db, merchantId);
+
+    // While Razorpay is reviewing the account, refresh its activation status.
+    if (row?.razorpay_account_id && row.razorpay_product_id && row.status === "pending") {
+        const razorpay = await razorpayFromEnv(getEnv);
+        if (razorpay) {
+            const a = await fetchActivation(razorpay, {
+                accountId: row.razorpay_account_id,
+                productId: row.razorpay_product_id,
+            });
+            if (a.activationStatus && a.activationStatus !== row.activation_status) {
+                await db
+                    .prepare(
+                        `UPDATE payout_accounts SET activation_status = ?, activation_note = ?, status = ?,
+                         updated_at = datetime('now') WHERE merchant_id = ?`,
+                    )
+                    .bind(a.activationStatus, a.requirements.join("; ") || null, statusFor(a.activationStatus), merchantId)
+                    .run();
+                row = await getAccount(db, merchantId);
+            }
+        }
+    }
 
     // Revenue that would route to the merchant once Route is live (captured, by currency).
     const revenue = await db
@@ -75,7 +125,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     const ctx = await requireDashboard(request);
     if (ctx instanceof NextResponse) return ctx;
-    const { db, merchantId } = ctx;
+    const { db, merchantId, session } = ctx;
 
     // The platform owner doesn't connect a payout account — its products settle
     // directly to the platform Razorpay account.
@@ -89,14 +139,15 @@ export async function PUT(request: NextRequest) {
             { status: 400 },
         );
     }
+    if (needsReauth(session)) return reauth();
 
     const body: any = await request.json().catch(() => ({}));
-    const beneficiary = String(body.beneficiary_name || "").trim().slice(0, 120);
-    const ifsc = String(body.ifsc || "").trim().toUpperCase();
+    const str = (k: string, max = 120) => String(body[k] ?? "").trim().slice(0, max);
+    const beneficiary = str("beneficiary_name");
+    const ifsc = str("ifsc", 11).toUpperCase();
     const accountNumber = String(body.account_number || "").replace(/\s/g, "");
-    const businessType = String(body.business_type || "individual").trim();
 
-    if (!beneficiary) {
+    if (beneficiary.length < 4 || !/^[A-Za-z0-9 .]+$/.test(beneficiary)) {
         return NextResponse.json({ error: "missing_beneficiary" }, { status: 400 });
     }
     if (!IFSC_RE.test(ifsc)) {
@@ -106,91 +157,126 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: "invalid_account_number" }, { status: 400 });
     }
 
-    // Only the last 4 of the account number are persisted (display only); the
-    // full number is sent to Razorpay to create the linked account, not stored.
+    const razorpay = await razorpayFromEnv(getEnv);
+    if (!razorpay) {
+        return NextResponse.json({ error: "provider_unconfigured" }, { status: 503 });
+    }
+
+    // Only the last 4 of the account number are persisted (display only). The
+    // full number, PAN, phone and address go to Razorpay and are never stored.
     const last4 = accountNumber.slice(-4);
-
-    // Self-detection: if these are the PLATFORM OWNER's own bank details, this
-    // isn't a third-party split — funds already belong in the platform account.
-    // Mark it 'self' (settles directly, no Route split) and flag for ownership
-    // verification instead of creating a duplicate linked account.
-    const ownerAccount = ((await getEnv("ELIXPO_OWNER_BANK_ACCOUNT")) || "").replace(/\s/g, "");
-    const ownerIfsc = ((await getEnv("ELIXPO_OWNER_BANK_IFSC")) || "").trim().toUpperCase();
-    const isOwnerBank = !!ownerAccount && !!ownerIfsc && accountNumber === ownerAccount && ifsc === ownerIfsc;
-
     const existing = await getAccount(db, merchantId);
-    let accountId: string | null = existing?.razorpay_account_id ?? null;
-    let status: string = existing?.status ?? "pending";
-    let createError: string | null = null;
+    let result: Awaited<ReturnType<typeof onboardLinkedAccount>>;
 
-    if (isOwnerBank) {
-        // Don't create a linked account or split — needs ownership verification.
-        accountId = null;
-        status = "self";
-    }
-
-    // Create the Razorpay linked account from the bank details the merchant gave
-    // us (Elixpo Pay onboards them; they never touch Razorpay). Skip if they
-    // already have one, or if this is the owner's own bank (self). Non-fatal: on
-    // failure we save as 'pending' + surface why.
-    if (!accountId && !isOwnerBank) {
-        const razorpay = await razorpayFromEnv(getEnv);
-        if (razorpay) {
-            const merchant = (await db
-                .prepare("SELECT email, name FROM merchants WHERE id = ?")
-                .bind(merchantId)
-                .first()) as { email: string | null; name: string | null } | null;
-            try {
-                const created = await razorpay.createLinkedAccount({
-                    email: merchant?.email || `merchant+${merchantId}@elixpo.com`,
-                    name: beneficiary,
-                    beneficiaryName: beneficiary,
-                    ifsc,
-                    accountNumber,
-                    businessType,
-                });
-                accountId = created.accountId;
-                status = "active";
-            } catch (e: any) {
-                createError = e?.message || "Could not create the Razorpay account";
-                status = "pending";
-            }
+    if (existing?.razorpay_account_id && existing.razorpay_product_id) {
+        // KYC already submitted: just change the settlement bank account.
+        result = await setSettlementAccount(
+            razorpay,
+            { accountId: existing.razorpay_account_id, productId: existing.razorpay_product_id },
+            { accountNumber, ifsc, name: beneficiary },
+        );
+    } else {
+        const phone = str("phone", 15).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
+        const pan = str("pan", 10).toUpperCase();
+        const street = str("street", 100);
+        const city = str("city", 32);
+        const state = str("state", 32);
+        const postalCode = str("postal_code", 6);
+        const purpose: PayoutPurpose = body.purpose === "selling" ? "selling" : "fundraising";
+        if (!PHONE_RE.test(phone)) return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+        if (!PAN_RE.test(pan)) return NextResponse.json({ error: "invalid_pan" }, { status: 400 });
+        if (street.length < 10 || city.length < 2 || state.length < 2) {
+            return NextResponse.json({ error: "invalid_address" }, { status: 400 });
         }
+        if (!PIN_RE.test(postalCode)) return NextResponse.json({ error: "invalid_postal_code" }, { status: 400 });
+
+        const merchant = (await db.prepare("SELECT email FROM merchants WHERE id = ?").bind(merchantId).first()) as {
+            email: string | null;
+        } | null;
+        const email = merchant?.email || session.email;
+        if (!email) return NextResponse.json({ error: "missing_email" }, { status: 400 });
+
+        result = await onboardLinkedAccount(
+            razorpay,
+            { email, phone, name: beneficiary, pan, street, city, state, postalCode, purpose, accountNumber, ifsc },
+            {
+                accountId: existing?.razorpay_account_id ?? null,
+                productId: existing?.razorpay_product_id ?? null,
+            },
+        );
     }
+
+    if (result.error) console.error("[payouts] onboarding for %s: %s", merchantId, result.error);
+    // A failed bank change must not leave the old account looking replaced.
+    const bankSaved = !result.error;
+    const status = result.activationStatus ? statusFor(result.activationStatus) : "pending";
+    const note = result.requirements.join("; ") || null;
 
     if (existing) {
         await db
             .prepare(
                 `UPDATE payout_accounts
                  SET beneficiary_name = ?, bank_ifsc = ?, bank_last4 = ?,
-                     razorpay_account_id = ?, status = ?, updated_at = datetime('now')
+                     razorpay_account_id = ?, razorpay_product_id = ?,
+                     activation_status = COALESCE(?, activation_status), activation_note = ?,
+                     status = ?, updated_at = datetime('now')
                  WHERE merchant_id = ?`,
             )
-            .bind(beneficiary, ifsc, last4, accountId, status, merchantId)
+            .bind(
+                bankSaved ? beneficiary : existing.beneficiary_name,
+                bankSaved ? ifsc : existing.bank_ifsc,
+                bankSaved ? last4 : existing.bank_last4,
+                result.accountId,
+                result.productId,
+                result.activationStatus,
+                note,
+                bankSaved ? status : existing.status === "active" ? "active" : "pending",
+                merchantId,
+            )
             .run();
     } else {
         await db
             .prepare(
                 `INSERT INTO payout_accounts
-                 (id, merchant_id, provider, razorpay_account_id, beneficiary_name, bank_ifsc, bank_last4, status)
-                 VALUES (?, ?, 'razorpay', ?, ?, ?, ?, ?)`,
+                 (id, merchant_id, provider, razorpay_account_id, razorpay_product_id, beneficiary_name,
+                  bank_ifsc, bank_last4, activation_status, activation_note, status)
+                 VALUES (?, ?, 'razorpay', ?, ?, ?, ?, ?, ?, ?, ?)`,
             )
-            .bind(newId("payoutAccount"), merchantId, accountId, beneficiary, ifsc, last4, status)
+            .bind(
+                newId("payoutAccount"),
+                merchantId,
+                result.accountId,
+                result.productId,
+                beneficiary,
+                ifsc,
+                last4,
+                result.activationStatus,
+                note,
+                status,
+            )
             .run();
     }
 
-    return NextResponse.json({
-        ok: true,
-        account: view(await getAccount(db, merchantId)),
-        create_error: createError,
-        self: isOwnerBank,
-    });
+    return NextResponse.json(
+        {
+            ok: !result.error,
+            account: view(await getAccount(db, merchantId)),
+            create_error: result.error,
+        },
+        { status: result.error ? 422 : 200 },
+    );
 }
 
 export async function DELETE(request: NextRequest) {
     const ctx = await requireDashboard(request);
     if (ctx instanceof NextResponse) return ctx;
-    const { db, merchantId } = ctx;
-    await db.prepare("DELETE FROM payout_accounts WHERE merchant_id = ?").bind(merchantId).run();
+    const { db, merchantId, session } = ctx;
+    if (needsReauth(session)) return reauth();
+    // Pause instead of forgetting the Razorpay account: reconnecting reuses it
+    // (Razorpay won't create a second account for the same person).
+    await db
+        .prepare("UPDATE payout_accounts SET status = 'disabled', updated_at = datetime('now') WHERE merchant_id = ?")
+        .bind(merchantId)
+        .run();
     return NextResponse.json({ ok: true });
 }

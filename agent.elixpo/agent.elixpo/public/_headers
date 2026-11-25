@@ -1,0 +1,4 @@
+# Festive theme: dates and designs change through config/festivals.yaml, so browsers
+# revalidate within minutes instead of holding an old theme for hours.
+/festive/theme.js
+  Cache-Control: public, max-age=300, must-revalidate

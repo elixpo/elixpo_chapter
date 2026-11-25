@@ -12,6 +12,7 @@ import {
   SITE_NAME,
   SITE_URL,
 } from '@/lib/seo';
+import Script from 'next/script';
 
 // Typography follows research.elixpo: system Arial/Helvetica for UI,
 // Georgia for display accents, ui-monospace for code — no web-font download.
@@ -171,6 +172,8 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
         />
+        {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
+        <Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" />
       </body>
     </html>
   );

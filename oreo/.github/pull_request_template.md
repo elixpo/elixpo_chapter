@@ -1,24 +1,25 @@
-## Changes Made:- 
+## What changed
 
-## Checklists 
+<!-- What and why, in a few sentences. Link the issue: "Closes #123". -->
 
-- [ ] 
+## Tested on the host
 
-## Further Explanation (optional)
+<!-- The tests you ran or added. For hardware: ERC, DRC, the calculation behind a value. -->
 
+## Still to check on a badge
 
-> 
+<!-- What only a real badge (or an assembled board) can show, written as steps. "Nothing" is a fine answer. -->
 
+## Checklist
 
-## Checklist before merging
-
-- [ ] I read [`CONTRIBUTING.md`](https://github.com/elixpo/oreo/blob/main/CONTRIBUTING.md).
-- [ ] My changes follow the project's tone + commenting style.
-- [ ] No `print()` debug spam left behind.
-- [ ] If I added a new app, it has a manifest, an icon prompt under `prompts/`, and an entry in `apps/`.
-- [ ] If I touched `oreoOS/config.py: VERSION`, I bumped it intentionally.
+- [ ] I read [CONTRIBUTING.md](https://github.com/elixpo/falera/blob/main/CONTRIBUTING.md) and the rules in [PREAMBLE.md](https://github.com/elixpo/falera/blob/main/PREAMBLE.md).
+- [ ] `python3 -m unittest discover -s tests` and `python3 tools/validate_app.py` pass (and `cli/tests` for changes under `cli/`).
+- [ ] A change to a contract between the OS and the CLI updates both sides, their tests and the docs.
+- [ ] A schematic change was made in `generate_badge_schematic.py` and `circuit/elixpo/build.sh` was run; a pin change also updates `oreoWare/pins.py` and `docs/HARDWARE.md`.
+- [ ] My commits are signed off (`git commit -s`).
 
 ---
 
-<sub>By submitting this PR I confirm my contribution is offered under the
-[Oreo Panda Community Licence](https://github.com/elixpo/oreo/blob/main/LICENSE).</sub>
+<sub>By submitting this pull request I confirm my contribution is licensed under
+the licence its path gives it, as [PREAMBLE.md](https://github.com/elixpo/falera/blob/main/PREAMBLE.md)
+says: MIT for code and docs, CERN-OHL-P-2.0 for `circuit/`, CC-BY-4.0 for assets.</sub>

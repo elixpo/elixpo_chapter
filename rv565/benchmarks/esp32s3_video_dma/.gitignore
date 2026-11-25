@@ -2,3 +2,6 @@ build/
 sdkconfig
 sdkconfig.old
 main/video.rv565
+main/video.mjpeg
+main/video.mjpeg.json
+managed_components/

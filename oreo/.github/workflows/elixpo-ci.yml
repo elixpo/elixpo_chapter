@@ -28,6 +28,8 @@ jobs:
       (github.event_name == 'pull_request' && github.event.action != 'closed')
     uses: ./.github/workflows/quality-gate.yml
     secrets: inherit
+    permissions:
+      contents: read
 
   pr-manage:
     if: >-
@@ -35,8 +37,17 @@ jobs:
       github.event.action != 'closed'
     uses: ./.github/workflows/pr-management.yml
     secrets: inherit
+    # The repository's default token is read-only; a reusable workflow may
+    # not ask for more than its caller grants, or the run fails to start.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
   stale:
     if: github.event_name == 'schedule'
     uses: ./.github/workflows/stale-management.yml
     secrets: inherit
+    permissions:
+      issues: write
+      pull-requests: write

@@ -2,7 +2,14 @@
 
 import MetricChart from "@/components/metric-chart";
 import QueryConsole from "@/components/query-console";
-import { KpiTile, PageHeader, Panel, SectionError } from "@/components/ui";
+import {
+    C,
+    CHART,
+    KpiTile,
+    PageHeader,
+    Panel,
+    SectionError,
+} from "@/components/ui";
 import type { MetricSeries } from "@/lib/metrics";
 import { Box } from "@mui/material";
 
@@ -27,45 +34,45 @@ export default function D1DetailView({
                 sx={{
                     display: "grid",
                     gridTemplateColumns:
-                        "repeat(auto-fill, minmax(180px, 1fr))",
-                    gap: 2,
+                        "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
+                    gap: 1.5,
                     mb: 3,
                 }}
             >
                 <KpiTile
-                    label="Read queries · 24h"
+                    label="Read queries"
                     value={metrics.totals.readQueries?.toLocaleString() ?? "—"}
                     spark={metrics.points.map(
                         (p) => Number(p.readQueries) || 0,
                     )}
-                    color="#22c55e"
+                    color={C.green}
                 />
                 <KpiTile
-                    label="Write queries · 24h"
+                    label="Write queries"
                     value={metrics.totals.writeQueries?.toLocaleString() ?? "—"}
                     spark={metrics.points.map(
                         (p) => Number(p.writeQueries) || 0,
                     )}
-                    color="#f59e0b"
+                    color={C.yellow}
                 />
                 <KpiTile
-                    label="Rows read · 24h"
+                    label="Rows read"
                     value={metrics.totals.rowsRead?.toLocaleString() ?? "—"}
                     spark={metrics.points.map((p) => Number(p.rowsRead) || 0)}
-                    color="#4593ff"
+                    color={C.blue}
                 />
                 <KpiTile
-                    label="Rows written · 24h"
+                    label="Rows written"
                     value={metrics.totals.rowsWritten?.toLocaleString() ?? "—"}
                     spark={metrics.points.map(
                         (p) => Number(p.rowsWritten) || 0,
                     )}
-                    color="#a855f7"
+                    color={C.ink}
                 />
             </Box>
 
             <Box sx={{ mb: 3 }}>
-                <Panel title="D1 activity · 24h">
+                <Panel title="D1 activity">
                     {metrics.available ? (
                         <MetricChart
                             points={metrics.points}
@@ -73,12 +80,12 @@ export default function D1DetailView({
                                 {
                                     key: "readQueries",
                                     label: "Reads",
-                                    color: "#86efac",
+                                    color: C.green,
                                 },
                                 {
                                     key: "writeQueries",
                                     label: "Writes",
-                                    color: "#fbbf24",
+                                    color: CHART[2],
                                 },
                             ]}
                         />

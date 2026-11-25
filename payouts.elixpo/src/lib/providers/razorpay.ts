@@ -22,6 +22,32 @@ import type {
 
 const RAZORPAY_API = "https://api.razorpay.com/v1";
 
+/** A refund or dispute event, normalised (see RazorpayProvider.parseRefundEvent). */
+export interface RazorpayRefundEvent {
+    kind: "refund" | "dispute_lost" | "dispute_created";
+    paymentId: string;
+    /** rfnd_… for refunds, disp_… for disputes. */
+    referenceId: string | null;
+    /** This refund's / dispute's amount (minor units). */
+    amount: number;
+    /** The original payment amount, when the payload carries the payment. */
+    paymentAmount: number | null;
+    /** Cumulative amount gone from the payment after this event. */
+    totalRefunded: number;
+    currency: string | null;
+    /** True when the whole payment is now refunded / lost. */
+    full: boolean;
+}
+
+export interface RazorpayTransfer {
+    id: string;
+    recipient: string | null;
+    amount: number;
+    amountReversed: number;
+    currency: string | null;
+    status: string | null;
+}
+
 export class RazorpayProvider implements PaymentProvider {
     readonly name = "razorpay";
 
@@ -35,6 +61,20 @@ export class RazorpayProvider implements PaymentProvider {
     private authHeader(): string {
         // Basic auth: base64(key_id:key_secret)
         return `Basic ${btoa(`${this.keyId}:${this.keySecret}`)}`;
+    }
+
+    /**
+     * Raw authenticated call to any Razorpay API path (e.g. "/v2/accounts").
+     * Returns the parsed JSON and status; never throws on HTTP errors.
+     */
+    async call(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<{ ok: boolean; status: number; json: any }> {
+        const res = await fetch(`https://api.razorpay.com${path}`, {
+            method,
+            headers: { Authorization: this.authHeader(), "Content-Type": "application/json" },
+            body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const json: any = await res.json().catch(() => ({}));
+        return { ok: res.ok, status: res.status, json };
     }
 
     async createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
@@ -72,52 +112,6 @@ export class RazorpayProvider implements PaymentProvider {
     }
 
     /**
-     * Create a Razorpay Route LINKED ACCOUNT (sub-merchant) from a merchant's
-     * bank details, so payments can be split to them. Returns the `acc_…` id.
-     * Throws with Razorpay's error description on failure (surfaced to the UI).
-     */
-    async createLinkedAccount(input: {
-        email: string;
-        name: string;
-        beneficiaryName: string;
-        ifsc: string;
-        accountNumber: string;
-        businessType?: string;
-        accountType?: "current" | "savings";
-    }): Promise<{ accountId: string; raw: any }> {
-        const res = await fetch(`${RAZORPAY_API}/accounts`, {
-            method: "POST",
-            headers: {
-                Authorization: this.authHeader(),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                email: input.email,
-                name: input.name,
-                tnc_accepted: true,
-                account_details: {
-                    business_name: input.name,
-                    business_type: input.businessType || "individual",
-                },
-                bank_account: {
-                    ifsc_code: input.ifsc,
-                    beneficiary_name: input.beneficiaryName,
-                    account_type: input.accountType || "current",
-                    account_number: input.accountNumber,
-                },
-            }),
-        });
-        const raw: any = await res.json().catch(() => ({}));
-        if (!res.ok || !raw?.id) {
-            throw new Error(
-                raw?.error?.description ||
-                    `Razorpay linked-account create failed (${res.status})`,
-            );
-        }
-        return { accountId: raw.id, raw };
-    }
-
-    /**
      * Client handback signature: HMAC_SHA256(key_secret, `${orderId}|${paymentId}`).
      * Razorpay Checkout returns razorpay_signature in the success callback.
      */
@@ -138,6 +132,9 @@ export class RazorpayProvider implements PaymentProvider {
         rawBody: string,
         signature: string,
     ): Promise<boolean> {
+        // No configured secret → nothing can verify (and an empty HMAC key
+        // throws in WebCrypto). Fail closed instead of 500ing.
+        if (!this.webhookSecret || !signature) return false;
         const expected = await hmacSha256Hex(this.webhookSecret, rawBody);
         return timingSafeEqual(expected, (signature || "").trim());
     }
@@ -187,6 +184,112 @@ export class RazorpayProvider implements PaymentProvider {
                 subscription?.id ?? payment?.subscription_id ?? null,
             subscriptionStatus: subscriptionStatusFromType,
         };
+    }
+
+    /**
+     * Money-back events: `refund.processed` (full or partial) and the dispute
+     * lifecycle (`payment.dispute.created` / `.lost`). Returns null for any
+     * other event. `totalRefunded` is CUMULATIVE for the payment (Razorpay's
+     * payment.amount_refunded), so callers can act idempotently on it; a lost
+     * dispute counts as the whole disputed amount gone.
+     */
+    parseRefundEvent(body: any): RazorpayRefundEvent | null {
+        const type: string = body?.event || "";
+        const payment = body?.payload?.payment?.entity;
+        if (type === "refund.processed") {
+            const refund = body?.payload?.refund?.entity;
+            const paymentId: string | null = refund?.payment_id || payment?.id || null;
+            if (!paymentId) return null;
+            const amount = Number(refund?.amount ?? 0);
+            const paymentAmount = payment?.amount != null ? Number(payment.amount) : null;
+            const totalRefunded =
+                payment?.amount_refunded != null ? Number(payment.amount_refunded) : amount;
+            return {
+                kind: "refund",
+                paymentId,
+                referenceId: refund?.id ?? null,
+                amount,
+                paymentAmount,
+                totalRefunded,
+                currency: refund?.currency ?? payment?.currency ?? null,
+                full:
+                    payment?.refund_status === "full" ||
+                    (paymentAmount != null && totalRefunded >= paymentAmount),
+            };
+        }
+        if (type === "payment.dispute.lost" || type === "payment.dispute.created") {
+            const dispute = body?.payload?.dispute?.entity;
+            const paymentId: string | null = dispute?.payment_id || payment?.id || null;
+            if (!paymentId) return null;
+            const paymentAmount = payment?.amount != null ? Number(payment.amount) : null;
+            const amount = Number(dispute?.amount ?? paymentAmount ?? 0);
+            const lost = type === "payment.dispute.lost";
+            return {
+                kind: lost ? "dispute_lost" : "dispute_created",
+                paymentId,
+                referenceId: dispute?.id ?? null,
+                amount,
+                paymentAmount,
+                // A lost dispute debits the disputed amount on top of any refunds.
+                totalRefunded: lost
+                    ? Number(payment?.amount_refunded ?? 0) + amount
+                    : Number(payment?.amount_refunded ?? 0),
+                currency: dispute?.currency ?? payment?.currency ?? null,
+                full: lost && (paymentAmount == null || amount >= paymentAmount),
+            };
+        }
+        return null;
+    }
+
+    /** Route transfers made from a payment: GET /v1/payments/:id/transfers. */
+    async listPaymentTransfers(paymentId: string): Promise<RazorpayTransfer[]> {
+        const res = await fetch(
+            `${RAZORPAY_API}/payments/${encodeURIComponent(paymentId)}/transfers`,
+            {
+                method: "GET",
+                headers: { Authorization: this.authHeader(), Accept: "application/json" },
+            },
+        );
+        const raw: any = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(
+                `Razorpay list transfers failed (${res.status}): ${raw?.error?.description || res.statusText}`,
+            );
+        }
+        const items: any[] = Array.isArray(raw?.items) ? raw.items : [];
+        return items.map((t) => ({
+            id: String(t.id),
+            recipient: t.recipient ?? null,
+            amount: Number(t.amount ?? 0),
+            amountReversed: Number(t.amount_reversed ?? 0),
+            currency: t.currency ?? null,
+            status: t.status ?? null,
+        }));
+    }
+
+    /**
+     * Pull money back from a linked account: POST /v1/transfers/:id/reversals.
+     * Omitting `amount` reverses the whole remaining transfer.
+     */
+    async reverseTransfer(
+        transferId: string,
+        amount?: number,
+    ): Promise<{ reversalId: string; amount: number; raw: unknown }> {
+        const res = await fetch(
+            `${RAZORPAY_API}/transfers/${encodeURIComponent(transferId)}/reversals`,
+            {
+                method: "POST",
+                headers: { Authorization: this.authHeader(), "Content-Type": "application/json" },
+                body: JSON.stringify(amount != null ? { amount } : {}),
+            },
+        );
+        const raw: any = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(
+                `Razorpay transfer reversal failed (${res.status}): ${raw?.error?.description || res.statusText}`,
+            );
+        }
+        return { reversalId: raw.id, amount: Number(raw.amount ?? amount ?? 0), raw };
     }
 
     async createPlan(input: CreatePlanInput): Promise<CreatePlanResult> {

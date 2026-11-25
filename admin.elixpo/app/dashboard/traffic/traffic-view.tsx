@@ -12,6 +12,7 @@ import {
     SectionError,
     StatusBar,
     TopList,
+    eyebrow,
     fmt,
     fmtBytes,
     trend,
@@ -51,16 +52,21 @@ function ZoneBlock({ z }: { z: ZoneData }) {
 
     return (
         <Box sx={{ mb: 4 }}>
-            <Typography
-                sx={{
-                    color: C.accentLight,
-                    fontSize: "0.95rem",
-                    fontWeight: 700,
-                    mb: 1.5,
-                }}
-            >
-                {z.name}
-            </Typography>
+            <Box sx={{ mb: 1.5 }}>
+                <Typography sx={eyebrow}>Zone</Typography>
+                <Typography
+                    sx={{
+                        color: C.text,
+                        fontSize: { xs: "1.4rem", md: "1.7rem" },
+                        fontWeight: 650,
+                        letterSpacing: "-0.05em",
+                        lineHeight: 1.1,
+                        mt: 0.5,
+                    }}
+                >
+                    {z.name}
+                </Typography>
+            </Box>
 
             {!t.available ? (
                 <SectionError
@@ -71,8 +77,10 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                     <Box
                         sx={{
                             display: "grid",
-                            gridTemplateColumns:
-                                "repeat(auto-fit, minmax(210px, 1fr))",
+                            gridTemplateColumns: {
+                                xs: "1fr",
+                                sm: "repeat(auto-fit, minmax(210px, 1fr))",
+                            },
                             gap: 1.5,
                             mb: 1.5,
                         }}
@@ -88,20 +96,20 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                             label="Bandwidth"
                             value={fmtBytes(t.totals.bytes || 0)}
                             spark={bytSpark}
-                            color={C.accentLight}
+                            color={C.green}
                         />
                         <KpiTile
                             label="Peak / hr"
                             value={fmt(peak)}
                             spark={reqSpark}
-                            color={C.accentDeep}
+                            color={C.ink}
                         />
                         <KpiTile
                             label="Countries"
                             value={b.country.length}
                             sub="distinct in window"
                             spark={b.country.slice(0, 12).map((c) => c.count)}
-                            color="#5fb6ff"
+                            color={C.blue}
                         />
                     </Box>
 
@@ -113,12 +121,12 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                                     {
                                         key: "requests",
                                         label: "Requests",
-                                        color: "#9b7bf7",
+                                        color: C.blue,
                                     },
                                     {
                                         key: "bytes",
                                         label: "Bytes",
-                                        color: "#5fb6ff",
+                                        color: C.green,
                                     },
                                 ]}
                                 height={220}
@@ -191,8 +199,10 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                             <Box
                                 sx={{
                                     display: "grid",
-                                    gridTemplateColumns:
-                                        "repeat(auto-fit, minmax(320px, 1fr))",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        sm: "repeat(auto-fit, minmax(320px, 1fr))",
+                                    },
                                     gap: 1.5,
                                     mb: 1.5,
                                 }}
@@ -212,6 +222,10 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                                         items={b.host.slice(0, 12).map((h) => ({
                                             label: h.label,
                                             value: h.count,
+                                            // per-service zone view
+                                            href: h.label
+                                                ? `/dashboard/services/${encodeURIComponent(h.label)}`
+                                                : undefined,
                                         }))}
                                     />
                                 </Panel>
@@ -230,8 +244,10 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                             <Box
                                 sx={{
                                     display: "grid",
-                                    gridTemplateColumns:
-                                        "repeat(auto-fit, minmax(320px, 1fr))",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        sm: "repeat(auto-fit, minmax(320px, 1fr))",
+                                    },
                                     gap: 1.5,
                                     mb: 1.5,
                                 }}
@@ -275,14 +291,16 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                             <Box
                                 sx={{
                                     display: "grid",
-                                    gridTemplateColumns:
-                                        "repeat(auto-fit, minmax(320px, 1fr))",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        sm: "repeat(auto-fit, minmax(320px, 1fr))",
+                                    },
                                     gap: 1.5,
                                 }}
                             >
                                 <Panel title="HTTP versions" dense>
                                     <TopList
-                                        color={C.accentLight}
+                                        color={C.green}
                                         items={b.httpProtocol
                                             .slice(0, 8)
                                             .map((x) => ({
@@ -293,7 +311,7 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                                 </Panel>
                                 <Panel title="TLS versions" dense>
                                     <TopList
-                                        color={C.accentDeep}
+                                        color={C.ink}
                                         items={b.tls.slice(0, 8).map((x) => ({
                                             label: x.label || "—",
                                             value: x.count,
@@ -306,8 +324,10 @@ function ZoneBlock({ z }: { z: ZoneData }) {
                             <Box
                                 sx={{
                                     display: "grid",
-                                    gridTemplateColumns:
-                                        "repeat(auto-fit, minmax(320px, 1fr))",
+                                    gridTemplateColumns: {
+                                        xs: "1fr",
+                                        sm: "repeat(auto-fit, minmax(320px, 1fr))",
+                                    },
                                     gap: 1.5,
                                     mt: 1.5,
                                 }}

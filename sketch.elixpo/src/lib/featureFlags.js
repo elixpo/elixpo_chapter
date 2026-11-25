@@ -1,7 +1,9 @@
-// Remote workspace MCP is still under validation. Keep local development
-// available for testing, but do not expose grants or remote edits in a
-// production deployment until the integration is explicitly released.
-export const REMOTE_MCP_ENABLED = process.env.NODE_ENV !== 'production'
+// The MCP connector (package MCP server docs, Remote MCP grants, header
+// badge, API routes) is shown as "coming soon" everywhere unless
+// NEXT_PUBLIC_ENABLE_MCP is exactly "true" (inlined at build time). Set it
+// in .env.local to test the integration locally.
+export const MCP_ENABLED = process.env.NEXT_PUBLIC_ENABLE_MCP === 'true'
+export const REMOTE_MCP_ENABLED = MCP_ENABLED
 
 
 // Paid plans (pricing page, upgrade CTAs, Pro badges, billing tab, pricing

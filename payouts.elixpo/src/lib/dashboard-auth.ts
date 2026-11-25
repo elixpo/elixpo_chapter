@@ -8,6 +8,7 @@ import type { D1Database } from "@cloudflare/workers-types";
 import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "./d1-client";
 import { getSession, type SessionData } from "./session";
+import { isSessionRevoked } from "./session-revocation";
 
 export interface DashboardCtx {
     db: D1Database;
@@ -19,7 +20,7 @@ export async function requireDashboard(
     request: NextRequest,
 ): Promise<DashboardCtx | NextResponse> {
     const session = await getSession(request);
-    if (!session) {
+    if (!session || (await isSessionRevoked(session))) {
         return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     }
     const db = await getDatabase();

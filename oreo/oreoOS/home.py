@@ -1,4 +1,4 @@
-"""Oreo OS — home screen, 320×240 landscape, celebration theme.
+"""FaleraOS — home screen, 320×240 landscape, celebration theme.
 
 Layout:
   ┌─ status bar h=22 (pink bar) ───────────────────────────────┐
@@ -14,6 +14,11 @@ Layout:
   └────────────────────────────────────────────────────────────┘
 
 Nav: LEFT/RIGHT wrap, A to open.
+
+Wi-Fi state: next to the clock the status bar names what netsvc is doing
+when the link is not up ("joining", "retry 12s", "off", "no link"), read
+once a second from netsvc.status() (radio-state queries only). Home never
+fetches anything itself, so it has nothing to defer for the quiet window.
 """
 
 import time
@@ -53,6 +58,25 @@ _HOME_STATUS_BG = api.rgb(46, 102,  74)
 _NET_INTERVAL_MS = 5000          # 5 s — cron-style refresh while ANY screen is open
 _net_cache = {"wifi": False, "bt": False, "checked_ms": None, "ever_checked": False}
 
+_LINK_MS    = 1000                 # Wi-Fi state label refresh cadence
+_LINK_X     = 54                   # label starts after "HH:MM"
+_LINK_CHARS = 10
+
+
+def link_label(net=None):
+    """(text, state) for the status-bar Wi-Fi label; text is "" when
+    connected. Cheap: netsvc.status() only queries radio state."""
+    if net is None:
+        try:
+            from oreoOS import netsvc as net
+        except Exception:
+            return ("", "")
+    try:
+        state, secs = net.status()
+        return (net.short_text(state, secs)[:_LINK_CHARS], state)
+    except Exception:
+        return ("", "")
+
 
 def _poll_network():
     """Refresh the wifi/bt cache if the interval has elapsed. Cheap on miss
@@ -78,6 +102,7 @@ def _poll_network():
 _bg_cache         = None
 _apps_cache       = None
 _scaled_bg_cache  = None   # pre-rendered 320×240 RGB565 (big-endian) bytearray
+WALLPAPER_PATH    = "oreoOS/wallpaper.bin"
 
 
 def _load_bg():
@@ -122,6 +147,17 @@ def _get_scaled_bg():
     global _scaled_bg_cache
     if _scaled_bg_cache is not None:
         return _scaled_bg_cache if _scaled_bg_cache is not False else None
+
+    # The full-resolution wallpaper (tools/build_splash.py): a raw 320x240
+    # big-endian RGB565 frame, read straight into the buffer.
+    try:
+        out = bytearray(320 * 240 * 2)
+        with open(WALLPAPER_PATH, "rb") as f:
+            if f.readinto(out) == len(out):
+                _scaled_bg_cache = (out, 320, 240)
+                return _scaled_bg_cache
+    except Exception:
+        pass
 
     bg = _load_bg()
     if not bg:
@@ -276,6 +312,8 @@ class Home(oreoOS.App):
         except Exception:
             self._battery_pct = 85
         self._last_batt_ms = None
+        self._link_ms      = None
+        self._link         = ("", "")
 
     def on_enter(self, os):
         super().on_enter(os)
@@ -301,6 +339,22 @@ class Home(oreoOS.App):
                 self._wifi_ok      = _net_cache["wifi"]
                 self._bt_on        = _net_cache["bt"]
                 self._status_dirty = True
+
+        # Wi-Fi state label: once a second, repaint the bar on change
+        # (a retry countdown ticks once a second, so does the bar then).
+        import time as _t
+        now = _t.ticks_ms()
+        if self._link_ms is None or _t.ticks_diff(now, self._link_ms) >= _LINK_MS:
+            self._link_ms = now
+            link = link_label()
+            if link != self._link:
+                self._link = link
+                self._status_dirty = True
+                if link[1]:
+                    up = link[1] == "connected"
+                    if up != self._wifi_ok:
+                        self._wifi_ok = up
+                        _net_cache["wifi"] = up
 
         # Battery: re-sample every ~30 s. ADC reads are ~1 ms, but the
         # percentage changes slowly enough that anything more frequent is
@@ -356,14 +410,21 @@ class Home(oreoOS.App):
                 pass
             return
 
+        # Partial frames name the band they touched so the OS flushes only
+        # those rows (the colon blink no longer pushes the whole screen).
+        top, bot = SH, 0
         if clock_only:
             # Clear ONLY the clock+date area, then redraw
             self._draw_clock_area(d, h, m, wd, day, mon, yr)
             self._clock_dirty = False
+            top, bot = _CLOCK_Y, _DATE_Y + 16
 
         if status_only:
             self._draw_status_bar(d, h, m)
             self._status_dirty = False
+            top, bot = 0, max(bot, _STATUS_H)
+        if bot > top:
+            self._present_region = (0, top, SW, min(SH, bot) - top)
 
     def _draw_status_bar(self, d, h, m):
         # Forest-green to match the bg image's foliage; thin pink accent line.
@@ -396,7 +457,13 @@ class Home(oreoOS.App):
         _icon_bt     (d, bt_x,   icon_y, active=self._bt_on)
         d.text(pct_str, pct_x, text_y, api.WHITE)
         _icon_battery(d, bat_x, (_STATUS_H - 10) // 2, pct=self._battery_pct)
-        _icon_wifi (d, pct_x - 32, 5, connected=self._wifi_ok)
+
+        text, state = self._link
+        if text:
+            color = (theme.GOLD if state == "retrying"
+                     else api.WHITE if state == "connecting"
+                     else api.rgb(200, 170, 170))
+            d.text(text, _LINK_X, text_y, color)
 
     def _draw_clock_area(self, d, h, m, wd, day, mon, yr):
         # Repaint just the clock band over the (cached) background.
@@ -407,10 +474,15 @@ class Home(oreoOS.App):
             # Slice rows _CLOCK_Y..(_DATE_Y+8) from the cached bg
             slice_y = _CLOCK_Y - _MAIN_TOP
             slice_h = (_DATE_Y + 8) - _CLOCK_Y
-            row_bytes = sw * 2
-            start = slice_y * row_bytes
-            end   = start + slice_h * row_bytes
-            d.blit(data[start:end], 0, _CLOCK_Y, sw, slice_h)
+            if sw == SW:
+                # Opaque row copy straight out of the cached buffer: no
+                # 30 KB slice allocation per clock tick.
+                d.blit_rows(data, _CLOCK_Y, slice_h, slice_y)
+            else:
+                row_bytes = sw * 2
+                start = slice_y * row_bytes
+                end   = start + slice_h * row_bytes
+                d.blit(data[start:end], 0, _CLOCK_Y, sw, slice_h)
         else:
             d.rect(0, _CLOCK_Y, SW, (_DATE_Y + 8) - _CLOCK_Y, theme.BG, fill=True)
 

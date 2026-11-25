@@ -1,0 +1,18 @@
+115200 add: p95 20.932 ms, failures 0
+115200 crc32: p95 22.234 ms, failures 0
+115200 fir-x1: p95 21.953 ms, failures 0
+115200 fir-x64: p95 25.111 ms, failures 0
+115200 fir-x512: p95 48.254 ms, failures 0
+115200 Stage 12 profile: data/processed/baud/seriallink-03/baud-115200.json
+460800 add: p95 9.650 ms, failures 0
+460800 crc32: p95 10.151 ms, failures 0
+460800 fir-x1: p95 10.118 ms, failures 0
+460800 fir-x64: p95 13.140 ms, failures 0
+460800 fir-x512: p95 36.303 ms, failures 0
+460800 Stage 12 profile: data/processed/baud/seriallink-03/baud-460800.json
+1000000 add: p95 8.809 ms, failures 0
+1000000 crc32: p95 7.763 ms, failures 0
+1000000 fir-x1: p95 7.364 ms, failures 0
+1000000 fir-x64: p95 10.863 ms, failures 0
+1000000 fir-x512: p95 34.126 ms, failures 0
+1000000 Stage 12 profile: data/processed/baud/seriallink-03/baud-1000000.json

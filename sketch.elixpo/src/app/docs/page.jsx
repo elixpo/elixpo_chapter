@@ -5,6 +5,7 @@ import Link from 'next/link'
 import LandingNav from '@/components/landing/LandingNav'
 import { LIXSCRIPT_LLM_SPEC } from '@/lib/lixscript-llm-spec'
 import { blogPosts } from '@/content/blog'
+import { MCP_ENABLED } from '@/lib/featureFlags'
 
 function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = useState(false)
@@ -171,6 +172,7 @@ export default function DocsPage() {
             >
               <i className="bx bx-plug text-base" />
               MCP Server
+              {!MCP_ENABLED && <span className="ml-auto rounded-full border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-text-dim">Soon</span>}
             </Link>
             <NavItem href="#api" label="JavaScript API" icon="bx-code-alt" active={activeSection === 'api'} />
             <NavItem href="#llm" label="LixScript Spec" icon="bx-code-block" active={activeSection === 'llm'} />
@@ -207,16 +209,18 @@ export default function DocsPage() {
 
           {/* MCP link in sidebar */}
           <div className="mt-8 p-3 rounded-xl bg-surface-card border border-line">
-            <p className="lx-eyebrow !mb-0 !text-[10px] mb-2">Package MCP</p>
+            <p className="lx-eyebrow !mb-0 !text-[10px] mb-2">{MCP_ENABLED ? 'Package MCP' : 'MCP connector'}</p>
             <Link
               href="/docs/mcp"
               className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-accent/15 text-accent border border-accent/25 hover:bg-accent/20"
             >
-              <i className="bx bx-plug text-base" />
-              Setup MCP
+              <i className={`bx ${MCP_ENABLED ? 'bx-plug' : 'bx-time-five'} text-base`} />
+              {MCP_ENABLED ? 'Setup MCP' : 'Coming soon'}
             </Link>
             <p className="text-text-dim text-[10px] mt-2 leading-relaxed">
-              Structured canvas tools are available in the LixSketch package.
+              {MCP_ENABLED
+                ? 'Structured canvas tools are available in the LixSketch package.'
+                : 'Structured canvas tools for AI agents are on the way.'}
             </p>
           </div>
         </nav>
@@ -556,7 +560,7 @@ const result = window.__lixscriptRender(parsed)`} />
               <div className="mt-4 mb-4">
                 <p className="text-text-muted text-sm leading-relaxed mb-4">
                   Preview of the compact LixScript specification planned for programmable canvas generation.
-                  This interface is separate from the available package MCP server.
+                  This interface is separate from the MCP connector, which is also coming soon.
                 </p>
                 <div className="flex items-center gap-3 mb-4">
                   <button
@@ -577,9 +581,13 @@ const result = window.__lixscriptRender(parsed)`} />
               </div>
 
               <div className="mt-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/10">
-                <h4 className="text-purple-700 text-sm font-medium mb-2">Need MCP today?</h4>
+                <h4 className="text-purple-700 text-sm font-medium mb-2">{MCP_ENABLED ? 'Need MCP today?' : 'MCP connector — coming soon'}</h4>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  Use the package-native MCP server for structured scene patches, previews, and published template imports. <Link href="/docs/mcp" className="text-accent hover:underline">Open the MCP setup guide.</Link>
+                  {MCP_ENABLED ? (
+                    <>Use the package-native MCP server for structured scene patches, previews, and published template imports. <Link href="/docs/mcp" className="text-accent hover:underline">Open the MCP setup guide.</Link></>
+                  ) : (
+                    <>Structured scene patches, previews and template imports for AI agents will ship with the MCP connector. <Link href="/docs/mcp" className="text-accent hover:underline">Read more.</Link></>
+                  )}
                 </p>
               </div>
             </Section>

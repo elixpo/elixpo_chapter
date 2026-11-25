@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CheckCircle2, MessageCircle } from "lucide-react";
 import { DISCUSSIONS_CONFIG, getFeaturedDiscussions, getLatestDiscussions } from "@/lib/discussions";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "Elixpo community and public discussions",
@@ -24,7 +25,7 @@ export default async function CommunityPage() {
 
   return <main className="community-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="community-hero">
+    <header className="community-hero"><Sparks chips={["say hi 👋", "be kind ♥", "discuss ↗"]} />
       <div><p className="eyebrow">Community / public work</p><h1>The commons is made of <em>visible decisions.</em></h1><p>Elixpo community life happens around active work: discussions that frame it, reviews that strengthen it, releases that credit it, and records that keep it discoverable.</p></div>
       <aside><span>CANONICAL FORUM</span><strong>GitHub Discussions</strong><p>Conversation remains on GitHub. Elixpo.com presents a cached public index and never exposes an organization token to the browser.</p><a href={DISCUSSIONS_CONFIG.organizationUrl} target="_blank" rel="noreferrer">Open the forum <ArrowUpRight size={14}/></a></aside>
     </header>
@@ -34,12 +35,12 @@ export default async function CommunityPage() {
     </section>
 
     <section className="community-routes section-wrap" aria-labelledby="response-ownership">
-      <div className="section-heading split"><div><p className="eyebrow">Response ownership</p><h2 id="response-ownership">A public question has a named route.</h2></div><p>Responses are best-effort rather than a support-level agreement. Unanswered discussions enter a public review queue after {DISCUSSIONS_CONFIG.responsePolicy.unansweredReviewDays} days; the record stays visible even when no immediate answer is available.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Response ownership</p><h2 id="response-ownership">A public question has a named route.</h2></div><p>Responses are best-effort rather than a support-level agreement. Unanswered discussions enter a public review queue after {DISCUSSIONS_CONFIG.responsePolicy.unansweredReviewDays} days; the record stays visible even when no immediate answer is available.</p></div>
       <div className="about-grid"><article><span>PROJECTS / SERVICES</span><p>{DISCUSSIONS_CONFIG.responsePolicy.serviceAndProjectOwner}</p></article><article><span>RESEARCH</span><p>{DISCUSSIONS_CONFIG.responsePolicy.researchOwner}</p></article><article><span>CHAPTERS</span><p>{DISCUSSIONS_CONFIG.responsePolicy.chapterOwner}</p><a className="text-link" href={DISCUSSIONS_CONFIG.responsePolicy.escalationUrl} target="_blank" rel="noreferrer">Escalate an unanswered question <ArrowUpRight size={14}/></a></article></div>
     </section>
 
     {featured.length > 0 && <section className="discussion-stream section-wrap" aria-labelledby="featured-discussions">
-      <div className="section-heading split"><div><p className="eyebrow">Editorial selection</p><h2 id="featured-discussions">Featured discussions.</h2></div><p>These conversations are selected explicitly in Elixpo’s canonical moderation record. Placement is editorial and is not determined by reactions, comment volume, or recency.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Editorial selection</p><h2 id="featured-discussions">Featured discussions.</h2></div><p>These conversations are selected explicitly in Elixpo’s canonical moderation record. Placement is editorial and is not determined by reactions, comment volume, or recency.</p></div>
       <div className="discussion-list">{featured.map((item, index) => <article key={item.number}>
         <span className="discussion-index">{String(index + 1).padStart(2,"0")}</span>
         <div className="discussion-copy"><div><span>{item.category}</span>{item.answered && <b><CheckCircle2 size={13}/> Answered</b>}</div><h3><a href={item.url} target="_blank" rel="noreferrer">{item.title}</a></h3><p>Started by <a href={item.authorUrl} target="_blank" rel="noreferrer">@{item.author}</a> · updated {formatDate(item.updatedAt)}</p></div>
@@ -48,7 +49,7 @@ export default async function CommunityPage() {
     </section>}
 
     <section className="discussion-stream section-wrap" aria-labelledby="latest-discussions">
-      <div className="section-heading split"><div><p className="eyebrow">Latest discussions</p><h2 id="latest-discussions">Current public conversation.</h2></div><p>This feed is ordered by recent activity and refreshed every fifteen minutes. Recency does not imply Elixpo endorsement or featured status.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Latest discussions</p><h2 id="latest-discussions">Current public conversation.</h2></div><p>This feed is ordered by recent activity and refreshed every fifteen minutes. Recency does not imply Elixpo endorsement or featured status.</p></div>
       {latest.length ? <div className="discussion-list">{latest.map((item, index) => <article key={item.number}>
         <span className="discussion-index">{String(index + 1).padStart(2,"0")}</span>
         <div className="discussion-copy"><div><span>{item.category}</span>{item.answered && <b><CheckCircle2 size={13}/> Answered</b>}</div><h3><a href={item.url} target="_blank" rel="noreferrer">{item.title}</a></h3><p>Started by <a href={item.authorUrl} target="_blank" rel="noreferrer">@{item.author}</a> · updated {formatDate(item.updatedAt)}</p></div>

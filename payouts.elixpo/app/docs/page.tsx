@@ -9,6 +9,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 
 export default function DocsOverview() {
@@ -21,6 +22,7 @@ export default function DocsOverview() {
                 providers behind one API plus a hosted checkout, a unified
                 ledger, entitlement grants, and creator payouts.
             </DocLead>
+            <DocActions actions={[{ label: "Follow the quickstart", href: "/docs/quickstart", hint: "Checkout, webhook and entitlements in four steps.", primary: true }, { label: "Create an app & get your secret key", href: "/dashboard/products", hint: "Dashboard → Products → New app. Shown once; roll it any time." }, { label: "Connect your bank", href: "/dashboard/payouts", hint: "Razorpay verifies you once; payments then reach your bank." }]} />
             <BaseUrlChip />
 
             <DocH2>How it fits together</DocH2>

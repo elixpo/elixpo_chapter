@@ -150,6 +150,25 @@ impl CommandCatalog {
                 None,
             );
         }
+        // A sentence that starts with a word that is not a command is a
+        // request even when it quotes code with shell characters, for
+        // example "add a function fn f() -> String to main.rs".
+        if let Some(command) = command_word(trimmed)
+            && !self.is_command(command)
+            && looks_like_sentence(trimmed)
+        {
+            let route = route_for_unknown(policy.unknown_input);
+            return decision(
+                route,
+                if matches!(route, InputRoute::Agent) {
+                    RouteReason::NaturalLanguageCandidate
+                } else {
+                    RouteReason::PolicyFallback
+                },
+                input,
+                None,
+            );
+        }
         if has_unambiguous_shell_syntax(trimmed) {
             return decision(InputRoute::Native, RouteReason::ShellSyntax, input, None);
         }
@@ -208,6 +227,14 @@ impl CommandCatalog {
             input,
             suggestion,
         )
+    }
+
+    /// Whether `command` runs something: a path, a known executable, or a
+    /// PowerShell verb-noun command.
+    fn is_command(&self, command: &str) -> bool {
+        looks_like_path(command)
+            || (self.powershell_commands && looks_like_powershell_command(command))
+            || self.contains(command)
     }
 
     fn contains(&self, command: &str) -> bool {
@@ -353,14 +380,10 @@ fn looks_like_agent_imperative(first: &str, words: &[&str]) -> bool {
                 | "currently"
         )
     });
-    if words.len() >= 3
+    words.len() >= 3
         && ambiguous_lead
         && conversational_glue
         && !looks_like_shell_arguments(&words[1..])
-    {
-        return true;
-    }
-    false
 }
 
 fn first_word_is_http_url(input: &str) -> bool {
@@ -372,7 +395,7 @@ fn first_word_is_http_url(input: &str) -> bool {
 
 fn looks_like_shell_arguments(arguments: &[&str]) -> bool {
     arguments.iter().any(|argument| {
-        argument.starts_with('-')
+        is_flag(argument)
             || argument == &"."
             || argument == &".."
             || argument.starts_with("./")
@@ -382,6 +405,14 @@ fn looks_like_shell_arguments(arguments: &[&str]) -> bool {
             || argument.contains('=')
             || argument.contains('*')
     })
+}
+
+/// `-x`, `--long` or `-1`, but not prose arrows or dashes such as `->`.
+fn is_flag(argument: &str) -> bool {
+    argument
+        .strip_prefix('-')
+        .and_then(|rest| rest.chars().next())
+        .is_some_and(|next| next.is_ascii_alphanumeric() || next == '-')
 }
 
 fn sentence_punctuation(character: char) -> bool {
@@ -577,6 +608,26 @@ mod tests {
             let decision = catalog.route(question, &RoutePolicy::default());
             assert_eq!(decision.route, InputRoute::Agent, "{question}");
             assert_eq!(decision.reason, RouteReason::NaturalLanguageCandidate);
+        }
+    }
+
+    #[test]
+    fn requests_that_quote_code_still_reach_the_agent() {
+        for request in [
+            "Add a function fn greeting() -> String to src/main.rs that returns the number 5, and call it from main",
+            "fix the parser so a < b and c > d both work",
+            "explain what `ls | grep foo` does",
+        ] {
+            let decision = catalog().route(request, &RoutePolicy::default());
+            assert_eq!(decision.route, InputRoute::Agent, "{request}");
+        }
+        for command in [
+            "ls | grep foo",
+            "echo hello > notes.txt",
+            "git log --oneline | head",
+        ] {
+            let decision = catalog().route(command, &RoutePolicy::default());
+            assert_eq!(decision.route, InputRoute::Native, "{command}");
         }
     }
 

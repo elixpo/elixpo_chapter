@@ -1,12 +1,12 @@
-# Site assets — `oreo.elixpo/`
+# Site assets — `falera.elixpo/`
 
 Image-generation prompts for everything the marketing site needs.
 Each block is self-contained: copy the prompt into your generator
 of choice (Midjourney, SDXL, DALL-E, Flux), render, then drop the
-optimised output into `oreo.elixpo/public/` and reference it from
+optimised output into `falera.elixpo/public/` and reference it from
 the relevant component.
 
-All assets must use the brand palette in `oreo.elixpo/theme.js`:
+All assets must use the brand palette in `falera.elixpo/theme.js`:
 
 | token     | hex       | use                                  |
 |-----------|-----------|--------------------------------------|
@@ -34,14 +34,14 @@ upper-left. Centred slightly left: a small wireframe illustration of
 a portrait pocket-sized conference badge with eight tactile buttons
 in two rows below a rectangular screen. The screen shows a tiny app
 drawer grid in matching pink. On the right side, large display
-typography reads "OreoOS" in pink-coral, with "Python OS in a pocket
+typography reads "FaleraOS" in pink-coral, with "Python OS in a pocket
 badge." below in cream (#F5E6DC). A faint scanline texture overlay
 at 5% opacity. No people, no logos other than the wordmark, no
 gradients besides the corner glow. Flat geometric style, like an
 indie hardware project poster, not photorealistic.
 ```
 
-Output: `oreo.elixpo/public/og-banner.png` and a copy at
+Output: `falera.elixpo/public/og-banner.png` and a copy at
 `docs/og-banner.png` for the main repo README.
 
 ---
@@ -54,13 +54,13 @@ app icons on the badge.
 ```
 A square pixel-art logomark, 64×64 logical pixels, sharp aliased
 edges (no anti-aliasing). Dark purple-navy background (#0F0C1C).
-A stylised lowercase 'o' rendered with two cookie-shaped halves —
+A stylised lowercase 'f' with a round medal behind it —
 the outer ring in pink-coral (#FF5D68), the inner highlight in
-cream (#F5E6DC). The 'o' should read as both a letter AND an Oreo
-cookie. No text, no shadow, no glow. Strictly the mark.
+cream (#F5E6DC). The 'f' should read as both a letter AND a badge of
+honour. No text, no shadow, no glow. Strictly the mark.
 ```
 
-Output: `oreo.elixpo/public/logo-mark.svg` + a `favicon.ico` rendered
+Output: `falera.elixpo/public/logo-mark.svg` + a `favicon.ico` rendered
 at 32px from the same source.
 
 ---
@@ -71,7 +71,7 @@ Used for: future home-page hero replacement of the CSS-only floating
 tile preview.
 
 ```
-An isometric line-art illustration of the Oreo badge on a clean
+An isometric line-art illustration of the Falera badge on a clean
 desk surface, 800×1000 portrait, viewed from a 35-degree angle. The
 badge is a portrait-orientation PCB with a 240×320 screen showing a
 3-column app grid in pink-coral tiles on dark background. Around
@@ -84,7 +84,7 @@ ambient floor light. Style: clean blueprint-poster, flat colours
 with thin 2px line art, no gradients on surfaces, no photorealism.
 ```
 
-Output: `oreo.elixpo/public/hero-badge.webp`.
+Output: `falera.elixpo/public/hero-badge.webp`.
 
 ---
 
@@ -108,18 +108,18 @@ Variants:
   app tiles, each tile is a single coloured square with a centred
   glyph; the third tile (Gallery) has a pink ring around it"*.
 - `screen-transfer` — fill with: *"the SEND FILES page showing
-  'oreo.elixpo.com/upload' in pink, a 6-character code 'K9MX72' in
+  'falera.elixpo.com/upload' in pink, a 6-character code 'K9MX72' in
   large pink text, a 60% green progress bar, and a small yellow dot
   to the right of the code"*.
 - `screen-store` — fill with: *"the on-device App Store with 4
-  rows: 'Color Picker', 'Oreo Pet', 'Flappy Oreo', 'Snake' — each
+  rows: 'Color Picker', 'Lumi', 'Flappy Lumi', 'Snake' — each
   row a coloured icon + name + chevron"*.
 
-Outputs: `oreo.elixpo/public/screens/<name>.webp` (resize on export).
+Outputs: `falera.elixpo/public/screens/<name>.webp` (resize on export).
 
 ---
 
-## 5. `panda-mascot.png` — Oreo Pet mascot full-size (512×512)
+## 5. `panda-mascot.png` — Lumi mascot full-size (512×512)
 
 Used for: 404 page, marketing collateral, future "about the project"
 photo.
@@ -127,15 +127,15 @@ photo.
 ```
 A friendly pixel-art panda mascot, 512×512, centred in frame.
 Round white body, classic black ear-and-eye-patches, sitting upright
-with a small cookie held between its front paws. The cookie has
-visible cream filling — explicitly an Oreo. Background is solid
+with a small round badge held between its front paws, and a
+bow on her head (Lumi is a girl panda). Background is solid
 dark purple-navy (#0F0C1C). Style: 32×32 pixel-art upscaled to
 512px with nearest-neighbour scaling, sharp aliased edges, limited
 palette: black, white, cream (#F5E6DC), and a tiny pink-coral
 accent (#FF5D68) on the cookie filling and the panda's blush.
 ```
 
-Output: `oreo.elixpo/public/panda.png`.
+Output: `falera.elixpo/public/panda.png`.
 
 ---
 
@@ -152,6 +152,6 @@ avifenc --min 20 --max 28 hero-badge.png hero-badge.avif
 svgo logo-mark.svg
 ```
 
-Drop the optimised outputs into `oreo.elixpo/public/`. The Next.js
+Drop the optimised outputs into `falera.elixpo/public/`. The Next.js
 static export will pick them up verbatim — no server-side image
 optimisation involved.

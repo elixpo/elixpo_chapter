@@ -1,6 +1,6 @@
-# From 0.5 FPS to Native Video: Building OreoOS Gallery Playback
+# From 0.5 FPS to Native Video: Building FaleraOS Gallery Playback
 
-OreoOS runs on an ESP32-S3 badge with a 320 × 240 RGB565 display, MicroPython,
+FaleraOS runs on an ESP32-S3 badge with a 320 × 240 RGB565 display, MicroPython,
 and a deliberately small application model. Adding video to Gallery initially
 looked like an image-decoding problem. In practice, it became a systems problem
 spanning storage bandwidth, Python interpreter overhead, PSRAM fragmentation,
@@ -9,7 +9,7 @@ display timing, input latency, and deployment.
 This is the architecture we arrived at: an offline encoder produces an indexed
 `RV565 v4` stream; Gallery preloads it into small PSRAM frame blocks; a dynamic
 native C module expands each frame directly into the display buffer; and the
-normal OreoOS event loop remains responsible for timing and buttons.
+normal FaleraOS event loop remains responsible for timing and buttons.
 
 The result is a measured native render-and-display ceiling of approximately
 25.6 FPS, with content scheduled at 24 FPS.
@@ -132,7 +132,7 @@ disabled to prevent a static scene from shimmering as palettes change.
 The host encoder lives in `tools/encode_gallery_video.py`. FFmpeg performs
 cover-scaling and cropping, while Pillow performs median-cut quantization and
 converts the palette to big-endian RGB565 bytes, which match the panel transfer
-order used by OreoOS.
+order used by FaleraOS.
 
 ## Why PSRAM uses frame blocks instead of one giant buffer
 
@@ -190,7 +190,7 @@ and destination dimensions. It then:
 
 ```mermaid
 sequenceDiagram
-    participant Loop as OreoOS loop
+    participant Loop as FaleraOS loop
     participant Gallery
     participant Native as gallery_native.mpy
     participant FB as Display._buf
@@ -212,7 +212,7 @@ hundreds of milliseconds in nested Python loops.
 
 ## Playback timing and controls
 
-Video playback remains inside the standard OreoOS application lifecycle. No
+Video playback remains inside the standard FaleraOS application lifecycle. No
 second event loop or background thread owns the screen.
 
 ```mermaid
@@ -267,7 +267,7 @@ specific embedded display pipeline:
 - high visual quality for the available flash and PSRAM;
 - low input latency;
 - no custom firmware rebuild;
-- compatibility with OreoOS's existing app and deployment model.
+- compatibility with FaleraOS's existing app and deployment model.
 
 The largest gain did not come from a single compression trick. It came from
 assigning each stage to the resource that handles it best: colour quantization

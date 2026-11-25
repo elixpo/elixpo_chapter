@@ -8,6 +8,12 @@ class App:
 
     name = "unnamed"
 
+    # Set True when C is one of the app's own controls (a game's strafe, a
+    # button tester): the OS then delivers C to on_button_press instead of
+    # opening the notification panel. It is read on every press, so an app
+    # may also flip it on the instance at runtime (e.g. only during play).
+    CAPTURES_C = False
+
     def on_enter(self, os):
         self.os = os
 
@@ -31,6 +37,12 @@ class App:
 
     def after_present(self, elapsed_us):
         """Optional notification after the OS completes an LCD presentation."""
+
+    def invalidate(self):
+        """Called by the OS after an overlay (notification panel, pair
+        prompt) covered the app. Apps that redraw only what changed should
+        override this to schedule a full repaint."""
+        self._dirty = True
 
     def on_button_press(self, btn):
         pass

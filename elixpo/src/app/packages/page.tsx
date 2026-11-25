@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Bot, Github, PackageCheck, ShieldCheck, Terminal } from "lucide-react";
 import { ELIXPO_PACKAGES, LINUX_APPLICATIONS, NATIVE_TOOLS, PACKAGE_DISTRIBUTION, PACKAGES_LAST_VERIFIED } from "@/lib/packages";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 const pageMetadata = createPageMetadata({
   title: "Elixpo Packages — native tools, Linux and npm releases",
@@ -65,7 +66,7 @@ export default function PackagesPage() {
   return <main className="packages-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
 
-    <header className="packages-hero">
+    <header className="packages-hero"><Sparks chips={["apt install ✓", "signed ✓", "npm ✓"]} />
       <div className="packages-hero-copy">
         <p className="eyebrow">Elixpo Packages</p>
         <h1>Packages, from source to <em>signed release.</em></h1>
@@ -85,11 +86,11 @@ export default function PackagesPage() {
     </header>
 
     <section className="linux-catalog section-wrap" aria-labelledby="native-tools">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Native tools</p><h2 id="native-tools">Install a verified tool from its owning project.</h2></div>
         <p>Native tools keep source, versioning, signatures, SBOMs, and release authority in their product repository. Elixpo Packages provides one trusted discovery and installation record.</p>
       </div>
-      <div className="package-feature-grid">
+      <div className="package-feature-grid is-native">
         {NATIVE_TOOLS.map((item, index) => <article className="package-feature-card package-lifecycle-maintained" key={item.slug}>
           <div className="package-feature-art"><span>N{String(index + 1).padStart(2, "0")}</span><Image src={item.images[0].src} alt={item.images[0].alt} width={1200} height={630}/></div>
           <div className="package-feature-copy">
@@ -104,7 +105,7 @@ export default function PackagesPage() {
     </section>
 
     <section className="linux-catalog section-wrap" aria-labelledby="linux-applications">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Maintained applications</p><h2 id="linux-applications">Install a documented Linux release.</h2></div>
         <p>The installers verify Elixpo’s repository key, register the shared APT source, and install the selected package. Normal system updates can then deliver later stable releases.</p>
       </div>
@@ -135,7 +136,7 @@ export default function PackagesPage() {
     </section>
 
     <section className="developer-packages section-wrap" aria-labelledby="developer-package-index">
-      <div className="section-heading split"><div><p className="eyebrow">JavaScript and command-line tooling</p><h2 id="developer-package-index">Developer packages published separately through npm.</h2><a className="text-link" href="/packages/feed.xml">Subscribe to package releases <ArrowUpRight size={14}/></a></div><p>These libraries and command-line tools support Elixpo’s canvas, publishing, identity, and link services. They are separate from the Linux application repository above.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">JavaScript and command-line tooling</p><h2 id="developer-package-index">Developer packages published separately through npm.</h2><a className="text-link" href="/packages/feed.xml">Subscribe to package releases <ArrowUpRight size={14}/></a></div><p>These libraries and command-line tools support Elixpo’s canvas, publishing, identity, and link services. They are separate from the Linux application repository above.</p></div>
       <div className="developer-package-list">
         {ELIXPO_PACKAGES.map((item, index) => <Link className={`package-lifecycle-${item.status}`} href={`/packages/${item.slug}`} key={item.name}><span>{String(index + 1).padStart(2,"0")}</span><i className="npm-mark">npm</i><div><small>{item.type} · v{item.version} · {item.license}</small><strong>{item.name}</strong><code>{item.install}</code><span className={`status-pill status-${item.status === "maintained" ? "active" : item.status}`}>{item.status}</span></div><ArrowRight size={16}/></Link>)}
       </div>

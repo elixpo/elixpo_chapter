@@ -123,12 +123,16 @@ export function parseERDiagram(src) {
 
 /**
  * Mermaid ER cardinality token (`||`, `|o`, `o|`, `}o`, `o{`, `}|`, `|{`)
- * → crow's-foot arrowhead. Zero-or-one has no dedicated head and uses the
- * closest one ("one"); zero-or-many uses "many".
+ * → crow's-foot arrowhead.
  */
 export function crowfootForCardinality(token = '') {
     const many = /[{}]/.test(token);
-    if (many) return token.includes('|') ? 'crowfoot_one_or_many' : 'crowfoot_many';
+    const zero = token.includes('o') || token.includes('O');
+    if (many) {
+        if (zero) return 'crowfoot_zero_or_many';
+        return token.includes('|') ? 'crowfoot_one_or_many' : 'crowfoot_many';
+    }
+    if (zero) return 'crowfoot_zero_or_one';
     return 'crowfoot_one';
 }
 

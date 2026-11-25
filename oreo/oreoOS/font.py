@@ -1,4 +1,4 @@
-"""Custom 5x7 pixel font for the Oreo Badge.
+"""Custom 5x7 pixel font for the Falera Badge.
 
 Each glyph is a 5-column bitmap encoded as a tuple of 5 column-bytes; bit 0 = top
 row, bit 6 = bottom row. The 7th bit (0x80) is unused. Drawing renders the

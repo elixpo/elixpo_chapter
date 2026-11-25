@@ -3,7 +3,8 @@ THIRD-PARTY NOTICES
 
 This repository depends on and incorporates third-party components, each
 distributed under its own license. The source code in this repository is
-licensed under the Elixpo standard (MIT for code, CC-BY-4.0 for assets); see
+licensed under the MIT (code) and CC-BY-4.0
+(visual assets); see
 ../../LICENSE.
 
 On-device runtime / firmware
@@ -19,6 +20,10 @@ On-device runtime / firmware
       https://github.com/espressif/esp-idf
   * ESP32-S3 toolchain               - respective upstream licenses
       (xtensa-esp32s3-elf, newlib, FreeRTOS components)
+  * RV565 core library 2.0.0        - MIT
+      Copyright (c) 2026 Ayushman Bhattacharya and Elixpo
+      Vendored in firmware/usermods/oreo_rv565/rv565/ (see VENDORED.md there).
+      https://github.com/elixpo/rv565
 
 Host-side tooling (see oreoOS/requirements.txt for versions)
 ------------------------------------------------------------

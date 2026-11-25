@@ -9,6 +9,7 @@ import {
 } from "@/lib/attachments";
 import { cleanupOrphanImages } from "@/lib/cloudinary";
 import { getDatabase } from "@/lib/d1-client";
+import { MAX_RAW_HTML_BYTES, sanitizeEmailHtml } from "@/lib/html-sanitize";
 import { getProduct, productToFooter, slugify } from "@/lib/products";
 import { getSession } from "@/lib/session";
 import { deleteTemplate, getTemplate, toPublic, updateTemplate } from "@/lib/templates";
@@ -79,9 +80,31 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
         }
     }
 
+    // Raw-HTML mode (requested now, or already set on the template): the HTML
+    // is authoritative — sanitise and cap it.
+    const contentMode: "editor" | "html" | undefined =
+        body?.contentMode === "html"
+            ? "html"
+            : body?.contentMode === "editor"
+              ? "editor"
+              : undefined;
+    const htmlMode = (contentMode ?? existing.content_mode) === "html";
+    let contentHtml: string | undefined =
+        typeof body?.contentHtml === "string" ? body.contentHtml : undefined;
+    if (htmlMode && contentHtml !== undefined) {
+        if (new TextEncoder().encode(contentHtml).length > MAX_RAW_HTML_BYTES) {
+            return NextResponse.json(
+                { error: "html_too_large", message: "Template HTML must be under 512 KB." },
+                { status: 400 },
+            );
+        }
+        contentHtml = sanitizeEmailHtml(contentHtml);
+    }
+
     try {
         const row = await updateTemplate(db, session.tenantId, id, {
             productId,
+            contentMode,
             footer:
                 body?.footer !== undefined
                     ? body.footer && typeof body.footer === "object"
@@ -99,7 +122,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
                         ? body.contentJson
                         : null
                     : undefined,
-            contentHtml: typeof body?.contentHtml === "string" ? body.contentHtml : undefined,
+            contentHtml,
             senderId:
                 body?.senderId !== undefined
                     ? typeof body.senderId === "string"
@@ -125,7 +148,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
                 : [];
             await cleanupOrphanImages(db, session.tenantId, {
                 previousHtml: existing.content_html,
-                newHtml: body.contentHtml,
+                newHtml: contentHtml ?? "",
                 sessionUrls: uploaded,
                 keepTemplateId: id,
             }).catch(() => {});

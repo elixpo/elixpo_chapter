@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeModeProvider, ThemeModeScript } from "@/components/theme-mode";
-import { Sofia_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const SITE_URL = "https://payouts.elixpo.com";
@@ -13,19 +12,12 @@ const OG_IMAGE = {
 };
 
 export const viewport: Viewport = {
-    themeColor: "var(--app-bg)",
-    colorScheme: "light",
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#fbfbf8" },
+        { media: "(prefers-color-scheme: dark)", color: "#0e1511" },
+    ],
+    colorScheme: "light dark",
 };
-
-const sofiaSans = Sofia_Sans({
-    variable: "--font-sofia-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
     title: {
@@ -44,6 +36,10 @@ export const metadata: Metadata = {
         "subscriptions",
         "entitlements",
         "billing",
+        "fundraiser",
+        "crowdfunding",
+        "donations",
+        "UPI",
     ],
     authors: [{ name: "Elixpo", url: "https://elixpo.com" }],
     creator: "Elixpo",
@@ -100,6 +96,13 @@ const JSON_LD = {
             name: "Elixpo",
             url: "https://elixpo.com",
             logo: `${SITE_URL}/icon-512.png`,
+            sameAs: ["https://github.com/elixpo", "https://github.com/elixpo/payouts.elixpo", "https://elixpo.com"],
+            contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: "hello@elixpo.com",
+                availableLanguage: ["en"],
+            },
         },
         {
             "@type": "WebSite",
@@ -130,9 +133,7 @@ export default function RootLayout({
             <head>
                 <ThemeModeScript />
             </head>
-            <body
-                className={`${sofiaSans.variable} ${geistMono.variable} antialiased`}
-            >
+            <body>
                 <a href="#main-content" className="skip-link">
                     Skip to content
                 </a>

@@ -3,9 +3,9 @@ export const runtime = "edge";
 import type { D1Database } from "@cloudflare/workers-types";
 import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
-import { getEnv } from "@/lib/env";
+import { getEnv, testPaymentsAllowed } from "@/lib/env";
+import { routeTransfers } from "@/lib/route-transfers";
 import { verifyHandoff } from "@/lib/handoff";
-import { isPlatformMerchant, PLATFORM_COMMISSION_BPS } from "@/lib/merchant";
 // ensureProviderCustomer kept available in @/lib/customers for future use
 // once accounts.elixpo collects phone numbers — see the comment in the
 // recurring-checkout branch below.
@@ -165,8 +165,7 @@ async function finalizeSession(
         // Test payment mode: outside production, complete without a real provider
         // so the full session -> grant -> entitlement loop can be exercised before
         // Razorpay/Stripe bank accounts are connected.
-        const environment = await getEnv("ENVIRONMENT");
-        if (environment !== "production") {
+        if (await testPaymentsAllowed()) {
             return NextResponse.json({
                 session_id: session.id,
                 provider: "test",
@@ -343,20 +342,39 @@ async function finalizeSession(
                 tier: details.tier,
             },
         };
+        // Razorpay Route only settles INR; never let a non-INR payment for a
+        // Route-connected merchant fall through to the platform account.
+        if (transfers && String(session.currency).toUpperCase() !== "INR") {
+            return NextResponse.json(
+                {
+                    error: "currency_not_supported_for_payouts",
+                    error_description:
+                        "This creator can only be paid in INR.",
+                },
+                { status: 400 },
+            );
+        }
         let order: { providerOrderId: string };
         try {
             order = await razorpay.createOrder(
                 transfers ? { ...base, transfers } : base,
             );
         } catch (err) {
-            // A bad/inactive Route account must never break checkout — fall back
-            // to a normal order (funds settle to the platform) and log it.
             if (!transfers) throw err;
+            // Never fall back to a plain order: 100% would settle to the
+            // platform instead of the merchant's linked account.
             console.error(
-                `[checkout/session] Route transfer rejected for merchant ${app?.merchant_id}; falling back to platform settle:`,
+                `[checkout/session] Route order failed for merchant ${app?.merchant_id}:`,
                 err,
             );
-            order = await razorpay.createOrder(base);
+            return NextResponse.json(
+                {
+                    error: "payout_route_unavailable",
+                    error_description:
+                        "Payments to this creator are temporarily unavailable. Please try again later.",
+                },
+                { status: 503 },
+            );
         }
         orderId = order.providerOrderId;
         await setSessionOrder(db, session.id, orderId);
@@ -424,15 +442,26 @@ async function materialiseFromToken(
         );
     }
 
+    // Charge the catalog price, never the amount/currency carried in the token.
+    if (!resolved.price) {
+        return NextResponse.json(
+            {
+                error: "no_price",
+                error_description: `No active ${p.currency} price for tier '${p.plan}'`,
+            },
+            { status: 404 },
+        );
+    }
+
     const customerId = await upsertCustomer(db, app.id, p.uid, p.email);
     return createCheckoutSession(db, {
         appId: app.id,
         customerId,
         externalUid: p.uid,
         productId: resolved.product.id,
-        priceId: resolved.price?.id ?? null,
-        currency: p.currency,
-        amount: p.amount,
+        priceId: resolved.price.id,
+        currency: resolved.price.currency,
+        amount: resolved.price.unit_amount,
         returnUrl: p.return ?? app.return_url,
         metadata: { plan: p.plan, source: "handoff" },
     });
@@ -447,44 +476,3 @@ function parseMeta(raw: unknown): Record<string, any> {
     }
 }
 
-/**
- * Build the Razorpay Route `transfers` for an order when the app's merchant has
- * a connected, active payout account. Splits `amount` to their linked account,
- * holding back the platform commission. Returns undefined when there's no active
- * account (→ funds settle to the platform account, unchanged behaviour).
- */
-async function routeTransfers(
-    db: D1Database,
-    merchantId: string | undefined,
-    amount: number,
-    currency: string,
-    appSlug: string | undefined,
-): Promise<Array<Record<string, unknown>> | undefined> {
-    // The platform owner's products settle directly to the platform account —
-    // never split them.
-    if (!merchantId || isPlatformMerchant(merchantId)) return undefined;
-    const pa = (await db
-        .prepare(
-            `SELECT razorpay_account_id
-             FROM payout_accounts
-             WHERE merchant_id = ? AND status = 'active'
-               AND razorpay_account_id IS NOT NULL`,
-        )
-        .bind(merchantId)
-        .first()) as { razorpay_account_id: string } | null;
-    if (!pa?.razorpay_account_id) return undefined;
-
-    // Platform commission is set by us (hardcoded), never by the merchant.
-    const commission = Math.round((amount * PLATFORM_COMMISSION_BPS) / 10000);
-    const transferAmount = amount - commission;
-    if (transferAmount <= 0) return undefined; // commission ≥ amount → keep it all
-
-    return [
-        {
-            account: pa.razorpay_account_id,
-            amount: transferAmount,
-            currency,
-            notes: appSlug ? { app: appSlug } : {},
-        },
-    ];
-}

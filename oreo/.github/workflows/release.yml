@@ -20,18 +20,15 @@ on:
       - 'oreoWare/**'
 
 permissions:
-  contents: write    
-                     
-  packages: write    
-                     
+  contents: write
 
 concurrency:
-  group: oreo-release-${{ github.ref }}
+  group: falera-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    # Skip the bump-commit's own re-trigger.
+    # Skip commits marked [skip release] (older version-bump commits).
     if: |
       github.event_name == 'workflow_dispatch' ||
       !contains(github.event.head_commit.message, '[skip release]')
@@ -40,10 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          # Need a PAT (not GITHUB_TOKEN) so the auto-bump push back to
-          # main can re-trigger downstream workflows that listen on
-          # push. CI_AGENT_TOKEN already exists in repo secrets.
-          token: ${{ secrets.CI_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+          # Full history with tags: the next version follows the latest
+          # stable/v* release tag.
           fetch-depth: 0
 
       - name: Setup Python
@@ -51,21 +46,68 @@ jobs:
         with:
           python-version: "3.12"
 
+      # mpy-cross for the precompiled (.mpy) release: built from the exact
+      # MicroPython commit the firmware uses (v1.28.0), so the bytecode
+      # matches what badges load. tools/mpy_build.py checks its version and
+      # every file's header; build_release.py --mpy require fails otherwise.
+      - name: Cache mpy-cross
+        id: mpy-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .mpy-cross
+          key: mpy-cross-v1.28.0-e0e9fbb17ed6fd06bb76e266ae554784c9c80804-${{ runner.os }}
+
+      - name: Build mpy-cross (MicroPython v1.28.0)
+        if: steps.mpy-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git init -q micropython
+          git -C micropython fetch -q --depth 1 https://github.com/micropython/micropython.git \
+            e0e9fbb17ed6fd06bb76e266ae554784c9c80804
+          git -C micropython checkout -q FETCH_HEAD
+          test "$(git -C micropython rev-parse HEAD)" = e0e9fbb17ed6fd06bb76e266ae554784c9c80804
+          make -C micropython/mpy-cross -j"$(nproc)"
+          mkdir -p .mpy-cross
+          cp micropython/mpy-cross/build/mpy-cross .mpy-cross/mpy-cross
+
+      - name: Check mpy-cross
+        run: |
+          .mpy-cross/mpy-cross --version
+          # Built from the pinned commit without tags, it names the commit
+          # ("MicroPython e0e9fbb17e ... mpy v6.3") instead of "v1.28.0".
+          .mpy-cross/mpy-cross --version | grep -Eq '(v1\.28\.0|e0e9fbb17e).*mpy v6\.3'
+
       - name: Resolve channel + version
         id: meta
+        # Inputs and commit text reach scripts through env, never through
+        # ${{ }} inside run: GitHub substitutes ${{ }} into the script before
+        # bash parses it, so text containing backticks or $( ) would execute.
+        env:
+          INPUT_CHANNEL: ${{ github.event.inputs.channel }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            CHANNEL="${{ github.event.inputs.channel }}"
-            VERSION="${{ github.event.inputs.version }}"
-            [ -z "$CHANNEL" ] && CHANNEL="stable"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            CHANNEL="${INPUT_CHANNEL:-stable}"
+            VERSION="$INPUT_VERSION"
           else
             CHANNEL="stable"
             VERSION=""
           fi
-          # Current version literal from config.py — single source of truth.
-          CURR=$(grep -oP 'VERSION\s*=\s*"\Kv\d+\.\d+\.\d+' oreoOS/config.py || echo "v0.0.0")
+          # Both become tag names, file paths and later arguments: accept only
+          # the shapes they can legitimately have.
+          case "$CHANNEL" in stable|beta) ;; *) echo "invalid channel: $CHANNEL"; exit 1 ;; esac
+          if [ -n "$VERSION" ] && ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "invalid version (expected vX.Y.Z): $VERSION"; exit 1
+          fi
+          # Next version: one patch above the newer of config.py and the
+          # latest stable tag. main is protected (changes only through pull
+          # requests), so the bump is not committed back; it is written into
+          # this checkout's config.py only, which is what ships, so the
+          # release, its manifest and the badge's OTA check all agree.
+          CONFIG=$(grep -oP 'VERSION\s*=\s*"\Kv\d+\.\d+\.\d+' oreoOS/config.py || echo "v0.0.0")
+          TAGGED=$(git tag -l 'stable/v*' | sed 's|^stable/||' | sort -V | tail -1)
+          CURR=$(printf '%s\n%s\n' "$CONFIG" "${TAGGED:-v0.0.0}" | sort -V | tail -1)
           if [ -z "$VERSION" ]; then
-            # Auto-bump patch component for push-triggered releases.
             # MAJ/MIN/PAT split via parameter expansion — no python here
             # so we don't fight YAML's indentation rules around heredocs.
             CORE=${CURR#v}
@@ -74,16 +116,9 @@ jobs:
             MIN=${REST%%.*}
             PAT=${REST#*.}
             VERSION="v${MAJ}.${MIN}.$((PAT + 1))"
-            # Rewrite config.py with the bumped version literal, commit
-            # back to main with [skip release] so this push doesn't
-            # re-fire the workflow.
-            sed -i "s/VERSION\s*=\s*\"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/VERSION           = \"$VERSION\"/" oreoOS/config.py
-            git config user.name  "elixpoo"
-            git config user.email "elixpoo@users.noreply.github.com"
-            git add oreoOS/config.py
-            git commit -m "chore(release): bump VERSION to $VERSION [skip release]"
-            git push origin HEAD:main
           fi
+          sed -i "s/VERSION\s*=\s*\"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/VERSION           = \"$VERSION\"/" oreoOS/config.py
+          grep -q "\"$VERSION\"" oreoOS/config.py || { echo "could not set VERSION in config.py"; exit 1; }
           TAG="$CHANNEL/$VERSION"
           echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
@@ -91,6 +126,8 @@ jobs:
           echo "Building $TAG (current was $CURR)"
 
       - name: Build release artefacts
+        env:
+          RELEASE_NOTES: ${{ github.event.head_commit.message || github.event.inputs.version }}
         run: |
           # The asset-base-url makes the manifest's per-file URLs point
           # at the actual GitHub Release asset URLs once they're uploaded
@@ -99,8 +136,9 @@ jobs:
           python tools/build_release.py \
             --version "${{ steps.meta.outputs.version }}" \
             --channel "${{ steps.meta.outputs.channel }}" \
-            --notes   "${{ github.event.head_commit.message || github.event.inputs.version }}" \
+            --notes   "$RELEASE_NOTES" \
             --asset-base-url "$ASSET_BASE" \
+            --mpy require --mpy-cross .mpy-cross/mpy-cross \
             --out dist
 
       - name: Flatten release files for upload
@@ -110,6 +148,7 @@ jobs:
           # build_release.py puts in the manifest's `url` field).
           mkdir -p upload
           cp dist/${{ steps.meta.outputs.version }}/manifest.json upload/manifest.json
+          cp dist/${{ steps.meta.outputs.version }}/manifest-mpy.json upload/manifest-mpy.json
           cp dist/${{ steps.meta.outputs.version }}/bundle.tar    upload/bundle.tar
           (cd dist/${{ steps.meta.outputs.version }}/files && \
             find . -type f -print0 | \
@@ -127,7 +166,7 @@ jobs:
           # The PAT must have `contents:write` for the repo.
           token: ${{ secrets.CI_AGENT_TOKEN }}
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: "OreoOS ${{ steps.meta.outputs.version }} (${{ steps.meta.outputs.channel }})"
+          name: "FaleraOS ${{ steps.meta.outputs.version }} (${{ steps.meta.outputs.channel }})"
           prerelease: ${{ steps.meta.outputs.channel != 'stable' }}
           body: |
             Auto-built by `tools/build_release.py`.
@@ -139,17 +178,3 @@ jobs:
             See `CONTRIBUTING.md` for the release process.
           files: |
             upload/*
-
-
-      - name: Install build tools
-        run: pip install --upgrade build twine
-      - name: Build sdist + wheel
-        run: python -m build
-      - name: Publish to GitHub Packages (PyPI registry)
-        env:
-          TWINE_USERNAME: __token__
-          # Attribute the package upload to elixpoo too. The PAT needs
-          # `write:packages` (and `read:packages` for re-uploads).
-          TWINE_PASSWORD: ${{ secrets.CI_AGENT_TOKEN }}
-          TWINE_REPOSITORY_URL: https://${{ github.repository_owner }}.pkg.github.com/${{ github.repository_owner }}/
-        run: twine upload --skip-existing dist/oreoos-*.tar.gz dist/oreoos-*.whl

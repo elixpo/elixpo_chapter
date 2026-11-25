@@ -11,7 +11,7 @@ use std::fmt::Write as _;
 use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Stdio};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -216,10 +216,8 @@ impl BackgroundJobs {
         let log = self.inner.folder.join(format!("job-{id}.log"));
         let output = File::create(&log).context("failed to create the job log")?;
         let shell = &self.inner.shell;
-        let mut process = Command::new(&shell.program);
+        let mut process = crate::shell::shell_command(shell, &self.inner.workspace, command);
         process
-            .args(&shell.arguments)
-            .arg(command)
             .current_dir(&self.inner.workspace)
             .stdin(Stdio::null())
             .stdout(output.try_clone().context("failed to share the job log")?)
@@ -573,6 +571,7 @@ mod tests {
                 path: std::env::var_os("PATH"),
                 command_rewriter: None,
                 inherit_environment: false,
+                sandbox: None,
                 max_output_bytes: 4096,
                 timeout: Duration::from_secs(30),
             },

@@ -14,29 +14,29 @@ export function makeDashboardTheme(mode: "light" | "dark") {
     return createTheme({
         palette: {
             mode,
-            primary: { main: mode === "dark" ? "#9b7bf7" : "#7c5cff" },
+            primary: { main: mode === "dark" ? "#79a7ff" : "#3a65c7" },
             // Concrete colors (not CSS vars): MUI runs decomposeColor/alpha on
             // palette values internally and throws on var(...). The theme is
             // rebuilt per-mode via makeDashboardTheme, so these track the toggle.
             background: {
-                default: mode === "dark" ? "#0b0d12" : "#ffffff",
-                paper: mode === "dark" ? "#13161d" : "#ffffff",
+                default: mode === "dark" ? "#0e1511" : "#fbfbf8",
+                paper: mode === "dark" ? "#152019" : "#ffffff",
             },
             text: {
-                primary: mode === "dark" ? "#f5f5f4" : "#141413",
+                primary: mode === "dark" ? "#eef1ec" : "#142018",
                 secondary:
-                    mode === "dark"
-                        ? "rgba(245,245,244,0.62)"
-                        : "rgba(20,20,19,0.66)",
+                    mode === "dark" ? "#a3ada6" : "#5f6962",
             },
             // Concrete color (not a CSS var): MUI runs alpha()/decomposeColor on
             // palette.divider (e.g. inside <Divider>), which throws on var(...).
             divider:
-                mode === "dark"
-                    ? "rgba(255,255,255,0.09)"
-                    : "rgba(20,20,19,0.12)",
+                mode === "dark" ? "rgba(238,241,236,0.13)" : "#d7dbd6",
         },
-        typography: { fontFamily: "var(--font-geist-sans), Arial, sans-serif" },
+        typography: {
+            fontFamily: "Arial, Helvetica, sans-serif",
+            button: { textTransform: "none", fontWeight: 700 },
+        },
+        shape: { borderRadius: 12 },
         components: {
             MuiPaper: {
                 styleOverrides: {
@@ -44,9 +44,12 @@ export function makeDashboardTheme(mode: "light" | "dark") {
                         backgroundImage: "none",
                         background: "var(--app-surface)",
                         border: "1px solid var(--app-border)",
-                        borderRadius: "12px",
+                        borderRadius: "1.1rem",
                     },
                 },
+            },
+            MuiButton: {
+                styleOverrides: { root: { borderRadius: 999 } },
             },
         },
     });
@@ -94,9 +97,8 @@ export function GlassCard({
             sx={{
                 background: SURFACE,
                 border: `1px solid ${BORDER}`,
-                borderRadius: "12px",
+                borderRadius: "var(--radius-panel)",
                 p: { xs: 2.5, md: 3 },
-                boxShadow: "0 1px 2px rgba(0,0,0,0.35)",
                 ...sx,
             }}
         >
@@ -106,41 +108,13 @@ export function GlassCard({
 }
 
 const STATUS_COLORS: Record<string, { c: string; bg: string; b: string }> = {
-    captured: {
-        c: "#4ade80",
-        bg: "rgba(34,197,94,0.1)",
-        b: "rgba(34,197,94,0.25)",
-    },
-    active: {
-        c: "#4ade80",
-        bg: "rgba(34,197,94,0.1)",
-        b: "rgba(34,197,94,0.25)",
-    },
-    created: {
-        c: "#fbbf24",
-        bg: "rgba(251,191,36,0.1)",
-        b: "rgba(251,191,36,0.25)",
-    },
-    open: {
-        c: "#fbbf24",
-        bg: "rgba(251,191,36,0.1)",
-        b: "rgba(251,191,36,0.25)",
-    },
-    failed: {
-        c: "#f87171",
-        bg: "rgba(239,68,68,0.1)",
-        b: "rgba(239,68,68,0.25)",
-    },
-    expired: {
-        c: "#9ca3af",
-        bg: "rgba(156,163,175,0.1)",
-        b: "rgba(156,163,175,0.2)",
-    },
-    none: {
-        c: "#9ca3af",
-        bg: "rgba(156,163,175,0.1)",
-        b: "rgba(156,163,175,0.2)",
-    },
+    captured: { c: "var(--app-success)", bg: "color-mix(in srgb, var(--app-success) 9%, transparent)", b: "color-mix(in srgb, var(--app-success) 28%, transparent)" },
+    active: { c: "var(--app-success)", bg: "color-mix(in srgb, var(--app-success) 9%, transparent)", b: "color-mix(in srgb, var(--app-success) 28%, transparent)" },
+    created: { c: "var(--app-warn)", bg: "color-mix(in srgb, var(--app-warn) 9%, transparent)", b: "color-mix(in srgb, var(--app-warn) 28%, transparent)" },
+    open: { c: "var(--app-warn)", bg: "color-mix(in srgb, var(--app-warn) 9%, transparent)", b: "color-mix(in srgb, var(--app-warn) 28%, transparent)" },
+    failed: { c: "var(--app-danger)", bg: "color-mix(in srgb, var(--app-danger) 9%, transparent)", b: "color-mix(in srgb, var(--app-danger) 28%, transparent)" },
+    expired: { c: "var(--app-fg-faint)", bg: "color-mix(in srgb, var(--app-fg-faint) 9%, transparent)", b: "color-mix(in srgb, var(--app-fg-faint) 28%, transparent)" },
+    none: { c: "var(--app-fg-faint)", bg: "color-mix(in srgb, var(--app-fg-faint) 9%, transparent)", b: "color-mix(in srgb, var(--app-fg-faint) 28%, transparent)" },
 };
 
 export function StatusChip({ status }: { status: string }) {
@@ -152,9 +126,9 @@ export function StatusChip({ status }: { status: string }) {
                 display: "inline-block",
                 px: 1.1,
                 py: 0.3,
-                borderRadius: "6px",
-                fontSize: "0.72rem",
-                fontWeight: 600,
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 700,
                 color: s.c,
                 background: s.bg,
                 border: `1px solid ${s.b}`,
@@ -170,7 +144,7 @@ export function StatCard({
     label,
     value,
     sub,
-    accent = "#9b7bf7",
+    accent = "var(--app-accent)",
 }: {
     label: string;
     value: string;
@@ -193,9 +167,10 @@ export function StatCard({
                 <Typography
                     sx={{
                         color: "var(--app-fg-muted)",
-                        fontSize: "0.76rem",
+                        fontSize: "0.65rem",
+                        fontFamily: "var(--font-geist-mono)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.06em",
+                        letterSpacing: "0.14em",
                         fontWeight: 600,
                     }}
                 >
@@ -204,10 +179,11 @@ export function StatCard({
             </Box>
             <Typography
                 sx={{
-                    fontWeight: 700,
-                    fontSize: "1.85rem",
+                    fontWeight: 510,
+                    fontSize: "2.4rem",
+                    letterSpacing: "-0.055em",
                     color: "var(--app-fg)",
-                    lineHeight: 1.1,
+                    lineHeight: 1,
                 }}
             >
                 {value}

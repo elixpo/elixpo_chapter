@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * UI kit — aurora purple scheme over a glass-on-aurora surface, kept dense and
- * commercial (KPI tiles with sparklines + deltas, bordered glass panels, top-N
- * bar tables, donuts). Single accent color (#9b7bf7) across the whole app.
+ * UI kit — the research.elixpo "paper & ink" look (warm paper ground, white
+ * rounded cards, hairline borders, mono eyebrows) kept dense and operational:
+ * KPI tiles with sparklines + deltas, panels, top-N bar tables, donuts.
  */
 
 import TimeRange from "@/components/time-range";
@@ -37,40 +37,76 @@ import { useMemo, useRef, useState } from "react";
 // Server code should import these from "@/lib/format" directly.
 export { fmt, fmtBytes, trend } from "@/lib/format";
 
+/**
+ * Elixpo "paper & ink" palette — shared with research.elixpo.com. Keys are kept
+ * stable so every page restyles from here; new keys (paper, ink, line, …) are
+ * the research tokens by name.
+ */
 export const C = {
-    bg: "#0b0d12",
-    accent: "#9b7bf7",
-    accentLight: "#b69aff",
-    accentDeep: "#7c5cff",
-    accentDim: "rgba(155,123,247,0.15)",
-    panel: "rgba(18,21,32,0.55)",
-    panelSolid: "#14172270",
-    panelHover: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.09)",
-    borderLight: "rgba(255,255,255,0.16)",
-    text: "#f5f5f4",
-    textDim: "#b6bcc8",
-    textMuted: "#7c8493",
-    success: "#4ade80",
-    error: "#f87171",
-    warn: "#fbbf24",
+    bg: "#fbfbf8",
+    paper: "#fbfbf8",
+    paperDeep: "#eff1ed",
+    ink: "#142018",
+    line: "#d7dbd6",
+    blue: "#3a65c7",
+    blueWash: "#dce7ff",
+    green: "#0b623c",
+    orange: "#e76043",
+    yellow: "#f0ad16",
+    accent: "#3a65c7",
+    accentLight: "#2d55b3",
+    accentDeep: "#1f3f8c",
+    accentDim: "#dce7ff",
+    panel: "#ffffff",
+    panelSolid: "#ffffff",
+    panelHover: "#f4f5f1",
+    border: "#d7dbd6",
+    borderLight: "#c3c8c2",
+    text: "#142018",
+    textDim: "#3d4741",
+    textMuted: "#5f6962",
+    success: "#0b623c",
+    successBg: "#dcefe4",
+    error: "#c2412a",
+    errorBg: "#fbe3dd",
+    warn: "#a66a00",
+    warnBg: "#fbefd2",
+    mono: "ui-monospace, SFMono-Regular, Menlo, monospace",
 };
 
-/** Purple-forward chart palette (single scheme). Error red reserved for errors. */
+/** Status-class colours used by every status-code visual. */
+export const STATUS_COLORS: Record<string, string> = {
+    "1xx": "#9aa39d",
+    "2xx": "#2f9e63",
+    "3xx": "#3a65c7",
+    "4xx": "#f0ad16",
+    "5xx": "#e76043",
+};
+
+/** Research palette for charts. Orange is reserved-ish for errors. */
 export const CHART = [
-    "#9b7bf7",
-    "#b69aff",
-    "#7c5cff",
-    "#c4b5fd",
-    "#86efac",
-    "#5fb6ff",
+    "#3a65c7",
+    "#0b623c",
+    "#f0ad16",
+    "#142018",
+    "#0e8a8a",
+    "#e76043",
 ];
 
 export const glass = {
     bgcolor: C.panel,
-    backdropFilter: "blur(16px)",
     border: `1px solid ${C.border}`,
-    borderRadius: "12px",
+    borderRadius: "18px",
+} as const;
+
+/** Mono uppercase eyebrow label — the research.elixpo signature. */
+export const eyebrow = {
+    fontFamily: C.mono,
+    fontSize: "0.66rem",
+    fontWeight: 700,
+    letterSpacing: "0.17em",
+    textTransform: "uppercase",
+    color: C.blue,
 } as const;
 
 /* ---------------------------------------------------------------- page header */
@@ -101,10 +137,11 @@ export function PageHeader({
             <Box>
                 <Typography
                     sx={{
-                        fontWeight: 800,
-                        fontSize: "1.4rem",
+                        fontWeight: 650,
+                        fontSize: { xs: "1.9rem", md: "2.5rem" },
+                        lineHeight: 1,
                         color: C.text,
-                        letterSpacing: "-0.02em",
+                        letterSpacing: "-0.055em",
                     }}
                 >
                     {title}
@@ -153,7 +190,7 @@ export function Panel({
             sx={{
                 ...glass,
                 height: "100%",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.30)",
+                boxShadow: "none",
             }}
         >
             {title && (
@@ -169,9 +206,8 @@ export function Panel({
                 >
                     <Typography
                         sx={{
-                            fontWeight: 600,
-                            color: C.text,
-                            fontSize: "0.85rem",
+                            ...eyebrow,
+                            color: C.textDim,
                         }}
                     >
                         {title}
@@ -228,7 +264,7 @@ function PanelMenu({
         try {
             const { toPng } = await import("html-to-image");
             const url = await toPng(targetRef.current, {
-                backgroundColor: "#11151f",
+                backgroundColor: C.panel,
                 pixelRatio: 2,
             });
             const a = document.createElement("a");
@@ -277,10 +313,10 @@ function PanelMenu({
                 slotProps={{
                     paper: {
                         sx: {
-                            bgcolor: "rgba(20,22,34,0.97)",
-                            backdropFilter: "blur(16px)",
+                            bgcolor: C.panel,
+                            boxShadow: "0 18px 48px rgba(20,32,24,.09)",
                             border: `1px solid ${C.border}`,
-                            borderRadius: "10px",
+                            borderRadius: "14px",
                             minWidth: 190,
                         },
                     },
@@ -325,7 +361,7 @@ function PanelMenuItem({
                 py: 0.85,
                 color: C.textDim,
                 fontSize: "0.82rem",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.05)", color: C.text },
+                "&:hover": { bgcolor: C.panelHover, color: C.text },
             }}
         >
             <ListItemIcon sx={{ color: "inherit", minWidth: 32 }}>
@@ -401,19 +437,18 @@ export function KpiTile({
         <Card
             sx={{
                 ...glass,
-                p: 1.5,
+                p: { xs: 1.5, md: 1.75 },
                 height: "100%",
+                boxShadow: "none",
                 transition: "border-color 0.15s",
-                "&:hover": { borderColor: href ? C.accent : C.border },
+                "&:hover": { borderColor: href ? C.ink : C.border },
             }}
         >
             <Typography
                 sx={{
+                    ...eyebrow,
                     color: C.textMuted,
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
+                    fontSize: "0.62rem",
                 }}
             >
                 {label}
@@ -422,16 +457,21 @@ export function KpiTile({
                 sx={{
                     display: "flex",
                     alignItems: "baseline",
-                    gap: 1,
-                    mt: 0.5,
+                    flexWrap: "wrap",
+                    columnGap: 1,
+                    mt: 0.75,
                 }}
             >
                 <Typography
                     sx={{
-                        fontWeight: 800,
+                        fontWeight: 650,
                         color: C.text,
-                        fontSize: "1.5rem",
-                        lineHeight: 1.1,
+                        fontSize: { xs: "1.85rem", md: "2.2rem" },
+                        lineHeight: 1,
+                        letterSpacing: "-0.055em",
+                        fontVariantNumeric: "tabular-nums",
+                        overflowWrap: "anywhere",
+                        minWidth: 0,
                     }}
                 >
                     {value}
@@ -443,7 +483,8 @@ export function KpiTile({
                             alignItems: "center",
                             color: up ? C.success : C.error,
                             fontSize: "0.74rem",
-                            fontWeight: 600,
+                            fontWeight: 700,
+                            fontFamily: C.mono,
                         }}
                     >
                         {up ? (
@@ -534,9 +575,9 @@ export function TopList({
                             alignItems: "center",
                             gap: 0.5,
                             flex: 1,
-                            bgcolor: "rgba(255,255,255,0.04)",
-                            borderRadius: "6px",
-                            px: 1,
+                            bgcolor: C.paperDeep,
+                            borderRadius: "999px",
+                            px: 1.25,
                         }}
                     >
                         <SearchIcon
@@ -578,7 +619,7 @@ export function TopList({
                             position: "relative",
                             py: 0.8,
                             px: 1,
-                            borderBottom: `1px solid ${C.border}`,
+                            borderBottom: `1px solid ${C.line}`,
                             "&:hover": it.href
                                 ? { bgcolor: C.panelHover }
                                 : undefined,
@@ -592,7 +633,7 @@ export function TopList({
                                 bottom: 0,
                                 width: `${(it.value / max) * 100}%`,
                                 bgcolor: color,
-                                opacity: 0.12,
+                                opacity: 0.1,
                                 borderRight: `2px solid ${color}`,
                             }}
                         />
@@ -628,7 +669,8 @@ export function TopList({
                                 <Typography
                                     sx={{
                                         color: C.textDim,
-                                        fontSize: "0.8rem",
+                                        fontSize: "0.78rem",
+                                        fontFamily: C.mono,
                                         fontVariantNumeric: "tabular-nums",
                                     }}
                                 >
@@ -681,7 +723,7 @@ export function Donut({
                     cy={cy}
                     r={r}
                     fill="none"
-                    stroke="rgba(255,255,255,0.06)"
+                    stroke={C.line}
                     strokeWidth="14"
                 />
                 {data.map((d, i) => {
@@ -710,8 +752,9 @@ export function Donut({
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill={C.text}
-                    fontSize="0.95rem"
-                    fontWeight="700"
+                    fontSize="1.15rem"
+                    fontWeight="650"
+                    letterSpacing="-0.04em"
                 >
                     {total >= 1000 ? `${(total / 1000).toFixed(1)}k` : total}
                 </text>
@@ -755,10 +798,22 @@ export function Donut({
 /* ---------------------------------------------------------- status code bar */
 
 const STATUS_CLASSES = [
-    { key: "2xx", color: "#4593ff", test: (n: number) => n >= 200 && n < 300 },
-    { key: "3xx", color: "#fbbf24", test: (n: number) => n >= 300 && n < 400 },
-    { key: "4xx", color: "#f472b6", test: (n: number) => n >= 400 && n < 500 },
-    { key: "5xx", color: "#a855f7", test: (n: number) => n >= 500 },
+    {
+        key: "2xx",
+        color: STATUS_COLORS["2xx"],
+        test: (n: number) => n >= 200 && n < 300,
+    },
+    {
+        key: "3xx",
+        color: STATUS_COLORS["3xx"],
+        test: (n: number) => n >= 300 && n < 400,
+    },
+    {
+        key: "4xx",
+        color: STATUS_COLORS["4xx"],
+        test: (n: number) => n >= 400 && n < 500,
+    },
+    { key: "5xx", color: STATUS_COLORS["5xx"], test: (n: number) => n >= 500 },
 ];
 
 export function StatusBar({
@@ -810,10 +865,11 @@ export function StatusBar({
             <Box
                 sx={{
                     display: "flex",
-                    height: 30,
-                    borderRadius: "6px",
+                    height: 26,
+                    borderRadius: "999px",
                     overflow: "hidden",
-                    bgcolor: "rgba(255,255,255,0.04)",
+                    bgcolor: C.paperDeep,
+                    gap: "2px",
                 }}
             >
                 {groups
@@ -837,11 +893,11 @@ export function StatusBar({
 /* ------------------------------------------------------------- misc primitives */
 
 const STATUS: Record<string, { color: string; bg: string }> = {
-    success: { color: C.success, bg: "rgba(74,222,128,0.12)" },
-    warning: { color: C.warn, bg: "rgba(251,191,36,0.12)" },
-    error: { color: C.error, bg: "rgba(248,113,113,0.12)" },
+    success: { color: C.success, bg: C.successBg },
+    warning: { color: C.warn, bg: C.warnBg },
+    error: { color: C.error, bg: C.errorBg },
     info: { color: C.accentLight, bg: C.accentDim },
-    neutral: { color: C.textDim, bg: "rgba(255,255,255,0.05)" },
+    neutral: { color: C.textDim, bg: C.paperDeep },
 };
 
 export function StatusChip({
@@ -860,7 +916,8 @@ export function StatusChip({
                 color: s.color,
                 bgcolor: s.bg,
                 border: `1px solid ${s.color}33`,
-                borderRadius: "6px",
+                borderRadius: "999px",
+                "& .MuiChip-label": { px: 0.9 },
             }}
         />
     );
@@ -871,9 +928,9 @@ export function SectionError({ message }: { message: string }) {
         <Box
             sx={{
                 p: 1.5,
-                borderRadius: "8px",
-                bgcolor: "rgba(251,191,36,0.07)",
-                border: "1px solid rgba(251,191,36,0.25)",
+                borderRadius: "12px",
+                bgcolor: C.warnBg,
+                border: `1px solid ${C.warn}33`,
                 color: C.warn,
                 fontSize: "0.78rem",
             }}

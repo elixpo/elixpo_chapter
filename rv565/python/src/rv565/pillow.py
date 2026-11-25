@@ -10,16 +10,20 @@
 
     frames[0].save("out.rv565", save_all=True, append_images=frames[1:], fps=24)
 
-Frames decode to mode "RGB". Saving converts to RGB565, so colours keep 5-6-5
-bits. ``fps`` (1-30) defaults to 24, or is taken from ``duration`` (ms) if
-given; ``level`` sets the zlib level (default 1).
+Frames decode to mode "RGB", whatever the clip's pixel format. Saving
+converts to ``pixel_format`` (default "rgb565be", so colours keep 5-6-5 bits;
+any of rv565.PIXEL_FORMATS works). ``fps`` (1-60) defaults to 24, or is taken
+from ``duration`` (ms) if given; ``level`` sets the zlib level (default 1);
+``codec`` ("zlib" or "stored") and ``keyframe_interval`` (1-255) are passed to
+rv565.write.
 """
 
 from array import array
 
 from PIL import Image, ImageFile
 
-from . import MAGIC, RV565Error, open as open_clip, rgb888_to_rgb565be, write
+from . import MAGIC, MAX_FPS, RV565Error, convert, open as open_clip, rgb888_to_rgb565be, \
+    to_rgb888, write
 
 
 def _accept(prefix):
@@ -28,7 +32,7 @@ def _accept(prefix):
 
 class RV565ImageFile(ImageFile.ImageFile):
     format = "RV565"
-    format_description = "RV565 frame-independent RGB565 video"
+    format_description = "RV565 microcontroller display video"
 
     def _open(self):
         try:
@@ -41,6 +45,7 @@ class RV565ImageFile(ImageFile.ImageFile):
         self.info["fps"] = h.fps
         self.info["duration"] = 1000.0 / h.fps
         self.info["loop"] = 0
+        self.info["pixel_format"] = h.pixel_format
         self.n_frames = h.frames
         self.is_animated = h.frames > 1
         self._frame = -1
@@ -48,11 +53,16 @@ class RV565ImageFile(ImageFile.ImageFile):
         self._load_frame(0)
 
     def _load_frame(self, index):
-        swapped = array("H")
-        swapped.frombytes(self._clip.frame(index))
-        swapped.byteswap()  # big-endian pairs -> the little-endian layout "BGR;16" unpacks
+        h = self._clip.header
         self.im = Image.core.new(self.mode, self.size)
-        self.frombytes(swapped.tobytes(), "raw", "BGR;16")
+        if h.pixel_format == "rgb565be":
+            swapped = array("H")
+            swapped.frombytes(self._clip.frame(index))
+            swapped.byteswap()  # big-endian pairs -> the little-endian layout "BGR;16" unpacks
+            self.frombytes(swapped.tobytes(), "raw", "BGR;16")
+        else:
+            self.frombytes(to_rgb888(self._clip.frame(index), h.width, h.height,
+                                     h.pixel_format), "raw", "RGB")
         self._frame = index
 
     def seek(self, frame):
@@ -83,21 +93,30 @@ def _fps(info, encoderinfo):
         fps = round(1000.0 / duration)
     else:
         fps = info.get("fps", 24)
-    return max(1, min(30, int(fps)))
+    return max(1, min(MAX_FPS, int(fps)))
 
 
 def _save(im, fp, filename, save_all=False):
     enc = im.encoderinfo
     frames = _frames(im, enc.get("append_images")) if save_all else [im.convert("RGB")]
     width, height = im.size
+    fmt = enc.get("pixel_format", "rgb565be")
 
     def packed():
         for frame in frames:
             if frame.size != (width, height):
                 raise ValueError("all frames must be %dx%d" % (width, height))
-            yield rgb888_to_rgb565be(frame.tobytes())
+            if fmt == "rgb565be":
+                yield rgb888_to_rgb565be(frame.tobytes())
+            else:
+                yield convert(frame.tobytes(), width, height, fmt)
 
-    write(fp, width, height, _fps(im.info, enc), packed(), enc.get("level", 1))
+    try:
+        write(fp, width, height, _fps(im.info, enc), packed(), enc.get("level", 1),
+              pixel_format=fmt, codec=enc.get("codec", "zlib"),
+              keyframe_interval=enc.get("keyframe_interval", 1))
+    except RV565Error as exc:
+        raise ValueError(str(exc)) from None
 
 
 def _save_all(im, fp, filename):

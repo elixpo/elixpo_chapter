@@ -2,14 +2,16 @@ schema_version: '1.0'
 project:
   id: payouts
   name: payouts.elixpo
-  title: Elixpo Payouts
-  description: Shared operational tooling for tracked payout workflows.
+  title: Elixpo Pay
+  description: Payments, subscriptions and payouts for the Elixpo ecosystem — hosted checkout, signed entitlement webhooks, buyer emails via Elixpo Mails, and creator payouts.
   family: service
   artifact_type: hosted-service
   profile: hosted-service
   technologies:
   - TypeScript
+  - Next.js
   - payments
+  - Razorpay
   - Cloudflare
   chapter_status: null
   lifecycle: active
@@ -17,7 +19,7 @@ project:
   custody: elixpo-owned
   stack: hosted-service
   repository: https://github.com/elixpo/payouts.elixpo
-  deployment: null
+  deployment: https://payouts.elixpo.com
   discussions: https://github.com/orgs/elixpo/discussions
   status_owner: elixpo
   status_verified_at: '2026-10-17'
@@ -34,11 +36,11 @@ license:
   current_file: LICENSE
   notice_file: LICENSES/NOTICE
   migration_status: review-required
-  target_code_license: not-designated
+  target_code_license: MIT
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: npm run lint
-  test_cmd: ''
+  test_cmd: npm run test:e2e
   build_cmd: npm run build
 maintainers:
 - github: Circuit-Overtime

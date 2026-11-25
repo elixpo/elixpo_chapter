@@ -2,6 +2,7 @@ import Image from "next/image";
 import { ArrowUpRight, Mail } from "lucide-react";
 import { PartnershipImpact } from "@/components/PartnershipImpact";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "Community event partnerships and sticker support",
@@ -125,7 +126,7 @@ export default function PartnershipsPage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
-      <header className="partnership-hero">
+      <header className="partnership-hero"><Sparks chips={["thank you ♥", "sticker drop ✦", "in-kind ✓"]} />
         <div className="partnership-hero-geometry" aria-hidden="true">
           <span />
           <span />
@@ -157,7 +158,7 @@ export default function PartnershipsPage() {
       <PartnershipImpact />
 
       <section className="collaboration-section section-wrap" aria-labelledby="past-collaborations">
-        <div className="section-heading split">
+        <div className="section-heading split"><Sparks stars={4} />
           <div>
             <p className="eyebrow">Past collaborations</p>
             <h2 id="past-collaborations">Elixpo has supported community events before.</h2>
@@ -199,7 +200,7 @@ export default function PartnershipsPage() {
       </section>
 
       <section className="partnership-options section-wrap" aria-labelledby="partnership-options">
-        <div className="section-heading split">
+        <div className="section-heading split"><Sparks stars={4} />
           <div>
             <p className="eyebrow">Current support options</p>
             <h2 id="partnership-options">Choose the scale that matches your event.</h2>

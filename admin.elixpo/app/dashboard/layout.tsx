@@ -4,6 +4,7 @@
  * Cloudflare API, so gating lives here (and in requireAdmin on each /api route).
  */
 
+import { type Service, listServices } from "@/lib/services";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -23,8 +24,12 @@ export default async function DashboardLayout({
         redirect("/api/auth/login");
     }
 
+    // Feeds the header's service switcher. Never let it break the shell.
+    const services: Service[] = await listServices().catch(() => []);
+
     return (
         <DashboardChrome
+            services={services}
             user={{
                 email: session.email,
                 name: session.name,

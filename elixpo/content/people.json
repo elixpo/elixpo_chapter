@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/people.schema.json",
   "schemaVersion": 1,
-  "lastVerified": "2026-10-16",
+  "lastVerified": "2026-10-29",
   "methodology": "Current roles are published only from the organization and Chapter's public records. A missing start date is shown as not publicly established rather than inferred from a first commit. Project-maintainer, alumni, and advisor records remain empty until the role, period, scope, and public evidence have been verified.",
   "correctionUrl": "https://github.com/elixpo/elixpo/issues/new",
   "consentPolicy": {
@@ -24,8 +24,8 @@
     {
       "handle": "Circuit-Overtime",
       "name": "Ayushman Bhattacharya",
-      "role": "Founder, project lead and maintainer",
-      "summary": "Coordinates Elixpo's technical direction, public releases, research surfaces, organization operations, and the shared project-foundry programme.",
+      "role": "Founder, Lead Maintainer and Developer",
+      "summary": "Founded Elixpo and leads its maintenance and development: technical direction, public releases, research surfaces, organization operations, and the shared project-foundry programme.",
       "github": "https://github.com/Circuit-Overtime",
       "portfolio": "https://me.elixpo.com/ayushman",
       "profileSource": "public-evidence-only",
@@ -35,8 +35,8 @@
     {
       "handle": "ez-vivek",
       "name": "Vivek Yadav",
-      "role": "Lead developer",
-      "summary": "Works across Chapter engineering and project delivery, helping move shared implementation work into reviewed public releases.",
+      "role": "Lead Developer and Co-Founder",
+      "summary": "Co-founded Elixpo and leads development across Chapter engineering and project delivery, moving shared implementation work into reviewed public releases.",
       "github": "https://github.com/ez-vivek",
       "portfolio": "https://me.elixpo.com/vivek",
       "profileSource": "public-evidence-only",
@@ -46,8 +46,8 @@
     {
       "handle": "anwe-ch",
       "name": "Anwesha Chakraborty",
-      "role": "Research and engineering lead",
-      "summary": "Connects open research with implementation through published studies, technical review, project development, and organization-level stewardship.",
+      "role": "Program & Research Manager",
+      "summary": "Manages Elixpo's programmes and open research, connecting published studies with implementation, technical review, and organization-level stewardship.",
       "github": "https://github.com/anwe-ch",
       "portfolio": "https://me.elixpo.com/anwesha",
       "profileSource": "public-evidence-only",

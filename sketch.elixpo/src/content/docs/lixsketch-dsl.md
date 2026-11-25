@@ -81,7 +81,7 @@ A document **without** a header is read as a LixScript document. The syntax is i
 | `@created` | ISO timestamp string | none | `@created "2026-10-25T10:00:00.000Z"` |
 | `@meta.<key>` | any value | — | `@meta.mcpRevision 4` |
 
-`@background`, `@theme` and `@grid` are applied to the editor when the file is opened. `@meta.*` keeps extra top-level scene fields (written by integrations such as the MCP server) so they survive a round trip.
+`@background`, `@theme` and `@grid` are applied to the editor when the file is opened. `@meta.*` keeps extra top-level scene fields (written by integrations) so they survive a round trip.
 
 ### Variables
 
@@ -328,7 +328,7 @@ arrow flow from a.right to b.left {
 See [Connections and bindings](#connections-and-bindings).
 
 
-Arrowhead types (`startHead` / `endHead`): `none` · `arrow` (open V) · `bar` · `dot` (filled circle) · `circle` (outline) · `triangle` · `triangle_outline` · `diamond` · `diamond_outline` · `crowfoot_one` · `crowfoot_many` · `crowfoot_one_or_many` · `cross`.
+Arrowhead types (`startHead` / `endHead`): `none` · `arrow` (open V) · `bar` · `dot` (filled circle) · `circle` (outline) · `triangle` · `triangle_outline` · `diamond` · `diamond_outline` · `crowfoot_one` · `crowfoot_many` · `crowfoot_one_or_many` · `crowfoot_zero_or_one` · `crowfoot_zero_or_many` · `cross`.
 
 Heads are drawn hand-drawn with the shaft's roughness and seed, always with a solid stroke (a dashed `style` only affects the shaft). Filled heads use the stroke colour, head size grows with `strokeWidth`, and the shaft stops at the back of closed heads.
 

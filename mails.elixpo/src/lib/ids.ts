@@ -14,6 +14,7 @@ const PREFIXES = {
     suppression: "sup", // an unsubscribed/suppressed recipient (per product)
     member: "wm", // a workspace member (user ↔ workspace with a role)
     invite: "inv", // a workspace invite link
+    invoice: "invc", // a paid plan charge mirrored from Elixpo Pay
 } as const;
 
 export type IdKind = keyof typeof PREFIXES;

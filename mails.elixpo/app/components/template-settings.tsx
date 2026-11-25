@@ -598,6 +598,9 @@ export default function TemplateSettings({ templateId }: { templateId: string })
                 variables={tmpl.variables}
                 getContentHtml={async () => tmpl.content_html || ""}
                 bgColor={tmpl.bg_color || undefined}
+                onTemplateUpdated={(updated) =>
+                    setTmpl((prev) => (prev ? { ...prev, ...updated } : prev))
+                }
             />
             <TemplateSendDialog
                 open={sendOpen}
@@ -607,6 +610,9 @@ export default function TemplateSettings({ templateId }: { templateId: string })
                 variables={tmpl.variables}
                 getContentHtml={async () => tmpl.content_html || ""}
                 bgColor={tmpl.bg_color || undefined}
+                onTemplateUpdated={(updated) =>
+                    setTmpl((prev) => (prev ? { ...prev, ...updated } : prev))
+                }
             />
 
             <Dialog

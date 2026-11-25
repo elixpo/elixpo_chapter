@@ -44,11 +44,99 @@ class _Row:
         self.off_label = off_label
 
 
+# How often update() re-reads the live row values (Wi-Fi state, sync
+# result) and repaints when one changed.
+LIVE_MS = 500
+
+# The Sleep After slider changes the timer at once (power.SETTINGS is what
+# the power manager reads) but writes flash only once the slider has been
+# still this long, or when Settings closes: holding RIGHT used to write
+# the settings file on every step.
+SAVE_MS = 1500
+
+
+def _ticks():
+    import time      # looked up per call, so host tests can stand one in
+    try:
+        return time.ticks_ms()
+    except AttributeError:               # CPython
+        return int(time.monotonic() * 1000)
+
+
+def _diff(a, b):
+    import time
+    try:
+        return time.ticks_diff(a, b)
+    except AttributeError:
+        return a - b
+
+
+def sync_summary(net, wifi=None):
+    """Value column of the "Sync Time" row, from netsvc.time_status().
+    Never touches the network."""
+    try:
+        state, _detail = net.time_status()
+    except Exception:
+        return ""
+    if state == "syncing":
+        return "syncing..."
+    if state == "pending":
+        return "queued"
+    if state == "synced":
+        # time_status() says the clock was synced at some point; the
+        # row reports the latest attempt (a manual sync can fail later).
+        try:
+            seq, ok, _msg = net.sync_result()
+            if seq and not ok:
+                return "failed"
+        except Exception:
+            pass
+        return "synced"
+    if state == "failed":
+        return "failed"
+    try:
+        if wifi is not None and not wifi.is_connected():
+            return "no wifi"
+    except Exception:
+        pass
+    return "tap A"
+
+
+def wifi_summary(wifi, net=None):
+    """Value column of the "WiFi" row: the SSID when connected, else
+    netsvc's state ("joining", "retry 12s", "off", "no link")."""
+    if not wifi:
+        return "—"
+    try:
+        if wifi.is_connected():
+            return wifi.ssid() or wifi.ip() or "on"
+    except Exception:
+        return "—"
+    if net is not None:
+        try:
+            state, secs = net.status()
+            return net.short_text(state, secs) or "on"
+        except Exception:
+            pass
+    try:
+        if wifi.connect_target():
+            return "joining"
+    except Exception:
+        pass
+    try:
+        if wifi.is_radio_on():
+            return "on"
+    except Exception:
+        pass
+    return "off"
+
+
 class App(oreoOS.App):
     name         = "Settings"
     author       = "Circuit-Overtime"
     SHOW_LOADING = True     # pulls the pink slide-down panel while on_enter
                             # wires up WiFi / BT / power manager imports.
+    _save_at     = None     # ticks_ms of an unsaved slider change
 
     def on_enter(self, os):
         self._os         = os
@@ -64,8 +152,18 @@ class App(oreoOS.App):
         except Exception:
             self._wifi = None
             self._bt   = None
+        try:
+            from oreoOS import netsvc as _n
+            self._net = _n
+        except Exception:
+            self._net = None
+        self._live_ms   = 0
+        self._live_vals = None
+        self._sync_note = ""          # "no wifi" after a refused request
+        self._save_at   = None        # ticks_ms of an unsaved slider change
 
-        self._brightness = 100   # logical brightness (0..100), backlight is pure HIGH for now
+        # Same value the notification panel's slider uses (100% after boot).
+        self._brightness = getattr(os, "_last_brightness", 100)
 
         # Power-manager settings live in the SETTINGS dict in oreoOS.power.
         # Default to "on, 120 s" if the module isn't importable for any reason.
@@ -130,11 +228,12 @@ class App(oreoOS.App):
         if not self._wifi:
             return
         if on:
+            # Non-blocking: the run loop finishes the join (boot
+            # auto-connect state machine) so Settings never freezes.
             try:
-                self._wifi.radio_on()
+                self._wifi.auto_begin()
             except Exception:
                 pass
-            self._wifi.connect_from_config()
         else:
             try:
                 self._wifi.radio_off()
@@ -148,6 +247,7 @@ class App(oreoOS.App):
             setter = getattr(self._os.display, "set_brightness", None)
             if setter:
                 setter(self._brightness)
+            self._os._last_brightness = self._brightness
         except Exception:
             pass
 
@@ -175,7 +275,22 @@ class App(oreoOS.App):
         # 10 = top cap so the slider doesn't run off into hours.
         v = max(0, min(10, int(v)))
         self._pm.SETTINGS["idle_seconds"] = v * 60
-        self._pm.save_settings(self._os)
+        # Saved by update() once the slider rests (SAVE_MS), or on exit.
+        self._save_at = _ticks()
+
+    def _flush_power(self):
+        """Write the power settings if a slider change is unsaved."""
+        if self._save_at is None:
+            return
+        self._save_at = None
+        if self._pm:
+            try:
+                self._pm.save_settings(self._os)
+            except Exception:
+                pass
+
+    def on_exit(self):
+        self._flush_power()
 
     # ── apps drawer view ────────────────────────────────────────────────
     # The launcher reads os.settings_get("app_view", "grid"). We toggle it
@@ -235,16 +350,17 @@ class App(oreoOS.App):
             pass
 
     # ── time sync ───────────────────────────────────────────────────────
-    # Manual NTP re-sync. The boot path runs this once when WiFi comes up;
-    # this row lets the user kick it again after they fix a bad clock or
-    # land in a new timezone without rebooting. Result is mirrored to the
-    # notif panel via timeutil's module-level last_sync_status.
+    # Manual NTP re-sync. netsvc syncs on every link-up and every 6 h;
+    # this row asks it for one now (after fixing a bad clock or landing in
+    # a new timezone). The sync runs on netsvc's worker thread, never in
+    # this app's frame; update() repaints the row when the result lands.
     # ── gestures (sub-page) ─────────────────────────────────────────────
     # Settings just launches the dedicated apps/gestures/ app, same as
     # WiFi / Bluetooth. The summary string gives a glanceable status.
     def _open_gestures(self):
         try:
-            self._os.launch("gestures")
+            from oreoOS import store
+            store.open_app(self._os, "gestures")
         except Exception:
             pass
 
@@ -264,24 +380,21 @@ class App(oreoOS.App):
         return "%d on" % n if n else "Idle"
 
     def _sync_time(self):
-        try:
-            from oreoOS import timeutil
-            timeutil.sync_from_ntp()
-        except Exception:
-            pass
+        queued = False
+        if self._net is not None:
+            try:
+                queued = bool(self._net.request_sync())
+            except Exception:
+                queued = False
+        self._sync_note = "" if queued else "no wifi"
+        self._dirty = True
 
     def _sync_time_summary(self):
-        try:
-            from oreoOS import timeutil
-            status = timeutil.last_sync_status()
-        except Exception:
+        if self._net is None:
             return ""
-        return {
-            "ok":      "synced",
-            "no-wifi": "no wifi",
-            "failed":  "failed",
-            "never":   "tap A",
-        }.get(status, "tap A")
+        if self._sync_note:
+            return self._sync_note
+        return sync_summary(self._net, self._wifi)
 
     def _open_wifi(self):
         try:
@@ -290,24 +403,12 @@ class App(oreoOS.App):
             pass
 
     def _wifi_summary(self):
-        if not self._wifi:
-            return "—"
-        try:
-            if self._wifi.is_connected():
-                ip = self._wifi.ip() or ""
-                return ip or "on"
-            try:
-                if self._wifi.is_radio_on():
-                    return "on"
-            except Exception:
-                pass
-            return "off"
-        except Exception:
-            return "—"
+        return wifi_summary(self._wifi, self._net)
 
     def _open_bt(self):
         try:
-            self._os.launch("bt")
+            from oreoOS import store
+            store.open_app(self._os, "bt")
         except Exception:
             pass
 
@@ -354,7 +455,26 @@ class App(oreoOS.App):
             row.setter(None)
 
     def update(self, dt):
-        pass
+        if self._save_at is not None and \
+                _diff(_ticks(), self._save_at) >= SAVE_MS:
+            self._flush_power()
+        # The WiFi and Sync rows show live state (a join, a retry
+        # countdown, a sync landing on the worker). Re-read them twice a
+        # second and repaint only when one changed.
+        now = _ticks()
+        if _diff(now, self._live_ms) < LIVE_MS:
+            return
+        self._live_ms = now
+        if self._sync_note:
+            try:
+                if self._wifi is not None and self._wifi.is_connected():
+                    self._sync_note = ""
+            except Exception:
+                pass
+        vals = (self._wifi_summary(), self._sync_time_summary())
+        if vals != self._live_vals:
+            self._live_vals = vals
+            self._dirty = True
 
     # ── render ───────────────────────────────────────────────────────────
     def draw(self, d):

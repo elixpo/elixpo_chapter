@@ -8,19 +8,17 @@ on:
 permissions:
   contents: read
   deployments: write
+  discussions: read
 
 concurrency:
   group: elixpo-cloudflare-pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Validate and deploy
+  build:
+    name: Validate and build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment:
-      name: cloudflare-pages-production
-      url: https://elixpo.com
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -45,6 +43,9 @@ jobs:
 
       - name: Build static portal
         run: npm run build
+        env:
+          # Authenticated GitHub API calls for the /community Discussions feed (unauthenticated runner calls get rate-limited).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Stamp deployment evidence
         run: |
@@ -53,14 +54,41 @@ jobs:
             "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" \
             > out/.well-known/elixpo-deployment.json
 
-      - name: Deploy production candidate
-        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+      - name: Upload static portal
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=elixpo --branch=main
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          name: elixpo-site
+          path: out
+          # The deployment evidence marker lives under .well-known.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
 
+  # The portal has no separate preview branch: it deploys straight to the
+  # production branch and then proves both hostnames serve this commit.
+  deploy:
+    name: Deploy production
+    needs: build
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: elixpo
+      artifact-name: elixpo-site
+      output-directory: out
+      node-version: "24"
+      branch: main
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  verify:
+    name: Verify candidate and production hostnames
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: cloudflare-pages-production
+      url: https://elixpo.com
+    steps:
       - name: Verify candidate and production hostnames
         run: |
           fetch() {

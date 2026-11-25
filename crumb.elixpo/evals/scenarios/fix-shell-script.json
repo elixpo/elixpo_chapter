@@ -1,0 +1,11 @@
+{
+  "category": "coding",
+  "prompt": "greet.sh should print 'Hello, <name>' for the name given as its first argument, but it doesn't. Fix it.",
+  "files": {
+    "greet.sh": "#!/bin/sh\nname=$2\necho \"Hello, $nme\"\n"
+  },
+  "commands_succeed": [
+    "test \"$(sh greet.sh Crumb)\" = 'Hello, Crumb'"
+  ],
+  "max_tokens": 60000
+}

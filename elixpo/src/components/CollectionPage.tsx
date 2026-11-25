@@ -4,6 +4,7 @@ import type { DirectoryEntry, PublicFamily } from "@/lib/directory";
 import { familyPath } from "@/lib/directory";
 import { serializeJsonLd } from "@/lib/seo";
 import { ProjectMark } from "@/components/ProjectMark";
+import { Sparks } from "@/components/Sparks";
 
 const FAMILY_LABEL: Record<PublicFamily, string> = {
   project: "Open projects",
@@ -42,7 +43,7 @@ export function CollectionPage({ family, title, introduction, entries }: Collect
   return (
     <main className="page-shell">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <header className="page-intro">
+      <header className="page-intro"><Sparks chips={family === "service" ? ["200 OK ✓", "deployed ↗", "status ✓"] : ["git push ✓", "v1.0 ↗", "LGTM ✓"]} />
         <p className="eyebrow">Elixpo directory / {FAMILY_LABEL[family]}</p>
         <h1>{title}</h1>
         <p className="lede">{introduction}</p>
@@ -54,7 +55,7 @@ export function CollectionPage({ family, title, introduction, entries }: Collect
       </header>
 
       <section className="directory-section" aria-labelledby={`${family}-current`}>
-        <div className="section-heading">
+        <div className="section-heading"><Sparks stars={4} />
           <p className="eyebrow">Current directory</p>
           <h2 id={`${family}-current`}>Work with a present-tense status.</h2>
           <p>{current.length} records drawn from the canonical organization registry.</p>

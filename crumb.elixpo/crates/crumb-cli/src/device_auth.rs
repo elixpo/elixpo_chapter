@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::process::Command;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -97,10 +97,12 @@ pub(crate) fn connect(writer: &mut dyn Write) -> Result<SecretString> {
     if !open_browser(verification_url) {
         writeln!(writer, "Open the URL above manually to continue.")?;
     }
-    writeln!(writer, "Waiting for crumb.elixpo account approval…")?;
-    writer.flush()?;
-
-    let access_token = poll_accounts(&client, &accounts, &config.client_id, &device)?;
+    let access_token = poll_accounts(&client, &accounts, &config.client_id, &device, writer);
+    // Leave the progress line before any further output.
+    if std::io::stdout().is_terminal() {
+        writeln!(writer)?;
+    }
+    let access_token = access_token?;
     let response = client
         .post(crumb.join("/api/terminal/exchange")?)
         .bearer_auth(&access_token)
@@ -128,11 +130,29 @@ fn poll_accounts(
     accounts: &Url,
     client_id: &str,
     device: &AuthorizationChallenge,
+    writer: &mut dyn Write,
 ) -> Result<String> {
-    let deadline = Instant::now() + Duration::from_secs(device.expires_in);
+    let started = Instant::now();
+    let deadline = started + Duration::from_secs(device.expires_in);
     let mut interval = Duration::from_secs(device.interval.max(1));
+    let mut frame = 0_usize;
+    // Redraw only on a terminal; logs and pipes get one plain line.
+    let animate = std::io::stdout().is_terminal();
+    if !animate {
+        writeln!(writer, "Waiting for crumb.elixpo account approval…")?;
+        writer.flush()?;
+    }
     while Instant::now() < deadline {
-        thread::sleep(interval);
+        // Wait out the polling interval in short steps so the progress line
+        // keeps moving.
+        let poll_at = Instant::now() + interval;
+        while Instant::now() < poll_at {
+            if animate {
+                write_waiting(writer, frame, started.elapsed())?;
+            }
+            frame = frame.wrapping_add(1);
+            thread::sleep(PROGRESS_TICK.min(poll_at.saturating_duration_since(Instant::now())));
+        }
         let response = client
             .post(accounts.join("/api/auth/token")?)
             .form(&[
@@ -163,6 +183,27 @@ fn poll_accounts(
     bail!("Accounts device authorization timed out")
 }
 
+/// How often the waiting line is redrawn.
+const PROGRESS_TICK: Duration = Duration::from_millis(200);
+const PROGRESS_FRAMES: [&str; 4] = ["◐", "◓", "◑", "◒"];
+
+/// Rewrites the waiting line in place. A leading carriage return makes a
+/// plain terminal overwrite the line; the fullscreen view replaces it.
+fn write_waiting(writer: &mut dyn Write, frame: usize, elapsed: Duration) -> Result<()> {
+    // One write, so the carriage return and its text arrive together.
+    writer.write_all(waiting_line(frame, elapsed).as_bytes())?;
+    writer.flush()?;
+    Ok(())
+}
+
+fn waiting_line(frame: usize, elapsed: Duration) -> String {
+    format!(
+        "\rWaiting for crumb.elixpo account approval… {} {}s\x1b[K",
+        PROGRESS_FRAMES[frame % PROGRESS_FRAMES.len()],
+        elapsed.as_secs()
+    )
+}
+
 fn trusted_origin(value: &str, label: &str) -> Result<Url> {
     let url = Url::parse(value).with_context(|| format!("{label} is invalid"))?;
     let local = matches!(url.host_str(), Some("localhost" | "127.0.0.1"));
@@ -172,24 +213,57 @@ fn trusted_origin(value: &str, label: &str) -> Result<Url> {
     Ok(url)
 }
 
+/// Opens `url` in the default browser. The browser's own output (GTK
+/// warnings and the like) must not reach Crumb's screen, so its standard
+/// streams are discarded, and the launcher is reaped in the background.
 fn open_browser(url: &str) -> bool {
     #[cfg(target_os = "linux")]
-    let result = Command::new("xdg-open").arg(url).spawn();
+    let mut command = Command::new("xdg-open");
+    #[cfg(target_os = "linux")]
+    command.arg(url);
     #[cfg(target_os = "macos")]
-    let result = Command::new("open").arg(url).spawn();
+    let mut command = Command::new("open");
+    #[cfg(target_os = "macos")]
+    command.arg(url);
     #[cfg(target_os = "windows")]
-    let result = Command::new("cmd").args(["/C", "start", "", url]).spawn();
+    let mut command = Command::new("cmd");
+    #[cfg(target_os = "windows")]
+    command.args(["/C", "start", "", url]);
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-    let result: std::io::Result<std::process::Child> = Err(std::io::Error::new(
-        std::io::ErrorKind::Unsupported,
-        "browser launch is unsupported",
-    ));
-    result.is_ok()
+    return false;
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    {
+        use std::process::Stdio;
+        match command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        {
+            Ok(mut child) => {
+                thread::spawn(move || {
+                    let _ = child.wait();
+                });
+                true
+            }
+            Err(_) => false,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::trusted_origin;
+    use super::{trusted_origin, waiting_line};
+    use std::time::Duration;
+
+    #[test]
+    fn the_waiting_line_redraws_itself_with_a_spinner_and_elapsed_time() {
+        let first = waiting_line(0, Duration::from_secs(3));
+        let next = waiting_line(1, Duration::from_millis(4_200));
+        assert!(first.starts_with('\r') && first.ends_with("\x1b[K"));
+        assert!(first.contains("approval… ◐ 3s"));
+        assert!(next.contains("approval… ◓ 4s"));
+    }
 
     #[test]
     fn device_origins_require_https_except_for_local_development() {

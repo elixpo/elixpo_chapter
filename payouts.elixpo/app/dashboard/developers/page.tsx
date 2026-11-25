@@ -12,7 +12,7 @@ export default function DevelopersRedirect() {
     }, []);
     return (
         <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-            <CircularProgress sx={{ color: "#9b7bf7" }} />
+            <CircularProgress sx={{ color: "var(--app-accent)" }} />
         </Box>
     );
 }

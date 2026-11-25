@@ -76,9 +76,9 @@ const META: Record<string, ProjectMeta> = {
     },
     oreo: {
         key: "oreo",
-        label: "Oreo",
-        domain: "oreo.elixpo.com",
-        repo: `${GH}/oreo`,
+        label: "Falera",
+        domain: "falera.elixpo.com",
+        repo: `${GH}/falera`,
     },
     "research-elixpo": {
         key: "research",

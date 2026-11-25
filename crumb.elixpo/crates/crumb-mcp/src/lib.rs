@@ -435,8 +435,10 @@ mod tests {
 
     #[test]
     fn long_calls_with_a_progress_token_report_progress_until_they_finish() {
+        // The call runs 25 heartbeats long so that two of them arrive even on
+        // loaded CI runners (macOS) whose timers fire far later than asked.
         let messages = serve(
-            r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"fixture","arguments":{"sleep_ms":150},"_meta":{"progressToken":"t1"}}}"#,
+            r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"fixture","arguments":{"sleep_ms":500},"_meta":{"progressToken":"t1"}}}"#,
         );
         let (last, progress) = messages.split_last().expect("a response is sent");
         assert_eq!(last["id"], 7);

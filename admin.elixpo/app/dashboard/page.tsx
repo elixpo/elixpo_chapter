@@ -1,10 +1,11 @@
 /**
- * Overview — account-wide health, fully driven by auto-discovery. Every resource
- * the account has is listed here; new ones appear automatically on next refresh.
+ * Account home — Cloudflare-style overview of every *.elixpo service: live
+ * health state, account KPIs, per-service status bars, the top diagnostics
+ * findings, traffic, inventory and recent deploys. All data is fetched in
+ * parallel by loadOverview() and every call degrades instead of throwing.
  */
 
-import { discoverAccount } from "@/lib/discovery";
-import { workersMetricsAll, zoneBreakdown, zoneTraffic } from "@/lib/metrics";
+import { loadOverview } from "@/components/overview/data";
 import { rangeWindow } from "@/lib/range";
 import OverviewView from "./overview-view";
 
@@ -16,25 +17,7 @@ export default async function OverviewPage({
 }: {
     searchParams: Promise<{ range?: string }>;
 }) {
-    const inv = await discoverAccount();
     const { range } = await searchParams;
-    const w = rangeWindow(range);
-    const primaryZone =
-        inv.zones.find((z) => z.name === "elixpo.com") || inv.zones[0];
-
-    const [workers, traffic, breakdown] = await Promise.all([
-        workersMetricsAll(w),
-        primaryZone ? zoneTraffic(primaryZone.id, w) : Promise.resolve(null),
-        primaryZone ? zoneBreakdown(primaryZone.id, w) : Promise.resolve(null),
-    ]);
-
-    return (
-        <OverviewView
-            inv={inv}
-            workers={workers}
-            traffic={traffic}
-            breakdown={breakdown}
-            primaryZoneName={primaryZone?.name}
-        />
-    );
+    const data = await loadOverview(rangeWindow(range));
+    return <OverviewView data={data} />;
 }

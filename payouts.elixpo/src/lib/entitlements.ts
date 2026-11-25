@@ -255,3 +255,50 @@ export async function revokeEntitlement(
 
     return { ...row, status: "revoked", version };
 }
+
+/**
+ * A one-time purchase was fully refunded / charged back: revoke the access it
+ * bought. Only when (a) the entitlement is still active, (b) its subscription
+ * is one-time (an autopay renewal refund leaves the mandate's access alone),
+ * and (c) the LATEST grant on the entitlement came from this transaction — a
+ * refund of an older purchase must not cut off a newer paid period.
+ * Returns the revoked row, or null when nothing changed.
+ */
+export async function revokeForRefundedTransaction(
+    db: D1Database,
+    transactionId: string,
+): Promise<EntitlementRow | null> {
+    const grant = (await db
+        .prepare(
+            "SELECT entitlement_id FROM grants WHERE transaction_id = ? ORDER BY created_at DESC LIMIT 1",
+        )
+        .bind(transactionId)
+        .first()) as { entitlement_id: string } | null;
+    if (!grant) return null;
+
+    const row = (await db
+        .prepare("SELECT * FROM entitlements WHERE id = ?")
+        .bind(grant.entitlement_id)
+        .first()) as EntitlementRow | null;
+    if (row?.status !== "active") return null;
+
+    if (row.subscription_id) {
+        const sub = (await db
+            .prepare("SELECT billing_mode FROM subscriptions WHERE id = ?")
+            .bind(row.subscription_id)
+            .first()) as { billing_mode: string } | null;
+        if (sub?.billing_mode === "recurring") return null;
+    }
+
+    const latest = (await db
+        .prepare(
+            `SELECT transaction_id FROM grants
+             WHERE entitlement_id = ? AND action IN ('granted', 'renewed')
+             ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+        )
+        .bind(row.id)
+        .first()) as { transaction_id: string | null } | null;
+    if (latest?.transaction_id !== transactionId) return null;
+
+    return revokeEntitlement(db, row);
+}

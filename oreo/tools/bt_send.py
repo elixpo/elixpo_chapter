@@ -1,4 +1,4 @@
-"""Push a file to the Oreo Badge over BLE.
+"""Push a file to the Falera Badge over BLE.
 
 Usage:
     python tools/bt_send.py path/to/photo.png
@@ -32,7 +32,7 @@ except ImportError:
     print("This script needs `bleak` — pip install bleak", file=sys.stderr)
     sys.exit(1)
 
-DEVICE_NAME = "Oreo"
+DEVICE_NAME = "Falera"
 SVC_UUID = "6f72656f-0000-1000-8000-00805f9b34fb"
 RX_UUID  = "6f72656f-0001-1000-8000-00805f9b34fb"
 TX_UUID  = "6f72656f-0002-1000-8000-00805f9b34fb"

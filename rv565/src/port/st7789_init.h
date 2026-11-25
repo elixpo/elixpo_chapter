@@ -14,6 +14,8 @@
 #define RV565_ST7789_DELAY 0x80
 
 #define RV565_ST7789_RAMWR 0x2C
+#define RV565_ST7789_RASET 0x2B
+#define RV565_ST7789_CASET 0x2A
 #define RV565_ST7789_STEPS 16
 
 typedef struct {
@@ -63,6 +65,34 @@ static inline size_t rv565_st7789_sequence(const rv565_panel_t *panel,
         out[i] = steps[i];
     }
     return RV565_ST7789_STEPS;
+}
+
+/* RASET data for visible rows first .. first + rows - 1 of `panel`
+ * (rows >= 1), for partial updates; rows = panel height restores the full
+ * window that rv565_st7789_sequence() sets. */
+static inline void rv565_st7789_rows(const rv565_panel_t *panel, uint16_t first,
+                                     uint16_t rows, uint8_t out[4])
+{
+    const rv565_panel_t p = rv565_panel_resolve(panel);
+    const unsigned y0 = p.y_offset + first, y1 = y0 + rows - 1u;
+    out[0] = (uint8_t)(y0 >> 8);
+    out[1] = (uint8_t)y0;
+    out[2] = (uint8_t)(y1 >> 8);
+    out[3] = (uint8_t)y1;
+}
+
+/* CASET data for visible columns first .. first + cols - 1 of `panel`
+ * (cols >= 1), for region updates; cols = panel width restores the full
+ * window that rv565_st7789_sequence() sets. */
+static inline void rv565_st7789_columns(const rv565_panel_t *panel, uint16_t first,
+                                        uint16_t cols, uint8_t out[4])
+{
+    const rv565_panel_t p = rv565_panel_resolve(panel);
+    const unsigned x0 = p.x_offset + first, x1 = x0 + cols - 1u;
+    out[0] = (uint8_t)(x0 >> 8);
+    out[1] = (uint8_t)x0;
+    out[2] = (uint8_t)(x1 >> 8);
+    out[3] = (uint8_t)x1;
 }
 
 #endif /* RV565_ST7789_INIT_H */

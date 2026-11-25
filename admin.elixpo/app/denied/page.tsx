@@ -1,20 +1,39 @@
-import BackgroundAurora from "@/components/background-aurora";
+import "../landing.css";
+import {
+    REPO_URL,
+    SiteFooter,
+    SiteHeader,
+} from "@/components/landing/site-chrome";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 export const runtime = "edge";
 
-const REASONS: Record<string, string> = {
-    not_admin:
-        "Your Elixpo account isn't marked as an admin yet. Request access below and an existing admin will review it.",
-    bad_state:
-        "The sign-in request expired or was tampered with. Please try again.",
-    exchange_failed:
-        "We couldn't complete sign-in with Elixpo Accounts. Please try again.",
-    no_profile: "We couldn't read your Elixpo profile. Please try again.",
-    access_denied: "You declined the sign-in request.",
+export const metadata: Metadata = { title: "Access denied" };
+
+const REASONS: Record<string, { label: string; text: string }> = {
+    not_admin: {
+        label: "Not an admin",
+        text: "Your Elixpo account isn't marked as an admin yet. Request access below and an existing admin will review it.",
+    },
+    bad_state: {
+        label: "Request expired",
+        text: "The sign-in request expired or was tampered with. Please try again.",
+    },
+    exchange_failed: {
+        label: "Sign-in failed",
+        text: "We couldn't complete sign-in with Elixpo Accounts. Please try again.",
+    },
+    no_profile: {
+        label: "No profile",
+        text: "We couldn't read your Elixpo profile. Please try again.",
+    },
+    access_denied: {
+        label: "Declined",
+        text: "You declined the sign-in request.",
+    },
 };
 
-const REPO = "https://github.com/Circuit-Overtime/admin.elixpo";
 const issueUrl = () => {
     const title = "Admin access request — admin.elixpo";
     const body = [
@@ -26,31 +45,8 @@ const issueUrl = () => {
         "",
         "_Submitted from admin.elixpo/denied._",
     ].join("\n");
-    return `${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&labels=access-request`;
+    return `${REPO_URL}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&labels=access-request`;
 };
-
-const btn = (primary?: boolean) => ({
-    height: 46,
-    padding: "0 24px",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    fontWeight: 700,
-    fontSize: "0.9rem",
-    textDecoration: "none",
-    ...(primary
-        ? {
-              color: "#fff",
-              background: "linear-gradient(180deg, #a98cff 0%, #7c5cff 100%)",
-              boxShadow: "0 14px 30px rgba(124,92,255,0.35)",
-          }
-        : {
-              color: "#f5f5f4",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.14)",
-          }),
-});
 
 export default async function Denied({
     searchParams,
@@ -58,138 +54,138 @@ export default async function Denied({
     searchParams: Promise<{ reason?: string }>;
 }) {
     const { reason } = await searchParams;
+    const known = reason ? REASONS[reason] : undefined;
     const message =
-        (reason && REASONS[reason]) ||
-        "You don't have access to the Elixpo Admin console.";
+        known?.text ?? "You don't have access to the Elixpo Admin console.";
+    const notAdmin = !reason || reason === "not_admin";
 
     return (
-        <main
-            style={{
-                position: "relative",
-                minHeight: "100dvh",
-                color: "#f5f5f4",
-                overflow: "hidden",
-            }}
-        >
-            <BackgroundAurora variant="warm" />
-            <div
-                style={{
-                    position: "relative",
-                    zIndex: 1,
-                    minHeight: "100dvh",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                    padding: "2rem",
-                }}
-            >
-                <div
-                    style={{
-                        maxWidth: 520,
-                        width: "100%",
-                        padding: "2.5rem 2rem",
-                        borderRadius: 20,
-                        background: "rgba(18,21,32,0.55)",
-                        backdropFilter: "blur(18px)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "inline-block",
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                            color: "#f87171",
-                            background: "rgba(239,68,68,0.12)",
-                            border: "1px solid rgba(239,68,68,0.3)",
-                            borderRadius: 999,
-                            padding: "5px 13px",
-                            marginBottom: "1.25rem",
-                        }}
-                    >
-                        Access denied
+        <div className="lx">
+            <SiteHeader sectionLinks={false} />
+            <main className="record-page">
+                <Link className="back" href="/">
+                    ← Back to Elixpo Admin
+                </Link>
+                <div className="record-geometry" aria-hidden="true">
+                    <div className="record-geometry-label">
+                        <span>Access record · 403</span>
+                        <b>403</b>
                     </div>
-                    <h1
-                        style={{
-                            fontSize: "clamp(1.9rem, 5vw, 2.6rem)",
-                            fontWeight: 800,
-                            margin: "0 0 0.75rem",
-                            letterSpacing: "-0.02em",
-                        }}
-                    >
-                        Admins only
-                    </h1>
-                    <p
-                        style={{
-                            color: "rgba(245,245,244,0.7)",
-                            lineHeight: 1.65,
-                            margin: "0 0 1.75rem",
-                            fontSize: "0.98rem",
-                        }}
-                    >
-                        {message}
-                    </p>
+                    <i className="geometry-ring" />
+                    <i className="geometry-disc" />
+                    <i className="geometry-pill" />
+                    <i className="geometry-tile" />
+                    <i className="geometry-axis" />
+                    <i className="geometry-node" />
+                </div>
 
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: 10,
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                        }}
-                    >
+                <section className="record-hero">
+                    <div className="record-heading">
+                        <p className="eyebrow">Access denied</p>
+                        <h1>
+                            This console is for <em>admins only.</em>
+                        </h1>
+                        <div className="record-abstract">
+                            <h2>What happened</h2>
+                            <p>{message}</p>
+                        </div>
+                    </div>
+                    <aside className="record-summary">
+                        <dl>
+                            <div>
+                                <dt>Result</dt>
+                                <dd className="bad">Not signed in</dd>
+                            </div>
+                            <div>
+                                <dt>Reason</dt>
+                                <dd>
+                                    {known?.label ?? "No admin access"}
+                                    {reason ? (
+                                        <>
+                                            <br />
+                                            <code>{reason}</code>
+                                        </>
+                                    ) : null}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Identity</dt>
+                                <dd>accounts.elixpo.com</dd>
+                            </div>
+                            <div>
+                                <dt>Required</dt>
+                                <dd>Admin role</dd>
+                            </div>
+                        </dl>
+                    </aside>
+                </section>
+
+                <section className="record-grid">
+                    <article>
+                        <p className="eyebrow">Next steps</p>
+                        <h2>
+                            {notAdmin
+                                ? "Ask for access, or switch accounts."
+                                : "Try signing in again."}
+                        </h2>
+                        <p>
+                            Elixpo Admin only issues a session to Elixpo
+                            accounts that carry the admin role. No session was
+                            created for this attempt, and nothing about your
+                            account was changed.
+                        </p>
+                        <ul>
+                            <li>
+                                Request access
+                                <span>
+                                    Opens a pre-filled GitHub issue an admin
+                                    will review
+                                </span>
+                            </li>
+                            <li>
+                                Different account
+                                <span>
+                                    Signs out here, then start sign-in again
+                                    with another Elixpo account
+                                </span>
+                            </li>
+                            <li>
+                                Public status
+                                <span>
+                                    status.elixpo.com is open to everyone
+                                </span>
+                            </li>
+                        </ul>
+                    </article>
+                    <aside className="released-material">
+                        <p className="eyebrow">Actions</p>
+                        <div className="actions" style={{ margin: "0 0 1rem" }}>
+                            <a href="/api/auth/login">Try again</a>
+                            <a href="/api/auth/logout">
+                                Sign in with a different account
+                            </a>
+                        </div>
                         <a
+                            className="primary"
                             href={issueUrl()}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={btn(true)}
                         >
-                            Request admin access
+                            Request admin access ↗
+                            <span>Pre-filled issue on elixpo/admin.elixpo</span>
                         </a>
-                        <a href="/api/auth/login" style={btn()}>
-                            Try again
+                        <a href="https://status.elixpo.com">
+                            Public status page ↗
+                            <span>Live health for every Elixpo service</span>
                         </a>
-                    </div>
-
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: 10,
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                            marginTop: 12,
-                        }}
-                    >
-                        <Link href="/" style={btn()}>
-                            Back to home
-                        </Link>
-                        <a
-                            href="https://elixpo.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={btn()}
-                        >
-                            Visit elixpo.com
+                        <a href="https://elixpo.com">
+                            Back to elixpo.com ↗
+                            <span>The Elixpo suite home page</span>
                         </a>
-                    </div>
-
-                    <p
-                        style={{
-                            color: "rgba(245,245,244,0.4)",
-                            fontSize: "0.74rem",
-                            marginTop: "1.75rem",
-                        }}
-                    >
-                        Requesting access opens a pre-filled issue on GitHub —
-                        an admin will review it.
-                    </p>
-                </div>
-            </div>
-        </main>
+                    </aside>
+                </section>
+            </main>
+            <SiteFooter />
+        </div>
     );
 }

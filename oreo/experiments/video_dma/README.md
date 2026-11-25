@@ -1,6 +1,6 @@
 # ESP32-S3 24 FPS DMA video benchmark
 
-This is a standalone ESP-IDF firmware, not an OreoOS app. It boots directly
+This is a standalone ESP-IDF firmware, not a FaleraOS app. It boots directly
 into a full-screen video loop and leaves Wi-Fi, Bluetooth, MicroPython, the app
 launcher, and the normal framebuffer out of the measurement.
 
@@ -20,7 +20,7 @@ to the encoder to produce the uncompressed RV565 v5 baseline.
 
 ## 1. Back up the complete current badge flash
 
-This benchmark replaces MicroPython, its partition table, and OreoOS. The
+This benchmark replaces MicroPython, its partition table, and FaleraOS. The
 backup is the reliable route back to the exact current badge state.
 
 ```bash

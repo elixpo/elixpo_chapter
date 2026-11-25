@@ -385,12 +385,15 @@ const LixEditor = forwardRef(function LixEditor({
     return () => tiptap.off('update', handleInput);
   }, [editor, f.markdownLinks]);
 
-  // Shift+Arrow should extend the text selection, not move/rearrange blocks.
-  // BlockNote binds block-move to Shift+ArrowUp/Down; intercept it in the capture
-  // phase (before ProseMirror's handler) so the native selection happens instead.
+  // Shift+Up/Down (with or without Ctrl/Cmd) only extends the selection.
+  // BlockNote binds Shift-Mod-Arrow to "move blocks", which hijacked the
+  // browser's paragraph-select shortcut and moved the selected text.
+  // Stop ProseMirror seeing the key but keep the browser default.
+  // Moving blocks stays available on Alt+Up/Down.
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
+    const editorEl = el.querySelector('.bn-editor');
     const onKeyDown = (e) => {
       if (e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const block = editor.getTextCursorPosition()?.block;
@@ -413,9 +416,37 @@ const LixEditor = forwardRef(function LixEditor({
         }
       }
 
-      if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
-        && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      // Shift+Up/Down (with or without Ctrl/Cmd) only extends the selection.
+      // BlockNote binds Shift-Mod-Arrow to "move blocks", which hijacked the
+      // browser's paragraph-select shortcut and moved the selected text.
+      // Stop ProseMirror seeing the key but keep the browser default.
+      const isVerticalArrow = e.key === 'ArrowUp' || e.key === 'ArrowDown';
+      if (
+        isVerticalArrow &&
+        e.shiftKey &&
+        !e.altKey &&
+        (!editorEl || e.target === editorEl)
+      ) {
         e.stopImmediatePropagation();
+        return;
+      }
+
+      // Moving blocks stays available on Alt+Up/Down.
+      if (
+        isVerticalArrow &&
+        e.altKey &&
+        !e.shiftKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        (!editorEl || e.target === editorEl)
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        try {
+          if (e.key === 'ArrowUp') editor.moveBlocksUp();
+          else editor.moveBlocksDown();
+        } catch {}
+        return;
       }
     };
     el.addEventListener('keydown', onKeyDown, true);

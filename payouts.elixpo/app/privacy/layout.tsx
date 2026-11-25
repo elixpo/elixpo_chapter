@@ -4,7 +4,7 @@ import type React from "react";
 export const metadata: Metadata = {
     title: "Privacy Policy",
     description:
-        "How Elixpo Pay collects, uses, and protects data for payments and payouts. We never store raw card or bank details.",
+        "What Elixpo Pay collects from buyers, fundraiser contributors and creators, who processes it (Razorpay, Elixpo Mails, Cloudflare), and what we never store — no card numbers, UPI PINs or full bank account numbers.",
     alternates: { canonical: "/privacy" },
     openGraph: {
         title: "Privacy Policy | Elixpo Pay",

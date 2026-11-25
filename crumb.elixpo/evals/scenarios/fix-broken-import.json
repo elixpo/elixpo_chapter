@@ -1,0 +1,13 @@
+{
+  "category": "coding",
+  "prompt": "Running main.py crashes. Fix it without changing what it prints.",
+  "files": {
+    "helpers/__init__.py": "",
+    "helpers/formatting.py": "def shout(text):\n    return text.upper() + '!'\n",
+    "main.py": "from helpers.format import shout\n\nprint(shout('crumb'))\n"
+  },
+  "commands_succeed": [
+    "test \"$(python3 main.py)\" = 'CRUMB!'"
+  ],
+  "max_tokens": 80000
+}

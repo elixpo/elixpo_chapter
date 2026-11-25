@@ -1,0 +1,16 @@
+Copyright Elixpo contributors 2026.
+
+This source describes Open Hardware and is licensed under the CERN-OHL-P v2.
+
+You may redistribute and modify this documentation and make products using it
+under the terms of the CERN-OHL-P v2 (https://ohwr.org/cern_ohl_p_v2.txt).
+This documentation is distributed WITHOUT ANY EXPRESS OR IMPLIED WARRANTY,
+INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A
+PARTICULAR PURPOSE. Please see the CERN-OHL-P v2 for applicable conditions.
+
+Source location: https://github.com/elixpo/oreo/tree/main/circuit/elixpo
+
+The full licence text is in ../../LICENSES/preferred/CERN-OHL-P-2.0.
+The "Elixpo", "Oreo" and "Oreo Badge" names and the Oreo mascot are trademarks
+(see ../../TRADEMARKS.md); boards made from this design must use their own
+names.

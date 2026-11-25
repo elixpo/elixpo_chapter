@@ -1,6 +1,7 @@
 import registry from "../../content/repositories.json";
 import directory from "../../content/directory.json";
 import repositoryLicenses from "../../content/repository-licenses.json";
+import siteFavicons from "../../content/site-favicons.json";
 
 export type PublicFamily = "project" | "research" | "service";
 export type Lifecycle = "incubating" | "active" | "maintenance" | "paused" | "completed" | "archived";
@@ -20,8 +21,12 @@ export interface DirectoryEntry {
   description: string;
   focus: string[];
   featured?: boolean;
+  /** Favicon of the deployed site when one exists, otherwise the brand icon. */
   icon?: string;
+  /** Favicon synced from the live website by scripts/sync-site-favicons.py. */
+  favicon?: string;
   evidence?: { label: string; url: string }[];
+  programmes?: { label: string; url: string }[];
   licenseEvidence: {
     detection: string;
     classification: "spdx-recognized" | "external-spdx" | "custom-mixed" | "missing";
@@ -37,6 +42,7 @@ type RegistryEntry = (typeof registry.entries)[number];
 type DirectoryDetails = Omit<DirectoryEntry, "repository" | "repositoryUrl" | "family" | "lifecycle" | "relationship" | "verificationState" | "statusVerifiedAt" | "licenseEvidence">;
 const DETAILS = directory.entries as Record<string, DirectoryDetails>;
 const LICENSES = repositoryLicenses.entries as Record<string, DirectoryEntry["licenseEvidence"]>;
+const FAVICONS = siteFavicons.entries as Record<string, { path: string; source: string }>;
 
 function isPublicEntry(entry: RegistryEntry): entry is RegistryEntry & { publicClass: PublicFamily } {
   return entry.disposition === "public-entry" && entry.publicClass !== null;
@@ -49,8 +55,11 @@ export const DIRECTORY_ENTRIES: DirectoryEntry[] = registry.entries
     if (!detail) throw new Error(`Missing public directory copy for ${entry.name}`);
     const licenseEvidence = LICENSES[entry.name];
     if (!licenseEvidence) throw new Error(`Missing repository license evidence for ${entry.name}`);
+    const favicon = FAVICONS[entry.name]?.path;
     return {
       ...detail,
+      icon: favicon ?? detail.icon,
+      favicon,
       licenseEvidence,
       repository: entry.name,
       repositoryUrl: entry.repositoryUrl,

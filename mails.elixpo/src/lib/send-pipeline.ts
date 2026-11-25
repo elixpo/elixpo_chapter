@@ -10,6 +10,7 @@
 
 import type { D1Database } from "@cloudflare/workers-types";
 import { listAttachments, resolveAttachments } from "./attachments";
+import { assertCanSend } from "./billing";
 import {
     createDelivery,
     getDelivery,
@@ -238,6 +239,32 @@ export async function deliverTemplate(db: D1Database, input: DeliverInput): Prom
     const { tenantId, template, product, webhookId, to, vars = {} } = input;
     const productId = product?.id ?? template.product_id;
     const isTransactional = template.transactional === 1;
+
+    // Check billing subscription status and send allowance limits
+    const canSend = await assertCanSend(db, tenantId);
+    if (!canSend.allowed) {
+        const error = canSend.reason || "Send allowance exceeded or subscription inactive.";
+        const deliveryId = await createDelivery(db, {
+            tenantId,
+            productId,
+            templateId: template.id,
+            webhookId: webhookId || null,
+            senderId: null,
+            toEmail: to,
+            subject: template.subject,
+            vars,
+            idempotencyKey: input.idempotencyKey || null,
+            status: "failed",
+        });
+        await markDeliveryFailed(db, deliveryId, error, null);
+        return {
+            ok: false,
+            deliveryId,
+            status: "failed",
+            subject: template.subject,
+            error,
+        };
+    }
 
     // Honor unsubscribes — except for transactional templates (receipts etc.),
     // which are CAN-SPAM exempt and always send. Suppression is product-scoped,

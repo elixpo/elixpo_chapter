@@ -56,6 +56,16 @@ Request body (JSON):
   "idempotency_key": "optional-dedupe-key"
 }
 
+### Timeouts & Client Configuration
+- Configure your HTTP client with a request timeout of AT LEAST 20 seconds (>= 20s, e.g. AbortSignal.timeout(20000)).
+- Cold paths (suppression lookups, dynamic template rendering, attachment fetching, and SMTP socket handshakes over cloudflare:sockets) can take 6–15s. A 20s timeout avoids premature client aborts while the worker is actively delivering.
+
+### Response Inspection (CRITICAL: Must check body \`ok\`)
+- HTTP 200 does NOT guarantee delivery!
+- Callers MUST inspect the parsed JSON body's \`ok\` field (\`if (!result.ok)\`), NOT just the HTTP transport status code.
+- Unsubscribed recipients return \`200 { ok: false, status: "suppressed", to }\` — a successful no-op.
+- Downstream failures return \`502 { ok: false, status: "failed", error }\`.
+
 Responses:
 - 200 { ok: true, id, status: "sent", to, subject } — sent.
 - 200 { ok: false, status: "suppressed", ... } — recipient unsubscribed; a
@@ -74,11 +84,29 @@ const url = "https://mails.elixpo.com/v1/hooks/whe_xxx";
 const payload = JSON.stringify({ to: "user@example.com", variables: { name: "Ada" } });
 const t = Math.floor(Date.now() / 1000);
 const v1 = crypto.createHmac("sha256", secret).update(\`\${t}.\${payload}\`).digest("hex");
+
+// Timeout >= 20s to allow for suppression checks & SMTP socket delivery
 const res = await fetch(url, {
   method: "POST",
   headers: { "Content-Type": "application/json", "X-Elixpo-Signature": \`t=\${t},v1=\${v1}\` },
   body: payload,
+  signal: AbortSignal.timeout(20000),
 });
+
+const out = await res.json();
+
+// ALWAYS inspect out.ok — HTTP 200 does not guarantee delivery!
+if (!out.ok) {
+  if (out.status === "suppressed") {
+    // Recipient unsubscribed; platform skipped delivery (successful no-op)
+    console.log("Recipient unsubscribed (suppressed):", out.to);
+  } else {
+    // Delivery failed (e.g. 502 SMTP error)
+    console.error("Delivery failed:", out.error);
+  }
+} else {
+  console.log("Email sent! Delivery ID:", out.id);
+}
 
 Important: sign and send the SAME bytes. Build the JSON string once
 (\`payload\`), HMAC over \`\${t}.\${payload}\`, and pass that same string as the

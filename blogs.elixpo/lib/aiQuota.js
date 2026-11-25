@@ -20,18 +20,47 @@ export function utcDay(now = new Date()) {
  *
  * @param {D1Database} db
  * @param {string} userId
- * @param {number} limit   requests allowed per UTC day for the user's tier
- * @param {string} [today] UTC day (YYYY-MM-DD); injectable for tests
+ * @param {number} limit Requests allowed per UTC day
+ * @param {string} [today] UTC day (YYYY-MM-DD), injectable for tests
  * @returns {Promise<boolean>} true when a request was claimed, false when the
- *   allowance is exhausted (or the user row does not exist)
+ *   allowance is exhausted, the input is invalid, or the user row does not exist
  */
-export async function claimAIQuota(db, userId, limit, today = utcDay()) {
+export async function claimAIQuota(
+  db,
+  userId,
+  limit,
+  today = utcDay()
+) {
+  // Deny rather than throw on bad input: enforceAILimits() treats a thrown error as
+  // "database unavailable" and lets non-member requests through unmetered.
+  if (!db || !userId || !Number.isInteger(limit) || limit < 0) {
+    return false;
+  }
+
   const result = await db.prepare(`
     UPDATE users
-    SET ai_usage_today = CASE WHEN ai_usage_date = ? THEN COALESCE(ai_usage_today, 0) + 1 ELSE 1 END,
-        ai_usage_date = ?
+    SET
+      ai_usage_today = CASE
+        WHEN ai_usage_date = ?
+        THEN COALESCE(ai_usage_today, 0) + 1
+        ELSE 1
+      END,
+      ai_usage_date = ?
     WHERE id = ?
-      AND (CASE WHEN ai_usage_date = ? THEN COALESCE(ai_usage_today, 0) ELSE 0 END) < ?
-  `).bind(today, today, userId, today, limit).run();
+      AND (
+        CASE
+          WHEN ai_usage_date = ?
+          THEN COALESCE(ai_usage_today, 0)
+          ELSE 0
+        END
+      ) < ?
+  `).bind(
+    today,
+    today,
+    userId,
+    today,
+    limit
+  ).run();
+
   return (result?.meta?.changes ?? 0) > 0;
 }

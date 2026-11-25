@@ -4,7 +4,7 @@
  * breakdowns (status code classes, device types) where a bar reads clearer than
  * a stacked bar or donut. */
 
-import { C, CHART } from "@/components/ui";
+import { C, CHART, STATUS_COLORS } from "@/components/ui";
 import { fmt } from "@/lib/format";
 import { Box, Typography } from "@mui/material";
 import { useState } from "react";
@@ -72,6 +72,7 @@ export default function BarChart({
                                 sx={{
                                     fontSize: "0.72rem",
                                     fontWeight: 700,
+                                    fontVariantNumeric: "tabular-nums",
                                     color: active ? C.text : C.textDim,
                                     mb: 0.5,
                                 }}
@@ -84,14 +85,10 @@ export default function BarChart({
                                     maxWidth: 64,
                                     height: `${h}px`,
                                     borderRadius: "6px 6px 0 0",
-                                    background: `linear-gradient(180deg, ${color} 0%, ${color}99 100%)`,
+                                    bgcolor: color,
                                     opacity:
                                         hover === null || active ? 1 : 0.45,
-                                    boxShadow: active
-                                        ? `0 0 16px ${color}88`
-                                        : "none",
-                                    transition:
-                                        "opacity 0.15s, box-shadow 0.15s",
+                                    transition: "opacity 0.15s",
                                 }}
                             />
                         </Box>
@@ -104,7 +101,7 @@ export default function BarChart({
                     gap: 1.5,
                     px: 0.5,
                     mt: 0.75,
-                    borderTop: `1px solid ${C.border}`,
+                    borderTop: `1px solid ${C.line}`,
                     pt: 0.75,
                 }}
             >
@@ -166,10 +163,10 @@ export default function BarChart({
 /** Group raw status-code dimensions into 2xx/3xx/4xx/5xx bars. */
 export function statusBars(status: { label: string; count: number }[]): Bar[] {
     const classes = [
-        { label: "2xx", color: "#4593ff", lo: 200, hi: 300 },
-        { label: "3xx", color: "#fbbf24", lo: 300, hi: 400 },
-        { label: "4xx", color: "#f472b6", lo: 400, hi: 500 },
-        { label: "5xx", color: "#a855f7", lo: 500, hi: 600 },
+        { label: "2xx", color: STATUS_COLORS["2xx"], lo: 200, hi: 300 },
+        { label: "3xx", color: STATUS_COLORS["3xx"], lo: 300, hi: 400 },
+        { label: "4xx", color: STATUS_COLORS["4xx"], lo: 400, hi: 500 },
+        { label: "5xx", color: STATUS_COLORS["5xx"], lo: 500, hi: 600 },
     ];
     return classes.map((c) => ({
         label: c.label,

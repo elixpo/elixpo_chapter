@@ -43,7 +43,9 @@ import { IntegrationsClient } from "../src/api/IntegrationsClient.js";
 import { MediaClient } from "../src/api/MediaClient.js";
 import { CollectionClient } from "../src/api/CollectionClient.js";
 import { ContestClient } from "../src/api/ContestClient.js";
+import { NotificationClient } from "../src/api/NotificationClient.js";
 import { EXIT_CODES, errorEnvelope, normalizeCommand } from "../src/cli/contract.js";
+import { GLOBAL_HELP, commandHelp } from "../src/cli/help.js";
 import {
   colorEnabled,
   errorLine,
@@ -86,6 +88,7 @@ import {
 } from "../src/commands/collab/index.js";
 import { skillInspect, skillInstall, skillInstallAll, skillList } from "../src/commands/skill/index.js";
 import { analyticsExport, analyticsQuery } from "../src/commands/analytics/index.js";
+import { notificationList, notificationRead } from "../src/commands/notification/index.js";
 import { cloudinaryDisconnect } from "../src/commands/integrations/cloudinary-disconnect.js";
 import { cloudinaryStatus } from "../src/commands/integrations/cloudinary-status.js";
 import { mediaDelete, mediaGenerate, mediaUpload } from "../src/commands/media/index.js";
@@ -137,6 +140,7 @@ const OPTIONS = {
   mine: { type: "boolean", default: false },
   limit: { type: "string" },
   cursor: { type: "string" },
+  unread: { type: "boolean", default: false },
   range: { type: "string" },
   from: { type: "string" },
   to: { type: "string" },
@@ -216,120 +220,6 @@ const OPTIONS = {
   finalize: { type: "boolean", default: false },
   help: { type: "boolean", short: "h", default: false },
 };
-
-const HELP_TEXT = `lixblogs — LixBlogs CLI
-
-Usage:
-  lixblogs login         [--profile <name>] [--open]
-  lixblogs register      [--profile <name>] [--open]
-  lixblogs logout        [--profile <name>]
-  lixblogs whoami        [--profile <name>] [--json]
-  lixblogs profiles      [--json]
-  lixblogs use <name>    [--json]
-  lixblogs auth login    [--profile <name>] [--env <environment>] [--json] [--quiet] [--allow-insecure-fallback]
-  lixblogs auth status   [--profile <name>] [--json]
-  lixblogs auth logout   [--profile <name>] [--json] [--quiet]
-  lixblogs auth revoke   [--profile <name>] [--json] [--quiet] --yes
-  lixblogs auth profiles [--json]
-  lixblogs auth use <name> [--json]
-  lixblogs blog list      [--status <status>] [--limit <n>] [--cursor <cursor>] [--json]
-  lixblogs blog get <id>  [--json]
-  lixblogs blog preview <id> [--json]
-  lixblogs blog create    [--file <post.md>|--stdin|--content <markdown>|--editor] [metadata]
-  lixblogs blog edit <id> [--file <post.md>|--stdin|--content <markdown>|--editor] [metadata]
-  lixblogs blog publish <id> --yes [--dry-run] [--json]
-  lixblogs blog unpublish <id> --yes [--dry-run] [--json]
-  lixblogs blog delete <id> --yes [--permanent] [--dry-run] [--json]
-  lixblogs blog trash <id> --yes [--dry-run] [--json]
-  lixblogs blog restore <id> --yes [--dry-run] [--json]
-  lixblogs blog history <id> [--version <version-id>] [--json]
-  lixblogs blog restore-version <id> --version <version-id> --yes [--json]
-  lixblogs comment list <blog-id> [--json]
-  lixblogs comment add <blog-id> --content <text> [--json]
-  lixblogs comment reply <blog-id> --parent <comment-id> --content <text> [--json]
-  lixblogs comment delete <blog-id> --comment <comment-id> --yes [--json]
-  lixblogs org list          [--json]
-  lixblogs org get <id>      [--json]
-  lixblogs org collections <id> [--json]
-  lixblogs org members <id>  [--json]
-  lixblogs org targets       [--json]
-  lixblogs collection list   [--json]
-  lixblogs collection get <id> [--json]
-  lixblogs collection create --title <name> [--slug <slug>] [--visibility private|unlisted|public]
-  lixblogs collection edit <id> [--title <name>] [--description <text>] [--introduction <text>] [--visibility <value>]
-  lixblogs collection delete <id> --yes
-  lixblogs collection entries <id> [--json]
-  lixblogs collection add <id> --blog <blog-id> [--note <text>] [--category <name>]
-  lixblogs collection remove <id> --blog <blog-id> --yes
-  lixblogs contest list [--status <status>] [--mine] [--json]
-  lixblogs contest get <id-or-slug> [--json]
-  lixblogs contest create --title <title> --starts-at <date> --submissions-close-at <date> --judging-closes-at <date> [--slug <slug>] [--contest-tag <tag>] [--minimum-account-age-months <n>] [--limit <1-5>]
-  lixblogs contest edit <id> [--slug <slug>] [--description <text>] [--problem <markdown>] [--rules <markdown>] [--contest-tag <tag>] [--minimum-account-age-months <n>] [--limit <1-5>]
-  lixblogs contest publish <id> --yes
-  lixblogs contest cancel <id> --yes
-  lixblogs contest delete <id> --yes
-  lixblogs contest submissions <id> [--snapshot] [--json]
-  lixblogs contest submit <id> --blog <blog-id>
-  lixblogs contest withdraw <id> --submission <submission-id> --yes
-  lixblogs contest members <id> [--json]
-  lixblogs contest role <id> --user <username-or-id> --role <moderator|judge>
-  lixblogs contest remove-member <id> --user <user-id> --yes
-  lixblogs contest results <id> --award winner:<submission-id> [--award runner-up:<id>] [--finalize --yes]
-  lixblogs collab list <blog-id> [--json]
-  lixblogs collab invitations   [--json]
-  lixblogs collab invite <blog-id> --user <username> --role <viewer|editor|admin> --yes
-  lixblogs collab role <blog-id> --user <username-or-id> --role <viewer|editor|admin> --yes
-  lixblogs collab remove <blog-id> [--user <username-or-id>] --yes
-  lixblogs collab accept <blog-id> --yes [--hide-on-profile]
-  lixblogs collab decline <blog-id> --yes
-  lixblogs analytics query [--scope personal|org:<id>] [--range 30d] [--dimension overview]
-  lixblogs analytics export --output <file> [--format json|csv] [query options]
-  lixblogs integrations cloudinary-status [--json]
-  lixblogs integrations cloudinary-disconnect --yes [--json]
-  lixblogs integrations pollinations-status [--json]
-  lixblogs integrations pollinations-disconnect --yes [--json]
-  lixblogs media generate --prompt <text> [--model flux] [--reference <image>] [--blog <id> --type inline|cover --attach] [--output <file>]
-  lixblogs media upload --file <image> --blog <id> [--type inline|cover] [--attach]
-  lixblogs media delete <media-id> --yes [--json]
-  lixblogs skill list             [--json]
-  lixblogs skill inspect <name>   [--json]
-  lixblogs skill install <name>   [--target <directory>] [--dry-run] --yes
-  lixblogs skill install --all    [--target <directory>] [--dry-run] --yes
-  lixblogs disconnect cloudinary --yes
-  lixblogs disconnect pollinations
-
-Global flags:
-  --profile <name>            local account alias (defaults to the signed-in username)
-  --env <environment>         override environment (development|staging|production)
-  --auth-provider <provider>  elixpo, or mock in development/test only
-  --accounts-url <url>        override the Accounts discovery origin
-  --api-url <url>             LixBlogs API origin (default: https://blogs.elixpo.com)
-  --token-file <path>         read a personal access token from a file
-  --scope <scope>             request an OAuth scope (repeatable)
-  --file <path>               read blog Markdown from a file
-  --stdin                     read blog Markdown from stdin
-  --content <markdown>        use inline Markdown
-  --editor                    open the current blog in $EDITOR
-  --title/--subtitle/--slug   update blog metadata
-  --tag <tag>                 set a tag (repeatable, up to five)
-  --publication <target>      personal or org:<id>
-  --collection <id>           organization collection ID
-  --license <id>              all-rights-reserved, cc-by-4.0, cc-by-sa-4.0, cc-by-nc-4.0, or cc0-1.0
-  --dry-run                   validate and show the intended action without writing
-  --permanent                 permanently delete instead of moving to trash
-  --open                      open the device verification URL immediately
-  --json                      machine-readable JSON output
-  --quiet                     suppress non-essential output
-  --yes, -y                   auto-confirm destructive actions (required for revoke)
-  --allow-insecure-fallback   explicit opt-in: if the OS keychain is unavailable, use a
-                               non-persistent in-memory store instead of failing
-  --help, -h                  show this help
-
-Machine mode:
-  --json --no-input produces stable JSON on stdout, diagnostics on stderr, and
-  never prompts. Publishing and destructive state changes require --yes.
-  Set LIXBLOGS_TOKEN or LIXBLOGS_TOKEN_FILE for non-interactive authentication.
-`;
 
 const DEFAULT_SCOPES = [
   "openid", "profile", "email",
@@ -751,6 +641,11 @@ const ANALYTICS_COMMANDS = {
   export: analyticsExport,
 };
 
+const NOTIFICATION_COMMANDS = {
+  list: notificationList,
+  read: notificationRead,
+};
+
 const MEDIA_COMMANDS = { generate: mediaGenerate, upload: mediaUpload, delete: mediaDelete };
 const COMMENT_COMMANDS = { list: commentList, add: commentAdd, reply: commentReply, delete: commentDelete };
 const COLLECTION_COMMANDS = {
@@ -1015,6 +910,35 @@ async function runAnalytics(opts, _args, action) {
       console.log(successLine(`Exported ${result.rows} rows to ${result.output}.`, colorEnabled()));
       return;
     }
+
+    async function runNotification(opts, args, action) {
+      const context = await authenticatedBlogClient(opts);
+      if (!context) return;
+      const client = new NotificationClient(context.http);
+      const normalized = {
+        ...opts,
+        limit: opts.limit === undefined ? undefined : Number.parseInt(opts.limit, 10),
+      };
+      try {
+        const result = await withProgress(
+          opts,
+          action === 'list' ? 'Loading notifications…' : 'Updating notifications…',
+          () => NOTIFICATION_COMMANDS[action]({ client, id: args[0], options: normalized }),
+        );
+        output(opts, { ok: true, data: result });
+        if (opts.json || opts.quiet) return;
+        if (action === 'list') {
+          for (const row of result.data || []) {
+            console.log(`${row.id}\t${row.read ? 'read' : 'unread'}\t${row.type}\t${row.target?.title || row.target?.url || ''}`);
+          }
+          if (result.meta?.nextCursor) console.log(infoLine(`Next cursor: ${result.meta.nextCursor}`, colorEnabled()));
+        } else {
+          console.log(successLine(opts.all ? 'All notifications marked as read.' : `Notification ${args[0]} marked as read.`, colorEnabled()));
+        }
+      } catch (error) {
+        fail(opts, error, error.status === 401 || error.status === 403 ? EXIT_CODES.AUTH : EXIT_CODES.ERROR);
+      }
+    }
     const payload = result.data;
     console.log(`${payload.scope.label} · ${payload.dimension} · ${payload.range.key}`);
     if (payload.dimension === 'overview') {
@@ -1070,6 +994,10 @@ const ROUTES = {
     action,
     (opts, args) => runAnalytics(opts, args, action),
   ])),
+  notification: Object.fromEntries(Object.keys(NOTIFICATION_COMMANDS).map((action) => [
+    action,
+    (opts, args) => runNotification(opts, args, action),
+  ])),
   media: Object.fromEntries(Object.keys(MEDIA_COMMANDS).map((action) => [
     action,
     (opts, args) => runMedia(opts, args, action),
@@ -1108,8 +1036,13 @@ async function main() {
     return;
   }
 
-  if (values.help || positionals.length === 0) {
-    process.stdout.write(HELP_TEXT);
+  if (positionals.length === 0) {
+    process.stdout.write(GLOBAL_HELP);
+    return;
+  }
+
+  if (values.help) {
+    process.stdout.write(commandHelp(positionals) || GLOBAL_HELP);
     return;
   }
 

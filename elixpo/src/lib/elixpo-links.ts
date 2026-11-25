@@ -48,7 +48,7 @@ export const ELIXPO_LINKS = {
   urlShortener: "https://lixrl.com",
   portfolio: "https://me.elixpo.com",
   packages: "https://packages.elixpo.com",
-  oreo: "https://oreo.elixpo.com",
+  oreo: "https://falera.elixpo.com",
   tommy: "https://github.com/elixpo/tommy",
   nominate: "https://stars.github.com/nominate/",
   fundingPolicy: "https://github.com/elixpo/elixpo/blob/main/docs/policies/sponsorship.md",

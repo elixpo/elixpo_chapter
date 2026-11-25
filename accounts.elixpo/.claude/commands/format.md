@@ -6,6 +6,7 @@ Run Biome to fix lint/format issues on the current branch.
 ```
 
 If `./biome.sh ci` fails:
+
 1. Read the output. Real errors are the only thing that fails CI — `info` and `warn` don't.
 2. Fix the errors by hand in the files listed.
 3. Re-run `./biome.sh ci` until it exits 0.

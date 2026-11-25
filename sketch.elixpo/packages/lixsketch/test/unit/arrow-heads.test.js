@@ -20,7 +20,8 @@ describe('types and legacy mapping', () => {
   it('has every Excalidraw head plus cross', () => {
     expect(ARROWHEAD_TYPES).toEqual([
       'none', 'arrow', 'bar', 'dot', 'circle', 'triangle', 'triangle_outline',
-      'diamond', 'diamond_outline', 'crowfoot_one', 'crowfoot_many', 'crowfoot_one_or_many', 'cross',
+      'diamond', 'diamond_outline', 'crowfoot_one', 'crowfoot_many', 'crowfoot_one_or_many',
+      'crowfoot_zero_or_one', 'crowfoot_zero_or_many', 'cross',
     ])
   })
 
@@ -36,6 +37,8 @@ describe('types and legacy mapping', () => {
   it('prefers the new keys and normalizes aliases', () => {
     expect(readArrowheads({ arrowHeadStyle: 'solid', startArrowhead: 'dot', endArrowhead: 'diamond' })).toEqual({ startArrowhead: 'dot', endArrowhead: 'diamond' })
     expect(normalizeArrowhead('TRIANGLE_OUTLINE')).toBe('triangle_outline')
+    expect(normalizeArrowhead('crowfoot-zero-or-one')).toBe('crowfoot_zero_or_one')
+    expect(normalizeArrowhead('crowfoot-zero-or-many')).toBe('crowfoot_zero_or_many')
     expect(normalizeArrowhead('x')).toBe('cross')
     expect(normalizeArrowhead(null)).toBe('none')
     expect(normalizeArrowhead('bogus')).toBe('arrow')
@@ -108,6 +111,21 @@ describe('geometry per type', () => {
     expect(close(apex.x, tip.x - 16)).toBe(true)
     expect(arrowheadGeometry('crowfoot_one', tip, 0, 16).parts).toHaveLength(1)
     expect(arrowheadGeometry('crowfoot_one_or_many', tip, 0, 16).parts).toHaveLength(2)
+
+    const zeroOne = arrowheadGeometry('crowfoot_zero_or_one', tip, 0, 18).parts
+    expect(zeroOne).toHaveLength(2)
+    expect(zeroOne[0]).toMatchObject({ kind: 'polyline', filled: false })
+    expect(zeroOne[1]).toMatchObject({ kind: 'circle', filled: false })
+    expect(close(zeroOne[1].center.y, tip.y)).toBe(true)
+    expect(zeroOne[1].center.x).toBeLessThan(tip.x)
+
+    const zeroMany = arrowheadGeometry('crowfoot_zero_or_many', tip, 0, 18).parts
+    expect(zeroMany).toHaveLength(2)
+    expect(zeroMany[0]).toMatchObject({ kind: 'polyline', filled: false })
+    expect(zeroMany[1]).toMatchObject({ kind: 'circle', filled: false })
+    expect(close(zeroMany[1].center.y, tip.y)).toBe(true)
+    expect(zeroMany[1].center.x).toBeLessThan(tip.x)
+
     expect(arrowheadGeometry('cross', tip, 0, 12).parts).toHaveLength(2)
   })
 

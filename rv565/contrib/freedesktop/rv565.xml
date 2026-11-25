@@ -9,10 +9,13 @@
   <mime-type type="video/x-rv565">
     <comment>RV565 video</comment>
     <acronym>RV565</acronym>
-    <expanded-acronym>RGB565 frame-independent video</expanded-acronym>
+    <expanded-acronym>RGB565 video</expanded-acronym>
     <generic-icon name="video-x-generic"/>
     <magic priority="50">
+      <!-- format versions 6, 7 and 8 -->
       <match type="string" value="RV5\x06" offset="0"/>
+      <match type="string" value="RV5\x07" offset="0"/>
+      <match type="string" value="RV5\x08" offset="0"/>
     </magic>
     <glob pattern="*.rv565"/>
   </mime-type>

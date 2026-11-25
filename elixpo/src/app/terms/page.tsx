@@ -1,6 +1,7 @@
 import { createPageMetadata } from "@/lib/seo";
 import { ELIXPO_LINKS } from "@/lib/elixpo-links";
 import { PageStructuredData } from "@/components/PageStructuredData";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "Terms of Service",
@@ -12,7 +13,7 @@ export default function TermsPage() {
   return (
     <main className="page-shell legal-page">
       <PageStructuredData name="Elixpo terms of service" description="Portal-level terms for Elixpo public information, hosted services, project licenses, acceptable use, warranties, and brand rights." path="/terms" />
-      <header className="page-intro"><p className="eyebrow">Public policy / last reviewed 17 October 2026</p><h1>Terms of service</h1><p className="lede">These terms describe the boundary between Elixpo’s public portal, community records, open-source artifacts, and operated services. A repository license, an artifact license, and a service’s operating terms are separate instruments.</p></header>
+      <header className="page-intro"><Sparks chips={["fine print", "read me ✓", "plain words"]} /><p className="eyebrow">Public policy / last reviewed 17 October 2026</p><h1>Terms of service</h1><p className="lede">These terms describe the boundary between Elixpo’s public portal, community records, open-source artifacts, and operated services. A repository license, an artifact license, and a service’s operating terms are separate instruments.</p></header>
       <article className="prose prose-lg max-w-3xl prose-headings:tracking-tight prose-a:text-[#0b623c] prose-a:no-underline hover:prose-a:underline">
         <h2>1. Acceptance of terms</h2>
         <p>

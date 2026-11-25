@@ -40,7 +40,8 @@ export default function KvDetailView({
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gridTemplateColumns:
+                        "repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
                     gap: 1.5,
                     mb: 1.5,
                 }}
@@ -51,12 +52,7 @@ export default function KvDetailView({
                     color={C.accent}
                 />
                 {Object.entries(metrics.totals).map(([k, v]) => (
-                    <KpiTile
-                        key={k}
-                        label={k}
-                        value={fmt(v)}
-                        color={C.accentLight}
-                    />
+                    <KpiTile key={k} label={k} value={fmt(v)} color={C.green} />
                 ))}
             </Box>
 
@@ -150,16 +146,17 @@ function KeyBrowser({ id }: { id: string }) {
                     placeholder="Key prefix filter…"
                     sx={{
                         flex: 1,
-                        bgcolor: "rgba(0,0,0,0.3)",
-                        border: `1px solid ${C.border}`,
-                        borderRadius: "8px",
-                        px: 1.25,
+                        minWidth: 0,
+                        bgcolor: C.panel,
+                        border: `1px solid ${C.line}`,
+                        borderRadius: "999px",
+                        px: 1.75,
                         py: 0.75,
                         color: C.text,
                         fontSize: "0.82rem",
-                        fontFamily: "var(--font-geist-mono), monospace",
+                        fontFamily: C.mono,
                         outline: "none",
-                        "&:focus": { borderColor: C.accent },
+                        "&:focus": { borderColor: C.ink },
                     }}
                 />
             </Box>
@@ -175,8 +172,9 @@ function KeyBrowser({ id }: { id: string }) {
                     sx={{
                         maxHeight: 380,
                         overflowY: "auto",
-                        border: `1px solid ${C.border}`,
-                        borderRadius: "8px",
+                        border: `1px solid ${C.line}`,
+                        borderRadius: "14px",
+                        minWidth: 0,
                     }}
                 >
                     {loading && <Empty message="Loading…" />}
@@ -189,19 +187,16 @@ function KeyBrowser({ id }: { id: string }) {
                                 px: 1.25,
                                 py: 0.75,
                                 cursor: "pointer",
-                                borderBottom: `1px solid ${C.border}`,
-                                fontFamily: "var(--font-geist-mono), monospace",
+                                borderBottom: `1px solid ${C.line}`,
+                                fontFamily: C.mono,
                                 fontSize: "0.78rem",
-                                color:
-                                    active === k.name
-                                        ? C.accentLight
-                                        : C.textDim,
+                                color: active === k.name ? C.ink : C.textDim,
                                 bgcolor:
                                     active === k.name
-                                        ? C.accentDim
+                                        ? C.blueWash
                                         : "transparent",
                                 "&:hover": {
-                                    bgcolor: "rgba(255,255,255,0.04)",
+                                    bgcolor: C.paperDeep,
                                     color: C.text,
                                 },
                                 whiteSpace: "nowrap",
@@ -215,20 +210,24 @@ function KeyBrowser({ id }: { id: string }) {
                 </Box>
                 <Box
                     sx={{
-                        border: `1px solid ${C.border}`,
-                        borderRadius: "8px",
-                        p: 1.25,
+                        border: `1px solid ${C.line}`,
+                        borderRadius: "14px",
+                        bgcolor: C.paper,
+                        p: 1.5,
                         minHeight: 120,
+                        minWidth: 0,
+                        maxHeight: 380,
+                        overflow: "auto",
                     }}
                 >
                     {active ? (
                         <>
                             <Typography
                                 sx={{
-                                    color: C.accentLight,
+                                    color: C.blue,
+                                    fontWeight: 700,
                                     fontSize: "0.76rem",
-                                    fontFamily:
-                                        "var(--font-geist-mono), monospace",
+                                    fontFamily: C.mono,
                                     mb: 0.75,
                                     wordBreak: "break-all",
                                 }}
@@ -241,8 +240,7 @@ function KeyBrowser({ id }: { id: string }) {
                                     m: 0,
                                     color: C.text,
                                     fontSize: "0.76rem",
-                                    fontFamily:
-                                        "var(--font-geist-mono), monospace",
+                                    fontFamily: C.mono,
                                     whiteSpace: "pre-wrap",
                                     wordBreak: "break-all",
                                 }}

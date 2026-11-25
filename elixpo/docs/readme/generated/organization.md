@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/marks/elixpo_lock_up_text_mascot.webp" width="420" alt="Elixpo wordmark with the Lumi panda mascot" />
+  <img src="https://raw.githubusercontent.com/elixpo/elixpo/main/public/brand/banners/lumi-built-in-the-open.webp" width="100%" alt="Lumi, the Elixpo panda, relaxing on a beach beside a sign reading built in the open" />
 </p>
 
 <h1 align="center">Elixpo</h1>
@@ -17,7 +17,7 @@
   <a href="https://packages.elixpo.com">Packages</a>
 </p>
 
-<!-- BEGIN ELIXPO SHARED · sha256:82a5ec278abe8ffebefc5578778b994935162b45ad0e771ebaf7ad394d1a3760 · generated from elixpo/elixpo -->
+<!-- BEGIN ELIXPO SHARED · sha256:6085d483d26ae8f591ad96d1eaa4878f79b4f148dcd0c844c564a6505b190bb1 · generated from elixpo/elixpo -->
 
 ## What Elixpo is
 
@@ -83,11 +83,13 @@ Feature placement is editorial and does not change these records.
 | [`cypher`](https://github.com/elixpo/cypher) | Incubating | Core |
 | [`agent.elixpo`](https://github.com/elixpo/agent.elixpo) | Active | Core |
 | [`crumb.elixpo`](https://github.com/elixpo/crumb.elixpo) | Active | Core |
+| [`diwali.elixpo`](https://github.com/elixpo/diwali.elixpo) | Active | Connected |
 | [`elixpo_chapter`](https://github.com/elixpo/elixpo_chapter) | Active | Core |
 | [`flappy6502`](https://github.com/elixpo/flappy6502) | Active | Core |
 | [`Kareixo`](https://github.com/elixpo/Kareixo) | Active | Member |
-| [`oreo`](https://github.com/elixpo/oreo) | Active | Core |
+| [`falera`](https://github.com/elixpo/falera) | Active | Core |
 | [`packages.elixpo`](https://github.com/elixpo/packages.elixpo) | Active | Core |
+| [`plumlang`](https://github.com/plumlang/plumlang) | Active | Connected |
 | [`sketch.elixpo`](https://github.com/elixpo/sketch.elixpo) | Active | Core |
 | [`Nano28C64`](https://github.com/elixpo/Nano28C64) | Maintenance | Core |
 | [`oreoPI`](https://github.com/elixpo/oreoPI) | Paused | Core |
@@ -139,6 +141,15 @@ The specialized sites must consume the shared schema or synchronize changes
 through reviewable pull requests. They do not maintain independent
 organization directories, silently change lifecycle status, or replace the
 owning repository as the source of technical evidence.
+
+## Google Summer of Code 2027
+
+Elixpo is applying to be a mentoring organisation for Google Summer of Code
+2027; the application has not been accepted, and Google has not yet announced
+the 2027 programme. Project ideas, mentors, and ways to get involved are at
+[gsoc.elixpo.com](https://gsoc.elixpo.com). Questions: [gsoc@elixpo.com](mailto:gsoc@elixpo.com).
+
+Google Summer of Code and the GSoC logo are trademarks of Google LLC.
 
 ## Participate
 

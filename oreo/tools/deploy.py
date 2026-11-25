@@ -1,4 +1,4 @@
-"""Deploy Oreo Badge OS to the ESP32-S3 via mpremote.
+"""Deploy Falera Badge OS to the ESP32-S3 via mpremote.
 
 Usage:
     python tools/deploy.py                          # auto-detect port
@@ -6,7 +6,7 @@ Usage:
     python tools/deploy.py --clean                  # wipe device first
     python tools/deploy.py --website                # build + ship the
                                                     # Cloudflare Pages site
-                                                    # in oreo.elixpo/ (no
+                                                    # in falera.elixpo/ (no
                                                     # badge interaction)
     python tools/deploy.py --website --preview      # deploy to branch alias
                                                     # instead of production
@@ -16,6 +16,15 @@ Usage:
         # BT-uploaded photos / documents or Store-installed apps have
         # diverged on device and you want the laptop copy to win. Without
         # --override the device-side content for those apps is preserved.
+
+    python tools/deploy.py --py
+        # development: push every module as plain .py (and remove the .mpy
+        # an earlier deploy or OTA left). Without --py, the modules
+        # tools/mpy_build.py selects (oreoOS/, oreoWare/, built-in apps'
+        # src/) are compiled with MicroPython 1.28.0's mpy-cross and pushed
+        # as .mpy, and their .py is removed from the badge afterwards
+        # (MicroPython imports x.py before x.mpy). No matching mpy-cross:
+        # a warning, and plain .py as with --py.
 
 Must be run from the project root.
 """
@@ -52,6 +61,8 @@ for _arg in sys.argv[1:]:
         except ValueError:
             pass
 SKIP_FREE_GUARD = "--no-free-guard" in sys.argv
+PLAIN_PY = "--py" in sys.argv          # development: no .mpy (see the docstring)
+MPY_DIR = Path(".deploy_mpy")          # compiled modules (git-ignored)
 
 # --override=<csv>  -- list of app dir names to wipe on device BEFORE the
 # push. The deploy still pushes the laptop copy afterwards, so the net
@@ -139,6 +150,7 @@ DEPLOY = [
     # OS layer (flat namespace: api, app, theme, widgets, font, …)
     ("oreoOS/__init__.py",      "oreoOS/__init__.py"),
     ("oreoOS/_http.py",         "oreoOS/_http.py"),
+    ("oreoOS/tls_roots.py",     "oreoOS/tls_roots.py"),   # tools/gen_ca_bundle.py
     ("oreoOS/config.py",        "oreoOS/config.py"),
     ("oreoOS/api.py",           "oreoOS/api.py"),
     ("oreoOS/app.py",           "oreoOS/app.py"),
@@ -150,22 +162,33 @@ DEPLOY = [
     ("oreoOS/launcher.py",      "oreoOS/launcher.py"),
     ("oreoOS/power.py",         "oreoOS/power.py"),
     ("oreoOS/splash.py",        "oreoOS/splash.py"),
+    ("oreoOS/splash.bin",       "oreoOS/splash.bin"),   # tools/build_splash.py
+    ("oreoOS/splash.rv565",     "oreoOS/splash.rv565"), # tools/build_splash_clip.py
+    ("oreoOS/wallpaper.bin",    "oreoOS/wallpaper.bin"),  # tools/build_splash.py
     ("oreoOS/theme.py",         "oreoOS/theme.py"),
     ("oreoOS/timeutil.py",      "oreoOS/timeutil.py"),
     ("oreoOS/widgets.py",       "oreoOS/widgets.py"),
     ("oreoOS/cache.py",         "oreoOS/cache.py"),
+    ("oreoOS/github.py",        "oreoOS/github.py"),
     ("oreoOS/ota.py",           "oreoOS/ota.py"),
     ("oreoOS/storage.py",       "oreoOS/storage.py"),
     ("oreoOS/store.py",         "oreoOS/store.py"),
+    ("oreoOS/store_io.py",      "oreoOS/store_io.py"),
     ("oreoOS/notifications.py", "oreoOS/notifications.py"),
     ("oreoOS/notif_panel.py",   "oreoOS/notif_panel.py"),
     ("oreoOS/pair_prompt.py",   "oreoOS/pair_prompt.py"),
-    ("oreoOS/http_server.py",   "oreoOS/http_server.py"),
-    # Mascot image served at /mascot.png by the on-badge upload page.
-    # Without this in the deploy manifest the file never makes it to
-    # flash, so the local upload page renders a broken-image icon.
-    ("oreoOS/mascot.png",       "oreoOS/mascot.png"),
     ("oreoOS/gestures.py",      "oreoOS/gestures.py"),
+    ("oreoOS/netsvc.py",        "oreoOS/netsvc.py"),    # background network (#121)
+    ("oreoOS/perf.py",          "oreoOS/perf.py"),      # boot timing (#121)
+    ("oreoOS/bonds.py",         "oreoOS/bonds.py"),     # BLE bond store (bt.py)
+    ("oreoOS/state.py",         "oreoOS/state.py"),     # /state app saves
+    ("oreoOS/profile.py",       "oreoOS/profile.py"),   # owner profile
+    ("oreoOS/crashlog.py",      "oreoOS/crashlog.py"),  # /crash.log
+    ("oreoOS/geo.py",           "oreoOS/geo.py"),       # Weather's auto location
+    ("oreoOS/busy.py",          "oreoOS/busy.py"),      # loading animation
+    ("oreoOS/opening.py",       "oreoOS/opening.py"),   # feedback while an app opens
+    ("oreoOS/hostui.py",        "oreoOS/hostui.py"),    # screen while the CLI drives
+    ("oreoOS/usbhost.py",       "oreoOS/usbhost.py"),   # is a computer on USB?
 
     # Hardware drivers
     ("oreoWare/__init__.py",    "oreoWare/__init__.py"),
@@ -190,6 +213,13 @@ if _fonts_dir.exists():
                    "assets/fonts/optimized/__init__.py"))
     for _f in sorted(_fonts_dir.glob("pixelify_*.py")):
         DEPLOY.append((str(_f), "assets/fonts/optimized/" + _f.name))
+
+# Personal files a checkout may still hold that never go to a badge: the
+# avatar module older tools/fetch_avatar.py wrote (one person's face on
+# every badge, #133). The owner's avatar is /avatar.bin, from `falera setup`.
+NEVER_SHIP = (
+    "apps/badge/assets/optimized/avatar.py",
+)
 
 APPS_DIR     = Path("apps")
 _app_roots   = [APPS_DIR]
@@ -265,6 +295,8 @@ for _root in _app_roots:
             for py in sorted(opt.glob("*.py")):
                 if py.name == "__init__.py":
                     continue
+                if "%s/%s" % (r_base, py.name) in NEVER_SHIP:
+                    continue
                 if raw_stems is not None and py.stem not in raw_stems:
                     # The matching raw image was removed — don't push the
                     # stale optimized module. The device-side cleanup below
@@ -300,6 +332,51 @@ for subdir in ["icons", "sprites", "status"]:
             DEPLOY.append((parent_local, parent_remote))
 
 DEPLOY.append(("assets/__init__.py", "assets/__init__.py"))
+
+
+# ── precompiled modules ───────────────────────────────────────────────────────
+
+def mpy_plan(deploy, plain=False, tool=None, out_dir=MPY_DIR):
+    """(deploy list, remote paths to delete after the push, note).
+
+    Modules mpy_build.should_compile() selects are compiled into out_dir
+    and pushed as .mpy; their .py is deleted on the badge afterwards. With
+    `plain` (or no usable mpy-cross) every module goes as .py and the .mpy
+    an earlier deploy or OTA left is deleted instead, since a stale .mpy is
+    only dead weight once the .py is back (the .py wins the import)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import mpy_build
+    note = "modules as .mpy"
+    if plain:
+        tool, note = None, "plain .py (--py)"
+    else:
+        tool = tool or mpy_build.find_mpy_cross()
+        try:
+            mpy_build.check(tool)
+        except mpy_build.MpyError as e:
+            tool, note = None, "plain .py: %s" % e
+    out, remove = [], []
+    for local, remote in deploy:
+        if mpy_build.should_compile(remote) and Path(local).exists():
+            m = mpy_build.mpy_path(remote)
+            if tool:
+                dst = Path(out_dir) / m
+                if (not dst.exists()
+                        or dst.stat().st_mtime < Path(local).stat().st_mtime):
+                    mpy_build.compile_file(tool, local, dst, remote)
+                out.append((str(dst), m))
+                remove.append(remote)
+                continue
+            remove.append(m)
+        out.append((local, remote))
+    return out, remove, note
+
+
+def remove_script(paths):
+    return ("import os\n"
+            "for p in %r:\n"
+            "    try: os.remove(p)\n"
+            "    except OSError: pass\n") % list(paths)
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -355,6 +432,12 @@ def _progress_bar(cur, total, width=24):
     return "[" + "#" * filled + "-" * (width - filled) + "]"
 
 
+# mpremote mount reads: keep each request under the ESP32 stdin ring (260 B).
+SERIAL_BLOCK = 249
+# Device-side gather buffer: one flash write per FLASH_BLOCK bytes.
+FLASH_BLOCK = 4096
+
+
 def mpremote_batch(actions, label=""):
     """Stream changed files through mpremote's binary mounted-FS protocol.
 
@@ -364,10 +447,13 @@ def mpremote_batch(actions, label=""):
     A Gallery video can consequently take 10+ minutes.
 
     Mounting the repository at `/remote` uses mpremote's binary filesystem
-    channel instead. One device-side loop reads each local file and writes it
-    to flash in 249-byte blocks (mpremote's safe USB-stdin ring-buffer size).
-    Each destination is staged as `.part`, so an interrupted transfer does not
-    truncate the currently working file.
+    channel instead. One device-side loop reads each local file in 249-byte
+    blocks (mpremote's safe USB-stdin ring-buffer size: the ESP32 port's
+    stdin ring is 260 bytes and mpremote's mount protocol has no flow
+    control) and gathers them in a 4 KB buffer, so flash sees one write per
+    ~4 KB instead of one per 249 bytes. Each destination is staged as
+    `.part`, so an interrupted transfer does not truncate the currently
+    working file.
     """
     if label:
         print(label)
@@ -384,12 +470,12 @@ def mpremote_batch(actions, label=""):
         try:
             mounted_path = "/remote/" + local.relative_to(root).as_posix()
         except ValueError:
-            print("  ERROR: refusing to mount-copy a file outside the project: %s" % local)
+            print("  ERROR: refusing to mount-copy a file outside the project (device path %s)" % a[2])
             return 2
         try:
             size = local.stat().st_size
         except OSError as exc:
-            print("  ERROR: cannot stat %s: %s" % (local, exc))
+            print("  ERROR: cannot stat the file for %s: %s" % (a[2], exc.__class__.__name__))
             return 2
         remote = "/" + a[2].lstrip("/")
         copies.append((mounted_path, remote, size, a[1]))
@@ -397,7 +483,9 @@ def mpremote_batch(actions, label=""):
     # Keep this program compatible with MicroPython: no context managers,
     # pathlib, f-strings, or CPython-only APIs run on the badge.
     device_files = [(src, dst, size) for src, dst, size, _ in copies]
-    copy_script = "import os\nfiles=%r\nbuf=bytearray(249)\n" % (device_files,)
+    copy_script = ("import os\nfiles=%r\nB=%d\nbuf=bytearray(%d)\n"
+                   "mv=memoryview(buf)\n"
+                   % (device_files, SERIAL_BLOCK, FLASH_BLOCK))
     copy_script += (
         "for idx,item in enumerate(files):\n"
         " src,dst,size=item\n"
@@ -407,10 +495,15 @@ def mpremote_batch(actions, label=""):
         " inp=open(src,'rb')\n"
         " out=open(tmp,'wb')\n"
         " try:\n"
+        "  pos=0\n"
         "  while True:\n"
-        "   n=inp.readinto(buf)\n"
+        "   n=inp.readinto(mv[pos:pos+B])\n"
         "   if not n: break\n"
-        "   out.write(memoryview(buf)[:n])\n"
+        "   pos+=n\n"
+        "   if pos>len(buf)-B:\n"
+        "    out.write(mv[:pos])\n"
+        "    pos=0\n"
+        "  if pos: out.write(mv[:pos])\n"
         " finally:\n"
         "  inp.close()\n"
         "  out.close()\n"
@@ -462,8 +555,96 @@ def mpremote_batch(actions, label=""):
     return rc
 
 
-def write_secrets_local():
-    """Generate a local .secrets_tmp.py by importing the project's config.py.
+# Owner profile keys. Before the profile moved to .env.local these were
+# hardcoded in config.py, so an older .env.local may lack them; a deploy
+# then writes them blank and the badge loses its name, weather location
+# and timezone (the clock falls back to UTC) unless /profile.json on the
+# badge sets them.
+# WEATHER_LAT / WEATHER_LON are optional: without them Weather uses the
+# badge's own location (oreoOS.geo). DISPLAY_DESIGNATION may also be given
+# under its older name DESIGNATION.
+PROFILE_KEYS = ("GITHUB_USER", "DISPLAY_NAME", "DISPLAY_DESIGNATION",
+                "TIMEZONE_OFFSET")
+_PROFILE_ALIASES = {"DISPLAY_DESIGNATION": "DESIGNATION"}
+
+
+def blank_profile_keys(env):
+    """The PROFILE_KEYS with no value in the parsed .env/.env.local."""
+    def has(k):
+        return bool(str(env.get(k) or "").strip())
+    return [k for k in PROFILE_KEYS
+            if not has(k) and not has(_PROFILE_ALIASES.get(k, ""))]
+
+
+def profile_note(blank):
+    """One deploy note naming every blank profile key."""
+    effects = []
+    if "GITHUB_USER" in blank:
+        if "DISPLAY_NAME" in blank:
+            effects.append("Badge shows its setup card")
+        else:
+            effects.append("Badge has no GitHub card")
+        effects.append("Commits shows a setup hint")
+    if "TIMEZONE_OFFSET" in blank:
+        effects.append("the clock runs on UTC")
+    text = ("  note: no value in .env.local for %s; writing them blank."
+            % ", ".join(blank))
+    if effects:
+        text += " Unless /profile.json on the badge sets them, " + \
+            "; ".join(effects) + "."
+    return text + " Add them to .env.local (see .env.example) or " \
+        "/profile.json (docs/PROFILE.md)."
+
+
+# Built-in apps that have left apps/ (merged into another app or dropped).
+# A badge deployed before still has their folder, which the drawer would
+# keep showing as a tile, so every deploy deletes these folders, plus any
+# OS files that only they used. Nothing else under /apps is touched: App
+# Store installs and apps the owner put there with `falera push` stay.
+# A name that is back in apps/ or in the App Store is never removed.
+RETIRED_APPS = (
+    "identity",          # merged into Badge (name, title and GitHub card)
+)
+RETIRED_FILES = (
+    "assets/icons/optimized/identity_icon.py",
+) + NEVER_SHIP          # removed from badges that got them before #133
+
+
+def retired_paths(repo_apps, store_apps):
+    """Device paths a deploy removes: apps/<name> for each RETIRED_APPS
+    entry that is neither a repo app nor an App Store app, and the
+    RETIRED_FILES."""
+    keep = set(repo_apps) | set(store_apps)
+    return (["apps/" + a for a in RETIRED_APPS if a not in keep]
+            + list(RETIRED_FILES))
+
+
+def retired_script(paths):
+    """Device-side script deleting `paths` (folders recursively); missing
+    paths are skipped silently, removed ones are printed."""
+    return (
+        "import os\n"
+        "def _rm(p):\n"
+        "    try:\n"
+        "        for f in os.listdir(p): _rm(p + '/' + f)\n"
+        "        os.rmdir(p)\n"
+        "    except OSError:\n"
+        "        os.remove(p)\n"
+        "for p in %r:\n"
+        "    try:\n"
+        "        os.stat(p)\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    try:\n"
+        "        _rm(p)\n"
+        "        print('  removed retired ' + p)\n"
+        "    except OSError:\n"
+        "        print('  could not remove ' + p)\n"
+    ) % list(paths)
+
+
+def write_device_config():
+    """Generate a local .cfg_snapshot.py by importing the project's config.py.
 
     config.py is the single source of truth: non-secret values are edited
     inline there, secrets come from .env. This function just snapshots every
@@ -471,7 +652,7 @@ def write_secrets_local():
     apps can `from secrets import GITHUB_USER, OWM_API_KEY, ...` with no
     filesystem dance at runtime.
 
-    Returns (path_to_tmp_file, wifi_ssid_for_logging).
+    Returns the path to the tmp file (no credential values leave this function).
     """
     # Import the project config from the repo root.
     import sys as _sys
@@ -494,6 +675,9 @@ def write_secrets_local():
               "SOPS-encrypted); writing them blank, so WiFi and weather stay "
               "off until you set your own values in .env.local."
               % ", ".join(missing))
+    blank = blank_profile_keys(getattr(_cfg, "_env", {}))
+    if blank:
+        print(profile_note(blank))
 
     fields = (
         # name              python repr formatter
@@ -510,10 +694,10 @@ def write_secrets_local():
         ("DISPLAY_NAME",     "%r"),
         ("DESIGNATION",      "%r"),
         ("OWM_API_KEY",      "%r"),
-        ("WEATHER_LAT",      "%s"),
-        ("WEATHER_LON",      "%s"),
+        ("WEATHER_LAT",      "%r"),
+        ("WEATHER_LON",      "%r"),
         ("WEATHER_NAME",     "%r"),
-        ("TIMEZONE_OFFSET",  "%s"),
+        ("TIMEZONE_OFFSET",  "%r"),
         ("WIFI_TX_DBM",      "%s"),
         ("WIFI_POWERSAVE",   "%r"),
         ("BT_ADV_INTERVAL_MS","%s"),
@@ -523,9 +707,9 @@ def write_secrets_local():
         out.append(("%-18s = " + fmt) % (name, getattr(_cfg, name, "")))
     out.append("")
 
-    tmp = Path(".secrets_tmp.py")
+    tmp = Path(".cfg_snapshot.py")
     tmp.write_text("\n".join(out))
-    return tmp, getattr(_cfg, "WIFI_SSID", "")
+    return tmp
 
 
 # ── build directory set ────────────────────────────────────────────────────────
@@ -547,14 +731,14 @@ remote_dirs = sorted(remote_dirs, key=lambda p: p.count("/"))
 
 # ── website deploy ───────────────────────────────────────────────────────────
 
-WEBSITE_DIR    = Path("oreo.elixpo")
-WEBSITE_PROJECT = "oreo"        # Cloudflare Pages project name
+WEBSITE_DIR    = Path("falera.elixpo")
+WEBSITE_PROJECT = "falera"        # Cloudflare Pages project name
 
 def deploy_website():
     """Build the Next.js static export and push it to Cloudflare Pages.
     Production by default; pass `--preview` for a branch-alias deploy.
 
-    The site lives in oreo.elixpo/ and exports to oreo.elixpo/out/. We
+    The site lives in falera.elixpo/ and exports to falera.elixpo/out/. We
     shell out to the project's own `next build` + `wrangler pages
     deploy` so behaviour stays identical whether the user runs this
     helper or the package.json `deploy` script directly.
@@ -576,7 +760,7 @@ def deploy_website():
         sys.exit(1)
 
     # `--branch=main` pins the deploy to the production alias so the
-    # custom domain (oreo.elixpo.com) actually serves the new bytes.
+    # custom domain (falera.elixpo.com) actually serves the new bytes.
     # Without it wrangler defaults to the current git branch, which
     # only updates the branch-alias preview URL.
     cmd = ["npx", "wrangler", "pages", "deploy", "out",
@@ -595,6 +779,10 @@ def deploy_website():
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+        print(__doc__.strip())
+        return
+
     # Website-only path — short-circuits everything ESP-related so the
     # user can ship the site without a badge attached.
     if "--website" in sys.argv:
@@ -603,6 +791,15 @@ def main():
 
     import time as _t
     t0 = _t.time()
+    print("Deploying Falera Badge OS → %s\n" % PORT)
+
+    # Verify the device is reachable before changing anything locally, so a
+    # missing or busy badge never leaves a version bump behind.
+    r = mpremote("fs", "ls", ":")
+    if r.returncode != 0:
+        print("Cannot reach device on %s. Check USB cable and port." % PORT)
+        sys.exit(1)
+
     if "--no-bump" not in sys.argv:
         old, new = bump_patch_version()
         if new:
@@ -610,13 +807,6 @@ def main():
         else:
             print("Version: could not locate VERSION line in %s — skipping bump"
                   % CONFIG_PATH)
-    print("Deploying Oreo Badge OS → %s\n" % PORT)
-
-    # Verify device reachable
-    r = mpremote("fs", "ls", ":")
-    if r.returncode != 0:
-        print("Cannot reach device on %s. Check USB cable and port." % PORT)
-        sys.exit(1)
 
     if OVERRIDE_DIRS:
         # Wipe the specified app trees on device. We do this BEFORE the
@@ -695,13 +885,17 @@ def main():
     ) % list(remote_dirs)
     mpremote("exec", mkdir_script)
 
+    # Precompiled modules (or plain .py with --py), see mpy_plan().
+    deploy_list, mpy_remove, mpy_note = mpy_plan(DEPLOY, PLAIN_PY)
+    print("Modules: %s" % mpy_note)
+
     # Build cp action list, skipping files whose hash matches the local cache.
     cache       = _load_hash_cache()
     new_cache   = dict(cache)
     actions     = []
     files       = []
     skipped_pre = 0
-    for local, remote in DEPLOY:
+    for local, remote in deploy_list:
         if not Path(local).exists():
             print("SKIP  %s (not found locally)" % local)
             continue
@@ -720,10 +914,10 @@ def main():
     # Generate secrets before comparing it with the cache. Hashing the rendered
     # file still notices .env changes, without unconditionally writing the same
     # tiny module on every deploy.
-    secrets_tmp, ssid = write_secrets_local()
-    secrets_hash = _hash_file(secrets_tmp)
+    cfg_snapshot = write_device_config()
+    secrets_hash = _hash_file(cfg_snapshot)
     if cache.get("secrets.py") != secrets_hash:
-        actions.append(("cp", str(secrets_tmp), "secrets.py"))
+        actions.append(("cp", str(cfg_snapshot), "secrets.py"))
         new_cache["secrets.py"] = secrets_hash
     else:
         skipped_pre += 1
@@ -751,36 +945,32 @@ def main():
         ) % keep
         print("  pruning stale gallery photos on device (keep=%d)" % len(keep))
         mpremote("exec", cleanup)
-    repo_apps = sorted({
+    repo_apps = {
         p.name for p in Path("apps").iterdir()
         if p.is_dir() and (p / "main.py").exists()
             and (p / "manifest.json").exists()
             and not p.name.startswith("_")
-    })
-    apps_prune = (
-        "import os\n"
-        "keep = set(%r)\n"
-        "def _rm(p):\n"
-        "    try:\n"
-        "        for f in os.listdir(p): _rm(p + '/' + f)\n"
-        "        os.rmdir(p)\n"
-        "    except OSError:\n"
-        "        try: os.remove(p)\n"
-        "        except: pass\n"
-        "try:\n"
-        "    for d in os.listdir('apps'):\n"
-        "        if d in keep or d.startswith('_') or d == '__init__.py':\n"
-        "            continue\n"
-        "        try:\n"
-        "            os.stat('apps/' + d + '/manifest.json')\n"
-        "        except OSError:\n"
-        "            continue\n"
-        "        print('  prune apps/' + d)\n"
-        "        _rm('apps/' + d)\n"
-        "except OSError: pass\n"
-    ) % repo_apps
-    print("  pruning stale apps on device (keep=%d)" % len(repo_apps))
-    mpremote("exec", apps_prune)
+    }
+    # Apps the App Store installs (apps_market/index.json) live under apps/
+    # too; with their market folder names (an older Store saved e.g.
+    # "Lumi") they are never removed.
+    store_apps = set()
+    try:
+        for e in json.loads(Path("apps_market/index.json").read_text())["apps"]:
+            store_apps.add(e["id"])
+            store_apps.add(e["path"].split("/", 1)[1])
+    except (OSError, ValueError, KeyError, IndexError):
+        pass
+    retired = retired_paths(repo_apps, store_apps)
+    if retired:
+        print("  removing retired built-ins on device (%s)"
+              % ", ".join(retired))
+        mpremote("exec", retired_script(retired))
+        # Forget their hashes too, so a file that comes back later is
+        # pushed again instead of being skipped as "already there".
+        for k in list(new_cache):
+            if any(k == r or k.startswith(r + "/") for r in retired):
+                del new_cache[k]
 
     cache_state = "miss" if not cache else "hit (%d entries)" % len(cache)
     print("  hash cache: %s   |   to push: %d   skipped: %d"
@@ -818,7 +1008,7 @@ def main():
                          _human_size(deficit)))
                 print("  Free up space (delete photos / documents / caches) "
                       "or rerun with --no-free-guard to override.")
-                secrets_tmp.unlink(missing_ok=True)
+                cfg_snapshot.unlink(missing_ok=True)
                 sys.exit(2)
     print()
 
@@ -834,13 +1024,22 @@ def main():
             print("No changed files to push.")
             rc = 0
     finally:
-        secrets_tmp.unlink(missing_ok=True)
+        cfg_snapshot.unlink(missing_ok=True)
     push_elapsed = _t.time() - push_t0
     print("  binary stream took %.1fs" % push_elapsed)
 
     # Only trust queued hashes after the complete mpremote batch succeeds.
     # Saving them after an interrupted/failed --force run marks partial files
     # as installed and makes the next normal deploy skip repairs.
+    if rc == 0 and mpy_remove:
+        # Only now, with the new files on the badge: delete the form they
+        # replace (x.py would shadow a new x.mpy).
+        r = mpremote("exec", remove_script(mpy_remove))
+        if r.returncode != 0:
+            print("  could not remove the replaced modules; deploy again")
+            rc = r.returncode
+        for p in mpy_remove:
+            new_cache.pop(p, None)
     if rc == 0:
         _save_hash_cache(new_cache)
     else:
@@ -848,10 +1047,10 @@ def main():
 
     elapsed = _t.time() - t0
     if rc == 0:
-        print("\nDone in %.1fs.  WIFI_SSID=%r" % (elapsed, ssid or "<unset>"))
+        print("\nDone in %.1fs." % elapsed)
         print("Resetting device...")
         mpremote("reset")
-        print("Oreo OS is booting.")
+        print("FaleraOS is booting.")
     else:
         print("\nBatch exited with code %d after %.1fs (cache not changed)." %
               (rc, elapsed))
