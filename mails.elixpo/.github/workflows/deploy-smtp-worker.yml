@@ -1,0 +1,25 @@
+# Deploys the elixpo-mail-smtp-sender Worker (and its retry workflow) through the shared
+# Elixpo deploy workflow, syncing the SMTP_SENDER_SECRET it shares with the Pages app.
+
+name: Deploy SMTP sender
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - workers/smtp-sender/**
+      - .env
+      - .github/workflows/deploy-smtp-worker.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-worker.yml@main
+    with:
+      working-directory: workers/smtp-sender
+      sops-file: ../../.env
+      secret-keys: SMTP_SENDER_SECRET
+    secrets: inherit

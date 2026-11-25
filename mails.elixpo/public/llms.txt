@@ -1,0 +1,28 @@
+# Elixpo Mails
+
+> Event-based transactional email for the Elixpo ecosystem. Teams connect their own SMTP mailbox, design templates with {{variables}} in a visual editor, and trigger sends with HMAC-signed webhooks. Runs on Cloudflare's edge.
+
+## Documentation
+
+- [Overview](https://mails.elixpo.com/docs)
+- [Quickstart](https://mails.elixpo.com/docs/quickstart)
+- [Webhook authentication](https://mails.elixpo.com/docs/authentication)
+- [Templates and variables](https://mails.elixpo.com/docs/templates)
+- [Triggering sends](https://mails.elixpo.com/docs/triggering)
+- [Attachments](https://mails.elixpo.com/docs/attachments)
+- [Unsubscribe and suppression](https://mails.elixpo.com/docs/unsubscribe)
+- [Delivery logs](https://mails.elixpo.com/docs/logs)
+- [Deliverability](https://mails.elixpo.com/docs/deliverability)
+
+## Product
+
+- [Pricing](https://mails.elixpo.com/pricing)
+- [Privacy policy](https://mails.elixpo.com/privacy)
+- [Terms](https://mails.elixpo.com/terms)
+- [Content policy](https://mails.elixpo.com/content-policy)
+
+## Integration rules
+
+- Sign every webhook request with the product's HMAC secret; requests without a valid signature are rejected.
+- Mail is sent from the tenant's own mailbox; Elixpo Mails is not the sender of record.
+- Every send carries a List-Unsubscribe header; suppressed recipients are skipped.
