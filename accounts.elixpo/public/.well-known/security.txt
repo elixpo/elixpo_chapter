@@ -1,0 +1,5 @@
+Contact: https://github.com/elixpo/accounts.elixpo/security/advisories/new
+Expires: 2027-10-26T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://accounts.elixpo.com/.well-known/security.txt
+Policy: https://github.com/elixpo/accounts.elixpo/security/policy
