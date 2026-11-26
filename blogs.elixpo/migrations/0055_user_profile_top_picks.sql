@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN top_pick_ids TEXT NOT NULL DEFAULT '[]';
