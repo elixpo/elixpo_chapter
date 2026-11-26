@@ -1,0 +1,38 @@
+{
+  "format": "lixsketch",
+  "version": 1,
+  "sessionID": "lx-legacy-arrow",
+  "name": "Legacy arrow binding",
+  "createdAt": "2025-11-02T10:00:00.000Z",
+  "viewport": { "x": 0, "y": 0, "width": 1200, "height": 800 },
+  "zoom": 1,
+  "shapes": [
+    {
+      "shapeID": "box-a",
+      "type": "rectangle",
+      "x": 0, "y": 0, "width": 100, "height": 60,
+      "rotation": 0,
+      "options": { "stroke": "#fff", "strokeWidth": 2 }
+    },
+    {
+      "shapeID": "box-b",
+      "type": "rectangle",
+      "x": 300, "y": 0, "width": 100, "height": 60,
+      "rotation": 0,
+      "options": { "stroke": "#fff", "strokeWidth": 2 }
+    },
+    {
+      "shapeID": "arrow-1",
+      "type": "arrow",
+      "startPoint": { "x": 100, "y": 30 },
+      "endPoint": { "x": 300, "y": 30 },
+      "options": { "stroke": "#fff", "strokeWidth": 2 },
+      "arrowOutlineStyle": "solid",
+      "arrowHeadStyle": "default",
+      "arrowCurved": "straight",
+      "arrowCurveAmount": 50,
+      "startAttachmentID": "box-a",
+      "endAttachmentID": "box-b"
+    }
+  ]
+}
