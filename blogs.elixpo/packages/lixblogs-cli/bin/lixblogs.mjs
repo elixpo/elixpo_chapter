@@ -44,7 +44,7 @@ import { MediaClient } from "../src/api/MediaClient.js";
 import { CollectionClient } from "../src/api/CollectionClient.js";
 import { ContestClient } from "../src/api/ContestClient.js";
 import { NotificationClient } from "../src/api/NotificationClient.js";
-import { EXIT_CODES, errorEnvelope, normalizeCommand } from "../src/cli/contract.js";
+import { EXIT_CODES, errorEnvelope, jsonEnvelope, normalizeCommand } from "../src/cli/contract.js";
 import { GLOBAL_HELP, commandHelp } from "../src/cli/help.js";
 import {
   colorEnabled,
@@ -258,7 +258,7 @@ async function openBrowser(url) {
 
 function output(opts, data) {
   if (opts.json) {
-    process.stdout.write(safeJsonStringify(data) + "\n");
+    process.stdout.write(safeJsonStringify(jsonEnvelope(data)) + "\n");
   }
 }
 
@@ -714,10 +714,10 @@ async function runBlog(opts, args, action) {
     }
   } catch (error) {
     if (opts.json && error instanceof BlogApiError) {
-      process.stdout.write(safeJsonStringify({
+      process.stdout.write(safeJsonStringify(jsonEnvelope({
         ok: false,
         error: { code: error.code, message: error.message, requestId: error.requestId, details: error.details },
-      }) + '\n');
+      })) + '\n');
       process.exitCode = error.status === 412 ? 3 : 1;
       return;
     }

@@ -35,13 +35,17 @@ export default function DocsSearch() {
   if (!open) {
     return (
       <button
+        type="button"
+        aria-label="Search documentation pages and sections"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px]"
+        className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-[14px] shadow-sm transition-colors hover:border-[var(--accent)]"
         style={{ border: '1px solid var(--border-default)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
       >
-        <ion-icon name="search-outline" style={{ fontSize: '14px' }} />
-        Search docs
-        <kbd className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--border-default)' }}>⌘K</kbd>
+        <span className="flex min-w-0 items-center gap-3">
+          <ion-icon name="search-outline" style={{ fontSize: '17px' }} />
+          <span className="truncate">Search documentation pages and sections...</span>
+        </span>
+        <kbd className="shrink-0 rounded px-1.5 py-0.5 text-[11px]" style={{ backgroundColor: 'var(--border-default)' }}>⌘K</kbd>
       </button>
     );
   }

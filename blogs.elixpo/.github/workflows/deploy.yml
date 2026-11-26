@@ -104,8 +104,8 @@ jobs:
 
   # Stays local: publish-npm.yml publishes the checked-out version only, while this job
   # bumps versions first, attests and publishes the exact packed tarballs to npm and
-  # GitHub Packages, then commits the bump, tags and writes GitHub releases with
-  # ELIXPOO_GITHUB_AGENTIC_TOKEN.
+  # GitHub Packages (with the built-in token), then commits the bump, tags and
+  # writes GitHub releases with ELIXPOO_GITHUB_AGENTIC_TOKEN.
   packages:
     name: npm and GitHub Packages
     needs: changes
@@ -193,12 +193,12 @@ jobs:
           ./deploy.sh "${args[@]}" deploy
       - name: Publish the same artifacts to GitHub Packages
         env:
-          GITHUB_ACCESS_TOKEN: ${{ secrets.ELIXPOO_GITHUB_AGENTIC_TOKEN }}
+          # The built-in token carries this workflow's `packages: write`.
+          # ELIXPOO_GITHUB_AGENTIC_TOKEN was rejected by npm.pkg.github.com
+          # ("token provided does not match expected scopes"), which failed
+          # the 2.8.13 release after npm had already published it.
+          GITHUB_ACCESS_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$GITHUB_ACCESS_TOKEN" ]; then
-            echo "::error::ELIXPOO_GITHUB_AGENTIC_TOKEN is required with the write:packages scope."
-            exit 1
-          fi
           args=(--github --no-bump)
           if [ "${{ needs.changes.outputs.lixeditor }}" = "true" ] && [ "${{ needs.changes.outputs.cli }}" != "true" ]; then args+=(--lixeditor); fi
           if [ "${{ needs.changes.outputs.cli }}" = "true" ] && [ "${{ needs.changes.outputs.lixeditor }}" != "true" ]; then args+=(--cli); fi
@@ -324,6 +324,10 @@ jobs:
     uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
     with:
       project-name: lixblogs
+      # Apply pending D1 migrations before the new build goes live. #603 moved
+      # this job to the shared workflow without this input, so 0055/0056 never
+      # ran and every user profile and personal post failed to resolve.
+      d1-database: lixblogs
       build-command: npm run pages:build
       output-directory: .vercel/output/static
       branch: main

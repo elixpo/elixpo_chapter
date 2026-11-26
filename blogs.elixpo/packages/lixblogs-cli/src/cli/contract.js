@@ -7,6 +7,8 @@ export const EXIT_CODES = Object.freeze({
   CONFIRMATION: 5,
 });
 
+export const JSON_SCHEMA_VERSION = 1;
+
 const TOP_LEVEL_ALIASES = Object.freeze({
   login: ['auth', 'login'],
   logout: ['auth', 'logout'],
@@ -22,9 +24,11 @@ export function normalizeCommand(positionals) {
 }
 
 export function errorEnvelope(error, fallbackCode = 'cli_error') {
-  if (error && typeof error === 'object' && error.error && !Array.isArray(error.error)) return error;
+  if (error && typeof error === 'object' && error.error && !Array.isArray(error.error)) {
+    return jsonEnvelope(error);
+  }
   const value = error && typeof error === 'object' ? error : { message: String(error || 'Command failed.') };
-  return {
+  return jsonEnvelope({
     ok: false,
     error: {
       code: value.code || fallbackCode,
@@ -33,7 +37,17 @@ export function errorEnvelope(error, fallbackCode = 'cli_error') {
       requestId: value.requestId || null,
       ...(value.details ? { details: value.details } : {}),
     },
-  };
+  });
+}
+
+export function jsonEnvelope(payload) {
+  if (Array.isArray(payload)) {
+    return { schemaVersion: JSON_SCHEMA_VERSION, data: payload };
+  }
+  if (payload && typeof payload === 'object') {
+    return { ...payload, schemaVersion: JSON_SCHEMA_VERSION };
+  }
+  return { schemaVersion: JSON_SCHEMA_VERSION, data: payload };
 }
 
 export function requireConfirmation(options, action) {

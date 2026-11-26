@@ -32,6 +32,22 @@ Choose **Publish** for a new story or **Update** for an existing one. A successf
 
 Public stories are included in the dynamic sitemap and expose story-specific metadata so search engines can index them. Indexing time is controlled by each search engine and is not immediate.
 
+## RSS feeds
+
+Every writer has an RSS feed of their public stories, linked from their profile page:
+
+```
+https://blogs.elixpo.com/feed.xml?author=USERNAME
+```
+
+Add `tag` to include only stories with one topic, for example to submit just your Debian posts to [Planet Debian](https://planet.debian.org/):
+
+```
+https://blogs.elixpo.com/feed.xml?author=USERNAME&tag=debian
+```
+
+`/feed.xml` alone covers recent stories across LixBlogs, and `/feed.xml?tag=TOPIC` covers one topic. Feeds list only public stories, never drafts, unlisted, secret or private-organization ones. Each entry is plain text (title, summary, author and date), with no images, scripts or tracking pixels.
+
 ## Links and embeds
 
 Paste an `https://` URL to create a link or supported embed. If [LixRL](/docs/lixrl) is connected, the link editor can replace a destination with an account-owned short URL before inserting it.

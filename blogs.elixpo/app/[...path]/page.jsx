@@ -11,6 +11,7 @@ import {
 } from "../../src/utils/seoContent";
 import { getCloudinaryUrl } from "../../lib/cloudinary";
 import { isIndexableBlog } from "../../lib/indexability";
+import { feedUrl } from "../../lib/rssFeed";
 import { publicBlogPath } from "../../lib/sitemapData";
 import CatchAllClient from "./client";
 
@@ -294,13 +295,24 @@ export async function generateMetadata({ params, searchParams }) {
                     seed: data.user.username || name,
                     ...noBrand(data.user.tier),
                 });
-                return cardMeta({
+                const meta = cardMeta({
                     title: `${dn} (${handle}), Author on LixBlogs`,
                     description,
                     url,
                     og,
                     ogType: "profile",
                 });
+                // Advertise the writer's own RSS feed so readers and aggregators
+                // (e.g. Planet Debian) can discover it from the profile page.
+                meta.alternates.types = {
+                    "application/rss+xml": [
+                        {
+                            url: feedUrl({ author: String(data.user.username || name).toLowerCase() }),
+                            title: `${dn} on LixBlogs`,
+                        },
+                    ],
+                };
+                return meta;
             }
             if (data.type === "org" && data.org) {
                 const dn = data.org.name || name;

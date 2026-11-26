@@ -11,6 +11,14 @@ lixblogs blog list --help
 
 Every command accepts `--help` (or `-h`) for its own usage and flags.
 
+### Automation contract
+
+Use `--json --no-input` in scripts and agent workflows. Every JSON response
+has `schemaVersion: 1`. Successful results keep their command-specific fields;
+array results are returned under `data`. Errors use the same versioned envelope
+with `ok: false` and an `error` object containing `code`, `message`, `hint`,
+and `requestId`. Credentials are redacted.
+
 ### Authentication
 
 ```bash

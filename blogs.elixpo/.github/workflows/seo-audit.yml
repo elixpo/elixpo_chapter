@@ -1,0 +1,83 @@
+name: SEO audit
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      sitemap_url:
+        description: "HTTPS article sitemap URL to audit"
+        required: false
+        default: "https://blogs.elixpo.com/blog-sitemap.xml"
+        type: string
+      limit:
+        description: "Number of unique article URLs to sample"
+        required: false
+        default: "25"
+        type: string
+
+concurrency:
+  group: seo-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit article indexability
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run SEO audit
+        id: audit
+        continue-on-error: true
+        env:
+          SITEMAP_URL: ${{ inputs.sitemap_url || 'https://blogs.elixpo.com/blog-sitemap.xml' }}
+          SAMPLE_LIMIT: ${{ inputs.limit || '25' }}
+        run: |
+          npm run seo:audit -- \
+            --sitemap "$SITEMAP_URL" \
+            --limit "$SAMPLE_LIMIT" \
+            --json seo-audit.json \
+            --markdown seo-audit.md | tee seo-audit.log
+
+      - name: Add report to summary
+        if: always()
+        run: |
+          if [ -f seo-audit.md ]; then
+            cat seo-audit.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## SEO audit" >> "$GITHUB_STEP_SUMMARY"
+            echo "The audit did not produce a report." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: seo-audit-report
+          path: |
+            seo-audit.json
+            seo-audit.md
+            seo-audit.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fail when technical checks fail
+        if: steps.audit.outcome == 'failure'
+        run: exit 1

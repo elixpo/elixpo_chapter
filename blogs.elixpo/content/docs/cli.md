@@ -150,6 +150,10 @@ lixblogs blog publish BLOG_ID --yes --json --no-input
 
 - stdout contains data; diagnostics use stderr.
 - JSON mode has no ANSI styling, banners, or prompts.
+- Every JSON response has `schemaVersion: 1`. Successful results keep their
+  command-specific fields; array results are returned under `data`. Error
+  responses use the same versioned envelope with `ok: false` and an `error`
+  object.
 - `--quiet` suppresses non-essential human output.
 - Mutations accept `--idempotency-key`; safe reads and idempotent writes retry one transient response.
 - Errors contain `code`, `message`, `hint`, and `requestId`. Credentials are redacted.

@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { parseSearchQuery, buildBlogSearch, isEmptyQuery } from '../../../../lib/searchQuery';
+import { publicBlogVisibilityWhere, redactSecretBlogAuthor } from '../../../../lib/readAccess';
 
 // Granular blog search with selectable fields.
 //
@@ -30,6 +31,7 @@ export async function GET(request) {
 
     const defaultStatus = status.split(',').map(s => s.trim()).filter(Boolean);
     const { where, binds, orderBy } = buildBlogSearch(parsed, { defaultStatus });
+    const visibilityWhere = publicBlogVisibilityWhere();
 
     const base = await db.prepare(`
       SELECT b.id as slugid, b.slug, b.title, b.subtitle, b.page_emoji, b.cover_image_r2_key, b.secret,
@@ -40,16 +42,12 @@ export async function GET(request) {
       JOIN users au ON au.id = b.author_id
       LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
       WHERE ${where}
-        AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
+        AND ${visibilityWhere}
       ORDER BY ${orderBy}
       LIMIT ?
     `).bind(...binds, limit).all();
 
-    const blogs = (base?.results || []).map((b) => {
-      if (!b.secret) return b;
-      const { author_id, author_username, author_name, author_avatar, ...safe } = b;
-      return safe;
-    });
+    const blogs = (base?.results || []).map(redactSecretBlogAuthor);
 
     // Enrich with optional counts
     if (blogs.length > 0) {

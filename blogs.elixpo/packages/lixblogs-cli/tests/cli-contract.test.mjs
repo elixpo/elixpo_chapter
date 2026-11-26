@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EXIT_CODES, errorEnvelope, normalizeCommand, requireConfirmation } from '../src/cli/contract.js';
+import {
+  EXIT_CODES,
+  errorEnvelope,
+  jsonEnvelope,
+  normalizeCommand,
+  requireConfirmation,
+} from '../src/cli/contract.js';
 import { GLOBAL_HELP, commandHelp } from '../src/cli/help.js';
 
 test('top-level authentication commands preserve auth aliases', () => {
@@ -13,8 +19,21 @@ test('top-level authentication commands preserve auth aliases', () => {
 
 test('machine errors have a stable redaction-friendly shape', () => {
   assert.deepEqual(errorEnvelope({ code: 'invalid_input', message: 'Bad input', hint: 'Fix it', requestId: 'r1' }), {
+    schemaVersion: 1,
     ok: false,
     error: { code: 'invalid_input', message: 'Bad input', hint: 'Fix it', requestId: 'r1' },
+  });
+});
+
+test('JSON output uses a versioned object envelope for command results and arrays', () => {
+  assert.deepEqual(jsonEnvelope({ ok: true, data: { id: 'blog-1' } }), {
+    schemaVersion: 1,
+    ok: true,
+    data: { id: 'blog-1' },
+  });
+  assert.deepEqual(jsonEnvelope([{ id: 'blog-1' }]), {
+    schemaVersion: 1,
+    data: [{ id: 'blog-1' }],
   });
 });
 

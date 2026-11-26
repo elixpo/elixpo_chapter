@@ -36,6 +36,7 @@ export default function ProfilePage() {
   const [showBannerModal, setShowBannerModal] = useState(false);
   const [localBanner, setLocalBanner] = useState(null);
   const [bannerError, setBannerError] = useState(null);
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [localAvatar, setLocalAvatar] = useState(null);
   const [avatarError, setAvatarError] = useState(null);
@@ -231,6 +232,7 @@ export default function ProfilePage() {
   const bannerSrc = localBanner || uploadedBannerSrc || generateProfileBanner(defaultSeed, user.avatar_url);
 
   async function handleBannerSave(blob) {
+    setBannerUploading(true);
     if (!blob) {
       // Remove → clear server-side and return to the generated default.
       setShowBannerModal(false);
@@ -246,6 +248,8 @@ export default function ProfilePage() {
         await refetchUser?.();
       } catch (e) {
         setBannerError(e?.message || 'Failed to remove banner');
+      } finally {
+        setBannerUploading(false);
       }
       return;
     }
@@ -270,6 +274,7 @@ export default function ProfilePage() {
       setLocalBanner(null); // revert optimistic preview
     } finally {
       URL.revokeObjectURL(previewUrl);
+      setBannerUploading(false);
     }
   }
 
@@ -325,17 +330,30 @@ export default function ProfilePage() {
           <div className="group w-full h-48 rounded-xl bg-[var(--bg-elevated)] overflow-hidden relative">
 	            <img src={bannerSrc} alt="" className="w-full h-full object-cover" />
             <button
+              type="button"
+              disabled={bannerUploading}
               onClick={() => setShowBannerModal(true)}
               className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors cursor-pointer"
             >
-              <span className="flex items-center gap-2 px-4 py-2 bg-[#27232f]/90 rounded-lg text-[13px] text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm shadow-lg">
+              <span className={`flex items-center gap-2 px-4 py-2 bg-[#27232f]/90 rounded-lg text-[13px] text-white font-medium transition-opacity backdrop-blur-sm shadow-lg ${bannerUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-	                {localBanner || uploadedBannerSrc ? 'Change Banner' : 'Add Banner'}
+	                {bannerUploading ? 'Uploading banner…' : (localBanner || uploadedBannerSrc ? 'Change Banner' : 'Add Banner')}
               </span>
             </button>
+            {bannerUploading && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 cover-banner-enter"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="rounded-lg bg-[#27232f]/90 px-4 py-2 text-[13px] font-medium text-white shadow-lg">
+                  Saving banner…
+                </span>
+              </div>
+            )}
           </div>
           {bannerError && (
             <div className="absolute top-2 right-2 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/15 text-red-400 border border-red-500/25">
@@ -610,6 +628,7 @@ export default function ProfilePage() {
           maxSizeKB={90}
           currentImage={bannerSrc}
           onSave={handleBannerSave}
+          onSavingChange={setBannerUploading}
           onClose={() => setShowBannerModal(false)}
         />
       )}

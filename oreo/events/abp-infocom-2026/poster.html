@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Falera poster · ABP Infocom 2026 · A3 landscape</title>
+<!--
+  A3 landscape poster for ABP Infocom 2026 (JIS University stall, 28 Nov 2026).
+  Every size is in millimetres at print size (420 x 297 mm). Edit the text
+  here, then run `python3 make_poster.py` to rebuild out/poster-a3*.pdf and
+  the PNG preview. ?bleed adds 3 mm of background on every side.
+  Claims follow the handoff's rules: 0.5 to 24 FPS is the standalone firmware
+  path (12.2 FPS inside FaleraOS, never claimed here); Adafruit featured it;
+  the paper is an arXiv preprint; OSHWA certified the board design.
+-->
+<style>
+  :root {
+    --ink: #142018; --dim: #4a514d; --muted: #5f6962; --red: #c93a45; --red-dim: #a92f39;
+    --border: #d7dbd6; --card: #f6f7f4; --paper: #fbfbf8;
+    --serif: Georgia, "Noto Serif", serif;
+    --sans: Arial, "Liberation Sans", "Noto Sans", sans-serif;
+    --mono: "Liberation Mono", "DejaVu Sans Mono", monospace;
+    --bleed: 0mm;
+  }
+  .bleed { --bleed: 3mm; }
+  @page { size: calc(420mm + 2 * var(--bleed)) calc(297mm + 2 * var(--bleed)); margin: 0; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--paper); }
+  body { width: calc(420mm + 2 * var(--bleed)); height: calc(297mm + 2 * var(--bleed)); position: relative;
+         font-family: var(--sans); color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* The trim area, 420 x 297 mm: everything is placed in it. */
+  .poster { position: absolute; left: var(--bleed); top: var(--bleed); width: 420mm; height: 297mm; overflow: hidden; }
+  .poster > * { position: absolute; }
+
+  .band { left: calc(-1 * var(--bleed)); right: calc(-1 * var(--bleed)); top: calc(-1 * var(--bleed)); height: calc(6mm + var(--bleed)); background: var(--red); }
+
+  /* ── Left: title, tagline, highlights ─────────────────────────────── */
+  .eyebrow { left: 18mm; top: 14mm; display: flex; align-items: center; gap: 2.6mm;
+             font: 700 3.6mm/1 var(--mono); letter-spacing: 0.5mm; color: var(--red); text-transform: uppercase; }
+  .eyebrow img { height: 4.6mm; }
+  .eyebrow span { color: var(--muted); }
+  .title { left: 18mm; top: 21mm; width: 128mm; font-family: var(--serif); color: var(--ink); }
+  .title .t1 { display: block; font-size: 25mm; line-height: 1; font-weight: 700; letter-spacing: -0.5mm; color: var(--red); }
+  .title .t2 { display: block; margin-top: 2.4mm; font-size: 8.4mm; line-height: 1.14; font-weight: 700; letter-spacing: -0.15mm; }
+  .tagline { left: 18mm; top: 75mm; width: 128mm; font: italic 4.9mm/1.25 var(--serif); color: var(--dim); }
+
+  .points { left: 18mm; top: 92mm; width: 126mm; display: flex; flex-direction: column; gap: 9mm; }
+  .pt { display: grid; grid-template-columns: 12mm 1fr; column-gap: 4.5mm; padding-top: 4mm; border-top: 1.2mm solid var(--red); }
+  .pt .ic { padding-top: 0.6mm; }
+  .pt .ic svg { width: 12mm; height: 12mm; stroke: var(--red); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .pt h3 { font: 700 6mm/1.15 var(--serif); color: var(--ink); }
+  .pt p { margin-top: 1.8mm; font: 400 4.5mm/1.32 var(--sans); color: var(--dim); }
+  .pt p b { color: var(--ink); }
+  .pt .mark { display: block; margin-top: 2.6mm; height: 10mm; }
+
+  /* ── Centre: the badge in 3D, Lumi ─────────────────────────────────── */
+  .hero { left: 144mm; top: 11mm; width: 164mm; }
+  .render-cap { left: 150mm; top: 190mm; font: 400 3.4mm/1 var(--mono); color: var(--muted); letter-spacing: 0.2mm; }
+  .lumi { left: 262mm; top: 182mm; width: 40mm; }
+  .lumi-says { left: 212mm; top: 194mm; width: 48mm; padding: 2.6mm 3mm; background: #fff; border: 0.5mm solid var(--border);
+               border-radius: 3mm; font: 400 3.8mm/1.3 var(--sans); color: var(--dim); }
+  .lumi-says b { color: var(--red); }
+
+  /* ── Right: three screens from FaleraOS ───────────────────────────── */
+  .screens { left: 316mm; top: 14mm; width: 86mm; display: flex; flex-direction: column; gap: 3.6mm; }
+  .screens figure { margin: 0; }
+  .screens .frame { width: 76mm; padding: 2.6mm; background: #1b1f1d; border-radius: 3mm; margin-left: auto; }
+  .screens .frame img { display: block; width: 100%; aspect-ratio: 4 / 3; }
+  .screens figcaption { margin-top: 1.4mm; width: 76mm; margin-left: auto; font: 700 3.6mm/1.2 var(--sans); color: var(--ink); }
+  .screens figcaption span { font-weight: 400; color: var(--muted); }
+  .screens .credit { display: block; margin-top: 0.6mm; font: 400 2.4mm/1.2 var(--sans); color: var(--muted); }
+
+  /* ── Who wrote about it and who recognised it, full width ──────────── */
+  .press { left: 18mm; top: 225mm; width: 384mm; height: 15mm; display: flex; align-items: center; justify-content: space-between; }
+  .press .lab { font: 700 3.3mm/1.15 var(--mono); letter-spacing: 0.4mm; color: var(--red); text-transform: uppercase; white-space: nowrap; }
+  .press img { display: block; }
+  .press .word { font: 700 5.4mm/1 var(--sans); color: var(--ink); letter-spacing: -0.1mm; white-space: nowrap; }
+  /* MA-NO's logo is white: on a dark tile, as it's meant to be shown. */
+  .press .tile { display: flex; align-items: center; padding: 1.8mm 3mm; background: var(--ink); border-radius: 1.6mm; }
+  .press .tile img { height: 7mm; }
+  .press .with-icon { display: flex; align-items: center; gap: 2mm; }
+  .press .sep { width: 0.4mm; align-self: stretch; background: var(--border); margin: 0 2mm; }
+
+  /* ── Footer: QR codes, who, logos ─────────────────────────────────── */
+  .foot { left: 0; right: 0; bottom: 0; height: 52mm; background: var(--card); border-top: 0.5mm solid var(--border); }
+  .qr { left: 18mm; top: 249mm; display: flex; gap: 6mm; align-items: flex-end; }
+  .qr figure { margin: 0; text-align: center; }
+  .qr img { display: block; background: #fff; }
+  .qr .main img { width: 40mm; height: 40mm; }   /* the handoff: at least 4 x 4 cm */
+  .qr .small img { width: 24mm; height: 24mm; }
+  .qr figcaption { margin-top: 1.2mm; font: 700 3.1mm/1.15 var(--mono); color: var(--ink); }
+  .who { left: 104mm; top: 251mm; }
+  .who .name { font: 700 7.4mm/1.1 var(--serif); color: var(--ink); }
+  .who .role { margin-top: 1.8mm; font: 400 4.6mm/1.3 var(--sans); color: var(--dim); }
+  .who .role b { color: var(--red); }
+  .who .mail { margin-top: 1.6mm; font: 700 4.2mm/1 var(--mono); color: var(--ink); letter-spacing: 0.1mm; }
+  .who .url { margin-top: 3.2mm; font: 700 4.2mm/1 var(--mono); color: var(--red); letter-spacing: 0.2mm; }
+  .who .team { margin-top: 1.6mm; font: 400 4.2mm/1.3 var(--sans); color: var(--dim); }
+  .who .team b { font-weight: 700; color: var(--ink); }
+  .logos { right: 18mm; top: 252mm; height: 38mm; display: flex; align-items: center; gap: 10mm; }
+  .logos .jis { height: 34mm; }
+  .logos .elixpo { height: 34mm; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="band"></div>
+
+  <div class="eyebrow"><img src="assets/bow.svg" alt="">JIS University <span>· ABP Infocom 2026 · Kolkata</span></div>
+  <h1 class="title"><span class="t1">Falera:</span><span class="t2">An Open-Source Smart Badge<br>with Its Own Operating System</span></h1>
+  <p class="tagline">I designed the board and wrote its operating system.</p>
+
+  <div class="points">
+    <div class="pt">
+      <div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+      <div><h3>Its own operating system</h3><p><b>FaleraOS</b>, on MicroPython: apps, an App Store and over-the-air updates.</p></div>
+    </div>
+    <div class="pt">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.3 2 3-.4.9 2.9 2.7 1.4-.8 2.9 1.4 2.7-2.4 1.8-.3 3-3 .3-1.8 2.4-2.7-1.4-2.7 1.4-1.8-2.4-3-.3-.3-3L2.3 14l1.4-2.7-.8-2.9 2.7-1.4.9-2.9 3 .4z"/><path d="M8.6 12.2l2.3 2.3 4.6-4.8"/></svg></div>
+      <div><h3>Certified open hardware design</h3><p>Certified by <b>OSHWA</b>, UID IN000107 <span style="white-space:nowrap">(CERN-OHL-P)</span>.</p><img class="mark" src="assets/oshw_mark.png" alt="Open Source Hardware certification mark, IN000107"></div>
+    </div>
+    <div class="pt">
+      <div class="ic"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M10 9.2v5.6l4.8-2.8z"/></svg></div>
+      <div><h3>Smooth video on a microcontroller</h3><p><b>RV565</b>, a video format I invented, took playback from <b>0.5 to 24 FPS</b>. Featured on the Adafruit blog; preprint on arXiv.</p></div>
+    </div>
+  </div>
+
+  <img class="hero" src="assets/hero-final.png" alt="The Falera Badge: the final board with its screen, name card and lanyard">
+  <p class="render-cap">The final board, in 3D</p>
+  <p class="lumi-says">Hi, I'm <b>Lumi</b>. Come and try the badge!</p>
+  <img class="lumi" src="assets/lumi-badge-3x.png" alt="Lumi, the Falera panda">
+
+  <div class="screens">
+    <figure><div class="frame"><img src="assets/screen-store.png" alt="FaleraOS App Store"></div>
+      <figcaption>App Store <span>· apps install over Wi-Fi</span></figcaption></figure>
+    <figure><div class="frame"><img src="assets/screen-video.png" alt="A film playing on the badge"></div>
+      <figcaption>Video <span>· RV565 on the badge</span><span class="credit">Big Buck Bunny © Blender Foundation, CC BY 3.0</span></figcaption></figure>
+    <figure><div class="frame"><img src="assets/screen-about.png" alt="FaleraOS About screen"></div>
+      <figcaption>About <span>· FaleraOS on the ESP32-S3</span></figcaption></figure>
+  </div>
+
+  <!-- From falera.elixpo/src/data/press.ts: Adafruit featured FaleraOS (4 Nov) and
+       RV565 (10 Nov); MA-NO and HardLabs wrote about it. Espressif assigned the USB ID,
+       OSHWA certified the board design, OpenSSF gave the Best Practices badge, and
+       RV565 is in the Arduino Library Manager. Logos: Wikimedia Commons, espressif.com. -->
+  <div class="press">
+    <span class="lab">Featured by</span>
+    <img src="assets/press/adafruit.svg" alt="Adafruit" style="height:10.5mm">
+    <span class="tile"><img src="assets/press/ma-no.png" alt="MA-NO"></span>
+    <span class="with-icon"><img src="assets/press/hardlabs.png" alt="" style="height:9mm"><span class="word">HardLabs</span></span>
+    <span class="sep"></span>
+    <span class="lab">Recognised by</span>
+    <img src="assets/press/espressif.svg" alt="Espressif" style="height:7.5mm">
+    <img src="assets/oshw_mark.png" alt="OSHWA" style="height:8.5mm">
+    <img src="assets/press/openssf.svg" alt="OpenSSF" style="height:10.5mm">
+    <img src="assets/press/arduino.svg" alt="Arduino" style="height:10.5mm">
+  </div>
+
+  <div class="foot"></div>
+  <div class="qr">
+    <figure class="main"><img src="assets/qr-github.svg" alt="QR code: github.com/elixpo/falera"><figcaption>Code &amp; board</figcaption></figure>
+    <figure class="small"><img src="assets/qr-arxiv.svg" alt="QR code: arxiv.org/abs/2610.35935"><figcaption>Paper (arXiv)</figcaption></figure>
+  </div>
+  <div class="who">
+    <div class="name">Ayushman Bhattacharya</div>
+    <div class="mail">ayushman@elixpo.com</div>
+    <div class="role">Founder, <b>Elixpo</b> · JIS University</div>
+    <div class="url">falera.elixpo.com</div>
+    <div class="team">with <b>Vivek Yadav</b> · <b>Anwesha Chakraborty</b></div>
+  </div>
+  <div class="logos">
+    <img class="jis" src="assets/jis_university_logo.png" alt="JIS University">
+    <img class="elixpo" src="assets/elixpo-lockup-clean.png" alt="Elixpo, built in the open">
+  </div>
+</div>
+<script>if (location.search.includes("bleed")) document.documentElement.classList.add("bleed");</script>
+</body>
+</html>

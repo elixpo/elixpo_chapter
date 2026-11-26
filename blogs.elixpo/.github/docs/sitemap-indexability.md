@@ -45,6 +45,19 @@ The same predicate drives article `robots` metadata, article `BlogPosting` outpu
 
 Root `/sitemap.xml` keeps its separate static-only fallback when D1 is unavailable. `lastmod` comes only from `updated_at`/`published_at`; absent or invalid values are omitted.
 
+## Automated audit
+
+`.github/workflows/seo-audit.yml` runs the article audit daily at 03:17 UTC and
+can also be dispatched manually. It uses the public article sitemap, samples
+25 unique URLs by default, writes JSON and Markdown reports, publishes the
+Markdown report in the Actions summary, and retains the report artifacts for
+14 days. A technical failure fails the workflow after the report is uploaded.
+
+The workflow has only `contents: read` permission and sends no credentials,
+cookies, or authorization headers. Search Console inspection remains optional
+and is not part of this workflow; the audit reports technical indexability
+separately from Google's indexed state.
+
 ## Deferred
 
 Package 3 adds invalidation for org privacy/slug/delete, org collection changes, curated collection changes and user purge, plus eligibility-aware IndexNow/WebSub transition notifications. Until then those mutations can leave discovery data stale for up to the 300-second fallback TTL. Live scheduling, Search Console and #559 are out of scope.

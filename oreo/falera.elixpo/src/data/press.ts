@@ -96,3 +96,18 @@ export const PUBLISHED: PressItem[] = [
   { who: "Wikidata", what: "FaleraOS, Q141968869", href: "https://www.wikidata.org/wiki/Q141968869" },
   { who: "MicroPython", what: "The FaleraOS announcement", href: "https://github.com/orgs/micropython/discussions/19847" },
 ];
+
+/** Where the badge is shown in person. `iso` is the day; the home page says
+ *  "See it at" until then and "Shown at" after (decided when the site is
+ *  built). */
+export type EventItem = { name: string; where: string; detail: string; date: string; iso: string };
+
+export const EVENTS: EventItem[] = [
+  {
+    name: "ABP Infocom 2026",
+    where: "Hyatt Regency, Kolkata",
+    detail: "the working badge at the JIS University stall",
+    date: "28 Nov 2026",
+    iso: "2026-11-28",
+  },
+];

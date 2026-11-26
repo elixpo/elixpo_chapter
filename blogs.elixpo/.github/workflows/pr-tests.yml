@@ -33,16 +33,27 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Install CLI dependencies
+        working-directory: packages/lixblogs-cli
+        run: npm ci
+
+      - name: Run CLI tests
+        working-directory: packages/lixblogs-cli
+        run: npm test
+
       - name: Summarize the test run
         if: always()
         run: |
           {
             echo "## Unit tests"
             echo
-            echo 'This check installs from the lockfile and runs `npm test` on Node 22.'
+            echo 'This check installs from both lockfiles and runs the root and CLI test suites on Node 22.'
             echo
             echo "Run the same commands locally:"
             echo '```bash'
+            echo "npm ci"
+            echo "npm test"
+            echo "cd packages/lixblogs-cli"
             echo "npm ci"
             echo "npm test"
             echo '```'

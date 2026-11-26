@@ -5,6 +5,10 @@ import { AppIcon } from "@/components/AppCard";
 import { LumiTip } from "@/components/Lumi";
 import { Card, Eyebrow, NumberBand, Onward, Screen, Section, SectionHeader, Split, Stat, Steps } from "@/components/ui";
 import { PRELOADED, STORE } from "@/data/apps";
+import { EVENTS } from "@/data/press";
+
+/** Today when the site is built (a static export): events on or after it are upcoming. */
+const BUILD_DAY = new Date().toISOString().slice(0, 10);
 
 /* The home page tells one story, top to bottom: what Falera is, the proof,
  * the badge, the apps, building for it, RV565, and supporting it. Every
@@ -165,6 +169,15 @@ export default function Home() {
             <span className="mx-2" aria-hidden="true">·</span>FaleraOS was called OreoOS until November 2026
           </figcaption>
         </figure>
+        {EVENTS.map((e) => {
+          const upcoming = e.iso >= BUILD_DAY;
+          return (
+            <p key={e.name} className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-text-dim">
+              <span className="label text-primary">{upcoming ? "See it at" : "Shown at"}</span>{" "}
+              <b className="text-text">{e.name}</b>, {e.where}: {e.detail}, {e.date}.
+            </p>
+          );
+        })}
       </Section>
 
       {/* 5 · Build for it: steps on a line */}
