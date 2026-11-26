@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>1 / 17 · Title · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* The cover: name, one line, four facts, and the two proof marks used
+       on the last slide, so the deck opens and closes the same way. */
+    .hero { margin-top: 110px; font-size: 190px; line-height: 0.95; font-weight: 600; letter-spacing: -0.05em; }
+    .tagline { margin-top: 36px; max-width: 1100px; font-size: 50px; line-height: 1.22; letter-spacing: -0.02em; }
+    .tagline em { font-family: var(--serif); }
+
+    .facts { margin-top: 56px; display: flex; gap: 0; width: 1150px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .facts div { flex: 1; padding: 20px 0 20px 22px; border-left: 1px solid var(--border); }
+    .facts div:first-child { border-left: 0; padding-left: 0; }
+    .facts b { display: block; font-family: var(--mono); font-size: 34px; color: var(--red); line-height: 1.1; }
+    .facts span { display: block; margin-top: 6px; font-size: 19px; color: var(--dim); }
+
+    .by { margin-top: 30px; font-size: 24px; color: var(--muted); }
+    .by b { color: var(--ink); }
+
+    .proof { position: absolute; right: 136px; top: 100px; width: 400px; display: grid; row-gap: 12px; }
+    .proof .row { display: flex; align-items: center; gap: 18px; padding: 14px 20px; border: 1px solid var(--border); border-radius: 16px; background: #fff; }
+    .proof .row img { height: 40px; flex: 0 0 auto; }
+    .proof .row svg { width: 40px; height: 40px; flex: 0 0 40px; }
+    .proof .t b { display: block; font-size: 20px; color: var(--ink); white-space: nowrap; }
+    .proof .t span { display: block; font-family: var(--mono); font-size: 16px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+
+    /* Watermark: the badge's own schematic (core_compute sheet, exported
+       with kicad-cli), as faint red lines that fade out towards the text. */
+    .schem {
+      position: absolute; left: 760px; top: -220px; width: 1600px; height: 1320px; z-index: 0;
+      object-fit: contain; object-position: right center; opacity: 0.45; pointer-events: none;
+      -webkit-mask-image: linear-gradient(90deg, transparent 22%, #000 50%);
+      mask-image: linear-gradient(90deg, transparent 22%, #000 50%);
+    }
+    .lumi { position: absolute; right: 100px; bottom: -24px; width: 450px; }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <!-- No corner mark on the title slide: Lumi is drawn large instead. -->
+  <div class="body">
+    <img class="schem" src="../assets/schematic-core-red.svg" alt="">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>Sponsor deck · November 2026</span>
+    </div>
+
+    <h1 class="hero">Falera<span class="red">OS</span></h1>
+
+    <p class="tagline">
+      An open conference badge, <em>and</em> the operating
+      system that runs it.
+    </p>
+
+    <!-- Three facts, each on a later slide (hardware, software). -->
+    <div class="facts">
+      <div><b>ESP32-S3</b><span>with a 2.8″ touch screen</span></div>
+      <div><b>₹4,172</b><span>in parts per badge ($44)</span></div>
+      <div><b>100%</b><span>open source</span></div>
+    </div>
+
+    <p class="by">By <b>Elixpo</b> · Built in India, in the open</p>
+
+    <div class="proof">
+      <div class="row"><img src="../assets/oshw_mark.png" alt="OSHWA certified open source hardware mark, IN000107"><div class="t"><b>OSHWA certified</b><span>open source hardware</span></div></div>
+      <div class="row"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#1d2420" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><div class="t"><b>Open source, in public</b><span>github.com/elixpo/falera</span></div></div>
+      <div class="row"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#1d2420" stroke-width="2" stroke-linejoin="round" d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path fill="none" stroke="#c8323c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l3 3 5-6"/></svg><div class="t"><b>Registered MSME, India</b><span>UDYAM-WB-07-0152337</span></div></div>
+    </div>
+
+    <img class="lumi" src="../assets/lumi-badge.webp" alt="Lumi, the Falera panda, holding a badge">
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">1 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>
