@@ -37,17 +37,9 @@ body
     display: none;
 }
 
-.controlButton.selected::before
-{
-    content: "";
-    position: relative;
-    top: 0;
-    left: 0px;
-    width: 3px;
-    height: 80%;
-    background-color: #7ba8f0;
-    opacity: 0.5;
-    z-index: 1;
+.controlButton.selected {
+    background-color: #252a36;
+    box-shadow: inset 0 -2px 0 rgba(123, 168, 240, 0.45);
 }
 .picksHeader,
 .organization,
