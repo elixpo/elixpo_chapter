@@ -1,4 +1,0 @@
-# The old Cloudflare Pages project "oreo" (oreo.elixpo.com, oreo-dw9.pages.dev)
-# serves only this: every path, 301, to the same path on falera.elixpo.com.
-# Deploy: npx wrangler pages deploy legacy-oreo --project-name=oreo --branch=main
-/* https://falera.elixpo.com/:splat 301
