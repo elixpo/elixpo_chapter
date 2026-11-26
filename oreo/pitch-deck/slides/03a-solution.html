@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3 / 17 · The solution · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Before → after: each row answers one column of slide 2. */
+    .rows { margin-top: 64px; width: 1648px; display: grid; row-gap: 16px; }
+    .row {
+      display: grid;
+      grid-template-columns: 640px 120px 1fr;
+      align-items: stretch;
+    }
+    .old, .new {
+      border-radius: 20px;
+      padding: 16px 30px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .old { border: 1px dashed var(--border); background: #fff; }
+    .old .what {
+      font-size: 28px; font-weight: 700; color: var(--muted);
+      text-decoration: line-through; text-decoration-color: var(--red);
+      text-decoration-thickness: 3px;
+    }
+    .old .why { margin-top: 6px; font-size: 22px; color: var(--muted); }
+    .new { background: var(--card); border: 1px solid var(--red); }
+    .new .what { font-size: 30px; font-weight: 700; color: var(--ink); }
+    .new .why { margin-top: 6px; font-size: 23px; color: var(--dim); line-height: 1.35; }
+    .arrow { display: flex; align-items: center; justify-content: center; }
+    .arrow svg { width: 72px; height: 28px; }
+    .heads {
+      display: grid; grid-template-columns: 640px 120px 1fr;
+      font-family: var(--mono); font-size: 20px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      margin-top: 44px; width: 1648px;
+    }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <img class="mark" src="../assets/lumi-badge.webp" alt="">
+  <div class="body">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>The solution</span>
+    </div>
+
+    <h2 class="title" style="max-width: 1500px">
+      So we asked: what if the badge was <em>the one thing people kept?</em>
+    </h2>
+
+    <div class="heads"><span>What events use today</span><span></span><span>What a Falera badge does instead</span></div>
+
+    <div class="rows" style="margin-top: 18px">
+      <div class="row">
+        <div class="old"><div class="what">Printed badges and swag</div><div class="why">Binned or put in a drawer after two days</div></div>
+        <div class="arrow"><svg viewBox="0 0 72 28"><path d="M2 14 H62 M50 4 L64 14 L50 24" fill="none" stroke="#c8323c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="new"><div class="what">A badge people keep</div><div class="why">A real device with games, Lumi the panda and the owner’s GitHub card.</div></div>
+      </div>
+      <div class="row">
+        <div class="old"><div class="what">Event apps</div><div class="why">Nothing to come back to after the last session</div></div>
+        <div class="arrow"><svg viewBox="0 0 72 28"><path d="M2 14 H62 M50 4 L64 14 L50 24" fill="none" stroke="#c8323c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="new"><div class="what">Apps that keep coming</div><div class="why">New apps from the on-badge App Store, and OS updates over the air, long after the event.</div></div>
+      </div>
+      <div class="row">
+        <div class="old"><div class="what">Custom electronic badges</div><div class="why">Months of design, rebuilt for every event</div></div>
+        <div class="arrow"><svg viewBox="0 0 72 28"><path d="M2 14 H62 M50 4 L64 14 L50 24" fill="none" stroke="#c8323c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="new"><div class="what">A ready platform</div><div class="why">An event writes one Python app (schedule, branding, a Lumi theme) instead of designing a board.</div></div>
+      </div>
+    </div>
+
+    <p class="lede" style="margin-top: 36px; max-width: 1648px">
+      Organisers get a badge without a hardware team. Sponsors get a place on a device developers keep.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">3 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>

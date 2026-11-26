@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>7 / 17 · RV565, the story · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Three versions of the same frame. Each mini screen shades the part a
+       player sends to the panel; the bar under it is the frame time against
+       the 41.7 ms a frame gets at 24 FPS. Figures: elixpo/rv565 README and
+       docs/RESULTS_V8.md, "On the badge" (low-motion film W90, ESP32-S3,
+       measured 20 Nov 2026). The frame is Big Buck Bunny at 1:34 (CC BY 3.0). */
+    .intro { margin-top: 24px; font-size: 30px; line-height: 1.4; color: var(--dim); max-width: 1500px; }
+    .intro b { color: var(--ink); }
+
+    .panels { margin-top: 36px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; width: 1648px; }
+    .panel .tag {
+      font-family: var(--mono); font-size: 18px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .panel.best .tag { color: var(--red); }
+    .screen {
+      position: relative; margin-top: 14px; width: 320px; height: 240px;   /* 4:3, like the panel */
+      border-radius: 14px; background: #1d2420 url('../assets/bbb-frame.jpg') center / cover; overflow: hidden;
+      border: 6px solid #1d2420;
+    }
+    .screen .sent { position: absolute; background: rgba(200, 50, 60, 0.32); outline: 4px solid var(--red); outline-offset: -4px; }
+    .panel .what { margin-top: 16px; font-size: 28px; font-weight: 700; color: var(--ink); }
+    .panel .why { margin-top: 4px; font-size: 21px; line-height: 1.35; color: var(--dim); }
+
+    .time { margin-top: 18px; }
+    .time .track { position: relative; height: 22px; width: 460px; border-radius: 11px; background: var(--card); }
+    .time .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 11px; background: var(--muted); }
+    .panel.best .time .fill { background: var(--red); }
+    .time .budget { position: absolute; top: -8px; bottom: -8px; width: 2px; background: var(--ink); }
+    .time .ms { margin-top: 8px; font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--ink); }
+    .panel.best .time .ms { color: var(--red); }
+    .time .ms span { font-size: 18px; font-weight: 400; color: var(--muted); }
+    .foot { margin-top: 18px; font-size: 20px; color: var(--muted); width: 1648px; }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <img class="mark" src="../assets/lumi-badge.webp" alt="">
+  <div class="body">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>RV565, the story</span>
+    </div>
+
+    <h2 class="title" style="max-width: 1560px">
+      Along the way, the badge needed video, <em>so we built a format for it.</em>
+    </h2>
+
+    <p class="intro">A small screen is fed through one thin wire. So smooth video isn’t about drawing faster: <b>it’s about sending less.</b></p>
+
+    <!-- Bar widths: frame time / 41.7 ms × 460 px; the budget line sits at 460 px. -->
+    <div class="panels">
+      <div class="panel">
+        <div class="tag">Before · whole frames</div>
+        <div class="screen"><div class="sent" style="inset: 0"></div></div>
+        <div class="what">Send every pixel</div>
+        <div class="why">Even when only the bunny moved.</div>
+        <div class="time"><div class="track"><div class="fill" style="width: 346px"></div></div>
+          <div class="ms">31.4 ms <span>per frame · 100% of pixels</span></div></div>
+      </div>
+      <div class="panel">
+        <div class="tag">RV565 2.0 · changed rows</div>
+        <div class="screen"><div class="sent" style="left: 0; right: 0; top: 14px; height: 210px"></div></div>
+        <div class="what">Send the rows that changed</div>
+        <div class="why">Whole bands of rows, wherever something moved.</div>
+        <div class="time"><div class="track"><div class="fill" style="width: 303px"></div></div>
+          <div class="ms">27.5 ms <span>per frame · 87% of pixels</span></div></div>
+      </div>
+      <div class="panel best">
+        <div class="tag">RV565 3.0 · changed regions</div>
+        <div class="screen"><div class="sent" style="left: 26px; top: 40px; width: 172px; height: 190px"></div></div>
+        <div class="what">Send only what changed</div>
+        <div class="why">Each frame records the rectangle that changed.</div>
+        <div class="time"><div class="track"><div class="fill" style="width: 177px"></div></div>
+          <div class="ms">16.0 ms <span>per frame · 42% of pixels</span></div></div>
+      </div>
+    </div>
+
+    <p class="foot">Film on the Falera Badge (ESP32-S3, 40 MHz SPI); a UI animation drops from 31.4 to 6.3 ms. At 24 FPS a frame gets 41.7 ms, and every frame arrived on time. Frame: <i>Big Buck Bunny</i> © Blender Foundation, CC BY 3.0.</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">7 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>

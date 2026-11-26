@@ -1,0 +1,164 @@
+/* Falera Badge name card: shared style for every card in cards/.
+ * The card is drawn at its real size in millimetres (88 x 59.5); see
+ * template/ for the shape and README.md for every dimension.
+ * Look: a GitHub profile card, quiet and typographic. */
+
+:root {
+  --bg: #ffffff;
+  --ink: #1f2328;
+  --muted: #59636e;
+  --line: #d1d9e0;
+  --red: #c93a45;
+  --g0: #eff2f5;  /* contribution levels, GitHub greens */
+  --g1: #aceebb;
+  --g2: #4ac26b;
+  --g3: #2da44e;
+  --g4: #116329;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+/* ── The card, at real size ─────────────────────────────────────────── */
+.card {
+  position: relative;
+  width: 88mm;
+  height: 59.5mm;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  clip-path: url(#card-shape);       /* slots and IR notch cut away */
+  overflow: hidden;
+}
+.card > * { position: absolute; }
+
+.top-label {
+  left: 17.3mm; width: 53.4mm; top: 5mm; text-align: center;
+  font: 600 1.6mm/1 var(--mono); letter-spacing: 0.35mm; color: var(--muted);
+}
+
+.avatar {
+  left: 5.5mm; top: 14mm; width: 18mm; height: 18mm;
+  border-radius: 50%; object-fit: cover;
+  border: 0.35mm solid var(--bg);
+}
+
+/* Centred on the photo (top 14 + 18/2 = 23 mm), for one- or two-line names. */
+.who { left: 29mm; top: 23mm; width: 40mm; transform: translateY(-50%); }
+.who .name {
+  font-size: 4.9mm; font-weight: 700; line-height: 1.08; letter-spacing: -0.1mm;
+}
+.who .handle {
+  margin-top: 1.4mm; display: flex; align-items: center; gap: 1mm;
+  font: 400 2.75mm/1 var(--mono); color: var(--muted);
+}
+.who .handle svg { width: 2.9mm; height: 2.9mm; fill: var(--ink); flex: none; }
+.who .handle span {position: relative; top: 3px;}
+.who .role {
+  margin-top: 2.6mm; font-size: 3.05mm; line-height: 1.2; color: var(--ink);
+}
+.who .role b { color: var(--red); font-weight: 700; }
+
+/* Themes: faint grounds from the Elixpo palette (falera.elixpo globals.css),
+ * the same as the lanyard's; ink and red stay the card's. */
+.theme-paper  { --bg: #fbfbf8; }
+.theme-butter { --bg: #fbf3d6; }
+.theme-blush  { --bg: #fbe9ea; }
+.theme-bamboo { --bg: #e5f0e8; --muted: #5f6962; }
+
+/* Faint geometry behind everything. */
+.bg { left: 0; top: 0; width: 88mm; height: 59.5mm; }
+.bg .bgs { fill: none; stroke: var(--ink); stroke-width: 0.12; opacity: 0.07; }
+.bg .bgd { fill: var(--ink); opacity: 0.12; }
+
+/* Glyph ring around the photo: centred on the avatar (4 + 10.5, 12.5 + 10.5). */
+.ring { left: 1.5mm; top: 10mm; width: 26mm; height: 26mm; }
+.ring .tk { stroke: var(--muted); stroke-width: 0.16; stroke-linecap: round; opacity: 0.55; }
+.ring .tk.long { stroke: var(--ink); stroke-width: 0.22; opacity: 0.9; }
+.ring .arc { fill: none; stroke: var(--red); stroke-width: 0.55; stroke-linecap: round; }
+.ring .dot { fill: var(--red); }
+
+/* The handle's waveform and its caption. */
+.wave { left: 4mm; top: 38mm; width: 64mm; height: 12mm; }   /* same band as the QR */
+.wave .wb { fill: var(--ink); opacity: 0.82; }
+.wave .wb.hot { fill: var(--red); opacity: 1; }
+.wave .wmid { stroke: var(--line); stroke-width: 0.1; }
+.wave-cap {
+  left: 4mm; top: 51.2mm; width: 64mm; display: flex; justify-content: space-between;
+  font: 400 1.5mm/1 var(--mono); color: var(--muted);
+}
+
+.qr { left: 72.5mm; top: 38mm; width: 12mm; height: 12mm; }    /* top and bottom level with the waveform */
+.qr .qd circle { fill: var(--ink); }
+.qr .fo { fill: none; stroke: var(--ink); stroke-width: 1; }
+.qr .fi { fill: var(--red); }
+.qr g path { fill: var(--ink); }
+.qr-cap {
+  left: 69mm; top: 51.2mm; width: 19mm; text-align: center; white-space: nowrap;  /* long handles break after github.com/ */
+  font: 400 1.3mm/1.15 var(--mono); color: var(--muted);   /* on the caption line */
+}
+
+.foot {
+  left: 4mm; top: 55.1mm; display: flex; align-items: center; gap: 1mm;
+  font: 600 1.6mm/1 var(--mono); color: var(--muted); letter-spacing: 0.15mm;
+}
+.foot img { width: 3.2mm; }
+
+.lumi { left: 69.5mm; top: 5mm; width: 21mm; transform: scale(1.5); filter: opacity(0.3); }   /* big: runs into the lanyard slot, the right edge and the IR notch, all cut away */
+
+/* Easter egg hint: the Konami code plays this card's waveform on the badge. */
+.konami {
+  left: 40mm; top: 54.95mm; width: 28mm; display: flex; justify-content: flex-end; align-items: center; gap: 0.35mm;
+  font: 700 1.6mm/1 var(--mono); color: var(--muted);
+}
+.konami svg { width: 1.45mm; height: 1.45mm; fill: var(--muted); }
+.konami b { margin-left: 0.5mm; }
+.konami span { margin-left: 0.7mm; color: var(--red); }
+
+/* The cut line, drawn over the card (hidden on screen unless .show-cut). */
+/* The card with its fold-back tab (15 mm, TAB in make_name_card.py; change
+ * the heights here with it): the tab folds back on the dashed line and props
+ * the card up. */
+.unit { position: relative; width: 88mm; height: 74.5mm; }
+.tab {
+  position: absolute; left: 2mm; top: 59.5mm; width: 84mm; height: 15mm;
+  background: var(--bg); border-radius: 0 0 1mm 1mm;
+  display: flex; align-items: center; justify-content: center;
+  font: 600 1.3mm/1 var(--mono); letter-spacing: 0.15mm; color: var(--muted);
+}
+.foldline { position: absolute; left: 0; top: 0; width: 88mm; height: 74.5mm; pointer-events: none; }
+.foldline line { stroke: var(--red); stroke-width: 0.2; stroke-dasharray: 1 0.7; }
+.cutline { position: absolute; left: 0; top: 0; width: 88mm; height: 74.5mm; pointer-events: none; display: none; }
+.cutline path { fill: none; stroke: #c93a45; stroke-width: 0.2; }
+
+/* ── Screen: preview, scaled up ─────────────────────────────────────── */
+@media screen {
+  .crop { display: none; }
+  body { background: #eaeef2; min-height: 100vh; display: grid; place-items: center; font-family: var(--sans); }
+  .stage { transform: scale(2.8); transform-origin: center; }
+  .stage .card { outline: 0.15mm solid #c9d1d9; }
+  .stage .tab { outline: 0.15mm solid #c9d1d9; }
+  .show-cut .cutline { display: block; }
+  .hint { position: fixed; bottom: 14px; left: 0; right: 0; text-align: center; color: #59636e; font-size: 13px; }
+}
+
+/* ── Print: A4, actual size, with a hairline cut line and crop marks ── */
+@page { size: A4; margin: 0; }
+@media print {
+  body { margin: 0; }
+  .hint { display: none; }
+  .stage { position: absolute; left: 30mm; top: 30mm; }
+  .stage .card { clip-path: none; }           /* print the full rectangle… */
+  .cutline { display: block; }                /* …and cut along this line */
+  .cutline path { stroke: #9aa4ad; stroke-width: 0.12; }
+  .crop { position: absolute; background: #000; }
+}
+
+/* ── For make_sheet.py: the card alone on a card-sized page ────────────── */
+@media print {
+  .card-only .stage { left: 0; top: 0; }
+  .card-only .crop { display: none; }
+  .blank .card, .blank .tab span { visibility: hidden; }   /* empty places: cut and fold lines only */
+  .blank .tab { background: none; }
+}

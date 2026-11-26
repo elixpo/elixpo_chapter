@@ -1,0 +1,60 @@
+NOTICE
+======
+
+The code in this repository is licensed under the MIT License (see
+`../LICENSE` and `preferred/MIT`). Hardware design files under `../circuit/`
+are licensed under the CERN Open Hardware Licence v2 - Permissive (see
+`preferred/CERN-OHL-P-2.0`). Visual assets are licensed under CC-BY-4.0
+(see `preferred/CC-BY-4.0`). Brand rules - names, mascot, logos, domains and
+official listings - are separate and documented in `../TRADEMARKS.md`.
+
+This notice adds no copyright restriction on top of those licences.
+
+REPOSITORY
+----------
+
+  Name:        oreoOS ("Falera Badge")
+  What it is:  A handheld, panda-themed conference badge that runs a MicroPython
+               operating system on ESP32-S3 hardware - the FaleraOS firmware, the
+               oreoWare drivers, the on-device apps, and the host-side
+               flashing/OTA tooling.
+
+OFFICIAL NAMES AND LISTINGS
+---------------------------
+
+The following identify official Elixpo releases and are covered by
+`../TRADEMARKS.md`, not by an extra copyright term:
+
+  - the "Falera", "Falera Badge", and "FaleraOS" names
+  - the oreoos package name (PyPI)
+  - the official firmware/OTA release channel on this repository's GitHub
+    Releases
+  - the Falera Badge product identity (you may build and redistribute boards
+    from the open design files under your own name)
+
+Forks are welcome under MIT; please use your own product, package, listing
+and domain names and do not imply Elixpo endorsement.
+
+REGISTERED COPYRIGHT
+--------------------
+
+  Copyright in the FaleraOS firmware and operating-system source is registered
+  with the Copyright Office under Registration No. LD-26455/2026-CO, held by
+  Elixpo (Ayushman Bhattacharya). The registration records authorship only; it
+  does not narrow the MIT licence for those files.
+
+VISUAL ASSETS
+-------------
+
+  The brand and visual asset files listed in `README.md` (in this
+  directory) are CC-BY-4.0. Reusing them as files only
+  requires the attribution CC-BY-4.0 asks for; using the Elixpo or Falera names
+  or mascot as your own branding is covered by `../TRADEMARKS.md`.
+
+THIRD-PARTY MATERIAL
+--------------------
+
+  Third-party components keep their own licences. See
+  `notices/notice-board` for the attribution list.
+
+Contact: hello@elixpo.com
