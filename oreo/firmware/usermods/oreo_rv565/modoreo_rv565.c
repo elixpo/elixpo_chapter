@@ -5,11 +5,18 @@
 // Gallery can decode directly from its reused compressed buffer into its
 // reused RGB565 frame buffer without allocating a Python bytes object or
 // running the Deflate stream through the MicroPython layer.
+//
+// The module also carries the native boot splash player (oreo_splash.c):
+// splash_load, splash_start, splash_progress, splash_stop and splash_state,
+// built on the vendored RV565 2.0 core in rv565/. inflate_frame does not use
+// it and behaves exactly as before.
 
 #include <stddef.h>
 
 #include "py/runtime.h"
 #include "miniz.h"
+
+#include "oreo_splash.h"
 
 static mp_obj_t oreo_rv565_inflate_frame(mp_obj_t source_obj,
                                           mp_obj_t destination_obj) {
@@ -44,6 +51,11 @@ static const mp_rom_map_elem_t oreo_rv565_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__oreo_rv565)},
     {MP_ROM_QSTR(MP_QSTR_inflate_frame),
      MP_ROM_PTR(&oreo_rv565_inflate_frame_obj)},
+    {MP_ROM_QSTR(MP_QSTR_splash_load), MP_ROM_PTR(&oreo_splash_load_obj)},
+    {MP_ROM_QSTR(MP_QSTR_splash_start), MP_ROM_PTR(&oreo_splash_start_obj)},
+    {MP_ROM_QSTR(MP_QSTR_splash_progress), MP_ROM_PTR(&oreo_splash_progress_obj)},
+    {MP_ROM_QSTR(MP_QSTR_splash_stop), MP_ROM_PTR(&oreo_splash_stop_obj)},
+    {MP_ROM_QSTR(MP_QSTR_splash_state), MP_ROM_PTR(&oreo_splash_state_obj)},
 };
 static MP_DEFINE_CONST_DICT(
     oreo_rv565_module_globals,

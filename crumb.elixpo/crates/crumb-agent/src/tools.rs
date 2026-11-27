@@ -112,6 +112,8 @@ pub fn tool_activity_label(name: &str) -> String {
     let normalized = name.to_ascii_lowercase();
     let action = if normalized.contains("task") {
         "Planning"
+    } else if normalized.contains("verify") {
+        "Checking"
     } else if normalized.contains("background") {
         "Background"
     } else if normalized.contains("write")

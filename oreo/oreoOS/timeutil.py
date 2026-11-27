@@ -29,6 +29,15 @@ except ImportError:
 
 _last_sync_status = "never"     # "never" | "ok" | "no-wifi" | "failed"
 _last_sync_ts     = 0           # epoch seconds of the last successful sync
+_sync_count       = 0           # successful syncs since boot (UI can watch it)
+_busy             = False       # a sync is in flight (netsvc worker or UI)
+_ntp_addr         = None        # resolved pool.ntp.org address, reused
+
+try:
+    import _thread
+    _lock = _thread.allocate_lock()
+except Exception:      # no threads: the plain flag is enough
+    _lock = None
 
 
 def last_sync_status():
@@ -37,6 +46,16 @@ def last_sync_status():
 
 def last_sync_ts():
     return _last_sync_ts
+
+
+def sync_count():
+    """Successful syncs since boot. A screen that caches the time can
+    redraw when this changes (the clock may have jumped)."""
+    return _sync_count
+
+
+def sync_busy():
+    return _busy
 
 
 # NTP epoch (1900-01-01) → MicroPython epoch (2000-01-01) offset.
@@ -53,13 +72,20 @@ def _ntp_raw(host="pool.ntp.org", port=123, timeout_s=2.5):
     indefinitely on this MicroPython build — the OS run loop locks up
     for tens of seconds while it waits.
     """
+    global _ntp_addr
     try:
         import socket as _socket
     except ImportError:
         return None
     s = None
+    ok = False
     try:
-        addr = _socket.getaddrinfo(host, port)[0][-1]
+        # The DNS lookup has no timeout of its own. netsvc runs this on a
+        # worker thread, and the address is cached so re-syncs skip DNS;
+        # a failed query drops the cache so the next try resolves again.
+        addr = _ntp_addr
+        if addr is None:
+            addr = _socket.getaddrinfo(host, port)[0][-1]
         s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
         s.settimeout(timeout_s)
         # 48-byte NTP request: LI=0, VN=3, Mode=3 (client). Everything
@@ -73,10 +99,16 @@ def _ntp_raw(host="pool.ntp.org", port=123, timeout_s=2.5):
         # Transmit timestamp seconds — big-endian uint32 at offset 40.
         secs = ((data[40] << 24) | (data[41] << 16)
                 | (data[42] << 8) |  data[43])
+        if not secs:
+            return None
+        ok = True
+        _ntp_addr = addr
         return secs - _NTP_DELTA
     except Exception:
         return None
     finally:
+        if not ok:
+            _ntp_addr = None
         try:
             if s is not None:
                 s.close()
@@ -91,8 +123,32 @@ def sync_from_ntp(timezone_offset_h=None):
     Uses a raw UDP socket with a 2.5 s settimeout so the OS run loop
     can never block longer than that — bypasses MicroPython's stock
     ntptime, whose recvfrom doesn't honour timeouts on this build.
+
+    The automatic syncs (on link-up, retries, the 6-hourly re-sync) run on
+    netsvc's worker thread, not in a UI frame (#118). The manual "Sync"
+    rows in the notification panel and in Settings still call this
+    directly on the UI thread and can block a frame for the DNS lookup
+    plus up to 2.5 s; moving them to netsvc.request_sync() is still to
+    do. Only one sync runs at a time; a second caller gets
+    (False, "busy") instead of a second socket.
     """
-    global _last_sync_status, _last_sync_ts
+    global _busy
+    if _lock is not None:
+        if not _lock.acquire(0):
+            return False, "busy"
+    elif _busy:
+        return False, "busy"
+    _busy = True
+    try:
+        return _sync(timezone_offset_h)
+    finally:
+        _busy = False
+        if _lock is not None:
+            _lock.release()
+
+
+def _sync(timezone_offset_h):
+    global _last_sync_status, _last_sync_ts, _sync_count
 
     try:
         from oreoWare import wifi
@@ -120,8 +176,8 @@ def sync_from_ntp(timezone_offset_h=None):
 
         if timezone_offset_h is None:
             try:
-                from oreoOS.config import TIMEZONE_OFFSET as _TZ
-                timezone_offset_h = _TZ
+                from oreoOS import profile
+                timezone_offset_h = profile.get("TIMEZONE_OFFSET", 0)
             except Exception:
                 timezone_offset_h = 0
 
@@ -133,6 +189,7 @@ def sync_from_ntp(timezone_offset_h=None):
 
         _last_sync_ts     = _t.time()
         _last_sync_status = "ok"
+        _sync_count      += 1
         return True, "synced"
     except Exception as e:
         _last_sync_status = "failed"

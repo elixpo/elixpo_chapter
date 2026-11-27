@@ -55,6 +55,11 @@ function publicFamiliesTable() {
   return lines.join("\n");
 }
 
+// A renamed repository keeps its registry key; show the name GitHub uses now.
+function repositoryLabel(entry) {
+  return entry.repositoryUrl ? entry.repositoryUrl.replace(/\/$/, "").split("/").pop() : entry.name;
+}
+
 function repositoryDirectory() {
   const familyOrder = new Map(taxonomy.publicFamilies.map((family, index) => [family.id, index]));
   const lifecycleOrder = new Map(taxonomy.lifecycles.map((lifecycle, index) => [lifecycle, index]));
@@ -78,7 +83,7 @@ function repositoryDirectory() {
     ];
     for (const entry of familyEntries) {
       lines.push(
-        `| [\`${escapeCell(entry.name)}\`](${entry.repositoryUrl}) | ${titleCase(entry.lifecycle)} | ${titleCase(entry.relationship)} |`,
+        `| [\`${escapeCell(repositoryLabel(entry))}\`](${entry.repositoryUrl}) | ${titleCase(entry.lifecycle)} | ${titleCase(entry.relationship)} |`,
       );
     }
     sections.push(lines.join("\n"));
@@ -116,6 +121,7 @@ const shared = replaceTokens(sharedTemplate, {
   PEOPLE_URL: portalUrl("people"),
   CONTRIBUTORS_URL: portalUrl("contributors"),
   HISTORY_URL: portalUrl("history"),
+  GSOC_URL: activeUrl("gsoc"),
 });
 
 const sharedHash = createHash("sha256").update(shared).digest("hex");

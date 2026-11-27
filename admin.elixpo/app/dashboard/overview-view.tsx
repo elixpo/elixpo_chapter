@@ -1,546 +1,715 @@
 "use client";
 
-import BarChart, { statusBars } from "@/components/bar-chart";
-import ExpandableGlobe from "@/components/expandable-globe";
 import MetricChart from "@/components/metric-chart";
+import type { InventoryKey, OverviewData } from "@/components/overview/data";
+import {
+    AttentionRow,
+    Card,
+    Dot,
+    HeroGeometry,
+    PillLink,
+    SectionHead,
+    ServiceTile,
+    TextLink,
+    ago,
+    countryName,
+} from "@/components/overview/parts";
+import TimeRange from "@/components/time-range";
 import {
     C,
+    CHART,
     Empty,
     KpiTile,
-    PageHeader,
-    Panel,
+    STATUS_COLORS,
     SectionError,
+    StatusBar,
     StatusChip,
     TopList,
+    eyebrow,
     fmt,
     fmtBytes,
     trend,
 } from "@/components/ui";
-import type { Inventory } from "@/lib/discovery";
-import { autoLabel, metaFor } from "@/lib/enrich";
-import type { MetricSeries, ZoneBreakdown } from "@/lib/metrics";
-import { Warning } from "@mui/icons-material";
+import { CheckCircleOutline } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
 import Link from "next/link";
+import { Suspense } from "react";
 
-const grid = (min: number) => ({
+const grid = (min: number, gap = 1.5) => ({
     display: "grid",
-    gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
-    gap: 1.5,
+    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${min}px), 1fr))`,
+    gap,
 });
 
-function CompactRow({
-    primary,
-    secondary,
-    href,
-    chip,
-}: {
-    primary: string;
-    secondary?: string;
-    href?: string;
-    chip?: React.ReactNode;
-}) {
-    const inner = (
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 1,
-                px: 1,
-                py: 0.8,
-                borderBottom: `1px solid ${C.border}`,
-                "&:hover": href ? { bgcolor: C.panelHover } : undefined,
-            }}
-        >
-            <Box sx={{ minWidth: 0 }}>
-                <Typography
-                    sx={{
-                        color: C.text,
-                        fontSize: "0.82rem",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                    }}
-                >
-                    {primary}
-                </Typography>
-                {secondary && (
-                    <Typography
-                        sx={{
-                            color: C.textMuted,
-                            fontSize: "0.7rem",
-                            fontFamily: "var(--font-geist-mono), monospace",
-                        }}
-                    >
-                        {secondary}
-                    </Typography>
-                )}
-            </Box>
-            {chip}
-        </Box>
-    );
-    return href ? (
-        <Link href={href} style={{ textDecoration: "none" }}>
-            {inner}
-        </Link>
-    ) : (
-        inner
-    );
-}
+const pct = (n: number, d: number) =>
+    d > 0
+        ? `${((n / d) * 100).toFixed(n / d > 0.995 || n / d < 0.1 ? 2 : 1)}%`
+        : "—";
 
-export default function OverviewView({
-    inv,
-    workers,
-    traffic,
-    breakdown,
-    primaryZoneName,
-}: {
-    inv: Inventory;
-    workers: MetricSeries;
-    traffic: MetricSeries | null;
-    breakdown: ZoneBreakdown | null;
-    primaryZoneName?: string;
-}) {
-    const deadQueues = inv.queues.filter(
-        (q) => (q.consumers_total_count ?? 0) === 0,
-    );
-    const failedSections = Object.entries(inv.errors).filter(
-        ([, e]) => e !== null,
-    ) as [string, { error: string }][];
+const STATE_WORD = {
+    healthy: { lead: "All systems", word: "healthy", color: C.green },
+    degraded: { lead: "Systems", word: "degraded", color: C.warn },
+    failing: { lead: "Services", word: "failing", color: C.orange },
+} as const;
 
+const INVENTORY: { key: InventoryKey; label: string; href?: string }[] = [
+    { key: "pages", label: "Pages projects", href: "/dashboard/projects" },
+    { key: "workers", label: "Workers", href: "/dashboard/workers" },
+    { key: "d1", label: "D1 databases", href: "/dashboard/d1" },
+    { key: "kv", label: "KV namespaces", href: "/dashboard/kv" },
+    { key: "queues", label: "Queues", href: "/dashboard/queues" },
+    {
+        key: "durableObjects",
+        label: "Durable Objects",
+        href: "/dashboard/durable-objects",
+    },
+    { key: "workflows", label: "Workflows", href: "/dashboard/workflows" },
+    { key: "zones", label: "Zones", href: "/dashboard/dns" },
+];
+
+export default function OverviewView({ data }: { data: OverviewData }) {
+    const { kpi, workers } = data;
+    const st = STATE_WORD[data.state];
+    const issues = data.criticalCount + data.warningCount;
+
+    const s = kpi.series;
+    const reqS = s.map((p) => p.requests);
+    const cacheS = s.map((p) => (p.requests ? p.cached / p.requests : 0));
+    const tl = data.timeline.points;
+    const err5S = tl.map((p) => p["5xx"]);
+    const ok2S = tl.map((p) => {
+        const t = p["1xx"] + p["2xx"] + p["3xx"] + p["4xx"] + p["5xx"];
+        return t ? p["2xx"] / t : 0;
+    });
     const wReq = workers.points.map((p) => Number(p.requests) || 0);
-    const wErr = workers.points.map((p) => Number(p.errors) || 0);
-    const tReq = traffic?.points.map((p) => Number(p.requests) || 0) || [];
-    const tByt = traffic?.points.map((p) => Number(p.bytes) || 0) || [];
+    const na = (v: string) => (kpi.available ? v : "—");
+
+    const chartPoints = tl.map((p) => ({
+        ts: p.ts,
+        requests: p["1xx"] + p["2xx"] + p["3xx"] + p["4xx"] + p["5xx"],
+        "4xx": p["4xx"],
+        "5xx": p["5xx"],
+    }));
+
+    const summary = [
+        `${data.serviceCount} services`,
+        `${data.hostsWith5xx} with server errors in the last ${data.rangeLabel}`,
+        issues
+            ? `${data.criticalCount} critical · ${data.warningCount} warning`
+            : null,
+    ]
+        .filter(Boolean)
+        .join(" · ");
 
     return (
-        <Box>
-            <PageHeader
-                title="Overview"
-                subtitle={`Elixpo Cloudflare account · refreshed ${new Date(inv.fetchedAt).toLocaleTimeString()}`}
-                timeRange
-            />
-
-            {deadQueues.length > 0 && (
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.25,
-                        mb: 2,
-                        p: 1.25,
-                        borderRadius: "6px",
-                        bgcolor: "rgba(245,158,11,0.08)",
-                        border: "1px solid rgba(245,158,11,0.3)",
-                    }}
-                >
-                    <Warning sx={{ color: C.warn, fontSize: "1.1rem" }} />
-                    <Typography sx={{ color: C.warn, fontSize: "0.8rem" }}>
-                        {deadQueues.length} queue
-                        {deadQueues.length > 1 ? "s have" : " has"} no consumer:{" "}
-                        <b>{deadQueues.map((q) => q.queue_name).join(", ")}</b>
+        <Box sx={{ display: "grid", gap: { xs: 2.5, md: 3.5 }, minWidth: 0 }}>
+            {/* ------------------------------------------------ hero */}
+            <Box
+                component="section"
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "1.55fr 1fr" },
+                    gap: { xs: 2, md: 3 },
+                    alignItems: "stretch",
+                }}
+            >
+                <Box sx={{ minWidth: 0, py: { md: 1 } }}>
+                    <Typography sx={eyebrow}>
+                        Elixpo · Cloudflare account
                     </Typography>
+                    <Typography
+                        component="h1"
+                        sx={{
+                            mt: 1.25,
+                            fontSize: {
+                                xs: "2.3rem",
+                                sm: "3rem",
+                                md: "3.6rem",
+                            },
+                            fontWeight: 650,
+                            lineHeight: 0.95,
+                            letterSpacing: "-0.065em",
+                            color: C.ink,
+                        }}
+                    >
+                        {st.lead}{" "}
+                        <Box component="span" sx={{ color: st.color }}>
+                            {st.word}
+                        </Box>
+                        .
+                    </Typography>
+                    <Typography
+                        sx={{
+                            mt: 1.5,
+                            color: C.textMuted,
+                            fontSize: { xs: "0.9rem", md: "1rem" },
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {summary}
+                    </Typography>
+                    <Box
+                        sx={{
+                            mt: 2.25,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <PillLink href="/dashboard/diagnostics" primary>
+                            Open diagnostics
+                        </PillLink>
+                        <PillLink href="/dashboard/services">
+                            All services
+                        </PillLink>
+                        <Box sx={{ maxWidth: "100%", ml: { sm: "auto" } }}>
+                            <Suspense fallback={null}>
+                                <TimeRange />
+                            </Suspense>
+                        </Box>
+                    </Box>
                 </Box>
+                <HeroGeometry
+                    state={data.state}
+                    label={
+                        issues
+                            ? `Open issues · ${data.rangeLabel}`
+                            : `Live · ${data.rangeLabel}`
+                    }
+                    count={issues}
+                />
+            </Box>
+
+            {data.diagnosticsError && (
+                <SectionError
+                    message={`Some diagnostics data is unavailable: ${data.diagnosticsError}`}
+                />
             )}
 
-            {/* KPI hero row */}
-            <Box sx={{ ...grid(220), mb: 1.5 }}>
-                <KpiTile
-                    label={`Requests · ${primaryZoneName || "zone"}`}
-                    value={
-                        traffic?.available
-                            ? fmt(traffic.totals.requests || 0)
-                            : "—"
-                    }
-                    delta={trend(tReq)}
-                    spark={tReq}
-                    color={C.accent}
+            {/* ------------------------------------------------ KPIs */}
+            <Box component="section">
+                <SectionHead
+                    kicker={`Account traffic · ${data.rangeLabel} · all zones`}
                 />
-                <KpiTile
-                    label="Bandwidth"
-                    value={
-                        traffic?.available
-                            ? fmtBytes(traffic.totals.bytes || 0)
-                            : "—"
-                    }
-                    spark={tByt}
-                    color="#22c55e"
-                />
-                <KpiTile
-                    label="Worker requests"
-                    value={
-                        workers.available
-                            ? fmt(workers.totals.requests || 0)
-                            : "—"
-                    }
-                    delta={trend(wReq)}
-                    spark={wReq}
-                    color="#a855f7"
-                />
-                <KpiTile
-                    label="Worker errors"
-                    value={
-                        workers.available
-                            ? fmt(workers.totals.errors || 0)
-                            : "—"
-                    }
-                    spark={wErr}
-                    color={C.error}
-                />
+                {!kpi.available && kpi.error && (
+                    <Box sx={{ mb: 1.5 }}>
+                        <SectionError
+                            message={`Zone analytics unavailable: ${kpi.error}`}
+                        />
+                    </Box>
+                )}
+                {/* 8 tiles → an even 4×2 / 2×4 / 1×8 grid at every width. */}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(2, minmax(0, 1fr))",
+                            lg: "repeat(4, minmax(0, 1fr))",
+                        },
+                        gap: 1.5,
+                    }}
+                >
+                    <KpiTile
+                        label="Requests"
+                        value={na(fmt(kpi.requests))}
+                        delta={trend(reqS)}
+                        spark={reqS}
+                        color={C.blue}
+                    />
+                    <KpiTile
+                        label="Bandwidth"
+                        value={na(fmtBytes(kpi.bytes))}
+                        spark={s.map((p) => p.bytes)}
+                        color={C.green}
+                    />
+                    <KpiTile
+                        label="Unique visitors"
+                        value={na(fmt(kpi.uniques))}
+                        spark={s.map((p) => p.uniques)}
+                        color={CHART[4]}
+                        sub={`Sum of ${kpi.bucket === "day" ? "daily" : "hourly"} uniques`}
+                    />
+                    <KpiTile
+                        label="Threats"
+                        value={na(fmt(kpi.threats))}
+                        spark={s.map((p) => p.threats)}
+                        color={C.orange}
+                    />
+                    <KpiTile
+                        label="Cache hit ratio"
+                        value={na(pct(kpi.cached, kpi.requests))}
+                        spark={cacheS}
+                        color={CHART[1]}
+                        sub={`${fmt(kpi.cached)} served from cache`}
+                    />
+                    <KpiTile
+                        label="2xx share"
+                        value={na(pct(kpi.status2xx, kpi.statusTotal))}
+                        spark={ok2S}
+                        color={STATUS_COLORS["2xx"]}
+                        sub={`${fmt(kpi.status2xx)} successful responses`}
+                    />
+                    <KpiTile
+                        label="5xx errors"
+                        value={na(fmt(kpi.status5xx))}
+                        spark={err5S}
+                        color={STATUS_COLORS["5xx"]}
+                        sub={`${pct(kpi.status5xx, kpi.statusTotal)} of responses`}
+                        href="/dashboard/diagnostics"
+                    />
+                    <KpiTile
+                        label="Workers invocations"
+                        value={
+                            workers.available
+                                ? fmt(workers.totals.requests || 0)
+                                : "—"
+                        }
+                        delta={trend(wReq)}
+                        spark={wReq}
+                        color={CHART[0]}
+                        sub={
+                            workers.available
+                                ? `${fmt(workers.totals.errors || 0)} errors · ${pct(workers.totals.errors || 0, workers.totals.requests || 0)} error rate`
+                                : workers.error
+                        }
+                        href="/dashboard/workers"
+                    />
+                </Box>
             </Box>
 
-            {/* resource counts */}
-            <Box sx={{ ...grid(150), mb: 2 }}>
-                <KpiTile label="Pages" value={inv.pages.length} />
-                <KpiTile
-                    label="Workers"
-                    value={inv.workers.length}
-                    href="/dashboard/workers"
-                />
-                <KpiTile
-                    label="D1"
-                    value={inv.d1.length}
-                    href="/dashboard/d1"
-                />
-                <KpiTile
-                    label="KV"
-                    value={inv.kv.length}
-                    href="/dashboard/kv"
-                />
-                <KpiTile
-                    label="Queues"
-                    value={inv.queues.length}
-                    href="/dashboard/queues"
-                />
-                <KpiTile
-                    label="Durable Objects"
-                    value={inv.durableObjects.length}
-                    href="/dashboard/durable-objects"
-                />
-                <KpiTile
-                    label="Workflows"
-                    value={inv.workflows.length}
-                    href="/dashboard/workflows"
-                />
-                <KpiTile
-                    label="Zones"
-                    value={inv.zones.length}
-                    href="/dashboard/traffic"
-                />
-            </Box>
-
-            {/* charts */}
-            <Box sx={{ ...grid(440), mb: 2 }}>
-                <Panel title={`Requests over time · ${primaryZoneName || ""}`}>
-                    {traffic ? (
-                        traffic.available ? (
-                            <MetricChart
-                                points={traffic.points}
-                                series={[
-                                    {
-                                        key: "requests",
-                                        label: "Requests",
-                                        color: C.accent,
-                                    },
-                                ]}
-                            />
-                        ) : (
-                            <SectionError
-                                message={`Zone analytics unavailable: ${traffic.error}`}
-                            />
-                        )
+            {/* -------------------------------- attention + traffic */}
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", lg: "1fr 1.35fr" },
+                    gap: 1.5,
+                }}
+            >
+                <Card>
+                    <SectionHead
+                        kicker="Needs attention"
+                        title={
+                            data.attention.length
+                                ? `${issues} finding${issues === 1 ? "" : "s"} to review`
+                                : "Nothing to fix"
+                        }
+                        action={{
+                            label: "Diagnostics",
+                            href: "/dashboard/diagnostics",
+                        }}
+                    />
+                    {data.attention.length ? (
+                        <Box>
+                            {data.attention.map((f) => (
+                                <AttentionRow key={f.id} f={f} />
+                            ))}
+                        </Box>
                     ) : (
-                        <Empty message="No zones discovered." />
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.25,
+                                p: 1.5,
+                                borderRadius: "14px",
+                                bgcolor: C.successBg,
+                                color: C.success,
+                                fontSize: "0.84rem",
+                            }}
+                        >
+                            <CheckCircleOutline sx={{ fontSize: "1.2rem" }} />
+                            No critical or warning findings in the last{" "}
+                            {data.rangeLabel}.
+                        </Box>
                     )}
-                </Panel>
-                <Panel title="Workers invocations · all scripts">
-                    {workers.available ? (
+                </Card>
+
+                <Card>
+                    <SectionHead
+                        kicker="Traffic over time"
+                        title="Requests vs errors"
+                        action={{
+                            label: "Status codes",
+                            href: "/dashboard/diagnostics",
+                        }}
+                    />
+                    {data.timeline.available && chartPoints.length ? (
                         <MetricChart
-                            points={workers.points}
+                            points={chartPoints}
+                            height={210}
                             series={[
                                 {
                                     key: "requests",
                                     label: "Requests",
-                                    color: "#a855f7",
+                                    color: C.blue,
                                 },
                                 {
-                                    key: "errors",
-                                    label: "Errors",
-                                    color: C.error,
+                                    key: "4xx",
+                                    label: "4xx",
+                                    color: STATUS_COLORS["4xx"],
+                                },
+                                {
+                                    key: "5xx",
+                                    label: "5xx",
+                                    color: STATUS_COLORS["5xx"],
                                 },
                             ]}
                         />
-                    ) : (
+                    ) : data.timeline.error ? (
                         <SectionError
-                            message={`Metrics unavailable: ${workers.error}`}
+                            message={`Timeline unavailable: ${data.timeline.error}`}
                         />
+                    ) : (
+                        <Empty message="No requests in this window." />
                     )}
-                </Panel>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography
+                            sx={{ ...eyebrow, color: C.textMuted, mb: 1 }}
+                        >
+                            Status classes · zone totals
+                        </Typography>
+                        {data.status.length ? (
+                            <StatusBar status={data.status} />
+                        ) : (
+                            <Empty message="No status data." />
+                        )}
+                    </Box>
+                </Card>
             </Box>
 
-            {/* geo + breakdowns — fills the row Cloudflare uses for the globe */}
-            {breakdown?.available && (
+            {/* ------------------------------------------- services */}
+            <Box component="section">
+                <SectionHead
+                    kicker={`Services · ${data.serviceCount}`}
+                    title="Service health"
+                    action={{
+                        label: "All services",
+                        href: "/dashboard/services",
+                    }}
+                />
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", lg: "1.4fr 1fr 1fr" },
-                        gap: 1.5,
-                        mb: 2,
+                        display: "flex",
+                        gap: 2,
+                        flexWrap: "wrap",
+                        mb: 1.25,
+                        fontSize: "0.72rem",
+                        color: C.textMuted,
                     }}
                 >
-                    <Panel
-                        title={`Requests by country · ${primaryZoneName || ""}`}
-                    >
+                    {(
+                        [
+                            ["Failing", STATUS_COLORS["5xx"]],
+                            ["Degraded", STATUS_COLORS["4xx"]],
+                            ["Healthy", STATUS_COLORS["2xx"]],
+                            ["No traffic", C.borderLight],
+                        ] as const
+                    ).map(([l, c]) => (
                         <Box
+                            key={l}
                             sx={{
-                                display: "grid",
-                                gridTemplateColumns: {
-                                    xs: "1fr",
-                                    sm: "auto 1fr",
-                                },
-                                gap: 2,
+                                display: "flex",
                                 alignItems: "center",
+                                gap: 0.75,
                             }}
                         >
-                            <ExpandableGlobe
-                                country={breakdown.country}
-                                size={300}
-                            />
-                            <TopList
-                                color={C.accent}
-                                items={breakdown.country
-                                    .slice(0, 8)
-                                    .map((c) => ({
-                                        label: c.label,
-                                        value: c.count,
-                                    }))}
-                            />
+                            <Dot color={c} size={7} />
+                            {l}
                         </Box>
-                    </Panel>
-                    <Panel title="Status Codes">
-                        <BarChart
-                            data={statusBars(breakdown.status)}
-                            height={190}
-                        />
-                    </Panel>
-                    <Panel title="Requests by device">
-                        {breakdown.device.length ? (
-                            <BarChart
-                                data={breakdown.device.map((d) => ({
-                                    label: d.label || "unknown",
-                                    value: d.count,
-                                }))}
-                                height={190}
-                            />
-                        ) : (
-                            <Empty message="No device data." />
-                        )}
-                    </Panel>
+                    ))}
                 </Box>
-            )}
-
-            {/* top hosts + paths */}
-            {breakdown?.available && (
-                <Box sx={{ ...grid(360), mb: 2 }}>
-                    <Panel title="Top hosts">
-                        <TopList
-                            color={C.accentDeep}
-                            items={breakdown.host.slice(0, 8).map((h) => ({
-                                label: h.label,
-                                value: h.count,
-                            }))}
-                        />
-                    </Panel>
-                    <Panel title="Top paths">
-                        <TopList
-                            color="#86efac"
-                            items={breakdown.path.slice(0, 8).map((p) => ({
-                                label: p.label,
-                                value: p.count,
-                            }))}
-                        />
-                    </Panel>
-                </Box>
-            )}
-
-            {/* discovery-driven resource lists */}
-            <Box sx={grid(340)}>
-                <Panel title={`Pages projects · ${inv.pages.length}`} dense>
-                    {inv.pages.length ? (
-                        inv.pages.map((p) => {
-                            const domain =
-                                p.domains?.find(
-                                    (d) => !d.endsWith(".pages.dev"),
-                                ) || p.domains?.[0];
-                            return (
-                                <CompactRow
-                                    key={p.name}
-                                    primary={metaFor(p.name).label}
-                                    secondary={domain || p.name}
-                                    href={
-                                        domain ? `https://${domain}` : undefined
-                                    }
-                                />
-                            );
-                        })
-                    ) : (
-                        <Empty message="No Pages projects." />
-                    )}
-                </Panel>
-
-                <Panel title={`Workers · ${inv.workers.length}`} dense>
-                    {inv.workers.length ? (
-                        inv.workers.map((w) => (
-                            <CompactRow
-                                key={w.id}
-                                primary={autoLabel(w.id)}
-                                secondary={w.id}
-                                href="/dashboard/workers"
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No Workers." />
-                    )}
-                </Panel>
-
-                <Panel title={`D1 databases · ${inv.d1.length}`} dense>
-                    {inv.d1.length ? (
-                        inv.d1.map((d) => (
-                            <CompactRow
-                                key={d.uuid}
-                                primary={d.name}
-                                secondary={
-                                    d.num_tables != null
-                                        ? `${d.num_tables} tables`
-                                        : d.uuid
-                                }
-                                href={`/dashboard/d1/${d.uuid}`}
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No D1 databases." />
-                    )}
-                </Panel>
-
-                <Panel title={`KV namespaces · ${inv.kv.length}`} dense>
-                    {inv.kv.length ? (
-                        inv.kv.map((k) => (
-                            <CompactRow
-                                key={k.id}
-                                primary={k.title}
-                                secondary={k.id}
-                                href="/dashboard/kv"
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No KV namespaces." />
-                    )}
-                </Panel>
-
-                <Panel title={`Queues · ${inv.queues.length}`} dense>
-                    {inv.queues.length ? (
-                        inv.queues.map((q) => (
-                            <CompactRow
-                                key={q.queue_id}
-                                primary={q.queue_name}
-                                secondary={`${q.producers_total_count ?? 0} prod · ${q.consumers_total_count ?? 0} cons`}
-                                href="/dashboard/queues"
-                                chip={
-                                    (q.consumers_total_count ?? 0) === 0 ? (
-                                        <StatusChip
-                                            label="no consumer"
-                                            tone="warning"
-                                        />
-                                    ) : (
-                                        <StatusChip
-                                            label="active"
-                                            tone="success"
-                                        />
-                                    )
-                                }
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No queues." />
-                    )}
-                </Panel>
-
-                <Panel
-                    title={`Durable Objects · ${inv.durableObjects.length}`}
-                    dense
-                >
-                    {inv.durableObjects.length ? (
-                        inv.durableObjects.map((d) => (
-                            <CompactRow
-                                key={d.id}
-                                primary={d.class || d.name || d.id}
-                                secondary={d.script || d.id}
-                                href="/dashboard/durable-objects"
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No Durable Object namespaces." />
-                    )}
-                </Panel>
-
-                <Panel title={`Zones · ${inv.zones.length}`} dense>
-                    {inv.zones.length ? (
-                        inv.zones.map((z) => (
-                            <CompactRow
-                                key={z.id}
-                                primary={z.name}
-                                secondary={z.id}
-                                chip={
-                                    <StatusChip
-                                        label={z.status || "?"}
-                                        tone={
-                                            z.status === "active"
-                                                ? "success"
-                                                : "neutral"
-                                        }
-                                    />
-                                }
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No zones." />
-                    )}
-                </Panel>
-
-                <Panel title={`Workflows · ${inv.workflows.length}`} dense>
-                    {inv.workflows.length ? (
-                        inv.workflows.map((w) => (
-                            <CompactRow
-                                key={w.name}
-                                primary={w.name}
-                                secondary={w.class_name || w.script_name}
-                            />
-                        ))
-                    ) : (
-                        <Empty message="No Workflows yet." />
-                    )}
-                </Panel>
+                {data.services.length ? (
+                    <Box sx={grid(250, 1.25)}>
+                        {data.services.map((sv) => (
+                            <ServiceTile key={sv.host} s={sv} />
+                        ))}
+                    </Box>
+                ) : (
+                    <Card>
+                        <Empty message="No services discovered." />
+                    </Card>
+                )}
             </Box>
 
-            {failedSections.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                    <Typography
-                        sx={{ color: C.textMuted, fontSize: "0.76rem", mb: 1 }}
-                    >
-                        Some resource types couldn't be listed (token scope or
-                        product not enabled):
-                    </Typography>
-                    <Box sx={grid(300)}>
-                        {failedSections.map(([name, e]) => (
-                            <SectionError
-                                key={name}
-                                message={`${name}: ${e.error}`}
+            {/* -------------------------------------- breakdowns */}
+            <Box sx={grid(320)}>
+                <Card>
+                    <SectionHead
+                        kicker="Top countries"
+                        title="Where requests come from"
+                    />
+                    <TopList
+                        controls={false}
+                        color={C.blue}
+                        items={data.countries.map((c) => ({
+                            label: countryName(c.label),
+                            value: c.value,
+                        }))}
+                    />
+                </Card>
+                <Card>
+                    <SectionHead
+                        kicker="Top hosts"
+                        title="Busiest hostnames"
+                        action={{
+                            label: "Services",
+                            href: "/dashboard/services",
+                        }}
+                    />
+                    <TopList
+                        controls={false}
+                        color={C.green}
+                        items={data.hosts.map((h) => ({
+                            label: h.host,
+                            value: h.total,
+                            href: h.known
+                                ? `/dashboard/services/${encodeURIComponent(h.host)}`
+                                : undefined,
+                            chip:
+                                h.errorRate > 0.05 ? (
+                                    <StatusChip
+                                        label={`${Math.round(h.errorRate * 100)}% err`}
+                                        tone={
+                                            h.errorRate > 0.25
+                                                ? "error"
+                                                : "warning"
+                                        }
+                                    />
+                                ) : undefined,
+                        }))}
+                    />
+                </Card>
+            </Box>
+
+            {/* ------------------------------- inventory + activity */}
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", lg: "1.25fr 1fr" },
+                    gap: 1.5,
+                }}
+            >
+                <Card>
+                    <SectionHead kicker="Compute & storage" title="Inventory" />
+                    <Box sx={grid(130, 1)}>
+                        {INVENTORY.map((it) => (
+                            <InventoryTile
+                                key={it.key}
+                                label={it.label}
+                                value={data.inventory.counts[it.key]}
+                                href={it.href}
+                                failed={data.inventory.errors.some(
+                                    (e) => e.section === it.key,
+                                )}
                             />
                         ))}
                     </Box>
-                </Box>
-            )}
+                    {data.deadQueues.length > 0 && (
+                        <Box sx={{ mt: 1.5 }}>
+                            <SectionError
+                                message={`${data.deadQueues.length} queue${data.deadQueues.length > 1 ? "s have" : " has"} no consumer: ${data.deadQueues.join(", ")}`}
+                            />
+                        </Box>
+                    )}
+                    {data.inventory.errors.length > 0 && (
+                        <Box sx={{ mt: 1.5, display: "grid", gap: 1 }}>
+                            {data.inventory.errors.map((e) => (
+                                <SectionError
+                                    key={e.section}
+                                    message={`${e.section}: ${e.error}`}
+                                />
+                            ))}
+                        </Box>
+                    )}
+                    <Typography
+                        sx={{
+                            mt: 1.5,
+                            fontFamily: C.mono,
+                            fontSize: "0.64rem",
+                            color: C.textMuted,
+                            letterSpacing: "0.06em",
+                        }}
+                    >
+                        Discovered{" "}
+                        {ago(
+                            data.now,
+                            new Date(data.inventory.fetchedAt).toISOString(),
+                        )}
+                    </Typography>
+                </Card>
+
+                <Card>
+                    <SectionHead
+                        kicker="Recent activity"
+                        title="Latest Pages deployments"
+                        action={{
+                            label: "Projects",
+                            href: "/dashboard/projects",
+                        }}
+                    />
+                    {data.deploys.length ? (
+                        <Box>
+                            {data.deploys.map((d) => (
+                                <Link
+                                    key={d.project}
+                                    href={`/dashboard/projects/${encodeURIComponent(d.project)}`}
+                                    style={{ textDecoration: "none" }}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: "grid",
+                                            gridTemplateColumns:
+                                                "auto 1fr auto",
+                                            alignItems: "center",
+                                            gap: 1.25,
+                                            py: 1,
+                                            px: 1,
+                                            mx: -1,
+                                            borderRadius: "12px",
+                                            borderBottom: `1px solid ${C.line}`,
+                                            "&:hover": {
+                                                bgcolor: C.panelHover,
+                                            },
+                                        }}
+                                    >
+                                        <Dot
+                                            color={
+                                                d.env === "production"
+                                                    ? C.green
+                                                    : C.blue
+                                            }
+                                            size={8}
+                                        />
+                                        <Box sx={{ minWidth: 0 }}>
+                                            <Typography
+                                                sx={{
+                                                    fontSize: "0.85rem",
+                                                    fontWeight: 650,
+                                                    color: C.ink,
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {d.project}
+                                            </Typography>
+                                            <Typography
+                                                sx={{
+                                                    fontFamily: C.mono,
+                                                    fontSize: "0.68rem",
+                                                    color: C.textMuted,
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {d.host || "—"}
+                                            </Typography>
+                                        </Box>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                            }}
+                                        >
+                                            <StatusChip
+                                                label={d.env}
+                                                tone={
+                                                    d.env === "production"
+                                                        ? "success"
+                                                        : "info"
+                                                }
+                                            />
+                                            <Typography
+                                                sx={{
+                                                    fontFamily: C.mono,
+                                                    fontSize: "0.68rem",
+                                                    color: C.textMuted,
+                                                    minWidth: 52,
+                                                    textAlign: "right",
+                                                }}
+                                            >
+                                                {ago(data.now, d.createdOn)}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Link>
+                            ))}
+                        </Box>
+                    ) : (
+                        <Empty message="No Pages deployments found." />
+                    )}
+                    <Box sx={{ mt: 1.5 }}>
+                        <TextLink
+                            label="Open audit log"
+                            href="/dashboard/audit"
+                        />
+                    </Box>
+                </Card>
+            </Box>
         </Box>
+    );
+}
+
+function InventoryTile({
+    label,
+    value,
+    href,
+    failed,
+}: {
+    label: string;
+    value: number;
+    href?: string;
+    failed?: boolean;
+}) {
+    const tile = (
+        <Box
+            sx={{
+                p: 1.5,
+                borderRadius: "14px",
+                border: `1px solid ${C.line}`,
+                bgcolor: C.paper,
+                height: "100%",
+                transition: "border-color .15s, background-color .15s",
+                "&:hover": href
+                    ? { borderColor: C.ink, bgcolor: C.panel }
+                    : undefined,
+            }}
+        >
+            <Typography
+                sx={{
+                    fontSize: "1.65rem",
+                    fontWeight: 700,
+                    letterSpacing: "-0.05em",
+                    lineHeight: 1,
+                    color: failed ? C.warn : C.ink,
+                }}
+            >
+                {failed ? "—" : value}
+            </Typography>
+            <Typography
+                sx={{
+                    mt: 0.75,
+                    fontFamily: C.mono,
+                    fontSize: "0.6rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: C.textMuted,
+                }}
+            >
+                {label}
+            </Typography>
+        </Box>
+    );
+    return href ? (
+        <Link href={href} style={{ textDecoration: "none" }}>
+            {tile}
+        </Link>
+    ) : (
+        tile
     );
 }

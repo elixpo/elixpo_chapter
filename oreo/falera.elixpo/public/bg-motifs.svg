@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <!-- Background motifs for falera.elixpo.com: hearts, Lumi's bow, plus
+       signs, dots and circuit traces, tiled behind the page (400px tile).
+       Light enough that body text keeps AA contrast over it. -->
+  <defs>
+    <path id="heart" d="M0 3.2C-1.6-.8-7-.4-7 3.6c0 3.2 3.4 5.6 7 8.4 3.6-2.8 7-5.2 7-8.4 0-4-5.4-4.4-7-.4z"/>
+    <g id="bow">
+      <path d="M0 0L-9-5.5v11z"/><path d="M0 0L9-5.5v11z"/><circle r="2.4"/>
+    </g>
+    <path id="plus" d="M-5 0h10M0-5v10"/>
+  </defs>
+
+  <g fill="#C93A45" fill-opacity="0.15">
+    <use href="#heart" x="48" y="40"/>
+    <use href="#heart" x="292" y="86" transform="rotate(-14 292 86)"/>
+    <use href="#heart" x="170" y="222" transform="rotate(10 170 222)"/>
+    <use href="#heart" x="356" y="318"/>
+    <use href="#heart" x="80" y="344" transform="rotate(-8 80 344)"/>
+    <use href="#heart" x="236" y="372" transform="rotate(16 236 372)"/>
+  </g>
+
+  <g fill="#C93A45" fill-opacity="0.14">
+    <use href="#bow" x="210" y="44" transform="rotate(-10 210 44)"/>
+    <use href="#bow" x="40" y="182" transform="rotate(8 40 182)"/>
+    <use href="#bow" x="338" y="204"/>
+    <use href="#bow" x="250" y="296" transform="rotate(-6 250 296)"/>
+    <use href="#bow" x="120" y="110" transform="rotate(12 120 110)"/>
+  </g>
+
+  <g stroke="#1D2420" stroke-opacity="0.11" stroke-width="1.6" stroke-linecap="round" fill="none">
+    <use href="#plus" x="140" y="36"/>
+    <use href="#plus" x="372" y="28"/>
+    <use href="#plus" x="272" y="168"/>
+    <use href="#plus" x="22" y="270"/>
+    <use href="#plus" x="180" y="306"/>
+    <use href="#plus" x="380" y="388"/>
+    <!-- Small circuit traces with a pad at each end. -->
+    <path d="M96 140h28l10 10h34"/>
+    <path d="M300 160v24l-9 9v22"/>
+    <path d="M24 392h30l8-8h26"/>
+  </g>
+  <g fill="#1D2420" fill-opacity="0.11">
+    <circle cx="96" cy="140" r="2.6"/><circle cx="168" cy="150" r="2.6"/>
+    <circle cx="300" cy="160" r="2.6"/><circle cx="291" cy="215" r="2.6"/>
+    <circle cx="24" cy="392" r="2.6"/><circle cx="88" cy="384" r="2.6"/>
+    <circle cx="114" cy="286" r="2"/><circle cx="328" cy="128" r="2"/>
+    <circle cx="196" cy="128" r="2"/><circle cx="28" cy="100" r="2"/>
+    <circle cx="352" cy="256" r="2"/><circle cx="150" cy="384" r="2"/>
+    <circle cx="232" cy="248" r="2"/><circle cx="70" cy="232" r="2"/>
+  </g>
+</svg>

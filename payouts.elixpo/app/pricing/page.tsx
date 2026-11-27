@@ -3,6 +3,8 @@
 import CheckIcon from "@mui/icons-material/Check";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import Link from "next/link";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 import PageShell from "../components/page-shell";
 
 interface Tier {
@@ -19,67 +21,64 @@ interface Tier {
 
 const TIERS: Tier[] = [
     {
-        name: "Starter",
-        price: "Free",
+        name: "Sell",
+        price: "₹0",
         unit: "to start",
-        rate: "2.0% + ₹3",
-        blurb: "Launch your first paid product.",
+        rate: "5% all-in",
+        blurb: "Products and subscriptions in your own app.",
         features: [
-            "Hosted checkout page",
-            "Instant access via signed webhooks",
-            "1 app connection",
-            "Razorpay (INR) payments",
-            "Dashboard & reporting",
-            "Community Slack support",
+            "Hosted checkout: UPI, cards, netbanking",
+            "One-time payments and autopay subscriptions",
+            "Signed webhooks and an entitlements API",
+            "Tiers and prices synced from your code",
+            "Receipts and notices through Elixpo Mails",
+            "Unlimited apps; payouts straight to your bank",
         ],
-        cta: "Start Free",
-        href: "/login",
+        cta: "Start selling",
+        href: "/login?next=%2Fdashboard%2Fproducts",
     },
     {
-        name: "Growth",
-        price: "₹1,999",
-        unit: "/mo + usage",
-        rate: "1.5% + ₹3",
-        blurb: "Scale revenue across products.",
+        name: "Raise",
+        price: "₹0",
+        unit: "to start",
+        rate: "5% all-in",
+        blurb: "A fundraiser page, live in two steps.",
         features: [
-            "Everything in Starter",
-            "Creator payouts (RazorpayX)",
-            "Unlimited applications",
-            "Bring-your-own gateway credentials",
-            "Stripe & Razorpay adapters",
-            "Priority developer support",
+            "Your page with a shareable link and QR code",
+            "Supporters pay in a couple of taps, no account",
+            "Rupees and dollars (charged in INR at the live rate)",
+            "Email receipts for every supporter",
+            "Live dashboard and CSV export",
+            "Reporting and review to keep pages honest",
         ],
-        cta: "Choose Growth",
-        href: "/login",
+        cta: "Start a fundraiser",
+        href: "/login?next=%2Fdashboard%2Ffundraisers",
         popular: true,
     },
     {
-        name: "Scale",
+        name: "Volume",
         price: "Custom",
-        unit: "volume pricing",
-        rate: "from 0.9%",
-        blurb: "High volume & merchant-of-record.",
+        unit: "rate",
+        rate: "Lower rate",
+        blurb: "Processing over ₹10 lakh a month?",
         features: [
-            "Negotiated volume discounts",
-            "Merchant-of-record operations",
-            "Local sales tax compliance",
-            "Custom payout schedules",
-            "Dedicated integration manager",
-            "SLA support agreements",
+            "A lower all-in rate for your volume",
+            "Help with your integration",
+            "Priority email support",
+            "Same checkout, webhooks and payouts",
         ],
-        cta: "Contact Sales",
-        href: "mailto:hello@elixpo.com",
+        cta: "Talk to us",
+        href: "mailto:hello@elixpo.com?subject=Elixpo%20Pay%20volume%20pricing",
     },
 ];
 
 const FEES: { label: string; value: string }[] = [
-    { label: "Per successful charge", value: "1.5–2.0% + ₹3 (by plan)" },
-    { label: "Payouts to creators / sellers", value: "0.25% + ₹5 per payout" },
-    { label: "Refunds & chargeback disputes", value: "No Elixpo platform fee" },
-    {
-        label: "Cross-currency conversion",
-        value: "+1% on the converted amount",
-    },
+    { label: "Each successful payment", value: "5%, all-in" },
+    { label: "Payment gateway fee (Razorpay, 2% + GST)", value: "Included" },
+    { label: "Setup, monthly or payout fees", value: "₹0" },
+    { label: "What the buyer or supporter pays", value: "Exactly the price shown" },
+    { label: "Example: a ₹1,000 payment", value: "₹950 reaches your bank" },
+    { label: "Issuing a refund", value: "No extra fee" },
 ];
 
 export default function PricingPage() {
@@ -97,32 +96,30 @@ export default function PricingPage() {
                     sx={{ mb: { xs: 6, md: 10 } }}
                 >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "#CF4500" }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "var(--app-accent)" }} />
                         <Typography
                             sx={{
                                 fontSize: "14px",
                                 fontWeight: 700,
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 color: "var(--app-fg-muted)",
                                 textTransform: "uppercase",
-                                fontFamily: "var(--font-sofia-sans)",
                             }}
                         >
-                            PRICING PLANS
+                            PRICING
                         </Typography>
                     </Stack>
                     <Typography
                         variant="h2"
                         sx={{
                             fontWeight: 500,
-                            fontSize: { xs: "32px", md: "48px" },
-                            letterSpacing: "-2%",
-                            lineHeight: 1.1,
+                            fontSize: { xs: "2.7rem", md: "4.6rem" }, lineHeight: 0.96,
+                            letterSpacing: "-0.055em",
                             color: "var(--app-fg)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
-                        Pay only when you get paid
+                        One fee. Everything included.
                     </Typography>
                     <Typography
                         sx={{
@@ -134,7 +131,7 @@ export default function PricingPage() {
                             fontWeight: 450,
                         }}
                     >
-                        A simple platform fee on each successful charge, on top of your payment provider's own fee. No setup costs, no monthly minimums.
+                        5% of each successful payment, and that already covers the payment gateway. No setup fee, no monthly fee, no payout fee. You only pay when you get paid.
                     </Typography>
                 </Stack>
 
@@ -159,14 +156,14 @@ export default function PricingPage() {
                                 display: "flex",
                                 flexDirection: "column",
                                 p: { xs: 3.5, md: 4 },
-                                borderRadius: "24px",
+                                borderRadius: "var(--radius-card)",
                                 background: "var(--app-bg-2)", // Lifted Cream
                                 border: t.popular
                                     ? "2px solid var(--app-fg)" // Bolder border for popular
                                     : "1.5px solid var(--app-overlay)",
                                 boxShadow: t.popular
-                                    ? "rgba(0, 0, 0, 0.08) 0px 24px 48px 0px"
-                                    : "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                                    ? "color-mix(in srgb, var(--app-fg) 8%, transparent) 0px 24px 48px 0px"
+                                    : "color-mix(in srgb, var(--app-fg) 4%, transparent) 0px 4px 24px 0px",
                             }}
                         >
                             {t.popular && (
@@ -180,11 +177,10 @@ export default function PricingPage() {
                                         borderRadius: "999px",
                                         fontSize: "11px",
                                         fontWeight: 700,
-                                        letterSpacing: "0.06em",
+                                        letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                         textTransform: "uppercase",
                                         color: "var(--app-on-ink)",
                                         background: "var(--app-ink)", // Ink Black pill badge
-                                        fontFamily: "var(--font-sofia-sans)",
                                     }}
                                 >
                                     Popular
@@ -227,7 +223,7 @@ export default function PricingPage() {
                                         fontSize: "36px",
                                         color: "var(--app-fg)",
                                         fontFamily: "var(--font-sofia-sans)",
-                                        letterSpacing: "-1px",
+                                        letterSpacing: "-0.045em",
                                     }}
                                 >
                                     {t.price}
@@ -245,7 +241,7 @@ export default function PricingPage() {
 
                             <Typography
                                 sx={{
-                                    color: "#CF4500", // Signal Orange for key pricing metrics
+                                    color: "var(--app-accent)", // Signal Orange for key pricing metrics
                                     fontSize: "15px",
                                     fontWeight: 600,
                                     mb: 4,
@@ -267,7 +263,7 @@ export default function PricingPage() {
                                         <CheckIcon
                                             sx={{
                                                 fontSize: 18,
-                                                color: "#CF4500", // Signal Orange check icons
+                                                color: "var(--app-accent)", // Signal Orange check icons
                                                 mt: "2px",
                                             }}
                                         />
@@ -298,7 +294,7 @@ export default function PricingPage() {
                                         background: "var(--app-ink)",
                                         color: "var(--app-on-ink)",
                                         border: "1.5px solid var(--app-ink)",
-                                        borderRadius: "20px",
+                                        borderRadius: "999px",
                                         py: 1.4,
                                         fontSize: "15px",
                                         fontWeight: 500,
@@ -323,7 +319,7 @@ export default function PricingPage() {
                                         background: "var(--app-surface)",
                                         color: "var(--app-fg)",
                                         border: "1.5px solid var(--app-fg)",
-                                        borderRadius: "20px",
+                                        borderRadius: "999px",
                                         py: 1.4,
                                         fontSize: "15px",
                                         fontWeight: 500,
@@ -346,10 +342,10 @@ export default function PricingPage() {
                 <Box
                     sx={{
                         p: { xs: 4, md: 5 },
-                        borderRadius: "24px",
+                        borderRadius: "var(--radius-card)",
                         background: "var(--app-bg-2)", // Lifted Cream
                         border: "1.5px solid var(--app-overlay)",
-                        boxShadow: "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                        boxShadow: "rgba(20, 32, 24, 0.04) 0px 4px 24px 0px",
                         mb: 6,
                     }}
                 >
@@ -360,11 +356,11 @@ export default function PricingPage() {
                             fontSize: "22px",
                             mb: 3,
                             color: "var(--app-fg)",
-                            letterSpacing: "-1%",
+                            letterSpacing: "-0.035em",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
-                        Detailed fee breakdown
+                        What you pay, line by line
                     </Typography>
 
                     <Stack
@@ -417,8 +413,77 @@ export default function PricingPage() {
                             fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
-                        Network provider merchant account fees (charged directly by Stripe or Razorpay) are billed separately. Local goods and services tax (GST) is applied to processing charges in accordance with regional regulations.
+                        The 5% is deducted before the money is paid out to you. It already includes Razorpay's gateway fee and the GST on it, so nothing else is taken from the payment. International cards are charged in INR and carry the same 5%. We'll email you at least 30 days before any change to this rate.
                     </Typography>
+                </Box>
+
+                {/* How payments work */}
+                <Box
+                    component="section"
+                    aria-labelledby="how-payments-work"
+                    sx={{
+                        p: { xs: 3, md: 5 },
+                        borderRadius: "var(--radius-card)",
+                        background: "var(--app-bg-2)",
+                        border: "1.5px solid var(--app-overlay)",
+                        mb: 6,
+                    }}
+                >
+                    <Typography
+                        id="how-payments-work"
+                        variant="h3"
+                        sx={{
+                            fontWeight: 500,
+                            fontSize: "22px",
+                            mb: 1,
+                            color: "var(--app-fg)",
+                            letterSpacing: "-0.035em",
+                            fontFamily: "var(--font-sofia-sans)",
+                        }}
+                    >
+                        How payments work
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: "var(--app-fg-muted)",
+                            fontSize: "14px",
+                            lineHeight: 1.6,
+                            mb: 4,
+                            maxWidth: 640,
+                            fontFamily: "var(--font-sofia-sans)",
+                        }}
+                    >
+                        Payments are processed by Razorpay, an RBI-regulated payment gateway. Card and UPI details are entered on Razorpay's checkout and never reach Elixpo or your app.
+                    </Typography>
+                    <FlowDiagram
+                        title="How payments work"
+                        steps={[
+                            {
+                                icon: "app",
+                                title: "Your app",
+                                body: "Sends the buyer to Elixpo Pay's hosted checkout.",
+                            },
+                            {
+                                icon: "phone",
+                                title: "Buyer pays",
+                                body: "On Razorpay with UPI, cards or netbanking.",
+                            },
+                            {
+                                icon: "key",
+                                title: "Signed webhook",
+                                body: "Elixpo Pay records the payment once and notifies your app.",
+                            },
+                            {
+                                icon: "bank",
+                                title: "Access and payouts",
+                                body: "The buyer's access unlocks; your earnings are paid out to your bank.",
+                            },
+                        ]}
+                    />
+                    <PolicyLinks trust="buying"
+                        lead="Policies that apply to every payment:"
+                        style={{ marginTop: "2rem", fontFamily: "var(--font-sofia-sans)" }}
+                    />
                 </Box>
 
                 {/* Bottom Assistance Link */}
@@ -430,13 +495,13 @@ export default function PricingPage() {
                         fontFamily: "var(--font-sofia-sans)",
                     }}
                 >
-                    Questions about enterprise transaction volumes?{" "}
+                    Questions about pricing?{" "}
                     <Box
                         component="a"
                         href="mailto:hello@elixpo.com"
-                        sx={{ color: "#3860BE", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
+                        sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
                     >
-                        Talk to our payments team →
+                        Write to hello@elixpo.com →
                     </Box>
                 </Typography>
             </Container>

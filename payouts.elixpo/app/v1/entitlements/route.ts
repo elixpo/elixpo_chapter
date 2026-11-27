@@ -1,17 +1,17 @@
 export const runtime = "edge";
 
 import { type NextRequest, NextResponse } from "next/server";
-import { sha256Hex, timingSafeEqual } from "@/lib/crypto";
+import { appFromApiKey } from "@/lib/api-auth";
 import { getDatabase } from "@/lib/d1-client";
 import { getEntitlement, toView } from "@/lib/entitlements";
-import { getAppBySlug } from "@/lib/repo";
 
 /**
  * GET /v1/entitlements?app=<slug>&uid=<external uid>
  *
  * Server-to-server entitlement lookup for the consuming app. Auth:
  *   Authorization: Bearer <app secret key>   (or  X-Elixpo-Pay-Key: <key>)
- * The key is SHA-256-compared against apps.api_key_hash.
+ * The key must belong to `app` (current key, or the previous one during a
+ * rotation grace window).
  *
  * Returns the EntitlementView (tier, status, active, expires_at, version).
  */
@@ -31,29 +31,26 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const authHeader = request.headers.get("authorization");
-        const key = authHeader?.startsWith("Bearer ")
-            ? authHeader.slice(7)
-            : request.headers.get("x-elixpo-pay-key");
-
-        if (!key) {
+        const db = await getDatabase();
+        // Same key check as every other /v1 route (incl. rotation grace), and
+        // auth BEFORE any slug lookup so callers can't enumerate apps.
+        const app = await appFromApiKey(db, request);
+        if (!app) {
             return NextResponse.json(
-                { error: "unauthorized", error_description: "missing API key" },
+                {
+                    error: "unauthorized",
+                    error_description: "Invalid or missing secret key",
+                },
                 { status: 401 },
             );
         }
-
-        const db = await getDatabase();
-        const app = await getAppBySlug(db, appSlug);
-        if (!app || !app.api_key_hash) {
-            return NextResponse.json({ error: "unknown_app" }, { status: 404 });
-        }
-
-        const presentedHash = await sha256Hex(key);
-        if (!timingSafeEqual(presentedHash, app.api_key_hash)) {
+        if (app.slug !== appSlug) {
             return NextResponse.json(
-                { error: "unauthorized", error_description: "invalid API key" },
-                { status: 401 },
+                {
+                    error: "forbidden",
+                    error_description: "This key does not belong to that app",
+                },
+                { status: 403 },
             );
         }
 

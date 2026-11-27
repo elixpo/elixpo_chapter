@@ -71,7 +71,38 @@ export async function syncProduct(
     const description = input.description
         ? String(input.description).trim().slice(0, 280)
         : null;
-    const priceList = input.prices ?? input.tiers ?? [];
+    const rawPrices = input.prices ?? input.tiers;
+    // Omitting `prices` updates product metadata only — it must never wipe
+    // the live price list (that would break checkout with `no_price`).
+    const reconcilePrices = rawPrices !== undefined;
+    if (reconcilePrices && !Array.isArray(rawPrices)) {
+        throw new SyncError("invalid_prices", "product.prices must be an array");
+    }
+    const priceList: CatalogPriceInput[] = rawPrices ?? [];
+    // Validate every row BEFORE writing anything, so a typo is a 400 rather
+    // than a silently half-applied catalog.
+    priceList.forEach((t, i) => {
+        const currency = String(t?.currency || "").toUpperCase();
+        const unit = Number(t?.unit_amount);
+        if (!SYNC_CURRENCIES.includes(currency)) {
+            throw new SyncError(
+                "invalid_price",
+                `prices[${i}].currency must be one of ${SYNC_CURRENCIES.join(", ")}`,
+            );
+        }
+        if (!Number.isInteger(unit) || unit <= 0) {
+            throw new SyncError(
+                "invalid_price",
+                `prices[${i}].unit_amount must be a positive integer in minor units (e.g. 19900 for ₹199)`,
+            );
+        }
+        if (t.interval != null && !SYNC_INTERVALS.includes(String(t.interval))) {
+            throw new SyncError(
+                "invalid_price",
+                `prices[${i}].interval must be one of ${SYNC_INTERVALS.join(", ")}`,
+            );
+        }
+    });
 
     // 1. Upsert the product by (app, tier).
     const existingProduct = (await db
@@ -210,7 +241,7 @@ export async function syncProduct(
 
     // 3. Deactivate active prices not present in the payload.
     let deactivated = 0;
-    for (const e of existing) {
+    for (const e of reconcilePrices ? existing : []) {
         if (e.active && !seen.has(priceKey(e.currency, e.region, e.interval))) {
             await db
                 .prepare("UPDATE prices SET active = 0 WHERE id = ?")

@@ -1,4 +1,5 @@
-# Production deployment adapted from blogs.elixpo.
+# Production deployment through the organization's shared Cloudflare workflows
+# (elixpo/agent.elixpo).
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN  — Workers Scripts: Edit and Cloudflare Pages: Edit
@@ -7,6 +8,11 @@
 #
 # Runtime secrets remain configured on the Worker and Pages project. This
 # workflow only supplies public values that Next.js compiles into the client.
+#
+# The Pages site is built here rather than in the shared workflow because the
+# build reads NEXT_PUBLIC_ELIXPO_AUTH_CLIENT_ID from a repository secret, which
+# the shared workflow's plain `build-env` input cannot carry. The built
+# `.vercel/output/static` is handed to the shared Pages workflow as an artifact.
 name: Deploy
 
 on:
@@ -26,20 +32,17 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       !contains(github.event.head_commit.message, '[skip deploy]')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: production
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-worker.yml@main
+    with:
+      # Deploys wrangler.toml at the repository root (Worker lixsketch-collab).
+      working-directory: "."
+      node-version: "20"
+      environment: production
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Deploy collaboration worker
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config wrangler.toml
-
-  deploy-pages:
+  build-pages:
     needs: deploy-worker
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -73,12 +76,28 @@ jobs:
           NEXT_PUBLIC_ROOM_WS_URL: ${{ vars.NEXT_PUBLIC_ROOM_WS_URL || 'wss://sketch.elixpo.com' }}
           NEXT_PUBLIC_LIXSKETCH_EMBED_ORIGINS: ${{ vars.NEXT_PUBLIC_LIXSKETCH_EMBED_ORIGINS || 'https://sketch.elixpo.com' }}
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+      - name: Upload built site
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .vercel/output/static --project-name lixsketch --branch main
+          name: lixsketch-pages
+          path: .vercel/output/static
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-pages:
+    needs: build-pages
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: lixsketch
+      artifact-name: lixsketch-pages
+      output-directory: .vercel/output/static
+      node-version: "20"
+      branch: main
+      environment: production
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # D1 migrations intentionally remain manual via `npm run db:migrate`.
   # Schema changes must be applied before merging code that depends on them.

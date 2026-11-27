@@ -341,6 +341,12 @@
   animation: coverBannerIn 0.35s ease-out;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .cover-banner-enter {
+    animation: none;
+  }
+}
+
 /* Cover toolbar buttons */
 .cover-toolbar-btn {
   display: flex;

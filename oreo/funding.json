@@ -1,0 +1,148 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "organisation",
+    "role": "owner",
+    "name": "Elixpo",
+    "email": "hello@elixpo.com",
+    "description": "Elixpo is an open-source project foundry in India, a Udyam-registered MSME (UDYAM-WB-07-0152337). It builds FaleraOS and the Elixpo Falera Badge: open hardware, open software and the research behind them, all released under open licences. Team: Ayushman Bhattacharya (founder), Anwesha Chakraborty and Vivek Yadav (co-founders), and Nihal Gazi (maintainer).",
+    "webpageUrl": {
+      "url": "https://falera.elixpo.com",
+      "wellKnown": "https://falera.elixpo.com/.well-known/funding-manifest-urls"
+    }
+  },
+  "projects": [
+    {
+      "guid": "faleraos",
+      "name": "FaleraOS and the Elixpo Falera Badge",
+      "description": "FaleraOS is an open-source MicroPython operating system for the Elixpo Falera Badge, an open-hardware ESP32-S3 conference badge with a 2.8-inch touch screen, eight buttons, IR, a motion sensor, a speaker and microSD. It has an app SDK, an on-device App Store, over-the-air updates, a command-line tool (falera-cli) and RV565, a video format for small displays described in arXiv:2610.35935. The hardware is OSHWA-certified (IN000107) under CERN-OHL-P-2.0 and the software is MIT. Formerly OreoOS.",
+      "webpageUrl": {
+        "url": "https://falera.elixpo.com",
+        "wellKnown": "https://falera.elixpo.com/.well-known/funding-manifest-urls"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/elixpo/falera"
+      },
+      "licenses": [
+        "spdx:MIT",
+        "spdx:CERN-OHL-P-2.0",
+        "spdx:CC-BY-4.0"
+      ],
+      "tags": [
+        "open-hardware",
+        "micropython",
+        "esp32",
+        "embedded",
+        "operating-system",
+        "education",
+        "hardware"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "elixpo-pay",
+        "type": "payment-provider",
+        "address": "https://payouts.elixpo.com/f/falera-badge",
+        "description": "The Falera Badge fundraiser on Elixpo Pay (UPI, cards and netbanking, in INR)."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "founder-boards",
+        "status": "active",
+        "name": "The first five founder boards",
+        "description": "Bare PCBs from JLCPCB and parts from LCSC for the first five badges, paid out of pocket so far; the fundraiser's goal. Every price is in circuit/elixpo/BOM_COST.md.",
+        "amount": 8000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "one-badge",
+        "status": "active",
+        "name": "One badge",
+        "description": "The parts for one complete badge at the prices paid in November 2026 (board share, LCSC parts and shipping, display, battery and module), from circuit/elixpo/BOM_COST.md.",
+        "amount": 4172,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "four-month-plan",
+        "status": "active",
+        "name": "Four months: the final version 2 board",
+        "description": "Four months, ₹2,50,000, to make the version 2 board final so every board after it works first time. Month 1: the first PCB badges running FaleraOS and a public build guide. Month 2: touch, audio and an app tutorial. Month 3: the final version 2 board. Month 4: 10 badges built and tested on it, and two workshops. Each milestone is reported in the repository; terms in pitch-deck/SPONSORSHIP.md.",
+        "amount": 250000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "maintainer-stipends",
+        "status": "active",
+        "name": "Maintainer stipends",
+        "description": "Four maintainers × ₹7,500 a month for four months (₹1,20,000), paid by milestone.",
+        "amount": 30000,
+        "currency": "INR",
+        "frequency": "monthly",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "final-board",
+        "status": "active",
+        "name": "The final version 2 board",
+        "description": "The fixes found on the first five boards, fabrication and assembly of version 2, and 10 badges built and tested on it.",
+        "amount": 75000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "two-workshops",
+        "status": "active",
+        "name": "Two workshops",
+        "description": "Kits, travel and documentation for two build-and-code workshops: everyone builds a badge and publishes an app.",
+        "amount": 30000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      },
+      {
+        "guid": "test-equipment",
+        "status": "active",
+        "name": "Test equipment",
+        "description": "A hot-air station, a bench power supply and a logic analyser for bringing up and testing every board.",
+        "amount": 25000,
+        "currency": "INR",
+        "frequency": "one-time",
+        "channels": [
+          "elixpo-pay"
+        ]
+      }
+    ],
+    "history": [
+      {
+        "year": 2026,
+        "income": 872,
+        "expenses": 8185,
+        "taxes": 0,
+        "currency": "INR",
+        "description": "Income: the community fundraiser, ₹872 from 16 people as of 21 November 2026. Expenses: the first five PCBs (JLCPCB, ₹4,122) and their parts (LCSC, ₹4,063), paid by the maintainers."
+      }
+    ]
+  }
+}

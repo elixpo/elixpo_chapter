@@ -1,7 +1,7 @@
 Valid-License-Identifier: Apache-2.0
 SPDX-URL: https://spdx.org/licenses/Apache-2.0.html
 Usage-Guide:
-  This license is included as a reference copy. OreoOS's own source
+  This license is included as a reference copy. FaleraOS's own source
   code is licensed under MIT (see LICENSES/preferred/MIT). The
   Apache-2.0 text below applies to upstream ESP-IDF components that
   ship as part of the MicroPython firmware image. Downstream

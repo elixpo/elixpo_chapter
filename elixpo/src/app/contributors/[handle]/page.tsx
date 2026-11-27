@@ -7,6 +7,7 @@ import contributors from "../../../../content/contributors.json";
 import { PrintRecordButton } from "@/components/PrintRecordButton";
 import { DIRECTORY_ENTRIES, familyPath } from "@/lib/directory";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 type PageProps = { params: Promise<{ handle: string }> };
 
@@ -61,7 +62,7 @@ export default async function ContributorRecordPage({ params }: PageProps) {
   return <main className="page-shell contributor-record">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     <div className="record-actions"><Link className="record-back" href="/contributors"><ArrowLeft size={14} /> All contributor records</Link><PrintRecordButton /></div>
-    <header className="record-hero">
+    <header className="record-hero"><Sparks chips={["thank you ♥", "merged ✓"]} />
       <div className="record-portrait"><span>PUBLIC RECORD</span><i /><i /><Image src={`https://github.com/${person.handle}.png`} alt={`${person.name} profile`} width={360} height={360} unoptimized /></div>
       <div><p className="eyebrow">Contributor / @{person.handle}</p><h1>{person.name}</h1><p className="lede">{person.story}</p><dl><div><dt>Record ID</dt><dd>{person.recordId}</dd></div><div><dt>Observed window</dt><dd>{person.activeWindow}</dd></div><div><dt>Primary evidence records</dt><dd>{person.evidence.length}</dd></div><div><dt>Record reviewed</dt><dd>{contributors.lastVerified}</dd></div></dl></div>
     </header>
@@ -74,7 +75,7 @@ export default async function ContributorRecordPage({ params }: PageProps) {
     </section>
 
     <section className="contribution-work" aria-labelledby="structured-work-title">
-      <div className="section-heading split"><div><p className="eyebrow">Structured work record</p><h2 id="structured-work-title">Projects, role, outcome, and demonstrated skills.</h2></div><p>Each field is limited to what the linked public evidence supports. Missing reviewer attribution is shown explicitly rather than inferred.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Structured work record</p><h2 id="structured-work-title">Projects, role, outcome, and demonstrated skills.</h2></div><p>Each field is limited to what the linked public evidence supports. Missing reviewer attribution is shown explicitly rather than inferred.</p></div>
       <div className="contribution-work-grid">{person.workRecords.map((record) => <article key={record.label}>
         <div className="work-record-heading"><p className="eyebrow">{record.dateRange}</p><h3>{record.label}</h3><span>{record.role}</span></div>
         <p>{record.outcome}</p>
@@ -91,7 +92,7 @@ export default async function ContributorRecordPage({ params }: PageProps) {
       </article>)}</div>
     </section>
 
-    <section className="record-evidence"><div className="section-heading split"><div><p className="eyebrow">Primary evidence</p><h2>Inspect the work directly.</h2></div><p>Evidence links point to the public source record. They are preserved independently from this summary so the claim can be checked.</p></div><div>{person.evidence.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2,"0")}</span><b>Chapter contribution evidence</b><small>{url}</small><ArrowUpRight size={16} /></a>)}</div></section>
+    <section className="record-evidence"><div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Primary evidence</p><h2>Inspect the work directly.</h2></div><p>Evidence links point to the public source record. They are preserved independently from this summary so the claim can be checked.</p></div><div>{person.evidence.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2,"0")}</span><b>Chapter contribution evidence</b><small>{url}</small><ArrowUpRight size={16} /></a>)}</div></section>
 
     <section className="method-panel"><p className="eyebrow">Record boundary</p><h2>Evidence, not a decorative credential.</h2><p>This page records attributable public work observed in a dated repository snapshot. It is not a certification, academic award, employment verification, or guarantee of present affiliation.</p><p>{contributors.recordPolicy.correctionRule}</p><p>{contributors.recordPolicy.fraudRule}</p><div className="inline-links"><a className="text-link" href={contributors.selectionPolicy.correctionUrl} target="_blank" rel="noreferrer">Request a correction <ArrowUpRight size={14} /></a><a className="text-link" href={contributors.selectionPolicy.optOutUrl} target="_blank" rel="noreferrer">Request removal <ArrowUpRight size={14} /></a><a className="text-link" href="https://github.com/elixpo/elixpo/blob/main/docs/policies/contributor-records.md" target="_blank" rel="noreferrer">Read the record policy <ArrowUpRight size={14} /></a></div></section>
   </main>;

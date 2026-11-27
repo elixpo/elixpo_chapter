@@ -45,7 +45,7 @@ CELL_H       = (SH - PAD_TOP - PAD_BOT) // VISIBLE_ROWS
 
 # ── animation ────────────────────────────────────────────────────────────────
 ANIM_DUR     = 0.28
-SCROLL_TWEEN = 0.32      # fraction of remaining distance covered per frame
+SCROLL_DUR   = 0.22      # seconds for an eased row-to-row glide
 
 CORNER_R     = 4
 
@@ -266,6 +266,53 @@ _APPS_CACHE       = None
 _CATEGORIES_CACHE = None  # (apps_tuple, mode) → [(name, icon, idxs)…]
 
 
+DRAWER_HIDDEN = ("launcher", "bt", "wifi", "gestures", "updates")
+
+
+def _build_icons(apps):
+    """Fill the icon and label caches for `apps` unless they already hold
+    this roster. Returns True when it had to build them."""
+    global _ICON_CACHE_KEY
+    cache_key = (tuple(a["dir"] for a in apps), ICON_SZ)
+    if _ICON_CACHE_KEY == cache_key:
+        return False
+    _ICON_CACHE.clear()
+    _SMALL_ICON_CACHE.clear()
+    _LABEL_CACHE.clear()
+    _ICON_CACHE_KEY = cache_key
+
+    from oreoOS import icons as _icons
+    for a in apps:
+        res = _icons.load(a["dir"], a.get("icon"))
+        if not res:
+            continue
+        data, iw, ih = res
+        _SMALL_ICON_CACHE[a["dir"]] = (bytearray(data), iw, ih)
+        if iw == ICON_SZ and ih == ICON_SZ:
+            _ICON_CACHE[a["dir"]] = (bytearray(data), iw, ih)
+        else:
+            sx = max(1, ICON_SZ // iw)
+            sy = max(1, ICON_SZ // ih)
+            up, uw, uh = _upscale_xy(bytearray(data), iw, ih, sx, sy)
+            _ICON_CACHE[a["dir"]] = (up, uw, uh)
+
+    for a in apps:
+        _LABEL_CACHE[a["dir"]] = _wrap_label(a["name"])
+    return True
+
+
+def warm(apps):
+    """Called by the OS behind the boot splash with the app list it has
+    just read: seed the apps cache and build the icons, so the first A on
+    Home opens the drawer without reading manifests or decoding icons."""
+    global _APPS_CACHE
+    if _APPS_CACHE is None and apps is not None:
+        _APPS_CACHE = list(apps)
+    if _APPS_CACHE is not None:
+        _build_icons([a for a in _APPS_CACHE
+                      if a["dir"] not in DRAWER_HIDDEN])
+
+
 def invalidate_apps_cache():
     """Hook for the Store + Updates apps to drop the cached app list
     after an install / uninstall lands. Without this the launcher would
@@ -325,7 +372,6 @@ class App(oreoOS.App):
             def _lap(label):
                 pass
         self._os = os
-        DRAWER_HIDDEN = ("launcher", "bt", "wifi", "gestures", "updates")
 
         # Apps-list cache. list_apps() opens every manifest.json from
         # flash — ~50-100 ms per file on a busy FS, so 20+ apps was
@@ -344,32 +390,8 @@ class App(oreoOS.App):
         # invalidate on (apps_tuple, ICON_SZ) change — adding or removing
         # an app rebuilds, but re-entering the launcher with the same
         # roster is instant.
-        global _ICON_CACHE_KEY
-        cache_key  = (tuple(a["dir"] for a in self._apps), ICON_SZ)
-        icon_cache_hit = (_ICON_CACHE_KEY == cache_key)
+        icon_cache_hit = not _build_icons(self._apps)
         if not icon_cache_hit:
-            _ICON_CACHE.clear()
-            _SMALL_ICON_CACHE.clear()
-            _LABEL_CACHE.clear()
-            _ICON_CACHE_KEY = cache_key
-
-            from oreoOS import icons as _icons
-            for a in self._apps:
-                res = _icons.load(a["dir"], a.get("icon"))
-                if not res:
-                    continue
-                data, iw, ih = res
-                _SMALL_ICON_CACHE[a["dir"]] = (bytearray(data), iw, ih)
-                if iw == ICON_SZ and ih == ICON_SZ:
-                    _ICON_CACHE[a["dir"]] = (bytearray(data), iw, ih)
-                else:
-                    sx = max(1, ICON_SZ // iw)
-                    sy = max(1, ICON_SZ // ih)
-                    up, uw, uh = _upscale_xy(bytearray(data), iw, ih, sx, sy)
-                    _ICON_CACHE[a["dir"]] = (up, uw, uh)
-
-            for a in self._apps:
-                _LABEL_CACHE[a["dir"]] = _wrap_label(a["name"])
             _lap("icons (cold)")
         else:
             _lap("icons (warm)")
@@ -415,9 +437,13 @@ class App(oreoOS.App):
 
         self._sel       = 0
         self._top_row   = 0          # which grid row is at top of viewport
-        self._scroll_y  = 0.0        # tweened pixel offset
+        # Eased, time-based pixel offset (see widgets.Scroller). The grid
+        # only repaints the band between header and hint while it glides.
+        self._scroll    = widgets.Scroller(0, dur=SCROLL_DUR)
         self._anim_t    = ANIM_DUR
         self._dirty     = True
+        self._full      = True       # next draw repaints header + hint too
+        self._present_region = None
 
         # Restore the previous (sel, scroll, cat_level) if HOME from an
         # app brought us back here. Done last so it overrides the
@@ -492,14 +518,16 @@ class App(oreoOS.App):
         self._cat_level = 1
         self._sel       = 0
         self._top_row   = 0
-        self._scroll_y  = 0.0
+        self._scroll.set_target(0, snap=True)
         self._anim_t    = 0.0
+        self._full      = True
 
     def _leave_category(self):
         """Return from the apps grid back up to the category picker."""
         self._cat_level = 0
         self._view_apps = list(range(len(self._apps)))
         self._anim_t    = 0.0
+        self._full      = True
 
     # ── HOME-button resume context ───────────────────────────────────────
     # The launcher snapshots its scroll/selection before launching an
@@ -516,7 +544,7 @@ class App(oreoOS.App):
                 "cat_sel":   self._cat_sel,
                 "sel":       self._sel,
                 "top_row":   self._top_row,
-                "scroll_y":  self._scroll_y,
+                "scroll_y":  self._scroll.target,
             }
         except Exception:
             pass
@@ -547,13 +575,15 @@ class App(oreoOS.App):
                 if n:
                     self._sel      = max(0, min(n - 1, int(ctx.get("sel", 0))))
                     self._top_row  = max(0, int(ctx.get("top_row", 0)))
-                    self._scroll_y = float(ctx.get("scroll_y", 0.0))
+                    self._scroll.set_target(
+                        float(ctx.get("scroll_y", 0.0)), snap=True)
         else:
             n = len(self._view_apps)
             if n:
                 self._sel      = max(0, min(n - 1, int(ctx.get("sel", 0))))
                 self._top_row  = max(0, int(ctx.get("top_row", 0)))
-                self._scroll_y = float(ctx.get("scroll_y", 0.0))
+                self._scroll.set_target(
+                    float(ctx.get("scroll_y", 0.0)), snap=True)
         self._anim_t = ANIM_DUR
         self._dirty  = True
 
@@ -623,6 +653,7 @@ class App(oreoOS.App):
             self._top_row = sel_row - VISIBLE_ROWS + 1
         if self._top_row > rows_total - VISIBLE_ROWS:
             self._top_row = max(0, rows_total - VISIBLE_ROWS)
+        self._scroll.set_target(self._top_row * CELL_H)
 
         if self._sel != prev:
             self._anim_t = 0.0
@@ -646,31 +677,45 @@ class App(oreoOS.App):
         self._dirty = True
 
     def update(self, dt):
-        # Tween scroll
-        target = self._top_row * CELL_H
-        if abs(self._scroll_y - target) > 0.5:
-            self._scroll_y += (target - self._scroll_y) * SCROLL_TWEEN
+        # Eased scroll: time-based, so a slow frame never makes it jerk.
+        if self._scroll.step(dt):
             self._dirty = True
-        else:
-            self._scroll_y = float(target)
 
         if self._anim_t < ANIM_DUR:
             self._anim_t = min(ANIM_DUR, self._anim_t + dt)
             self._dirty = True
 
     # ── render ───────────────────────────────────────────────────────────
+    def invalidate(self):
+        """An overlay (notification panel, pair prompt) painted over us:
+        the next frame must repaint header and hint too, not just the grid."""
+        self._dirty = True
+        self._full  = True
+
+    def _hint(self):
+        # Hint reflects what the user can do at this level.
+        if self._mode == "categories" and self._cat_level == 0:
+            return "A=open  HOME=back  C=notif"
+        if self._mode == "categories" and self._cat_level == 1:
+            return "A=launch  B=back  C=notif"
+        return "A=launch  HOME=back  C=notif"
+
     def draw(self, d):
         if not self._dirty:
             return
-        d.clear(theme.BG)
-        widgets.draw_header(d, "APPS")
-        # Hint reflects what the user can do at this level.
-        if self._mode == "categories" and self._cat_level == 0:
-            widgets.draw_hint(d, "A=open  HOME=back  C=notif")
-        elif self._mode == "categories" and self._cat_level == 1:
-            widgets.draw_hint(d, "A=launch  B=back  C=notif")
+        # Grid frames after the first only touch the band between header
+        # and hint: no full-screen clear, and the OS flushes just that band
+        # (see _present_region) — a 196-row push instead of 240.
+        partial = (not self._full and
+                   not (self._mode == "categories" and self._cat_level == 0))
+        if partial:
+            d.rect(0, widgets.HEADER_H, SW,
+                   SH - widgets.HEADER_H - widgets.HINT_H, theme.BG, fill=True)
         else:
-            widgets.draw_hint(d, "A=launch  HOME=back  C=notif")
+            d.clear(theme.BG)
+            widgets.draw_header(d, "APPS")
+            widgets.draw_hint(d, self._hint())
+        self._full = False
 
         n = len(self._apps)
         if not n:
@@ -690,7 +735,7 @@ class App(oreoOS.App):
         # all apps (grid mode) or just one category's apps (level 1).
         view_n     = len(self._view_apps)
         rows_total = (view_n + COLS - 1) // COLS
-        scroll_int = int(self._scroll_y)
+        scroll_int = self._scroll.value
 
         viewport_top    = PAD_TOP
         viewport_bottom = PAD_TOP + VISIBLE_ROWS * CELL_H
@@ -773,25 +818,25 @@ class App(oreoOS.App):
                 _rounded_outline(d, rect_x, rect_y, cur_w, full_h,
                                  theme.SEL_BORDER, r=r)
 
-        # ── viewport mask: hide rows scrolled above the top edge ─────────
-        if scroll_int > 0:
-            d.rect(0, 0, SW, PAD_TOP, theme.BG, fill=True)
-            widgets.draw_header(d, "APPS")   # re-stamp the header on top
+        # ── viewport mask: rows that poke past the band are clipped by
+        # re-stamping the header and hint over them. The pixels match what
+        # is already on the panel, so a partial frame need not flush them.
+        if scroll_int > 0 or self._scroll.moving():
+            widgets.draw_header(d, "APPS")
+        if rows_total > VISIBLE_ROWS:
+            widgets.draw_hint(d, self._hint())
 
         # ── scrollbar on the right ───────────────────────────────────────
-        if rows_total > VISIBLE_ROWS:
-            track_x = SW - 4
-            track_y = PAD_TOP
-            track_h = SH - PAD_TOP - PAD_BOT
-            d.rect(track_x, track_y, 2, track_h, theme.MUTED2, fill=True)
-            thumb_h = max(12, track_h * VISIBLE_ROWS // rows_total)
-            thumb_y = track_y + (track_h - thumb_h) * self._top_row \
-                                 // max(1, rows_total - VISIBLE_ROWS)
-            d.rect(track_x, thumb_y, 2, thumb_h, theme.PRIMARY, fill=True)
+        # Thumb follows the eased offset (pixels), so it glides with the grid.
+        widgets.draw_scrollbar(d, SW - 4, PAD_TOP, SH - PAD_TOP - PAD_BOT,
+                               rows_total * CELL_H, VISIBLE_ROWS * CELL_H,
+                               scroll_int, track=theme.MUTED2)
 
+        if partial:
+            self._present_region = (0, widgets.HEADER_H, SW,
+                                    SH - widgets.HEADER_H - widgets.HINT_H)
         # keep dirty while scrolling / animating
-        if (abs(self._scroll_y - self._top_row * CELL_H) > 0.5 or
-            self._anim_t < ANIM_DUR):
+        if self._scroll.moving() or self._anim_t < ANIM_DUR:
             return    # leave _dirty = True
         self._dirty = False
 

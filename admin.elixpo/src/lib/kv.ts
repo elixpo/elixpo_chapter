@@ -145,6 +145,15 @@ export async function cached<T>(
         // ignore cache read failure
     }
     const value = await fn();
-    cacheSet(key, value, ttlSeconds).catch(() => {});
+    // Never cache a failure — a transient Cloudflare error would otherwise be
+    // served for the whole TTL after the API has recovered.
+    if (!isFailure(value)) cacheSet(key, value, ttlSeconds).catch(() => {});
     return value;
+}
+
+/** `{ available: false }` / `{ ok: false }` results are failures: never cache. */
+function isFailure(value: unknown): boolean {
+    if (typeof value !== "object" || value === null) return false;
+    const v = value as { available?: unknown; ok?: unknown };
+    return v.available === false || v.ok === false;
 }

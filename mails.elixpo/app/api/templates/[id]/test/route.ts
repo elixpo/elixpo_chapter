@@ -1,5 +1,6 @@
 export const runtime = "edge";
 
+import { assertCanSend } from "@/lib/billing";
 import { getDatabase } from "@/lib/d1-client";
 import { decryptSecret } from "@/lib/encryption";
 import { getProduct, productToFooter } from "@/lib/products";
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     try {
         const db = await getDatabase();
+        const canSend = await assertCanSend(db, session.tenantId);
+        if (!canSend.allowed) {
+            return NextResponse.json({ ok: false, error: canSend.reason }, { status: 403 });
+        }
+
         const tmpl = await getTemplate(db, session.tenantId, id);
         if (!tmpl) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 

@@ -3,6 +3,7 @@
 export const runtime = "edge";
 
 import { Box } from "@mui/material";
+import { Fragment } from "react";
 import CodeBlock from "../_components/code-block";
 import {
     Callout,
@@ -25,6 +26,7 @@ const payload = JSON.stringify({ to: "user@example.com", variables: { name: "Ada
 const t = Math.floor(Date.now() / 1000);
 const v1 = crypto.createHmac("sha256", secret).update(\`\${t}.\${payload}\`).digest("hex");
 
+// Configure client timeout >= 20s for cold paths & SMTP delivery
 const res = await fetch(url, {
   method: "POST",
   headers: {
@@ -32,10 +34,23 @@ const res = await fetch(url, {
     "X-Elixpo-Signature": \`t=\${t},v1=\${v1}\`,
   },
   body: payload,
+  signal: AbortSignal.timeout(20000),
 });
 
 const out = await res.json();
-// { ok: true, id, status: "sent", to, subject }`;
+
+// ALWAYS inspect out.ok — HTTP 200 does not guarantee delivery!
+if (!out.ok) {
+  if (out.status === "suppressed") {
+    // Recipient unsubscribed; platform skipped delivery (successful no-op)
+    console.log("Recipient unsubscribed (suppressed):", out.to);
+  } else {
+    // Delivery failed (e.g. 502 SMTP error)
+    console.error("Delivery failed:", out.error);
+  }
+} else {
+  console.log("Email sent! Delivery ID:", out.id);
+}`;
 
 export default function Quickstart() {
     return (
@@ -94,21 +109,36 @@ export default function Quickstart() {
                 trigger. Build the JSON body once, sign over <Code>{"`${t}.${rawBody}`"}</Code>, and
                 send the same bytes.
             </DocP>
+            <Callout tone="warn" title="Client timeouts &amp; inspecting result.ok">
+                <strong>Set client timeout ≥ 20s:</strong> Cold paths (suppression lookups, dynamic
+                template rendering, and SMTP socket handshakes) can take 6–15 seconds. Configure
+                your HTTP client with at least 20 seconds timeout (
+                <Code>signal: AbortSignal.timeout(20000)</Code>) to avoid premature aborts.
+                <br />
+                <br />
+                <strong>
+                    Always inspect <Code>out.ok</Code>:
+                </strong>{" "}
+                An HTTP 200 status code does not guarantee delivery (e.g. suppressed recipients
+                return <Code>200 &#123; ok: false, status: "suppressed" &#125;</Code>). You must
+                inspect the parsed JSON body's <Code>ok</Code> field before assuming the email was
+                sent.
+            </Callout>
             <CodeBlock code={TRIGGER} language="javascript" />
 
             <DocList
                 items={[
-                    <>
+                    <Fragment key="sent">
                         <Code>200 {'{ ok: true, status: "sent" }'}</Code> — the email was sent.
-                    </>,
-                    <>
+                    </Fragment>,
+                    <Fragment key="suppressed">
                         <Code>200 {'{ ok: false, status: "suppressed" }'}</Code> — recipient
                         unsubscribed; a successful no-op.
-                    </>,
-                    <>
+                    </Fragment>,
+                    <Fragment key="failed">
                         <Code>502 {'{ ok: false, status: "failed", error }'}</Code> — downstream
                         send failure.
-                    </>,
+                    </Fragment>,
                 ]}
             />
 

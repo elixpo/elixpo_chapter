@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render Oreo source art for the crumb-ui terminal assets."""
+"""Render Lumi source art for the crumb-ui terminal assets."""
 
 from __future__ import annotations
 

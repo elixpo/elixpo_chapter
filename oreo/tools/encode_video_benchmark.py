@@ -5,6 +5,12 @@ independently zlib-compressed frames (u32 little-endian size + payload). Each
 frame expands to RGB565 big-endian pixels. Independent frames keep seeking,
 looping and SD-card streaming deterministic. ``--raw`` emits the proven v5
 baseline instead.
+
+This stays on v6 on purpose. RV565 format version 7 (RV565 2.0: more pixel
+formats, delta and repeat frames) exists, but the badge firmware's
+``_oreo_rv565`` module and the Gallery read only v6 until the usermod moves to
+the RV565 2.0 C library. Write v7 with the reference ``rv565`` package
+(``rv565 encode``) or the browser converter, not for the Gallery.
 """
 
 import argparse
@@ -54,6 +60,7 @@ def encode(source, output, seconds, fps, width, height, compressed=True,
     frames = 0
     try:
         with output.open("wb+") as out:
+            # v6 (not v7): the badge's Gallery and firmware read only v6.
             version = 6 if compressed else 5
             out.write(b"RV5" + bytes((version,)) +
                       struct.pack("<HHBBH", width, height, fps, 0, 0))

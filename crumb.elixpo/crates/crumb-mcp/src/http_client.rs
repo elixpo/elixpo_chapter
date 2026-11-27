@@ -543,6 +543,11 @@ mod tests {
         delay: Duration,
         malformed_list: bool,
     ) {
+        // Windows inherits the listener's nonblocking mode on accept; block so the 1s
+        // read timeout bounds the request instead of rejecting bytes that have not arrived.
+        stream
+            .set_nonblocking(false)
+            .expect("fixture stream blocking");
         let Some(body) = read_http_body(stream) else {
             return;
         };

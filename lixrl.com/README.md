@@ -131,7 +131,7 @@ community for helping shape the project's early direction.
 
 The source code is available under the [MIT license](LICENSES/preferred/MIT).
 Visual assets are available under
-[CC BY 4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and Oreo names, marks,
+[CC BY 4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and Lumi names, marks,
 domains, and protected brand elements remain reserved. See
 [LICENSE](LICENSE) and [NOTICE](LICENSES/NOTICE) for the complete terms.
 

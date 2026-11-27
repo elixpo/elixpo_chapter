@@ -55,3 +55,17 @@ def test_workflow_yaml_is_parseable() -> None:
     for folder in (ROOT / ".github/workflows", ROOT / "distribution/workflows"):
         for path in folder.glob("*.yml"):
             assert isinstance(yaml.safe_load(path.read_text()), dict), path
+
+
+def test_reusable_workflow_secrets_avoid_reserved_names() -> None:
+    # GitHub refuses to start a caller whose called workflow declares a
+    # `workflow_call` secret named github_token (it collides with the built-in
+    # GITHUB_TOKEN) or starting with GITHUB_; every Elixpoo run then fails
+    # before its first job.
+    for name in REUSABLES:
+        workflow = yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
+        triggers = workflow.get(True) or workflow.get("on") or {}
+        secrets = (triggers.get("workflow_call") or {}).get("secrets") or {}
+        assert secrets, f"{name} declares no workflow_call secrets"
+        for secret in secrets:
+            assert not str(secret).upper().startswith("GITHUB_"), f"{name}: secret {secret} is reserved"

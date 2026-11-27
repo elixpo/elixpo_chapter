@@ -15,7 +15,8 @@
 
 export const ARROWHEAD_TYPES = [
     'none', 'arrow', 'bar', 'dot', 'circle', 'triangle', 'triangle_outline',
-    'diamond', 'diamond_outline', 'crowfoot_one', 'crowfoot_many', 'crowfoot_one_or_many', 'cross',
+    'diamond', 'diamond_outline', 'crowfoot_one', 'crowfoot_many', 'crowfoot_one_or_many',
+    'crowfoot_zero_or_one', 'crowfoot_zero_or_many', 'cross',
 ];
 
 export const DEFAULT_START_ARROWHEAD = 'none';
@@ -34,6 +35,9 @@ const ALIASES = {
     open: 'arrow', v: 'arrow', line: 'bar', filled_circle: 'dot', circle_outline: 'circle',
     'triangle-outline': 'triangle_outline', 'diamond-outline': 'diamond_outline',
     'crowfoot-one': 'crowfoot_one', 'crowfoot-many': 'crowfoot_many', 'crowfoot-one-or-many': 'crowfoot_one_or_many',
+    'crowfoot-zero-or-one': 'crowfoot_zero_or_one', 'crowfoot-zero-or-many': 'crowfoot_zero_or_many',
+    'crowfoot_zero_one': 'crowfoot_zero_or_one', 'crowfoot_zero_many': 'crowfoot_zero_or_many',
+    'crowfoot-zero-one': 'crowfoot_zero_or_one', 'crowfoot-zero-many': 'crowfoot_zero_or_many',
     x: 'cross', null: 'none', false: 'none',
 };
 
@@ -83,7 +87,8 @@ export function serializeLineArrowheads(shape) {
 // Base head length (px at stroke width 2), tuned to Excalidraw's sizes.
 const BASE_SIZE = {
     arrow: 18, bar: 14, dot: 11, circle: 12, triangle: 16, triangle_outline: 16,
-    diamond: 16, diamond_outline: 16, crowfoot_one: 14, crowfoot_many: 16, crowfoot_one_or_many: 18, cross: 12,
+    diamond: 16, diamond_outline: 16, crowfoot_one: 14, crowfoot_many: 16, crowfoot_one_or_many: 18,
+    crowfoot_zero_or_one: 18, crowfoot_zero_or_many: 18, cross: 12,
 };
 
 /**
@@ -165,6 +170,27 @@ export function arrowheadGeometry(type, tip, angle, size) {
                 parts: [
                     { kind: 'polyline', points: [at(0, fork / 2), at(fork), at(0, -fork / 2)], filled: false },
                     { kind: 'polyline', points: [at(size, size / 2), at(size, -size / 2)], filled: false },
+                ],
+            };
+        }
+        case 'crowfoot_zero_or_one': {
+            const diameter = size * 0.35;
+            return {
+                trim: 0,
+                parts: [
+                    { kind: 'polyline', points: [at(size * 0.35, size / 2), at(size * 0.35, -size / 2)], filled: false },
+                    { kind: 'circle', center: at(size - diameter / 2), diameter, filled: false },
+                ],
+            };
+        }
+        case 'crowfoot_zero_or_many': {
+            const fork = size * 0.6;
+            const diameter = size * 0.35;
+            return {
+                trim: 0,
+                parts: [
+                    { kind: 'polyline', points: [at(0, fork / 2), at(fork), at(0, -fork / 2)], filled: false },
+                    { kind: 'circle', center: at(size - diameter / 2), diameter, filled: false },
                 ],
             };
         }

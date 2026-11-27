@@ -122,22 +122,22 @@
     },
     "qfabric": {
       "slug": "qfabric",
-      "title": "QFabric: Contract-Driven Cross-Domain Task Recovery",
-      "abstract": "QFabric studies empirical timing-contract recovery across Linux and RTOS domains on Arduino UNO Q, with safe-boundary migration, rollback, and replayable decisions.",
+      "title": "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board",
+      "abstract": "QFabric treats task placement on a Linux-plus-microcontroller board as guarded recovery from violated empirical timing contracts, with hysteresis, semantic and capacity admission, quiescent epoch switching, and probation-based rollback. Measured on an Arduino UNO Q, each MCU call costs about 19 ms of Linux-resident dispatch and Linux contention degrades the MCU path more than the Linux path, so migration never helps; QFabric correctly never migrates, while a controller without hysteresis would make seven harmful moves.",
       "authors": [{ "name": "Ayushman Bhattacharya", "affiliation": null }, { "name": "Anwesha Chakraborty", "affiliation": null }],
-      "researchStatus": "technical-report",
+      "researchStatus": "preprint",
       "reviewStatus": "not-peer-reviewed",
-      "releasedAt": "2026-10-09",
-      "paperUrl": "https://github.com/elixpo/qfabric/tree/main/paper",
-      "doi": null,
+      "releasedAt": "2026-11-01",
+      "paperUrl": "https://arxiv.org/abs/2611.01598",
+      "doi": "10.48550/arXiv.2611.01598",
       "technicalReportInstitution": null,
       "technicalReportNumber": null,
       "codeUrl": "https://github.com/elixpo/qfabric",
-      "artifacts": [{ "kind": "package", "label": "QFabric Python package", "url": "https://pypi.org/project/qfabric/", "license": "Apache-2.0" }],
+      "artifacts": [{ "kind": "evaluation", "label": "QFabric v1.1.0 source, raw traces, and paper generators", "url": "https://doi.org/10.5281/zenodo.23692354", "license": "Apache-2.0" }, { "kind": "package", "label": "QFabric Python package", "url": "https://pypi.org/project/qfabric/", "license": "Apache-2.0" }],
       "liveDemos": [],
-      "licenses": [{ "artifact": "software and non-manuscript project material", "license": "Apache-2.0", "url": "https://github.com/elixpo/qfabric/blob/main/LICENSE" }, { "artifact": "unpublished manuscript, original figures, tables, and testbed photograph", "license": "All Rights Reserved", "url": "https://github.com/elixpo/qfabric/blob/main/paper/LICENSE.md" }],
-      "reproducibility": { "status": "documented", "summary": "The repository includes raw and processed evidence, staged audits, reproducible paper tables and figures, package artifacts, checksum manifests, and hardware-independent verification commands." },
-      "citation": { "text": "Bhattacharya and Chakraborty. QFabric: Contract-Driven Cross-Domain Task Recovery, v1.0.2 (2026).", "cffUrl": "https://github.com/elixpo/qfabric/blob/main/CITATION.cff" },
+      "licenses": [{ "artifact": "paper", "license": "CC BY 4.0", "url": "https://arxiv.org/abs/2611.01598" }, { "artifact": "software and non-manuscript project material", "license": "Apache-2.0", "url": "https://github.com/elixpo/qfabric/blob/main/LICENSE" }],
+      "reproducibility": { "status": "documented", "summary": "The Zenodo archive and repository hold the source, firmware, the 120,000-invocation Stage 12 trace campaign, and generators for every table and figure; the deadline rule and replay protocol were committed before data collection. Results come from one UNO Q board." },
+      "citation": { "text": "Bhattacharya and Chakraborty. QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board. arXiv:2611.01598 (2026).", "cffUrl": "https://github.com/elixpo/qfabric/blob/main/CITATION.cff" },
       "metadataCompleteness": "verified"
     },
     "wozformer": {
@@ -178,7 +178,7 @@
       "doi": "10.48550/arXiv.2610.35935",
       "technicalReportInstitution": null,
       "technicalReportNumber": null,
-      "codeUrl": "https://github.com/elixpo/oreo",
+      "codeUrl": "https://github.com/elixpo/falera",
       "artifacts": [
         {
           "kind": "evaluation",
@@ -197,7 +197,7 @@
       ],
       "reproducibility": {
         "status": "documented",
-        "summary": "The paper, its LaTeX source in elixpo/oreo/paper, and the Zenodo artifact with firmware, measurements and analysis scripts are public; results were measured on one ESP32-S3 board with two 10-second clips."
+        "summary": "The paper, its LaTeX source in elixpo/falera/paper, and the Zenodo artifact with firmware, measurements and analysis scripts are public; results were measured on one ESP32-S3 board with two 10-second clips."
       },
       "citation": {
         "text": "Bhattacharya and Chakraborty. RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems. arXiv:2610.35935 (2026).",

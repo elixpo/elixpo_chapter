@@ -28,7 +28,9 @@ export function isPlatformMerchant(merchantId: string): boolean {
  * payment amount MINUS this cut to the merchant's linked account; the cut stays
  * with the platform. Change this one value to adjust the rate everywhere.
  */
-export const PLATFORM_COMMISSION_BPS = 200; // 2%
+// 5% all-in: covers Razorpay's gateway fee (~2% + 18% GST ≈ 2.36%) out of
+// the platform's cut, so the creator receives exactly 95% and pays nothing else.
+export const PLATFORM_COMMISSION_BPS = 500; // 5%
 
 export interface MerchantRow {
     id: string;

@@ -63,7 +63,7 @@ You MUST respond with ONLY a valid JSON object — no markdown fences, no explan
   "stroke":          "string — edge color (default '#e0e0e0')",
   "strokeWidth":     "number — edge thickness (default 1.5)",
   "lineStyle":       "string — 'solid' | 'dashed' | 'dotted' (default 'solid')",
-  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'cross' (default 'none')",
+  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'crowfoot_zero_or_one' | 'crowfoot_zero_or_many' | 'cross' (default 'none')",
   "endArrowhead":    "string — same values (default 'arrow', only for directed edges)"
 }
 
@@ -72,7 +72,7 @@ Arrowheads (startArrowhead / endArrowhead, only when "directed": true):
   • "triangle" / "triangle_outline" — filled / hollow triangle
   • "dot" / "circle" — filled / hollow circle;  "bar" — perpendicular bar
   • "diamond" / "diamond_outline" — e.g. UML composition / aggregation
-  • "crowfoot_one" / "crowfoot_many" / "crowfoot_one_or_many" — ER cardinality
+  • "crowfoot_one" / "crowfoot_many" / "crowfoot_one_or_many" / "crowfoot_zero_or_one" / "crowfoot_zero_or_many" — ER cardinality
   • "cross" — an X;  "none" — no head (default start)
   Set both ends for a two-way edge (one edge, not two).
 
@@ -467,7 +467,7 @@ You MUST respond with ONLY valid JSON — no markdown fences, no explanations.
   "stroke":          "string — edge color",
   "strokeWidth":     "number — edge thickness",
   "lineStyle":       "string — 'solid' | 'dashed' | 'dotted'",
-  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'cross'",
+  "startArrowhead":  "string — 'none' | 'arrow' | 'bar' | 'dot' | 'circle' | 'triangle' | 'triangle_outline' | 'diamond' | 'diamond_outline' | 'crowfoot_one' | 'crowfoot_many' | 'crowfoot_one_or_many' | 'crowfoot_zero_or_one' | 'crowfoot_zero_or_many' | 'cross'",
   "endArrowhead":    "string — same values"
 }
 

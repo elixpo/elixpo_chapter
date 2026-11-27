@@ -64,9 +64,9 @@ export const PROJECTS: Project[] = [
     badge: "05",
   },
   {
-    title: "Oreo.",
-    cta: "Explore Oreo",
-    href: "https://oreo.elixpo.com",
+    title: "Falera.",
+    cta: "Explore Falera",
+    href: ELIXPO_LINKS.oreo,
     video: VIDEOS.oreo,
     pos: "object-center",
     aspect: "aspect-[16/9]",

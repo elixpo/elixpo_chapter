@@ -1,10 +1,10 @@
-# Oreo Badge — Datasheet
+# Falera Badge — Datasheet
 
 **Document version:** rev. A — 2026-05-15
 **Hardware revision:** reference design (breadboard prototype)
-**OS:** OreoOS v1.3 +
+**OS:** FaleraOS v1.3 +
 
-This document is the single technical reference for the Oreo Badge:
+This document is the single technical reference for the Falera Badge:
 electrical, mechanical, and logical. It complements
 [`HARDWARE.md`](HARDWARE.md) (which is the *narrative* build guide) and
 [`../oreoWare/pins.py`](../oreoWare/pins.py) (which is the *executable*
@@ -78,7 +78,7 @@ collapses the rail below the 2.7 V brownout threshold.
 | Radio | WiFi 802.11 b/g/n + BLE 5.0 |
 | USB | Native USB 1.1 OTG (data) + CP2102N (debug UART) |
 | GPIOs available | 21 of 45 used (see § 6) |
-| OS firmware | MicroPython 1.28 (ESP32_GENERIC_S3 + SPIRAM_OCT) |
+| OS firmware | MicroPython 1.28, board `OREO_BADGE` (`firmware/boards/`: ESP32_GENERIC_S3 + SPIRAM_OCT configuration; USB "Elixpo / Falera Badge") |
 
 ---
 
@@ -231,8 +231,8 @@ manual.
 |---|---|---|---|
 | SPI1 (LCD) | 11 (MOSI), 12 (SCK) + 14 (CS), 15 (DC), 16 (RST) | 40 MHz | `oreoWare.display` |
 | I²C0 | 42 (SDA), 47 (SCL) | 100 kHz default | `oreoWare.imu`, MAX17048 |
-| UART0 | (CP2102 onboard) | 115 200 bps | mpremote, console |
-| USB-CDC | 19 (D-), 20 (D+) | USB FS 12 Mbps | mpremote, REPL |
+| UART0 | 43 (TX), 44 (RX), via the DevKit's USB-UART bridge (CH343 on the tested board) | 115 200 bps | boot log, recovery |
+| USB-CDC | 19 (D-), 20 (D+); `303a:83ec` "Elixpo Falera Badge" | USB FS 12 Mbps | mpremote, REPL, deploy ([USB.md](USB.md)) |
 | WiFi | internal | 802.11 b/g/n | `oreoWare.wifi`, OTA |
 | BLE | internal | BLE 5.0 LE | `oreoWare.bt` |
 | IR-NEC | 2 (TX), 18 (RX) | 38 kHz carrier | `oreoWare.ir` |

@@ -313,7 +313,7 @@ erDiagram
 | `NAME { type name [key] }` | Header rectangle with one row rectangle per attribute |
 | `A <card>--<card> B : label`, `A <card>..<card> B : label` | Arrow bound to both headers with crow's-foot heads, labelled `label` |
 
-Cardinalities become crow's-foot arrowheads at each entity: `||` → one (`crowfoot_one`), `}|` / `|{` → one or many (`crowfoot_one_or_many`), `}o` / `o{` → many (`crowfoot_many`). Zero-or-one (`|o` / `o|`) uses the closest head, one.
+Cardinalities become crow's-foot arrowheads at each entity: `||` → one (`crowfoot_one`), `}|` / `|{` → one or many (`crowfoot_one_or_many`), `}o` / `o{` → zero or many (`crowfoot_zero_or_many`), `|o` / `o|` → zero or one (`crowfoot_zero_or_one`).
 
 Entities are laid out in a grid. Aliases (`A["Alias"]`), attribute comments and quoted entity names are not read by the native importer. When Mermaid accepts such a source, it is placed as an image instead.
 

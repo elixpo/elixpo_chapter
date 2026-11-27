@@ -5,6 +5,7 @@ import { ThemeProvider } from '../src/context/ThemeContext';
 import { SeasonalThemeProvider } from '../src/themes/seasonal/SeasonalThemeProvider';
 import { seasonalThemeBootstrapScript } from '../src/themes/seasonal/index';
 import ScrollToTopButton from '../src/components/ScrollToTopButton';
+import Script from 'next/script';
 
 const SITE_URL = 'https://blogs.elixpo.com';
 const SITE_NAME = 'LixBlogs';
@@ -230,6 +231,8 @@ export default function RootLayout({ children }) {
         </SeasonalThemeProvider>
         <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" defer />
         <script noModule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js" defer />
+        {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
+        <Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" />
       </body>
     </html>
   );

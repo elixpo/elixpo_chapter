@@ -44,6 +44,15 @@ impl fmt::Display for AuthError {
 impl Error for AuthError {}
 
 /// Secret text that is redacted in diagnostics and zeroed when dropped.
+///
+/// # Examples
+///
+/// ```
+/// use crumb_auth::SecretString;
+///
+/// let key = SecretString::new("example-api-key");
+/// assert_eq!(format!("{key:?}"), "SecretString([REDACTED])");
+/// ```
 pub struct SecretString {
     inner: Zeroizing<String>,
 }
@@ -57,6 +66,10 @@ impl SecretString {
         }
     }
 
+    /// Borrows the unredacted secret text.
+    ///
+    /// Use only when passing the secret to a provider or credential store. The
+    /// returned string is not redacted; never include it in logs or diagnostics.
     #[must_use]
     pub fn expose(&self) -> &str {
         self.inner.as_str()
@@ -300,8 +313,8 @@ fn native_keyring_unavailable() -> AuthError {
 #[cfg(test)]
 mod tests {
     use super::{
-        CredentialSource, CredentialStore, MemoryCredentialStore, SecretString, credential_status,
-        login,
+        AuthErrorKind, CredentialSource, CredentialStore, MemoryCredentialStore, SecretString,
+        credential_status, login,
     };
 
     #[test]
@@ -341,5 +354,55 @@ mod tests {
 
         assert!(debug.contains("[REDACTED]"));
         assert!(!debug.contains("sk_top_secret"));
+    }
+
+    #[test]
+    fn login_rejects_empty_and_whitespace_only_secrets() {
+        let store = MemoryCredentialStore::default();
+
+        for blank in ["", " ", "\t", "\r\n", "  \t\n\r "] {
+            let error =
+                login(&store, &SecretString::new(blank)).expect_err("blank login must fail");
+
+            assert_eq!(error.kind, AuthErrorKind::EmptyCredential);
+        }
+        assert!(store.get().expect("read should succeed").is_none());
+    }
+
+    #[test]
+    fn rejected_login_keeps_previous_secret() {
+        let store = MemoryCredentialStore::default();
+        login(&store, &SecretString::new("sk_fixture")).expect("login should succeed");
+
+        let error = login(&store, &SecretString::new(" \t\r\n "))
+            .expect_err("whitespace-only login must fail");
+
+        assert_eq!(error.kind, AuthErrorKind::EmptyCredential);
+        assert_eq!(
+            store
+                .get()
+                .expect("read should succeed")
+                .expect("secret should exist")
+                .expose(),
+            "sk_fixture"
+        );
+    }
+
+    #[test]
+    fn whitespace_only_environment_value_is_ignored() {
+        let stored = MemoryCredentialStore::default();
+        login(&stored, &SecretString::new("sk_fixture")).expect("login should succeed");
+        let empty = MemoryCredentialStore::default();
+
+        for blank in ["", " ", "  \t\n\r "] {
+            let with_secret = credential_status(&stored, Some(blank)).expect("status should load");
+            let without_secret =
+                credential_status(&empty, Some(blank)).expect("status should load");
+
+            assert!(with_secret.configured);
+            assert_eq!(with_secret.source, Some(CredentialSource::Keyring));
+            assert!(!without_secret.configured);
+            assert_eq!(without_secret.source, None);
+        }
     }
 }

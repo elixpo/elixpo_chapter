@@ -1,7 +1,8 @@
 {
-  "name":     "Example",
-  "type":     "app",
-  "version":  "0.1.0",
-  "icon":     "example_icon.png",
-  "author":   "your-github-handle"
+  "name":        "Example",
+  "type":        "app",
+  "version":     "0.1.0",
+  "description": "Counter example: A adds one, B takes one away.",
+  "icon":        "example_icon.png",
+  "author":      "your-github-handle"
 }

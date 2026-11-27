@@ -4,12 +4,12 @@ import type React from "react";
 export const metadata: Metadata = {
     title: "Refund & Cancellation Policy",
     description:
-        "How cancellations and refunds work for digital subscriptions billed through Elixpo Pay — duplicate charges, undelivered service, and how to request a refund.",
+        "How cancellations and refunds work on Elixpo Pay — subscriptions, duplicate charges, undelivered service, fundraiser contributions, and how refunds return to your original payment method via Razorpay.",
     alternates: { canonical: "/refunds" },
     openGraph: {
         title: "Refund & Cancellation Policy | Elixpo Pay",
         description:
-            "Cancellation, refunds, and disputes for subscriptions billed through Elixpo Pay.",
+            "Cancellation, refunds, and disputes for subscriptions and fundraiser contributions on Elixpo Pay.",
         url: "https://payouts.elixpo.com/refunds",
     },
 };

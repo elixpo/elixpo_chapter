@@ -1,4 +1,4 @@
-# OreoOS as a distributable Python package.
+# FaleraOS as a distributable Python package.
 #
 # This file exists so the OS can be uploaded as a GitHub Package (visible
 # on the repo's "Packages" sidebar). The badge does NOT pip-install from
@@ -9,8 +9,9 @@
 # Build locally:
 #     pip install --upgrade build
 #     python -m build
-# That produces dist/oreoos-<version>.tar.gz + a .whl. CI publishes both
-# to GitHub Packages on every release tag.
+# That produces dist/oreoos-<version>.tar.gz + a .whl. Releases ship the OS
+# as GitHub Release assets (see .github/workflows/release.yml); the package is
+# not published to a registry. GitHub Packages has no Python registry.
 
 [build-system]
 requires      = ["setuptools >= 68", "wheel"]
@@ -20,10 +21,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name            = "oreoos"
 dynamic         = ["version"]
-description     = "OreoOS — the friendly MicroPython operating system for the Elixpo Oreo Badge."
+description     = "FaleraOS — the friendly MicroPython operating system for the Elixpo Falera Badge."
 readme          = "README.md"
 requires-python = ">=3.9"
-license         = { file = "LICENSE" }
+license         = { text = "MIT" }
 keywords        = ["esp32", "esp32-s3", "micropython", "badge", "conference-badge", "oreoos", "elixpo"]
 authors         = [
     { name = "Ayushman Bhattacharya", email = "hello@elixpo.com" },
@@ -36,6 +37,7 @@ classifiers     = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: Implementation :: MicroPython",
@@ -46,9 +48,9 @@ classifiers     = [
 
 [project.urls]
 Homepage       = "https://elixpo.com"
-Repository     = "https://github.com/elixpo/oreo"
-Issues         = "https://github.com/elixpo/oreo/issues"
-Documentation  = "https://github.com/elixpo/oreo/blob/main/docs/HARDWARE.md"
+Repository     = "https://github.com/elixpo/falera"
+Issues         = "https://github.com/elixpo/falera/issues"
+Documentation  = "https://github.com/elixpo/falera/blob/main/docs/HARDWARE.md"
 
 
 # ── setuptools layout ─────────────────────────────────────────────────────────

@@ -8,7 +8,8 @@ test('robots blocks the API but keeps OG card images crawlable', () => {
   assert.ok(rules.disallow.includes('/api/'));
   // Social crawlers honor robots.txt; without this allow, link previews break.
   assert.ok(rules.allow.includes('/api/og'));
-  assert.equal(sitemap, 'https://blogs.elixpo.com/sitemap.xml');
+  assert.equal(sitemap[0], 'https://blogs.elixpo.com/sitemap.xml');
+  assert.equal(sitemap[1], 'https://blogs.elixpo.com/blog-sitemap.xml');
 });
 
 test('static page cards point at the page, not the homepage', () => {

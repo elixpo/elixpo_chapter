@@ -87,11 +87,71 @@ the ecosystem.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Falera** | The open conference badge and FaleraOS | [falera.elixpo.com](https://falera.elixpo.com) |
 
 Developers can drop our editors into their own projects with the
 **`@elixpo/lixsketch`** and **`@elixpo/lixeditor`** packages, on npm and as VS
 Code extensions.
+
+## Architecture
+
+Everything runs on **Cloudflare**. Three shared platform services back the
+ecosystem, and products are either **SSO-backed SaaS**, **standalone**, or our
+**flagship**:
+
+- **`accounts.elixpo`** - single sign-on / identity
+- **`mails.elixpo`** - shared mailing infrastructure
+- **`payouts.elixpo`** - shared payments / payouts
+
+SaaS products (Blogs, Art, Chat, Sketch, Search) and the flagship **lixrl.com**
+all authenticate through Accounts (SSO) and share the Mail and Payouts infra.
+The public, login-free surfaces (**elixpo.com**, **falera.elixpo**, **me.elixpo**)
+are standalone. **admin.elixpo** is the operations dashboard and
+**status.elixpo** is monitoring.
+
+```mermaid
+graph TB
+  classDef shared fill:#1d1d1d,stroke:#DEDBC8,color:#E1E0CC;
+  classDef saas fill:#141414,stroke:#9a9a9a,color:#E1E0CC;
+  classDef flag fill:#2a2410,stroke:#FFBE1E,color:#ffffff;
+  classDef solo fill:#141414,stroke:#00B4A5,color:#E1E0CC;
+  classDef ops fill:#141414,stroke:#FF5D68,color:#E1E0CC;
+
+  subgraph SHARED["Shared platform"]
+    ACC["accounts.elixpo<br/>SSO / Identity"]:::shared
+    MAIL["mails.elixpo<br/>Mail infra"]:::shared
+    PAY["payouts.elixpo<br/>Payments"]:::shared
+  end
+
+  subgraph PRODUCTS["SaaS products - require login"]
+    BLOGS["blogs.elixpo"]:::saas
+    ART["art.elixpo (under dev)"]:::saas
+    CHAT["chat.elixpo (under dev)"]:::saas
+    SKETCH["sketch.elixpo"]:::saas
+    SEARCH["search.elixpo"]:::saas
+  end
+
+  LIXRL["lixrl.com<br/>URL shortener · flagship"]:::flag
+
+  subgraph SOLO["Standalone - no login"]
+    HOME["elixpo.com"]:::solo
+    OREO["falera.elixpo"]:::solo
+    ME["me.elixpo"]:::solo
+  end
+
+  subgraph OPS["Operations"]
+    ADMIN["admin.elixpo<br/>Dashboard"]:::ops
+    STATUS["status.elixpo<br/>Monitoring"]:::ops
+  end
+
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> ACC
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> MAIL
+  BLOGS & ART & CHAT & SKETCH & SEARCH & LIXRL --> PAY
+  ADMIN -.- ACC
+  STATUS -.- MAIL
+```
+
+A rendered, interactive version lives at **[elixpo.com/architecture](https://elixpo.com/architecture)**.
 
 ## For developers
 

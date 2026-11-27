@@ -30,9 +30,11 @@ code before checkout or execution.
 
 The portfolio audit in `scripts/audit-workflows.py` enforces these mechanical
 boundaries. Its accepted 2026-10-17 assessment covers 91 ordinary workflows
-across 23 repositories with zero errors and zero warnings. Agent workflows and
-the Agent, Crumb, and OreoPI repositories are explicitly excluded pending the
-separate agent-direction decision; they are not silently treated as conformant.
+across 23 repositories with zero errors and zero warnings. That assessment
+predates the now-published, separate directions for Elixpoo and Crumb; both are
+active Chapter subtrees and must be included explicitly in later audits.
+OreoPI remains deferred pending its own repository-direction decision and is
+not silently treated as conformant.
 
 ## Migration and rollback
 

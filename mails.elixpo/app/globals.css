@@ -14,12 +14,12 @@
     --soft-stone: #eeece7;
     --pale-green: #edfce9;
     --pale-blue: #f1f5ff;
-    --card-border: #f2f2f2;
-    --ink: #212121;
-    --muted-slate: #93939f;
-    --slate: #75758a;
-    --hairline: #d9d9dd;
-    --border-light: #e5e7eb;
+    --card-border: var(--border-soft);
+    --ink: var(--fg);
+    --muted-slate: var(--fg-faint);
+    --slate: var(--fg-muted);
+    --hairline: var(--border);
+    --border-light: var(--border-soft);
 
     /* Accent — Elixpo research blue, shared across both themes. */
     --accent: #3a65c7;
@@ -82,6 +82,14 @@
     --action-fg: #3a65c7;
     color-scheme: light;
 
+    /* Theme typography & layout aliases */
+    --ink: var(--fg);
+    --slate: var(--fg-muted);
+    --muted-slate: var(--fg-faint);
+    --hairline: var(--border);
+    --card-border: var(--border-soft);
+    --border-light: var(--border-soft);
+
     /* Inline code & Callout specific variables */
     --code-fg: var(--deep-green);
     --callout-info-bg: #f1f5ff;
@@ -128,15 +136,81 @@
     --paper-deep: #121b15;
     color-scheme: dark;
 
+    /* Theme typography & layout aliases */
+    --ink: var(--fg);
+    --slate: var(--fg-muted);
+    --muted-slate: var(--fg-faint);
+    --hairline: var(--border);
+    --card-border: var(--border-soft);
+    --border-light: var(--border-soft);
+
     /* Inline code & Callout specific variables */
     --code-fg: var(--pale-green);
     --callout-info-bg: rgba(121, 167, 255, 0.08);
     --callout-warn-bg: rgba(231, 96, 67, 0.1);
 }
 
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --background: #0f1712;
+        --foreground: #eef1ec;
+
+        --bg: #0f1712;
+        --bg-soft: #121b15;
+        --surface: #16201a;
+        --surface-2: rgba(238, 241, 236, 0.03);
+        --surface-3: rgba(238, 241, 236, 0.06);
+        --menu-surface: #16201a;
+        --fg: #eef1ec;
+        --fg-muted: #b5c0b8;
+        --fg-faint: rgba(238, 241, 236, 0.45);
+        --border: rgba(238, 241, 236, 0.12);
+        --border-soft: rgba(238, 241, 236, 0.07);
+        --field-bg: rgba(238, 241, 236, 0.03);
+        --field-border: rgba(238, 241, 236, 0.14);
+        --overlay: rgba(238, 241, 236, 0.04);
+        --overlay-strong: rgba(238, 241, 236, 0.07);
+        --aurora-opacity: 0;
+        --card-shadow: none;
+        --topbar-bg: rgba(15, 23, 18, 0.82);
+        --drawer-bg: #121b15;
+        --action-fg: #79a7ff;
+        --accent: #79a7ff;
+        --accent-2: #a5c2ff;
+        --accent-contrast: #0f1712;
+        --accent-gradient: linear-gradient(135deg, #79a7ff 0%, #a5c2ff 100%);
+        --accent-gradient-hover: linear-gradient(135deg, #8db4ff 0%, #b6ceff 100%);
+        --accent-shadow: rgba(121, 167, 255, 0.22);
+        --danger-fg: #f2836f;
+        --accent-tint: rgba(121, 167, 255, 0.1);
+        --accent-tint-strong: rgba(121, 167, 255, 0.16);
+        --accent-border: rgba(121, 167, 255, 0.32);
+        --line: rgba(238, 241, 236, 0.12);
+        --paper: #0f1712;
+        --paper-deep: #121b15;
+        color-scheme: dark;
+
+        --ink: var(--fg);
+        --slate: var(--fg-muted);
+        --muted-slate: var(--fg-faint);
+        --hairline: var(--border);
+        --card-border: var(--border-soft);
+        --border-light: var(--border-soft);
+
+        --code-fg: var(--pale-green);
+        --callout-info-bg: rgba(121, 167, 255, 0.08);
+        --callout-warn-bg: rgba(231, 96, 67, 0.1);
+    }
+}
+
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-surface: var(--surface);
+    --color-border: var(--border);
+    --color-ink: var(--ink);
+    --color-slate: var(--slate);
+    --color-hairline: var(--hairline);
     --font-sans: Arial, Helvetica, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
     --font-display: Arial, Helvetica, sans-serif;
@@ -148,6 +222,34 @@ body {
     color: var(--foreground);
     font-family: Arial, Helvetica, sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure typography across markdown, prose, and components inverts properly */
+p,
+li,
+dd,
+dt,
+blockquote {
+    color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--fg);
+}
+
+.MuiTypography-root {
+    color: inherit;
+}
+
+main,
+article,
+section {
+    color: var(--fg);
 }
 
 ::selection {

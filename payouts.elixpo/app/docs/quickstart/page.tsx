@@ -8,7 +8,9 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
+import Link from "next/link";
 import CodeBlock from "../../components/code-block";
 
 const FLOW = `// In your app (server-side), when a user upgrades:
@@ -64,6 +66,7 @@ export default function Quickstart() {
                     </>,
                 ]}
             />
+            <DocActions actions={[{ label: "Create an app & get your secret key", href: "/dashboard/products", hint: "Dashboard → Products → New app. Shown once; roll it any time.", primary: true }, { label: "Set your webhook & signing secret", href: "/dashboard/products", hint: "Open your app → Entitlement webhook → copy the whsec_ secret." }]} />
             <DocP>
                 There is no shared handoff secret — the secret key both starts
                 checkout and reads entitlements.
@@ -73,7 +76,10 @@ export default function Quickstart() {
             <DocP>
                 Products and prices are managed from a catalog file in your
                 repo, pushed with your secret key — not from the dashboard. See{" "}
-                <Code>Catalog sync</Code>. Until a tier has an active price,
+                <Link href="/docs/catalog" style={{ color: "var(--app-link)", fontWeight: 600 }}>
+                    Catalog sync
+                </Link>
+                . Until a tier has an active price,
                 checkout for it will 404.
             </DocP>
 
@@ -91,6 +97,16 @@ export default function Quickstart() {
                 can also pull the current state at any time:
             </DocP>
             <CodeBlock code={READ} language="javascript" />
+
+            <DocH2>5. Go live</DocH2>
+            <DocList
+                items={[
+                    <>Connect your bank so payments are split to you automatically (minus the platform fee).</>,
+                    <>Send a test purchase and watch the delivery in your webhook logs.</>,
+                    <>Link the policies from your app's pricing page so buyers know where to find them.</>,
+                ]}
+            />
+            <DocActions actions={[{ label: "Connect your bank", href: "/dashboard/payouts", hint: "Razorpay verifies you once; payments then reach your bank.", primary: true }, { label: "View delivery logs", href: "/dashboard/webhooks", hint: "Every attempt, status code and retry." }, { label: "Pricing & fees", href: "/pricing", hint: "What each payment costs." }]} />
         </Box>
     );
 }

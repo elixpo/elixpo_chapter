@@ -315,7 +315,7 @@ export default function CommandPalette() {
       >
         {/* Search */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border-light">
-          <i className="bx bx-search text-text-muted text-lg" />
+          <i className="bx bx-search text-text-muted text-lg" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -339,7 +339,7 @@ export default function CommandPalette() {
                   : 'text-text-muted border border-transparent hover:bg-surface-hover hover:text-text-primary'
               }`}
             >
-              <i className={`bx ${tab.icon} text-base`} />
+              <i className={`bx ${tab.icon} text-base`} aria-hidden="true" />
               {tab.label}
             </button>
           ))}
@@ -375,7 +375,7 @@ export default function CommandPalette() {
                     }`}
                   >
                     <span className="flex items-center gap-3">
-                      <i className={`bx ${cmd.icon} text-base text-text-muted`} />
+                      <i className={`bx ${cmd.icon} text-base text-text-muted`} aria-hidden="true" />
                       {cmd.label}
                     </span>
                     {cmd.shortcut && (

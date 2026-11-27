@@ -20,6 +20,8 @@ hand it a whole task and get back its final answer.
 2. **Shell**, otherwise: `crumb exec --json -- "<the full task>"` from the
    workspace root. It prints one JSON object with `response`, `finish_reason`,
    `session_id`, and `usage`. Without `--json` it prints only the answer.
+   `--stream-json` prints one JSON event per line while Crumb works and ends
+   with a `result` event carrying the same fields.
 
 The MCP server also exposes Crumb's individual tools (`search_code`,
 `detect_stack`, `run_disposable`, `web_search`, and others). Prefer your own

@@ -13,18 +13,18 @@ Generate a PR description from the diff. Triggered when a whitelisted author put
 1. **Extract user blockquotes** from `CURRENT_BODY`. Any lines starting with `>` are notes the author wants preserved verbatim. Keep them as-is. Ignore the `@elixpoo fill` trigger line itself.
 
 2. **Summarize the diff** into a tight "Changes Made" section:
-   - One bullet per meaningful file or logical change.
-   - Reference the file path in backticks and say what changed and why.
-   - 3-7 bullets. If the diff touches 1 file, 1-2 bullets is fine.
-   - Skip lockfiles, generated files, and formatting-only noise.
+    - One bullet per meaningful file or logical change.
+    - Reference the file path in backticks and say what changed and why.
+    - 3-7 bullets. If the diff touches 1 file, 1-2 bullets is fine.
+    - Skip lockfiles, generated files, and formatting-only noise.
 
 3. **Pick the checklist items** relevant to this diff. Only include items that actually apply:
-   - `- [ ] \`export const runtime = 'edge'\` on any new API route`— only if a new`app/api/**/route.ts` was added.
-   - `- [ ] No Node built-ins imported (crypto, fs, path, stream, Buffer)` — only if `src/` code changed.
-   - `- [ ] New DB columns/tables have a migration in \`src/workers/migrations/\`` — only if D1 / schema changed.
-   - `- [ ] Rate-limit middleware on new public auth endpoints` — only if a new `app/api/auth/**` route was added.
-   - `- [ ] \`./biome.sh ci\` clean` — always include.
-   - `- [ ] Tested locally: <how>` — always include, leave the "how" unchecked as a prompt for the author.
+    - `- [ ] \`export const runtime = 'edge'\` on any new API route`— only if a new`app/api/**/route.ts` was added.
+    - `- [ ] No Node built-ins imported (crypto, fs, path, stream, Buffer)` — only if `src/` code changed.
+    - `- [ ] New DB columns/tables have a migration in \`src/workers/migrations/\`` — only if D1 / schema changed.
+    - `- [ ] Rate-limit middleware on new public auth endpoints` — only if a new `app/api/auth/**` route was added.
+    - `- [ ] \`./biome.sh ci\` clean` — always include.
+    - `- [ ] Tested locally: <how>` — always include, leave the "how" unchecked as a prompt for the author.
 
 4. **Assemble the final body**. Use exactly this structure, keep it tight (no marketing prose):
 

@@ -23,6 +23,9 @@ tempfile.workspace = true
 url.workspace = true
 walkdir.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock.workspace = true
+
 [target.'cfg(unix)'.dependencies]
 rustix.workspace = true
 

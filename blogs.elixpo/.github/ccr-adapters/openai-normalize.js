@@ -43,193 +43,297 @@
  *   }
  */
 
-// Only SKIP flattening for models we know accept Anthropic-native structured
-// content. Everything else needs the flatten pass.
-const ANTHROPIC_NATIVE_RE = /^claude(-|$)/i;
+"use strict";
 
-function asString(x) {
-    if (x == null) return "";
-    if (typeof x === "string") return x;
+// Only bypass normalization for Claude models.
+const ANTHROPIC_NATIVE_RE = /^claude(?:-|$)/i;
+
+/**
+ * Safely convert values to strings.
+ */
+function asString(value) {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
     try {
-        return JSON.stringify(x);
+        return JSON.stringify(value);
     } catch {
-        return String(x);
+        return String(value);
     }
 }
 
+/**
+ * Extract readable text from structured content.
+ */
+function extractText(content) {
+    if (content == null) return "";
+    if (typeof content === "string") return content;
+    if (!Array.isArray(content)) return asString(content);
+
+    return content
+        .map((block) => {
+            if (!block || typeof block !== "object") {
+                return asString(block);
+            }
+            if (block.type === "text") {
+                return typeof block.text === "string" ? block.text : "";
+            }
+            return "";
+        })
+        .filter(Boolean)
+        .join("\n");
+}
+
+/**
+ * Build an index of tool calls from assistant messages.
+ */
 function buildToolUseIndex(messages) {
     const index = new Map();
-    for (const m of messages) {
-        if (m?.role !== "assistant") continue;
-        if (Array.isArray(m.content)) {
-            for (const b of m.content) {
-                if (b?.type === "tool_use" && b.id) {
-                    index.set(b.id, { name: b.name, input: asString(b.input) });
-                }
-            }
-        } else if (Array.isArray(m.tool_calls)) {
-            for (const tc of m.tool_calls) {
-                if (tc?.id) {
-                    const fn = tc.function || {};
-                    index.set(tc.id, {
-                        name: fn.name,
-                        input: fn.arguments || "{}",
+
+    for (const message of messages) {
+        if (!message || message.role !== "assistant") {
+            continue;
+        }
+
+        // Anthropic-style tool calls in message.content
+        if (Array.isArray(message.content)) {
+            for (const block of message.content) {
+                if (block?.type === "tool_use" && block.id) {
+                    index.set(block.id, {
+                        name: block.name || "unknown",
+                        input: asString(block.input ?? {}),
                     });
                 }
             }
         }
+
+        // OpenAI-style tool calls in message.tool_calls
+        if (Array.isArray(message.tool_calls)) {
+            for (const toolCall of message.tool_calls) {
+                if (!toolCall?.id) continue;
+                const fn = toolCall.function || {};
+                index.set(toolCall.id, {
+                    name: fn.name || "unknown",
+                    input: asString(fn.arguments ?? "{}"),
+                });
+            }
+        }
     }
+
     return index;
 }
 
-function toolResultNarrative(toolUseIndex, toolUseId, resultContent) {
-    const tu = toolUseIndex.get(toolUseId);
-    const result = asString(resultContent);
-    return tu
-        ? `Earlier I ran ${tu.name} with ${tu.input}. It returned: ${result}`
-        : `Earlier tool output: ${result}`;
+/**
+ * Convert tool results into readable conversation notes.
+ */
+function toolResultNarrative(index, toolId, resultContent) {
+    const tool = index?.get(toolId);
+    const result = extractText(resultContent);
+
+    if (tool) {
+        return `Earlier I ran ${tool.name} with ${tool.input}. It returned: ${result}`;
+    }
+
+    return `Earlier tool output: ${result}`;
 }
 
-function narrate(index, toolId, result) {
-    return toolResultNarrative(index, toolId, result);
-}
-
+/**
+ * Check whether the model supports native Anthropic content.
+ */
 function isAnthropicModel(model) {
     return typeof model === "string" && ANTHROPIC_NATIVE_RE.test(model);
 }
 
-function flattenTextBlocks(content) {
-    // Join `[{type:'text',text:'...'}, ...]` into a single string, dropping
-    // any cache_control markers and non-text blocks (images, documents, etc.).
-    if (typeof content === "string") return content;
-    if (!Array.isArray(content)) return asString(content);
-    const parts = [];
-    for (const b of content) {
-        if (b && b.type === "text" && typeof b.text === "string") {
-            parts.push(b.text);
-        }
+/**
+ * Normalize an individual message.
+ * Strictly returns only `{ role, content }` to prevent leaking provider-specific
+ * metadata (e.g. thought_signature, reasoning_content, stop_reason, tool_calls).
+ */
+function normalizeMessage(message, toolIndex) {
+    if (!message || typeof message !== "object") {
+        return null;
     }
-    return parts.join("\n");
-}
 
-function flattenMessages(messages) {
-    const toolUseIndex = buildToolUseIndex(messages);
-    const out = [];
+    const role = message.role;
 
-    for (const m of messages) {
-        if (!m || typeof m !== "object") continue;
-        const role = m.role;
-
-        // System messages: flatten content array, drop cache_control.
-        if (role === "system") {
-            const content = flattenTextBlocks(m.content);
-            if (content) out.push({ role: "system", content });
-            continue;
+    // System and developer messages: flatten text blocks, drop cache_control.
+    // If empty, drop it.
+    if (role === "system" || role === "developer") {
+        const content = extractText(message.content);
+        if (!content) {
+            return null;
         }
+        return {
+            role,
+            content,
+        };
+    }
 
-        if (role === "assistant" && Array.isArray(m.content)) {
-            const texts = [];
-            for (const b of m.content) {
-                if (b?.type === "text" && b.text) texts.push(b.text);
-            }
-            if (texts.length > 0) {
-                const content = texts.join("\n");
-                out.push({ role: "assistant", content });
-            }
-            continue;
-        }
-
-        const toolCalls = m.tool_calls;
-        const isToolCallArray = Array.isArray(toolCalls);
-        const hasToolCalls = isToolCallArray && toolCalls.length > 0;
-        if (role === "assistant" && hasToolCalls) {
-            const c = asString(m.content);
-            if (c) out.push({ role: "assistant", content: c });
-            continue;
-        }
-
-        if (role === "assistant") {
-            const c = asString(m.content);
-            if (c) out.push({ role: "assistant", content: c });
-            continue;
-        }
-
-        if (role === "user" && Array.isArray(m.content)) {
+    // User messages: flatten text and convert Anthropic tool_result blocks.
+    // Preserves user turns even if empty to maintain turn alternation.
+    if (role === "user") {
+        if (Array.isArray(message.content)) {
             const parts = [];
-            for (const b of m.content) {
-                if (b?.type === "text" && b.text) parts.push(b.text);
-                else if (b?.type === "tool_result") {
-                    const toolId = b.tool_use_id;
-                    const result = b.content;
-                    const index = toolUseIndex;
-                    const narrative = narrate(index, toolId, result);
-                    parts.push(narrative);
+
+            for (const block of message.content) {
+                if (!block || typeof block !== "object") {
+                    const str = asString(block);
+                    if (str) parts.push(str);
+                    continue;
+                }
+
+                if (block.type === "text" && typeof block.text === "string") {
+                    if (block.text) parts.push(block.text);
+                } else if (block.type === "tool_result") {
+                    parts.push(
+                        toolResultNarrative(
+                            toolIndex,
+                            block.tool_use_id,
+                            block.content
+                        )
+                    );
                 }
             }
-            if (parts.length > 0) {
-                const content = parts.join("\n");
-                out.push({ role: "user", content });
-            }
-            continue;
-        }
 
-        if (role === "tool") {
-            const toolId = m.tool_call_id;
-            const result = m.content;
-            out.push({
+            return {
                 role: "user",
-                content: toolResultNarrative(toolUseIndex, toolId, result),
-            });
-            continue;
+                content: parts.join("\n"),
+            };
         }
 
-        out.push(m);
+        return {
+            role: "user",
+            content: extractText(message.content),
+        };
     }
 
+    // Assistant messages: keep text only, discard tool calls (Rules 2 & 3).
+    if (role === "assistant") {
+        const content = extractText(message.content);
+
+        // Assistant messages that contained ONLY tool_use (no real text) are dropped entirely.
+        if (!content.trim()) {
+            return null;
+        }
+
+        return {
+            role: "assistant",
+            content,
+        };
+    }
+
+    // OpenAI-style tool result messages: convert to user narrative (Rule 1).
+    if (role === "tool") {
+        return {
+            role: "user",
+            content: toolResultNarrative(
+                toolIndex,
+                message.tool_call_id,
+                message.content
+            ),
+        };
+    }
+
+    // Unrecognized roles: rebuild cleanly with only role and content.
+    return {
+        role: String(role || "user"),
+        content: extractText(message.content),
+    };
+}
+
+/**
+ * Merge consecutive user messages so the downstream proxy sees clean alternation (Rule 5).
+ */
+function mergeConsecutiveUserMessages(messages) {
     const merged = [];
-    for (const m of out) {
-        const last = merged[merged.length - 1];
-        if (last && last.role === "user" && m.role === "user") {
-            last.content = `${last.content}\n${m.content}`;
+
+    for (const message of messages) {
+        if (!message) continue;
+
+        const previous = merged[merged.length - 1];
+
+        if (previous && previous.role === "user" && message.role === "user") {
+            if (previous.content && message.content) {
+                previous.content = `${previous.content}\n${message.content}`;
+            } else {
+                previous.content = previous.content || message.content || "";
+            }
         } else {
-            merged.push(m);
+            merged.push({ role: message.role, content: message.content });
         }
     }
 
-    for (const m of merged) {
-        if (m && typeof m === "object") {
-            m.tool_calls = undefined;
-            m.tool_call_id = undefined;
-        }
-    }
     return merged;
 }
 
+/**
+ * Normalize the complete message history.
+ */
+function flattenMessages(messages) {
+    const toolIndex = buildToolUseIndex(messages);
+
+    const normalized = messages
+        .map((message) => normalizeMessage(message, toolIndex))
+        .filter(Boolean);
+
+    return mergeConsecutiveUserMessages(normalized);
+}
+
+/**
+ * CCR Transformer.
+ */
 class OpenAINormalizeAdapter {
-    constructor(options) {
+    constructor(options = {}) {
         this.name = "openai-normalize";
-        this.options = options || {};
+        this.options = options;
     }
 
     async transformRequestIn(request) {
         return this._flatten(request);
     }
+
     async transformRequestOut(request) {
         return this._flatten(request);
     }
 
+    /**
+     * Normalize request messages without mutating
+     * the original request object.
+     */
     _flatten(request) {
-        const body = request?.body ? request.body : request;
-        if (!body || typeof body !== "object") return request;
-        if (!Array.isArray(body.messages)) return request;
-        // Only pass through unchanged for real Claude models; everything else
-        // (kimi, qwen, perplexity, glm, gemini, ...) gets flattened.
+        if (!request || typeof request !== "object") {
+            return request;
+        }
+
+        const hasBody =
+            request.body &&
+            typeof request.body === "object" &&
+            !Array.isArray(request.body);
+
+        const body = hasBody ? request.body : request;
+
+        if (!Array.isArray(body.messages)) {
+            return request;
+        }
+
+        // Preserve native Anthropic content for Claude models.
         if (isAnthropicModel(body.model)) {
             return request;
         }
 
-        body.messages = flattenMessages(body.messages);
-        return request;
+        const normalizedBody = {
+            ...body,
+            messages: flattenMessages(body.messages),
+        };
+
+        // Preserve the original request wrapper if present.
+        if (hasBody) {
+            return {
+                ...request,
+                body: normalizedBody,
+            };
+        }
+
+        return normalizedBody;
     }
 }
 

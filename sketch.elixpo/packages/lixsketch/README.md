@@ -159,7 +159,9 @@ The `.lixsketch` format is JSON:
 
 Files are fully interoperable between the web app, VS Code extension, and any custom integration.
 
-## MCP server
+## MCP server (coming soon)
+
+> **Coming soon.** The MCP connector is not released yet. Remote MCP grants are disabled on sketch.elixpo.com, and the tools, flags and APIs below are a preview that may change before release.
 
 The same package includes a local MCP server for structured canvas operations. It edits an atomic `.lixjson` file; open that file in LixSketch, or provide a custom scene store when embedding the server in another host.
 

@@ -13,6 +13,7 @@ import "@blocknote/mantine/style.css";
 import "../styles/editor/editor.css";
 import "../styles/katex-fonts.css";
 import { readTimeFromWords } from "../../lib/readTime";
+import { countBlockWords } from "../../lib/wordCount";
 import { useCollaboration } from "../hooks/useCollaboration";
 import { IMAGE_ACCEPT_ATTR, isAllowedImage } from "../utils/allowedImageTypes";
 import { extractMermaidFences } from "../utils/markdownMermaid";
@@ -1902,14 +1903,7 @@ export default function WritePage({ slugid }) {
             }
         }
         if (!Array.isArray(blocks)) return 0;
-        const text = blocks
-            .map((b) =>
-                b.content && Array.isArray(b.content)
-                    ? b.content.map((c) => c.text || "").join("")
-                    : "",
-            )
-            .join(" ");
-        return text.trim().split(/\s+/).filter(Boolean).length;
+        return countBlockWords(blocks);
     }, []);
 
     const handleEditorChange = useCallback(

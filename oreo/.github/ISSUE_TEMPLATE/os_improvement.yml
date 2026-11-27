@@ -1,0 +1,93 @@
+name: OS improvement
+description: A change to FaleraOS itself (launcher, services, drivers, OTA) or to how it works with the falera CLI.
+title: "os: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read [AGENTS.md](https://github.com/elixpo/falera/blob/main/AGENTS.md) first: it
+        has the rules FaleraOS is built by (the badge works on its own, Wi-Fi
+        is for the internet only, a computer reaches the badge over USB,
+        Bluetooth comes last) and the contracts the OS and the CLI share.
+        For a large change, agree on the shape here before you write it.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Launcher, home screen, drawer, notification panel
+        - App platform (lifecycle, state, profile, busy, cache)
+        - Network service, Wi-Fi, HTTP
+        - App Store
+        - OTA updates and releases
+        - Hardware drivers (oreoWare)
+        - Power, sleep, performance, memory
+        - Firmware build
+        - Host tools (deploy, validate_app, release)
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is wrong or missing today, with numbers if you have them (free heap, frame time, boot time).
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would change and how. Name the files or modules.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contract
+    attributes:
+      label: Which OS and CLI contract does it touch?
+      description: From AGENTS.md. A change to a contract changes both sides, their tests and their docs in the same pull request.
+      multiple: true
+      options:
+        - None
+        - Owner profile keys (oreoOS/profile.py, cli owner.py)
+        - Built-in app list (DEFAULT_APPS)
+        - App checks (tools/validate_app.py, cli appcheck.py)
+        - App template (app_templates/)
+        - Transfer protocol (proto.py VERSION)
+        - Connected-to-computer screen (oreoOS/hostui.py)
+        - Launcher loading /remote/apps for falera dev
+        - USB identity 303a:83ec
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: How it will be tested
+      description: The host tests you will add (tests/, cli/tests/), and what still has to be checked on a badge.
+
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who is building it?
+      options:
+        - I will send a pull request
+        - I would like help
+        - Someone else, please
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow the project's [Code of Conduct](https://github.com/elixpo/falera/blob/main/CODE_OF_CONDUCT.md).
+          required: true

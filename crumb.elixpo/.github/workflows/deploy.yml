@@ -177,18 +177,15 @@ jobs:
             done
           fi
 
-  website:
-    name: Deploy Crumb website
+  # The marketplace is signed here so its cosign certificates keep naming this workflow
+  # (crates/crumb-cli trusts only deploy.yml@refs/heads/main). The signed build is then
+  # deployed through elixpo/agent.elixpo's shared Worker workflow.
+  website-build:
+    name: Build and sign Crumb website
     needs: changes
     if: needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-      RUN_MIGRATIONS: ${{ needs.changes.outputs.migrations }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -197,29 +194,7 @@ jobs:
           cache: npm
           cache-dependency-path: crumb.elixpo/package-lock.json
       - name: Install Cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      - name: Install SOPS
-        env:
-          SOPS_VERSION: v3.13.3
-          SOPS_SHA256: e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
-        run: |
-          set -euo pipefail
-          binary="$RUNNER_TEMP/sops"
-          curl --fail --location --silent --show-error \
-            "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64" \
-            --output "$binary"
-          printf '%s  %s\n' "$SOPS_SHA256" "$binary" | sha256sum --check --strict
-          sudo install -m 0755 "$binary" /usr/local/bin/sops
-      - name: Check deployment credentials
-        run: |
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::Configure CLOUDFLARE_API_TOKEN in the production environment."
-            exit 1
-          fi
-          if [ -z "${SOPS_AGE_KEY:-}" ]; then
-            echo "::error::Configure SOPS_AGE_KEY so application secrets can be decrypted before deployment."
-            exit 1
-          fi
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
       - name: Publish marketplace indexes and exact manifests
         run: node .github/scripts/publish-marketplace.mjs
       - name: Sign marketplace catalog, discovery, and artifacts
@@ -236,10 +211,28 @@ jobs:
           done < <(find crumb.elixpo/public/marketplace/packages -type f ! -name '*.sigstore.json' -print0)
       - name: Build website
         run: ./deploy.sh --worker build
-      - name: Upload encrypted application secrets
-        run: ./deploy.sh --worker secrets
-      - name: Migrate and deploy website
-        run: |
-          set -euo pipefail
-          if [ "$RUN_MIGRATIONS" = "true" ]; then ./deploy.sh --worker migrate; fi
-          ./deploy.sh --worker deploy
+      - name: Upload signed build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: crumb-website
+          path: crumb.elixpo/.open-next
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  website:
+    name: Deploy Crumb website
+    needs: [changes, website-build]
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-worker.yml@main
+    with:
+      working-directory: crumb.elixpo
+      artifact-name: crumb-website
+      artifact-path: .open-next
+      # Decrypted outside the site directory so nothing reaches the build or the bundle.
+      sops-file: ../.env
+      sops-output: ../.env.ci
+      # Exactly the application secrets deploy.sh uploads.
+      secret-keys: NEXT_PUBLIC_ELIXPO_CLIENT_ID NEXT_PUBLIC_ELIXPO_CLIENT_ID_CLI ELIXPO_CLIENT_SECRET ELIXPO_ACCOUNTS_WEBHOOK_SECRET POLLINATIONS_APP_KEY CONNECTOR_ENCRYPTION_KEY
+      d1-database: ${{ needs.changes.outputs.migrations == 'true' && 'crumb-elixpo' || '' }}
+      environment: production
+    secrets: inherit

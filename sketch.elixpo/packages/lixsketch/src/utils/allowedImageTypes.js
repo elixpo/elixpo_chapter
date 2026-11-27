@@ -33,12 +33,17 @@ export const IMAGE_ACCEPT_ATTR = ALLOWED_IMAGE_MIME_TYPES.join(',');
 /**
  * Validate a File / Blob against the allowlist by mime type, falling back
  * to extension matching when the browser doesn't fill in `type` (some
- * drag-drop sources, some SVGs).
+ * drag-drop sources, some SVGs) or supplies a generic non-image type.
+ * Explicit disallowed image/* MIME types are rejected immediately without
+ * checking the extension.
  */
 export function isAllowedImage(file) {
     if (!file) return false;
     const type = (file.type || '').toLowerCase();
-    if (type && ALLOWED_IMAGE_MIME_TYPES.includes(type)) return true;
+    if (type) {
+        if (ALLOWED_IMAGE_MIME_TYPES.includes(type)) return true;
+        if (type.startsWith('image/')) return false;
+    }
     const name = (file.name || '').toLowerCase();
     if (!name) return false;
     return ALLOWED_IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));

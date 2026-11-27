@@ -1,0 +1,35 @@
+# Deploys mails.elixpo.com (next-on-pages) through the shared Elixpo deploy workflow.
+# Mirrors deploy.sh: runtime secrets come from the sops-encrypted .env, the production
+# app URL is fixed, and the SMTP sender URL is pushed from SMTP_SENDER_LIVE_URL.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - workers/smtp-sender/**
+      - docs/**
+      - "**/*.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: elixpo-mail
+      build-command: npm run pages:build
+      output-directory: .vercel/output/static
+      build-env: NEXT_PUBLIC_APP_URL=https://mails.elixpo.com
+      sops-file: .env
+      # Every key except build-time NEXT_PUBLIC_* values and dev-only URLs; these three
+      # NEXT_PUBLIC_* keys are read server-side at runtime, so they are synced too.
+      secret-keys: "* NEXT_PUBLIC_ELIXPO_CLIENT_ID NEXT_PUBLIC_ACCOUNTS_URL NEXT_PUBLIC_GOOGLE_CLIENT_ID"
+      secret-exclude: "NEXT_PUBLIC_* ENVIRONMENT NODE_ENV SMTP_SENDER_URL SMTP_SENDER_LIVE_URL"
+      secret-map: SMTP_SENDER_URL=SMTP_SENDER_LIVE_URL
+      secret-values: NEXT_PUBLIC_APP_URL=https://mails.elixpo.com
+      d1-database: elixpo_mail
+    secrets: inherit

@@ -16,14 +16,16 @@ import {
 import { useEffect, useState } from "react";
 import ConfirmDialog from "@/components/confirm-dialog";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 
 const field = {
     "& .MuiOutlinedInput-root": {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
 };
@@ -32,7 +34,7 @@ const labelSx = {
     fontSize: "0.7rem",
     color: "var(--app-fg-faint)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
     mb: 0.5,
 };
 
@@ -46,6 +48,14 @@ export default function PayoutsPage() {
     const [beneficiary, setBeneficiary] = useState("");
     const [accountNumber, setAccountNumber] = useState("");
     const [ifsc, setIfsc] = useState("");
+    // KYC, sent to Razorpay once and never stored by Elixpo.
+    const [phone, setPhone] = useState("");
+    const [pan, setPan] = useState("");
+    const [street, setStreet] = useState("");
+    const [city, setCity] = useState("");
+    const [stateName, setStateName] = useState("");
+    const [postal, setPostal] = useState("");
+    const [purpose, setPurpose] = useState<"fundraising" | "selling">("fundraising");
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState("");
     const [createError, setCreateError] = useState("");
@@ -86,19 +96,40 @@ export default function PayoutsPage() {
                     beneficiary_name: beneficiary.trim(),
                     account_number: accountNumber.trim(),
                     ifsc: ifsc.trim(),
+                    phone: phone.trim(),
+                    pan: pan.trim(),
+                    street: street.trim(),
+                    city: city.trim(),
+                    state: stateName.trim(),
+                    postal_code: postal.trim(),
+                    purpose,
                 }),
             });
             const d: any = await r.json().catch(() => ({}));
+            if (d.error === "reauth_required") {
+                window.location.href = "/login?next=%2Fdashboard%2Fpayouts";
+                return;
+            }
+            if (r.status === 422 && d.create_error) {
+                setCreateError(d.create_error);
+                await load();
+                return;
+            }
             if (!r.ok) {
                 throw new Error(
                     {
-                        missing_beneficiary: "Enter the account holder name.",
+                        missing_beneficiary: "Enter the account holder name exactly as on your PAN (letters, numbers, spaces).",
+                        invalid_phone: "Enter a 10-digit Indian mobile number.",
+                        invalid_pan: "Enter your personal PAN (10 characters, 4th letter P).",
+                        invalid_address: "Enter your full address (street at least 10 characters, city and state).",
+                        invalid_postal_code: "Enter a 6-digit PIN code.",
                         invalid_ifsc: "That IFSC doesn't look right.",
                         invalid_account_number: "Enter a valid account number.",
                     }[d.error as string] || d.error_description || d.error || "failed",
                 );
             }
             setAccountNumber("");
+            setPan("");
             setSaved(true);
             // Razorpay couldn't create the linked account (e.g. KYC/details) —
             // saved as pending; show why so the merchant can fix it.
@@ -113,7 +144,12 @@ export default function PayoutsPage() {
 
     const disconnect = async () => {
         setBusy(true);
-        await fetch("/api/dashboard/payouts", { method: "DELETE", credentials: "include" });
+        const r = await fetch("/api/dashboard/payouts", { method: "DELETE", credentials: "include" });
+        const d: any = await r.json().catch(() => ({}));
+        if (d.error === "reauth_required") {
+            window.location.href = "/login?next=%2Fdashboard%2Fpayouts";
+            return;
+        }
         setConfirmDisconnect(false);
         setAccount(null);
         setBeneficiary("");
@@ -125,7 +161,7 @@ export default function PayoutsPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -133,6 +169,9 @@ export default function PayoutsPage() {
     const connected = !!account;
     const active = account?.status === "active";
     const selfAcct = account?.status === "self";
+    // Fee comes from the API; fall back to the standard 5% while it is unset.
+    const feePct = feeBps ? (feeBps / 100).toFixed(feeBps % 100 ? 1 : 0) : "5";
+    const sharePct = feeBps ? ((10000 - feeBps) / 100).toFixed(feeBps % 100 ? 1 : 0) : "95";
 
     return (
         <Box>
@@ -143,7 +182,7 @@ export default function PayoutsPage() {
                 <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.92rem" }}>
                     Connect your bank to receive your app's revenue. Once live, each payment
                     is split to you automatically — you get the amount minus a{" "}
-                    <Box component="span" sx={{ color: "#c4b5fd", fontWeight: 600 }}>
+                    <Box component="span" sx={{ color: "var(--app-accent)", fontWeight: 600 }}>
                         {(feeBps / 100).toFixed(feeBps % 100 ? 1 : 0)}% platform fee
                     </Box>
                     .
@@ -153,7 +192,7 @@ export default function PayoutsPage() {
             {isOwner ? (
                 <GlassCard>
                     <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                        <AccountBalanceIcon sx={{ color: "#86efac", mt: 0.3 }} />
+                        <AccountBalanceIcon sx={{ color: "var(--app-success)", mt: 0.3 }} />
                         <Box>
                             <Typography sx={{ fontWeight: 700, fontSize: "1.05rem" }}>
                                 Your products settle directly
@@ -185,44 +224,49 @@ export default function PayoutsPage() {
               <>
             {/* Status */}
             {connected && (
-                <GlassCard sx={{ mb: 2, border: `1px solid ${selfAcct ? "rgba(155,123,247,0.35)" : active ? "rgba(134,239,172,0.3)" : "rgba(251,191,36,0.3)"}` }}>
+                <GlassCard sx={{ mb: 2, border: `1px solid ${selfAcct ? "color-mix(in srgb, var(--app-accent) 35%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 30%, transparent)" : "color-mix(in srgb, var(--app-warn) 30%, transparent)"}` }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                        <AccountBalanceIcon sx={{ color: selfAcct ? "#c4b5fd" : active ? "#86efac" : "#fbbf24" }} />
+                        <AccountBalanceIcon sx={{ color: selfAcct ? "var(--app-accent)" : active ? "var(--app-success)" : "var(--app-warn)" }} />
                         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                                 <Typography sx={{ fontWeight: 700 }}>
                                     {account.beneficiary_name}
                                 </Typography>
                                 <Chip
-                                    label={selfAcct ? "Self" : active ? "Active" : "Pending"}
+                                    label={selfAcct ? "Self" : active ? "Active" : account.status === "disabled" ? "Paused" : account.activation_status === "needs_clarification" ? "Action needed" : account.activation_status ? "In review" : "Pending"}
                                     size="small"
                                     sx={{
                                         height: 20,
                                         fontSize: "0.62rem",
                                         fontWeight: 700,
-                                        color: selfAcct ? "#c4b5fd" : active ? "#86efac" : "#fbbf24",
-                                        bgcolor: selfAcct ? "rgba(155,123,247,0.12)" : active ? "rgba(134,239,172,0.12)" : "rgba(251,191,36,0.12)",
-                                        border: `1px solid ${selfAcct ? "rgba(155,123,247,0.3)" : active ? "rgba(134,239,172,0.3)" : "rgba(251,191,36,0.3)"}`,
+                                        color: selfAcct ? "var(--app-accent)" : active ? "var(--app-success)" : "var(--app-warn)",
+                                        bgcolor: selfAcct ? "color-mix(in srgb, var(--app-accent) 12%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 12%, transparent)" : "color-mix(in srgb, var(--app-warn) 12%, transparent)",
+                                        border: `1px solid ${selfAcct ? "color-mix(in srgb, var(--app-accent) 30%, transparent)" : active ? "color-mix(in srgb, var(--app-success) 30%, transparent)" : "color-mix(in srgb, var(--app-warn) 30%, transparent)"}`,
                                     }}
                                 />
                             </Stack>
                             <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", mt: 0.2 }}>
                                 {account.bank_ifsc} · A/C ••••{account.bank_last4}
-                                {account.razorpay_account_id ? ` · ${account.razorpay_account_id}` : ""}
+
                             </Typography>
                         </Box>
                     </Stack>
                     {selfAcct ? (
-                        <Typography sx={{ color: "#c4b5fd", fontSize: "0.8rem", mt: 1.4 }}>
+                        <Typography sx={{ color: "var(--app-accent)", fontSize: "0.8rem", mt: 1.4 }}>
                             These details match the platform's own bank — marked as{" "}
                             <strong>Self</strong>, so payments settle directly (no split).
                             Ownership verification is required before this is finalised.
                         </Typography>
                     ) : (
                         !active && (
-                            <Typography sx={{ color: "rgba(251,191,36,0.85)", fontSize: "0.8rem", mt: 1.4 }}>
-                                Funds currently settle to Elixpo. Routing to your bank turns on once
-                                your Razorpay linked account is attached & verified.
+                            <Typography sx={{ color: "color-mix(in srgb, var(--app-warn) 85%, transparent)", fontSize: "0.8rem", mt: 1.4 }}>
+                                {account.status === "disabled"
+                                    ? "Payouts are paused. Connect again below to resume them."
+                                    : account.activation_status === "needs_clarification"
+                                      ? `Razorpay needs more from you: ${account.activation_note || "check your details below and submit again"}.`
+                                      : account.kyc_submitted
+                                        ? "Razorpay is verifying your details, usually within 1 to 2 working days. Fundraisers can be published and splits start as soon as it is approved."
+                                        : "Finish connecting below. Until then, payments can't be split to you."}
                             </Typography>
                         )
                     )}
@@ -235,13 +279,75 @@ export default function PayoutsPage() {
                     {connected ? "Update bank details" : "Connect your bank"}
                 </Typography>
                 <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.82rem", mb: 2 }}>
-                    We verify these and set up your Razorpay payout account for you — you
-                    don't touch Razorpay. Your account number is never stored in full
-                    (only the last 4 digits, for display).
+                    Razorpay, our RBI-regulated payment partner, verifies these once (KYC) and
+                    pays you directly. Your PAN, phone and address go only to Razorpay; we keep
+                    just the last 4 digits of your account number, for display.
                 </Typography>
                 <Stack spacing={1.8}>
+                    {!account?.kyc_submitted && (
+                        <>
+                            <Box>
+                                <Typography sx={labelSx}>What will you use payouts for?</Typography>
+                                <Stack direction="row" spacing={1}>
+                                    {(
+                                        [
+                                            ["fundraising", "Fundraisers"],
+                                            ["selling", "Selling my app or product"],
+                                        ] as const
+                                    ).map(([v, l]) => (
+                                        <Button
+                                            key={v}
+                                            onClick={() => setPurpose(v)}
+                                            aria-pressed={purpose === v}
+                                            sx={{
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                borderRadius: "999px",
+                                                px: 2,
+                                                border: "1px solid",
+                                                borderColor: purpose === v ? "var(--app-ink)" : "var(--app-border)",
+                                                background: purpose === v ? "var(--app-ink)" : "transparent",
+                                                color: purpose === v ? "var(--app-on-ink)" : "var(--app-fg)",
+                                                "&:hover": { background: purpose === v ? "var(--app-ink)" : "var(--app-overlay)" },
+                                            }}
+                                        >
+                                            {l}
+                                        </Button>
+                                    ))}
+                                </Stack>
+                            </Box>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>Mobile number</Typography>
+                                    <TextField value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" inputProps={{ inputMode: "numeric", autoComplete: "tel-national" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>PAN (personal)</Typography>
+                                    <TextField value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCPE1234F" inputProps={{ autoComplete: "off", maxLength: 10 }} size="small" fullWidth sx={field} />
+                                </Box>
+                            </Stack>
+                            <Box>
+                                <Typography sx={labelSx}>Address</Typography>
+                                <TextField value={street} onChange={(e) => setStreet(e.target.value)} placeholder="House, street, area" inputProps={{ autoComplete: "street-address" }} size="small" fullWidth sx={field} />
+                            </Box>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>City</Typography>
+                                    <TextField value={city} onChange={(e) => setCity(e.target.value)} placeholder="Kolkata" inputProps={{ autoComplete: "address-level2" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>State</Typography>
+                                    <TextField value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="West Bengal" inputProps={{ autoComplete: "address-level1" }} size="small" fullWidth sx={field} />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={labelSx}>PIN code</Typography>
+                                    <TextField value={postal} onChange={(e) => setPostal(e.target.value)} placeholder="700001" inputProps={{ inputMode: "numeric", autoComplete: "postal-code", maxLength: 6 }} size="small" fullWidth sx={field} />
+                                </Box>
+                            </Stack>
+                        </>
+                    )}
                     <Box>
-                        <Typography sx={labelSx}>Account holder name</Typography>
+                        <Typography sx={labelSx}>Account holder name (as on PAN)</Typography>
                         <TextField value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} placeholder="Acme Pvt Ltd" size="small" fullWidth sx={field} />
                     </Box>
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.8}>
@@ -256,9 +362,9 @@ export default function PayoutsPage() {
                     </Stack>
                 </Stack>
                 {createError && (
-                    <Box sx={{ mt: 1.8, px: 1.6, py: 1.2, borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)" }}>
-                        <Typography sx={{ color: "#fbbf24", fontSize: "0.82rem" }}>
-                            Saved, but Razorpay couldn't set up the payout account yet: {createError}
+                    <Box sx={{ mt: 1.8, px: 1.6, py: 1.2, borderRadius: "10px", background: "color-mix(in srgb, var(--app-warn) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--app-warn) 30%, transparent)" }}>
+                        <Typography sx={{ color: "var(--app-warn)", fontSize: "0.82rem" }}>
+                            Razorpay couldn't accept these details yet: {createError}
                         </Typography>
                     </Box>
                 )}
@@ -266,23 +372,49 @@ export default function PayoutsPage() {
                     <Button
                         onClick={save}
                         disabled={busy}
-                        sx={{ textTransform: "none", fontWeight: 600, color: "#fff", px: 2.6, py: 0.9, borderRadius: "10px", background: "#7c5cff", "&:hover": { background: "#8a6dff" }, "&.Mui-disabled": { opacity: 0.5, color: "#fff" } }}
+                        sx={{ textTransform: "none", fontWeight: 600, color: "var(--app-on-ink)", px: 2.6, py: 0.9, borderRadius: "999px", background: "var(--app-ink)", "&:hover": { background: "var(--app-ink)", opacity: 0.86 }, "&.Mui-disabled": { opacity: 0.5, color: "var(--app-on-ink)" } }}
                     >
                         {busy ? "Saving…" : connected ? "Update" : "Connect bank"}
                     </Button>
                     {connected && (
-                        <Button onClick={() => setConfirmDisconnect(true)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600, color: "rgba(248,113,113,0.85)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "10px", px: 2 }}>
-                            Disconnect
+                        <Button onClick={() => setConfirmDisconnect(true)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600, color: "color-mix(in srgb, var(--app-danger) 85%, transparent)", border: "1px solid color-mix(in srgb, var(--app-danger) 25%, transparent)", borderRadius: "999px", px: 2 }}>
+                            Pause payouts
                         </Button>
                     )}
                     {saved && (
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                            <CheckCircleIcon sx={{ fontSize: 16, color: "#86efac" }} />
-                            <Typography sx={{ color: "#86efac", fontSize: "0.82rem" }}>Saved</Typography>
+                            <CheckCircleIcon sx={{ fontSize: 16, color: "var(--app-success)" }} />
+                            <Typography sx={{ color: "var(--app-success)", fontSize: "0.82rem" }}>Saved</Typography>
                         </Stack>
                     )}
-                    {err && <Typography sx={{ color: "#f87171", fontSize: "0.82rem" }}>{err}</Typography>}
+                    {err && <Typography sx={{ color: "var(--app-danger)", fontSize: "0.82rem" }}>{err}</Typography>}
                 </Stack>
+                <PolicyLinks trust="payouts" lead="By connecting payouts you agree to the" style={{ marginTop: 14 }} />
+            </GlassCard>
+
+            {/* How payouts work (secondary) */}
+            <GlassCard sx={{ mt: 2, p: { xs: 2, md: 2.5 } }}>
+                <Typography sx={{ ...labelSx, mb: 1.8 }}>How payouts work</Typography>
+                <FlowDiagram
+                    compact
+                    title="How payouts work"
+                    steps={[
+                        { icon: "phone", title: "Someone pays", body: "A buyer or supporter pays on Elixpo Pay checkout." },
+                        { icon: "shield", title: "Razorpay", body: "Processed by Razorpay, an RBI-regulated payment gateway." },
+                        { icon: "split", title: "Route split", body: `${sharePct}% to you, ${feePct}% Elixpo platform fee.` },
+                        { icon: "bank", title: "Your bank", body: "Razorpay settles your share on its settlement schedule." },
+                    ]}
+                />
+                <Box component="ul" sx={{ m: 0, mt: 2, pl: 2.2, color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, "& li + li": { mt: 0.4 } }}>
+                    <li>
+                        When you connect, we create a Razorpay Route linked account for you. Razorpay
+                        runs the KYC checks; payouts switch on once it is verified.
+                    </li>
+                    <li>
+                        Your full account number is sent to Razorpay to create that account and is not
+                        stored by Elixpo. We keep only the last 4 digits, the IFSC and the holder name, for display.
+                    </li>
+                </Box>
             </GlassCard>
 
             {/* Routable revenue */}
@@ -316,14 +448,14 @@ export default function PayoutsPage() {
                 open={confirmDisconnect}
                 destructive
                 busy={busy}
-                title="Disconnect your bank?"
-                confirmLabel="Disconnect"
+                title="Pause payouts?"
+                confirmLabel="Pause payouts"
                 message={
                     <>
-                        With no bank connected, your payments will{" "}
-                        <strong>settle into the Elixpo Pay account</strong> (
-                        <strong>hello@elixpo.com</strong>) until you reconnect — they won't
-                        reach your bank. Your existing payments aren't affected.
+                        While payouts are paused, your fundraisers stop accepting contributions, and
+                        product payments <strong>settle into the Elixpo Pay account</strong> instead of
+                        your bank until you resume. Payments already made aren't affected. You can
+                        resume any time without redoing KYC.
                     </>
                 }
                 onConfirm={disconnect}

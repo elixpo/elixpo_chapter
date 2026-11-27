@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import "lenis/dist/lenis.css";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { MegaNavbar } from "@/components/MegaNavbar";
 import { Footer } from "@/components/Footer";
 import { MotionPreferences } from "@/components/MotionPreferences";
+import { OreoCompanion } from "@/components/OreoCompanion";
+import { SparkGuard } from "@/components/SparkGuard";
+import { PointerEffects } from "@/components/PointerEffects";
 import { PortalAnalytics } from "@/components/PortalAnalytics";
 import { SITE_URL } from "@/lib/seo";
 
@@ -86,8 +90,13 @@ export default function RootLayout({
             <MegaNavbar />
             <div className="site-content">{children}</div>
             <Footer />
+            <OreoCompanion />
+            <SparkGuard />
+            <PointerEffects />
           </div>
         </MotionPreferences>
+        {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
+        <Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" />
       </body>
     </html>
   );

@@ -68,7 +68,7 @@ around the world.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Falera** | The open conference badge and FaleraOS | [falera.elixpo.com](https://falera.elixpo.com) |
 
 Developers can drop our editors into their own projects with the
 **`@elixpo/lixsketch`** and **`@elixpo/lixeditor`** packages, on npm and as VS
@@ -294,7 +294,7 @@ kit is at **[elixpo.com/assets](https://elixpo.com/assets)**.
 - **Code** - [MIT](LICENSE).
 - **Brand & visual assets** - [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0).
 
-The "Elixpo" and "Oreo" names, the Oreo mascot, the E-badge mark, and the
+The "Elixpo" and "Lumi" names, the Lumi mascot, the E-badge mark, and the
 elixpo.com domains are trademarks of the Elixpo project and are not licensed by
 MIT or CC-BY-4.0. See [`TRADEMARKS.md`](TRADEMARKS.md) and the per-product
 notice board, [`NOTICE`](LICENSES/NOTICE).

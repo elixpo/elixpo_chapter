@@ -35,7 +35,7 @@ active, and not a public download surface.
 ```text
 brand/
 ├── README.md                 # contributor and production documentation
-├── MASCOT.md                 # canonical Oreo anatomy and generation rules
+├── MASCOT.md                 # canonical Lumi anatomy and generation rules
 ├── provenance.json           # source paths, revisions, checksums and licences
 ├── prompts/                  # reviewed reproducibility prompts
 ├── tooling/                  # reviewed generators and optimization scripts
@@ -96,7 +96,7 @@ portal-owned. Colour tokens, typography guidance, and general usage guidance
 remain public. Official sticker masters and production sheets are restricted
 partnership material; only watermarked previews belong in `public/`. Product-
 specific brand assets remain project-owned unless the registry explicitly
-transfers their canonical distribution here. Oreo's visual rules remain in
+transfers their canonical distribution here. Lumi's visual rules remain in
 `brand/MASCOT.md`, while the Open Field system determines where the mascot is
 appropriate across organization surfaces.
 

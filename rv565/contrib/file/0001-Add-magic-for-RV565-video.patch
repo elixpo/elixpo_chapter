@@ -1,43 +1,55 @@
-From f4696dcfde0621254516b8fa94d821df96472583 Mon Sep 17 00:00:00 2001
+From e1be3b843d1e14c779b46ac7a40b33ee1be85768 Mon Sep 17 00:00:00 2001
 From: Ayushman Bhattacharya <ayushman.elixpo@gmail.com>
 Date: Sun, 1 Nov 2026 13:14:34 +0530
 Subject: [PATCH] Add magic for RV565 video
 
-RV565 is a frame-independent RGB565 video container for microcontroller
-displays: a 12-byte little-endian header followed by length-prefixed zlib
-frames. Specification:
+RV565 is a video container for microcontroller displays: a little-endian
+header followed by length-prefixed frames. Version 6 frames are zlib
+streams of big-endian RGB565 pixels; version 7 adds a pixel format (RGB565,
+RGB444, RGB666, RGB888, 8- and 4-bit grayscale, 1-bit monochrome), stored
+or zlib frames, and keyframe, delta and repeat frames. The entry prints
+the size, frame rate and frame count, and for version 7 the pixel format,
+codec and keyframe interval. Specification:
 https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md
 
-Adds a test file (a 24-frame synthetic test pattern).
+Adds a version 6 test file (a 24-frame synthetic test pattern) and a
+version 7 one (a 10-frame rgb565be clip with deltas and a repeat).
 ---
- magic/Magdir/animation |  23 +++++++++++++++++++++++
- tests/Makefile.am      |   2 ++
- tests/rv565.result     |   1 +
- tests/rv565.testfile   | Bin 0 -> 6322 bytes
- 4 files changed, 26 insertions(+)
+ magic/Magdir/animation  |  52 ++++++++++++++++++++++++++++++++++++++++
+ tests/Makefile.am       |   4 ++++
+ tests/rv565-v7.result   |   1 +
+ tests/rv565-v7.testfile | Bin 0 -> 1800 bytes
+ tests/rv565.result      |   1 +
+ tests/rv565.testfile    | Bin 0 -> 6322 bytes
+ 6 files changed, 58 insertions(+)
+ create mode 100644 tests/rv565-v7.result
+ create mode 100644 tests/rv565-v7.testfile
  create mode 100644 tests/rv565.result
  create mode 100644 tests/rv565.testfile
 
 diff --git a/magic/Magdir/animation b/magic/Magdir/animation
-index 4a73e72..b7cec57 100644
+index 4a73e72..292c5d9 100644
 --- a/magic/Magdir/animation
 +++ b/magic/Magdir/animation
-@@ -1251,3 +1251,26 @@
+@@ -1251,3 +1251,55 @@
  >14	belong	!0	\b, XOR obfuscation key %d
  !:mime	application/x-cubism-archive
  !:ext	cmo3/can3
 +
 +#------------------------------------------------------------------------------
-+# rv565:  file(1) magic for RV565 frame-independent RGB565 video
++# rv565:  file(1) magic for RV565 video for microcontroller displays
 +#
-+# RV565 is a container for microcontroller displays: a 12-byte little-endian
-+# header, then per frame a u32 length and a zlib stream that inflates to
-+# width*height big-endian RGB565 pixels.
++# A little-endian header ("RV5", version, width, height, frames per second,
++# flags, frame count) followed by one length-prefixed record per frame.
++# Version 6 frames are zlib streams of big-endian RGB565 pixels. Version 7
++# adds the header size, a pixel format, a codec (stored or zlib) and a
++# keyframe interval; each record starts with a frame type byte.
 +# Specification: https://github.com/elixpo/rv565/blob/main/docs/FORMAT.md
 +# Paper: https://arxiv.org/abs/2610.35935
 +#
-+# The 3-byte magic is short, so also require version 6, a frame rate of
-+# 1-30, and a zlib header (0x78) on the first frame.
++# The 3-byte magic is short, so also require the version, a valid frame rate
++# and, in version 6, a zlib header (0x78) on the first frame, or in version 7,
++# valid header fields and a keyframe as the first frame.
 +0	string		RV5
 +>3	byte		6
 +>>8	ubyte		>0
@@ -49,19 +61,99 @@ index 4a73e72..b7cec57 100644
 +>>>>>6		uleshort	x		\bx%u
 +>>>>>8		ubyte		x		\b, %u fps
 +>>>>>10		uleshort	x		\b, %u frames
++>3	byte		7
++>>8	ubyte		>0
++>>>8	ubyte		<61
++>>>>12	ubyte		>15
++>>>>>13	ubyte		<9
++>>>>>>14	ubyte		<2
++>>>>>>>15	ubyte		>0
++>>>>>>>>(12.b+4)	ubyte	0	RV565 video
++!:mime	video/x-rv565
++!:ext	rv565
++>>>>>>>>>4	uleshort	x		\b, %u
++>>>>>>>>>6	uleshort	x		\bx%u
++>>>>>>>>>8	ubyte		x		\b, %u fps
++>>>>>>>>>10	uleshort	x		\b, %u frames
++>>>>>>>>>13	ubyte		0		\b, rgb565be
++>>>>>>>>>13	ubyte		1		\b, rgb565le
++>>>>>>>>>13	ubyte		2		\b, rgb444
++>>>>>>>>>13	ubyte		3		\b, rgb666
++>>>>>>>>>13	ubyte		4		\b, rgb888
++>>>>>>>>>13	ubyte		5		\b, gray8
++>>>>>>>>>13	ubyte		6		\b, gray4
++>>>>>>>>>13	ubyte		7		\b, mono
++>>>>>>>>>13	ubyte		8		\b, mono_vpage
++>>>>>>>>>14	ubyte		0		\b, stored
++>>>>>>>>>14	ubyte		1		\b, zlib
++>>>>>>>>>15	ubyte		>1		\b, keyframe every %u frames
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index 5079b3a..4dbd40d 100644
+index 5079b3a..391296a 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
-@@ -160,6 +160,8 @@ rpm-v3.0-bin-x86_64.result \
+@@ -160,6 +160,10 @@ rpm-v3.0-bin-x86_64.result \
  rpm-v3.0-bin-x86_64.testfile \
  rpm-v3.0-src.result \
  rpm-v3.0-src.testfile \
 +rv565.result \
 +rv565.testfile \
++rv565-v7.result \
++rv565-v7.testfile \
  searchbug.magic \
  searchbug.result \
  searchbug.testfile \
+diff --git a/tests/rv565-v7.result b/tests/rv565-v7.result
+new file mode 100644
+index 0000000..2b10296
+--- /dev/null
++++ b/tests/rv565-v7.result
+@@ -0,0 +1 @@
++RV565 video, 21x13, 12 fps, 10 frames, rgb565be, zlib, keyframe every 4 frames
+\ No newline at end of file
+diff --git a/tests/rv565-v7.testfile b/tests/rv565-v7.testfile
+new file mode 100644
+index 0000000000000000000000000000000000000000..db9fa177818ff84a83e00269d19241a7b80de3ea
+GIT binary patch
+literal 1800
+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
+Qbs4N=ObP&$?SO**1<S)+BLDyZ
+
+literal 0
+HcmV?d00001
+
 diff --git a/tests/rv565.result b/tests/rv565.result
 new file mode 100644
 index 0000000..7dc1ed6

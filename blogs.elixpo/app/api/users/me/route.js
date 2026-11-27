@@ -14,7 +14,7 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Profile update must be a JSON object' }, { status: 400 });
   }
   const {
-    display_name, bio, location, timezone, pronouns, website, company, links,
+    display_name, bio, location, timezone, pronouns, website, company, links, top_pick_ids,
   } = body;
   let designation;
   try {
@@ -45,9 +45,38 @@ export async function PUT(request) {
     }
   }
 
+  let normTopPickIds;
+  if (top_pick_ids !== undefined) {
+    if (!Array.isArray(top_pick_ids)) {
+      return NextResponse.json({ error: 'Top picks must be a blog ID array' }, { status: 400 });
+    }
+    normTopPickIds = [...new Set(top_pick_ids
+      .filter((id) => typeof id === 'string')
+      .map((id) => id.trim())
+      .filter(Boolean))]
+      .slice(0, 3);
+  }
+
   try {
     const { getDB } = await import('../../../../lib/cloudflare');
     const db = getDB();
+
+    if (normTopPickIds?.length) {
+      const placeholders = normTopPickIds.map(() => '?').join(',');
+      const eligible = await db.prepare(`
+        SELECT b.id
+        FROM blogs b
+        WHERE b.status = 'published'
+          AND b.secret = 0
+          AND b.id IN (${placeholders})
+          AND (b.author_id = ? OR b.id IN (
+            SELECT blog_id FROM blog_co_authors
+            WHERE user_id = ? AND status = 'accepted' AND show_on_profile = 1
+          ))
+      `).bind(...normTopPickIds, session.userId, session.userId).all();
+      const eligibleIds = new Set((eligible?.results || []).map((row) => row.id));
+      normTopPickIds = normTopPickIds.filter((id) => eligibleIds.has(id));
+    }
 
     const now = Math.floor(Date.now() / 1000);
     await db.prepare(`
@@ -61,6 +90,7 @@ export async function PUT(request) {
         website = COALESCE(?, website),
         company = COALESCE(?, company),
         links = COALESCE(?, links),
+        top_pick_ids = COALESCE(?, top_pick_ids),
         updated_at = ?
       WHERE id = ?
     `).bind(
@@ -68,8 +98,21 @@ export async function PUT(request) {
       bio === undefined ? null : bio, location === undefined ? null : location,
       timezone === undefined ? null : timezone, pronouns === undefined ? null : pronouns,
       normWebsite ?? null, company === undefined ? null : company,
-      normLinks ? JSON.stringify(normLinks) : null, now, session.userId,
+      normLinks ? JSON.stringify(normLinks) : null,
+      normTopPickIds ? JSON.stringify(normTopPickIds) : null,
+      now, session.userId,
     ).run();
+
+    const profile = await db.prepare(`
+      SELECT display_name, designation, bio, avatar_url, banner_r2_key
+      FROM users WHERE id = ?
+    `).bind(session.userId).first();
+    if (profile?.display_name && (profile.designation || profile.bio || profile.avatar_url || profile.banner_r2_key)) {
+      try {
+        const { recordActivationMilestone } = await import('../../../../lib/activation');
+        await recordActivationMilestone(db, session.userId, 'completed_profile');
+      } catch {}
+    }
 
     // Profile metadata and its sitemap last-modified value changed together.
     try {

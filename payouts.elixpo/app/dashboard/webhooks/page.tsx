@@ -218,7 +218,7 @@ export default function WebhooksPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -267,10 +267,10 @@ export default function WebhooksPage() {
             {/* New secret banner */}
             {newSecret && (
                 <GlassCard
-                    sx={{ mb: 3, border: "1px solid rgba(134,239,172,0.35)" }}
+                    sx={{ mb: 3, border: "1px solid color-mix(in srgb, var(--app-success) 35%, transparent)" }}
                 >
                     <Typography
-                        sx={{ fontWeight: 700, color: "#86efac", mb: 1.2 }}
+                        sx={{ fontWeight: 700, color: "var(--app-success)", mb: 1.2 }}
                     >
                         Webhook registered — copy your signing secret now
                     </Typography>
@@ -279,7 +279,7 @@ export default function WebhooksPage() {
                             fontSize: "0.72rem",
                             color: "var(--app-fg-faint)",
                             textTransform: "uppercase",
-                            letterSpacing: "0.06em",
+                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                             mb: 0.5,
                         }}
                     >
@@ -296,7 +296,7 @@ export default function WebhooksPage() {
                             }}
                         >
                             <CheckCircleIcon
-                                sx={{ fontSize: 16, color: "#86efac" }}
+                                sx={{ fontSize: 16, color: "var(--app-success)" }}
                             />
                             Copied & hidden — store it as ELIXPO_PAY_WEBHOOK_SECRET.
                         </Box>
@@ -322,11 +322,11 @@ export default function WebhooksPage() {
                                 sx={{
                                     textTransform: "none",
                                     fontWeight: 600,
-                                    color: "#fff",
+                                    color: "var(--app-on-ink)",
                                     px: 2,
-                                    background: "#7c5cff",
-                                    borderRadius: "10px",
-                                    "&:hover": { background: "#8a6dff" },
+                                    background: "var(--app-ink)",
+                                    borderRadius: "999px",
+                                    "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
                                 }}
                             >
                                 Copy
@@ -372,7 +372,7 @@ export default function WebhooksPage() {
                                             fontFamily:
                                                 "var(--font-geist-mono)",
                                             fontSize: "0.8rem",
-                                            color: "#c4b5fd",
+                                            color: "var(--app-accent)",
                                         }}
                                     >
                                         {tmpl.type}
@@ -398,10 +398,10 @@ export default function WebhooksPage() {
                                             height: 18,
                                             fontSize: "0.6rem",
                                             fontWeight: 600,
-                                            color: "#9b7bf7",
+                                            color: "var(--app-accent)",
                                             bgcolor:
-                                                "rgba(155,123,247,0.12)",
-                                            border: "1px solid rgba(155,123,247,0.25)",
+                                                "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                            border: "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
                                         }}
                                     />
                                 </Stack>
@@ -489,7 +489,7 @@ export default function WebhooksPage() {
                             sx={{
                                 transition: "border-color 0.2s ease",
                                 "&:hover": {
-                                    borderColor: "rgba(155,123,247,0.4)",
+                                    borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)",
                                 },
                             }}
                         >
@@ -525,13 +525,13 @@ export default function WebhooksPage() {
                                                 fontWeight: 700,
                                                 color:
                                                     wh.status === "active"
-                                                        ? "#4ade80"
-                                                        : "#9ca3af",
+                                                        ? "var(--app-success)"
+                                                        : "var(--app-fg-faint)",
                                                 bgcolor:
                                                     wh.status === "active"
-                                                        ? "rgba(34,197,94,0.1)"
-                                                        : "rgba(156,163,175,0.1)",
-                                                border: `1px solid ${wh.status === "active" ? "rgba(34,197,94,0.25)" : "rgba(156,163,175,0.2)"}`,
+                                                        ? "color-mix(in srgb, var(--app-success) 10%, transparent)"
+                                                        : "color-mix(in srgb, var(--app-fg-faint) 10%, transparent)",
+                                                border: `1px solid ${wh.status === "active" ? "color-mix(in srgb, var(--app-success) 25%, transparent)" : "color-mix(in srgb, var(--app-fg-faint) 20%, transparent)"}`,
                                             }}
                                         />
                                     </Stack>
@@ -562,10 +562,10 @@ export default function WebhooksPage() {
                                                     fontSize: "0.62rem",
                                                     fontFamily:
                                                         "var(--font-geist-mono)",
-                                                    color: "#c4b5fd",
+                                                    color: "var(--app-accent)",
                                                     bgcolor:
-                                                        "rgba(155,123,247,0.1)",
-                                                    border: "1px solid rgba(155,123,247,0.2)",
+                                                        "color-mix(in srgb, var(--app-accent) 10%, transparent)",
+                                                    border: "1px solid color-mix(in srgb, var(--app-accent) 20%, transparent)",
                                                 }}
                                             />
                                         ))}
@@ -576,13 +576,13 @@ export default function WebhooksPage() {
                                     href={`/dashboard/products/${wh.productId}`}
                                     sx={{
                                         textTransform: "none",
-                                        color: "#9b7bf7",
+                                        color: "var(--app-accent)",
                                         fontWeight: 700,
                                         fontSize: "0.9rem",
                                         whiteSpace: "nowrap",
                                         "&:hover": {
                                             background:
-                                                "rgba(155,123,247,0.06)",
+                                                "color-mix(in srgb, var(--app-accent) 6%, transparent)",
                                         },
                                     }}
                                 >
@@ -729,18 +729,18 @@ function RegisterWebhookDialog({
                                         sx={{
                                             p: 1.2,
                                             borderRadius: "10px",
-                                            border: `1px solid ${selectedProductId === p.id ? "rgba(155,123,247,0.5)" : "var(--app-border)"}`,
+                                            border: `1px solid ${selectedProductId === p.id ? "color-mix(in srgb, var(--app-accent) 50%, transparent)" : "var(--app-border)"}`,
                                             background:
                                                 selectedProductId === p.id
-                                                    ? "rgba(155,123,247,0.1)"
+                                                    ? "color-mix(in srgb, var(--app-accent) 10%, transparent)"
                                                     : "var(--app-overlay)",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                             "&:hover": {
                                                 borderColor:
-                                                    "rgba(155,123,247,0.4)",
+                                                    "color-mix(in srgb, var(--app-accent) 40%, transparent)",
                                                 background:
-                                                    "rgba(155,123,247,0.06)",
+                                                    "color-mix(in srgb, var(--app-accent) 6%, transparent)",
                                             },
                                         }}
                                     >
@@ -764,7 +764,7 @@ function RegisterWebhookDialog({
                                                         fontFamily:
                                                             "var(--font-geist-mono)",
                                                         fontSize: "0.72rem",
-                                                        color: "#c4b5fd",
+                                                        color: "var(--app-accent)",
                                                     }}
                                                 >
                                                     {p.client_id}
@@ -774,7 +774,7 @@ function RegisterWebhookDialog({
                                                 <CheckCircleIcon
                                                     sx={{
                                                         fontSize: 18,
-                                                        color: "#9b7bf7",
+                                                        color: "var(--app-accent)",
                                                     }}
                                                 />
                                             )}
@@ -843,7 +843,7 @@ function RegisterWebhookDialog({
                                                         fontFamily:
                                                             "var(--font-geist-mono)",
                                                         fontSize: "0.77rem",
-                                                        color: "#c4b5fd",
+                                                        color: "var(--app-accent)",
                                                     }}
                                                 >
                                                     {tmpl.type}
@@ -883,11 +883,11 @@ function RegisterWebhookDialog({
                                             }
                                             sx={{
                                                 "& .MuiSwitch-switchBase.Mui-checked":
-                                                    { color: "#9b7bf7" },
+                                                    { color: "var(--app-accent)" },
                                                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                                     {
                                                         backgroundColor:
-                                                            "#7c5cff",
+                                                            "var(--app-accent)",
                                                     },
                                             }}
                                         />
@@ -898,7 +898,7 @@ function RegisterWebhookDialog({
                     </Box>
 
                     {err && (
-                        <Typography sx={{ color: "#f87171", fontSize: "0.85rem" }}>
+                        <Typography sx={{ color: "var(--app-danger)", fontSize: "0.85rem" }}>
                             {err}
                         </Typography>
                     )}
@@ -931,8 +931,8 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
     "& .MuiFormHelperText-root": { color: "var(--app-fg-faint)" },
@@ -943,7 +943,7 @@ const mono = {
     fontSize: "0.82rem",
     p: 1.2,
     borderRadius: "10px",
-    background: "rgba(0,0,0,0.3)",
+    background: "var(--app-surface-2)",
     border: "1px solid var(--app-border)",
     overflowX: "auto",
     whiteSpace: "nowrap",
@@ -952,7 +952,7 @@ const mono = {
 const dialogPaper = {
     bgcolor: "var(--app-surface)",
     border: "1px solid var(--app-border)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-panel)",
     color: "var(--app-fg)",
     backgroundImage: "none",
 };
@@ -960,11 +960,11 @@ const dialogPaper = {
 const primaryBtn = {
     textTransform: "none",
     fontWeight: 700,
-    color: "#fff",
+    color: "var(--app-on-ink)",
     px: 2.4,
     py: 1,
     borderRadius: "10px",
-    background: "#7c5cff",
-    "&:hover": { background: "#8a6dff" },
-    "&.Mui-disabled": { opacity: 0.4, color: "#fff" },
+    background: "var(--app-ink)",
+    "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
+    "&.Mui-disabled": { opacity: 0.4, color: "var(--app-on-ink)" },
 };

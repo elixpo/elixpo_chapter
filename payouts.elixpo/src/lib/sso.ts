@@ -5,6 +5,9 @@
 
 import { getEnv, requireEnv } from "./env";
 
+/** Short-lived cookie binding the OAuth `state` to the post-login path. */
+export const STATE_COOKIE = "pay_oauth_state";
+
 export async function accountsBaseUrl(): Promise<string> {
     return (
         (await getEnv("NEXT_PUBLIC_ACCOUNTS_URL")) ||

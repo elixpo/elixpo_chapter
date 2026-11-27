@@ -36,7 +36,7 @@ PROFILES: dict[str, dict[str, Any]] = {
     "octabit": {"local": "octabit", "artifact": "hardware", "profile": "research-hardware", "technologies": ["digital logic", "computer architecture", "8-bit CPU"]},
     "Nano28C64": {"local": "Nano28C64", "artifact": "hardware", "profile": "open-hardware", "technologies": ["EEPROM", "digital logic", "circuit design"]},
     "opensource.elixpo": {"local": "opensource.elixpo", "artifact": "hosted-service", "profile": "incubating-service", "technologies": ["TypeScript", "web application", "GitHub"]},
-    "oreo": {"local": "oreoOS", "artifact": "hardware", "profile": "research-hardware", "technologies": ["OreoOS", "embedded systems", "open hardware"]},
+    "oreo": {"local": "oreoOS", "artifact": "hardware", "profile": "research-hardware", "technologies": ["FaleraOS", "embedded systems", "open hardware"]},
     "payouts.elixpo": {"local": "payouts.elixpo", "artifact": "hosted-service", "profile": "hosted-service", "technologies": ["TypeScript", "payments", "Cloudflare"]},
     "qfabric": {"local": "qfabric", "artifact": "framework", "profile": "open-research", "technologies": ["Python", "quantum computing", "simulation"]},
     "sketch.elixpo": {"local": "sketch.elixpo", "artifact": "application", "profile": "software-monorepo", "technologies": ["Next.js", "TypeScript", "SVG", "Cloudflare"]},

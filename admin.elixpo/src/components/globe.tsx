@@ -43,13 +43,16 @@ export default function Globe({
                 height: size * 2,
                 phi: 0,
                 theta: thetaRef.current,
-                dark: 1,
-                diffuse: 1.2,
+                // Light "paper & ink" globe: white sphere, ink-grey land dots,
+                // research-blue (#3a65c7) markers, paperDeep glow.
+                dark: 0,
+                diffuse: 1.1,
                 mapSamples: 16000,
-                mapBrightness: 5,
-                baseColor: [0.28, 0.26, 0.38],
-                markerColor: [0.61, 0.48, 0.97],
-                glowColor: [0.36, 0.26, 0.6],
+                mapBrightness: 6,
+                mapBaseBrightness: 0,
+                baseColor: [1, 1, 1],
+                markerColor: [0.227, 0.396, 0.78],
+                glowColor: [0.937, 0.945, 0.929],
                 markers,
             });
             const tick = () => {

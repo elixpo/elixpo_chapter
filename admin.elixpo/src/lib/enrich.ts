@@ -75,7 +75,20 @@ const META: Record<string, ProjectMeta> = {
         repo: `${GH}/mail.elixpo`,
     },
     lixsearch: { key: "search", label: "Search" },
-    oreo: { key: "oreo", label: "Oreo", domain: "oreo.elixpo.com" },
+    // The site deploys as the Pages project "falera" (it was "oreo" before
+    // the rename); both names map to the same product.
+    falera: {
+        key: "falera",
+        label: "Falera",
+        domain: "falera.elixpo.com",
+        repo: "https://github.com/elixpo/falera",
+    },
+    oreo: {
+        key: "falera",
+        label: "Falera",
+        domain: "falera.elixpo.com",
+        repo: "https://github.com/elixpo/falera",
+    },
     career: { key: "career", label: "Career", domain: "career.elixpo.com" },
 
     // D1 databases (business tables filled in Phase 2 from each app's migrations)

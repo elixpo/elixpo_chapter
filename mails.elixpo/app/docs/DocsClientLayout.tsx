@@ -23,6 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import ThemeToggle from "../components/theme-toggle";
 import CopyForLlm from "./_components/copy-for-llm";
 
 const CORAL = "var(--accent)";
@@ -96,6 +97,7 @@ export default function DocsClientLayout({ children }: { children: React.ReactNo
                                         fontSize: "0.88rem",
                                         fontWeight: active ? 500 : 400,
                                         fontFamily: "var(--font-sans)",
+                                        color: "inherit",
                                     }}
                                 />
                             </ListItemButton>
@@ -181,7 +183,10 @@ export default function DocsClientLayout({ children }: { children: React.ReactNo
                             </Typography>
                         </Box>
                         <Box sx={{ flexGrow: 1 }} />
-                        <CopyForLlm />
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                            <ThemeToggle size={18} />
+                            <CopyForLlm />
+                        </Box>
                     </Toolbar>
                 </AppBar>
 

@@ -224,14 +224,21 @@ jobs:
       - name: Build prompt body
         if: steps.whitelist.outputs.authorized == 'true'
         id: build_prompt
+        # The title is written by whoever opened the issue: pass it through env
+        # so the shell never parses it as code.
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           CTX="(context artifact missing — fall back to Glob/Grep discovery)"
           if [ -f .elixpo-context/context.md ]; then
             CTX=$(cat .elixpo-context/context.md)
           fi
           {
-            echo 'prompt<<PROMPT_EOF'
-            echo "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
+            # Random delimiter: a title containing a fixed one could end the
+            # output block early and inject further step outputs.
+            DELIM="PROMPT_EOF_$(openssl rand -hex 16)"
+            echo "prompt<<$DELIM"
+            echo "Issue #${{ github.event.issue.number }}: $ISSUE_TITLE"
             echo ""
             echo "## Cold repo context (pre-built snapshot)"
             echo "$CTX"
@@ -262,10 +269,10 @@ jobs:
             echo "   - Post ONE 'gh issue comment' with the specific questions needed to proceed. Stop."
             echo ""
             echo "Never commit to main. Never fabricate test results. The repo context above is cold but current — prefer it over re-exploring the tree."
-            echo 'PROMPT_EOF'
+            echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@867ab36a6fa36ec00845704bc92d95ae20a817b1 # v1
+      - uses: anthropics/claude-code-action@d535f5172dec02b204866b393d6b20b9b2aaf98d # v1.0.266
         if: steps.whitelist.outputs.authorized == 'true'
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456

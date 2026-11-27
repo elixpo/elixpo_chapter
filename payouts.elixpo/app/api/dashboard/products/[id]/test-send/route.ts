@@ -2,8 +2,8 @@ export const runtime = "edge";
 
 import { type NextRequest, NextResponse } from "next/server";
 import { requireDashboard } from "@/lib/dashboard-auth";
-import { getDatabase } from "@/lib/d1-client";
-import { getEnv } from "@/lib/env";
+import type { getDatabase } from "@/lib/d1-client";
+import { testPaymentsAllowed } from "@/lib/env";
 import { fulfillPayment } from "@/lib/fulfill";
 import {
     createCheckoutSession,
@@ -62,10 +62,13 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
-    const environment = await getEnv("ENVIRONMENT");
-    if (environment === "production") {
+    if (!(await testPaymentsAllowed())) {
         return NextResponse.json(
-            { error: "disabled_in_production" },
+            {
+                error: "test_payments_disabled",
+                error_description:
+                    "Simulated payments only run with ENVIRONMENT=development.",
+            },
             { status: 403 },
         );
     }

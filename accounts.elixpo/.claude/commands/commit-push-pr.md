@@ -24,18 +24,18 @@ gh pr list --head "$(git branch --show-current)" --state open --json number,url 
 - **Open PR exists** → push to this branch (Step 2). Do NOT open another PR.
 - **No open PR** → check for a merged one:
 
-  ```bash
-  gh pr list --head "$(git branch --show-current)" --state merged --json number --jq '.[0].number'
-  ```
-
-  - **Merged** → branch is stale. Cut a fresh branch from `main`:
-
     ```bash
-    git checkout main && git pull && git checkout -b elixpo/issue-$ISSUE_N-$(openssl rand -hex 2)
+    gh pr list --head "$(git branch --show-current)" --state merged --json number --jq '.[0].number'
     ```
 
-    Re-apply the change there.
-  - **Never had a PR** → push and open a new one (Step 3).
+    - **Merged** → branch is stale. Cut a fresh branch from `main`:
+
+        ```bash
+        git checkout main && git pull && git checkout -b elixpo/issue-$ISSUE_N-$(openssl rand -hex 2)
+        ```
+
+        Re-apply the change there.
+    - **Never had a PR** → push and open a new one (Step 3).
 
 ## Step 2 — Biome, commit, push
 
@@ -45,10 +45,10 @@ gh pr list --head "$(git branch --show-current)" --state open --json number,url 
 4. `git add` specific files — avoid `.env*`, `.wrangler/`, anything under `tsconfig.tsbuildinfo`.
 5. Commit with conventional format:
 
-   ```
-   feat: <concrete summary> (#<issue-n>)
-   fix: <concrete summary> (#<issue-n>)
-   ```
+    ```
+    feat: <concrete summary> (#<issue-n>)
+    fix: <concrete summary> (#<issue-n>)
+    ```
 6. `git push -u origin HEAD` (first push) or `git push` (subsequent).
 
 ## Step 3 — Open PR (only if no open PR already)
@@ -78,6 +78,7 @@ EOF
 ```
 
 PR body rules:
+
 - Always end with `Fixes #<n>` so GitHub auto-closes on merge.
 - 3-6 bullets in Changes. No marketing. No "seamlessly", "leverages", "robust".
 - For REVIEW path (no code changes): don't open a PR at all — just comment on the issue.

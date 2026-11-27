@@ -1,0 +1,89 @@
+# Reusable VS Code Marketplace publish for Elixpo extensions.
+# Publishes only when package.json's version differs from the Marketplace's latest.
+#
+#   jobs:
+#     vscode:
+#       uses: elixpo/agent.elixpo/.github/workflows/publish-vscode.yml@main
+#       with:
+#         working-directory: packages/vscode
+#       secrets:
+#         VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+name: Publish VS Code extension
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: "."
+      node-version:
+        type: string
+        default: "22"
+      build-command:
+        type: string
+        default: ""
+      environment:
+        type: string
+        default: vscode
+    secrets:
+      VSCE_PAT:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: vscode-${{ github.repository }}-${{ inputs.working-directory }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Check whether this version is already published
+        id: version
+        run: |
+          id=$(node -p 'const p=require("./package.json"); p.publisher + "." + p.name')
+          version=$(node -p 'require("./package.json").version')
+          latest=$(npx --yes @vscode/vsce@3 show "$id" --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).versions[0].version)}catch{console.log("")}})')
+          echo "label=$id@$version" >> "$GITHUB_OUTPUT"
+          if [ "$latest" = "$version" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "$id@$version is already on the Marketplace; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.version.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.version.outputs.publish == 'true' && inputs.build-command != ''
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+
+      - name: Publish
+        if: steps.version.outputs.publish == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          LABEL: ${{ steps.version.outputs.label }}
+        run: |
+          npx --yes @vscode/vsce@3 publish --pat "$VSCE_PAT"
+          echo "Published \`$LABEL\` to the VS Code Marketplace." >> "$GITHUB_STEP_SUMMARY"

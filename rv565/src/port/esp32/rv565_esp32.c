@@ -14,12 +14,15 @@
 #include "../st7789_init.h"
 
 #define WORKER_STACK (24 * 1024)
+#define WINDOW_ROWS    1
+#define WINDOW_COLUMNS 2
 
 static struct {
     spi_device_handle_t dev;
     rv565_esp32_display_config_t cfg;
     spi_transaction_t slots[2]; /* one per in-flight stripe */
     int next_slot;
+    int windowed;               /* WINDOW_ROWS | WINDOW_COLUMNS set; restored before full writes */
 } disp;
 
 static void poll_bytes(const void *data, size_t length)
@@ -40,14 +43,67 @@ static void command(uint8_t cmd, const uint8_t *data, size_t length)
     gpio_set_level(disp.cfg.pin_cs, 1);
 }
 
-static void begin_frame(void *ctx)
+static void start_ramwr(void)
 {
-    (void)ctx;
     const uint8_t ramwr = RV565_ST7789_RAMWR;
     gpio_set_level(disp.cfg.pin_cs, 0);
     gpio_set_level(disp.cfg.pin_dc, 0);
     poll_bytes(&ramwr, 1);
     gpio_set_level(disp.cfg.pin_dc, 1);
+}
+
+static void set_rows(uint16_t first, uint16_t rows)
+{
+    uint8_t raset[4];
+    rv565_st7789_rows(&disp.cfg.panel, first, rows, raset);
+    command(RV565_ST7789_RASET, raset, sizeof(raset));
+}
+
+static void set_columns(uint16_t first, uint16_t cols)
+{
+    uint8_t caset[4];
+    rv565_st7789_columns(&disp.cfg.panel, first, cols, caset);
+    command(RV565_ST7789_CASET, caset, sizeof(caset));
+}
+
+/* Restore the full column window after a region update. */
+static void full_columns(void)
+{
+    if (disp.windowed & WINDOW_COLUMNS) {
+        set_columns(0, rv565_panel_resolve(&disp.cfg.panel).width);
+        disp.windowed &= ~WINDOW_COLUMNS;
+    }
+}
+
+static void begin_frame(void *ctx)
+{
+    (void)ctx;
+    full_columns();
+    if (disp.windowed & WINDOW_ROWS) {
+        set_rows(0, rv565_panel_resolve(&disp.cfg.panel).height);
+        disp.windowed &= ~WINDOW_ROWS;
+    }
+    start_ramwr();
+}
+
+/* Partial update: only rows first .. first + rows - 1 (full width). */
+static void begin_rows(void *ctx, uint16_t first, uint16_t rows)
+{
+    (void)ctx;
+    full_columns();
+    set_rows(first, rows);
+    disp.windowed |= WINDOW_ROWS;
+    start_ramwr();
+}
+
+/* Region update: columns x .. x + w - 1 of rows y .. y + h - 1. */
+static void begin_window(void *ctx, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+{
+    (void)ctx;
+    set_columns(x, w);
+    set_rows(y, h);
+    disp.windowed = WINDOW_ROWS | WINDOW_COLUMNS;
+    start_ramwr();
 }
 
 static void queue_stripe(void *ctx, const uint8_t *data, size_t length)
@@ -82,6 +138,7 @@ rv565_status_t rv565_esp32_display_init(const rv565_esp32_display_config_t *cfg,
     }
     disp.cfg = *cfg;
     disp.next_slot = 0;
+    disp.windowed = 0;
 
     uint64_t mask = (1ULL << cfg->pin_cs) | (1ULL << cfg->pin_dc);
     if (cfg->pin_rst >= 0) mask |= 1ULL << cfg->pin_rst;
@@ -140,6 +197,8 @@ rv565_status_t rv565_esp32_display_init(const rv565_esp32_display_config_t *cfg,
     ops->queue_stripe = queue_stripe;
     ops->wait_stripe = wait_stripe;
     ops->end_frame = end_frame;
+    ops->begin_rows = begin_rows;
+    ops->begin_window = begin_window;
     return RV565_OK;
 }
 
@@ -157,7 +216,7 @@ uint32_t rv565_esp32_micros(void)
 
 /* Inflate worker -------------------------------------------------------- */
 
-typedef struct { uint16_t index; uint8_t *dst; size_t len; } job_t;
+typedef struct { uint16_t index; const uint8_t *prev; uint8_t *dst; size_t len; } job_t;
 typedef struct { rv565_status_t status; uint32_t inflate_us; } result_t;
 
 static struct {
@@ -174,16 +233,17 @@ static void worker(void *arg)
         xQueueReceive(work.jobs, &job, portMAX_DELAY);
         const uint32_t start = rv565_esp32_micros();
         result_t r;
-        r.status = rv565_decode_frame(work.clip, job.index, job.dst, job.len);
+        /* The player passes prev != dst, so no scratch buffer is needed. */
+        r.status = rv565_decode(work.clip, job.index, job.prev, job.dst, job.len, NULL, 0);
         r.inflate_us = rv565_esp32_micros() - start;
         xQueueSend(work.results, &r, portMAX_DELAY);
     }
 }
 
-static void dec_start(void *ctx, uint16_t index, uint8_t *dst, size_t len)
+static void dec_start(void *ctx, uint16_t index, const uint8_t *prev, uint8_t *dst, size_t len)
 {
     (void)ctx;
-    const job_t job = { index, dst, len };
+    const job_t job = { index, prev, dst, len };
     xQueueSend(work.jobs, &job, portMAX_DELAY);
 }
 
@@ -215,6 +275,7 @@ rv565_status_t rv565_esp32_decoder_init(const rv565_clip_t *clip, int core,
     ops->ctx = NULL;
     ops->start = dec_start;
     ops->finish = dec_finish;
+    ops->decode = NULL;
     return RV565_OK;
 }
 

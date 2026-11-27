@@ -1,0 +1,32 @@
+# Deploys admin.elixpo.com (next-on-pages) through the shared Elixpo deploy workflow.
+# Mirrors deploy.sh: every key in the sops-encrypted .env becomes a runtime secret
+# (NEXT_PUBLIC_* included, because the app reads them server-side), except
+# ENVIRONMENT/NODE_ENV and CLOUDFLARE_*. The OAuth redirect is pinned to production,
+# since .env holds the localhost value used for development.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - docs/**
+      - "**/*.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+    with:
+      project-name: admin
+      build-command: npm run pages:build
+      output-directory: .vercel/output/static
+      build-env: NEXT_PUBLIC_REDIRECT_URL=https://admin.elixpo.com/api/auth/callback
+      sops-file: .env
+      secret-keys: all
+      secret-exclude: ENVIRONMENT NODE_ENV NEXT_PUBLIC_REDIRECT_URL
+      secret-values: NEXT_PUBLIC_REDIRECT_URL=https://admin.elixpo.com/api/auth/callback
+    secrets: inherit

@@ -1,0 +1,12 @@
+{
+  "category": "coding",
+  "prompt": "first_n returns the wrong number of items. Fix it so the tests pass.",
+  "files": {
+    "items.py": "def first_n(values, n):\n    return [values[i] for i in range(n + 1)]\n",
+    "test_items.py": "import unittest\nfrom items import first_n\n\n\nclass FirstNTest(unittest.TestCase):\n    def test_three(self):\n        self.assertEqual(first_n([1, 2, 3, 4, 5], 3), [1, 2, 3])\n\n    def test_zero(self):\n        self.assertEqual(first_n([1, 2], 0), [])\n\n\nif __name__ == '__main__':\n    unittest.main()\n"
+  },
+  "commands_succeed": [
+    "python3 -m unittest -q test_items"
+  ],
+  "max_tokens": 100000
+}

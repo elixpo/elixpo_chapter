@@ -3,6 +3,7 @@ import { ArrowUpRight, FileCheck2, Scale, ShieldCheck } from "lucide-react";
 import licensing from "../../../content/licensing.json";
 import { PageStructuredData } from "@/components/PageStructuredData";
 import { createPageMetadata } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "Licensing policy",
@@ -28,7 +29,7 @@ export default function LicensingPage() {
         path="/licensing"
       />
 
-      <header className="policy-hero">
+      <header className="policy-hero"><Sparks chips={["SPDX ✓", "read the LICENSE", "per artifact"]} />
         <div>
           <p className="eyebrow">Public policy / verified {licensing.lastVerified}</p>
           <h1>One organization.<br /><em>Different grants.</em></h1>

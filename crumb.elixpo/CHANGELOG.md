@@ -3,7 +3,142 @@
 This file records notable public changes to Crumb. Until the first stable
 release, behavior and interfaces may change without compatibility guarantees.
 
-## Unreleased
+## 1.5.2 - 2026-11-21
+
+### Terminal
+
+- Crumb now runs inline by default, in your terminal's normal scrollback, so
+  scrolling, search and selection are the terminal's own and stay smooth.
+  `CRUMB_FULLSCREEN=1` brings back the full-screen view.
+- `/agents` opens the agent map as a dialog while helpers are working too,
+  instead of printing over the live view.
+- Requests that quote code, such as "add a function fn f() -> String", go
+  to the agent instead of failing in the shell because of `>` or `()`.
+  Real commands like `ls | grep x` still run in your shell.
+
+### Agent
+
+- Helper agents (`spawn_agents`) no longer hang at "Thinking · 0 tokens":
+  they shared the turn's network connections, which could not make progress
+  while the turn waited for them.
+- When the sandbox blocks a command you asked for, Crumb can ask you to
+  approve running just that command outside the sandbox
+  (`run_shell_outside_sandbox`); the model cannot approve it itself.
+- The temporary folder used by write helpers is removed when they finish.
+
+### Sign-in and notifications
+
+- `/auth login` shows a moving spinner with the elapsed time while it waits
+  for you to approve the sign-in.
+- Messages the browser prints when Crumb opens it (for example GTK
+  warnings) no longer appear in Crumb's screen.
+- On Linux desktops where the terminal can only ring the bell, long tasks
+  also show a desktop notification (`notify-send`).
+
+### Security
+
+- Updates rustls to 0.23.46, fixing a moderate advisory (TLS secrets could
+  appear in debug output) and three low ones.
+
+## 1.5.1 - 2026-11-21
+
+- `crumb --version` (or `-V`) prints the installed version, for example
+  `crumb 1.5.1`.
+- `crumb --help` (or `-h`, `crumb help`) lists every command and the `exec`
+  options instead of failing with a usage error.
+- The MCP HTTP tests no longer fail intermittently on Windows.
+
+## 1.5.0 - 2026-11-20
+
+### Follows your project's instructions
+
+- Crumb reads the project's `AGENTS.md`, the instruction file other coding
+  agents use, and falls back to `CLAUDE.md`. Files are read from the
+  repository root down to the working folder, so a nested file refines the
+  project-wide one; outside a repository only the working folder is read.
+  They guide how Crumb works and never grant permissions. Helper agents get
+  the same instructions.
+
+### Safer by default
+
+- On Linux, commands Crumb runs for you are confined by the kernel
+  (Landlock): they can read the system but can only write inside the
+  project, temporary folders and toolchain caches, so files such as
+  `~/.ssh` stay out of reach. Your own shell commands are never sandboxed.
+  Full-access mode or `"permissions": {"sandbox": false}` turns it off.
+  Commands that used to write elsewhere now fail with "Permission denied",
+  and Crumb tells the model to ask you instead of retrying.
+
+### Checks its own work
+
+- After editing files, Crumb runs the project's fast check (`cargo check`,
+  `tsc --noEmit`, `go vet` or `ruff check`) before finishing and fixes what
+  it reports, at most twice per turn. Configure or disable it with
+  `"checks"` in `.crumb/agent.json`.
+
+### Hooks
+
+- `"hooks"` in `.crumb/agent.json` runs your own commands before and after
+  agent tool calls and when a turn ends. A `pre_tool` hook can block a call,
+  a `post_tool` hook can add a note for the model; hooks never approve
+  anything.
+
+### Helper agents in worktrees
+
+- Helpers that edit files (`spawn_agents` with write access) now work in
+  their own git worktree, starting from what you see, and their changes are
+  applied to your workspace as soon as each one finishes. Changes that no
+  longer apply are saved as a patch and reported, never forced. Outside git
+  repositories, and on Windows for now, helpers share the workspace as
+  before.
+
+### Notifications
+
+- When a task runs for more than ten seconds, Crumb asks the terminal for a
+  desktop notification when it finishes or needs your approval (kitty,
+  iTerm2, WezTerm, Ghostty and foot; other terminals get the bell). Set
+  `CRUMB_NOTIFICATIONS=off` to turn it off.
+
+### Other
+
+- The eval suite grows from 11 to 24 outcome-graded scenarios.
+- The website uses Next.js 16.4.6.
+
+## 1.4.1 - 2026-11-04
+
+### Use Crumb in your editor
+
+- `crumb acp` offers `crumb auth login` as a terminal sign-in to editors
+  that can run one (`auth.terminal`, or the earlier `terminal-auth`), so an
+  editor can connect the crumb.elixpo account without leaving it.
+
+## 1.4.0 - 2026-11-04
+
+### Use Crumb in your editor
+
+- `crumb acp` runs Crumb as an Agent Client Protocol (v1) agent, so editors
+  such as Zed can use it: answers, reasoning and tool calls with their output
+  stream into the editor, tool approvals become the editor's permission
+  prompts, a cancel stops the turn, and sessions can be listed, resumed and
+  closed. `--approvals` overrides the approval policy. Image and audio
+  prompts and editor-provided MCP servers are not supported yet.
+
+## 1.3.0 - 2026-11-04
+
+### Run Crumb as a harness
+
+- `crumb exec --stream-json` prints one JSON event per line while a turn runs
+  (text, reasoning, tool steps, file changes, approvals, usage) and ends with
+  a `result` event, so harness runners can follow and cancel Crumb like other
+  coding agents. Tool output is reported by size only, never by contents.
+- `crumb exec --resume <session_id>` continues a saved session, and
+  `crumb exec --model <provider>/<model>` picks a configured model for one
+  turn without changing `.crumb/agent.json`.
+- `CRUMB_EXEC_BASE_URL`, `CRUMB_EXEC_API_KEY` and `CRUMB_EXEC_PROTOCOL` point
+  `crumb exec --model exec/<model-id>` at any OpenAI-compatible endpoint for
+  one turn; the key is referenced by name and never stored.
+- `crumb exec --approvals always-ask|sensitive-only|full-access` sets the
+  turn's approval policy from the command line, which the model cannot change.
 
 ## 1.2.0 - 2026-10-27
 

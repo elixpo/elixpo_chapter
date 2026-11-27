@@ -1,12 +1,15 @@
 "use client";
 
 /** Public status page — light, commercial (Atlassian Statuspage style).
- * Every Elixpo service renders as its own card with a real uptime history bar:
- * 90 daily cells for the base platform (elixpo.com), 24 hourly cells for the
- * sub-services (which only retain short-window edge analytics). */
+ * Every Elixpo service renders as its own card with a real uptime history bar
+ * of visitor traffic: 30 daily cells, or 24 hourly cells via the toggle. */
 
-import type { DayPoint } from "@/lib/metrics";
-import type { Health, ProductStatus, StatusPayload } from "@/lib/status-data";
+import type {
+    DayPoint,
+    Health,
+    ProductStatus,
+    StatusPayload,
+} from "@/lib/status-data";
 import { GitHub, OpenInNew, Refresh } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -14,11 +17,15 @@ import { useCallback, useEffect, useState } from "react";
 
 const REPO = "https://github.com/elixpo/status.elixpo";
 
-/** Client cache: serve from localStorage within the TTL to avoid re-hitting the
- * server; the refresh button bypasses this (but not the server KV cache). */
-const LS_KEY = "elixpo-status-cache-v1";
-const LS_TTL = 60 * 60 * 1000; // 1 hour
+/** The SSR payload is always fresh, so it is shown as-is. The page then
+ * re-polls the JSON feed in the background (server KV-cached for ~60s). The
+ * old 1h localStorage cache kept showing stale "unavailable" states long after
+ * recovery; its key is cleared on load. */
+const LEGACY_LS_KEY = "elixpo-status-cache-v1";
+const POLL_MS = 2 * 60 * 1000; // 2 minutes
 const REFRESH_COOLDOWN = 5000; // 5 seconds
+
+type Span = "30d" | "24h";
 
 const L = {
     bg: "#f7f7f2",
@@ -52,11 +59,14 @@ function cellColor(d: DayPoint): string {
     return L.green;
 }
 
-function fmtCell(d: DayPoint | null, window: "90d" | "24h"): string {
+function fmtCell(d: DayPoint | null, window: Span): string {
     if (!d) return "no data";
     const when =
-        window === "90d"
-            ? d.date
+        window === "30d"
+            ? new Date(`${d.date}T00:00:00Z`).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+              })
             : new Date(d.date).toLocaleString(undefined, {
                   month: "short",
                   day: "numeric",
@@ -66,7 +76,8 @@ function fmtCell(d: DayPoint | null, window: "90d" | "24h"): string {
         d.total > 0
             ? `${(((d.total - d.errors) / d.total) * 100).toFixed(2)}%`
             : "—";
-    const unit = window === "90d" ? "req" : "req/h";
+    if (d.total === 0) return `${when} · no visitor traffic`;
+    const unit = window === "30d" ? "req" : "req/h";
     return `${when} · ${pct} · ${d.total.toLocaleString()} ${unit}`;
 }
 
@@ -74,7 +85,7 @@ function UptimeBars({
     days,
     target,
     window,
-}: { days: DayPoint[]; target: number; window: "90d" | "24h" }) {
+}: { days: DayPoint[]; target: number; window: Span }) {
     // Pad the left with "no data" cells so every strip is full width.
     const pad = Math.max(0, target - days.length);
     const cells = [
@@ -130,13 +141,18 @@ function relTime(iso: string): string {
 
 function ServiceCard({
     p,
+    span,
     hero = false,
-}: { p: ProductStatus; hero?: boolean }) {
+}: { p: ProductStatus; span: Span; hero?: boolean }) {
     const h = HEALTH[p.health];
     const healthAvailable = p.healthAvailable !== false;
     const healthColor = healthAvailable ? h.color : L.muted;
     const healthLabel = healthAvailable ? h.label : "Monitoring unavailable";
-    const is90 = p.window === "90d";
+    const is30 = span === "30d";
+    const points = is30 ? p.days : p.hours;
+    const seriesOk = is30 ? p.seriesAvailable : p.healthAvailable;
+    const windowTotal = is30 ? p.total30d : p.total24h;
+    const windowPct = is30 ? p.uptimePct : p.uptime24hPct;
     return (
         <Box
             sx={{
@@ -262,9 +278,9 @@ function ServiceCard({
             </Box>
 
             <UptimeBars
-                days={p.days}
-                target={is90 ? 90 : 24}
-                window={p.window}
+                days={seriesOk ? points : []}
+                target={is30 ? 30 : 24}
+                window={span}
             />
             <Box
                 sx={{
@@ -275,7 +291,7 @@ function ServiceCard({
                 }}
             >
                 <Typography sx={{ color: L.muted, fontSize: "0.74rem" }}>
-                    {is90 ? "90 days ago" : "24 hours ago"}
+                    {is30 ? "30 days ago" : "24 hours ago"}
                 </Typography>
                 <Typography
                     sx={{
@@ -284,16 +300,63 @@ function ServiceCard({
                         fontWeight: 600,
                     }}
                 >
-                    {!p.seriesAvailable
-                        ? "history unavailable"
-                        : p.total > 0
-                          ? `${p.uptimePct.toFixed(2)}% uptime`
-                          : "no traffic"}
+                    {!seriesOk
+                        ? "history temporarily unavailable"
+                        : windowTotal > 0
+                          ? `${windowPct.toFixed(windowPct === 100 ? 0 : 2)}% uptime · ${windowTotal.toLocaleString()} requests`
+                          : "no visitor traffic in this window"}
                 </Typography>
                 <Typography sx={{ color: L.muted, fontSize: "0.74rem" }}>
-                    {is90 ? "Today" : "Now"}
+                    {is30 ? "Today" : "Now"}
                 </Typography>
             </Box>
+        </Box>
+    );
+}
+
+function SpanToggle({
+    value,
+    onChange,
+}: { value: Span; onChange: (s: Span) => void }) {
+    return (
+        <Box
+            role="tablist"
+            aria-label="History window"
+            sx={{
+                display: "inline-flex",
+                p: "3px",
+                borderRadius: "999px",
+                border: `1px solid ${L.border}`,
+                bgcolor: L.card,
+            }}
+        >
+            {(["30d", "24h"] as Span[]).map((s) => {
+                const active = value === s;
+                return (
+                    <Box
+                        key={s}
+                        component="button"
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => onChange(s)}
+                        sx={{
+                            border: 0,
+                            cursor: "pointer",
+                            px: 1.4,
+                            py: 0.5,
+                            borderRadius: "999px",
+                            fontFamily: "inherit",
+                            fontSize: "0.74rem",
+                            fontWeight: 700,
+                            color: active ? "#fff" : L.muted,
+                            bgcolor: active ? L.text : "transparent",
+                        }}
+                    >
+                        {s === "30d" ? "30 days" : "24 hours"}
+                    </Box>
+                );
+            })}
         </Box>
     );
 }
@@ -303,56 +366,49 @@ export default function StatusView({ initial }: { initial: StatusPayload }) {
     const [refreshing, setRefreshing] = useState(false);
     const [cooling, setCooling] = useState(false);
 
-    // On mount: prefer a still-fresh localStorage cache (avoids re-reading the
-    // server within the TTL); otherwise seed the cache from the SSR payload,
-    // which is itself fresh at first paint.
+    const [span, setSpan] = useState<Span>("30d");
+
+    // Pull the JSON feed (server KV-cached ~60s). Used by the refresh button
+    // and the background poll; a failed fetch keeps the last good data.
+    const load = useCallback(async () => {
+        try {
+            const res = await fetch("/api/status", { cache: "no-store" });
+            if (!res.ok) return;
+            const fresh = (await res.json()) as StatusPayload;
+            // Never replace working data with a fully failed payload.
+            if (fresh.monitoringAvailable || !data.monitoringAvailable)
+                setData(fresh);
+        } catch {
+            // network hiccup — keep showing the last good data.
+        }
+    }, [data.monitoringAvailable]);
+
+    // The SSR payload is fresh at first paint. Drop the legacy 1h cache that
+    // used to override it, then poll while the tab is visible.
     useEffect(() => {
         try {
-            const raw = localStorage.getItem(LS_KEY);
-            if (raw) {
-                const c = JSON.parse(raw) as {
-                    ts: number;
-                    data: StatusPayload;
-                };
-                if (c?.data && Date.now() - c.ts < LS_TTL) {
-                    setData(c.data);
-                    return;
-                }
-            }
-            localStorage.setItem(
-                LS_KEY,
-                JSON.stringify({ ts: Date.now(), data: initial }),
-            );
+            localStorage.removeItem(LEGACY_LS_KEY);
         } catch {
-            // localStorage unavailable (private mode / SSR) — ignore.
+            // storage unavailable — nothing to clear.
         }
-    }, [initial]);
+        const id = setInterval(() => {
+            if (document.visibilityState === "visible") load();
+        }, POLL_MS);
+        return () => clearInterval(id);
+    }, [load]);
 
-    // Refresh bypasses localStorage and pulls the JSON feed; rate-limited to one
-    // call per cooldown window. (The server KV cache still applies.)
+    // Manual refresh, rate-limited to one call per cooldown window.
     const refresh = useCallback(async () => {
         if (refreshing || cooling) return;
         setRefreshing(true);
         try {
-            const res = await fetch("/api/status", { cache: "no-store" });
-            if (res.ok) {
-                const fresh = (await res.json()) as StatusPayload;
-                setData(fresh);
-                try {
-                    localStorage.setItem(
-                        LS_KEY,
-                        JSON.stringify({ ts: Date.now(), data: fresh }),
-                    );
-                } catch {}
-            }
-        } catch {
-            // network hiccup — keep showing the last good data.
+            await load();
         } finally {
             setRefreshing(false);
             setCooling(true);
             setTimeout(() => setCooling(false), REFRESH_COOLDOWN);
         }
-    }, [refreshing, cooling]);
+    }, [refreshing, cooling, load]);
 
     const { products, changelogs, fetchedAt } = data;
     const monitoringAvailable = data.monitoringAvailable !== false;
@@ -367,12 +423,12 @@ export default function StatusView({ initial }: { initial: StatusPayload }) {
         operational: products.filter((p) => p.health === "operational").length,
         degraded: products.filter((p) => p.health === "degraded").length,
         outage: products.filter((p) => p.health === "outage").length,
-        observed: products.filter((p) => p.total > 0).length,
+        observed: products.filter((p) => p.total24h > 0).length,
     };
 
-    // The base platform (elixpo.com, 90-day history) renders as a distinct hero
-    // card; everything else stacks below it.
-    const base = products.find((p) => p.window === "90d");
+    // The base platform (elixpo.com) renders as a distinct hero card;
+    // everything else stacks below it.
+    const base = products.find((p) => p.domain === "elixpo.com");
     const rest = products.filter((p) => p !== base);
 
     return (
@@ -730,17 +786,28 @@ export default function StatusView({ initial }: { initial: StatusPayload }) {
                     {/* base platform — distinct hero card */}
                     {base && (
                         <Box sx={{ mb: 4 }}>
-                            <ServiceCard p={base} hero />
+                            <ServiceCard p={base} span={span} hero />
                         </Box>
                     )}
 
                     {/* per-service cards */}
-                    <Typography
-                        id="services"
-                        sx={{ fontWeight: 700, fontSize: "0.95rem", mb: 1.5 }}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            mb: 1.5,
+                        }}
                     >
-                        Services
-                    </Typography>
+                        <Typography
+                            id="services"
+                            sx={{ fontWeight: 700, fontSize: "0.95rem" }}
+                        >
+                            Services
+                        </Typography>
+                        <SpanToggle value={span} onChange={setSpan} />
+                    </Box>
                     <Box
                         sx={{
                             display: "grid",
@@ -749,7 +816,11 @@ export default function StatusView({ initial }: { initial: StatusPayload }) {
                         }}
                     >
                         {rest.map((p) => (
-                            <ServiceCard key={p.domain || p.label} p={p} />
+                            <ServiceCard
+                                key={p.domain || p.label}
+                                p={p}
+                                span={span}
+                            />
                         ))}
                     </Box>
 

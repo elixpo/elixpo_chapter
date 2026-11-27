@@ -47,13 +47,15 @@ export default function WebEmbedModal() {
       <form onSubmit={submit} className="w-full max-w-xl rounded-2xl border border-border-light bg-surface-card p-6 font-[lixFont] shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div><h2 className="text-lg text-text-primary">Embed a website</h2><p className="mt-1 text-xs text-text-muted">One secure embed is placed inside a movable, resizable frame.</p></div>
-          <button type="button" className="cursor-pointer text-text-muted hover:text-text-primary" onClick={close}><i className="bx bx-x text-2xl" /></button>
+          <button type="button" className="cursor-pointer text-text-muted hover:text-text-primary" onClick={close} aria-label="Close">
+            <i className="bx bx-x text-2xl" aria-hidden="true" />
+          </button>
         </div>
         <label className="text-xs text-text-muted" htmlFor="web-embed-url">HTTPS URL</label>
         <input ref={inputRef} id="web-embed-url" value={url} onChange={(e) => { setUrl(e.target.value); setError('') }} placeholder="https://www.youtube.com/watch?v=..." className="mt-2 w-full rounded-xl border border-border-light bg-surface px-4 py-3 text-sm text-text-primary outline-none focus:border-accent" />
         {error && (
           <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border-light bg-surface/60 px-3 py-2.5">
-            <p className="text-xs text-text-muted"><i className="bx bx-info-circle mr-1" />{error}</p>
+            <p className="text-xs text-text-muted"><i className="bx bx-info-circle mr-1" aria-hidden="true" />{error}</p>
             <a href={whitelistRequestUrl} target="_blank" rel="noreferrer" className="shrink-0 cursor-pointer rounded-lg border border-accent/50 px-3 py-1.5 text-xs text-accent hover:bg-accent/10">Request whitelist</a>
           </div>
         )}

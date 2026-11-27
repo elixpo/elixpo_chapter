@@ -1,8 +1,9 @@
 /**
- * Templates — lixeditor documents with {{variable}} placeholders. content_json
- * (the BlockNote doc) is the source of truth; content_html is a cached render
- * used by previews and (later) the email send path. variables_json is the
- * derived list of declared {{vars}}.
+ * Templates — lixeditor documents with {{variable}} placeholders. In 'editor'
+ * mode content_json (the BlockNote doc) is the source of truth and
+ * content_html is a cached render; in 'html' mode content_html is hand-written
+ * and authoritative (content_json is NULL). content_html is what gets sent.
+ * variables_json is the derived list of declared {{vars}}.
  */
 
 import type { D1Database } from "@cloudflare/workers-types";
@@ -20,6 +21,8 @@ export interface TemplateRow {
     subject: string;
     content_json: string | null;
     content_html: string | null;
+    /** 'editor' (content_json is the source) | 'html' (content_html is the source). */
+    content_mode: string;
     variables_json: string | null;
     sender_id: string | null;
     bg_color: string | null;
@@ -43,6 +46,8 @@ export interface TemplateSummary {
     variables: string[];
     sender_id: string | null;
     transactional: boolean;
+    /** 'editor' = visual editor; 'html' = hand-written HTML (never rewritten). */
+    content_mode: "editor" | "html";
     status: string;
     updated_at: string;
 }
@@ -78,6 +83,7 @@ export function toSummary(row: TemplateRow): TemplateSummary {
         variables: parseJson<string[]>(row.variables_json, []),
         sender_id: row.sender_id,
         transactional: row.transactional === 1,
+        content_mode: row.content_mode === "html" ? "html" : "editor",
         status: row.status,
         updated_at: row.updated_at,
     };
@@ -120,6 +126,7 @@ export interface TemplateInput {
     kind?: string;
     contentJson?: any[] | null;
     contentHtml?: string | null;
+    contentMode?: "editor" | "html";
     senderId?: string | null;
     bgColor?: string | null;
     transactional?: boolean;
@@ -141,8 +148,8 @@ export async function createTemplate(
     await db
         .prepare(
             `INSERT INTO templates
-                (id, tenant_id, product_id, slug, name, kind, subject, content_json, content_html, variables_json, sender_id, bg_color, transactional, footer_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (id, tenant_id, product_id, slug, name, kind, subject, content_json, content_html, content_mode, variables_json, sender_id, bg_color, transactional, footer_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
             id,
@@ -152,8 +159,13 @@ export async function createTemplate(
             input.name,
             input.kind || "custom",
             subject,
-            input.contentJson ? JSON.stringify(input.contentJson) : null,
+            input.contentMode === "html"
+                ? null
+                : input.contentJson
+                  ? JSON.stringify(input.contentJson)
+                  : null,
             contentHtml || null,
+            input.contentMode === "html" ? "html" : "editor",
             JSON.stringify(variables),
             input.senderId || null,
             input.bgColor || null,
@@ -174,6 +186,7 @@ export interface TemplateUpdate {
     kind?: string;
     contentJson?: any[] | null;
     contentHtml?: string | null;
+    contentMode?: "editor" | "html";
     senderId?: string | null;
     bgColor?: string | null;
     transactional?: boolean;
@@ -232,7 +245,16 @@ export async function updateTemplate(
         sets.push("footer_json = ?");
         vals.push(update.footer ? JSON.stringify(update.footer) : null);
     }
-    if (update.contentJson !== undefined) {
+    if (update.contentMode !== undefined) {
+        sets.push("content_mode = ?");
+        vals.push(update.contentMode);
+    }
+    // In raw-HTML mode there is no editor document — never keep a stale one.
+    const effectiveMode =
+        update.contentMode ?? (existing.content_mode === "html" ? "html" : "editor");
+    if (effectiveMode === "html") {
+        sets.push("content_json = NULL");
+    } else if (update.contentJson !== undefined) {
         sets.push("content_json = ?");
         vals.push(update.contentJson ? JSON.stringify(update.contentJson) : null);
     }

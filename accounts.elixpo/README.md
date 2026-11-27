@@ -103,7 +103,7 @@ contributor and dev workflow.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem              | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl**           | Our flagship URL shortener                           | [lixrl.com](https://lixrl.com)                     |
 | 🪪 **Portfolios**      | Personal pages to showcase your work                 | [me.elixpo.com](https://me.elixpo.com)             |
-| 🐼 **Lumi**            | The mascot's home                                    | [oreo.elixpo.com](https://oreo.elixpo.com)         |
+| 🐼 **Falera**          | The open conference badge and FaleraOS               | [falera.elixpo.com](https://falera.elixpo.com)     |
 
 Developers can drop our editors into their own projects with the
 **`@elixpo/lixsketch`** and **`@elixpo/lixeditor`** packages, on npm and as VS

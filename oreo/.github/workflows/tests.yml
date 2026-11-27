@@ -25,3 +25,5 @@ jobs:
           python-version: "3.11"
       # Standard library only: no pip install, no badge, no keys.
       - run: python3 -m unittest discover -s tests -v
+      # Every app under apps/ and apps_market/ must load on the badge.
+      - run: python3 tools/validate_app.py

@@ -24,6 +24,8 @@ export interface PagesProject {
         environment?: string;
     };
     created_on?: string;
+    /** Script name of the project's Pages Functions, e.g. pages-worker--123-production. */
+    production_script_name?: string;
 }
 
 export interface WorkerScript {
@@ -125,12 +127,19 @@ export async function discoverAccount(force = false): Promise<Inventory> {
 
     const [pages, workers, d1, kv, queues, durableObjects, workflows, zones] =
         await Promise.all([
-            // Pages list rejects page/per_page combos — fetch the default page directly.
+            // Pages rejects per_page; it serves fixed pages of 10, so walk ?page=N.
             safe(async () => {
-                const env = await cfRest<PagesProject[]>(
-                    await acctPath("/pages/projects"),
-                );
-                return env.result || [];
+                const out: PagesProject[] = [];
+                const base = await acctPath("/pages/projects");
+                for (let page = 1; page <= 20; page++) {
+                    const env = await cfRest<PagesProject[]>(
+                        `${base}?page=${page}`,
+                    );
+                    out.push(...(env.result || []));
+                    const total = env.result_info?.total_pages ?? 1;
+                    if (page >= total || !env.result?.length) break;
+                }
+                return out;
             }),
             safe(() => listAcct<WorkerScript>("/workers/scripts")),
             safe(() => listAcct<D1Database>("/d1/database")),

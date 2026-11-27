@@ -484,7 +484,7 @@ function ProfileBadgeGallery({ badges = [] }) {
     );
 }
 
-function ProfileContent({ username, initialBlogs = [], tags = [], timezone, badges = [] }) {
+function ProfileContent({ username, initialBlogs = [], tags = [], timezone, badges = [], topPickIds = [], isOwnProfile = false }) {
     const [section, setSection] = useState("overview");
     const [filter, setFilter] = useState("newest");
     const [searchQuery, setSearchQuery] = useState("");
@@ -494,6 +494,7 @@ function ProfileContent({ username, initialBlogs = [], tags = [], timezone, badg
     const [cursor, setCursor] = useState(null);
     const [hasMore, setHasMore] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [pickIds, setPickIds] = useState(topPickIds);
 
     // Read deep-linked profile state after hydration so server and client render
     // the same initial tab and do not produce a hydration mismatch.
@@ -598,9 +599,34 @@ function ProfileContent({ username, initialBlogs = [], tags = [], timezone, badg
         }
     };
 
-    const topPicks = [...initialBlogs]
-        .sort((a, b) => ((b.like_count || 0) + (b.comment_count || 0)) - ((a.like_count || 0) + (a.comment_count || 0)) || (b.published_at || 0) - (a.published_at || 0))
-        .slice(0, 3);
+    const selectedPicks = pickIds
+        .map((id) => initialBlogs.find((blog) => blog.id === id))
+        .filter(Boolean);
+    const topPicks = selectedPicks.length
+        ? selectedPicks
+        : [...initialBlogs]
+            .sort((a, b) => ((b.like_count || 0) + (b.comment_count || 0)) - ((a.like_count || 0) + (a.comment_count || 0)) || (b.published_at || 0) - (a.published_at || 0))
+            .slice(0, 3);
+
+    const toggleTopPick = (blogId) => {
+        setPickIds((current) => {
+            if (current.includes(blogId)) return current.filter((id) => id !== blogId);
+            return current.length < 3 ? [...current, blogId] : current;
+        });
+    };
+
+    const saveTopPicks = async () => {
+        try {
+            const response = await fetch("/api/users/me", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ top_pick_ids: pickIds }),
+            });
+            if (!response.ok) throw new Error("Top picks could not be saved");
+        } catch (error) {
+            window.alert(error.message || "Top picks could not be saved");
+        }
+    };
 
     return (
         <div>
@@ -628,10 +654,35 @@ function ProfileContent({ username, initialBlogs = [], tags = [], timezone, badg
                         <section>
                             <div className="mb-3 flex items-center justify-between">
                                 <h2 className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)]">Top stories</h2>
-                                {initialBlogs.length > 3 && (
-                                    <button onClick={() => setSection("blogs")} className="text-[12px] font-semibold text-[#9b7bf7] hover:underline">View all</button>
-                                )}
+                                <div className="flex items-center gap-3">
+                                    {isOwnProfile && initialBlogs.length > 0 && (
+                                        <button type="button" onClick={saveTopPicks} className="text-[12px] font-semibold text-[#9b7bf7] hover:underline">Save picks</button>
+                                    )}
+                                    {initialBlogs.length > 3 && (
+                                        <button onClick={() => setSection("blogs")} className="text-[12px] font-semibold text-[#9b7bf7] hover:underline">View all</button>
+                                    )}
+                                </div>
                             </div>
+                            {isOwnProfile && (
+                                <div className="mb-2 flex flex-wrap gap-2" aria-label="Select up to three top picks">
+                                    {initialBlogs.slice(0, 12).map((blog) => {
+                                        const selected = pickIds.includes(blog.id);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={blog.id}
+                                                aria-pressed={selected}
+                                                disabled={!selected && pickIds.length >= 3}
+                                                onClick={() => toggleTopPick(blog.id)}
+                                                className={`max-w-full truncate rounded-full border px-3 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "border-[#9b7bf7]/40 bg-[#9b7bf7]/15 text-[#9b7bf7]" : "border-[var(--border-default)] bg-[var(--card-bg)] text-[var(--text-muted)]"}`}
+                                                title={blog.title || "Untitled"}
+                                            >
+                                                {selected ? "✓ " : ""}{blog.title || "Untitled"}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                             <div className="space-y-2.5">
                                 {topPicks.length ? topPicks.map((blog, index) => (
                                     <Link key={blog.id} href={publicBlogHref(blog, username)} className="group flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--card-bg)] p-3 transition-colors hover:border-[#9b7bf7]/35">
@@ -1650,7 +1701,7 @@ function HandlePageInner({ path, initialData = null }) {
 
         const bannerSrc = u.banner_r2_key
             ? `/api/media/${u.banner_r2_key}?v=${encodeURIComponent(u.updated_at || "")}`
-            : generateProfileBanner(u.username || u.id, u.avatar_url);
+            : null;
         const avatarSrc = u.avatar_url || generatePixelAvatar(u.username || u.id);
 
         return (
@@ -1660,14 +1711,16 @@ function HandlePageInner({ path, initialData = null }) {
                     <div className="relative mb-16">
                         <div
                             className="w-full rounded-xl bg-[var(--bg-elevated)] overflow-hidden"
-                            style={{ aspectRatio: "4 / 1" }}
+                            style={{ aspectRatio: "16 / 5" }}
                         >
-	                            <img
-	                                src={bannerSrc}
-	                                alt=""
-	                                className="w-full h-full object-cover"
-	                                loading="eager"
-	                            />
+                            {bannerSrc && (
+                                <img
+                                    src={bannerSrc}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    loading="eager"
+                                />
+                            )}
                             {/* Gradient overlay for text contrast on banner */}
                             {bannerSrc && (
                                 <div
@@ -1870,6 +1923,8 @@ function HandlePageInner({ path, initialData = null }) {
                         tags={data.tags || []}
                         timezone={u.timezone}
                         badges={u.badges || []}
+                        topPickIds={u.top_pick_ids || []}
+                        isOwnProfile={isOwnProfile}
                     />
                 </div>
             </AppShell>

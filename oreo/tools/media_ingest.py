@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and optionally transfer media into OreoOS.
+"""Prepare and optionally transfer media into FaleraOS.
 
 Every path follows the same contract: detect -> convert -> validate the final
 artifact -> check storage -> transfer. Source size is never used as a proxy for
@@ -54,11 +54,13 @@ def detect(path, forced=None):
 
 def encode_image(source, output, max_dim):
     try:
-        from PIL import Image
+        from PIL import Image, ImageOps
     except ImportError:
         raise SystemExit("Pillow is required for images: pip install Pillow")
     with Image.open(source) as image:
-        image = image.convert("RGB")
+        # Phone photos keep their pixels sideways and say how to turn them
+        # in the EXIF Orientation tag: apply it, or portraits arrive rotated.
+        image = ImageOps.exif_transpose(image).convert("RGB")
         scale = min(1.0, max_dim / max(image.size))
         size = (max(1, round(image.width * scale)),
                 max(1, round(image.height * scale)))
@@ -87,6 +89,10 @@ def encode_document(source, output):
 
 
 def encode_video(source, output, seconds, fps, width, height):
+    # Writes RV565 v6, which is what the Gallery and the firmware's
+    # _oreo_rv565 module read. RV565 format version 7 is not readable on the
+    # badge until the firmware moves to the RV565 2.0 C library, so neither
+    # this tool nor validate() below accepts it.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from encode_video_benchmark import encode
     encode(source, output, seconds, fps, width, height, compressed=True)

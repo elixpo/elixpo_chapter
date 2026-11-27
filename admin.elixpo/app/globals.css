@@ -1,49 +1,60 @@
 @import "tailwindcss";
 
+/* Elixpo "paper & ink" tokens — kept identical to research.elixpo.com. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #fbfbf8;
+  --paper-deep: #eff1ed;
+  --ink: #142018;
+  --muted: #5f6962;
+  --line: #d7dbd6;
+  --blue: #3a65c7;
+  --blue-wash: #dce7ff;
+  --green: #0b623c;
+  --orange: #e76043;
+  --yellow: #f0ad16;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Legacy names still referenced by components — now the research stack. */
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: var(--mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+a { color: inherit; }
+::selection { background: var(--blue-wash); color: var(--ink); }
 
-@keyframes auroraDriftA {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(6vmax, 4vmax) scale(1.08); }
-  66% { transform: translate(-4vmax, 7vmax) scale(0.94); }
-}
+/* Thin, quiet scrollbars to match the hairline look. */
+* { scrollbar-width: thin; scrollbar-color: #c3c8c2 transparent; }
 
-@keyframes auroraDriftB {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-5vmax, -6vmax) scale(1.05); }
-  66% { transform: translate(5vmax, -3vmax) scale(0.96); }
-}
-
-@keyframes auroraDriftC {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-46%, -54%) scale(1.1); }
+/* Faint dot grid used behind hero blocks (research record-geometry). */
+.paper-dots {
+  background-image: radial-gradient(circle at center, rgba(20,32,24,.18) 1px, transparent 1.5px);
+  background-size: 22px 22px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  @keyframes auroraDriftA { 0%, 100% { transform: none; } }
-  @keyframes auroraDriftB { 0%, 100% { transform: none; } }
-  @keyframes auroraDriftC { 0%, 100% { transform: translate(-50%, -50%); } }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+@media print {
+  header, nav { display: none !important; }
+  body { background: white; }
 }

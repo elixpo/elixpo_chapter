@@ -14,19 +14,8 @@ import {
     recordTransaction,
     upsertOneTimeSubscription,
 } from "./repo";
+import { notifyBuyer } from "./mail-notify";
 import { fireEntitlementUpdated, firePaymentCaptured } from "./webhooks";
-
-function periodDaysFromInterval(interval: string, count: number): number {
-    const base =
-        interval === "day"
-            ? 1
-            : interval === "week"
-              ? 7
-              : interval === "year"
-                ? 365
-                : 30; // month
-    return base * Math.max(1, count);
-}
 
 export interface FulfillInput {
     session: any; // checkout_sessions row
@@ -62,8 +51,9 @@ export async function fulfillPayment(
         raw: input.raw,
     });
 
-    if (!txn.created) {
-        // Already fulfilled by the other path — return current state, no re-grant.
+    if (!txn.created && !(await needsResume(db, txn.id))) {
+        // Already fulfilled (or being fulfilled right now) by the other path —
+        // return current state, no re-grant.
         const ent = await applyGrantNoop(db, session, input.appSlug);
         return { alreadyFulfilled: true, entitlement: ent };
     }
@@ -79,7 +69,8 @@ export async function fulfillPayment(
 
     // 3. Resolve tier + period from the product/price on the session.
     let tier = "member";
-    let periodDays = 30;
+    let interval = "month";
+    let intervalCount = 1;
     if (session.product_id) {
         const product = (await db
             .prepare("SELECT tier FROM products WHERE id = ?")
@@ -92,11 +83,10 @@ export async function fulfillPayment(
             .prepare("SELECT interval, interval_count FROM prices WHERE id = ?")
             .bind(session.price_id)
             .first()) as { interval: string; interval_count: number } | null;
-        if (price)
-            periodDays = periodDaysFromInterval(
-                price.interval,
-                price.interval_count,
-            );
+        if (price) {
+            interval = price.interval;
+            intervalCount = price.interval_count;
+        }
     }
 
     // 4. Roll the subscription period forward.
@@ -106,7 +96,8 @@ export async function fulfillPayment(
         productId: session.product_id,
         priceId: session.price_id,
         tier,
-        periodDays,
+        interval,
+        intervalCount,
     });
 
     // 5. Apply the entitlement grant (+ immutable grant log).
@@ -142,7 +133,43 @@ export async function fulfillPayment(
         });
     }
 
+    // 8. Email the buyer a receipt via Elixpo Mails (no-op unless wired up).
+    //    A session that was already completed is being charged again, i.e. an
+    //    autopay renewal on the same subscription.
+    await notifyBuyer(db, {
+        appId: session.app_id,
+        event: "payment.receipt",
+        externalUid: session.external_uid,
+        ref: txn.id,
+        tier,
+        productId: session.product_id,
+        amount: input.amount,
+        currency: input.currency,
+        interval,
+        isRenewal: session.status === "completed",
+        transactionId: txn.id,
+        paymentId: input.providerPaymentId || null,
+        periodEnd: sub.periodEnd,
+    });
+
     return { alreadyFulfilled: false, entitlement: view };
+}
+
+/**
+ * A transaction row with no grant means an earlier run crashed between
+ * recording the charge and granting access. Resume it — but only once the row
+ * is old enough that it can't be the other path still mid-flight.
+ */
+async function needsResume(db: D1Database, transactionId: string): Promise<boolean> {
+    const row = (await db
+        .prepare(
+            `SELECT
+                (SELECT 1 FROM grants WHERE transaction_id = ?1 LIMIT 1) AS granted,
+                (SELECT created_at < datetime('now', '-2 minutes') FROM transactions WHERE id = ?1) AS stale`,
+        )
+        .bind(transactionId)
+        .first()) as { granted: number | null; stale: number | null } | null;
+    return !row?.granted && !!row?.stale;
 }
 
 async function applyGrantNoop(

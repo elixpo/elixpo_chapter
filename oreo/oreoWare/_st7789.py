@@ -66,7 +66,18 @@ class ST7789:
     def init(self):
         self._hard_reset()
         self._cmd(_SWRESET); time.sleep_ms(150)
-        self._cmd(_SLPOUT);  time.sleep_ms(500)
+        self._configure(500, 100)
+
+    def resume(self):
+        """Put the panel in the configuration init() sets, without the
+        hardware and software resets, so a panel FaleraOS already set up
+        keeps its picture (no blank flash) and one that lost it (the
+        badge reset) comes back. About 130 ms. oreoOS.hostui uses it to
+        draw while FaleraOS is stopped at the raw REPL."""
+        self._configure(120, 10)
+
+    def _configure(self, slpout_ms, dispon_ms):
+        self._cmd(_SLPOUT);  time.sleep_ms(slpout_ms)
         self._cmd(_COLMOD, b'\x55')                        # 16bpp RGB565
         self._cmd(_MADCTL, bytes([_MADCTL_LANDSCAPE]))     # landscape 320×240
         # ── Power / timing config to reduce visible refresh artifacts ────
@@ -83,7 +94,7 @@ class ST7789:
         self._cmd(_RASET,  b'\x00\x00\x00\xEF')            # rows 0..239
         self._cmd(_INVON);  time.sleep_ms(10)              # IPS needs inversion
         self._cmd(_NORON);  time.sleep_ms(10)
-        self._cmd(_DISPON); time.sleep_ms(100)
+        self._cmd(_DISPON); time.sleep_ms(dispon_ms)
         # Backlight is NOT turned on here — the Display wrapper pushes a
         # solid black frame first and only then enables BL. That way the
         # user never sees the random LCD-RAM contents that produce a noisy

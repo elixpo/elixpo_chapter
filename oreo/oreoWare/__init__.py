@@ -1,4 +1,4 @@
-"""oreoWare — hardware drivers for the Oreo conference badge.
+"""oreoWare — hardware drivers for the Falera conference badge.
 
 ESP32-S3 + ST7789 LCD + buttons + WiFi/BT/ADC. The driver layer that
 oreoOS sits on top of. Future plan: rewrite the perf-critical parts

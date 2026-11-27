@@ -3,13 +3,16 @@ export const runtime = "edge";
 import { type NextRequest, NextResponse } from "next/server";
 import { appFromApiKey } from "@/lib/api-auth";
 import { getDatabase } from "@/lib/d1-client";
+import { safeReturnUrl } from "@/lib/safe-redirect";
 import {
     createCheckoutSession,
     resolveProductAndPrice,
     upsertCustomer,
 } from "@/lib/repo";
+import { hasActiveRouteAccount } from "@/lib/route-account";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
+const INTERVALS = ["day", "week", "month", "year"];
 
 /**
  * POST /v1/checkout/sessions
@@ -26,6 +29,8 @@ const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
  *   "tier": "member",                    // product tier to purchase (required)
  *   "customer": { "uid": "u_123", "email": "a@b.com" },   // buyer (uid required)
  *   "currency": "INR",                   // optional; defaults to INR
+ *   "interval": "year",                  // optional; month | year | week | day —
+ *                                        //   picks between a tier's prices
  *   "success_url": "https://app/return", // where checkout returns the buyer
  *   "metadata": { ... }                  // optional, echoed onto the session
  * }
@@ -85,12 +90,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const interval =
+            body.interval == null
+                ? null
+                : String(body.interval).trim().toLowerCase();
+        if (interval && !INTERVALS.includes(interval)) {
+            return NextResponse.json(
+                {
+                    error: "invalid_request",
+                    error_description: `interval must be one of ${INTERVALS.join(", ")}`,
+                },
+                { status: 400 },
+            );
+        }
+
         // Price is resolved from OUR catalog — never trusted from the caller.
         const resolved = await resolveProductAndPrice(
             db,
             app.id,
             tier,
             currency,
+            interval,
         );
         if (!resolved) {
             return NextResponse.json(
@@ -105,99 +125,63 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     error: "no_price",
-                    error_description: `No active ${currency} price for tier '${tier}'`,
+                    error_description: `No active ${currency}${interval ? ` ${interval}ly` : ""} price for tier '${tier}'`,
                 },
                 { status: 404 },
             );
         }
 
         const amount = resolved.price.unit_amount;
-        const returnUrl = body.success_url
-            ? String(body.success_url)
-            : app.return_url;
 
-        const customerId = await upsertCustomer(db, app.id, uid, email);
-
-        // Defensive auto-cancel of any pre-existing active recurring
-        // subscription for this (app, customer) before creating a new
-        // one — prevents the "two simultaneously-active subs both
-        // billing" failure mode if the consuming app's tier mirror
-        // drifted (e.g. manual SQL reset bypassed the plan-change
-        // detector). Only fires for recurring price selections; one-time
-        // checkouts are stateless and don't need this.
-        if (resolved.price.type === "recurring") {
-            try {
-                const stale = ((
-                    await db
-                        .prepare(
-                            `SELECT id, provider_subscription_id
-                             FROM subscriptions
-                             WHERE app_id = ? AND customer_id = ?
-                               AND billing_mode = 'recurring'
-                               AND status IN ('active','past_due')
-                               AND cancel_at IS NULL`,
-                        )
-                        .bind(app.id, customerId)
-                        .all()
-                ).results ?? []) as Array<{
-                    id: string;
-                    provider_subscription_id: string | null;
-                }>;
-                if (stale.length > 0) {
-                    const { razorpayFromEnv } = await import(
-                        "@/lib/providers/razorpay"
-                    );
-                    const { getEnv } = await import("@/lib/env");
-                    const razorpay = await razorpayFromEnv(getEnv);
-                    for (const s of stale) {
-                        if (razorpay && s.provider_subscription_id) {
-                            try {
-                                // Immediate cancel (not graceful) — the
-                                // user is moving to a NEW sub right now,
-                                // no need to keep the old period alive.
-                                await razorpay.cancelSubscription(
-                                    s.provider_subscription_id,
-                                    false,
-                                );
-                            } catch (err) {
-                                console.warn(
-                                    "[v1/checkout/sessions] couldn't cancel stale sub %s upstream (proceeding): %s",
-                                    s.provider_subscription_id,
-                                    err instanceof Error ? err.message : String(err),
-                                );
-                            }
-                        }
-                        await db
-                            .prepare(
-                                "UPDATE subscriptions SET status='cancelled', cancel_at=datetime('now'), updated_at=datetime('now') WHERE id = ?",
-                            )
-                            .bind(s.id)
-                            .run();
-                    }
-                    console.log(
-                        "[v1/checkout/sessions] auto-cancelled %d stale recurring sub(s) for app=%s uid=%s",
-                        stale.length,
-                        app.slug,
-                        uid,
-                    );
-                }
-            } catch (err) {
-                // Don't block checkout on cleanup failure — the worst
-                // case is the same pre-fix behaviour (duplicate sub).
-                console.error(
-                    "[v1/checkout/sessions] stale-sub cleanup failed (non-fatal): %s",
-                    err instanceof Error ? err.message : String(err),
+        // Razorpay Route (merchant payouts) only settles INR. A Route-connected
+        // merchant can't take other currencies — the money would have nowhere
+        // to go but the platform account.
+        if (
+            currency !== "INR" &&
+            (await hasActiveRouteAccount(db, app.merchant_id))
+        ) {
+            return NextResponse.json(
+                {
+                    error: "currency_not_supported_for_payouts",
+                    error_description:
+                        "Payouts to this merchant are INR-only; use currency INR.",
+                },
+                { status: 400 },
+            );
+        }
+        let returnUrl = app.return_url;
+        if (body.success_url != null && body.success_url !== "") {
+            returnUrl = safeReturnUrl(body.success_url);
+            if (!returnUrl) {
+                return NextResponse.json(
+                    {
+                        error: "invalid_request",
+                        error_description:
+                            "success_url must be an absolute https:// URL",
+                    },
+                    { status: 400 },
                 );
             }
         }
 
-        const metadata: Record<string, unknown> = {
-            plan: tier,
-            source: "api",
-        };
-        if (body.metadata && typeof body.metadata === "object") {
+        const customerId = await upsertCustomer(db, app.id, uid, email);
+
+        // NOTE: a buyer's existing autopay is NOT cancelled here — opening (and
+        // possibly abandoning) checkout must never stop a paid plan. Superseded
+        // subscriptions are cancelled once the new mandate activates (see
+        // cancelSupersededSubscriptions in the Razorpay webhook).
+
+        // Caller metadata first, then the system keys so they always win.
+        const metadata: Record<string, unknown> = {};
+        if (
+            body.metadata &&
+            typeof body.metadata === "object" &&
+            !Array.isArray(body.metadata)
+        ) {
             Object.assign(metadata, body.metadata);
         }
+        metadata.plan = tier;
+        metadata.source = "api";
 
         const sessionId = await createCheckoutSession(db, {
             appId: app.id,

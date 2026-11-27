@@ -380,8 +380,9 @@ export async function GET(request) {
 
     // ── Profile / org — always banner + always avatar + name + handle + bio ──
     if (type === "profile") {
-        // Banner: real URL when available, otherwise deterministic geometric art.
-        const bannerSrc = hasBanner ? banner : defaultBanner;
+        // A profile card has no synthetic banner region when the author has not
+        // uploaded one. This keeps social previews from displaying placeholder art.
+        const bannerSrc = hasBanner ? banner : "";
         // Avatar: real URL when available, otherwise the geometric avatar.
         const avatarSrc = hasAvatar ? avatar : defaultAvatar;
         // The generated avatar is square — render it with a rounded-square clip.
@@ -409,26 +410,27 @@ export async function GET(request) {
                         overflow: "hidden",
                     }}
                 >
-                    {/* Banner strip — always present */}
-                    <div
-                        style={{
-                            display: "flex",
-                            width: "100%",
-                            height: "160px",
-                            flexShrink: 0,
-                        }}
-                    >
-                        <img
-                            src={bannerSrc}
-                            width={1056}
-                            height={160}
+                    {bannerSrc ? (
+                        <div
                             style={{
+                                display: "flex",
                                 width: "100%",
                                 height: "160px",
-                                objectFit: "cover",
+                                flexShrink: 0,
                             }}
-                        />
-                    </div>
+                        >
+                            <img
+                                src={bannerSrc}
+                                width={1056}
+                                height={160}
+                                style={{
+                                    width: "100%",
+                                    height: "160px",
+                                    objectFit: "cover",
+                                }}
+                            />
+                        </div>
+                    ) : null}
                     <div
                         style={{
                             display: "flex",

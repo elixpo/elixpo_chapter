@@ -1,0 +1,12 @@
+921600 add: p95 6.427 ms, failures 86
+921600 crc32: p95 n/a, failures 100
+921600 fir-x1: p95 n/a, failures 100
+921600 fir-x64: p95 n/a, failures 100
+921600 fir-x512: p95 n/a, failures 100
+921600 Stage 12 profile: data/processed/baud/baud-probe-01/baud-921600.json
+2000000 add: p95 n/a, failures 100
+2000000 crc32: p95 n/a, failures 100
+2000000 fir-x1: p95 n/a, failures 100
+2000000 fir-x64: p95 n/a, failures 100
+2000000 fir-x512: p95 n/a, failures 100
+2000000 Stage 12 profile: data/processed/baud/baud-probe-01/baud-2000000.json

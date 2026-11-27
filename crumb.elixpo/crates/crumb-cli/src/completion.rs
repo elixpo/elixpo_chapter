@@ -224,7 +224,11 @@ fn current_token(line: &str) -> (usize, &str) {
     let start = line
         .char_indices()
         .rev()
-        .find_map(|(index, character)| character.is_whitespace().then_some(index + 1))
+        .find_map(|(index, character)| {
+            character
+                .is_whitespace()
+                .then_some(index + character.len_utf8())
+        })
         .unwrap_or(0);
     (start, &line[start..])
 }
@@ -914,6 +918,25 @@ mod tests {
         let result = completer.complete("explain @Car", 12);
         assert_eq!(result.suggestions()[0].value, "@file:Cargo.lock");
         assert_eq!(result.suggestions()[0].span.start, 8);
+    }
+
+    #[test]
+    fn completion_after_multibyte_whitespace_does_not_panic() {
+        let workspace = tempfile::tempdir().expect("workspace");
+        std::fs::write(workspace.path().join("Cargo.lock"), "").expect("fixture");
+        let mut completer =
+            CrumbCompleter::new(CompletionWorkspace::new(workspace.path().to_path_buf()));
+        // A no-break space (Option+Space on macOS) and an ideographic space
+        // are whitespace wider than one byte.
+        for separator in ['\u{a0}', '\u{3000}'] {
+            let line = format!("explain{separator}@Car");
+            let result = completer.complete(&line, line.len());
+            assert_eq!(result.suggestions()[0].value, "@file:Cargo.lock");
+            assert_eq!(
+                result.suggestions()[0].span.start,
+                "explain".len() + separator.len_utf8()
+            );
+        }
     }
 
     #[test]

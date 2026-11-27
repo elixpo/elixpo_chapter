@@ -92,8 +92,35 @@ except Exception:
     pass
 
 
+def _stop_native_splash():
+    """A native boot splash still playing (a crash or a soft reset during
+    boot, see oreoOS/splash.py) shares this SPI bus and drives the panel's
+    CS/DC pins: stop it before touching them. Firmware without the player
+    has no splash_stop."""
+    try:
+        import _oreo_rv565
+        stop = getattr(_oreo_rv565, "splash_stop", None)
+        if stop is not None:
+            stop()
+    except Exception:
+        pass
+
+
+# The newest Display, so code at the raw REPL (`falera screenshot`) can read
+# its framebuffer (_buf: big-endian RGB565, as sent to the panel) after
+# Ctrl-C has stopped FaleraOS.
+_current = None
+
+
+def current():
+    return _current
+
+
 class Display(api.Display):
+    _mono_pal = None        # 2×1 RGB565 palette for blit_mono, built lazily
+
     def __init__(self):
+        _stop_native_splash()
         spi = SPI(
             1,
             baudrate=pins.DISPLAY_BAUD,
@@ -130,6 +157,8 @@ class Display(api.Display):
             self._bl_pwm = PWM(Pin(pins.DISPLAY_BL, Pin.OUT), freq=1000, duty_u16=65535)
         except Exception:
             self._bl_pwm = None
+        global _current
+        _current = self
 
     # ── primitives ────────────────────────────────────────────────────────────
 
@@ -183,6 +212,57 @@ class Display(api.Display):
             buf = bytearray(sprite[:w * h * 2])
         src = framebuf.FrameBuffer(buf, w, h, framebuf.RGB565)
         self._fb.blit(src, x, y, CHROMA_KEY)
+        self._dirty = True
+
+    def blit_mono(self, mask, x, y, w, h, color):
+        """Stamp a MONO_HLSB 1-bit mask in `color` (clear bits transparent).
+
+        One native framebuf.blit through a 2-entry palette: set bits map to
+        the colour, clear bits map to 0 and are skipped by key=0. Key 0 is
+        also the raw clear-bit value, so the result is the same whether the
+        port compares the key before or after the palette lookup. Black ink
+        would collide with the key, so it is nudged to the darkest non-zero
+        value.
+        """
+        pal = self._mono_pal
+        if pal is None:
+            self._mono_pal_buf = bytearray(4)
+            pal = framebuf.FrameBuffer(self._mono_pal_buf, 2, 1,
+                                       framebuf.RGB565)
+            self._mono_pal = pal
+        ink = _swap(color) or 0x0100
+        # pixel(x, y, c) writes; the two-argument form only reads.
+        pal.pixel(0, 0, 0)
+        pal.pixel(1, 0, ink)
+        # framebuf needs a writable buffer; font modules hold bytes, so
+        # callers on a hot path should hand over a cached bytearray.
+        if not isinstance(mask, bytearray):
+            mask = bytearray(mask)
+        src = framebuf.FrameBuffer(mask, w, h, framebuf.MONO_HLSB)
+        self._fb.blit(src, x, y, 0, pal)
+        self._dirty = True
+
+    def copy_rows(self, y, h):
+        """Snapshot full-width rows (one memcpy into a new bytearray)."""
+        stride = api.SCREEN_W * 2
+        return bytearray(memoryview(self._buf)[y * stride:(y + h) * stride])
+
+    def blit_rows(self, src, y, h, src_y=0):
+        """Opaque full-width row copy: a single memcpy (same slice-assign
+        path as blit_fullscreen), no pixel loop."""
+        stride = api.SCREEN_W * 2
+        if y < 0:
+            h += y
+            src_y -= y
+            y = 0
+        if y + h > api.SCREEN_H:
+            h = api.SCREEN_H - y
+        if h <= 0:
+            return
+        n = h * stride
+        s = src_y * stride
+        d = y * stride
+        self._buf[d:d + n] = memoryview(src)[s:s + n]
         self._dirty = True
 
     def blit_2x(self, sprite, x, y, w, h):
@@ -301,8 +381,45 @@ class Display(api.Display):
         stride = api.SCREEN_W * 2
         row_start = y * stride + x * 2
         row_len = w * 2
-        buf = self._buf
-        for _ in range(h):
-            p.spi.write(buf[row_start: row_start + row_len])
-            row_start += stride
+        buf = memoryview(self._buf)
+        if x == 0 and w == api.SCREEN_W:
+            # Full-width band: the rows are contiguous, so one write.
+            p.spi.write(buf[row_start: row_start + h * stride])
+        else:
+            for _ in range(h):
+                p.spi.write(buf[row_start: row_start + row_len])
+                row_start += stride
         p.cs(1)
+        # present() assumes the full-screen window set at init; put it back
+        # so the next full flush is not squeezed into this rectangle.
+        p.set_window(0, 0, api.SCREEN_W - 1, api.SCREEN_H - 1)
+
+    def push_buffer(self, buf, x, y, w, h, src_x=0, src_y=0, src_w=None):
+        """Write a w x h block of an external RGB565 buffer straight to the
+        panel at (x, y), bypassing (and not touching) the framebuffer.
+
+        `buf` holds pixels the way the framebuffer does (colours passed
+        through _swap, i.e. big-endian on the wire), `src_w` pixels per
+        row (default w); the block starts at (src_x, src_y) in it.
+        oreoOS.busy's animator thread uses this so a loading spinner can
+        move while the UI thread is blocked, without sharing the
+        framebuffer. The caller keeps it from overlapping a present()."""
+        if src_w is None:
+            src_w = w
+        p = self._panel
+        p.set_window(x, y, x + w - 1, y + h - 1)
+        p.cs(0)
+        p.dc(0); p.spi.write(b'\x2C')
+        p.dc(1)
+        mv = memoryview(buf)
+        stride = src_w * 2
+        start = (src_y * src_w + src_x) * 2
+        if src_x == 0 and w == src_w:
+            p.spi.write(mv[start: start + h * stride])
+        else:
+            n = w * 2
+            for _ in range(h):
+                p.spi.write(mv[start: start + n])
+                start += stride
+        p.cs(1)
+        p.set_window(0, 0, api.SCREEN_W - 1, api.SCREEN_H - 1)

@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/discussions.schema.json",
   "schemaVersion": 1,
-  "lastVerified": "2026-10-16",
+  "lastVerified": "2026-11-22",
   "statusOwner": "elixpo",
   "sourceRepository": "https://github.com/elixpo/elixpo",
   "organizationUrl": "https://github.com/orgs/elixpo/discussions",
@@ -14,9 +14,25 @@
     "Polls",
     "Chapter Proposal",
     "Research",
-    "Service Feedback"
+    "Service Feedback",
+    "GSoC Announcements",
+    "GSoC 2027 ideas",
+    "GSoC Introductions",
+    "GSoC Warm-up results",
+    "GSoC Q&A"
   ],
-  "featuredDiscussionNumbers": [],
+  "featuredDiscussionNumbers": [
+    98,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97
+  ],
   "refreshSeconds": 900,
   "responsePolicy": {
     "serviceAndProjectOwner": "The maintainer named by the owning repository is responsible for technical responses and lifecycle corrections.",

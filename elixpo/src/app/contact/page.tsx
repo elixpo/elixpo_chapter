@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, FlaskConical, Github, Mail, MessageCircle, Settings, ShieldCheck } from "lucide-react";
 import { ELIXPO_LINKS } from "@/lib/elixpo-links";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "Contact Elixpo",
@@ -82,14 +83,14 @@ export default function ContactPage() {
 
   return <main className="contact-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="contact-hero">
+    <header className="contact-hero"><Sparks chips={["say hello ↗", "inbox zero?", "humans here"]} />
       <div className="contact-hero-geometry" aria-hidden="true"><span/><span/><span/><span/></div>
       <div><p className="eyebrow">Contact / choose the accountable route</p><h1>Put the question <em>where the work lives.</em></h1><p className="lede">Elixpo uses public discussions for public decisions, repository channels for technical work, and email for organization-level or private enquiries. Choosing the right route keeps context, responsibility, and follow-up visible.</p></div>
       <aside><span>GENERAL CONTACT</span><a href={`mailto:${ELIXPO_LINKS.email}`}>{ELIXPO_LINKS.email}</a><p>No universal response-time guarantee is published. Repository maintainers own project-specific support.</p></aside>
     </header>
 
     <section className="contact-channels section-wrap">
-      <div className="section-heading split"><div><p className="eyebrow">Contact routes</p><h2>One question, one responsible channel.</h2></div><p>Please do not send private security reports, account credentials, or sensitive personal information through public Discussions.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">Contact routes</p><h2>One question, one responsible channel.</h2></div><p>Please do not send private security reports, account credentials, or sensitive personal information through public Discussions.</p></div>
       <div className="contact-channel-grid">{channels.map((channel, index) => { const Icon = channel.icon; return <a key={channel.title} href={channel.href} target={channel.href.startsWith("http") ? "_blank" : undefined} rel={channel.href.startsWith("http") ? "noreferrer" : undefined}><span>{String(index + 1).padStart(2,"0")} / {channel.label}</span><Icon size={28}/><h3>{channel.title}</h3><p>{channel.text}</p><b>{channel.action} <ArrowUpRight size={14}/></b></a>; })}</div>
     </section>
 

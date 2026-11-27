@@ -1,7 +1,7 @@
 {
   "name": "RV565",
-  "version": "1.1.0",
-  "description": "Frame-independent RGB565 video on ESP32-S3 and RP2350 SPI displays (ST7789), with a dual-core decode and DMA pipeline. 24 FPS with zero missed frames on the ESP32-S3; decode time predictable from the file.",
+  "version": "3.0.0",
+  "description": "RGB565 video (keyframes, XOR deltas, repeats) on ESP32-S3 and RP2350 SPI displays (ST7789), with a dual-core decode and DMA pipeline. 24 FPS with zero missed frames on the ESP32-S3; decode time predictable from the file.",
   "keywords": "video, rgb565, st7789, display, dma, esp32, esp32s3, rp2350, pico, tft",
   "repository": {
     "type": "git",

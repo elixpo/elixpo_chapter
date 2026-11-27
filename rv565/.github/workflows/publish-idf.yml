@@ -1,8 +1,10 @@
 name: Publish to ESP Component Registry
 
-# Manual until the `elixpo` namespace is approved by Espressif. After that,
-# add `push: tags: ["v*"]` so each release tag publishes automatically.
+# Publishes elixpo/rv565 for every release tag (the version comes from
+# idf_component.yml); can also be run by hand for an existing tag.
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:

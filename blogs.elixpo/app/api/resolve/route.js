@@ -3,8 +3,14 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getSession } from "../../../lib/auth";
 import { decompressBlogContent } from "../../../lib/compress";
+import { indexableBlogSql } from "../../../lib/indexability";
 import { STAFF_ORG_ID } from "../../../lib/staff";
 import { getLimits } from "../../../lib/tiers";
+
+// Public-profile discovery filter. Reading permissions for a single article are
+// unchanged; this only keeps excluded rows out of the public listing and the
+// profile's structured data, and it runs before LIMIT 20.
+const INDEXABLE_PROFILE_BLOG = indexableBlogSql({ blogAlias: "b", orgAlias: "po" });
 
 // Accepted co-authors (max 10) with display info for multi-author bylines.
 async function fetchCoAuthors(db, blogId) {
@@ -146,7 +152,7 @@ async function fetchBlogBySlugid(db, slugid) {
     ) {
         const org = await db
             .prepare(
-                "SELECT id, slug, name, tagline, description, bio, logo_url, logo_r2_key, owner_id, updated_at FROM orgs WHERE id = ?",
+                "SELECT id, slug, name, tagline, description, bio, logo_url, logo_r2_key, owner_id, visibility, updated_at FROM orgs WHERE id = ?",
             )
             .bind(full.published_as.slice(4))
             .first();
@@ -319,7 +325,7 @@ export async function GET(request) {
             const user = await db
                 .prepare(`
         SELECT id, username, display_name, designation, bio, avatar_url, banner_r2_key,
-          location, timezone, pronouns, website, company, links, tier, created_at, updated_at
+          location, timezone, pronouns, website, company, links, tier, account_status, top_pick_ids, created_at, updated_at
         FROM users WHERE id = ?
       `)
                 .bind(ownerId)
@@ -330,6 +336,12 @@ export async function GET(request) {
                     { error: "User not found" },
                     { status: 404 },
                 );
+            if (["disabled", "removed"].includes(String(user.account_status || "active").toLowerCase())) {
+                return NextResponse.json(
+                    { error: "User unavailable", type: null },
+                    { status: 404 },
+                );
+            }
 
             // If slug requested, find the blog
             if (slug) {
@@ -337,7 +349,7 @@ export async function GET(request) {
                     .prepare(`
           SELECT b.id, b.slug, b.title, b.subtitle, b.excerpt, b.content, b.cover_image_r2_key,
             b.cover_pos_x, b.cover_pos_y, b.cover_zoom, b.member_only,
-            b.status, b.published_as, b.page_emoji, b.read_time_minutes,
+            b.status, b.secret, b.deleted_at, b.published_as, b.page_emoji, b.read_time_minutes,
             b.published_at, b.created_at, b.updated_at, b.author_id,
             u.username as author_username, u.display_name as author_name, u.designation as author_designation,
             u.avatar_url as author_avatar, u.tier as author_tier
@@ -392,14 +404,11 @@ export async function GET(request) {
         FROM blogs b
         JOIN users au ON au.id = b.author_id
         LEFT JOIN orgs po ON ('org:' || po.id) = b.published_as
-        LEFT JOIN collections pc ON pc.id = b.collection_id
+        LEFT JOIN collections pc ON pc.id = b.collection_id AND pc.org_id = po.id
         WHERE (b.author_id = ? OR b.id IN (
                  SELECT blog_id FROM blog_co_authors WHERE user_id = ? AND status = 'accepted' AND show_on_profile = 1
                ))
-          AND b.status = 'published'
-          -- Secret blogs never appear on a profile: listing them here would tie
-          -- the anonymous post straight back to its author (or a co-author).
-          AND b.secret = 0
+          AND ${INDEXABLE_PROFILE_BLOG}
         ORDER BY b.published_at DESC LIMIT 20
       `)
                 .bind(ownerId, ownerId, ownerId)
@@ -490,6 +499,14 @@ export async function GET(request) {
                 type: "user",
                 user: {
                     ...user,
+                    top_pick_ids: (() => {
+                        try {
+                            const ids = JSON.parse(user.top_pick_ids || "[]");
+                            return Array.isArray(ids) ? ids.filter((id) => typeof id === "string").slice(0, 3) : [];
+                        } catch {
+                            return [];
+                        }
+                    })(),
                     followers: followerCount?.c || 0,
                     following: followingCount?.c || 0,
                     badges,

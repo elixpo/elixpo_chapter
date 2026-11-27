@@ -185,9 +185,10 @@ export default function MetricChart({
                                         : "translateX(4%)",
                                 zIndex: 3,
                                 pointerEvents: "none",
-                                bgcolor: "rgba(15,17,26,0.96)",
+                                bgcolor: C.panel,
                                 border: `1px solid ${C.border}`,
-                                borderRadius: "8px",
+                                borderRadius: "10px",
+                                boxShadow: "0 18px 48px rgba(20,32,24,.09)",
                                 px: 1,
                                 py: 0.75,
                                 minWidth: 110,
@@ -196,6 +197,7 @@ export default function MetricChart({
                             <Typography
                                 sx={{
                                     fontSize: "0.64rem",
+                                    fontFamily: C.mono,
                                     color: C.textMuted,
                                     mb: 0.5,
                                 }}
@@ -299,7 +301,7 @@ export default function MetricChart({
                             y1={g.y}
                             x2={W - PAD.right}
                             y2={g.y}
-                            stroke={C.border}
+                            stroke={C.line}
                             strokeWidth="1"
                             strokeDasharray="2 5"
                             vectorEffect="non-scaling-stroke"
@@ -333,7 +335,8 @@ export default function MetricChart({
                             transform: "translateY(-50%)",
                             fontSize: "0.6rem",
                             color: C.textMuted,
-                            bgcolor: "rgba(11,13,18,0.5)",
+                            fontFamily: C.mono,
+                            bgcolor: C.panel,
                             px: 0.5,
                             borderRadius: "3px",
                             pointerEvents: "none",

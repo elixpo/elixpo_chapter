@@ -1,65 +1,88 @@
 export const runtime = 'edge';
 
 import { getDB } from '../../lib/cloudflare';
+import { indexableBlogSql } from '../../lib/indexability';
+import {
+  SITE_URL,
+  feedUrl,
+  normalizeFeedAuthor,
+  normalizeFeedTag,
+  renderRssFeed,
+} from '../../lib/rssFeed';
 
-const SITE_URL = 'https://blogs.elixpo.com';
+// GET /feed.xml                       — recent stories across LixBlogs
+// GET /feed.xml?author=<username>     — one writer's stories (e.g. for Planet Debian)
+// GET /feed.xml?tag=<tag>             — stories with a tag
+// GET /feed.xml?author=<u>&tag=<t>    — one writer's stories with a tag
+//
+// Only posts that are publicly indexable are listed (lib/indexability.js):
+// never drafts, unlisted, trashed, private-org or secret posts. Secret posts are
+// anonymous, so they must never appear in a per-author feed.
+export async function GET(request) {
+  const params = new URL(request.url).searchParams;
+  const rawAuthor = params.get('author');
+  const rawTag = params.get('tag');
+  const author = rawAuthor === null ? null : normalizeFeedAuthor(rawAuthor);
+  const tag = rawTag === null ? null : normalizeFeedTag(rawTag);
+  if ((rawAuthor !== null && !author) || (rawTag !== null && !tag)) {
+    return text('Invalid feed filter', 400);
+  }
 
-function xml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-function blogUrl(blog) {
-  if (blog.collection_slug && blog.org_slug) return `${SITE_URL}/${blog.org_slug}/${blog.collection_slug}/${blog.slug}`;
-  return `${SITE_URL}/${blog.org_slug || blog.author_username}/${blog.slug}`;
-}
-
-export async function GET() {
   try {
-    const result = await getDB().prepare(`
+    const db = getDB();
+
+    let user = null;
+    if (author) {
+      user = await db.prepare(
+        'SELECT id, username, display_name, account_status FROM users WHERE LOWER(username) = ?',
+      ).bind(author).first();
+      const status = String(user?.account_status || 'active').toLowerCase();
+      if (!user || status === 'disabled' || status === 'removed') {
+        return text('Feed not found', 404);
+      }
+    }
+
+    const where = [indexableBlogSql({ blogAlias: 'b', orgAlias: 'o' })];
+    const binds = [];
+    if (user) {
+      where.push('b.author_id = ?');
+      binds.push(user.id);
+    }
+    if (tag) {
+      where.push('EXISTS (SELECT 1 FROM blog_tags bt WHERE bt.blog_id = b.id AND LOWER(bt.tag) = ?)');
+      binds.push(tag);
+    }
+
+    const result = await db.prepare(`
       SELECT b.id, b.slug, b.title, b.subtitle, b.excerpt, b.published_at, b.updated_at,
-        b.published_as, u.username AS author_username, u.display_name AS author_name,
+        u.username AS author_username, u.display_name AS author_name,
         o.slug AS org_slug, c.slug AS collection_slug
       FROM blogs b JOIN users u ON u.id = b.author_id
-      LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
+      LEFT JOIN orgs o ON o.id = substr(b.published_as, 5)
       LEFT JOIN collections c ON c.id = b.collection_id
-      WHERE b.status = 'published' AND b.secret = 0
-      ORDER BY b.published_at DESC LIMIT 100
-    `).all();
-    const blogs = result?.results || [];
-    const latest = blogs.reduce(
-      (value, blog) => Math.max(value, Number(blog.updated_at || blog.published_at || 0)),
-      0,
-    ) || Math.floor(Date.now() / 1000);
-    const items = blogs.map((blog) => {
-      const url = blogUrl(blog);
-      return `<item>
-  <title>${xml(blog.title || 'Untitled')}</title>
-  <link>${xml(url)}</link>
-  <guid isPermaLink="true">${xml(url)}</guid>
-  <description>${xml(blog.subtitle || blog.excerpt || `A story by ${blog.author_name || blog.author_username} on LixBlogs.`)}</description>
-  <dc:creator>${xml(blog.author_name || blog.author_username)}</dc:creator>
-  <pubDate>${new Date((blog.published_at || latest) * 1000).toUTCString()}</pubDate>
-</item>`;
-    }).join('\n');
-    const body = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
-<channel>
-  <title>LixBlogs — recent stories</title>
-  <link>${SITE_URL}</link>
-  <description>Recent stories published by writers and organizations on LixBlogs.</description>
-  <language>en</language>
-  <lastBuildDate>${new Date(latest * 1000).toUTCString()}</lastBuildDate>
-  <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
-  <atom:link href="https://pubsubhubbub.appspot.com/" rel="hub" />
-${items}
-</channel>
-</rss>`;
-    return new Response(body, {
+      WHERE ${where.join(' AND ')}
+      ORDER BY b.published_at DESC LIMIT ?
+    `).bind(...binds, user ? 50 : 100).all();
+
+    const name = user ? (user.display_name || user.username) : null;
+    const channel = user
+      ? {
+          title: `${name} on LixBlogs${tag ? ` — #${tag}` : ''}`,
+          link: `${SITE_URL}/${encodeURIComponent(user.username)}`,
+          description: tag
+            ? `Stories tagged #${tag} by ${name} on LixBlogs.`
+            : `Stories by ${name} on LixBlogs.`,
+        }
+      : {
+          title: tag ? `LixBlogs — #${tag}` : 'LixBlogs — recent stories',
+          link: tag ? `${SITE_URL}/tag/${encodeURIComponent(tag)}` : SITE_URL,
+          description: tag
+            ? `Recent stories tagged #${tag} on LixBlogs.`
+            : 'Recent stories published by writers and organizations on LixBlogs.',
+        };
+    channel.selfUrl = feedUrl({ author: user ? user.username.toLowerCase() : null, tag });
+
+    return new Response(renderRssFeed(channel, result?.results || []), {
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8',
         // WebSub hubs fetch immediately after a publish notification. Revalidation
@@ -68,6 +91,13 @@ ${items}
       },
     });
   } catch {
-    return new Response('Feed temporarily unavailable', { status: 503 });
+    return text('Feed temporarily unavailable', 503);
   }
+}
+
+function text(body, status) {
+  return new Response(body, {
+    status,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }

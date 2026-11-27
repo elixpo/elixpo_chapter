@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Deploy mail.elixpo (Elixpo Mails) to Cloudflare.
 #
+# Production deploys run from CI on every push to main (.github/workflows/deploy.yml and
+# deploy-smtp-worker.yml, through elixpo/agent.elixpo's shared workflows). Use this script
+# only for local previews or an emergency deploy.
+#
 # Usage:
 #   ./deploy.sh                  — secrets + build + deploy (Pages)
 #   ./deploy.sh worker           — deploy the SMTP sender Worker

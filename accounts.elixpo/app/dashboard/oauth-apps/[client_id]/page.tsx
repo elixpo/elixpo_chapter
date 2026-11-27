@@ -31,6 +31,12 @@ import {
 } from "../../../components/dashboard/section-nav";
 import { OAuthScopePicker } from "../../../components/oauth-scope-picker";
 
+const detailLabelSx = {
+    color: "var(--fg-faint)",
+    fontSize: "0.8rem",
+    mb: 0.75,
+};
+
 const cardSx = {
     background: "var(--surface)",
     border: "1px solid var(--border)",
@@ -1179,7 +1185,7 @@ export default function OAuthAppSettingsPage() {
                     sx={{
                         ...cardSx,
                         order: 4,
-                        gridColumn: { xs: "1", lg: "2" },
+                        gridColumn: { xs: "1", lg: "2 / -1" },
                         ...sectionAnchorSx,
                     }}
                 >
@@ -1270,135 +1276,258 @@ export default function OAuthAppSettingsPage() {
                     )}
                 </Box>
 
-                {/* Scopes + Stats */}
+                {/* Scopes + details */}
                 <Box
                     sx={{
                         ...cardSx,
                         order: 4,
-                        gridColumn: { xs: "1", lg: "3" },
+                        gridColumn: { xs: "1", lg: "2 / -1" },
                     }}
                 >
                     <Typography
-                        sx={{ color: "var(--fg)", fontWeight: 600, mb: 2 }}
+                        sx={{ color: "var(--fg)", fontWeight: 600, mb: 0.5 }}
                     >
-                        Info
+                        Access &amp; details
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "var(--fg-faint)",
+                            display: "block",
+                            mb: 2.5,
+                        }}
+                    >
+                        Permissions this app can request, and how it is
+                        registered
                     </Typography>
 
-                    <Box sx={{ mb: 2 }}>
-                        <Typography
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: {
+                                xs: "minmax(0, 1fr)",
+                                md: "minmax(0, 1.35fr) minmax(0, 1fr)",
+                            },
+                            gap: { xs: 3, md: 4 },
+                            alignItems: "start",
+                        }}
+                    >
+                        <Box>
+                            <Typography sx={detailLabelSx}>Scopes</Typography>
+                            <OAuthScopePicker
+                                selectedScopes={form.scopes}
+                                customScopes={form.custom_scopes}
+                                onSelectedScopesChange={(scopes) =>
+                                    setForm({ ...form, scopes })
+                                }
+                                onCustomScopesChange={(custom_scopes) =>
+                                    setForm({ ...form, custom_scopes })
+                                }
+                            />
+                        </Box>
+
+                        <Box
                             sx={{
-                                color: "var(--fg-faint)",
-                                fontSize: "0.8rem",
-                                mb: 0.75,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2.5,
+                                pl: { md: 4 },
+                                borderLeft: { md: "1px solid var(--border)" },
                             }}
                         >
-                            Scopes
-                        </Typography>
-                        <OAuthScopePicker
-                            selectedScopes={form.scopes}
-                            customScopes={form.custom_scopes}
-                            onSelectedScopesChange={(scopes) =>
-                                setForm({ ...form, scopes })
-                            }
-                            onCustomScopesChange={(custom_scopes) =>
-                                setForm({ ...form, custom_scopes })
-                            }
-                        />
-                    </Box>
-
-                    <Typography
-                        sx={{ color: "var(--fg-faint)", fontSize: "0.8rem" }}
-                    >
-                        Type: {app?.client_type || "confidential"} · Auth:{" "}
-                        {app?.token_endpoint_auth_method ||
-                            "client_secret_post"}
-                        {app?.audience ? ` · Audience: ${app.audience}` : ""}
-                        {app?.owner_id ? ` · Owner: ${app.owner_id}` : ""}
-                    </Typography>
-
-                    {app?.request_count !== undefined && (
-                        <Box sx={{ mb: 2 }}>
-                            <Typography
+                            <Box
                                 sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.8rem",
-                                    mb: 0.25,
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: 1.5,
                                 }}
                             >
-                                Requests
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    color: "var(--fg)",
-                                    fontWeight: 600,
-                                    fontSize: "1.5rem",
-                                }}
-                            >
-                                {app.request_count.toLocaleString()}
-                            </Typography>
-                        </Box>
-                    )}
-
-                    {app?.created_at && (
-                        <Box>
-                            <Typography
-                                sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.8rem",
-                                    mb: 0.25,
-                                }}
-                            >
-                                Created
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    color: "var(--fg-faint)",
-                                    fontSize: "0.9rem",
-                                }}
-                            >
-                                {new Date(app.created_at).toLocaleDateString()}
-                            </Typography>
-                        </Box>
-                    )}
-                    {Array.isArray(app?.audit_history) &&
-                        app.audit_history.length > 0 && (
-                            <Box sx={{ mt: 2 }}>
-                                <Typography
-                                    sx={{
-                                        color: "var(--fg-faint)",
-                                        fontSize: "0.8rem",
-                                        mb: 0.75,
-                                    }}
-                                >
-                                    Recent audit history
-                                </Typography>
-                                {app.audit_history
-                                    .slice(0, 5)
-                                    .map(
-                                        (entry: {
-                                            event_type: string;
-                                            status: string;
-                                            created_at: string;
-                                        }) => (
-                                            <Typography
-                                                key={`${entry.event_type}-${entry.created_at}`}
-                                                sx={{
-                                                    color: "var(--fg-faint)",
-                                                    fontSize: "0.72rem",
-                                                    fontFamily: "monospace",
-                                                    mb: 0.5,
-                                                }}
-                                            >
-                                                {entry.event_type} ·{" "}
-                                                {entry.status} ·{" "}
-                                                {new Date(
-                                                    entry.created_at,
-                                                ).toLocaleString()}
-                                            </Typography>
-                                        ),
-                                    )}
+                                <StatTile
+                                    label="Requests"
+                                    value={(
+                                        app?.request_count ?? 0
+                                    ).toLocaleString()}
+                                />
+                                <StatTile
+                                    label="Created"
+                                    value={
+                                        app?.created_at
+                                            ? new Date(
+                                                  app.created_at,
+                                              ).toLocaleDateString(undefined, {
+                                                  month: "short",
+                                                  day: "numeric",
+                                                  year: "numeric",
+                                              })
+                                            : "—"
+                                    }
+                                />
                             </Box>
-                        )}
+
+                            <Box component="dl" sx={{ m: 0 }}>
+                                {[
+                                    [
+                                        "Client type",
+                                        app?.client_type || "confidential",
+                                    ],
+                                    [
+                                        "Token auth",
+                                        app?.token_endpoint_auth_method ||
+                                            "client_secret_post",
+                                    ],
+                                    ["Audience", app?.audience || "—"],
+                                    ["Owner", app?.owner_id || "—"],
+                                ].map(([label, value]) => (
+                                    <Box
+                                        key={label}
+                                        sx={{
+                                            display: "grid",
+                                            gridTemplateColumns:
+                                                "110px minmax(0, 1fr)",
+                                            gap: 2,
+                                            py: 1.1,
+                                            borderBottom:
+                                                "1px solid var(--border)",
+                                            "&:last-of-type": {
+                                                borderBottom: 0,
+                                            },
+                                        }}
+                                    >
+                                        <Box
+                                            component="dt"
+                                            sx={{
+                                                color: "var(--fg-faint)",
+                                                fontSize: "0.78rem",
+                                            }}
+                                        >
+                                            {label}
+                                        </Box>
+                                        <Box
+                                            component="dd"
+                                            sx={{
+                                                m: 0,
+                                                color: "var(--fg)",
+                                                fontSize: "0.8rem",
+                                                fontFamily: "var(--font-code)",
+                                                textAlign: "right",
+                                                overflowWrap: "anywhere",
+                                            }}
+                                        >
+                                            {value}
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </Box>
+
+                            {Array.isArray(app?.audit_history) &&
+                                app.audit_history.length > 0 && (
+                                    <Box>
+                                        <Typography sx={detailLabelSx}>
+                                            Recent audit history
+                                        </Typography>
+                                        <Box
+                                            component="ul"
+                                            sx={{
+                                                m: 0,
+                                                p: 0,
+                                                listStyle: "none",
+                                                border: "1px solid var(--border)",
+                                                borderRadius: "12px",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {app.audit_history
+                                                .slice(0, 5)
+                                                .map(
+                                                    (entry: {
+                                                        event_type: string;
+                                                        status: string;
+                                                        created_at: string;
+                                                    }) => (
+                                                        <Box
+                                                            component="li"
+                                                            key={`${entry.event_type}-${entry.created_at}`}
+                                                            sx={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 1,
+                                                                px: 1.5,
+                                                                py: 1,
+                                                                fontSize:
+                                                                    "0.74rem",
+                                                                borderBottom:
+                                                                    "1px solid var(--border)",
+                                                                "&:last-of-type":
+                                                                    {
+                                                                        borderBottom: 0,
+                                                                    },
+                                                            }}
+                                                        >
+                                                            <Box
+                                                                component="span"
+                                                                aria-hidden="true"
+                                                                sx={{
+                                                                    width: 7,
+                                                                    height: 7,
+                                                                    flexShrink: 0,
+                                                                    borderRadius:
+                                                                        "50%",
+                                                                    bgcolor:
+                                                                        entry.status ===
+                                                                        "success"
+                                                                            ? "#15803d"
+                                                                            : "#b91c1c",
+                                                                }}
+                                                            />
+                                                            <Box
+                                                                component="span"
+                                                                sx={{
+                                                                    flex: 1,
+                                                                    minWidth: 0,
+                                                                    color: "var(--fg)",
+                                                                    fontFamily:
+                                                                        "var(--font-code)",
+                                                                    overflow:
+                                                                        "hidden",
+                                                                    textOverflow:
+                                                                        "ellipsis",
+                                                                    whiteSpace:
+                                                                        "nowrap",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    entry.event_type
+                                                                }
+                                                            </Box>
+                                                            <Box
+                                                                component="span"
+                                                                sx={{
+                                                                    color: "var(--fg-faint)",
+                                                                    whiteSpace:
+                                                                        "nowrap",
+                                                                }}
+                                                            >
+                                                                {new Date(
+                                                                    entry.created_at,
+                                                                ).toLocaleString(
+                                                                    undefined,
+                                                                    {
+                                                                        month: "short",
+                                                                        day: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    },
+                                                                )}
+                                                            </Box>
+                                                        </Box>
+                                                    ),
+                                                )}
+                                        </Box>
+                                    </Box>
+                                )}
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
 

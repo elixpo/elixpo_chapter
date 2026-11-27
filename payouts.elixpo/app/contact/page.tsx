@@ -24,15 +24,14 @@ export default function ContactPage() {
                     sx={{ mb: 6 }}
                 >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "#CF4500" }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", background: "var(--app-accent)" }} />
                         <Typography
                             sx={{
                                 fontSize: "14px",
                                 fontWeight: 700,
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 color: "var(--app-fg-muted)",
                                 textTransform: "uppercase",
-                                fontFamily: "var(--font-sofia-sans)",
                             }}
                         >
                             CONTACT
@@ -42,8 +41,8 @@ export default function ContactPage() {
                         variant="h2"
                         sx={{
                             fontWeight: 500,
-                            fontSize: { xs: "32px", md: "42px" },
-                            letterSpacing: "-2%",
+                            fontSize: { xs: "2.5rem", md: "4rem" }, lineHeight: 0.96,
+                            letterSpacing: "-0.055em",
                             color: "var(--app-fg)",
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -68,10 +67,10 @@ export default function ContactPage() {
                 <Box
                     sx={{
                         p: { xs: 4, md: 5 },
-                        borderRadius: "24px",
+                        borderRadius: "var(--radius-card)",
                         background: "var(--app-bg-2)", // Lifted Cream
                         border: "1.5px solid var(--app-overlay)",
-                        boxShadow: "rgba(0, 0, 0, 0.04) 0px 4px 24px 0px",
+                        boxShadow: "rgba(20, 32, 24, 0.04) 0px 4px 24px 0px",
                     }}
                 >
                     <Typography
@@ -79,10 +78,9 @@ export default function ContactPage() {
                             fontSize: "11px",
                             color: "var(--app-fg-muted)",
                             textTransform: "uppercase",
-                            letterSpacing: "0.06em",
+                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                             fontWeight: 700,
                             mb: 1,
-                            fontFamily: "var(--font-sofia-sans)",
                         }}
                     >
                         Support Email
@@ -93,7 +91,7 @@ export default function ContactPage() {
                             fontWeight: 500,
                             fontSize: "24px",
                             color: "var(--app-fg)",
-                            letterSpacing: "-1px",
+                            letterSpacing: "-0.045em",
                             mb: 1,
                             fontFamily: "var(--font-sofia-sans)",
                         }}
@@ -131,7 +129,7 @@ export default function ContactPage() {
                                 color: "var(--app-on-ink)", // Light text on ink
                                 background: "var(--app-ink)", // Ink Black background
                                 border: "1.5px solid var(--app-ink)",
-                                borderRadius: "20px", // Signature button radius
+                                borderRadius: "999px", // Signature button radius
                                 py: 1.4,
                                 fontFamily: "var(--font-sofia-sans)",
                                 letterSpacing: "-0.32px",
@@ -186,7 +184,7 @@ export default function ContactPage() {
                     <Box
                         component={Link}
                         href="/refunds"
-                        sx={{ color: "#3860BE", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
+                        sx={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 500, "&:hover": { textDecoration: "underline" } }}
                     >
                         Refund Policy
                     </Box>
@@ -205,7 +203,7 @@ const outlinedButtonStyle = {
     color: "var(--app-fg)",
     background: "var(--app-surface)",
     border: "1.5px solid var(--app-fg)",
-    borderRadius: "20px",
+    borderRadius: "999px",
     py: 1.2,
     fontFamily: "var(--font-sofia-sans)",
     "&:hover": {

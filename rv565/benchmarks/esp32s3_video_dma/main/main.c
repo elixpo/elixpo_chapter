@@ -31,6 +31,20 @@
 #ifndef RV565_SELFTEST
 #define RV565_SELFTEST 0
 #endif
+// RV565_CODEC=1 swaps the per-frame decoder for a baseline: the clip is MJPEG
+// (independent JPEG frames, tools/encode_mjpeg_benchmark.py) decoded to
+// big-endian RGB565 by Espressif's esp_new_jpeg. Everything after the decoder
+// (buffers, scaling, stripes, DMA, pacing, measurement) is shared, so the two
+// builds differ only in the format and its decoder.
+#ifndef RV565_CODEC
+#define RV565_CODEC 0
+#endif
+#define CODEC_MJPEG (RV565_CODEC == 1)
+
+#if CODEC_MJPEG
+#include "esp_jpeg_dec.h"
+#include "esp_jpeg_version.h"
+#endif
 
 #define LCD_HOST       SPI2_HOST
 #define PIN_MOSI       11
@@ -55,8 +69,14 @@ static spi_device_handle_t lcd;
 static uint16_t xmap[LCD_W];
 static uint16_t ymap[LCD_H];
 
+#if CODEC_MJPEG
+extern const uint8_t video_start[] asm("_binary_video_mjpeg_start");
+extern const uint8_t video_end[] asm("_binary_video_mjpeg_end");
+static jpeg_dec_handle_t jpeg_decoder;
+#else
 extern const uint8_t video_start[] asm("_binary_video_rv565_start");
 extern const uint8_t video_end[] asm("_binary_video_rv565_end");
+#endif
 
 typedef struct {
     uint8_t version;
@@ -267,11 +287,20 @@ static void spi_init(void)
 static bool parse_clip(clip_t *clip)
 {
     const size_t size = (size_t)(video_end - video_start);
+#if CODEC_MJPEG
+    // Same 12-byte header and u32-length framing as RV565 v6; each payload
+    // is a baseline JPEG instead of a zlib stream.
+    if (size < 12 || memcmp(video_start, "MJP", 3) != 0 || video_start[3] != 1) {
+        ESP_LOGE(TAG, "expected an MJPEG benchmark clip (MJP v1)");
+        return false;
+    }
+#else
     if (size < 12 || memcmp(video_start, "RV5", 3) != 0 ||
             (video_start[3] != 5 && video_start[3] != 6)) {
         ESP_LOGE(TAG, "expected an RV565 v5/v6 video");
         return false;
     }
+#endif
     memset(clip, 0, sizeof(*clip));
     clip->version = video_start[3];
     clip->width = video_start[4] | ((uint16_t)video_start[5] << 8);
@@ -286,7 +315,7 @@ static bool parse_clip(clip_t *clip)
         ESP_LOGE(TAG, "invalid dimensions, timing, frame count, or file size");
         return false;
     }
-    if (clip->version == 5) {
+    if (!CODEC_MJPEG && clip->version == 5) {
         if (size != 12 + clip->frame_bytes * clip->frames) {
             ESP_LOGE(TAG, "invalid RV565 v5 payload size");
             return false;
@@ -305,8 +334,9 @@ static bool parse_clip(clip_t *clip)
             return false;
         }
         for (int i = 0; i < DECODE_BUFFERS; ++i) {
-            clip->decoded_frame[i] = heap_caps_malloc(
-                clip->frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            // 16-byte alignment is what esp_new_jpeg requires on the S3.
+            clip->decoded_frame[i] = heap_caps_aligned_alloc(
+                16, clip->frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
             if (!clip->decoded_frame[i]) {
                 ESP_LOGE(TAG, "could not allocate RV565 v6 decode buffer");
                 return false;
@@ -342,6 +372,31 @@ static bool parse_clip(clip_t *clip)
     return true;
 }
 
+#if CODEC_MJPEG
+static bool jpeg_init(void)
+{
+    jpeg_dec_config_t config = DEFAULT_JPEG_DEC_CONFIG();
+    config.output_type = JPEG_PIXEL_FORMAT_RGB565_BE;
+    return jpeg_dec_open(&config, &jpeg_decoder) == JPEG_ERR_OK;
+}
+
+// Header parsing is part of each frame's decode, as it would be in a player.
+static bool decode_frame(const clip_t *clip, uint16_t frame_index,
+                         uint8_t *destination)
+{
+    jpeg_dec_io_t io = {
+        .inbuf = (uint8_t *)clip->compressed_frames[frame_index],
+        .inbuf_len = (int)clip->compressed_sizes[frame_index],
+        .outbuf = destination,
+    };
+    jpeg_dec_header_info_t info;
+    if (jpeg_dec_parse_header(jpeg_decoder, &io, &info) != JPEG_ERR_OK ||
+            info.width != clip->width || info.height != clip->height) {
+        return false;
+    }
+    return jpeg_dec_process(jpeg_decoder, &io) == JPEG_ERR_OK;
+}
+#else
 static bool decode_frame(const clip_t *clip, uint16_t frame_index,
                          uint8_t *destination)
 {
@@ -354,11 +409,12 @@ static bool decode_frame(const clip_t *clip, uint16_t frame_index,
         TINFL_FLAG_PARSE_ZLIB_HEADER);
     return written == clip->frame_bytes;
 }
+#endif
 
 static const uint8_t *frame_pixels(const clip_t *clip, uint16_t frame_index,
                                    int buffer)
 {
-    return clip->version == 5
+    return (!CODEC_MJPEG && clip->version == 5)
         ? clip->payload + (size_t)frame_index * clip->frame_bytes
         : clip->decoded_frame[buffer];
 }
@@ -572,6 +628,12 @@ void app_main(void)
     if (!parse_clip(&clip)) {
         return;
     }
+#if CODEC_MJPEG
+    if (!jpeg_init()) {
+        ESP_LOGE(TAG, "could not open the JPEG decoder");
+        return;
+    }
+#endif
     print_heap_state("media_open");
 
     const uint32_t warmup_frames = clip.fps * WARMUP_SECONDS;
@@ -625,6 +687,13 @@ void app_main(void)
     printf("RV565_META,warmup_frames=%u\n", (unsigned)warmup_frames);
     printf("RV565_META,sample_frames=%u\n", (unsigned)sample_count);
     printf("RV565_META,overlap=%d\n", RV565_OVERLAP);
+#if CODEC_MJPEG
+    printf("RV565_META,codec=mjpeg\n");
+    printf("RV565_META,decoder=esp_new_jpeg %s\n", esp_jpeg_get_version());
+#else
+    printf("RV565_META,codec=rv565\n");
+    printf("RV565_META,decoder=%s\n", clip.version == 5 ? "none" : "rom tinfl");
+#endif
     printf("RV565_META,backlight_percent=%d\n", RV565_BACKLIGHT);
     printf("RV565_READY\n");
     fflush(stdout);

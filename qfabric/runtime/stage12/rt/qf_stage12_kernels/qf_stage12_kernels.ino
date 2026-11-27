@@ -11,6 +11,12 @@
 // is "RESULT LOCAL_EXECUTION_NS", or "error REASON". One RPC per invocation
 // keeps diagnostics off the measured path.
 
+// Serial link rate to the Linux router; must match its --serial-baudrate.
+// The library default is 115200; the baud sweep builds one image per rate.
+#ifndef QF_BRIDGE_BAUD
+#define QF_BRIDGE_BAUD 115200
+#endif
+
 qf_block_t qf_block{};
 
 String qf_stage12_invoke(String request) {
@@ -42,7 +48,7 @@ String qf_stage12_invoke(String request) {
 }
 
 void setup() {
-  if (!Bridge.begin()) {
+  if (!Bridge.begin(QF_BRIDGE_BAUD)) {
     while (true) delay(1000);
   }
   Bridge.provide("qf_stage12_invoke", qf_stage12_invoke);

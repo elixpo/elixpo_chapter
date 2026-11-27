@@ -23,7 +23,7 @@ function InfoRow({ label, value, icon, color }) {
   return (
     <div className="flex items-center justify-between py-2 px-1">
       <div className="flex items-center gap-2 text-text-dim text-xs">
-        <i className={`bx ${icon} text-sm ${color || 'text-text-muted'}`} />
+        <i className={`bx ${icon} text-sm ${color || 'text-text-muted'}`} aria-hidden="true" />
         {label}
       </div>
       <span className="text-text-secondary text-xs font-medium">{value}</span>
@@ -171,14 +171,14 @@ export default function CanvasPropertiesModal() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
           <div className="flex items-center gap-2">
-            <i className="bx bx-info-circle text-lg text-accent-blue" />
+            <i className="bx bx-info-circle text-lg text-accent-blue" aria-hidden="true" />
             <h2 className="text-text-primary text-sm font-medium">Canvas Properties</h2>
           </div>
           <button
             onClick={toggle}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover cursor-pointer transition-all duration-200"
-          >
-            <i className="bx bx-x text-xl" />
+            aria-label="Close">
+            <i className="bx bx-x text-xl" aria-hidden="true" />
           </button>
         </div>
 
@@ -257,7 +257,7 @@ export default function CanvasPropertiesModal() {
                         : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
                     }`}
                   >
-                    <i className={`bx ${m.icon} text-[11px]`} />
+                    <i className={`bx ${m.icon} text-[11px]`} aria-hidden="true" />
                     {m.label}
                   </button>
                 )
@@ -330,7 +330,7 @@ export default function CanvasPropertiesModal() {
                       onClick={() => sendCollabControl({ type: 'sharing-update', enabled: !sharingEnabled })}
                       className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] cursor-pointer transition-colors ${sharingEnabled ? 'border-green-500/30 text-green-400 hover:bg-green-500/10' : 'border-border-light text-text-muted hover:bg-surface-hover'}`}
                     >
-                      <i className={`bx ${sharingEnabled ? 'bx-broadcast' : 'bx-block'}`} />
+                      <i className={`bx ${sharingEnabled ? 'bx-broadcast' : 'bx-block'}`} aria-hidden="true"/>
                       {sharingEnabled ? 'Sharing on' : 'Sharing off'}
                     </button>
                     <button
@@ -339,7 +339,7 @@ export default function CanvasPropertiesModal() {
                       disabled={!inviteToken || !sharingEnabled}
                       className="flex items-center justify-center gap-1 rounded-lg border border-border-light px-2 py-1.5 text-[10px] text-text-secondary hover:bg-surface-hover cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <i className="bx bx-copy" /> Copy invite
+                      <i className="bx bx-copy" aria-hidden="true" /> Copy invite
                     </button>
                     <button
                       type="button"
@@ -347,7 +347,7 @@ export default function CanvasPropertiesModal() {
                       className="flex items-center justify-center gap-1 rounded-lg border border-border-light px-2 py-1.5 text-[10px] text-text-secondary hover:bg-surface-hover cursor-pointer"
                       title="Invalidate the old invite immediately"
                     >
-                      <i className="bx bx-refresh" /> Rotate link
+                      <i className="bx bx-refresh" aria-hidden="true" /> Rotate link
                     </button>
                   </div>
                 )}
@@ -388,8 +388,9 @@ export default function CanvasPropertiesModal() {
                                 onClick={() => sendCollabControl({ type: 'kick', connectionId: user.connectionId, userId: user.userId })}
                                 className="text-red-400/60 hover:text-red-400 text-[10px] px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
                                 title={`Remove ${user.displayName || 'user'} from session`}
+                                aria-label={`Remove ${user.displayName || 'participant'} from session`}
                               >
-                                <i className="bx bx-user-x text-sm" />
+                                <i className="bx bx-user-x text-sm" aria-hidden="true" />
                               </button>
                             </>
                           )}

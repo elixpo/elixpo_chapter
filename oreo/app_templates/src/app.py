@@ -1,17 +1,23 @@
-"""Minimal counter app — demonstrates the OreoOS app lifecycle.
+"""Minimal counter app — demonstrates the FaleraOS app lifecycle.
 
 Buttons:
-    A    increment the counter
-    B    decrement the counter
-    HOME exit (intercepted by the OS, app never sees it)
+    A (SELECT)  increment the counter
+    B (BACK)    decrement the counter
+    HOME        exit (intercepted by the OS, app never sees it)
+
+The counter survives reboots and reinstalls: it is saved with
+oreoOS.state in /state/<app id>.json when the app closes.
 
 Keep this file focused on the lifecycle. As your app grows, split
 pure logic into src/<feature>.py and drawing into src/render.py —
-see apps/snake/ for the reference layout.
+see apps_market/snake/ for the reference layout.
 """
 
 import oreoOS
-from oreoOS import api, theme, widgets
+from oreoOS import api, state, theme, widgets
+
+# "apps.my_app.src.app" -> "my_app": the state file follows the folder name.
+APP_ID = state.app_id(__name__, "example")
 
 
 class App(oreoOS.App):
@@ -22,19 +28,20 @@ class App(oreoOS.App):
 
     def on_enter(self, os):
         super().on_enter(os)
-        self._counter = 0
+        saved = state.load(APP_ID, {"counter": 0})
+        self._counter = saved["counter"]
         self._dirty   = True
 
     def on_exit(self):
-        # Persist state here if your app cares — see /docs/apps for
-        # the settings_get/set + plain-file options.
-        pass
+        # Save once on the way out, not every press: flash writes are slow
+        # and wear the chip. See docs/APPS.md, "Saving state".
+        state.save(APP_ID, {"counter": self._counter})
 
     def on_button_press(self, btn):
-        if btn == api.BTN_A:
+        if btn == api.BTN_SELECT:
             self._counter += 1
             self._dirty = True
-        elif btn == api.BTN_B:
+        elif btn == api.BTN_BACK:
             self._counter -= 1
             self._dirty = True
 

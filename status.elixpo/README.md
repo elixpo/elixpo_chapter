@@ -62,6 +62,19 @@ The page reports what the configured Cloudflare analytics source can observe.
 When that source cannot be reached, the public service directory remains
 available and the page explicitly withholds an operational conclusion.
 
+### Running this locally
+
+```bash
+npm install
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+It is built with Next.js and deployed on Cloudflare Pages. Production deploys run
+automatically from CI on every push to `main` (`.github/workflows/deploy.yml`, through
+Elixpo's shared deploy workflows); `wrangler.toml` holds the Pages configuration.
+
 ## The ecosystem
 
 | Tool | What it does | Link |
@@ -72,7 +85,7 @@ available and the page explicitly withholds an operational conclusion.
 | 👤 **Elixpo Accounts** | One identity (SSO) across the ecosystem | [accounts.elixpo.com](https://accounts.elixpo.com) |
 | 🔗 **lixrl** | Our flagship URL shortener | [lixrl.com](https://lixrl.com) |
 | 🪪 **Portfolios** | Personal pages to showcase your work | [me.elixpo.com](https://me.elixpo.com) |
-| 🐼 **Lumi** | The mascot's home | [oreo.elixpo.com](https://oreo.elixpo.com) |
+| 🐼 **Falera** | The open conference badge and FaleraOS | [falera.elixpo.com](https://falera.elixpo.com) |
 | 🧪 **Elixpo Research** | Papers, artifacts, source, and reproducibility records | [research.elixpo.com](https://research.elixpo.com) |
 | 📦 **Elixpo Packages** | Signed Linux applications and developer packages | [packages.elixpo.com](https://packages.elixpo.com) |
 
@@ -92,7 +105,7 @@ ecosystem, and products are either **SSO-backed SaaS**, **standalone**, or our
 
 SaaS products (Blogs, Art, Chat, Sketch, Search) and the flagship **lixrl.com**
 all authenticate through Accounts (SSO) and share the Mail and Payouts infra.
-The public, login-free surfaces (**elixpo.com**, **oreo.elixpo**, **me.elixpo**)
+The public, login-free surfaces (**elixpo.com**, **falera.elixpo**, **me.elixpo**)
 are standalone. **admin.elixpo** is the operations dashboard and
 **status.elixpo** is monitoring.
 
@@ -122,7 +135,7 @@ graph TB
 
   subgraph SOLO["Standalone - no login"]
     HOME["elixpo.com"]:::solo
-    OREO["oreo.elixpo"]:::solo
+    OREO["falera.elixpo"]:::solo
     ME["me.elixpo"]:::solo
   end
 
@@ -152,6 +165,11 @@ projects. Current roles and attributable work are published in the
 
 Everyone is welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)** and our
 **[Code of Conduct](CODE_OF_CONDUCT.md)**.
+
+## Recognition & programs
+
+Elixpo has taken part in and been supported by **GSSOC**, **Hacktoberfest**,
+**Pollinations.AI**, **MS Startup Foundations**, and **OSCI**.
 
 ## Get involved
 
@@ -185,18 +203,6 @@ notice board, [`NOTICE`](LICENSES/NOTICE).
 **This repository:** None - it is the source for a hosted status page.
 
 ---
-
-## Running this locally
-
-```bash
-npm install
-npm run dev
-```
-
-Then open [http://localhost:3000](http://localhost:3000).
-
-For deploys: this is built with Next.js and deployed on Cloudflare Pages — see
-`wrangler.toml` for the deploy config and run `npm run pages:deploy` to publish.
 
 <p align="center">
   <sub>Made in the open, together. © 2023-2026 Elixpo.</sub>

@@ -1,6 +1,6 @@
 """TTL-cached file storage for app data fetched over WiFi.
 
-Apps that hit the network (Badge, Commits, Weather, future Identity sync)
+Apps that hit the network (Badge, Commits, Weather)
 all do the same dance:
 
   1. on entry: show whatever's in the cache so the screen isn't blank
@@ -25,6 +25,9 @@ lines of `name=Ayushman` survive any abrupt reset.
 """
 
 import time
+
+# Age reported when the clock cannot tell how old a cache is.
+UNKNOWN_AGE = 1 << 30
 
 
 def _now_s():
@@ -58,7 +61,26 @@ def _esc(v):
 
 
 def _unesc(s):
-    return s.replace("\\n", "\n").replace("\\\\", "\\")
+    if "\\" not in s:
+        return s
+    out = []
+    i = 0
+    n = len(s)
+    while i < n:
+        c = s[i]
+        if c == "\\" and i + 1 < n:
+            nxt = s[i + 1]
+            if nxt == "n":
+                out.append("\n")
+                i += 2
+                continue
+            elif nxt == "\\":
+                out.append("\\")
+                i += 2
+                continue
+        out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def _deser(text):
@@ -78,14 +100,29 @@ def _deser(text):
 def save(path, payload):
     """Write `payload` (dict OR scalar) to `path` with a timestamp header.
 
-    On filesystem error we silently swallow — the cache is a nice-to-have,
-    never required for correctness. Apps always show *something* (cached
-    or fresh) so a write failure just means the next launch re-fetches.
+    The file is written to `path + ".tmp"` and renamed over the old one, so
+    a reset mid-write leaves the previous cache intact instead of a torn
+    file. On filesystem error we silently swallow — the cache is a
+    nice-to-have, never required for correctness.
     """
+    tmp = path + ".tmp"
     try:
-        with open(path, "w") as f:
+        with open(tmp, "w") as f:
             f.write("__ts=%d\n" % _now_s())
             f.write(_ser(payload))
+    except Exception:
+        return False
+    try:
+        import os as _os
+        try:
+            _os.rename(tmp, path)
+        except OSError:
+            # FAT refuses to rename over an existing file.
+            try:
+                _os.remove(path)
+            except OSError:
+                pass
+            _os.rename(tmp, path)
         return True
     except Exception:
         return False
@@ -116,8 +153,13 @@ def load(path, ttl_s=None):
         ts = int(first[5:])
     except ValueError:
         return None, None
-    age = max(0, _now_s() - ts)
-    return _deser(rest), age
+    now = _now_s()
+    if now < ts:
+        # The clock is behind the save (RTC not synced since boot), so the
+        # real age is unknown: report it as very stale so callers still
+        # show the data but refresh it when they can.
+        return _deser(rest), UNKNOWN_AGE
+    return _deser(rest), now - ts
 
 
 def fresh(path, ttl_s):
@@ -133,4 +175,90 @@ def invalidate(path):
         _os.remove(path)
         return True
     except Exception:
+        return False
+
+
+# ── background refresh ─────────────────────────────────────────────────────
+
+IDLE, RUNNING, DONE = 0, 1, 2
+
+
+class Refresh:
+    """Run `fn()` off the UI loop, then hand its result back via poll().
+
+        job = cache.Refresh(fetch_profile_for_me)
+        job.start()                 # returns at once
+        ...
+        if job.poll():              # in update(): True once, when finished
+            use(job.result)
+
+    With `_thread` (on in the stock ESP32 port) `fn` runs on its own task,
+    so buttons and redraws keep working while it waits on the network; the
+    ESP32 socket layer releases the GIL while blocked. Without it, or if the
+    thread cannot be created, `fn` runs inside poll() a frame later, after
+    the cached screen has already been drawn. `fn` must not draw; it only
+    returns data. Exceptions become `result = None` and `error = str`.
+    """
+
+    STACK = 16 * 1024      # TLS handshakes need more than the default stack
+
+    def __init__(self, fn):
+        self._fn = fn
+        self.state = IDLE
+        self.result = None
+        self.error = None
+        self.threaded = False
+        self._deferred = 0
+
+    def busy(self):
+        return self.state == RUNNING
+
+    def _run(self):
+        try:
+            self.result = self._fn()
+            self.error = None
+        except Exception as exc:
+            self.result = None
+            self.error = str(exc)
+        self.state = DONE
+
+    def start(self, use_thread=True):
+        if self.state == RUNNING:
+            return False
+        self.result = None
+        self.error = None
+        self.state = RUNNING
+        self.threaded = False
+        if use_thread:
+            try:
+                import _thread
+                old = None
+                try:
+                    old = _thread.stack_size(self.STACK)
+                except Exception:
+                    pass
+                try:
+                    _thread.start_new_thread(self._run, ())
+                    self.threaded = True
+                finally:
+                    if old is not None:
+                        try:
+                            _thread.stack_size(old)
+                        except Exception:
+                            pass
+            except Exception:
+                self.threaded = False
+        # Deferred path: skip one poll so the caller's frame is drawn first.
+        self._deferred = 0 if self.threaded else 2
+        return True
+
+    def poll(self):
+        """True exactly once, on the call that sees the job finished."""
+        if self.state == RUNNING and not self.threaded:
+            self._deferred -= 1
+            if self._deferred <= 0:
+                self._run()
+        if self.state == DONE:
+            self.state = IDLE
+            return True
         return False

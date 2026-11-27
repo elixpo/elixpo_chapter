@@ -79,7 +79,7 @@ jobs:
       # ── Python setup ───────────────────────────────────────────────
       - name: Setup Python
         if: steps.manifest.outputs.exists == 'true' && steps.manifest.outputs.stack == 'python'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 

@@ -5,6 +5,7 @@ import { discussionUrl, RELATIONSHIP_DESCRIPTIONS, RELATIONSHIP_LABELS } from "@
 import type { ResearchRecord } from "@/lib/research";
 import { serializeJsonLd } from "@/lib/seo";
 import { ProjectMark } from "@/components/ProjectMark";
+import { Sparks } from "@/components/Sparks";
 
 export function ResearchRecordPage({ entry, record }: { entry: DirectoryEntry; record: ResearchRecord }) {
   const canonicalUrl = `https://research.elixpo.com/${entry.slug}`;
@@ -43,7 +44,7 @@ export function ResearchRecordPage({ entry, record }: { entry: DirectoryEntry; r
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     <Link className="back-link" href="/research"><ArrowLeft size={15}/> Back to research</Link>
     <article>
-      <header className="dossier-hero">
+      <header className="dossier-hero"><Sparks chips={["cite me ↗", "reproduce ✓"]} />
         <div><ProjectMark seed={entry.slug} icon={entry.icon} size="large"/><p className="eyebrow">{entry.name} · {record.reviewStatus.replaceAll("-", " ")}</p><h1 className="citation_title">{record.title}</h1>{record.authors.length > 0 && <p className="citation_author">By {record.authors.map((author) => author.name).join(", ")}</p>}<p className="lede">{record.abstract}</p></div>
         <dl className="dossier-facts"><div><dt>Research status</dt><dd>{record.researchStatus.replaceAll("-", " ")}</dd></div><div><dt>Lifecycle</dt><dd><span className={`status-pill status-${entry.lifecycle}`}>{entry.lifecycle}</span></dd></div><div><dt>Relationship</dt><dd>{RELATIONSHIP_LABELS[entry.relationship]}</dd></div><div><dt>Registry state</dt><dd>{entry.verificationState.replaceAll("-", " ")}</dd></div><div><dt>Reproducibility</dt><dd>{record.reproducibility.status.replaceAll("-", " ")}</dd></div><div><dt>Repository license</dt><dd>{entry.licenseEvidence.spdxId ?? entry.licenseEvidence.classification.replaceAll("-", " ")}</dd></div>{record.releasedAt && <div><dt>Released</dt><dd>{record.releasedAt}</dd></div>}{journalTitle && <div><dt>Publication</dt><dd>{journalTitle}{volume && issue ? ` · ${volume}(${issue})` : ""}</dd></div>}</dl>
       </header>

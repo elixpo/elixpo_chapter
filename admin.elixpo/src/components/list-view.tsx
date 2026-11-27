@@ -1,6 +1,6 @@
 "use client";
 
-import { Empty, PageHeader, Panel, StatusChip } from "@/components/ui";
+import { C, Empty, PageHeader, Panel, StatusChip } from "@/components/ui";
 import { Box, Typography } from "@mui/material";
 import Link from "next/link";
 import type React from "react";
@@ -54,21 +54,21 @@ export default function ListView({
                                     gap: 1,
                                     py: 1.1,
                                     px: 1,
-                                    borderRadius: "8px",
-                                    borderBottom:
-                                        "1px solid rgba(255,255,255,0.05)",
+                                    borderRadius: "10px",
+                                    borderBottom: `1px solid ${C.line}`,
                                     transition: "background 0.15s",
                                     "&:hover": it.href
-                                        ? { bgcolor: "rgba(255,255,255,0.04)" }
+                                        ? { bgcolor: C.paperDeep }
                                         : undefined,
                                 }}
                             >
                                 <Box sx={{ minWidth: 0 }}>
                                     <Typography
                                         sx={{
-                                            color: "#f5f5f4",
+                                            color: C.text,
                                             fontSize: "0.9rem",
-                                            fontWeight: 500,
+                                            fontWeight: 600,
+                                            letterSpacing: "-0.01em",
                                         }}
                                     >
                                         {it.primary}
@@ -76,10 +76,10 @@ export default function ListView({
                                     {it.secondary && (
                                         <Typography
                                             sx={{
-                                                color: "rgba(255,255,255,0.4)",
+                                                color: C.textMuted,
                                                 fontSize: "0.74rem",
-                                                fontFamily:
-                                                    "var(--font-geist-mono), monospace",
+                                                fontFamily: C.mono,
+                                                overflowWrap: "anywhere",
                                             }}
                                         >
                                             {it.secondary}

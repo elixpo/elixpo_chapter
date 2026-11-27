@@ -304,8 +304,11 @@ cd packages/lixblogs-cli && npm ci && npm test
 **Starting the app without keys:** `npm run dev` also starts without
 `.env.local`. It prints a "no keys" warning and ignores the encrypted values in
 the committed `.env`. Public pages are expected to render; sign-in, uploads,
-email and AI features stay off because they need keys. If something asks you
-for a secret, open an issue instead of working around it.
+email and AI features stay off because they need keys. Before running
+`npm run db:migrate:local`, `/api/feed` and `/api/contests` may log
+`D1_ERROR: no such table` on an unmigrated local database while rendering
+empty states—this is expected. If something asks you for a secret, open an
+issue instead of working around it.
 
 ## Configuration and access
 
@@ -432,7 +435,7 @@ mascot marks, `og-image`, and the Lix\* brand fonts under
 
 The code is licensed under the [MIT License](LICENSE). Brand and visual assets
 are licensed under [CC-BY-4.0](LICENSES/preferred/CC-BY-4.0). The Elixpo and
-Oreo names, mascot, E-badge, and elixpo.com domains are covered by
+Lumi names, the Lumi mascot, the E-badge mark, and elixpo.com domains are covered by
 [`TRADEMARKS.md`](TRADEMARKS.md), not by either licence. See also the repository
 [notice board](LICENSES/NOTICE) and third-party notices.
 

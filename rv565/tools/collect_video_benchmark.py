@@ -23,7 +23,27 @@ except ImportError as exc:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-BENCHMARK_DIR = REPO_ROOT / "benchmarks/esp32s3_video_dma"
+PLATFORMS = {
+    "esp32s3": {
+        "dir": REPO_ROOT / "benchmarks/esp32s3_video_dma",
+        "artifacts": {
+            "application": "build/oreo_video_dma.bin",
+            "media": "main/video.rv565",
+            "sdkconfig": "sdkconfig",
+            "benchmark_source": "main/main.c",
+            "sdkconfig_defaults": "sdkconfig.defaults",
+        },
+    },
+    "rp2350": {
+        "dir": REPO_ROOT / "benchmarks/rp2350_video_dma",
+        "artifacts": {
+            "application": "build/rv565_rp2350_bench.uf2",
+            "media": "video.rv565",
+            "benchmark_source": "main.c",
+            "build_definition": "CMakeLists.txt",
+        },
+    },
+}
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "benchmarks/measurements"
 FRAME_COLUMNS = (
     "sequence",
@@ -47,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--label", default="native-dma-stripes")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--platform",
+        choices=sorted(PLATFORMS),
+        default="esp32s3",
+        help="benchmark firmware being measured (selects artifacts and start method)",
+    )
     parser.add_argument(
         "--no-reset",
         action="store_true",
@@ -146,7 +172,12 @@ def capture(args: argparse.Namespace) -> list[str]:
     deadline = time.monotonic() + args.timeout
     frame_records = 0
     with serial.Serial(args.port, args.baud, timeout=0.25) as connection:
-        if not args.no_reset:
+        if args.platform == "rp2350":
+            # Native USB serial has no reset line: the firmware waits for a byte.
+            time.sleep(0.5)
+            connection.reset_input_buffer()
+            connection.write(b"r")
+        elif not args.no_reset:
             reset_application(connection)
         print("Waiting for RV565 benchmark output ...", flush=True)
         while time.monotonic() < deadline:
@@ -253,18 +284,18 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(parsed.pop("frames"))
 
-    artifacts = {
-        "application": BENCHMARK_DIR / "build/oreo_video_dma.bin",
-        "media": BENCHMARK_DIR / "main/video.rv565",
-        "sdkconfig": BENCHMARK_DIR / "sdkconfig",
-        "benchmark_source": BENCHMARK_DIR / "main/main.c",
-        "sdkconfig_defaults": BENCHMARK_DIR / "sdkconfig.defaults",
-        "collector_source": Path(__file__).resolve(),
-    }
+    platform = PLATFORMS[args.platform]
+    artifacts = {name: platform["dir"] / path for name, path in platform["artifacts"].items()}
+    if parsed.get("metadata", {}).get("codec") == "mjpeg":
+        media = artifacts["media"].with_suffix(".mjpeg")
+        artifacts["media"] = media
+        artifacts["media_report"] = media.with_name(media.name + ".json")
+    artifacts["collector_source"] = Path(__file__).resolve()
     record = {
         "collector_schema_version": 1,
         "captured_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "label": args.label,
+        "platform": args.platform,
         "port": args.port,
         "baud": args.baud,
         "repository": git_metadata(),

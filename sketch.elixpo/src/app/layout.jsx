@@ -2,6 +2,7 @@ import './globals.css'
 import './site.css'
 import 'highlight.js/styles/github-dark-dimmed.css'
 import InitHljs from '@/components/InitHljs'
+import Script from 'next/script'
 const SITE_URL = 'https://sketch.elixpo.com'
 const SITE_NAME = 'Elixpo Sketch'
 const SITE_TAGLINE = 'Open Source Infinite Canvas, Hand Drawn Aesthetics, Built In Docs Editor'
@@ -216,6 +217,8 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: canvasThemeBootstrap }} />
         <InitHljs />
         {children}
+        {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
+        <Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" />
       </body>
     </html>
   )

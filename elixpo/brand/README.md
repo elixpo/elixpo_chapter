@@ -13,7 +13,7 @@ The canonical downloadable public library is served from
 - `public/brand/stickers/previews/` contains visibly watermarked display
   previews only.
 - `MASCOT.md` and [`docs/brand-system.md`](../docs/brand-system.md) define the
-  approved Oreo and Open Field visual rules.
+  approved Lumi and Open Field visual rules.
 - `provenance.json` records the source revision, source paths, checksums, and
   migration classification of imported public material.
 
@@ -38,7 +38,7 @@ general reproduction or distribution grant.
 ## Adding or changing an asset
 
 1. Confirm ownership, upstream sources, and artifact-specific licensing.
-2. Review the asset against the Open Field and Oreo rules.
+2. Review the asset against the Open Field and Lumi rules.
 3. Add the public master or optimized derivative to the appropriate
    `public/brand/` directory.
 4. Record its source revision, original path, checksum, classification, and

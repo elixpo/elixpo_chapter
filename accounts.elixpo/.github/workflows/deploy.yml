@@ -47,51 +47,74 @@ jobs:
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
             (github.event_name == 'workflow_dispatch' && inputs.target == 'pages')
         needs: verify
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        environment: production
-        env:
+        uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
+        with:
+            project-name: elixpo-accounts
+            node-version: "22"
+            pre-build-command: |
+                if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+                  echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required"
+                  exit 1
+                fi
+                if [[ "$CLOUDFLARE_API_TOKEN" == ENC\[* ]]; then
+                  echo "::error::CLOUDFLARE_API_TOKEN contains SOPS ciphertext"
+                  exit 1
+                fi
+                npx --no-install wrangler whoami
+            build-env: |
+                NEXT_TELEMETRY_DISABLED=1
+                NEXT_PUBLIC_APP_URL=https://accounts.elixpo.com
+            build-command: ./deploy.sh --pages build
+            output-directory: .vercel/output/static
+            d1-database: elixpo_auth
+            environment: production
+        secrets:
             CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
             CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-            NEXT_TELEMETRY_DISABLED: "1"
-            NEXT_PUBLIC_APP_URL: https://accounts.elixpo.com
-        steps:
-            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-              with:
-                  node-version: "22"
-                  cache: npm
-            - run: npm ci
 
-            - name: Validate Cloudflare credentials
-              run: |
-                  if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-                    echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required"
-                    exit 1
-                  fi
-                  if [[ "$CLOUDFLARE_API_TOKEN" == ENC\[* ]]; then
-                    echo "::error::CLOUDFLARE_API_TOKEN contains SOPS ciphertext"
-                    exit 1
-                  fi
-                  npx --no-install wrangler whoami
-
-            - name: Apply D1 migrations
-              run: npx --no-install wrangler d1 migrations apply elixpo_auth --remote
-
-            - name: Build and deploy Cloudflare Pages
-              run: ./deploy.sh --pages build deploy
-
-    publish-npm:
+    sdk-version:
         if: >-
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
             (github.event_name == 'workflow_dispatch' && inputs.target == 'npm')
         needs: verify
         runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            dist-tag: ${{ steps.tag.outputs.dist-tag }}
+        steps:
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+              with:
+                  persist-credentials: false
+            - name: Pick the npm dist-tag (beta for prerelease versions)
+              id: tag
+              run: |
+                  version=$(node -p "require('./packages/accounts/package.json').version")
+                  tag=latest
+                  [[ "$version" == *-* ]] && tag=beta
+                  echo "dist-tag=$tag" >> "$GITHUB_OUTPUT"
+
+    publish-npm:
+        needs: sdk-version
+        permissions:
+            contents: read
+            id-token: write
+        uses: elixpo/agent.elixpo/.github/workflows/publish-npm.yml@main
+        with:
+            working-directory: packages/accounts
+            node-version: "22"
+            build-command: npm run build
+            access: public
+            tag: ${{ needs.sdk-version.outputs.dist-tag }}
+            environment: npm
+        secrets:
+            NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    github-release:
+        needs: publish-npm
+        runs-on: ubuntu-latest
         timeout-minutes: 15
-        environment: npm
         permissions:
             contents: write
-            id-token: write
         steps:
             - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
             - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -99,10 +122,9 @@ jobs:
                   node-version: "22"
                   cache: npm
             - run: npm ci
-            - name: Publish npm package and GitHub Release
-              run: ./deploy.sh --package build deploy
+            - name: Create GitHub Release for the SDK version
+              run: ./deploy.sh --package build release
               env:
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     publish-github:
@@ -149,25 +171,20 @@ jobs:
     publish-vscode:
         if: github.event_name == 'workflow_dispatch' && inputs.target == 'vscode'
         needs: verify
-        runs-on: ubuntu-latest
-        timeout-minutes: 15
-        environment: vscode
-        steps:
-            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-              with:
-                  node-version: "22"
-                  cache: npm
-            - run: npm ci
-            - name: Build and publish VS Code extension
-              run: ./deploy.sh --package --vs build deploy
-              env:
-                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        uses: elixpo/agent.elixpo/.github/workflows/publish-vscode.yml@main
+        with:
+            working-directory: packages/vscode
+            node-version: "22"
+            build-command: npm run build
+            environment: vscode
+        secrets:
+            VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     bump-sdk-version:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         needs:
             - publish-npm
+            - github-release
             - publish-github
         runs-on: ubuntu-latest
         timeout-minutes: 10

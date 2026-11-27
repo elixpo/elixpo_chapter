@@ -27,6 +27,7 @@ const loadTag = cache(async (rawTag) => {
     LEFT JOIN orgs o ON ('org:' || o.id) = b.published_as
     LEFT JOIN collections c ON c.id = b.collection_id
     WHERE LOWER(bt.tag) = ? AND b.status = 'published' AND b.secret = 0
+      AND (o.id IS NULL OR LOWER(COALESCE(o.visibility, 'public')) != 'private')
     ORDER BY b.published_at DESC
     LIMIT 50
   `).bind(tag).all();

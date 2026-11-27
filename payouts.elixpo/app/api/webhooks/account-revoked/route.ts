@@ -1,5 +1,6 @@
 export const runtime = "edge";
 
+import { revokeSessions } from "@/lib/session-revocation";
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyHmacSha256Hex } from "@/lib/crypto";
 import { getDatabase } from "@/lib/d1-client";
@@ -106,6 +107,9 @@ export async function POST(request: NextRequest) {
                 await fireEntitlementUpdated(db, endpoint, view);
             }
         }
+
+        // Also end their Elixpo Pay dashboard sessions.
+        await revokeSessions(String(userId));
 
         console.log(
             `[account-revoked] event=${event} user=${userId} revoked=${revoked}`,

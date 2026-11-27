@@ -83,7 +83,9 @@ const Footer = () => {
                             sx={{ borderRadius: "10px", flexShrink: 0 }}
                         />
                         <Box>
-                            <Typography sx={{ fontWeight: 700, fontSize: "1rem" }}>
+                            <Typography
+                                sx={{ fontWeight: 700, fontSize: "1rem", color: "var(--fg)" }}
+                            >
                                 Elixpo Mails
                             </Typography>
                             <Typography
@@ -176,10 +178,14 @@ const Footer = () => {
                         letterSpacing: "0.06em",
                     }}
                 >
-                    <Typography sx={{ fontSize: "inherit", fontFamily: "inherit" }}>
+                    <Typography
+                        sx={{ fontSize: "inherit", fontFamily: "inherit", color: "inherit" }}
+                    >
                         © {new Date().getFullYear()} Elixpo · Event-based transactional email
                     </Typography>
-                    <Typography sx={{ fontSize: "inherit", fontFamily: "inherit" }}>
+                    <Typography
+                        sx={{ fontSize: "inherit", fontFamily: "inherit", color: "inherit" }}
+                    >
                         mails.elixpo.com
                     </Typography>
                 </Box>

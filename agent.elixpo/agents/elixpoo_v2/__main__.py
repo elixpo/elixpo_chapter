@@ -23,6 +23,7 @@ from agents.elixpoo_v2.core import (
     is_coding_request,
     permission_tier,
     public_body,
+    restrict_to_allowlists,
     review_marker,
     route_comment,
     validate_allowlists,
@@ -101,6 +102,9 @@ async def triage_one(api, router, event: dict, config: dict, project=None) -> di
         add_labels=result.labels,
         project_fields=result.project_fields,
     )
+    action, dropped = restrict_to_allowlists(action, labels=allowed_labels, fields=fields)
+    if dropped:
+        log.warning("elixpoo_v2.dropped_outside_allowlist", mode="triage", dropped=dropped)
     validate_allowlists(action, labels=allowed_labels, fields=fields)
     await _ensure_and_apply_labels(api, owner, repo, number, subject, set(action.add_labels), config)
     project_result = None
@@ -202,6 +206,9 @@ async def mention_one(api, router, event: dict, config: dict, project=None) -> d
             },
         )
     allowed_labels, fields = _allowlists(config)
+    action, dropped = restrict_to_allowlists(action, labels=allowed_labels, fields=fields)
+    if dropped:
+        log.warning("elixpoo_v2.dropped_outside_allowlist", mode="mention", dropped=dropped)
     validate_allowlists(action, labels=allowed_labels, fields=fields)
     if action.kind == "review" and scope == "pull_request":
         pull = await api.get_pull(owner, repo, number)

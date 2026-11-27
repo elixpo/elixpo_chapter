@@ -1,7 +1,7 @@
 # RV565 roadmap after 1.0
 
-1.0 put RV565 in the Arduino Library Manager (ESP-IDF pending namespace
-approval). The next goal is users and files in the wild, because that is what
+1.0 put RV565 in the Arduino Library Manager; 1.1 added the ESP Component
+Registry, PyPI and PlatformIO. The next goal is users and files in the wild, because that is what
 FFmpeg and everything built on it (VLC, mpv, Kodi, ImageMagick) ask for before
 adding a format.
 
@@ -60,7 +60,28 @@ Gives desktop users `pip install rv565`, and download counts we can quote.
       (`elixpo/rv565`, workflow `publish-pypi.yml`). Check the name is free first.
 - [x] 🙋 Run the publish workflow for 1.1.0.
 
-### 1.4 Online converter on oreo.elixpo
+### 1.3b CircuitPython library ([#30](https://github.com/elixpo/rv565/issues/30)), experimental
+
+Reaches CircuitPython's beginner audience on ESP32-S3 and RP2350 boards
+without C. Pure Python, so a few FPS rather than 24.
+
+- [x] 🤖 `ports/circuitpython/circuitpython_rv565.py`: reader (path, file or
+      bytes; lazy frame index; full validation), `Player` (`displayio.Bitmap`
+      + `RGB565_SWAPPED` converter, filled by `bitmaptools.readinto`, paced
+      with frame skipping, reports achieved FPS) and experimental
+      `DirectPlayer` (frames straight to the ST7789 over its bus).
+- [x] 🤖 Examples (any `board.DISPLAY`, Pico 2 + ST7789 on SPI0, ESP32-S3 TFT
+      Feather), host tests with fake `displayio` (all 24 test-pattern frames
+      match zlib), cookiecutter-style packaging.
+- [x] 🙋 Run the test pattern on a Pico 2 with CircuitPython (displayio and
+      direct examples) and record the achieved FPS in its README: 8.0 FPS
+      through displayio, 16.5 FPS with `DirectPlayer` (CircuitPython 10.3.1,
+      2026-11-11).
+- [ ] 🙋 Run it on an ESP32-S3 CircuitPython board.
+- [ ] 🤖 Then: own `CircuitPython_RV565` repository with the cookiecutter CI,
+      and a PR to the Adafruit CircuitPython Community Bundle.
+
+### 1.4 Online converter on falera.elixpo
 
 A free page that turns a video into an `.rv565` (or an Arduino `clip.h`) in
 the browser. It removes the biggest hurdle today: needing FFmpeg and Python.
@@ -87,7 +108,7 @@ Tasks:
       reference vector frame for frame, its files pass `rv565 verify`, and its
       `clip.h` is byte-identical to the CLI's (zlib output itself differs by
       implementation, so files are compared by decoded frames).
-- [x] 🤖 Page `oreo.elixpo/rv565/convert` (OreoOS repo), in the existing
+- [x] 🤖 Page `falera.elixpo/rv565/convert` (FaleraOS repo), in the existing
       research style, linked from the paper page and this README.
 - [x] 🤖 SEO: title/description aimed at what people search for ("MP4 to
       RGB565 converter", "play video on ESP32 ST7789"), JSON-LD
@@ -166,12 +187,16 @@ point to users: PyPI downloads, converter usage, projects by other people.
 
 Moved last because it needs hardware and time on the bench.
 
-- [ ] 🙋 Buy a Raspberry Pi Pico 2 and a 2.0" 320x240 ST7789 module.
-- [ ] 🤖 Measurement harness for `examples_pico/player` (per-frame timings
-      over USB serial, serial and overlap) and a script that fits the cost
-      model, matching the ESP32-S3 methodology.
-- [ ] 🙋 Bring-up and measurement runs.
-- [ ] 🤖 RP2350 cost model in the library; drop "experimental".
+- [x] 🙋 Buy a Raspberry Pi Pico 2 and a 2.0" 320x240 ST7789 module (ordered 2026-11-02).
+- [x] 🤖 Measurement harness: `benchmarks/rp2350_video_dma` (same method and
+      output as the ESP32-S3 benchmark, 4-second windows to fit 4 MB flash),
+      `tools/run_rv565_matrix_rp2350.sh`, and `tools/fit_cost_model.py`, which
+      reproduces the paper's ESP32-S3 model from its records.
+- [x] 🙋 Bring-up (2026-11-04): test pattern at 24 FPS, zero misses, display
+      transfer at 99.4% of the 37.5 MHz wire time after two port fixes.
+- [x] 🙋 Measurement runs on the two film windows (2026-11-04, 4 × 10 runs).
+- [x] 🤖 RP2350 cost model in the library; drop "experimental" for the
+      RP2350 (`docs/RESULTS_RP2350.md`).
 - [ ] 🙋 Follow-up paper: same format, second platform, cost model transfer.
 
 ---

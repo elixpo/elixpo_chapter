@@ -7,7 +7,7 @@ export const metadata: Metadata = {
         template: "%s - Elixpo Status",
     },
     description:
-        "Check the real-time operational status of all Elixpo services - including Sketch, Blogs, Accounts, Payouts, Mail, Portfolio and more. View 90 days of uptime history, live incident updates, and service health indicators powered directly by real Cloudflare traffic data. No third-party tool, no manual updates - always accurate.",
+        "Check the real-time operational status of all Elixpo services - including Sketch, Blogs, Accounts, Payouts, Mail, Portfolio and more. View 30 days of uptime history, live incident updates, and service health indicators powered directly by real Cloudflare traffic data. No third-party tool, no manual updates - always accurate.",
     applicationName: "Elixpo Status",
     keywords: [
         "Elixpo",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
         locale: "en_US",
         title: "Elixpo Status - Live service health & uptime",
         description:
-            "Live health dashboard for all Elixpo services. See which services are operational, degraded, or experiencing an outage - with 90 days of uptime history.",
+            "Live health dashboard for all Elixpo services. See which services are operational, degraded, or experiencing an outage - with 30 days of uptime history.",
         url: "https://status.elixpo.com",
         images: [
             {
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: "Elixpo Status - Live service health & uptime",
         description:
-            "Live health dashboard for all Elixpo services. See which services are operational, degraded, or experiencing an outage - with 90 days of uptime history.",
+            "Live health dashboard for all Elixpo services. See which services are operational, degraded, or experiencing an outage - with 30 days of uptime history.",
         images: ["/og-image.png"],
     },
     icons: {

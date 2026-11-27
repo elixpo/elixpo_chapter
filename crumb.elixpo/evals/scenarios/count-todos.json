@@ -1,0 +1,19 @@
+{
+  "category": "precision",
+  "prompt": "How many TODO comments are there in the Python files under src/? Give the exact number.",
+  "files": {
+    "src/a.py": "# TODO: tidy\nx = 1  # TODO later\n",
+    "src/pkg/b.py": "def f():\n    pass  # TODO: implement\n\n# not a todo\n",
+    "src/pkg/c.txt": "TODO in a text file\n",
+    "notes.py": "# TODO outside src\n"
+  },
+  "answer_matches": [
+    "\\b3\\b"
+  ],
+  "answer_excludes": [
+    "4 TODO",
+    "5 TODO"
+  ],
+  "no_new_files": true,
+  "max_tokens": 60000
+}

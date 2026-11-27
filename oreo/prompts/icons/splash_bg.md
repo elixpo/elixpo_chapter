@@ -20,7 +20,7 @@ detailed turns into mud once dimmed).
 
 Avoid hard pure-white highlights (they'll still read after dim and clash
 with the title text). Avoid putting any subject inside the centre 160×100
-rectangle — that's where the mascot + "OREO OS" + tagline sit.
+rectangle — that's where the mascot + "FALERA OS" + tagline sit.
 
 ## Style
 

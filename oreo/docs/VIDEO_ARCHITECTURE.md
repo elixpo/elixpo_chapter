@@ -1,6 +1,6 @@
-# From 0.5 FPS to Native Video: Building OreoOS Gallery Playback
+# From 0.5 FPS to Native Video: Building FaleraOS Gallery Playback
 
-OreoOS runs on an ESP32-S3 badge with a 320 × 240 RGB565 display, MicroPython,
+FaleraOS runs on an ESP32-S3 badge with a 320 × 240 RGB565 display, MicroPython,
 and a deliberately small application model. Adding video to Gallery initially
 looked like an image-decoding problem. In practice, it became a systems problem
 spanning storage bandwidth, Python interpreter overhead, PSRAM fragmentation,
@@ -9,7 +9,7 @@ display timing, input latency, and deployment.
 This is the architecture we arrived at: an offline encoder produces an indexed
 `RV565 v4` stream; Gallery preloads it into small PSRAM frame blocks; a dynamic
 native C module expands each frame directly into the display buffer; and the
-normal OreoOS event loop remains responsible for timing and buttons.
+normal FaleraOS event loop remains responsible for timing and buttons.
 
 The result is a measured native render-and-display ceiling of approximately
 25.6 FPS, with content scheduled at 24 FPS.
@@ -132,7 +132,7 @@ disabled to prevent a static scene from shimmering as palettes change.
 The host encoder lives in `tools/encode_gallery_video.py`. FFmpeg performs
 cover-scaling and cropping, while Pillow performs median-cut quantization and
 converts the palette to big-endian RGB565 bytes, which match the panel transfer
-order used by OreoOS.
+order used by FaleraOS.
 
 ## Why PSRAM uses frame blocks instead of one giant buffer
 
@@ -190,7 +190,7 @@ and destination dimensions. It then:
 
 ```mermaid
 sequenceDiagram
-    participant Loop as OreoOS loop
+    participant Loop as FaleraOS loop
     participant Gallery
     participant Native as gallery_native.mpy
     participant FB as Display._buf
@@ -212,7 +212,7 @@ hundreds of milliseconds in nested Python loops.
 
 ## Playback timing and controls
 
-Video playback remains inside the standard OreoOS application lifecycle. No
+Video playback remains inside the standard FaleraOS application lifecycle. No
 second event loop or background thread owns the screen.
 
 ```mermaid
@@ -256,6 +256,55 @@ dimensions, FPS, frame count, and exact payload size before allocating or
 playing anything. Runtime failures are logged and shown on-screen instead of
 being collapsed into an unexplained “broken video” state.
 
+## The native boot splash
+
+The boot splash ("hello" rolling through languages over the dark photo) used
+to animate on a Python thread. That thread shares MicroPython's interpreter
+lock with boot's imports and radio start-up, so the roll stuttered. Firmware
+with the native splash player plays it from C instead, as an RV565 clip.
+
+**The clip.** `tools/build_splash_clip.py` runs `oreoOS/splash.py`'s own band
+renderer for every frame, so `oreoOS/splash.rv565` is exactly what the Python
+splash draws: the 320 x 64 greeting band at y = 78, 13 frames per greeting at
+39 FPS (one word every 333 ms, as `CYCLE_MS`, and about the panel's ~39 Hz
+refresh), one loop of the 16 greetings, 208 frames. It is RV565 version 7,
+rgb565be, zlib level 9, lossless: frame 0 is the only keyframe, the word at
+rest is a repeat (nothing to decode or send), and the roll is partial deltas
+in bands of 4 rows, so only the rows the words touch are sent (5,484 rows per
+loop out of 13,312). It is 394 KB. Rebuild it after changing `splash.bin` or
+the splash timing; `--check` says whether the committed clip is stale.
+
+**The player** (`firmware/usermods/oreo_rv565/oreo_splash.c`, in the
+`_oreo_rv565` module, on the vendored RV565 2.0.0 core) is a FreeRTOS task on
+core 0; MicroPython runs on core 1. It never takes the interpreter lock and
+never touches the Python heap: `splash.py` copies the clip into the player's
+own memory in 8 KB chunks (`splash_load`). Each frame is decoded in place,
+only its changed rows go to the panel through two DMA bounce buffers, and an
+`esp_timer` paces it at the clip's rate. It also draws the loader bar, with
+the same formula as `splash.loader_frac()`, from the targets `progress()` and
+`finish()` pass on.
+
+**The panel hand-off.** `oreoWare.display` drives the ST7789 through
+`machine.SPI(1)` (ESP-IDF `SPI2_HOST`) with CS and DC as plain GPIOs. The
+player adds its own device on that bus, which stays initialised and
+configured as Python left it, drives the same CS and DC pins, and wraps each
+frame in `spi_device_acquire_bus()`. It never resets or re-initialises the
+panel: it sets row windows (and the loader's column window), writes, and
+restores the full-screen window after every frame. Between `intro()` and
+`finish()` nothing in Python draws. `finish()` asks the player to stop after
+a frame with the word at rest; `splash_stop()` copies the band on the panel
+into the framebuffer and returns the loader width it drew, which `splash.py`
+redraws, so the framebuffer matches the screen when the swipe into the OS
+starts from it. `Display()` and `oreoOS.hostui` stop a player that is still
+running (after a crash or a soft reset during boot), and the player stops
+itself 12 s into the splash.
+
+**Fallback.** OTA updates OS files, never the firmware, so a new OS meets old
+firmware: `splash.py` uses the player only when `_oreo_rv565` has
+`splash_start` (and the clip loads and the player starts); otherwise it runs
+the Python thread exactly as before. `inflate_frame`, which Gallery uses, is
+unchanged.
+
 ## What this architecture optimizes for
 
 This is not a general-purpose H.264 decoder. It is a format designed around one
@@ -267,7 +316,7 @@ specific embedded display pipeline:
 - high visual quality for the available flash and PSRAM;
 - low input latency;
 - no custom firmware rebuild;
-- compatibility with OreoOS's existing app and deployment model.
+- compatibility with FaleraOS's existing app and deployment model.
 
 The largest gain did not come from a single compression trick. It came from
 assigning each stage to the resource that handles it best: colour quantization

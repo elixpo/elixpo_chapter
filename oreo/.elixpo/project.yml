@@ -2,14 +2,14 @@ schema_version: '1.0'
 project:
   id: oreo
   name: oreo
-  title: Oreo
+  title: Falera
   description: An open hardware badge, operated site, and research platform running
-    OreoOS.
+    FaleraOS.
   family: project
   artifact_type: hardware
   profile: research-hardware
   technologies:
-  - OreoOS
+  - FaleraOS
   - embedded systems
   - open hardware
   chapter_status: null
@@ -17,8 +17,8 @@ project:
   relationship: core
   custody: elixpo-owned
   stack: research-hardware
-  repository: https://github.com/elixpo/oreo
-  deployment: https://oreo.elixpo.com
+  repository: https://github.com/elixpo/falera
+  deployment: https://falera.elixpo.com
   discussions: https://github.com/orgs/elixpo/discussions
   status_owner: elixpo
   status_verified_at: '2026-10-17'
@@ -35,7 +35,7 @@ license:
   current_file: LICENSE
   notice_file: LICENSES/NOTICE
   migration_status: review-required
-  target_code_license: not-designated
+  target_code_license: MIT
   trademark_policy: https://elixpo.com/terms
 ci:
   lint_cmd: ''
@@ -44,22 +44,22 @@ ci:
 maintainers:
 - github: Circuit-Overtime
   skills:
-  - OreoOS
+  - FaleraOS
   - embedded systems
   - open hardware
   lead: true
 - github: ez-vivek
   skills:
-  - OreoOS
+  - FaleraOS
   - Python
   lead: false
 governance:
   model: maintainer-led
-  document: GOVERNANCE.md
+  document: docs/GOVERNANCE.md
 support:
   document: SUPPORT.md
 security:
-  document: SECURITY.md
+  document: docs/SECURITY.md
 conformance:
   standard: '1.0'
   status: conformant

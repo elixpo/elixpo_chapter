@@ -1,19 +1,36 @@
 // Shared auth + rate-limit enforcement for AI endpoints
 
-import { getSession } from './auth';
-import { getLimits } from './tiers';
-import { claimAIQuota } from './aiQuota';
+import { getLimits } from './tiers.js';
+import { claimAIQuota } from './aiQuota.js';
 
 /**
  * Validate session and enforce AI usage limits.
  * Returns { session, error } — if error is set, return it as the Response.
  */
-export async function enforceAILimits({ requireMember = false, request = null } = {}) {
-  let session = await getSession();
+function isLocalD1Unavailable(error) {
+  if (process.env.NODE_ENV !== 'development') return false;
+
+  const message = error instanceof Error ? error.message : String(error);
+
+  return message.includes('D1 database binding is unavailable');
+}
+export async function enforceAILimits({
+  requireMember = false,
+  request = null,
+  getSessionImpl = async () => {
+    const { getSession } = await import('./auth.js');
+    return getSession();
+  },
+  getDBImpl = async () => {
+    const { getDB } = await import('./cloudflare.js');
+    return getDB();
+  },
+} = {}) {
+  let session = await getSessionImpl();
   if (!session?.userId && request?.headers?.get('authorization')?.startsWith('Bearer ')) {
     try {
-      const { requireBearerAuth } = await import('./api/v1/bearerAuth');
-      const { getDB } = await import('./cloudflare');
+      const { requireBearerAuth } = await import('./api/v1/bearerAuth.js');
+      const { getDB } = await import('./cloudflare.js');
       const auth = await requireBearerAuth(request, ['lixblogs:media:write'], { db: getDB() });
       session = { ...auth, apiClientId: auth.clientId };
     } catch {}
@@ -25,9 +42,32 @@ export async function enforceAILimits({ requireMember = false, request = null } 
     };
   }
 
+  let db;
+
   try {
-    const { getDB } = await import('./cloudflare');
-    const db = getDB();
+    db = await getDBImpl();
+
+    if (!db) {
+      throw new Error('D1 database binding is unavailable');
+    }
+  } catch (error) {
+    if (!requireMember && isLocalD1Unavailable(error)) {
+      return { session, error: null };
+    }
+
+    console.error('[ai/rate-limit] database unavailable:', error);
+
+    return {
+      session,
+      error: new Response(JSON.stringify({
+        error: requireMember
+          ? 'AI access check unavailable'
+          : 'AI quota check unavailable',
+      }), { status: 503 }),
+    };
+  }
+
+  try {
     const user = await db.prepare('SELECT tier FROM users WHERE id = ?')
       .bind(session.userId).first();
 
@@ -53,6 +93,7 @@ export async function enforceAILimits({ requireMember = false, request = null } 
     // Check-and-increment in a single atomic statement. A read-then-write here
     // lets parallel requests all observe the same count and exceed the cap.
     const claimed = await claimAIQuota(db, session.userId, limits.aiRequestsPerDay);
+
     if (!claimed) {
       return {
         session,
@@ -64,14 +105,16 @@ export async function enforceAILimits({ requireMember = false, request = null } 
       };
     }
   } catch (error) {
-    if (requireMember) {
-      console.error('[ai/rate-limit] membership check failed:', error);
-      return {
-        session,
-        error: new Response(JSON.stringify({ error: 'AI access check unavailable' }), { status: 503 }),
-      };
-    }
-    // D1 may not be available in local development for existing non-member AI routes.
+    console.error('[ai/rate-limit] quota check failed:', error);
+
+    return {
+      session,
+      error: new Response(JSON.stringify({
+        error: requireMember
+          ? 'AI access check unavailable'
+          : 'AI quota check unavailable',
+      }), { status: 503 }),
+    };
   }
 
   return { session, error: null };

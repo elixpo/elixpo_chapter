@@ -1160,6 +1160,7 @@ function InviteLinkCard({
     const [busy, setBusy] = useState(false);
     const [copied, setCopied] = useState(false);
     const [msg, setMsg] = useState<Msg | null>(null);
+    const [confirmAction, setConfirmAction] = useState<"rotate" | "disable" | null>(null);
 
     // Keep the role selector in sync when the link changes underneath us.
     useEffect(() => {
@@ -1196,17 +1197,7 @@ function InviteLinkCard({
     }
 
     function rotate() {
-        if (
-            !window.confirm(
-                "Rotate the invite link? The current link will stop working immediately.",
-            )
-        )
-            return;
-        void call(
-            { role, rotate: true },
-            "Link rotated — the old one no longer works.",
-            "Could not rotate the link.",
-        );
+        setConfirmAction("rotate");
     }
 
     function changeRole(next: AssignableRole) {
@@ -1214,8 +1205,11 @@ function InviteLinkCard({
         if (invite) void call({ role: next }, "Link role updated.", "Could not update the role.");
     }
 
-    async function disable() {
-        if (!window.confirm("Disable the invite link? It will stop working immediately.")) return;
+    function disable() {
+        setConfirmAction("disable");
+    }
+
+    async function performDisable() {
         setBusy(true);
         setMsg(null);
         try {
@@ -1374,6 +1368,87 @@ function InviteLinkCard({
             )}
 
             {msg && <MessageLine msg={msg} />}
+
+            <Dialog
+                open={confirmAction != null}
+                onClose={() => !busy && setConfirmAction(null)}
+                fullWidth
+                maxWidth="xs"
+                slotProps={{
+                    paper: {
+                        sx: {
+                            background: "var(--surface)",
+                            border: `1px solid ${BORDER}`,
+                            borderRadius: "16px",
+                            backgroundImage: "none",
+                        },
+                    },
+                }}
+            >
+                <DialogTitle sx={{ color: TEXT, fontWeight: 800, fontSize: "1.1rem" }}>
+                    {confirmAction === "rotate" ? "Rotate invite link" : "Disable invite link"}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: MUTED, fontSize: "0.9rem", lineHeight: 1.6 }}>
+                        {confirmAction === "rotate"
+                            ? "Rotate the invite link? The current link will stop working immediately."
+                            : "Disable the invite link? It will stop working immediately."}
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2.2, gap: 1 }}>
+                    <Button
+                        onClick={() => setConfirmAction(null)}
+                        disabled={busy}
+                        sx={ghostButtonSx}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            const act = confirmAction;
+                            setConfirmAction(null);
+                            if (act === "rotate") {
+                                void call(
+                                    { role, rotate: true },
+                                    "Link rotated — the old one no longer works.",
+                                    "Could not rotate the link.",
+                                );
+                            } else if (act === "disable") {
+                                void performDisable();
+                            }
+                        }}
+                        disabled={busy}
+                        sx={{
+                            ...gradientButtonSx,
+                            minWidth: 100,
+                            ...(confirmAction === "disable"
+                                ? {
+                                      background:
+                                          "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+                                      boxShadow: "0 8px 24px rgba(239,68,68,0.3)",
+                                      "&:hover": {
+                                          background:
+                                              "linear-gradient(135deg, #fca5a5 0%, #f87171 100%)",
+                                      },
+                                  }
+                                : {}),
+                            "&.Mui-disabled": {
+                                background: "var(--overlay)",
+                                color: "var(--fg-faint)",
+                                boxShadow: "none",
+                            },
+                        }}
+                    >
+                        {busy ? (
+                            <CircularProgress size={18} sx={{ color: "var(--fg-muted)" }} />
+                        ) : confirmAction === "rotate" ? (
+                            "Rotate"
+                        ) : (
+                            "Disable"
+                        )}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </GlassCard>
     );
 }

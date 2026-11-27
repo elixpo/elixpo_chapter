@@ -31,7 +31,7 @@ except Exception:
     _gallery_native = None
 
 try:
-    # Built into the OreoOS MicroPython firmware.  RV565 v6 frames are
+    # Built into the FaleraOS MicroPython firmware.  RV565 v6 frames are
     # inflated by the ESP32-S3 ROM miniz routine directly between two reused
     # buffers; no temporary Python bytes object is created on this path.
     import _oreo_rv565
@@ -43,6 +43,7 @@ SH = api.SCREEN_H
 
 
 _GALLERY_DIR = "apps/gallery/assets/optimized"
+LOAD_CARD_DELAY_MS = 200         # photo decodes quicker than this show no card
 _BENCHMARK_FLAG = "/.rv565-benchmark"
 _BENCHMARK_WARMUP = 48
 _BENCHMARK_FRAMES = 720
@@ -53,7 +54,7 @@ _BENCHMARK_RECORD_SIZE = _BENCHMARK_FIELDS * 4
 def _list_photos():
     """Both formats land here:
       .py    — laptop-optimised, baked at deploy time
-      .r565  — uploaded over WiFi, written by oreoOS.http_server in the
+      .r565  — uploaded over WiFi, written by the old Wi-Fi upload server in the
                on-device-renderable binary format defined below.
     Returned names include their extension so _load_photo can dispatch."""
     try:
@@ -336,7 +337,7 @@ class _Video:
 
         if self.version in (2, 6):
             # V2/V6 store independent zlib frames. V6 keeps the benchmark's
-            # high-quality 180x135 RGB565 source. Custom OreoOS firmware
+            # high-quality 180x135 RGB565 source. Custom FaleraOS firmware
             # inflates V6 directly into the reusable frame buffer; native C
             # scales it below.
             try:
@@ -593,13 +594,18 @@ class App(oreoOS.App):
         return self._is_video() and self._video_playing
 
     def _close_video(self):
-        if self._video is not None:
+        had = self._video is not None
+        if had:
             self._video.close()
         self._video = None
         self._video_name = ""
         self._video_elapsed = 0.0
         self._video_needs_clear = True
-        _gc.collect()
+        if had:
+            # Only a closed clip frees enough to be worth a full collect
+            # (tens of ms on the PSRAM heap); stepping between photos
+            # calls this too.
+            _gc.collect()
 
     def _is_video(self):
         return (not self._is_add_tile() and self._idx < len(self._names) and
@@ -642,7 +648,24 @@ class App(oreoOS.App):
     def _photo(self, idx):
         name = self._names[idx]
         if name not in self._cache:
-            self._cache[name] = _load_photo(name)
+            # Decoding a large .rz565 can take a few hundred ms inside
+            # draw(): a busy card appears if it takes longer than
+            # LOAD_CARD_DELAY_MS. Its animator writes to the panel only,
+            # so the half-drawn frame is untouched and this frame's
+            # present() replaces the card.
+            card = None
+            try:
+                from oreoOS import busy
+                card = busy.start("Opening photo", name,
+                                  display=getattr(self._os, "display", None),
+                                  delay_ms=LOAD_CARD_DELAY_MS)
+            except Exception:
+                card = None
+            try:
+                self._cache[name] = _load_photo(name)
+            finally:
+                if card is not None:
+                    card.stop(restore=False)
         return self._cache.get(name)
 
     def on_button_press(self, btn):
@@ -922,7 +945,7 @@ class App(oreoOS.App):
                 _time.ticks_us(), draw_start_us)
 
     def after_present(self, elapsed_us):
-        """Record one complete OreoOS Gallery frame after its LCD flush."""
+        """Record one complete FaleraOS Gallery frame after its LCD flush."""
         if not self._bench_enabled or not self._bench_pending_active:
             return
         self._bench_pending_active = False

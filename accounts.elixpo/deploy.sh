@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage:
 #   ./deploy.sh --package build deploy      — publish to npm + GitHub Release
+#   ./deploy.sh --package build release     — create the GitHub Release only
 #   ./deploy.sh --package --vs build deploy — build and publish a VS Code extension
 #   ./deploy.sh --worker build deploy       — build and deploy a Cloudflare Worker
 #   ./deploy.sh --pages build deploy        — build and deploy Cloudflare Pages
@@ -17,7 +18,7 @@ TEMP_NPMRC=""
 TEMP_RELEASE_DIR=""
 
 usage() {
-  sed -n '2,7p' "$0"
+  sed -n '2,8p' "$0"
 }
 
 cleanup() {
@@ -371,6 +372,7 @@ run_target() {
         publish_sdk npm
         create_github_release
         ;;
+      npm:release) create_github_release ;;
       github:deploy) publish_sdk github ;;
       vscode:build) build_vscode ;;
       vscode:deploy) deploy_vscode ;;

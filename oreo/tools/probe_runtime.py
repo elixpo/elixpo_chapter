@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture OreoOS/MicroPython runtime and memory facts over the serial REPL."""
+"""Capture FaleraOS/MicroPython runtime and memory facts over the serial REPL."""
 
 from __future__ import annotations
 
@@ -110,7 +110,7 @@ print("OREO_RUNTIME_JSON=" + json.dumps(result))
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Read OreoOS/MicroPython runtime metadata without writing to the badge."
+        description="Read FaleraOS/MicroPython runtime metadata without writing to the badge."
     )
     parser.add_argument("--port", default="/dev/ttyACM0")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)

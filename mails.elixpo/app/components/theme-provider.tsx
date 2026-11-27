@@ -33,7 +33,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const current = document.documentElement.getAttribute("data-theme");
-        if (current === "dark" || current === "light") setThemeState(current);
+        if (current === "dark" || current === "light") {
+            setThemeState(current);
+        } else if (
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+        ) {
+            setThemeState("dark");
+            document.documentElement.setAttribute("data-theme", "dark");
+        }
     }, []);
 
     const setTheme = useCallback((t: ThemeMode) => {
@@ -64,4 +72,4 @@ export function useTheme(): ThemeContextValue {
 
 /** Inline script that sets data-theme before first paint (no flash of wrong
  *  theme). Defaults to light (the oreo palette). Rendered in <body> head. */
-export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('mail_theme');if(!t){var m=document.cookie.match(/(?:^|; )mail_theme=([^;]+)/);t=m&&m[1];}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('mail_theme');if(!t){var m=document.cookie.match(/(?:^|; )mail_theme=([^;]+)/);t=m&&m[1];}if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){t='dark';}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;

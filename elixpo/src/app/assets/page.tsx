@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Download, ShieldCheck } from "lucide-react";
 import brand from "../../../content/brand.json";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const BRAND_DESCRIPTION = "Use Elixpo's Open Field colours, typography guidance, canonical marks, project icons, social artwork, diagrams, and protected sticker previews.";
 
@@ -18,9 +19,9 @@ export const metadata = {
 };
 
 const marks = [
-  { name: "Elixpo lock-up with Oreo", file: "/brand/source/marks/elixpo_lock_up_text_mascot.png" },
+  { name: "Elixpo lock-up with Lumi", file: "/brand/source/marks/elixpo_lock_up_text_mascot.png" },
   { name: "Elixpo word mark", file: "/brand/source/marks/elixpo_word_mask_text.png" },
-  { name: "Oreo mascot", file: "/brand/source/marks/mascot_elixpo_oreo.png" },
+  { name: "Lumi mascot", file: "/brand/source/marks/mascot_elixpo_oreo.png" },
 ];
 
 const socialAssets = [
@@ -56,10 +57,10 @@ export function BrandingContent({ canonicalPath = "/branding" }: { canonicalPath
   const jsonLd = { "@context": "https://schema.org", "@type": "CollectionPage", name: "Elixpo brand assets", description: BRAND_DESCRIPTION, url: `https://elixpo.com${canonicalPath}` };
   return <main className="page-shell brand-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="page-intro"><p className="eyebrow">Brand / Open Field</p><h1>A consistent identity for Elixpo&apos;s public work.</h1><p className="lede">The Elixpo identity combines clear institutional typography, warm paper, foundry green, and the Oreo mascot. This library provides the public colour system, typography guidance, reviewed organization marks, project assets, and the access rules for protected event material.</p></header>
+    <header className="page-intro"><Sparks chips={["Lumi approved ✓", "SVG ↗", "no stretching"]} /><p className="eyebrow">Brand / Open Field</p><h1>A consistent identity for Elixpo&apos;s public work.</h1><p className="lede">The Elixpo identity combines clear institutional typography, warm paper, foundry green, and Lumi, the mascot. This library provides the public colour system, typography guidance, reviewed organization marks, project assets, and the access rules for protected event material.</p></header>
     <section className="brand-direction"><div><p className="eyebrow">Visual principle</p><h2>{brand.visualDirection.name}</h2><p>{brand.visualDirection.principle}</p></div><div className="swatches">{brand.visualDirection.palette.map((color) => <div key={color.hex}><i style={{ background: color.hex }} /><span>{color.name}<small>{color.hex}</small></span></div>)}</div></section>
     <section className="asset-section brand-proof-section" aria-labelledby="brand-proofs-title">
-      <div className="section-heading split"><div><p className="eyebrow">System proofs</p><h2 id="brand-proofs-title">One grammar across six kinds of public record.</h2></div><p>These components test Open Field against the surfaces Elixpo actually maintains. They share structure without erasing the identity or evidence of each record.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">System proofs</p><h2 id="brand-proofs-title">One grammar across six kinds of public record.</h2></div><p>These components test Open Field against the surfaces Elixpo actually maintains. They share structure without erasing the identity or evidence of each record.</p></div>
       <div className="brand-proofs">
         <article className="proof-readme"><span>README / ORGANIZATION</span><strong>Open work should reach<br/><em>a clear public release.</em></strong><p>Software · Research · Services · Chapters</p><i/><i/></article>
         <article className="proof-ecosystem"><span>ECOSYSTEM</span><div><b>Projects</b><b>Research</b><b>Services</b><b>People</b><i>Elixpo</i></div></article>
@@ -69,12 +70,12 @@ export function BrandingContent({ canonicalPath = "/branding" }: { canonicalPath
         <article className="proof-timeline"><span>HISTORY / 2023</span><i/><div><b>Elixpo begins.</b><p>A college project origin, preserved as history rather than the present identity.</p></div></article>
       </div>
     </section>
-    <section className="asset-section"><div className="section-heading"><p className="eyebrow">Primary marks</p><h2>Use the mark with room to breathe.</h2></div><DownloadGrid items={marks} /></section>
-    <section className="asset-section"><div className="section-heading"><p className="eyebrow">Project icon family</p><h2>One family, distinct tools.</h2></div><div className="icon-grid">{icons.map((name) => <a key={name} href={`/brand/source/icons/${name}.png`} download><Image src={`/brand/source/icons/${name}.png`} alt={`${name} project icon`} width={96} height={96} /><span>{name}</span><Download size={13} /></a>)}</div></section>
-    <section className="asset-section"><div className="section-heading"><p className="eyebrow">Social templates</p><h2>Stable artwork for public announcements.</h2></div><DownloadGrid items={socialAssets} /></section>
-    <section className="asset-section"><div className="section-heading"><p className="eyebrow">README, evidence, and history diagrams</p><h2>Evidence-led diagrams for the primary public READMEs.</h2></div><DownloadGrid items={diagrams} /></section>
+    <section className="asset-section"><div className="section-heading"><Sparks stars={4} /><p className="eyebrow">Primary marks</p><h2>Use the mark with room to breathe.</h2></div><DownloadGrid items={marks} /></section>
+    <section className="asset-section"><div className="section-heading"><Sparks stars={4} /><p className="eyebrow">Project icon family</p><h2>One family, distinct tools.</h2></div><div className="icon-grid">{icons.map((name) => <a key={name} href={`/brand/source/icons/${name}.png`} download><Image src={`/brand/source/icons/${name}.png`} alt={`${name} project icon`} width={96} height={96} /><span>{name}</span><Download size={13} /></a>)}</div></section>
+    <section className="asset-section"><div className="section-heading"><Sparks stars={4} /><p className="eyebrow">Social templates</p><h2>Stable artwork for public announcements.</h2></div><DownloadGrid items={socialAssets} /></section>
+    <section className="asset-section"><div className="section-heading"><Sparks stars={4} /><p className="eyebrow">README, evidence, and history diagrams</p><h2>Evidence-led diagrams for the primary public READMEs.</h2></div><DownloadGrid items={diagrams} /></section>
     <section className="asset-section sticker-preview-section" aria-labelledby="sticker-previews-title">
-      <div className="section-heading split">
+      <div className="section-heading split"><Sparks stars={4} />
         <div><p className="eyebrow">Protected event material</p><h2 id="sticker-previews-title">Official stickers are available by approved request.</h2></div>
         <p>The images below are watermarked, screen-resolution previews. They are not print sources and do not grant permission to reproduce, distribute, modify, or sell the artwork.</p>
       </div>

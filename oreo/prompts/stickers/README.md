@@ -1,6 +1,6 @@
 # Sticker prompts
 
-Gummy-style die-cut stickers featuring the Oreo mascot in pixel-art form.
+Gummy-style die-cut stickers featuring the Lumi mascot in pixel-art form.
 Generated via [Pollinations.ai](https://pollinations.ai), then composited
 into a sheet for printing.
 

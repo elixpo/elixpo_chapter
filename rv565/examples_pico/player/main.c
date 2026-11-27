@@ -1,5 +1,5 @@
 /* RV565 Pico SDK example for the Raspberry Pi Pico 2 (RP2350) and an ST7789
- * 320x240 SPI panel. EXPERIMENTAL: the RP2350 port is not yet measured.
+ * 320x240 SPI panel. Measured: 24 FPS with dual-core decoding (docs/RESULTS_RP2350.md).
  * Core 1 inflates the next frame while core 0 scales and DMA-transfers. */
 #include <stdio.h>
 

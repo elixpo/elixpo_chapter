@@ -140,6 +140,31 @@ def authorize_action(
     return action.model_copy(update={"preview_only": not can_mutate})
 
 
+def restrict_to_allowlists(
+    action: MetadataAction, *, labels: set[str], fields: dict[str, set[str]]
+) -> tuple[MetadataAction, list[str]]:
+    """Drop model-proposed labels and Project field values outside the central allowlist.
+
+    The model is told the allowed values but sometimes blends a field into a
+    label (for example the Status option "ready" into "status/ready"). Those
+    values are removed, and reported, instead of failing the whole run;
+    validate_allowlists stays the final guard.
+    """
+    dropped = [f"label {name}" for name in (*action.add_labels, *action.remove_labels) if name not in labels]
+    kept_fields = {name: value for name, value in action.project_fields.items() if value in fields.get(name, set())}
+    dropped += [f"field {name}={value}" for name, value in action.project_fields.items() if name not in kept_fields]
+    if not dropped:
+        return action, []
+    restricted = action.model_copy(
+        update={
+            "add_labels": tuple(name for name in action.add_labels if name in labels),
+            "remove_labels": tuple(name for name in action.remove_labels if name in labels),
+            "project_fields": kept_fields,
+        }
+    )
+    return restricted, dropped
+
+
 def validate_allowlists(action: MetadataAction, *, labels: set[str], fields: dict[str, set[str]]) -> None:
     unknown_labels = (set(action.add_labels) | set(action.remove_labels)) - labels
     if unknown_labels:

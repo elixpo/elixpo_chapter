@@ -13,6 +13,10 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PersonIcon from "@mui/icons-material/Person";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import GavelIcon from "@mui/icons-material/Gavel";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import WebhookIcon from "@mui/icons-material/Webhook";
 import {
     Box,
@@ -38,29 +42,18 @@ import { makeDashboardTheme } from "@/components/dashboard-ui";
 import { ThemeToggle, useThemeMode } from "@/components/theme-mode";
 import BackgroundAurora from "../components/background-aurora";
 
+// Primary tabs stay visible; the rest live under "More" to keep the bar short.
 const NAV = [
     { label: "Overview", icon: SpaceDashboardIcon, href: "/dashboard" },
     { label: "Products", icon: InventoryIcon, href: "/dashboard/products" },
-    {
-        label: "Webhooks",
-        icon: WebhookIcon,
-        href: "/dashboard/webhooks",
-    },
-    {
-        label: "Transactions",
-        icon: ReceiptLongIcon,
-        href: "/dashboard/transactions",
-    },
-    {
-        label: "Payouts",
-        icon: AccountBalanceIcon,
-        href: "/dashboard/payouts",
-    },
-    {
-        label: "My subscriptions",
-        icon: CardMembershipIcon,
-        href: "/dashboard/subscriptions",
-    },
+    { label: "Fundraisers", icon: VolunteerActivismIcon, href: "/dashboard/fundraisers" },
+    { label: "Payouts", icon: AccountBalanceIcon, href: "/dashboard/payouts" },
+];
+const MORE_NAV = [
+    { label: "Transactions", icon: ReceiptLongIcon, href: "/dashboard/transactions", hint: "Every charge across your apps" },
+    { label: "Webhooks", icon: WebhookIcon, href: "/dashboard/webhooks", hint: "Endpoints and delivery logs" },
+    { label: "My subscriptions", icon: CardMembershipIcon, href: "/dashboard/subscriptions", hint: "Plans you pay for" },
+    { label: "Trust & policies", icon: VerifiedUserIcon, href: "/trust", hint: "How payments and payouts work" },
 ];
 
 interface Me {
@@ -68,9 +61,16 @@ interface Me {
     email: string;
     avatar: string | null;
     merchant: { id: string; name: string };
+    is_admin?: boolean;
 }
 
 const ACCOUNTS_PROFILE = "https://accounts.elixpo.com/dashboard/profile";
+
+/** Send signed-out users to Accounts, returning them to the page they wanted. */
+function loginHref(): string {
+    const here = window.location.pathname + window.location.search;
+    return `/login?next=${encodeURIComponent(here)}`;
+}
 
 export default function DashboardLayout({
     children,
@@ -90,13 +90,13 @@ export default function DashboardLayout({
             .then((r) => (r.ok ? r.json() : null))
             .then((data: any) => {
                 if (!data) {
-                    window.location.assign("/login");
+                    window.location.assign(loginHref());
                     return;
                 }
                 setMe(data);
                 setChecked(true);
             })
-            .catch(() => window.location.assign("/login"));
+            .catch(() => window.location.assign(loginHref()));
     }, []);
 
     const logout = async () => {
@@ -112,6 +112,13 @@ export default function DashboardLayout({
         window.location.assign("/");
     };
 
+    const [moreEl, setMoreEl] = useState<HTMLElement | null>(null);
+    const moreItems = [
+        ...MORE_NAV,
+        ...(me?.is_admin
+            ? [{ label: "Moderation", icon: GavelIcon, href: "/dashboard/moderation", hint: "Reported fundraisers (admin)" }]
+            : []),
+    ];
     const isActive = (href: string) =>
         href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
@@ -125,7 +132,7 @@ export default function DashboardLayout({
                     bgcolor: "var(--app-bg)",
                 }}
             >
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -179,9 +186,17 @@ export default function DashboardLayout({
                         position="sticky"
                         elevation={0}
                         sx={{
-                            bgcolor: "color-mix(in srgb, var(--app-bg) 88%, transparent)",
-                            backdropFilter: "blur(16px)",
-                            borderBottom: "1px solid var(--app-border)",
+                            // Floating pill bar — same shape as the site header.
+                            top: { xs: 8, md: 14 },
+                            width: "min(calc(100% - 2rem), 1320px)",
+                            mx: "auto",
+                            mt: { xs: 1, md: 1.75 },
+                            borderRadius: "999px",
+                            color: "var(--app-fg)",
+                            bgcolor: "color-mix(in srgb, var(--app-bg) 90%, transparent)",
+                            backdropFilter: "blur(18px)",
+                            border: "1px solid color-mix(in srgb, var(--app-fg) 14%, transparent)",
+                            boxShadow: "var(--app-shadow)",
                         }}
                     >
                         <Toolbar
@@ -212,7 +227,7 @@ export default function DashboardLayout({
                                     sx={{
                                         height: 30,
                                         width: 30,
-                                        borderRadius: "8px",
+                                        borderRadius: "50%",
                                         display: "block",
                                     }}
                                 />
@@ -221,18 +236,14 @@ export default function DashboardLayout({
                                         fontWeight: 700,
                                         color: "var(--app-fg)",
                                         display: { xs: "none", sm: "block" },
-                                        letterSpacing: "-0.01em",
+                                        letterSpacing: "-0.02em",
                                     }}
                                 >
-                                    Elixpo Pay
+                                    Elixpo <Box component="span" sx={{ color: "var(--app-fg-muted)", fontWeight: 400, fontSize: "0.75rem" }}>Pay</Box>
                                 </Typography>
                             </Box>
 
-                            <Stack
-                                direction="row"
-                                spacing={0.5}
-                                sx={{ flexGrow: 1, overflowX: "auto" }}
-                            >
+                            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>
                                 {NAV.map((item) => {
                                     const active = isActive(item.href);
                                     return (
@@ -240,48 +251,52 @@ export default function DashboardLayout({
                                             key={item.href}
                                             component={Link}
                                             href={item.href}
-                                            startIcon={
-                                                <item.icon
-                                                    sx={{
-                                                        fontSize:
-                                                            "1.1rem !important",
-                                                    }}
-                                                />
-                                            }
-                                            sx={{
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                fontSize: "0.85rem",
-                                                whiteSpace: "nowrap",
-                                                px: 1.6,
-                                                borderRadius: "8px",
-                                                color: active
-                                                    ? "var(--app-fg)"
-                                                    : "var(--app-fg-muted)",
-                                                bgcolor: active
-                                                    ? "var(--app-overlay)"
-                                                    : "transparent",
-                                                "&:hover": {
-                                                    bgcolor:
-                                                        "var(--app-overlay)",
-                                                    color: "var(--app-fg)",
-                                                },
-                                            }}
+                                            aria-current={active ? "page" : undefined}
+                                            startIcon={<item.icon sx={{ fontSize: "1.1rem !important" }} />}
+                                            sx={navBtn(active)}
                                         >
-                                            <Box
-                                                component="span"
-                                                sx={{
-                                                    display: {
-                                                        xs: "none",
-                                                        md: "inline",
-                                                    },
-                                                }}
-                                            >
+                                            <Box component="span" sx={{ display: { xs: "none", md: "inline" } }}>
                                                 {item.label}
                                             </Box>
                                         </Button>
                                     );
                                 })}
+                                <Button
+                                    onClick={(e) => setMoreEl(e.currentTarget)}
+                                    aria-haspopup="menu"
+                                    aria-expanded={!!moreEl}
+                                    endIcon={<ExpandMoreIcon sx={{ fontSize: "1.1rem !important" }} />}
+                                    sx={navBtn(moreItems.some((i) => isActive(i.href)))}
+                                >
+                                    {moreItems.find((i) => isActive(i.href))?.label ?? "More"}
+                                </Button>
+                                <Menu
+                                    anchorEl={moreEl}
+                                    open={!!moreEl}
+                                    onClose={() => setMoreEl(null)}
+                                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                                    slotProps={{ paper: { sx: { mt: 1, borderRadius: "16px", minWidth: 260 } } }}
+                                >
+                                    {moreItems.map((item) => (
+                                        <MenuItem
+                                            key={item.href}
+                                            component={Link}
+                                            href={item.href}
+                                            selected={isActive(item.href)}
+                                            onClick={() => setMoreEl(null)}
+                                            sx={{ py: 1.1, borderRadius: "10px", mx: 0.6 }}
+                                        >
+                                            <ListItemIcon>
+                                                <item.icon fontSize="small" />
+                                            </ListItemIcon>
+                                            <Box>
+                                                <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>{item.label}</Typography>
+                                                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.76rem" }}>{item.hint}</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Menu>
                             </Stack>
 
                             <ThemeToggle size={36} />
@@ -371,7 +386,7 @@ export default function DashboardLayout({
                                             border: "1px solid var(--app-border)",
                                             borderRadius: "14px",
                                             boxShadow:
-                                                "0 16px 48px rgba(0,0,0,0.55)",
+                                                "0 16px 48px rgba(20, 32, 24, 0.18)",
                                             overflow: "hidden",
                                         },
                                     },
@@ -446,7 +461,7 @@ export default function DashboardLayout({
                                                     fontSize: "0.68rem",
                                                     color: "var(--app-fg-muted)",
                                                     textTransform: "uppercase",
-                                                    letterSpacing: "0.06em",
+                                                    letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                                 }}
                                             >
                                                 Merchant
@@ -471,10 +486,10 @@ export default function DashboardLayout({
                                                 borderRadius: "999px",
                                                 fontSize: "0.66rem",
                                                 fontWeight: 700,
-                                                color: "#c4b5fd",
+                                                color: "var(--app-accent)",
                                                 background:
-                                                    "rgba(155,123,247,0.12)",
-                                                border: "1px solid rgba(155,123,247,0.3)",
+                                                    "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                                border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
                                                 flexShrink: 0,
                                                 ml: 1,
                                             }}
@@ -523,6 +538,12 @@ export default function DashboardLayout({
                                     onClick={() => setAnchorEl(null)}
                                 />
                                 <AccountItem
+                                    icon={<VerifiedUserIcon fontSize="small" />}
+                                    label="Trust & policies"
+                                    href="/trust"
+                                    onClick={() => setAnchorEl(null)}
+                                />
+                                <AccountItem
                                     icon={<HelpOutlineIcon fontSize="small" />}
                                     label="Support"
                                     href="mailto:hello@elixpo.com"
@@ -541,8 +562,8 @@ export default function DashboardLayout({
                                         py: 1.25,
                                         color: "var(--app-fg-muted)",
                                         "&:hover": {
-                                            bgcolor: "rgba(239,68,68,0.08)",
-                                            color: "#ef4444",
+                                            bgcolor: "color-mix(in srgb, var(--app-danger) 8%, transparent)",
+                                            color: "var(--app-danger)",
                                         },
                                     }}
                                 >
@@ -592,7 +613,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
                 pb: 0.4,
                 fontSize: "0.66rem",
                 fontWeight: 700,
-                letterSpacing: "0.08em",
+                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                 textTransform: "uppercase",
                 color: "var(--app-fg-muted)",
             }}
@@ -644,4 +665,23 @@ function AccountItem({
             </ListItemText>
         </MenuItem>
     );
+}
+
+/** Pill tab style shared by the primary tabs and the "More" button. */
+function navBtn(active: boolean) {
+    return {
+        textTransform: "none",
+        fontWeight: 600,
+        fontSize: "0.85rem",
+        whiteSpace: "nowrap",
+        px: 1.6,
+        minWidth: 0,
+        borderRadius: "999px",
+        color: active ? "var(--app-on-ink)" : "var(--app-fg-muted)",
+        bgcolor: active ? "var(--app-ink)" : "transparent",
+        "&:hover": {
+            bgcolor: active ? "var(--app-ink)" : "var(--app-overlay)",
+            color: active ? "var(--app-on-ink)" : "var(--app-fg)",
+        },
+    } as const;
 }

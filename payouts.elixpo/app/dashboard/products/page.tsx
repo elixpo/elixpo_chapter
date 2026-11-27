@@ -25,6 +25,8 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatMoney, GlassCard } from "@/components/dashboard-ui";
+import FlowDiagram from "@/components/trust/flow-diagram";
+import PolicyLinks from "@/components/trust/policy-links";
 
 export default function ProductsPage() {
     const [loading, setLoading] = useState(true);
@@ -134,7 +136,7 @@ export default function ProductsPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -182,10 +184,10 @@ export default function ProductsPage() {
 
             {creds && (
                 <GlassCard
-                    sx={{ mb: 3, border: "1px solid rgba(134,239,172,0.35)" }}
+                    sx={{ mb: 3, border: "1px solid color-mix(in srgb, var(--app-success) 35%, transparent)" }}
                 >
                     <Typography
-                        sx={{ fontWeight: 700, color: "#86efac", mb: 1.2 }}
+                        sx={{ fontWeight: 700, color: "var(--app-success)", mb: 1.2 }}
                     >
                         Product registered — copy your client secret now
                     </Typography>
@@ -194,13 +196,13 @@ export default function ProductsPage() {
                             fontSize: "0.72rem",
                             color: "var(--app-fg-faint)",
                             textTransform: "uppercase",
-                            letterSpacing: "0.06em",
+                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                             mb: 0.5,
                         }}
                     >
                         Client ID
                     </Typography>
-                    <Box sx={{ ...mono, mb: 2, color: "#c4b5fd" }}>
+                    <Box sx={{ ...mono, mb: 2, color: "var(--app-accent)" }}>
                         {creds.clientId}
                     </Box>
                     <Typography
@@ -208,7 +210,7 @@ export default function ProductsPage() {
                             fontSize: "0.72rem",
                             color: "var(--app-fg-faint)",
                             textTransform: "uppercase",
-                            letterSpacing: "0.06em",
+                            letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                             mb: 0.5,
                         }}
                     >
@@ -225,7 +227,7 @@ export default function ProductsPage() {
                             }}
                         >
                             <CheckCircleIcon
-                                sx={{ fontSize: 16, color: "#86efac" }}
+                                sx={{ fontSize: 16, color: "var(--app-success)" }}
                             />
                             Copied & hidden — for your security it won't be
                             shown again.
@@ -252,11 +254,11 @@ export default function ProductsPage() {
                                 sx={{
                                     textTransform: "none",
                                     fontWeight: 600,
-                                    color: "#fff",
+                                    color: "var(--app-on-ink)",
                                     px: 2,
-                                    background: "#7c5cff",
-                                    borderRadius: "10px",
-                                    "&:hover": { background: "#8a6dff" },
+                                    background: "var(--app-ink)",
+                                    borderRadius: "999px",
+                                    "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
                                 }}
                             >
                                 Copy
@@ -341,7 +343,7 @@ export default function ProductsPage() {
                                     opacity: app.active ? 1 : 0.55,
                                     transition: "border-color 0.2s ease",
                                     "&:hover": {
-                                        borderColor: "rgba(155,123,247,0.4)",
+                                        borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)",
                                     },
                                 }}
                             >
@@ -370,7 +372,7 @@ export default function ProductsPage() {
                                                     color: "var(--app-fg)",
                                                     textDecoration: "none",
                                                     "&:hover": {
-                                                        color: "#c4b5fd",
+                                                        color: "var(--app-accent)",
                                                         textDecoration:
                                                             "underline",
                                                         textUnderlineOffset:
@@ -391,12 +393,12 @@ export default function ProductsPage() {
                                                     height: 22,
                                                     fontSize: "0.7rem",
                                                     color: app.active
-                                                        ? "#4ade80"
-                                                        : "#9ca3af",
+                                                        ? "var(--app-success)"
+                                                        : "var(--app-fg-faint)",
                                                     bgcolor: app.active
-                                                        ? "rgba(34,197,94,0.1)"
-                                                        : "rgba(156,163,175,0.1)",
-                                                    border: `1px solid ${app.active ? "rgba(34,197,94,0.25)" : "rgba(156,163,175,0.2)"}`,
+                                                        ? "color-mix(in srgb, var(--app-success) 10%, transparent)"
+                                                        : "color-mix(in srgb, var(--app-fg-faint) 10%, transparent)",
+                                                    border: `1px solid ${app.active ? "color-mix(in srgb, var(--app-success) 25%, transparent)" : "color-mix(in srgb, var(--app-fg-faint) 20%, transparent)"}`,
                                                 }}
                                             />
                                         </Stack>
@@ -412,7 +414,7 @@ export default function ProductsPage() {
                                                     fontFamily:
                                                         "var(--font-geist-mono)",
                                                     fontSize: "0.78rem",
-                                                    color: "#c4b5fd",
+                                                    color: "var(--app-accent)",
                                                 }}
                                             >
                                                 {app.client_id}
@@ -428,7 +430,7 @@ export default function ProductsPage() {
                                                             sx={{
                                                                 fontSize:
                                                                     "0.9rem !important",
-                                                                color: "#86efac",
+                                                                color: "var(--app-success)",
                                                             }}
                                                         />
                                                     ) : (
@@ -483,13 +485,13 @@ export default function ProductsPage() {
                                         href={`/dashboard/products/${app.firstProductId}`}
                                         sx={{
                                             textTransform: "none",
-                                            color: "#9b7bf7",
+                                            color: "var(--app-accent)",
                                             fontWeight: 700,
                                             fontSize: "0.9rem",
                                             whiteSpace: "nowrap",
                                             "&:hover": {
                                                 background:
-                                                    "rgba(155,123,247,0.06)",
+                                                    "color-mix(in srgb, var(--app-accent) 6%, transparent)",
                                             },
                                         }}
                                     >
@@ -501,6 +503,40 @@ export default function ProductsPage() {
                     })}
                 </Stack>
             )}
+
+            {/* How it works (secondary) */}
+            <GlassCard sx={{ mt: 3, p: { xs: 2, md: 2.5 } }}>
+                <Typography
+                    sx={{
+                        fontSize: "0.7rem",
+                        color: "var(--app-fg-faint)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.14em",
+                        fontFamily: "var(--font-geist-mono)",
+                        mb: 1.8,
+                    }}
+                >
+                    How it works
+                </Typography>
+                <FlowDiagram
+                    compact
+                    title="How selling through Elixpo Pay works"
+                    steps={[
+                        { icon: "key", title: "Register", body: "Register your app and get its secret key." },
+                        { icon: "code", title: "Integrate", body: "Sync prices from code; your server creates checkout sessions." },
+                        { icon: "phone", title: "Buyer pays", body: "On Elixpo Pay's hosted checkout, processed by Razorpay." },
+                        { icon: "check", title: "Unlock access", body: "We send your app a signed entitlement.updated webhook." },
+                    ]}
+                />
+                <Typography sx={{ color: "var(--app-fg-muted)", fontSize: "0.8rem", lineHeight: 1.6, mt: 2 }}>
+                    Revenue reaches your bank through{" "}
+                    <Box component={Link} href="/dashboard/payouts" sx={{ color: "var(--app-fg)", fontWeight: 600 }}>
+                        Payouts
+                    </Box>
+                    : Razorpay splits each payment, you get the amount minus Elixpo&rsquo;s 5% all-in fee (gateway charges included).
+                </Typography>
+                <PolicyLinks trust="buying" lead="Selling through Elixpo Pay is covered by the" style={{ marginTop: 10 }} />
+            </GlassCard>
 
             <Stack alignItems="center" sx={{ mt: 4 }}>
                 <Button
@@ -516,11 +552,11 @@ export default function ProductsPage() {
                         color: "var(--app-fg)",
                         px: 3,
                         py: 1.2,
-                        borderRadius: "12px",
+                        borderRadius: "999px",
                         border: "1px solid var(--app-border)",
                         "&:hover": {
-                            borderColor: "rgba(155,123,247,0.5)",
-                            background: "rgba(155,123,247,0.06)",
+                            borderColor: "color-mix(in srgb, var(--app-accent) 50%, transparent)",
+                            background: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
                         },
                     }}
                 >
@@ -606,7 +642,7 @@ function RegisterDialog({ open, busy, err, onClose, onSubmit }: any) {
                     </Typography>
                     {err && (
                         <Typography
-                            sx={{ color: "#f87171", fontSize: "0.85rem" }}
+                            sx={{ color: "var(--app-danger)", fontSize: "0.85rem" }}
                         >
                             {err}
                         </Typography>
@@ -683,8 +719,8 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
 };
@@ -694,7 +730,7 @@ const mono = {
     fontSize: "0.85rem",
     p: 1.2,
     borderRadius: "10px",
-    background: "rgba(0,0,0,0.3)",
+    background: "var(--app-surface-2)",
     border: "1px solid var(--app-border)",
 };
 
@@ -709,8 +745,8 @@ const chipBtn = {
     borderRadius: "8px",
     border: "1px solid var(--app-border)",
     "&:hover": {
-        borderColor: "rgba(155,123,247,0.5)",
-        background: "rgba(155,123,247,0.06)",
+        borderColor: "color-mix(in srgb, var(--app-accent) 50%, transparent)",
+        background: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
         color: "var(--app-fg)",
     },
 };
@@ -718,7 +754,7 @@ const chipBtn = {
 const dialogPaper = {
     bgcolor: "var(--app-surface)",
     border: "1px solid var(--app-border)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-panel)",
     color: "var(--app-fg)",
     backgroundImage: "none",
 };
@@ -726,11 +762,11 @@ const dialogPaper = {
 const primaryBtn = {
     textTransform: "none",
     fontWeight: 700,
-    color: "#fff",
+    color: "var(--app-on-ink)",
     px: 2.4,
     py: 1,
     borderRadius: "10px",
-    background: "#7c5cff",
-    "&:hover": { background: "#8a6dff" },
-    "&.Mui-disabled": { opacity: 0.4, color: "#fff" },
+    background: "var(--app-ink)",
+    "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
+    "&.Mui-disabled": { opacity: 0.4, color: "var(--app-on-ink)" },
 };

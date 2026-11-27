@@ -5,12 +5,13 @@ import { PUBLIC_SITEMAP_CACHE_KEY } from '../lib/cache.js';
 
 const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public sitemap uses the shared invalidation key and only lists indexable blogs', async () => {
-  const sitemap = await source('app/sitemap.js');
+test('the shared sitemap cache is versioned for the named eligible-row shape', async () => {
+  const producer = await source('lib/sitemapData.js');
 
-  assert.equal(PUBLIC_SITEMAP_CACHE_KEY, 'v2:public-sitemap-rows');
-  assert.match(sitemap, /kvCache\(PUBLIC_SITEMAP_CACHE_KEY, 300,/);
-  assert.match(sitemap, /b\.status = 'published' AND b\.secret = 0/);
+  assert.equal(PUBLIC_SITEMAP_CACHE_KEY, 'v3:public-sitemap-rows');
+  // Behavior coverage for the key, TTL and row shape lives in
+  // tests/sitemapEligibility.test.mjs; this keeps producer wiring visible.
+  assert.match(producer, /kvCache\(PUBLIC_SITEMAP_CACHE_KEY, 300,/);
 });
 
 test('blog lifecycle invalidation also refreshes crawler discovery', async () => {
@@ -19,6 +20,6 @@ test('blog lifecycle invalidation also refreshes crawler discovery', async () =>
   const webDelete = await source('app/api/blogs/[slugid]/route.js');
 
   assert.match(lifecycle, /PUBLIC_SITEMAP_CACHE_KEY/);
-  assert.match(webPublish, /invalidateBlogLifecycleCaches\(slugid\)/);
-  assert.match(webDelete, /invalidateBlogLifecycleCaches\(slugid\)/);
+  assert.match(webPublish, /invalidateBlogLifecycleCaches\(slugid\b/);
+  assert.match(webDelete, /invalidateBlogLifecycleCaches\(slugid\b/);
 });

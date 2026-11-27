@@ -7,6 +7,7 @@ import {
     DocList,
     DocP,
     DocTitle,
+    DocActions,
 } from "@/components/docs-prose";
 import { Box } from "@mui/material";
 import CodeBlock from "../../components/code-block";
@@ -139,6 +140,7 @@ export default function WebhooksDocs() {
                     </>,
                 ]}
             />
+            <DocActions actions={[{ label: "Set your webhook & signing secret", href: "/dashboard/products", hint: "Open your app → Entitlement webhook → copy the whsec_ secret.", primary: true }, { label: "View delivery logs", href: "/dashboard/webhooks", hint: "Every attempt, status code and retry." }]} />
             <DocP>
                 Respond <Code>2xx</Code> fast. Failures are recorded and shown as failed
                 deliveries you can inspect.

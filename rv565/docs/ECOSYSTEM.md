@@ -30,7 +30,7 @@ subset.
 
 ### Library foundation
 
-- [x] History of the RV565 files extracted from OreoOS (8 commits) as the base of this repository.
+- [x] History of the RV565 files extracted from OreoOS (now FaleraOS, 8 commits) as the base of this repository.
 - [x] Portable core: parsing, validation, O(1) index, exact-length inflate, scaler, cost model, schedulability, pacer.
 - [x] Player: stripe pipeline with optional second-core decoding.
 - [x] Bundled inflate-only miniz with `rv565_`-prefixed symbols.
@@ -45,7 +45,7 @@ subset.
 - [x] `idf_component.yml` (target esp32s3) and `examples_idf/player`; compiles locally with ESP-IDF 5.5.1.
 - [x] Flash the example and confirm playback on the badge (180x135 @ 24 FPS, 0 predicted late frames).
 - [x] Request the `elixpo` namespace (submitted 2026-10-31, under review).
-- [ ] Run the publish workflow once the namespace is approved.
+- [x] Run the publish workflow once the namespace is approved (1.1.0 published 2026-11-02; tags publish automatically).
 - [ ] Developer Portal article (discussion first in `espressif/developer-portal`; Hugo, WebP images).
 - [ ] Test and list further targets (esp32 dual-core; single-core chips use the serial path).
 
@@ -61,9 +61,9 @@ subset.
 ### 3. Raspberry Pi Pico 2
 
 - [x] RP2 port (SPI DMA + core-1 worker with a 24 KiB stack) and Pico SDK example.
-- [ ] Bring up on a Pico 2 + ST7789; confirm the image and colours.
-- [ ] Measure W90/W360, serial vs overlap, with the paper's methodology.
-- [ ] Refit the cost model for RP2350 (no ROM inflater) and add it next to the ESP32-S3 model.
+- [x] Bring up on a Pico 2 + ST7789; confirm the image and colours (2026-11-04).
+- [x] Measure W90/W360, serial vs overlap, with the paper's methodology.
+- [x] Refit the cost model for RP2350 (no ROM inflater) and add it next to the ESP32-S3 model.
 - [ ] Post results in the Raspberry Pi forums; consider a follow-up paper (second platform answers a stated limitation).
 
 ## Positioning

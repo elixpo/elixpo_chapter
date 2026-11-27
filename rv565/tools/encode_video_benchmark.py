@@ -28,6 +28,17 @@ def _read_exact(stream, size):
     return data
 
 
+def video_filter(fps, width, height):
+    """The FFmpeg filter chain that turns the source into benchmark frames.
+
+    tools/encode_mjpeg_benchmark.py starts from the same frames, so both
+    formats in the comparison encode identical pixels.
+    """
+    return ("fps=%d,scale=%d:%d:force_original_aspect_ratio=increase:"
+            "flags=lanczos,crop=%d:%d,format=rgb565be" %
+            (fps, width, height, width, height))
+
+
 def encode(source, output, seconds, fps, width, height, compressed=True,
            start=0.0):
     if shutil.which("ffmpeg") is None:
@@ -40,9 +51,7 @@ def encode(source, output, seconds, fps, width, height, compressed=True,
         raise SystemExit("dimensions must fit inside 320x240")
 
     frame_size = width * height * 2
-    vf = ("fps=%d,scale=%d:%d:force_original_aspect_ratio=increase:"
-          "flags=lanczos,crop=%d:%d,format=rgb565be" %
-          (fps, width, height, width, height))
+    vf = video_filter(fps, width, height)
     cmd = [
         "ffmpeg", "-v", "error", "-ss", str(start), "-i", str(source),
         "-t", str(seconds),

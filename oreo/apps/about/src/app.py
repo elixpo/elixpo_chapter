@@ -1,227 +1,259 @@
-"""About — Oreo OS info, build metadata, and credits.
+"""About — FaleraOS info, build metadata, and credits.
 
-Scrollable card with: OS branding, version, build, hardware, runtime stats
-(free RAM, uptime, IP), and creator credits.
+Opens instantly with the values cached on flash (apps/about/cache.txt via
+oreoOS.cache), then refreshes them one step per frame after the first
+paint: OS/runtime, then hardware/flash, then network. The cache is
+rewritten only when something changed. Memory and uptime are live and
+repaint in place once a second without redrawing the screen.
+
+Layout: a fixed hero card (mascot, FALERA OS, version pill, update state)
+above a scrollable details card with SYSTEM / NETWORK / CREDITS sections.
 
 Controls:
-  UP/DOWN  scroll
+  UP/DOWN  scroll details
+  A        open Updates
   HOME     back to apps drawer
 """
 
-import gc
-import sys
 import time
 
 import oreoOS
-from oreoOS import api, pixelfont
+from oreoOS import api, cache, pixelfont
 from oreoOS import theme, widgets
+from . import info
 
 
 SW = api.SCREEN_W
 SH = api.SCREEN_H
 
+# Hero card
+HX, HY = 8, widgets.HEADER_H + 4
+HW, HH = SW - 16, 76
+# Details card
+LX, LY = 8, HY + HH + 4
+LW = SW - 16
+LH = SH - widgets.HINT_H - 4 - LY
+ROW_H = 13
+LIST_TOP = LY + 6
+VISIBLE = (LH - 10) // ROW_H
+LABEL_X = LX + 12
+VALUE_X = LX + 84
+VALUE_COLS = (LX + LW - 10 - VALUE_X) // 8
+
+LIVE_KEYS = ("mem", "uptime")
+NET_POLL_MS = 10000
+
+DEFAULTS = {
+    "version": "-", "released": "-", "update": "-", "runtime": "-",
+    "board": "ESP32-S3", "cpu": "-", "flash": "-",
+    "ip": "-", "ssid": "-", "mac": "-",
+}
+
 
 def _load_mascot():
     try:
-        m = __import__("assets.sprites.optimized.mascot", None, None, ["DATA", "W", "H"])
+        m = __import__("assets.sprites.optimized.mascot", None, None,
+                       ["DATA", "W", "H"])
         return (bytearray(m.DATA), m.W, m.H)
     except (ImportError, AttributeError):
         return None
 
 
-def _kb(b):
-    return "%d kB" % (b // 1024)
-
-
-def _os_version():
-    """Single source of truth for the OS version string lives in launcher.VERSION."""
-    try:
-        from oreoOS.launcher import VERSION
-        return VERSION
-    except Exception:
-        return "v?.?.?"
-
-
 class App(oreoOS.App):
     name = "About"
+    SHOW_LOADING = False
 
     def on_enter(self, os):
         super().on_enter(os)
-        self._os      = os
-        self._dirty   = True
-        self._mascot  = _load_mascot()
-        self._boot_ms = time.ticks_ms()
-        self._last_s  = -1
-        self._scroll  = 0
-        self._max_scroll = 0
-        try:
-            from oreoWare import wifi
-            self._ip = wifi.ip() or "—"
-        except Exception:
-            self._ip = "—"
-        # Pixelify font cache
+        self._os = os
+        self._mascot = _load_mascot()
         try:
             self._pf_title = pixelfont.load("pixelify_24")
-            self._pf_body  = pixelfont.load("pixelify_12")
         except (ImportError, AttributeError):
             self._pf_title = None
-            self._pf_body  = None
 
+        vals = dict(DEFAULTS)
+        cached, _age = cache.load(info.CACHE_PATH)
+        if isinstance(cached, dict):
+            for k in DEFAULTS:
+                if k in cached:
+                    vals[k] = cached[k]
+        self._vals = vals
+        self._saved = dict(vals) if cached else None
+
+        self._rows = self._build_rows()
+        self._top = 0
+        self._live_y = {}            # live key -> screen y while visible
+        self._live_txt = {"mem": "", "uptime": ""}
+        self._last_s = -1
+        self._stage = 0              # 0..2 refresh steps, 3 = done
+        self._drawn = False
+        self._net_ms = time.ticks_ms()
+        self._dirty = True
+        self._live_dirty = False
+
+    # ── data ────────────────────────────────────────────────────────────
+    def _build_rows(self):
+        v = self._vals
+        return (
+            ("h", "SYSTEM", None),
+            ("r", "Board", "board"),
+            ("r", "CPU", "cpu"),
+            ("r", "Runtime", "runtime"),
+            ("t", "Display", "ST7789 320x240"),
+            ("r", "Flash", "flash"),
+            ("l", "Memory", "mem"),
+            ("l", "Uptime", "uptime"),
+            ("h", "NETWORK", None),
+            ("r", "Wi-Fi", "ssid"),
+            ("r", "IP", "ip"),
+            ("r", "MAC", "mac"),
+            ("h", "CREDITS", None),
+            ("c", "Crafted by @Circuit-Overtime", theme.PRIMARY),
+            ("c", "Co-maintained by @anwe-ch", theme.PURPLE),
+            ("c", "github.com/elixpo/falera", theme.TEAL),
+            ("c", "Released " + str(v.get("released", "-")), theme.MUTED),
+        )
+
+    def _merge(self, new):
+        changed = False
+        for k, val in new.items():
+            val = str(val)
+            if self._vals.get(k) != val:
+                self._vals[k] = val
+                changed = True
+        return changed
+
+    def _refresh_step(self):
+        stage = self._stage
+        if stage == 0:
+            changed = self._merge(info.step_os(self._os))
+        elif stage == 1:
+            changed = self._merge(info.step_hw())
+        else:
+            changed = self._merge(info.step_net())
+        self._stage = stage + 1
+        if changed:
+            self._rows = self._build_rows()
+            self._dirty = True
+        if self._stage == 3 and self._saved != self._vals:
+            cache.save(info.CACHE_PATH, self._vals)
+            self._saved = dict(self._vals)
+
+    # ── loop ────────────────────────────────────────────────────────────
     def update(self, dt):
-        s = time.ticks_diff(time.ticks_ms(), self._boot_ms) // 1000
+        if not self._drawn:
+            return                    # paint the cached screen first
+        if self._stage < 3:
+            self._refresh_step()
+        elif time.ticks_diff(time.ticks_ms(), self._net_ms) >= NET_POLL_MS:
+            self._net_ms = time.ticks_ms()
+            self._stage = 2           # re-poll the network only
+        s = info.uptime_s()
         if s != self._last_s:
             self._last_s = s
-            self._dirty  = True
+            self._live_txt["uptime"] = info.fmt_uptime(s)
+            self._live_txt["mem"] = info.mem_line()
+            self._live_dirty = True
 
     def on_button_press(self, btn):
-        if btn == api.BTN_UP:
-            self._scroll = max(0, self._scroll - 12)
+        max_top = max(0, len(self._rows) - VISIBLE)
+        if btn == api.BTN_UP and self._top > 0:
+            self._top -= 1
             self._dirty = True
-        elif btn == api.BTN_DOWN:
-            self._scroll = min(self._max_scroll, self._scroll + 12)
+        elif btn == api.BTN_DOWN and self._top < max_top:
+            self._top += 1
             self._dirty = True
         elif btn == api.BTN_A:
-            # Version is the headline detail on this page — pressing A
-            # opens the dedicated Updates app where the user can run
-            # Check + Install. Matches the Settings → Version flow.
             try:
                 self._os.launch("updates")
             except Exception:
                 pass
 
-    def _info_rows(self):
-        secs = self._last_s
-        # OTA status comes from the Settings → Check Update flow.
-        # 'up-to-date' / 'downloading' / 'ready' / 'download-failed' / None
-        ota_status = None
-        try:
-            ota_status = self._os.settings_get("ota_status", None)
-        except Exception:
-            pass
-        ota_label = {
-            "up-to-date":       "up to date",
-            "downloading":      "downloading...",
-            "ready":            "ready to install",
-            "download-failed":  "fetch failed",
-        }.get(ota_status, "—") if ota_status else "—"
-        return [
-            ("OS",       "Oreo OS"),
-            ("Version",  _os_version()),
-            ("Update",   ota_label),
-            ("Codename", "Sweet Sandwich"),
-            ("Board",    "ESP32-S3"),
-            ("Memory",   _kb(gc.mem_free()) + " free"),
-            ("Display",  "ST7789  320x240"),
-            ("Runtime",  "MicroPython %d.%d.%d" % tuple(sys.implementation.version[:3])),
-            ("IP",       self._ip[:18]),
-            ("Uptime",   "%02d:%02d:%02d" % (secs // 3600,
-                                            (secs % 3600) // 60,
-                                             secs % 60)),
-        ]
-
+    # ── render ──────────────────────────────────────────────────────────
     def draw(self, d):
-        if not self._dirty:
-            return
+        if self._dirty:
+            self._draw_full(d)
+            self._dirty = False
+            self._live_dirty = False
+            self._drawn = True
+        elif self._live_dirty:
+            self._live_dirty = False
+            for key, y in self._live_y.items():
+                d.rect(VALUE_X, y, LX + LW - 8 - VALUE_X, 9, theme.CARD,
+                       fill=True)
+                d.text(self._live_txt[key][:VALUE_COLS], VALUE_X, y,
+                       theme.TEXT_BRIGHT)
+
+    def _draw_full(self, d):
+        if not self._live_txt["uptime"]:
+            self._live_txt["uptime"] = info.fmt_uptime(info.uptime_s())
+            self._live_txt["mem"] = info.mem_line()
         d.clear(theme.BG)
         widgets.draw_header(d, "ABOUT")
-        widgets.draw_hint  (d, "UP/DOWN=scroll  HOME=back")
+        widgets.draw_hint(d, "UP/DN=scroll  A=updates  HOME=back")
+        self._draw_hero(d)
+        self._draw_list(d)
 
-        # Scrollable content panel
-        panel_x = 8
-        panel_y = widgets.HEADER_H + 4
-        panel_w = SW - 16
-        panel_h = SH - widgets.HEADER_H - widgets.HINT_H - 8
-        d.rect(panel_x, panel_y, panel_w, panel_h, theme.CARD, fill=True)
-        d.rect(panel_x, panel_y, panel_w, 2, theme.PRIMARY, fill=True)
+    def _draw_hero(self, d):
+        d.rect(HX + 2, HY + 2, HW, HH, theme.MUTED2, fill=True)
+        d.rect(HX, HY, HW, HH, theme.CARD, fill=True)
+        d.rect(HX, HY, 3, HH, theme.PRIMARY, fill=True)
 
-        # Inner content region with breathing-room margins so scrolling text
-        # never bleeds into the pink accent at the top or hint bar below.
-        PAD_TOP = 14
-        PAD_BOT = 12
-        content_top = panel_y + PAD_TOP
-        content_bot = panel_y + panel_h - PAD_BOT
-
-        # Clip-helper: only draw the row when its full height fits inside the
-        # padded content region (no half-glyphs grazing the edges).
-        def _visible(yy, h):
-            return yy >= content_top and yy + h <= content_bot
-
-        # ── content layout (drawn into "virtual" Y, then translated by scroll)
-        cy_logical = 0    # logical y inside the padded content region
-        draw_y     = lambda y: content_top + y - self._scroll
-
-        # mascot + "OREO OS" — stacked, both horizontally centred in the panel.
-        # Mascot on top, single-line title beneath. Replaces the old
-        # side-by-side layout where OREO and OS sat on two separate lines.
+        tx = HX + 14
         if self._mascot:
             data, mw, mh = self._mascot
-            mx = panel_x + (panel_w - mw) // 2
-            my = draw_y(cy_logical)
-            if _visible(my, mh):
-                d.blit(data, mx, my, mw, mh)
-            cy_logical += mh + 8
+            d.blit(data, HX + 8, HY + (HH - mh) // 2, mw, mh)
+            tx = HX + 8 + mw + 10
 
-        title = "OREO OS"
+        title = "FALERA OS"
         if self._pf_title:
-            tw = self._pf_title.measure(title)
-            ty = draw_y(cy_logical)
-            if _visible(ty, 24):
-                self._pf_title.text(d, title,
-                                    panel_x + (panel_w - tw) // 2,
-                                    ty, theme.PRIMARY)
-            cy_logical += 28
+            self._pf_title.text(d, title, tx, HY + 8, theme.PRIMARY)
         else:
-            tw = len(title) * 24             # scale=3 → 8*3 px per glyph
-            ty = draw_y(cy_logical)
-            if _visible(ty, 24):
-                d.text(title,
-                       panel_x + (panel_w - tw) // 2,
-                       ty, theme.PRIMARY, scale=3)
-            cy_logical += 32
+            d.text(title, tx, HY + 10, theme.PRIMARY, scale=3)
 
-        cy_logical += 6     # gap before info rows
+        v = self._vals
+        ver = str(v.get("version", "-"))
+        pw = len(ver) * 8 + 10
+        py = HY + 40
+        d.rect(tx, py, pw, 13, theme.PRIMARY, fill=True)
+        d.text(ver, tx + 5, py + 3, api.WHITE)
+        d.text("Sweet Sandwich", tx + pw + 8, py + 3, theme.MUTED)
 
-        # ── info rows
-        for label, value in self._info_rows():
-            yy = draw_y(cy_logical)
-            if _visible(yy, 10):
-                d.text(label, panel_x + 16, yy, theme.MUTED)
-                d.text(str(value), panel_x + 100, yy, theme.TEXT_BRIGHT)
-            cy_logical += 14
+        upd = str(v.get("update", "-"))
+        col = theme.ORANGE if upd == "ready to install" else theme.TEAL
+        d.text("update", tx, py + 20, theme.MUTED)
+        d.text(upd, tx + 56, py + 20, col)
 
-        cy_logical += 10
+    def _draw_list(self, d):
+        d.rect(LX + 2, LY + 2, LW, LH, theme.MUTED2, fill=True)
+        d.rect(LX, LY, LW, LH, theme.CARD, fill=True)
+        self._live_y = {}
+        rows = self._rows
+        v = self._vals
+        y = LIST_TOP
+        end = min(len(rows), self._top + VISIBLE)
+        for i in range(self._top, end):
+            kind, label, ref = rows[i]
+            if kind == "h":
+                d.text(label, LABEL_X, y + 2, theme.GOLD)
+                lx = LABEL_X + len(label) * 8 + 6
+                d.rect(lx, y + 5, LX + LW - 14 - lx, 1, theme.MUTED2, fill=True)
+            elif kind == "c":
+                d.text(label[:(LW - 24) // 8], LABEL_X, y + 2, ref)
+            else:
+                if kind == "l":
+                    val = self._live_txt[ref]
+                    self._live_y[ref] = y + 2
+                elif kind == "t":
+                    val = ref
+                else:
+                    val = str(v.get(ref, "-"))
+                d.text(label, LABEL_X, y + 2, theme.MUTED)
+                d.text(val[:VALUE_COLS], VALUE_X, y + 2, theme.TEXT_BRIGHT)
+            y += ROW_H
 
-        # ── credits section
-        sep_y = draw_y(cy_logical)
-        if _visible(sep_y, 1):
-            d.rect(panel_x + 16, sep_y, panel_w - 32, 1, theme.PRIMARY, fill=True)
-        cy_logical += 8
-
-        for line, col, scale in [
-                ("Crafted by",                          theme.MUTED,       1),
-                ("@Circuit-Overtime",                   theme.PRIMARY,     2),
-                ("Source on GitHub at",                 theme.TEXT_DIM,    1),
-                ("https://github.com/elixpo/oreo",             theme.TEAL,        1)
-        ]:
-            yy = draw_y(cy_logical)
-            row_h = 10 * scale
-            if _visible(yy, row_h):
-                lw = len(line) * 8 * scale
-                d.text(line, panel_x + (panel_w - lw) // 2, yy, col, scale=scale)
-            cy_logical += row_h + 4
-
-
-        inner_h    = panel_h - PAD_TOP - PAD_BOT
-        total_need = cy_logical
-        if total_need > inner_h:
-            self._max_scroll = total_need - inner_h + PAD_BOT
-            track_h = panel_h - 8
-            thumb_h = max(16, track_h * panel_h // cy_logical)
-            thumb_y = panel_y + 4 + (track_h - thumb_h) * self._scroll \
-                                          // max(1, self._max_scroll)
-            d.rect(panel_x + panel_w - 4, panel_y + 4, 2, track_h, theme.MUTED2, fill=True)
-            d.rect(panel_x + panel_w - 4, thumb_y, 2, thumb_h, theme.PRIMARY, fill=True)
-        else:
-            self._max_scroll = 0
-
-        self._dirty = False
+        # Scrollbar
+        widgets.draw_scrollbar(d, LX + LW - 5, LY + 4, LH - 8,
+                               len(rows), VISIBLE, self._top,
+                               track=theme.DOCK_SEL)

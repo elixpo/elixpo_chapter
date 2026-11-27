@@ -118,6 +118,8 @@ export default function FrameSidebar() {
               key={s.id}
               onClick={() => updateFillStyle(s.id)}
               title={s.label}
+              aria-label={s.label}
+              aria-pressed={fillStyle === s.id}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-100 ${
                 fillStyle === s.id
                   ? 'bg-white/[0.12] text-white'
@@ -140,6 +142,8 @@ export default function FrameSidebar() {
                   key={c}
                   onClick={() => updateFillColor(c)}
                   title={c}
+                  aria-label={'Fill colour ' + c}
+                  aria-pressed={fillColor === c}
                   className={`w-6 h-6 rounded-md border-2 transition-all duration-100 ${
                     fillColor === c ? 'border-accent-blue scale-110' : 'border-white/10 hover:border-white/30'
                   }`}

@@ -247,6 +247,10 @@ export async function POST(request) {
         slugid, slug, title || '', subtitle || '', compressedContent, excerpt,
         session.userId, requestedTarget, pageEmoji || '', storedCover, posX, posY, zoom, finalSecret, finalMemberOnly, discovery.language, discovery.region, now, now
       ).run();
+      try {
+        const { recordActivationMilestone } = await import('../../../../lib/activation');
+        await recordActivationMilestone(db, session.userId, 'first_draft');
+      } catch {}
       if (compressedContent) {
         try {
           const { snapshotVersion } = await import('../../../../lib/blogVersions');

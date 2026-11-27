@@ -21,6 +21,7 @@ export default function ImageCropModal({
   belowHeader = false,    // editor covers sit below its fixed navbar
   squareDialog = false,   // constrain the outer panel to a responsive 1:1 shape
   onSave,
+  onSavingChange,
   onClose,
 }) {
   const outputHeight = Math.round(outputWidth / aspectRatio);
@@ -206,6 +207,7 @@ export default function ImageCropModal({
     const canvas = canvasRef.current;
     if (!canvas) return;
     setSaving(true);
+    onSavingChange?.(true);
     // Always lossy WebP; step quality down until the blob fits maxSizeKB so every
     // image hitting the site is heavily compressed regardless of source size.
     const toBlob = (q) => new Promise((res) => canvas.toBlob(res, 'image/webp', q));
@@ -215,8 +217,12 @@ export default function ImageCropModal({
       blob = await toBlob(q);
       if (blob && blob.size <= maxBytes) break;
     }
-    if (blob) onSave(blob);
-    setSaving(false);
+    try {
+      if (blob) await onSave(blob);
+    } finally {
+      onSavingChange?.(false);
+      setSaving(false);
+    }
   };
 
   const handleRemove = () => { onSave(null); onClose(); };
@@ -231,7 +237,7 @@ export default function ImageCropModal({
   return (
     <div
       className={`fixed inset-x-0 bottom-0 flex items-center justify-center p-4 ${belowHeader ? 'top-14 z-[49] bg-black/40' : 'top-0 z-[100] bg-black/55'}`}
-      onClick={onClose}
+      onClick={saving ? undefined : onClose}
     >
       <div
         className="border rounded-2xl w-full max-w-[900px] overflow-y-auto overscroll-contain"
@@ -251,7 +257,12 @@ export default function ImageCropModal({
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]" style={{ backgroundColor: 'var(--card-bg)' }}>
           <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">{title}</h3>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onClose}
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1 disabled:cursor-not-allowed disabled:opacity-50"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>

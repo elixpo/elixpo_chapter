@@ -74,6 +74,20 @@ static void begin_frame(void *)
     lcd.setAddrWindow(0, 0, lcd.width(), lcd.height());
 }
 
+// Partial deltas: only the rows that changed are sent.
+static void begin_rows(void *, uint16_t first_row, uint16_t rows)
+{
+    lcd.startWrite();
+    lcd.setAddrWindow(0, first_row, lcd.width(), rows);
+}
+
+// Region deltas: only the columns and rows of each changed band are sent.
+static void begin_window(void *, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+{
+    lcd.startWrite();
+    lcd.setAddrWindow(x, y, w, h);
+}
+
 static void queue_stripe(void *, const uint8_t *data, size_t length)
 {
     // swap565_t is big-endian RGB565, the byte order RV565 stripes use.
@@ -114,10 +128,15 @@ void setup()
         player.stripes[i] = (uint8_t *)heap_caps_aligned_alloc(4, stripe_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
     }
     player.frames[0] = (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    player.frames[1] = DUAL_CORE ? (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : NULL;
+    // The second buffer is needed for dual-core decoding and for clips with
+    // zlib delta frames; a single-core build playing keyframe-only clips may
+    // pass NULL instead.
+    player.frames[1] = (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
     player.display.ctx = NULL;
     player.display.begin_frame = begin_frame;
+    player.display.begin_rows = begin_rows;
+    player.display.begin_window = begin_window;
     player.display.queue_stripe = queue_stripe;
     player.display.wait_stripe = wait_stripe;
     player.display.end_frame = end_frame;

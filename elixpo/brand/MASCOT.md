@@ -1,4 +1,4 @@
-# Oreo — the Elixpo mascot
+# Lumi — the Elixpo mascot
 
 > **Single source of truth.** Every Elixpo-branded asset — sticker, icon,
 > banner, splash, app art — must respect the rules on this page. If a
@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| **Name** | Oreo |
+| **Name** | Lumi (she/her; formerly Oreo) |
 | **Species** | Panda (cartoon, kawaii) |
 | **Style** | 8-bit pixel art with thick dark outline |
 | **Vibe** | Warm, festive, celebratory — *NOT* dark mode |
@@ -30,9 +30,9 @@
 | Chest badge ("E-badge") | Red-gold (mascot's signature mark) | `rgb(220, 60, 50)` | `#DC3C32` |
 | Outline (everywhere) | Dark outline | `rgb(38, 38, 48)` | `#262630` |
 
-> The chest "E-badge" is **mandatory** — it is what makes Oreo *Elixpo's*
+> The chest "E-badge" is **mandatory** — it is what makes Lumi *Elixpo's*
 > panda. A panda without the badge is just a panda; with the badge it is
-> Oreo.
+> Lumi.
 
 ---
 
@@ -59,7 +59,7 @@
 ### ✅ Do
 - Use **warm, bright backgrounds** — ivory, cream, warm white.
 - Use **thick dark outlines** on every shape — pixel art demands them.
-- Give Oreo **pink cheeks** (`#FF5D68`) and the **red chest badge**.
+- Give Lumi **pink cheeks** (`#FF5D68`) and the **red chest badge**.
 - Keep the canvas **square** (`1:1`) for stickers and icons.
 - Default sticker output size: **1024×1024**. Icon source: **200×200**
   (optimised to 32×32 for the device).
@@ -70,7 +70,7 @@
 - **No dark / navy / black backgrounds.** This is a celebration brand.
 - **No text, no letters, no watermarks** unless the prompt explicitly
   asks for them.
-- **No anatomy drift** — Oreo is *always* a panda, not a bear / cat /
+- **No anatomy drift** — Lumi is *always* a panda, not a bear / cat /
   fox / dog. Keep ears round, body chubby, posture kawaii.
 - **No realism.** Always pixel-art cartoon. Never 3D-rendered, never
   photoreal, never anime-shaded.
@@ -84,7 +84,7 @@
 ## The Style Suffix
 
 Every prompt to the image API must end with this suffix. It is what
-binds the model to the Oreo look across runs and seeds:
+binds the model to the Lumi look across runs and seeds:
 
 ```
 pixel art cartoon style, thick dark outline, vibrant warm celebration
@@ -106,7 +106,7 @@ no watermark
 
 ## The Mascot Clause
 
-When a prompt features Oreo (vs. just an object icon), append this
+When a prompt features Lumi (vs. just an object icon), append this
 short anatomy clause **before** the style suffix, so the model can't
 drift:
 
@@ -122,14 +122,14 @@ red E-badge rgb(220,60,50) on the chest
 
 ```
 <one-line vibe sentence describing the scene>,
-<MASCOT CLAUSE if Oreo appears>,
+<MASCOT CLAUSE if Lumi appears>,
 <STYLE SUFFIX>
 ```
 
 Example (sticker):
 
 ```
-Oreo the panda waving hello with both paws raised in celebration,
+Lumi the panda waving hello with both paws raised in celebration,
 featuring the Lumi panda mascot: warm cream-white fur rgb(240,238,232),
 dark patches rgb(38,38,48), rosy pink cheeks rgb(255,93,104), and a
 red E-badge rgb(220,60,50) on the chest,
@@ -160,7 +160,7 @@ a `MASCOT-CHANGES.md` entry. Minor wording fixes are silent.
 
 The mascot itself is registered to **Ayushman Bhattacharya** under the
 Indian Copyright Act, 1957 (see the OreoOS copyright filing, Diary
-`LD-26455/2026-CO`). The Oreo character, the chest E-badge, and this
+`LD-26455/2026-CO`). The Lumi character, the chest E-badge, and this
 palette are the *visual identity*; their copyright is the author's.
 External contributors who generate assets via the issue workflow are
 granted a non-exclusive licence to use, share and remix those assets

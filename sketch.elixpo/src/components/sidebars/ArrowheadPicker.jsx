@@ -17,6 +17,8 @@ const LABELS = {
   crowfoot_one: 'Crow’s foot: one',
   crowfoot_many: 'Crow’s foot: many',
   crowfoot_one_or_many: 'Crow’s foot: one or many',
+  crowfoot_zero_or_one: 'Crow’s foot: zero or one',
+  crowfoot_zero_or_many: 'Crow’s foot: zero or many',
   cross: 'Cross',
 }
 

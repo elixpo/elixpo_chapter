@@ -170,15 +170,27 @@ def main() -> int:
         "sample_frames",
         "overlap",
         "backlight_percent",
+        "codec",
+        "decoder",
+        "platform",
+        "library_version",
     )
+    # Artifacts each platform's collector records (tools/collect_video_benchmark.py).
+    platform_artifacts = {
+        "esp32s3": ("application", "media", "sdkconfig"),
+        "rp2350": ("application", "media", "benchmark_source", "build_definition"),
+    }
 
     for path in paths:
         record = json.loads(path.read_text(encoding="utf-8"))
         if "aggregate_schema_version" in record:
             continue
+        platform = record.get("platform", "esp32s3")
+        if platform not in platform_artifacts:
+            raise SystemExit(f"{path}: unknown platform {platform!r}")
         hashes = {
             name: artifact_hash(record, name)
-            for name in ("application", "media", "sdkconfig")
+            for name in platform_artifacts[platform]
         }
         metadata = {key: record["metadata"].get(key) for key in stable_metadata_keys}
         if expected_hashes is None:
@@ -209,8 +221,11 @@ def main() -> int:
         int(record["summary"]["deadline_misses"]) for record in records
     )
 
+    # The RP2350 firmware prints no heap report (all buffers are static).
     heap_deltas = []
     for record in records:
+        if not record.get("heap"):
+            continue
         boot = heap_entry(record, "boot", "internal")
         media = heap_entry(record, "media_open", "internal")
         ready = heap_entry(record, "ready", "internal")

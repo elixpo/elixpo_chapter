@@ -21,5 +21,8 @@ test('file scene store creates and atomically replaces a private scene file', as
   const stored = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(stored.mcpRevision, 1);
   assert.equal(stored.shapes[0].shapeID, 'stored-circle');
-  assert.equal((await stat(filePath)).mode & 0o777, 0o600);
+  // Windows does not support POSIX permission bits (returns 0o666 instead of 0o600).
+  if (process.platform !== 'win32') {
+    assert.equal((await stat(filePath)).mode & 0o777, 0o600);
+  }
 });

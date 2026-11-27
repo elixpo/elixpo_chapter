@@ -1,6 +1,10 @@
 /* ESP32 port: ST7789 over SPI with GDMA, and an inflate worker on core 1.
  * Works under ESP-IDF and Arduino-ESP32. Measured on the ESP32-S3 in the
- * RV565 paper; other ESP32 chips are untested. */
+ * RV565 paper; other ESP32 chips are untested.
+ *
+ * The ST7789 runs in RGB565 mode, so clips must be rgb565be (any codec,
+ * keyframes, deltas and repeats); rv565_player_init() rejects other pixel
+ * formats with RV565_ERR_UNSUPPORTED. */
 #ifndef RV565_ESP32_H
 #define RV565_ESP32_H
 

@@ -1,4 +1,4 @@
-"""Hardware-free tests for pure OreoOS helpers.
+"""Hardware-free tests for pure FaleraOS helpers.
 
 Run from the repository root with only the standard library:
 

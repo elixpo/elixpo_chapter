@@ -25,6 +25,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChangeIdDialog from "@/components/change-id-dialog";
 import ConfirmDialog from "@/components/confirm-dialog";
+import MailNotificationsCard from "@/components/mail-notifications-card";
 import { formatMoney, GlassCard, StatCard } from "@/components/dashboard-ui";
 import RotateDialog, { type GraceKey } from "@/components/rotate-dialog";
 
@@ -393,7 +394,7 @@ export default function ProductDetailPage() {
     if (loading) {
         return (
             <Box sx={{ display: "grid", placeItems: "center", py: 12 }}>
-                <CircularProgress sx={{ color: "#9b7bf7" }} />
+                <CircularProgress sx={{ color: "var(--app-accent)" }} />
             </Box>
         );
     }
@@ -406,7 +407,7 @@ export default function ProductDetailPage() {
                 <Button
                     component={Link}
                     href="/dashboard/products"
-                    sx={{ mt: 2, textTransform: "none", color: "#9b7bf7" }}
+                    sx={{ mt: 2, textTransform: "none", color: "var(--app-accent)" }}
                 >
                     ← Back to products
                 </Button>
@@ -499,7 +500,7 @@ export default function ProductDetailPage() {
                                         minWidth: 0,
                                         textTransform: "none",
                                         fontWeight: 700,
-                                        color: "#c4b5fd",
+                                        color: "var(--app-accent)",
                                     }}
                                 >
                                     {nameBusy ? "…" : "Save"}
@@ -545,9 +546,9 @@ export default function ProductDetailPage() {
                                         color: "var(--app-fg-muted)",
                                         background: "transparent",
                                         "&:hover": {
-                                            color: "#c4b5fd",
+                                            color: "var(--app-accent)",
                                             background:
-                                                "rgba(155,123,247,0.08)",
+                                                "color-mix(in srgb, var(--app-accent) 8%, transparent)",
                                         },
                                     }}
                                 >
@@ -561,11 +562,11 @@ export default function ProductDetailPage() {
                             sx={{
                                 height: 22,
                                 fontSize: "0.7rem",
-                                color: product.active ? "#4ade80" : "#9ca3af",
+                                color: product.active ? "var(--app-success)" : "var(--app-fg-faint)",
                                 bgcolor: product.active
-                                    ? "rgba(34,197,94,0.1)"
-                                    : "rgba(156,163,175,0.1)",
-                                border: `1px solid ${product.active ? "rgba(34,197,94,0.25)" : "rgba(156,163,175,0.2)"}`,
+                                    ? "color-mix(in srgb, var(--app-success) 10%, transparent)"
+                                    : "color-mix(in srgb, var(--app-fg-faint) 10%, transparent)",
+                                border: `1px solid ${product.active ? "color-mix(in srgb, var(--app-success) 25%, transparent)" : "color-mix(in srgb, var(--app-fg-faint) 20%, transparent)"}`,
                             }}
                         />
                     </Stack>
@@ -580,7 +581,7 @@ export default function ProductDetailPage() {
                             sx={{
                                 fontFamily: "var(--font-geist-mono)",
                                 fontSize: "0.8rem",
-                                color: "#c4b5fd",
+                                color: "var(--app-accent)",
                             }}
                         >
                             Client ID: {product.client_id}
@@ -599,14 +600,14 @@ export default function ProductDetailPage() {
                                 fontSize: "0.76rem",
                                 textDecoration: "underline",
                                 textUnderlineOffset: "2px",
-                                "&:hover": { color: "#c4b5fd" },
+                                "&:hover": { color: "var(--app-accent)" },
                             }}
                         >
                             Change ID
                         </Box>
                         {slugGrace && (
                             <Typography
-                                sx={{ fontSize: "0.72rem", color: "#fbbf24" }}
+                                sx={{ fontSize: "0.72rem", color: "var(--app-warn)" }}
                             >
                                 old ID <strong>{product.prev_slug}</strong>{" "}
                                 works until {slugGrace}
@@ -673,9 +674,9 @@ export default function ProductDetailPage() {
                             sx={{
                                 textTransform: "none",
                                 fontWeight: 600,
-                                color: "rgba(248,113,113,0.85)",
-                                border: "1px solid rgba(239,68,68,0.25)",
-                                borderRadius: "10px",
+                                color: "color-mix(in srgb, var(--app-danger) 85%, transparent)",
+                                border: "1px solid color-mix(in srgb, var(--app-danger) 25%, transparent)",
+                                borderRadius: "999px",
                                 px: 2,
                             }}
                         >
@@ -689,13 +690,13 @@ export default function ProductDetailPage() {
                                 textTransform: "none",
                                 fontWeight: 700,
                                 color: "#fff",
-                                borderRadius: "10px",
+                                borderRadius: "999px",
                                 px: 2.2,
                                 background:
-                                    "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                                    "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                                 "&:hover": {
                                     background:
-                                        "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                        "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                                 },
                                 "&.Mui-disabled": {
                                     opacity: 0.5,
@@ -716,9 +717,9 @@ export default function ProductDetailPage() {
                         px: 2,
                         py: 1.4,
                         borderRadius: "12px",
-                        background: "rgba(239,68,68,0.08)",
-                        border: "1px solid rgba(239,68,68,0.25)",
-                        color: "rgba(248,113,113,0.9)",
+                        background: "color-mix(in srgb, var(--app-danger) 8%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--app-danger) 25%, transparent)",
+                        color: "color-mix(in srgb, var(--app-danger) 90%, transparent)",
                         fontSize: "0.88rem",
                     }}
                 >
@@ -754,19 +755,19 @@ export default function ProductDetailPage() {
                             ? `+${stats.revenue.length - 1} more currency`
                             : "captured"
                     }
-                    accent="#86efac"
+                    accent="var(--app-success)"
                 />
                 <StatCard
                     label="Active members"
                     value={String(stats.activeMembers)}
                     sub="entitlements live"
-                    accent="#9b7bf7"
+                    accent="var(--app-accent)"
                 />
                 <StatCard
                     label="Paid txns"
                     value={String(stats.paidTransactions)}
                     sub="lifetime"
-                    accent="#fbbf24"
+                    accent="var(--app-warn)"
                 />
             </Box>
 
@@ -798,7 +799,7 @@ export default function ProductDetailPage() {
                             <Typography
                                 sx={{
                                     fontSize: "0.74rem",
-                                    color: "#fbbf24",
+                                    color: "var(--app-warn)",
                                     mt: 0.4,
                                 }}
                             >
@@ -817,9 +818,9 @@ export default function ProductDetailPage() {
                         sx={{
                             textTransform: "none",
                             fontWeight: 600,
-                            color: "#c4b5fd",
-                            border: "1px solid rgba(155,123,247,0.3)",
-                            borderRadius: "10px",
+                            color: "var(--app-accent)",
+                            border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
+                            borderRadius: "999px",
                             px: 1.8,
                             "&.Mui-disabled": { opacity: 0.5 },
                         }}
@@ -833,13 +834,13 @@ export default function ProductDetailPage() {
                         fontSize: "0.7rem",
                         color: "var(--app-fg-faint)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.06em",
+                        letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                         mb: 0.5,
                     }}
                 >
                     Client ID
                 </Typography>
-                <Box sx={{ ...mono, color: "#c4b5fd", mb: creds ? 2 : 0 }}>
+                <Box sx={{ ...mono, color: "var(--app-accent)", mb: creds ? 2 : 0 }}>
                     {product.client_id}
                 </Box>
 
@@ -850,7 +851,7 @@ export default function ProductDetailPage() {
                                 fontSize: "0.7rem",
                                 color: "var(--app-fg-faint)",
                                 textTransform: "uppercase",
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 mb: 0.5,
                             }}
                         >
@@ -867,7 +868,7 @@ export default function ProductDetailPage() {
                                 }}
                             >
                                 <CheckCircleIcon
-                                    sx={{ fontSize: 16, color: "#86efac" }}
+                                    sx={{ fontSize: 16, color: "var(--app-success)" }}
                                 />
                                 Copied & hidden — the old secret no longer
                                 works. Store this as ELIXPO_PAY_API_KEY.
@@ -898,11 +899,11 @@ export default function ProductDetailPage() {
                                     sx={{
                                         textTransform: "none",
                                         fontWeight: 600,
-                                        color: "#fff",
+                                        color: "var(--app-on-ink)",
                                         px: 2,
-                                        background: "#7c5cff",
-                                        borderRadius: "10px",
-                                        "&:hover": { background: "#8a6dff" },
+                                        background: "var(--app-ink)",
+                                        borderRadius: "999px",
+                                        "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
                                     }}
                                 >
                                     Copy
@@ -913,7 +914,7 @@ export default function ProductDetailPage() {
                 )}
                 {err && (
                     <Typography
-                        sx={{ color: "#f87171", fontSize: "0.85rem", mt: 1 }}
+                        sx={{ color: "var(--app-danger)", fontSize: "0.85rem", mt: 1 }}
                     >
                         {err}
                     </Typography>
@@ -958,9 +959,9 @@ export default function ProductDetailPage() {
                             sx={{
                                 textTransform: "none",
                                 fontWeight: 600,
-                                color: "#c4b5fd",
-                                border: "1px solid rgba(155,123,247,0.3)",
-                                borderRadius: "10px",
+                                color: "var(--app-accent)",
+                                border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
+                                borderRadius: "999px",
                                 px: 1.8,
                                 "&.Mui-disabled": { opacity: 0.5 },
                             }}
@@ -975,7 +976,7 @@ export default function ProductDetailPage() {
                         fontSize: "0.7rem",
                         color: "var(--app-fg-faint)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.06em",
+                        letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                         mb: 0.5,
                     }}
                 >
@@ -1008,14 +1009,14 @@ export default function ProductDetailPage() {
                         sx={{
                             textTransform: "none",
                             fontWeight: 600,
-                            color: "#fff",
+                            color: "var(--app-on-ink)",
                             px: 2.4,
                             py: 0.9,
                             borderRadius: "10px",
-                            background: "#7c5cff",
+                            background: "var(--app-ink)",
                             whiteSpace: "nowrap",
-                            "&:hover": { background: "#8a6dff" },
-                            "&.Mui-disabled": { opacity: 0.5, color: "#fff" },
+                            "&:hover": { background: "var(--app-ink)", opacity: 0.86 },
+                            "&.Mui-disabled": { opacity: 0.5, color: "var(--app-on-ink)" },
                         }}
                     >
                         {webhookBusy ? "Saving…" : webhook ? "Update" : "Save"}
@@ -1029,7 +1030,7 @@ export default function ProductDetailPage() {
                                 fontSize: "0.7rem",
                                 color: "var(--app-fg-faint)",
                                 textTransform: "uppercase",
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 mb: 1,
                             }}
                         >
@@ -1067,7 +1068,7 @@ export default function ProductDetailPage() {
                                                     sx={{
                                                         ...mono,
                                                         fontSize: "0.8rem",
-                                                        color: "#c4b5fd",
+                                                        color: "var(--app-accent)",
                                                         p: 0,
                                                         background: "none",
                                                         border: "none",
@@ -1123,7 +1124,7 @@ export default function ProductDetailPage() {
                                 fontSize: "0.7rem",
                                 color: "var(--app-fg-faint)",
                                 textTransform: "uppercase",
-                                letterSpacing: "0.06em",
+                                letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)",
                                 mb: 0.5,
                             }}
                         >
@@ -1140,7 +1141,7 @@ export default function ProductDetailPage() {
                                 }}
                             >
                                 <CheckCircleIcon
-                                    sx={{ fontSize: 16, color: "#86efac" }}
+                                    sx={{ fontSize: 16, color: "var(--app-success)" }}
                                 />
                                 Copied &amp; hidden — store it as
                                 ELIXPO_PAY_WEBHOOK_SECRET. It won't be shown
@@ -1175,12 +1176,12 @@ export default function ProductDetailPage() {
                                         sx={{
                                             textTransform: "none",
                                             fontWeight: 600,
-                                            color: "#fff",
+                                            color: "var(--app-on-ink)",
                                             px: 2,
-                                            background: "#7c5cff",
+                                            background: "var(--app-ink)",
                                             borderRadius: "10px",
                                             "&:hover": {
-                                                background: "#8a6dff",
+                                                background: "var(--app-ink)", opacity: 0.86,
                                             },
                                         }}
                                     >
@@ -1204,13 +1205,16 @@ export default function ProductDetailPage() {
                 ) : null}
                 {webhookGrace && (
                     <Typography
-                        sx={{ fontSize: "0.74rem", color: "#fbbf24", mt: 1 }}
+                        sx={{ fontSize: "0.74rem", color: "var(--app-warn)", mt: 1 }}
                     >
                         Dual-signing with the previous secret until{" "}
                         {webhookGrace}.
                     </Typography>
                 )}
             </GlassCard>
+
+            {/* Buyer emails via Elixpo Mails */}
+            <MailNotificationsCard productId={id} />
 
             {/* Tiers (read-only — managed from code via the sync API) */}
             <GlassCard>
@@ -1244,9 +1248,9 @@ export default function ProductDetailPage() {
                                 height: 22,
                                 fontSize: "0.7rem",
                                 fontWeight: 600,
-                                color: "#c4b5fd",
-                                bgcolor: "rgba(155,123,247,0.12)",
-                                border: "1px solid rgba(155,123,247,0.25)",
+                                color: "var(--app-accent)",
+                                bgcolor: "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                border: "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
                             }}
                         />
                     )}
@@ -1321,12 +1325,12 @@ export default function ProductDetailPage() {
                                                 fontFamily:
                                                     "var(--font-geist-mono)",
                                                 fontSize: "0.72rem",
-                                                color: "#c4b5fd",
+                                                color: "var(--app-accent)",
                                                 px: 0.8,
                                                 py: 0.2,
                                                 borderRadius: "6px",
                                                 background:
-                                                    "rgba(155,123,247,0.1)",
+                                                    "color-mix(in srgb, var(--app-accent) 10%, transparent)",
                                             }}
                                         >
                                             {t.tier}
@@ -1340,12 +1344,12 @@ export default function ProductDetailPage() {
                                             fontSize: "0.62rem",
                                             fontWeight: 700,
                                             color: t.active
-                                                ? "#86efac"
-                                                : "#9ca3af",
+                                                ? "var(--app-success)"
+                                                : "var(--app-fg-faint)",
                                             bgcolor: t.active
-                                                ? "rgba(134,239,172,0.12)"
-                                                : "rgba(156,163,175,0.12)",
-                                            border: `1px solid ${t.active ? "rgba(134,239,172,0.3)" : "rgba(156,163,175,0.25)"}`,
+                                                ? "color-mix(in srgb, var(--app-success) 12%, transparent)"
+                                                : "color-mix(in srgb, var(--app-fg-faint) 12%, transparent)",
+                                            border: `1px solid ${t.active ? "color-mix(in srgb, var(--app-success) 30%, transparent)" : "color-mix(in srgb, var(--app-fg-faint) 25%, transparent)"}`,
                                         }}
                                     />
                                 </Stack>
@@ -1378,7 +1382,7 @@ export default function ProductDetailPage() {
                                                     borderRadius: "10px",
                                                     border: "1px solid var(--app-border)",
                                                     background:
-                                                        "rgba(0,0,0,0.18)",
+                                                        "color-mix(in srgb, var(--app-fg) 18%, transparent)",
                                                     opacity: pr.active
                                                         ? 1
                                                         : 0.5,
@@ -1412,7 +1416,7 @@ export default function ProductDetailPage() {
                                                                     fontSize:
                                                                         "0.62rem",
                                                                     fontWeight: 700,
-                                                                    color: "#86efac",
+                                                                    color: "var(--app-success)",
                                                                     textTransform:
                                                                         "uppercase",
                                                                     letterSpacing:
@@ -1422,8 +1426,8 @@ export default function ProductDetailPage() {
                                                                     borderRadius:
                                                                         "6px",
                                                                     background:
-                                                                        "rgba(134,239,172,0.1)",
-                                                                    border: "1px solid rgba(134,239,172,0.3)",
+                                                                        "color-mix(in srgb, var(--app-success) 10%, transparent)",
+                                                                    border: "1px solid color-mix(in srgb, var(--app-success) 30%, transparent)",
                                                                 }}
                                                             >
                                                                 Auto-pay
@@ -1483,7 +1487,7 @@ export default function ProductDetailPage() {
                     </Typography>
                     <Typography
                         sx={{
-                            color: "rgba(245,245,244,0.5)",
+                            color: "color-mix(in srgb, var(--app-fg) 50%, transparent)",
                             fontSize: "0.82rem",
                         }}
                     >
@@ -1503,11 +1507,11 @@ export default function ProductDetailPage() {
                         alignItems: "center",
                         p: 1,
                         borderRadius: "12px",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid color-mix(in srgb, var(--app-fg) 12%, transparent)",
+                        background: "color-mix(in srgb, var(--app-fg) 2%, transparent)",
                         cursor: "text",
                         "&:focus-within": {
-                            borderColor: "#9b7bf7",
+                            borderColor: "var(--app-accent)",
                         },
                     }}
                     onClick={() =>
@@ -1525,12 +1529,12 @@ export default function ProductDetailPage() {
                                 sx={{
                                     height: 26,
                                     fontSize: "0.78rem",
-                                    color: "#c4b5fd",
-                                    bgcolor: "rgba(155,123,247,0.12)",
-                                    border: "1px solid rgba(155,123,247,0.3)",
+                                    color: "var(--app-accent)",
+                                    bgcolor: "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                                    border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
                                     "& .MuiChip-deleteIcon": {
                                         color: "rgba(196,181,253,0.5)",
-                                        "&:hover": { color: "#c4b5fd" },
+                                        "&:hover": { color: "var(--app-accent)" },
                                     },
                                 }}
                             />
@@ -1580,7 +1584,7 @@ export default function ProductDetailPage() {
                             fontSize: "0.85rem",
                             fontFamily: "inherit",
                             "::placeholder": {
-                                color: "rgba(245,245,244,0.35)",
+                                color: "color-mix(in srgb, var(--app-fg) 35%, transparent)",
                             },
                         }}
                     />
@@ -1596,7 +1600,7 @@ export default function ProductDetailPage() {
                         <Typography
                             sx={{
                                 fontSize: "0.76rem",
-                                color: "rgba(245,245,244,0.4)",
+                                color: "color-mix(in srgb, var(--app-fg) 40%, transparent)",
                             }}
                         >
                             {testEmailChips.length} recipient
@@ -1632,10 +1636,10 @@ export default function ProductDetailPage() {
                                 py: 0.85,
                                 borderRadius: "10px",
                                 background:
-                                    "linear-gradient(135deg, #9b7bf7 0%, #7c5cff 100%)",
+                                    "linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent) 100%)",
                                 "&:hover": {
                                     background:
-                                        "linear-gradient(135deg, #b094ff 0%, #8a6dff 100%)",
+                                        "linear-gradient(135deg, var(--app-accent-2) 0%, var(--app-accent-2) 100%)",
                                 },
                                 "&.Mui-disabled": {
                                     opacity: 0.4,
@@ -1662,8 +1666,8 @@ export default function ProductDetailPage() {
                                     sx={{
                                         fontSize: 15,
                                         color: r.ok
-                                            ? "#86efac"
-                                            : "rgba(248,113,113,0.85)",
+                                            ? "var(--app-success)"
+                                            : "color-mix(in srgb, var(--app-danger) 85%, transparent)",
                                         flexShrink: 0,
                                     }}
                                 />
@@ -1671,8 +1675,8 @@ export default function ProductDetailPage() {
                                     sx={{
                                         fontSize: "0.82rem",
                                         color: r.ok
-                                            ? "rgba(245,245,244,0.75)"
-                                            : "rgba(248,113,113,0.85)",
+                                            ? "color-mix(in srgb, var(--app-fg) 75%, transparent)"
+                                            : "color-mix(in srgb, var(--app-danger) 85%, transparent)",
                                         fontFamily: "var(--font-geist-mono)",
                                     }}
                                 >
@@ -1699,14 +1703,14 @@ export default function ProductDetailPage() {
                     sx={{
                         textTransform: "none",
                         fontWeight: 600,
-                        color: "#c4b5fd",
-                        border: "1px solid rgba(155,123,247,0.3)",
-                        borderRadius: "12px",
+                        color: "var(--app-accent)",
+                        border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
+                        borderRadius: "999px",
                         px: 3,
                         py: 1.1,
                         "&:hover": {
-                            borderColor: "rgba(155,123,247,0.6)",
-                            background: "rgba(155,123,247,0.06)",
+                            borderColor: "color-mix(in srgb, var(--app-accent) 60%, transparent)",
+                            background: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
                         },
                     }}
                 >
@@ -1722,7 +1726,7 @@ export default function ProductDetailPage() {
                 </Typography>
                 <Stack spacing={1.6}>
                     <Box>
-                        <Typography sx={{ fontSize: "0.7rem", color: "var(--app-fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", mb: 0.5 }}>
+                        <Typography sx={{ fontSize: "0.7rem", color: "var(--app-fg-faint)", textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)", mb: 0.5 }}>
                             Homepage URL
                         </Typography>
                         <TextField
@@ -1735,7 +1739,7 @@ export default function ProductDetailPage() {
                         />
                     </Box>
                     <Box>
-                        <Typography sx={{ fontSize: "0.7rem", color: "var(--app-fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", mb: 0.5 }}>
+                        <Typography sx={{ fontSize: "0.7rem", color: "var(--app-fg-faint)", textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: "var(--font-geist-mono)", mb: 0.5 }}>
                             Pricing page URL
                         </Typography>
                         <TextField
@@ -1756,15 +1760,15 @@ export default function ProductDetailPage() {
                             (homepageDraft.trim() === (product.homepage_url || "") &&
                                 pricingDraft.trim() === (product.pricing_url || ""))
                         }
-                        sx={{ textTransform: "none", fontWeight: 600, color: "#fff", px: 2.4, py: 0.9, borderRadius: "10px", background: "#7c5cff", "&:hover": { background: "#8a6dff" }, "&.Mui-disabled": { opacity: 0.5, color: "#fff" } }}
+                        sx={{ textTransform: "none", fontWeight: 600, color: "var(--app-on-ink)", px: 2.4, py: 0.9, borderRadius: "999px", background: "var(--app-ink)", "&:hover": { background: "var(--app-ink)", opacity: 0.86 }, "&.Mui-disabled": { opacity: 0.5, color: "var(--app-on-ink)" } }}
                     >
                         {linksBusy ? "Saving…" : "Save links"}
                     </Button>
                     {linksSaved && (
-                        <Typography sx={{ color: "#86efac", fontSize: "0.82rem" }}>Saved ✓</Typography>
+                        <Typography sx={{ color: "var(--app-success)", fontSize: "0.82rem" }}>Saved ✓</Typography>
                     )}
                     {linksErr && (
-                        <Typography sx={{ color: "#f87171", fontSize: "0.82rem" }}>{linksErr}</Typography>
+                        <Typography sx={{ color: "var(--app-danger)", fontSize: "0.82rem" }}>{linksErr}</Typography>
                     )}
                 </Stack>
                 <Typography sx={{ color: "var(--app-fg-faint)", fontSize: "0.72rem", mt: 1 }}>
@@ -1773,8 +1777,8 @@ export default function ProductDetailPage() {
             </GlassCard>
 
             {/* Danger zone — permanent delete */}
-            <GlassCard sx={{ mt: 2, border: "1px solid rgba(239,68,68,0.3)" }}>
-                <Typography sx={{ fontWeight: 700, fontSize: "1.1rem", color: "#f87171" }}>
+            <GlassCard sx={{ mt: 2, border: "1px solid color-mix(in srgb, var(--app-danger) 30%, transparent)" }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--app-danger)" }}>
                     Danger zone
                 </Typography>
                 <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={1.5} sx={{ mt: 1 }}>
@@ -1788,13 +1792,13 @@ export default function ProductDetailPage() {
                             setDeleteErr("");
                             setConfirmDelete(true);
                         }}
-                        sx={{ textTransform: "none", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", px: 2.4, py: 0.9, borderRadius: "10px", background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)", "&:hover": { background: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)" } }}
+                        sx={{ textTransform: "none", fontWeight: 700, color: "#fff", whiteSpace: "nowrap", px: 2.4, py: 0.9, borderRadius: "999px", background: "linear-gradient(135deg, var(--app-danger) 0%, var(--app-danger) 100%)", "&:hover": { background: "linear-gradient(135deg, var(--app-danger) 0%, var(--app-danger) 100%)" } }}
                     >
                         Delete product
                     </Button>
                 </Stack>
                 {deleteErr && (
-                    <Typography sx={{ color: "#f87171", fontSize: "0.82rem", mt: 1.2 }}>{deleteErr}</Typography>
+                    <Typography sx={{ color: "var(--app-danger)", fontSize: "0.82rem", mt: 1.2 }}>{deleteErr}</Typography>
                 )}
             </GlassCard>
 
@@ -1890,8 +1894,8 @@ const field = {
         color: "var(--app-fg)",
         background: "var(--app-overlay)",
         "& fieldset": { borderColor: "var(--app-border)" },
-        "&:hover fieldset": { borderColor: "rgba(155,123,247,0.4)" },
-        "&.Mui-focused fieldset": { borderColor: "#9b7bf7" },
+        "&:hover fieldset": { borderColor: "color-mix(in srgb, var(--app-accent) 40%, transparent)" },
+        "&.Mui-focused fieldset": { borderColor: "var(--app-accent)" },
     },
     "& .MuiInputLabel-root": { color: "var(--app-fg-muted)" },
 };
@@ -1901,7 +1905,7 @@ const mono = {
     fontSize: "0.82rem",
     p: 1.2,
     borderRadius: "10px",
-    background: "rgba(0,0,0,0.3)",
+    background: "var(--app-surface-2)",
     border: "1px solid var(--app-border)",
     overflowX: "auto",
     whiteSpace: "nowrap",
@@ -1910,12 +1914,12 @@ const mono = {
 const purpleOutlineBtn = {
     textTransform: "none",
     fontWeight: 600,
-    color: "#c4b5fd",
-    border: "1px solid rgba(155,123,247,0.3)",
+    color: "var(--app-accent)",
+    border: "1px solid color-mix(in srgb, var(--app-accent) 30%, transparent)",
     borderRadius: "10px",
     px: 2,
     "&:hover": {
-        borderColor: "rgba(155,123,247,0.6)",
-        background: "rgba(155,123,247,0.06)",
+        borderColor: "color-mix(in srgb, var(--app-accent) 60%, transparent)",
+        background: "color-mix(in srgb, var(--app-accent) 6%, transparent)",
     },
 };

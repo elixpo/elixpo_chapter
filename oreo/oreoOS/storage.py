@@ -1,4 +1,4 @@
-"""Filesystem accounting for OreoOS.
+"""Filesystem accounting for FaleraOS.
 
 Walks the device root once and buckets every file into one of five
 human-meaningful categories so the user can see at a glance what's
@@ -9,8 +9,9 @@ eating their 16 MB:
   apps        per-app code/assets, EXCLUDING gallery content + caches
   gallery     incoming videos + baked/uploaded photos (gallery assets)
   documents   text / markdown landed via BT or sideload (documents/)
-  misc        runtime caches, OTA staging, anything we didn't classify
-              (apps/*/cache.txt, apps/*/state.txt, /_ota, /.deploy_hashes…)
+  misc        runtime caches, OTA staging, app state, anything we didn't
+              classify (apps/*/cache.txt, /state/, /profile.json,
+              /crash.log, /_ota, /.deploy_hashes…)
 
 Used by `apps/storage` and (read-only) by `tools/deploy.py`'s
 free-space guard before a push.
@@ -29,9 +30,9 @@ _SYSTEM_PREFIXES   = ("oreoOS/", "oreoWare/", "assets/")
 _SYSTEM_FILES      = ("main.py", "boot.py", "secrets.py")
 _GALLERY_PREFIX    = "apps/gallery/assets/"
 _DOCUMENTS_PREFIX  = "documents/"
-_MISC_PREFIXES     = ("_ota/", ".ota/", "ota_staging/")
+_MISC_PREFIXES     = ("_ota/", ".ota/", "ota_staging/", "state/")
 _MISC_SUFFIXES     = ("cache.txt", "state.txt")
-_MISC_FILES        = (".deploy_hashes.json",)
+_MISC_FILES        = (".deploy_hashes.json", "profile.json", "crash.log")
 
 
 def _classify(path):

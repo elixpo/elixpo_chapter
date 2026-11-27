@@ -32,9 +32,10 @@ See [`docs/elixpoo-v2.md`](docs/elixpoo-v2.md) for the runtime and authorization
 python -m pytest tests/test_elixpoo_v2.py tests/test_elixpoo_v2_workflows.py tests/test_rollout_prs.py
 python -m agents.rollout_prs
 python -m agents.rollout_audit --repo agent.elixpo
+python -m agents.repository_standard
 ```
 
-The rollout audit is read-only. Its source of truth is [`config/elixpoo_rollout.yaml`](config/elixpoo_rollout.yaml); archived, private, cancelled, and deferred repositories are excluded unless explicitly opted in.
+The caller rollout audit is read-only. Its source of truth is [`config/elixpoo_rollout.yaml`](config/elixpoo_rollout.yaml); archived and private repositories are excluded unless explicitly opted in. The repository-standard audit separately compares active repositories with [`config/repository_standard.yaml`](config/repository_standard.yaml). It covers merge methods, issue and documentation surfaces, post-merge cleanup, and the protected `main` ruleset while preserving declared repository-specific required checks. Metadata reconciliation is opt-in; branch rulesets are intentionally report-only.
 
 ## Repository map
 
@@ -47,6 +48,7 @@ The rollout audit is read-only. Its source of truth is [`config/elixpoo_rollout.
 | `distribution/workflows/` | Copy-ready callers for participating repositories |
 | `config/elixpoo_v2.yaml` | Metadata allowlists and public limits |
 | `config/elixpoo_rollout.yaml` | Organization rollout manifest |
+| `config/repository_standard.yaml` | Repository settings and branch-ruleset policy |
 | `agent.elixpo/` | Read-only public operations dashboard |
 
 ## Required configuration

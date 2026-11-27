@@ -22,6 +22,7 @@ import { renderFlowchartOnCanvas, renderFlowchartPreviewSVG } from './MermaidFlo
 import { parseSequenceDiagramWithErrors } from './MermaidSequenceParser.js';
 import { renderSequenceOnCanvas, renderSequencePreviewSVG } from './MermaidSequenceRenderer.js';
 import { parseClassDiagram, renderClassOnCanvas, renderClassPreviewSVG } from './MermaidClassDiagram.js';
+import { layoutWithMermaid, supportsMermaidLayout } from './MermaidNativeLayout.js';
 import {
     parseChartDiagram,
     parseERDiagram,
@@ -100,6 +101,7 @@ let _renderSeq = 0;
 export function setMermaidLoader(loader) {
     _loader = typeof loader === 'function' ? loader : null;
     _mermaid = null;
+    _initTheme = null; // a new instance has not been initialized yet
 }
 
 function themeIsDark() {
@@ -122,6 +124,11 @@ export async function getMermaid() {
         _initTheme = theme;
     }
     return _mermaid;
+}
+
+/** Forget the applied config so the next getMermaid() re-initializes. */
+export function resetMermaidConfig() {
+    _initTheme = null;
 }
 
 /** Normalise a mermaid parse/render error to { line, message }. */
@@ -215,7 +222,16 @@ export async function planMermaid(src) {
     if (!String(src ?? '').trim()) return { ok: false, path: null, type: null, errors: [{ line: null, message: 'Empty Mermaid source' }] };
     const native = parseNative(src);
     if (native.path === 'native' && native.diagram) {
-        return { ok: true, path: 'native', type: native.type, diagram: native.diagram, errors: [] };
+        // Position the editable shapes the way Mermaid lays the source out
+        // (mermaid.live / Excalidraw); keeps the built-in layout otherwise.
+        let diagram = native.diagram;
+        let layout = 'builtin';
+        if (supportsMermaidLayout(native.type)) {
+            const mermaid = await getMermaid().catch(() => null);
+            const positioned = await layoutWithMermaid(src, native.type, diagram, mermaid, resetMermaidConfig);
+            if (positioned !== diagram) { diagram = positioned; layout = 'mermaid'; }
+        }
+        return { ok: true, path: 'native', type: native.type, diagram, layout, errors: [] };
     }
     const check = await validateWithMermaid(src);
     if (check.ok === true) {

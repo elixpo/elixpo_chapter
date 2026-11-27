@@ -67,7 +67,10 @@ void setup()
         player.stripes[i] = (uint8_t *)heap_caps_aligned_alloc(4, stripe_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
     }
     player.frames[0] = (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    player.frames[1] = DUAL_CORE ? (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : NULL;
+    // The second buffer is needed for dual-core decoding and for clips with
+    // zlib delta frames; a single-core build playing keyframe-only clips may
+    // pass NULL instead.
+    player.frames[1] = (uint8_t *)heap_caps_malloc(frame_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
     const rv565_esp32_display_config_t display = {
         SPI2_HOST, PIN_MOSI, PIN_SCLK, PIN_CS, PIN_DC, PIN_RST, PIN_BL,

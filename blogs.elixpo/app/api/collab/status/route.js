@@ -67,6 +67,9 @@ export async function GET(request) {
     });
   } catch (e) {
     console.error('Collab status error:', e);
-    return NextResponse.json({ isLocked: false, hasCollaborators: false });
+    return NextResponse.json(
+      { error: 'Collaboration status unavailable' },
+      { status: 503 },
+    );
   }
 }

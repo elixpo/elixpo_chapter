@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Github } from "lucide-react";
 import { CHAPTER_ENTRY } from "@/lib/directory";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 const pageMetadata = createPageMetadata({
   title: "The Elixpo Chapter — the public build floor",
@@ -37,7 +38,7 @@ export default function ChapterPage() {
 
   return <main className="chapter-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-    <header className="chapter-page-hero">
+    <header className="chapter-page-hero"><Sparks chips={["frame → build → release", "chapter ✓", "on record"]} />
       <div className="chapter-page-orbit" aria-hidden="true"><span /><span /><span /></div>
       <div>
         <p className="eyebrow">Elixpo’s operating layer</p>
@@ -52,7 +53,7 @@ export default function ChapterPage() {
     </header>
 
     <section className="chapter-page-body section-wrap">
-      <div className="section-heading split"><div><p className="eyebrow">A bounded public outcome</p><h2>What happens inside a Chapter.</h2></div><p>A Chapter has an end condition. It does not promise endless maintenance; it makes the next meaningful release possible and preserves exactly what happened.</p></div>
+      <div className="section-heading split"><Sparks stars={4} /><div><p className="eyebrow">A bounded public outcome</p><h2>What happens inside a Chapter.</h2></div><p>A Chapter has an end condition. It does not promise endless maintenance; it makes the next meaningful release possible and preserves exactly what happened.</p></div>
       <ol>{stages.map(([number, title, copy]) => <li key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p></li>)}</ol>
     </section>
 

@@ -1,17 +1,43 @@
 {
   "heading": "PUBLICATIONS",
-  "description": "Research and technical publications on low-latency AI systems, model security, applied machine learning, and computer architecture.",
+  "description": "Research and technical publications on low-latency AI systems, embedded video and hardware architecture, model security, and applied machine learning.",
   "images": [
     "/assets/ayushman/publication/sq-1.webp",
     "/assets/ayushman/about/ptr-11.webp"
   ],
   "papers": [
     {
+      "title": "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board",
+      "authors": "Ayushman Bhattacharya and Anwesha Chakraborty",
+      "status": "arXiv preprint · arXiv:2611.01598",
+      "year": "2026",
+      "isNew": true,
+      "links": [
+        { "label": "arXiv", "url": "https://arxiv.org/abs/2611.01598" },
+        { "label": "Code", "url": "https://github.com/elixpo/qfabric" },
+        { "label": "Zenodo", "url": "https://doi.org/10.5281/zenodo.23692354" }
+      ]
+    },
+    {
+      "title": "RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems",
+      "authors": "Ayushman Bhattacharya and Anwesha Chakraborty",
+      "status": "arXiv preprint · arXiv:2610.35935",
+      "year": "2026",
+      "isNew": true,
+      "links": [
+        { "label": "arXiv", "url": "https://arxiv.org/abs/2610.35935" },
+        { "label": "Artifact (Zenodo)", "url": "https://doi.org/10.5281/zenodo.23543367" },
+        { "label": "Source", "url": "https://github.com/elixpo/falera/tree/main/paper" }
+        { "label": "Code", "url": "https://github.com/elixpo/falera" },
+        { "label": "Zenodo", "url": "https://doi.org/10.5281/zenodo.23543367" }
+      ]
+    },
+    {
       "title": "A Three-Layer Caching Architecture for Low-Latency LLM Web Search on Commodity CPU Hardware",
       "authors": "Ayushman Bhattacharya and Nihal Gazi",
       "status": "arXiv preprint · arXiv:2609.05463",
       "year": "2026",
-      "isNew": true,
+      "isNew": false,
       "links": [
         { "label": "arXiv", "url": "https://arxiv.org/abs/2609.05463" },
         { "label": "Hugging Face", "url": "https://huggingface.co/papers/2609.05463" },

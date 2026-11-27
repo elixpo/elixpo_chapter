@@ -66,7 +66,7 @@ export async function createCloudinaryUploadSignature({
 // Profile images (avatar/banner) get heavy compression + overwrite
 const PROFILE_TRANSFORMS = 'q_auto:low,f_webp';
 const AVATAR_TRANSFORMS = 'q_auto:low,f_webp,w_256,h_256,c_fill,g_face';
-const BANNER_TRANSFORMS = 'q_auto:low,f_webp,w_1920,h_480,c_fill';
+const BANNER_TRANSFORMS = 'q_auto:low,f_webp,w_1920,h_600,c_fill';
 
 export async function uploadToCloudinary(fileBuffer, { folder, publicId, overwrite = false, transformation = '', resourceType = 'image', mimeType = 'application/octet-stream', config = null }) {
   const resolvedConfig = resolveConfig(config);

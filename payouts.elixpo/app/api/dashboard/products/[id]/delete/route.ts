@@ -67,6 +67,8 @@ export async function POST(
         db.prepare("DELETE FROM ledger_entries WHERE app_id = ?1").bind(appId),
         db.prepare("DELETE FROM grants WHERE app_id = ?1").bind(appId),
         db.prepare("DELETE FROM webhook_deliveries WHERE app_id = ?1").bind(appId),
+        db.prepare("DELETE FROM mail_deliveries WHERE app_id = ?1").bind(appId),
+        db.prepare("DELETE FROM mail_hooks WHERE app_id = ?1").bind(appId),
         db.prepare("DELETE FROM transactions WHERE app_id = ?1").bind(appId),
         db.prepare("DELETE FROM entitlements WHERE app_id = ?1").bind(appId),
         db.prepare("DELETE FROM subscriptions WHERE app_id = ?1").bind(appId),

@@ -19,7 +19,7 @@ abstract: >-
   recovery across Linux and RTOS execution domains on the Arduino UNO Q, with a
   matched-load measurement study of when cross-domain migration can pay off.
 preferred-citation:
-  type: software
+  type: article
   authors:
     - family-names: "Bhattacharya"
       given-names: "Ayushman"
@@ -29,6 +29,11 @@ preferred-citation:
       email: "anwesha.elixpo@gmail.com"
   title: "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board"
   year: 2026
-  version: "v1.1.0"
-  doi: "10.5281/zenodo.23692354"
+  journal: "arXiv preprint"
+  doi: "10.48550/arXiv.2611.01598"
+  identifiers:
+    - type: other
+      value: "arXiv:2611.01598"
+      description: "arXiv identifier"
+  url: "https://arxiv.org/abs/2611.01598"
   repository-code: "https://github.com/elixpo/qfabric"

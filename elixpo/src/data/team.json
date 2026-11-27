@@ -7,12 +7,13 @@
   },
   "founder": {
     "name": "Ayushman Bhattacharya",
-    "role": "Founder & Lead Developer",
+    "role": "Founder, Lead Maintainer and Developer",
     "github": "Circuit-Overtime"
   },
   "coreTeam": [
-    { "name": "Anwesha Chakraborty", "role": "Core Contributor", "github": "anwe-ch" },
-    { "name": "Vivek Yadav", "role": "Core Contributor", "github": "ez-vivek" }
+    { "name": "Vivek Yadav", "role": "Lead Developer and Co-Founder", "github": "ez-vivek" },
+    { "name": "Anwesha Chakraborty", "role": "Program & Research Manager", "github": "anwe-ch" },
+    { "name": "Divyanshu Jha", "role": "Core Contributor", "github": "divyanshuj91" }
   ],
   "programs": [
     { "name": "GSSOC", "description": "GirlScript Summer of Code" },

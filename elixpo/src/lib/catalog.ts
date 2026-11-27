@@ -65,12 +65,12 @@ export const ECOSYSTEM_PRODUCTS: EcosystemProduct[] = [
     keywords: ["Linux packages", "software repository", "developer tools", "package distribution"], relatedPackages: [],
   },
   {
-    slug: "oreo", name: "Oreo Badge", eyebrow: "Open hardware and OreoOS", url: ELIXPO_LINKS.oreo, icon: "/brand/icons/oreo.elixpo.webp", schemaType: "Product",
-    shortDescription: "A panda-themed wearable conference badge running OreoOS, built for apps, games, quests, and badge-to-badge interaction.",
-    description: "Oreo Badge is Elixpo's handheld, panda-themed conference badge and open hardware platform. Its 320 × 240 colour display runs OreoOS with built-in apps, games, GitHub tools, IR quests, gesture controls, an on-device App Market, and over-the-air updates. Wi-Fi, Bluetooth, and infrared communication enable live data and social badge-to-badge experiences, while the compact Python app SDK lets developers create and deploy their own apps.",
+    slug: "oreo", name: "Falera Badge", eyebrow: "Open hardware and FaleraOS", url: ELIXPO_LINKS.oreo, icon: "/brand/icons/oreo.elixpo.webp", schemaType: "Product",
+    shortDescription: "A panda-themed wearable conference badge running FaleraOS, built for apps, games, quests, and badge-to-badge interaction.",
+    description: "The Falera Badge is Elixpo's handheld, panda-themed conference badge and open hardware platform. Its 320 × 240 colour display runs FaleraOS with built-in apps, games, GitHub tools, IR quests, gesture controls, an on-device App Market, and over-the-air updates. Wi-Fi, Bluetooth, and infrared communication enable live data and social badge-to-badge experiences, while the compact Python app SDK lets developers create and deploy their own apps.",
     audience: "Conference attendees, hardware hackers, Python developers, educators, and open-source communities",
     capabilities: ["320 × 240 colour display with a themed application launcher", "Wi-Fi, Bluetooth, infrared, gesture, and badge-to-badge interaction", "Fourteen built-in apps plus an on-device App Market", "Python app SDK, open firmware, and over-the-air updates"],
-    keywords: ["conference badge", "open hardware", "OreoOS", "wearable technology", "MicroPython", "badge app SDK"],
+    keywords: ["conference badge", "open hardware", "FaleraOS", "wearable technology", "MicroPython", "badge app SDK"],
     relatedPackages: [],
   },
 ];

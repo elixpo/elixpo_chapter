@@ -371,7 +371,7 @@ export default function SaveModal() {
     if (!limits.pdfExport) {
       const toast = document.getElementById('save-toast')
       if (toast) {
-        toast.innerHTML = '<i class="bx bxs-lock-alt text-[#b99be9] mr-1.5"></i>' + (PAID_PLANS_ENABLED ? 'PDF export is available on Pro' : 'PDF export is not available on this account')
+        toast.innerHTML = '<i class="bx bxs-lock-alt text-[#b99be9] mr-1.5" aria-hidden="true"></i>' + (PAID_PLANS_ENABLED ? 'PDF export is available on Pro' : 'PDF export is not available on this account')
         toast.classList.remove('hidden')
         setTimeout(() => toast.classList.add('hidden'), 3500)
       }
@@ -404,8 +404,9 @@ export default function SaveModal() {
           <button
             onClick={toggleSaveModal}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover cursor-pointer transition-all duration-200"
+            aria-label="Close"
           >
-            <i className="bx bx-x text-xl" />
+            <i className="bx bx-x text-xl" aria-hidden="true" />
           </button>
         </div>
 
@@ -417,7 +418,7 @@ export default function SaveModal() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs transition ${activeTab === tab.id ? 'bg-accent-blue/20 text-accent-blue shadow-sm' : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'}`}
             >
-              <i className={`bx ${tab.icon} text-sm`} />
+              <i className={`bx ${tab.icon} text-sm`} aria-hidden="true"/>
               {tab.label}
             </button>
           ))}
@@ -450,7 +451,7 @@ export default function SaveModal() {
               <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${saveStatus === 'cloud' ? 'bg-green-400' : saveStatus === 'failed' ? 'bg-red-400' : 'bg-yellow-400'}`} />
               <div className="flex-1"><p className="text-sm text-text-primary">Encrypted workspace save</p><p className="mt-1 text-[10px] leading-5 text-text-dim">Save the canvas and paired document locally, then sync the encrypted payload when cloud storage is available.</p></div>
             </div>
-            <button onClick={handleSaveNow} disabled={savingNow} className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-blue py-2.5 text-sm text-white hover:bg-accent-blue-hover disabled:opacity-50"><i className={`bx ${savingNow ? 'bx-loader-alt animate-spin' : 'bx-save'}`} />{savingNow ? 'Saving…' : 'Save workspace now'}</button>
+            <button onClick={handleSaveNow} disabled={savingNow} className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-blue py-2.5 text-sm text-white hover:bg-accent-blue-hover disabled:opacity-50"><i className={`bx ${savingNow ? 'bx-loader-alt animate-spin' : 'bx-save'}`} aria-hidden="true" />{savingNow ? 'Saving…' : 'Save workspace now'}</button>
             {saveMessage && <p className="mt-2 text-[10px] leading-4 text-text-muted">{saveMessage}</p>}
           </div>
           </div>}
@@ -458,7 +459,7 @@ export default function SaveModal() {
           {/* ── Export As ── */}
           {activeTab === 'export' && <div className="p-3.5 rounded-xl border border-border-light bg-surface/50">
             <div className="flex items-center gap-2 mb-3">
-              <i className="bx bx-export text-lg text-accent-blue" />
+              <i className="bx bx-export text-lg text-accent-blue" aria-hidden="true" />
               <span className="text-text-primary text-sm font-medium">Export As</span>
             </div>
 
@@ -496,7 +497,7 @@ export default function SaveModal() {
                         : 'text-text-muted hover:bg-surface-hover'
                     }`}
                   >
-                    <i className={`bx ${opt.icon} text-xs`} />
+                    <i className={`bx ${opt.icon} text-xs`} aria-hidden="true" />
                     {opt.label}
                   </button>
                 ))}
@@ -532,14 +533,14 @@ export default function SaveModal() {
                 onClick={handleExportPNG}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-accent-blue hover:bg-accent-blue-hover text-text-primary text-xs cursor-pointer transition-all duration-200"
               >
-                <i className="bx bx-image text-sm" />
+                <i className="bx bx-image text-sm" aria-hidden="true" />
                 PNG Image
               </button>
               <button
                 onClick={handleExportSVG}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
               >
-                <i className="bx bx-code-alt text-sm" />
+                <i className="bx bx-code-alt text-sm" aria-hidden="true" />
                 SVG Vector
               </button>
               <button
@@ -547,7 +548,7 @@ export default function SaveModal() {
                 title={limits.pdfExport ? 'Export PDF' : (PAID_PLANS_ENABLED ? 'PDF export is available on Pro' : 'PDF export is not available on this account')}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
               >
-                <i className="bx bxs-file-pdf text-sm" />
+                <i className="bx bxs-file-pdf text-sm" aria-hidden="true" />
                 PDF Document
                 {PAID_PLANS_ENABLED && !limits.pdfExport && <span className="ml-auto rounded bg-accent-blue/15 px-1.5 py-0.5 text-[8px] uppercase text-accent-blue">Pro</span>}
               </button>
@@ -555,7 +556,7 @@ export default function SaveModal() {
                 onClick={handleExportLixjson}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
               >
-                <i className="bx bx-braces text-sm" />
+                <i className="bx bx-braces text-sm" aria-hidden="true" />
                 .lixjson Scene
               </button>
               <button
@@ -563,7 +564,7 @@ export default function SaveModal() {
                 title="Readable LixSketch DSL text — diff-friendly, editable by hand"
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-surface hover:bg-surface-hover border border-border-light text-text-secondary text-xs cursor-pointer transition-all duration-200"
               >
-                <i className="bx bx-code-curly text-sm" />
+                <i className="bx bx-code-curly text-sm" aria-hidden="true" />
                 .lixsketch File
               </button>
             </div>
@@ -572,13 +573,13 @@ export default function SaveModal() {
           {/* ── Live Collaborate ── */}
           {activeTab === 'share' && <div className="p-3.5 rounded-xl border border-border-light bg-surface/50">
             <div className="flex items-center gap-2 mb-2.5">
-              <i className="bx bx-group text-lg text-accent-blue" />
+              <i className="bx bx-group text-lg text-accent-blue" aria-hidden="true" />
               <div className="flex-1">
                 <span className="text-text-primary text-sm font-medium">Live Collaborate</span>
                 <p className="text-text-dim text-[10px] leading-relaxed">Real-time E2E encrypted editing with up to {limits.collaborators} {limits.collaborators === 1 ? 'person' : 'people'} on {tier === 'guest' ? 'Guest' : tier[0].toUpperCase() + tier.slice(1)}</p>
               </div>
               <span className="flex items-center gap-1 text-[10px] text-green-400/80">
-                <i className="bx bxs-lock-alt text-xs" />
+                <i className="bx bxs-lock-alt text-xs" aria-hidden="true" />
                 Encrypted
               </span>
             </div>
@@ -616,7 +617,7 @@ export default function SaveModal() {
                   onClick={handleEndSession}
                   className="w-full mt-2 py-2 rounded-lg border border-red-500/30 text-red-400 text-xs cursor-pointer hover:bg-red-500/10 transition-all duration-200 flex items-center justify-center gap-1.5"
                 >
-                  <i className="bx bx-power-off text-sm" />
+                  <i className="bx bx-power-off text-sm" aria-hidden="true" />
                   End Session
                 </button>
               </>
@@ -638,13 +639,13 @@ export default function SaveModal() {
           {/* ── One-time view-only share (issue #24 bug #9) ── */}
           {activeTab === 'share' && <div className="p-3.5 rounded-xl border border-border-light bg-surface/50">
             <div className="flex items-center gap-2 mb-2.5">
-              <i className="bx bx-link-alt text-lg text-accent-blue" />
+              <i className="bx bx-link-alt text-lg text-accent-blue" aria-hidden="true" />
               <div className="flex-1">
                 <span className="text-text-primary text-sm font-medium">View-only share</span>
                 <p className="text-text-dim text-[10px] leading-relaxed">Snapshot the canvas — anyone with the link can view, no editing</p>
               </div>
               <span className="flex items-center gap-1 text-[10px] text-green-400/80">
-                <i className="bx bxs-lock-alt text-xs" />
+                <i className="bx bxs-lock-alt text-xs" aria-hidden="true" />
                 Encrypted
               </span>
             </div>
@@ -675,7 +676,7 @@ export default function SaveModal() {
                 disabled={creatingShare}
                 className="w-full py-2.5 rounded-lg bg-accent-blue/15 hover:bg-accent-blue/25 text-accent-blue text-sm cursor-pointer transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                <i className="bx bx-share-alt text-sm" />
+                <i className="bx bx-share-alt text-sm" aria-hidden="true" />
                 {creatingShare ? 'Creating link…' : 'Create view-only link'}
               </button>
             )}
@@ -688,7 +689,7 @@ export default function SaveModal() {
           {/* ── Public workspace template ── */}
           {activeTab === 'publish' && <div className="p-3.5 rounded-xl border border-accent-blue/25 bg-accent-blue/5">
             <div className="mb-3 flex items-start gap-2">
-              <i className="bx bx-world text-lg text-accent-blue" />
+              <i className="bx bx-world text-lg text-accent-blue" aria-hidden="true" />
               <div className="flex-1">
                 <span className="text-text-primary text-sm font-medium">Publish as a template</span>
                 <p className="text-text-dim text-[10px] leading-relaxed">Create a public canvas and document snapshot others can fork or clone.</p>
@@ -701,8 +702,8 @@ export default function SaveModal() {
                   <input readOnly value={publishedUrl} onClick={(event) => event.target.select()} className="min-w-0 flex-1 rounded-lg border border-border-light bg-surface px-2.5 py-2 text-xs text-text-secondary outline-none" />
                   <button onClick={() => navigator.clipboard.writeText(publishedUrl)} className="cursor-pointer rounded-lg bg-accent-blue px-3 text-xs text-white hover:bg-accent-blue-hover">Copy</button>
                 </div>
-                <a href={publishedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] text-accent-blue hover:underline">Open published template <i className="bx bx-link-external" /></a>
-                <button onClick={() => handlePublishTemplate(true)} disabled={publishing} className="mt-2 ml-4 cursor-pointer text-[10px] text-text-dim hover:text-accent-blue disabled:opacity-50"><i className="bx bx-refresh mr-1" />{publishing ? 'Updating…' : 'Update public snapshot'}</button>
+                <a href={publishedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] text-accent-blue hover:underline">Open published template <i className="bx bx-link-external" aria-hidden="true" /></a>
+                <button onClick={() => handlePublishTemplate(true)} disabled={publishing} className="mt-2 ml-4 cursor-pointer text-[10px] text-text-dim hover:text-accent-blue disabled:opacity-50"><i className="bx bx-refresh mr-1" aria-hidden="true" />{publishing ? 'Updating…' : 'Update public snapshot'}</button>
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -710,10 +711,10 @@ export default function SaveModal() {
                 <textarea value={publishDescription} maxLength={600} onChange={(event) => setPublishDescription(event.target.value)} placeholder="What can people build with this workspace?" rows={3} className="w-full resize-none rounded-lg border border-border-light bg-surface px-3 py-2 text-xs leading-5 text-text-primary outline-none focus:border-accent-blue" />
                 <input value={publishTags} onChange={(event) => setPublishTags(event.target.value)} placeholder="Tags, separated by commas (up to 6)" className="w-full rounded-lg border border-border-light bg-surface px-3 py-2 text-xs text-text-primary outline-none focus:border-accent-blue" />
                 <div className="rounded-lg border border-yellow-400/20 bg-yellow-400/5 p-2.5 text-[10px] leading-4 text-yellow-200/80">
-                  <i className="bx bx-info-circle mr-1" />Everything in this snapshot becomes public. Private or access-controlled media may not work for other users.
+                  <i className="bx bx-info-circle mr-1" aria-hidden="true" />Everything in this snapshot becomes public. Private or access-controlled media may not work for other users.
                 </div>
                 <button onClick={() => handlePublishTemplate(false)} disabled={publishing} className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-accent-blue py-2.5 text-sm text-white hover:bg-accent-blue-hover disabled:opacity-50">
-                  <i className="bx bx-upload" />{!isAuthenticated ? 'Sign in to publish' : publishing ? 'Publishing…' : 'Publish workspace'}
+                  <i className="bx bx-upload" aria-hidden="true" />{!isAuthenticated ? 'Sign in to publish' : publishing ? 'Publishing…' : 'Publish workspace'}
                 </button>
               </div>
             )}

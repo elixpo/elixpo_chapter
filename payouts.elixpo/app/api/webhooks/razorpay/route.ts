@@ -5,22 +5,34 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/d1-client";
 import { getEnv } from "@/lib/env";
 import { fulfillPayment } from "@/lib/fulfill";
-import { razorpayFromEnv } from "@/lib/providers/razorpay";
+import { revokeForRefundedTransaction, toView } from "@/lib/entitlements";
+import {
+    type RazorpayProvider,
+    type RazorpayRefundEvent,
+    razorpayFromEnv,
+} from "@/lib/providers/razorpay";
 import {
     getCheckoutSessionByOrder,
+    getTransactionByPaymentId,
+    markTransactionRefunded,
+    recordRefund,
     getCheckoutSessionBySubscription,
     getSubscriptionByProviderId,
     recordProviderEvent,
+    cancelSupersededSubscriptions,
+    getWebhookEndpoint,
     upsertRecurringSubscription,
 } from "@/lib/repo";
+import { markContributionPaid, markContributionRefunded } from "@/lib/fundraisers";
+import { notifyBuyer } from "@/lib/mail-notify";
 
 /**
  * POST /api/webhooks/razorpay
  *
  * Authoritative fulfillment. Verifies X-Razorpay-Signature over the RAW body,
- * de-dups on the provider event id, and fulfills `payment.captured`. Always
- * returns 200 on signature-valid events so Razorpay stops retrying — internal
- * errors are logged, not surfaced as retriable.
+ * de-dups on the provider event id, and fulfills `payment.captured`.
+ * Internal errors un-record the event and return 500 so Razorpay retries it —
+ * fulfillment is idempotent and resumable, so a retry finishes the job.
  */
 export async function POST(request: NextRequest) {
     let rawBody: string;
@@ -57,9 +69,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true, ignored: "parse_error" });
     }
 
+    const db = await getDatabase();
     try {
-        const db = await getDatabase();
-
         // Replay guard.
         const seen = await recordProviderEvent(
             db,
@@ -70,6 +81,14 @@ export async function POST(request: NextRequest) {
         );
         if (seen.alreadySeen) {
             return NextResponse.json({ ok: true, duplicate: true });
+        }
+
+        // ── Refunds and disputes ─────────────────────────────────────
+        // Handled before the subscription branch: a refunded autopay charge
+        // carries a subscription_id on its payment entity too.
+        const refund = razorpay.parseRefundEvent(event.raw);
+        if (refund) {
+            return NextResponse.json(await handleRefundEvent(db, razorpay, refund));
         }
 
         // ── Subscription lifecycle events ────────────────────────────
@@ -100,6 +119,20 @@ export async function POST(request: NextRequest) {
         // otherwise fall back to the order id. Without this branching,
         // recurring renewals returned "no_session" forever and the
         // entitlement was never extended.
+        // Fundraiser contributions are one-time orders outside the app/session
+        // model. markContributionPaid is idempotent (conditional UPDATE), so a
+        // replayed webhook or a race with the client confirm counts once.
+        if (!event.providerSubscriptionId && event.providerOrderId) {
+            const fr = await markContributionPaid(
+                db,
+                { orderId: event.providerOrderId },
+                event.providerPaymentId ?? null,
+            );
+            if (fr.contributionId) {
+                return NextResponse.json({ ok: true, contribution: fr.contributionId, counted: fr.newlyPaid });
+            }
+        }
+
         let session: any = null;
         if (event.providerSubscriptionId) {
             session = await getCheckoutSessionBySubscription(
@@ -139,11 +172,160 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
-        // Signature was valid; swallow internal errors so Razorpay doesn't
-        // hammer retries. Surfaced in logs / delivery records for replay.
+        // Forget the event so Razorpay's retry is processed instead of being
+        // swallowed by the replay guard, and ask it to retry with a 5xx.
         console.error("[webhook/razorpay] fulfillment error:", err);
-        return NextResponse.json({ ok: true, deferred: true });
+        if (event.eventId) {
+            await db
+                .prepare(
+                    "DELETE FROM provider_webhook_events WHERE provider = 'razorpay' AND provider_event_id = ?",
+                )
+                .bind(event.eventId)
+                .run()
+                .catch(() => {});
+        }
+        return NextResponse.json({ error: "processing_failed" }, { status: 500 });
     }
+}
+
+/**
+ * refund.processed / payment.dispute.lost / payment.dispute.created.
+ *
+ *  - Fundraiser contribution: flips to 'refunded' once the whole amount is
+ *    gone (drops out of the public total); partials are logged.
+ *  - Product transaction: the refund is recorded in `refunds`; a full refund
+ *    or lost dispute marks the transaction 'refunded' and, for a one-time
+ *    purchase, revokes the access it bought + fires entitlement.updated.
+ *  - Route: any transfer to a creator's linked account is reversed in
+ *    proportion to what was refunded, so the platform doesn't fund it.
+ *
+ * Every write is conditional / de-duplicated, and reversals are computed from
+ * Razorpay's cumulative figures, so a replay (even under a new event id) does
+ * nothing new. Reversal failures are logged and never fail the webhook.
+ */
+async function handleRefundEvent(
+    db: D1Database,
+    razorpay: RazorpayProvider,
+    refund: RazorpayRefundEvent,
+): Promise<Record<string, unknown>> {
+    if (refund.kind === "dispute_created") {
+        console.warn(
+            "[webhook/razorpay] dispute %s opened on payment %s for %d %s",
+            refund.referenceId ?? "?",
+            refund.paymentId,
+            refund.amount,
+            refund.currency ?? "",
+        );
+        return { ok: true, dispute: "created", payment: refund.paymentId };
+    }
+
+    const out: Record<string, unknown> = { ok: true, refund: refund.kind, payment: refund.paymentId };
+    let paymentAmount = refund.paymentAmount;
+
+    const ctb = await markContributionRefunded(db, refund.paymentId, refund.totalRefunded);
+    if (ctb.contributionId) {
+        paymentAmount ??= ctb.amount;
+        out.contribution = ctb.contributionId;
+        out.refunded = ctb.newlyRefunded;
+        out.partial = ctb.partial;
+    } else {
+        const txn = await getTransactionByPaymentId(db, refund.paymentId);
+        if (!txn) {
+            console.warn("[webhook/razorpay] %s for unknown payment %s", refund.kind, refund.paymentId);
+            out.ignored = "unknown_payment";
+        } else {
+            paymentAmount ??= Number(txn.amount);
+            out.transaction = txn.id;
+            await recordRefund(db, {
+                transactionId: txn.id,
+                appId: txn.app_id,
+                providerRefundId: refund.referenceId,
+                currency: refund.currency ?? txn.currency,
+                amount: refund.amount,
+                reason: refund.kind === "dispute_lost" ? "dispute_lost" : "refund",
+            });
+            const full = refund.full || refund.totalRefunded >= Number(txn.amount);
+            out.partial = !full;
+            if (full) {
+                const { changed } = await markTransactionRefunded(db, txn.id);
+                out.refunded = changed;
+                if (changed) out.entitlement = await revokeRefundedAccess(db, txn);
+            } else {
+                console.warn(
+                    "[webhook/razorpay] partial refund on %s (payment %s): %d of %d; access kept",
+                    txn.id,
+                    refund.paymentId,
+                    refund.totalRefunded,
+                    txn.amount,
+                );
+            }
+        }
+    }
+
+    if (!out.ignored && paymentAmount) {
+        out.reversed = await reverseRouteTransfers(razorpay, refund, paymentAmount);
+    }
+    return out;
+}
+
+/** Revoke a refunded one-time purchase's access and tell the consuming app. */
+async function revokeRefundedAccess(db: D1Database, txn: any): Promise<string | null> {
+    const updated = await revokeForRefundedTransaction(db, txn.id);
+    if (!updated) return null;
+    const endpoint = await getWebhookEndpoint(db, txn.app_id);
+    if (endpoint) {
+        const app = (await db
+            .prepare("SELECT slug FROM apps WHERE id = ?")
+            .bind(txn.app_id)
+            .first()) as { slug: string } | null;
+        const { fireEntitlementUpdated } = await import("@/lib/webhooks");
+        await fireEntitlementUpdated(
+            db,
+            endpoint,
+            toView(app?.slug ?? "", updated, updated.external_uid),
+        );
+    }
+    return updated.status;
+}
+
+/**
+ * Reverse Route transfers so each linked account gives back its share of the
+ * refund. Target per transfer = transfer.amount × totalRefunded / payment
+ * amount (capped at the transfer); only the part not already reversed is
+ * requested, which makes this idempotent across replays and successive
+ * partial refunds. Returns the amount reversed now; never throws.
+ */
+async function reverseRouteTransfers(
+    razorpay: RazorpayProvider,
+    refund: RazorpayRefundEvent,
+    paymentAmount: number,
+): Promise<number> {
+    let reversed = 0;
+    try {
+        const transfers = await razorpay.listPaymentTransfers(refund.paymentId);
+        const share = Math.min(1, refund.totalRefunded / paymentAmount);
+        for (const t of transfers) {
+            if (t.status === "failed" || t.status === "reversed") continue;
+            const target = Math.min(t.amount, Math.floor(t.amount * share));
+            const due = target - t.amountReversed;
+            if (due <= 0) continue;
+            try {
+                await razorpay.reverseTransfer(t.id, due);
+                reversed += due;
+            } catch (err) {
+                console.error(
+                    "[webhook/razorpay] reversal of %s (%d) for payment %s failed:",
+                    t.id,
+                    due,
+                    refund.paymentId,
+                    err,
+                );
+            }
+        }
+    } catch (err) {
+        console.error("[webhook/razorpay] couldn't list transfers for %s:", refund.paymentId, err);
+    }
+    return reversed;
 }
 
 /**
@@ -186,8 +368,12 @@ async function handleSubscriptionEvent(
     // Update DB status for non-charge events. `charged` falls through to
     // the main fulfillment path which writes status='active' via the
     // upsert in fulfillPayment.
-    if (status && status !== "charged") {
-        const dbStatus = mapSubStatus(status);
+    // Captured BEFORE the update below sets it: a cancel_at that was already
+    // there means /v1/subscriptions/cancel notified the app inline.
+    const alreadyNotifiedCancel = !!subRow?.cancel_at;
+
+    const dbStatus = status && status !== "charged" ? mapSubStatus(status) : null;
+    if (dbStatus) {
         if (subRow) {
             await db
                 .prepare(
@@ -219,6 +405,16 @@ async function handleSubscriptionEvent(
                 providerSubscriptionId: providerSubId,
                 status: "active",
             });
+            if (session.customer_id) {
+                const razorpay = await razorpayFromEnv(getEnv);
+                await cancelSupersededSubscriptions(
+                    db,
+                    razorpay,
+                    session.app_id,
+                    session.customer_id,
+                    providerSubId,
+                );
+            }
         }
         return NextResponse.json({ ok: true, subscription: "activated" });
     }
@@ -245,7 +441,12 @@ async function handleSubscriptionEvent(
     // active through period_end but the buyer needs to fix their card —
     // we send a `failed=true` flag.
     if (status === "cancelled" || status === "halted") {
-        await fireGracefulCancelWebhook(db, providerSubId, status);
+        await fireGracefulCancelWebhook(
+            db,
+            providerSubId,
+            status,
+            alreadyNotifiedCancel,
+        );
     }
 
     return NextResponse.json({
@@ -264,10 +465,11 @@ async function fireGracefulCancelWebhook(
     db: D1Database,
     providerSubId: string,
     status: "cancelled" | "halted",
+    alreadyNotifiedCancel: boolean,
 ): Promise<void> {
     const sub = (await db
         .prepare(
-            `SELECT s.id, s.app_id, s.tier, s.current_period_end, s.cancel_at,
+            `SELECT s.id, s.app_id, s.tier, s.product_id, s.current_period_end, s.cancel_at,
                     c.external_uid, a.slug AS app_slug
              FROM subscriptions s
              JOIN customers c ON c.id = s.customer_id
@@ -280,6 +482,7 @@ async function fireGracefulCancelWebhook(
               id: string;
               app_id: string;
               tier: string;
+              product_id: string | null;
               current_period_end: string | null;
               cancel_at: string | null;
               external_uid: string;
@@ -294,7 +497,7 @@ async function fireGracefulCancelWebhook(
     // is set. Skip the outbound — the consuming app already sent the
     // cancellation email when the buyer clicked Cancel. Halt events
     // (charge failures) still fire because they're a different signal.
-    if (status === "cancelled" && sub.cancel_at) {
+    if (status === "cancelled" && alreadyNotifiedCancel) {
         console.log(
             "[webhook/razorpay] skipping cancellation outbound for sub=%s — already notified inline at %s",
             providerSubId,
@@ -302,10 +505,6 @@ async function fireGracefulCancelWebhook(
         );
         return;
     }
-
-    const { getWebhookEndpoint } = await import("@/lib/repo");
-    const endpoint = await getWebhookEndpoint(db, sub.app_id);
-    if (!endpoint) return;
 
     // For halted events, distinguish UPI-mandate-revocation from
     // exhausted-card-retries by looking at recent payment.failed
@@ -337,6 +536,21 @@ async function fireGracefulCancelWebhook(
         failed = !!recentFail;
     }
 
+    // Email the buyer (Elixpo Mails). A UPI-mandate revoke halts the sub
+    // without a failed charge — that reads to the buyer as a cancellation.
+    await notifyBuyer(db, {
+        appId: sub.app_id,
+        event: failed ? "payment.failed" : "subscription.cancelled",
+        externalUid: sub.external_uid,
+        ref: `${sub.id}:${sub.current_period_end ?? ""}`,
+        tier: sub.tier,
+        productId: sub.product_id,
+        periodEnd: sub.current_period_end,
+    });
+
+    const endpoint = await getWebhookEndpoint(db, sub.app_id);
+    if (!endpoint) return;
+
     const { fireEntitlementUpdated } = await import("@/lib/webhooks");
     // The entitlement stays ACTIVE until period_end — the consumer
     // shouldn't downgrade until then. We surface `cancelled`/`halted`
@@ -354,10 +568,15 @@ async function fireGracefulCancelWebhook(
     } as any);
 }
 
-function mapSubStatus(razorpayStatus: string): string {
+/** Map a Razorpay subscription status to ours; null = leave the row alone. */
+function mapSubStatus(razorpayStatus: string): string | null {
     switch (razorpayStatus) {
         case "activated":
+        case "authenticated":
+        case "resumed":
             return "active";
+        case "pending": // a renewal charge failed and is being retried
+            return "past_due";
         case "paused":
             return "past_due";
         case "halted":
@@ -367,7 +586,8 @@ function mapSubStatus(razorpayStatus: string): string {
         case "completed":
             return "expired";
         default:
-            return razorpayStatus;
+            // e.g. `updated` — informational, must not overwrite our status.
+            return null;
     }
 }
 

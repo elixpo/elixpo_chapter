@@ -19,7 +19,9 @@ export interface RangeWindow extends Window {
 /** Resolve a ?range= value to a concrete time window (defaults to 24h). */
 export function rangeWindow(key?: string): RangeWindow {
     const r = RANGES.find((x) => x.key === key) || RANGES[2];
-    const until = new Date();
+    // Floor to the minute so cache keys built from since/until repeat across
+    // requests (ms-precise windows meant the KV analytics cache never hit).
+    const until = new Date(Math.floor(Date.now() / 60_000) * 60_000);
     const since = new Date(until.getTime() - r.hours * 3600_000);
     return {
         since: since.toISOString(),

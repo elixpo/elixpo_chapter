@@ -112,6 +112,18 @@ test('unknown users and zero limits are refused', { skip }, async () => {
   assert.equal(await claimAIQuota(db, 'u1', 0, TODAY), false);
 });
 
+// enforceAILimits() lets non-member requests through when the quota check
+// throws (it assumes D1 is unavailable), so bad input must deny, not throw.
+test('invalid arguments are refused instead of throwing', { skip }, async () => {
+  const { db, sqlite } = setup();
+  for (const limit of [1.5, -1, NaN, Infinity, undefined, '15']) {
+    assert.equal(await claimAIQuota(db, 'u1', limit, TODAY), false);
+  }
+  assert.equal(await claimAIQuota(null, 'u1', 15, TODAY), false);
+  assert.equal(await claimAIQuota(db, '', 15, TODAY), false);
+  assert.deepEqual(usage(sqlite, 'u1'), { n: 0, d: null });
+});
+
 test('utcDay formats the UTC calendar date', () => {
   assert.equal(utcDay(new Date('2026-10-02T23:59:59Z')), '2026-10-02');
   assert.equal(utcDay(new Date('2026-10-03T00:00:00Z')), '2026-10-03');

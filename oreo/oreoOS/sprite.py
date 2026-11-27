@@ -1,4 +1,4 @@
-"""Sprite-sheet helper for the Oreo Badge.
+"""Sprite-sheet helper for the Falera Badge.
 
 A SpriteSheet wraps a single big-endian RGB565 buffer that contains a grid of
 equally-sized frames, and lets you extract individual frames or step through

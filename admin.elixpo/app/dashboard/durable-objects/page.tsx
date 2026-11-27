@@ -1,9 +1,8 @@
 import ListView, { type ListItem } from "@/components/list-view";
-import MetricChart from "@/components/metric-chart";
-import { Panel, SectionError } from "@/components/ui";
 import { discoverAccount } from "@/lib/discovery";
 import { autoLabel } from "@/lib/enrich";
 import { doMetrics } from "@/lib/metrics";
+import DoRequestsPanel from "./do-requests-panel";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -30,31 +29,7 @@ export default async function DurableObjectsPage() {
             emptyMessage="No Durable Object namespaces found."
             error={inv.errors.durableObjects?.error}
         >
-            <div style={{ marginBottom: 12 }}>
-                <Panel title="Durable Object requests · 24h (account-wide)">
-                    {metrics.available ? (
-                        <MetricChart
-                            points={metrics.points}
-                            series={[
-                                {
-                                    key: "requests",
-                                    label: "Requests",
-                                    color: "#a855f7",
-                                },
-                                {
-                                    key: "errors",
-                                    label: "Errors",
-                                    color: "#ef4444",
-                                },
-                            ]}
-                        />
-                    ) : (
-                        <SectionError
-                            message={`Metrics unavailable: ${metrics.error}`}
-                        />
-                    )}
-                </Panel>
-            </div>
+            <DoRequestsPanel metrics={metrics} />
         </ListView>
     );
 }

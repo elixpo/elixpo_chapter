@@ -2,10 +2,12 @@
 
 Output format (row-major, MSB-first, packed into bytes per row):
 
-    GLYPH_W = 12
-    GLYPH_H = 16
-    BPR     = (GLYPH_W + 7) // 8     # bytes per row
-    KERN    = 1                       # extra pixel between glyphs
+    GLYPH_W  = 12
+    GLYPH_H  = 16
+    BPR      = (GLYPH_W + 7) // 8    # bytes per row
+    KERN     = 1                      # extra pixel between glyphs
+    BASELINE = 12                     # row the baseline sits on (y of the
+                                      # first row below 'x', 'H', ...)
     _FONT   = {
         ' ': b'\\x00\\x00...',          # BPR*GLYPH_H bytes per glyph
         '!': b'...',
@@ -21,8 +23,12 @@ Usage:
         --out assets/fonts/optimized/pixelify_12.py \\
         --size 12
 
-The pixel-size is the rendering box height in pixels; widths are auto-
-fit per-glyph but capped at `--max-width` (default 16).
+`--size` is the font's pixel size. Every glyph is drawn into one shared
+cell with its baseline on row BASELINE, so short letters (a, e, o), caps
+and descenders (g, p, y) all line up: GLYPH_H spans the highest ascender
+to the lowest descender in the ASCII set. GLYPH_W is the widest glyph's
+ink (or `--max-width`); each glyph's ink starts at column 0 and the
+renderer trims it to its ink width for proportional spacing.
 """
 
 import sys
@@ -42,7 +48,7 @@ def _argparse():
     p.add_argument("--size",      type=int, required=True,
                    help="rendering pixel height (glyph_h)")
     p.add_argument("--max-width", type=int, default=None,
-                   help="cap glyph width (default = size * 0.85)")
+                   help="cap glyph width (default = widest glyph's ink)")
     p.add_argument("--kern",      type=int, default=1,
                    help="inter-glyph spacing in pixels (default 1)")
     p.add_argument("--threshold", type=int, default=80,
@@ -50,19 +56,31 @@ def _argparse():
     return p.parse_args()
 
 
-def _render_glyph(font, ch, target_w, target_h, threshold):
-    """Render one character into a target_w × target_h binary bitmap."""
+def _render_glyph(font, ch, target_w, target_h, baseline, threshold):
+    """Render one character into a target_w x target_h binary bitmap.
+
+    The glyph's baseline lands on row `baseline` (anchor 'ls' = left,
+    baseline), never on its own ink top, so all glyphs share one baseline.
+    Horizontally the ink is shifted to start at column 0.
+    """
     img  = Image.new("L", (target_w, target_h), 0)
     draw = ImageDraw.Draw(img)
-    # Centre the glyph in the cell using metrics
-    try:
-        bbox = font.getbbox(ch)
-        ax   = -bbox[0]
-        ay   = -bbox[1]
-    except AttributeError:
-        ax, ay = 0, 0
-    draw.text((ax, ay), ch, fill=255, font=font)
+    left = font.getbbox(ch, anchor="ls")[0]
+    draw.text((-left, baseline), ch, fill=255, font=font, anchor="ls")
     return img.point(lambda v: 255 if v >= threshold else 0)
+
+
+def _cell_metrics(font, chars):
+    """(width, height, baseline) of a cell that holds every glyph unclipped."""
+    top, bot, wid = 0, 0, 1
+    for ch in chars:
+        x0, y0, x1, y1 = font.getbbox(ch, anchor="ls")
+        if x1 <= x0:                # space: no ink
+            continue
+        top = min(top, y0)
+        bot = max(bot, y1)
+        wid = max(wid, x1 - x0)
+    return wid, bot - top, -top
 
 
 def _pack_glyph(bitmap):
@@ -88,29 +106,31 @@ def main():
     ttf_path  = Path(args.ttf)
     out_path  = Path(args.out)
     size      = args.size
-    max_w     = args.max_width or max(6, int(size * 0.85))
 
-    font = ImageFont.truetype(str(ttf_path), size=size)
-    glyph_h = size
-    glyph_w = max_w
-    bpr     = (glyph_w + 7) // 8
+    font  = ImageFont.truetype(str(ttf_path), size=size)
+    chars = [chr(c) for c in range(ASCII_START, ASCII_END + 1)]
+    glyph_w, glyph_h, baseline = _cell_metrics(font, chars)
+    if args.max_width:
+        glyph_w = min(glyph_w, args.max_width)
+    bpr = (glyph_w + 7) // 8
 
-    print("Rasterising %s @ %d px → %dx%d cells (bpr=%d)"
-          % (ttf_path.name, size, glyph_w, glyph_h, bpr))
+    print("Rasterising %s @ %d px → %dx%d cells (bpr=%d, baseline row %d)"
+          % (ttf_path.name, size, glyph_w, glyph_h, bpr, baseline))
 
-    chars      = [chr(c) for c in range(ASCII_START, ASCII_END + 1)]
-    packed     = {}
+    packed = {}
     for ch in chars:
-        bitmap     = _render_glyph(font, ch, glyph_w, glyph_h, args.threshold)
+        bitmap     = _render_glyph(font, ch, glyph_w, glyph_h, baseline,
+                                   args.threshold)
         packed[ch] = _pack_glyph(bitmap)
 
     lines = [
         '"""Auto-generated bitmap font — do not edit. Re-run tools/rasterise_font.py."""',
         '',
-        'GLYPH_W = %d' % glyph_w,
-        'GLYPH_H = %d' % glyph_h,
-        'BPR     = %d' % bpr,
-        'KERN    = %d' % args.kern,
+        'GLYPH_W  = %d' % glyph_w,
+        'GLYPH_H  = %d' % glyph_h,
+        'BPR      = %d' % bpr,
+        'KERN     = %d' % args.kern,
+        'BASELINE = %d' % baseline,
         '',
         '_FONT = {',
     ]

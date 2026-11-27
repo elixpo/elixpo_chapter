@@ -26,6 +26,7 @@ const ROUTES: readonly StaticRoute[] = [
   { path: "/recognition", modified: recognition.lastVerified, priority: .75, frequency: "monthly" },
   { path: "/people", modified: people.lastVerified, priority: .8, frequency: "monthly" },
   { path: "/history", modified: history.lastVerified, priority: .75, frequency: "monthly" },
+  { path: "/wiki", modified: history.lastVerified, priority: .75, frequency: "monthly" },
   ...["/chapter", "/partnerships", "/community", "/about", "/architecture", "/branding", "/contact", "/features", "/resources", "/contributing", "/code-of-conduct", "/licensing", "/terms", "/privacy"].map((path): StaticRoute => ({ path, modified: organization.lastVerified, priority: .7, frequency: "monthly" })),
 ];
 

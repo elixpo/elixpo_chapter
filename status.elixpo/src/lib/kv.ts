@@ -145,6 +145,17 @@ export async function cached<T>(
         // ignore cache read failure
     }
     const value = await fn();
-    cacheSet(key, value, ttlSeconds).catch(() => {});
+    // Never cache a failure: a transient Cloudflare error used to be pinned
+    // for the whole TTL, so visitors kept seeing "unavailable" after recovery.
+    if (!isFailure(value)) cacheSet(key, value, ttlSeconds).catch(() => {});
     return value;
+}
+
+/** Results shaped like { available: false } are failures and must not be cached. */
+function isFailure(value: unknown): boolean {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        (value as { available?: unknown }).available === false
+    );
 }

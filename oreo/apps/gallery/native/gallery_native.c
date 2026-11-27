@@ -1,4 +1,4 @@
-/* Native RGB565/indexed scaler for OreoOS Gallery.
+/* Native RGB565/indexed scaler for FaleraOS Gallery.
  *
  * The badge firmware omits the on-device Viper emitter, but supports dynamic
  * xtensawin .mpy modules.  These kernels keep all per-pixel work out of the

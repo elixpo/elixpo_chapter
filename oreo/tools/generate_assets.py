@@ -1,4 +1,4 @@
-"""Generate Oreo Badge assets via the Pollinations AI image API.
+"""Generate Falera Badge assets via the Pollinations AI image API.
 
 Top-level icons:
   python tools/generate_assets.py              # all active entries
@@ -62,7 +62,7 @@ def download_to(prompt, out_path, width=200, height=200, seed=42):
     # NOTE: User-Agent is REQUIRED — the API returns 403 without it.
     headers = {
         "Authorization": "Bearer %s" % KEY,
-        "User-Agent":    "OreoBadge/1.0"
+        "User-Agent":    "FaleraBadge/1.0"
     }
     enc = urllib.parse.quote(prompt)
     url = "%s/%s?width=%d&height=%d&seed=%d&nologo=true&model=%s" % (
@@ -230,7 +230,6 @@ ACTIVE = {
     # "bluetooth_icon": None,
     # "wifi_icon": None,
     # "about_icon": None,
-    # "identity_icon": None,
     # "elixpo_pet_icon": None,
     # "elixpo_sketch_icon": None,
     # "IR_Quest_icon": None,

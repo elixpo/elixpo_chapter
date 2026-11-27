@@ -1,14 +1,9 @@
 name: Deploy packages.elixpo.com
 
+# GitHub Pages rollback host for packages.elixpo.com. Production deploys run through
+# deploy-cloudflare-pages.yml; run this only to publish the fallback by hand.
 on:
-  workflow_call:
-    secrets:
-      APT_SIGNING_KEY:
-        required: true
   workflow_dispatch:
-  repository_dispatch:
-    types:
-      - package-released
 
 permissions:
   contents: read

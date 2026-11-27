@@ -41,7 +41,7 @@
       ],
       "conformantWithExceptions": ["agent.elixpo", "crumb.elixpo"],
       "deferredAgentRepositories": ["oreoPI"],
-      "outOfScopeRepositories": [".github", "brand-production", "search.elixpo"],
+      "outOfScopeRepositories": [".github", "brand-production", "diwali.elixpo", "plumlang", "search.elixpo"],
       "centrallyRecordedArchives": [
         "art.elixpo",
         "chat.elixpo",
@@ -98,7 +98,7 @@
       "custody": "elixpo-owned",
       "githubArchived": false,
       "verificationState": "verified",
-      "statusVerifiedAt": "2026-10-17",
+      "statusVerifiedAt": "2026-11-15",
       "statusOwner": "elixpo"
     },
     {
@@ -227,6 +227,20 @@
       "verificationState": "verified",
       "statusVerifiedAt": "2026-10-17",
       "statusOwner": "elixpo"
+    },
+    {
+      "name": "diwali.elixpo",
+      "repositoryUrl": "https://github.com/elixpo/diwali.elixpo",
+      "disposition": "public-entry",
+      "publicClass": "project",
+      "relationship": "connected",
+      "lifecycle": "active",
+      "custody": "mirrored",
+      "githubArchived": false,
+      "verificationState": "verified",
+      "statusVerifiedAt": "2026-11-16",
+      "statusOwner": "elixpo",
+      "notes": "The Light Within by Arya Bhagat, imported with its full commit history from github.com/Aryaaa-21/Diya with the author's agreement. Elixpo operates the diwali.elixpo.com deployment; Arya Bhagat remains the copyright holder of the original MIT-licensed work."
     },
     {
       "name": "elixpo",
@@ -459,7 +473,7 @@
     },
     {
       "name": "oreo",
-      "repositoryUrl": "https://github.com/elixpo/oreo",
+      "repositoryUrl": "https://github.com/elixpo/falera",
       "disposition": "public-entry",
       "publicClass": "project",
       "relationship": "core",
@@ -508,8 +522,22 @@
       "custody": "elixpo-owned",
       "githubArchived": false,
       "verificationState": "verified",
-      "statusVerifiedAt": "2026-10-17",
+      "statusVerifiedAt": "2026-11-15",
       "statusOwner": "elixpo"
+    },
+    {
+      "name": "plumlang",
+      "repositoryUrl": "https://github.com/plumlang/plumlang",
+      "disposition": "public-entry",
+      "publicClass": "project",
+      "relationship": "connected",
+      "lifecycle": "active",
+      "custody": "externally-owned",
+      "githubArchived": false,
+      "verificationState": "verified",
+      "statusVerifiedAt": "2026-11-24",
+      "statusOwner": "elixpo",
+      "notes": "Plumlang is built in the plumlang GitHub organization as a collaboration with Elixpo and published at plum.elixpo.com as an Elixpo production. Pre-alpha; the language repository is Apache-2.0."
     },
     {
       "name": "qfabric",
@@ -577,7 +605,7 @@
       "custody": "elixpo-owned",
       "githubArchived": false,
       "verificationState": "verified",
-      "statusVerifiedAt": "2026-10-17",
+      "statusVerifiedAt": "2026-11-15",
       "statusOwner": "elixpo"
     },
     {

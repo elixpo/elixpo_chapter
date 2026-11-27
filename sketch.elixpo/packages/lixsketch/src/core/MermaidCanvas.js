@@ -70,6 +70,44 @@ export function beginDiagram({ width, height, title, diagramType, padding = 90, 
     return api;
 }
 
+/**
+ * Turn a Mermaid edge route (layout pass: diagram laid out by Mermaid) into
+ * one curve LixSketch can draw: straight, quadratic or cubic. Mermaid draws
+ * the route as a basis spline through the points; a single quadratic (3
+ * points) or cubic through the inner points follows it closely.
+ */
+export function routeCurve(points) {
+    if (!Array.isArray(points) || points.length < 2) return null;
+    const start = points[0];
+    const end = points[points.length - 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const off = (p) => Math.abs((p.x - start.x) * dy - (p.y - start.y) * dx) / len;
+    const inner = points.slice(1, -1);
+    if (!inner.length || inner.every(p => off(p) < 2)) return { kind: 'straight', start, end };
+    if (inner.length === 1) {
+        const c = inner[0];
+        return {
+            kind: 'quad', start, end, control: c,
+            c1: { x: start.x + (2 / 3) * (c.x - start.x), y: start.y + (2 / 3) * (c.y - start.y) },
+            c2: { x: end.x + (2 / 3) * (c.x - end.x), y: end.y + (2 / 3) * (c.y - end.y) },
+        };
+    }
+    const c1 = inner[0];
+    const c2 = inner[inner.length - 1];
+    // Closest single quadratic to this cubic, for Line (which is quadratic).
+    const control = { x: (3 * (c1.x + c2.x) - (start.x + end.x)) / 4, y: (3 * (c1.y + c2.y) - (start.y + end.y)) / 4 };
+    return { kind: 'cubic', start, end, c1, c2, control };
+}
+
+/** Point halfway along a route curve (for edge labels). */
+export function curveMidpoint(curve) {
+    if (curve.kind === 'straight') return { x: (curve.start.x + curve.end.x) / 2, y: (curve.start.y + curve.end.y) / 2 };
+    const { start: p0, c1, c2, end: p3 } = curve;
+    return { x: (p0.x + 3 * c1.x + 3 * c2.x + p3.x) / 8, y: (p0.y + 3 * c1.y + 3 * c2.y + p3.y) / 8 };
+}
+
 export function contrastText(fill, fallback = '#f0f0f0') {
     const raw = String(fill || '').replace('#', '');
     const hex = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw.slice(0, 6);

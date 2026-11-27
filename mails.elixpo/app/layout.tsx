@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import BackgroundAurora from "./components/background-aurora";
 import { THEME_BOOT_SCRIPT, ThemeProvider } from "./components/theme-provider";
 import "./globals.css";
+import Script from "next/script";
 
 const TAGLINE = "Elixpo Mails — Event-Based Transactional Emails";
 const OG_IMAGE = {
@@ -162,6 +163,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                         {children}
                     </div>
                 </ThemeProvider>
+                {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
+                <Script
+                    src="https://agent.elixpo.com/festive/theme.js"
+                    strategy="afterInteractive"
+                />
             </body>
         </html>
     );

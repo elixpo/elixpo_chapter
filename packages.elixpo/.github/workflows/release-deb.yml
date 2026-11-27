@@ -75,7 +75,5 @@ jobs:
     needs: [package, publish]
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/deploy-packages.yml
+    uses: ./.github/workflows/deploy-cloudflare-pages.yml
     secrets: inherit

@@ -10,17 +10,21 @@ permissions:
 
 jobs:
   host-tests:
-    name: Host tests (core + player)
+    name: Host tests (core, player, conformance)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Version numbers agree
         run: python3 -I tools/check_version.py
-      - name: Build and run
+      - name: Conformance vectors match their generator
+        run: python3 -I tools/make_conformance.py --check
+      - name: Build and run (includes the C conformance tests on tests/data/v7 and v8)
         run: make -C tests
+      - name: Sanitizers (ASan, UBSan)
+        run: make -C tests clean all CFLAGS="-std=c99 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all"
       - name: CLI round trip
         run: |
-          python3 -I tools/rv565.py testpattern /tmp/tp.rv565
+          python3 -I tools/rv565.py testpattern /tmp/tp.rv565 --v6
           cmp /tmp/tp.rv565 tests/data/testpattern.rv565 || echo "zlib version differs from the committed vector; decode check below is authoritative"
           python3 -I tools/rv565.py verify tests/data/testpattern.rv565
           python3 -I tools/rv565.py info tests/data/testpattern.rv565
@@ -32,6 +36,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Tests without Pillow
         run: python3 -m unittest discover -s python/tests -v
+      - name: CircuitPython library (fake displayio)
+        run: python3 -m unittest discover -s ports/circuitpython/tests -v
       - name: Build, install with Pillow, test again
         run: |
           python3 -m venv /tmp/venv
@@ -144,17 +150,36 @@ jobs:
           path: examples_idf/player
 
   pico-sdk:
-    name: Pico SDK example (pico2)
+    name: Pico SDK example and benchmark (pico2)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi
       - name: Fetch Pico SDK
-        run: git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git "$RUNNER_TEMP/pico-sdk"
+        run: |
+          git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git "$RUNNER_TEMP/pico-sdk"
+          git -C "$RUNNER_TEMP/pico-sdk" submodule update --init --depth 1 lib/tinyusb  # USB serial
       - name: Build
         env:
           PICO_SDK_PATH: ${{ runner.temp }}/pico-sdk
         run: |
           cmake -S examples_pico/player -B build-pico -DPICO_BOARD=pico2
           cmake --build build-pico -j
+      - name: Build the RP2350 benchmark (serial and overlap)
+        env:
+          PICO_SDK_PATH: ${{ runner.temp }}/pico-sdk
+        run: |
+          for overlap in 0 1; do
+            cmake -S benchmarks/rp2350_video_dma -B build-bench-$overlap -DPICO_BOARD=pico2 \
+              -DRV565_OVERLAP=$overlap -DRV565_VIDEO=$PWD/tests/data/testpattern.rv565
+            cmake --build build-bench-$overlap -j
+          done
+
+  lvgl:
+    name: LVGL widget (lv_rv565 on LVGL 9.2 and 9.4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build lv_rv565 against LVGL 9.2.2 and 9.4.0 and play every conformance clip
+        run: ports/lvgl/test/run.sh v9.2.2 v9.4.0

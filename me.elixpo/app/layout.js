@@ -1,5 +1,6 @@
 import "./globals.css";
 import { LANDING_DESCRIPTION, LANDING_TITLE } from "@/lib/seo";
+import Script from "next/script";
 
 export const metadata = {
   title: { default: LANDING_TITLE, template: "%s | Elixpo" },
@@ -17,5 +18,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body>{children}<Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" /></body></html>;
 }

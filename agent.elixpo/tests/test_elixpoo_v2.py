@@ -12,6 +12,7 @@ from agents.elixpoo_v2.core import (
     contains_exact_mention,
     is_coding_request,
     permission_tier,
+    restrict_to_allowlists,
     review_marker,
     route_comment,
     sanitize_evidence,
@@ -165,3 +166,73 @@ def test_review_runtime_uses_api_evidence_without_checkout() -> None:
     assert "get_pull_files" in text
     assert "git clone" not in text
     assert "subprocess" not in text
+
+
+class _FakeProjectApi:
+    """Answers the three GraphQL calls ProjectRecords makes and records updates."""
+
+    def __init__(self, fields: list[dict]) -> None:
+        self.fields = fields
+        self.updates: list[dict] = []
+
+    async def graphql(self, query: str, variables: dict) -> dict:
+        if "repositoryOwner" in query:
+            return {"repositoryOwner": {"projectV2": {"id": "P1", "fields": {"nodes": self.fields}}}}
+        if "items(" in query:
+            return {"node": {"items": {"nodes": [], "pageInfo": {"hasNextPage": False}}}}
+        if "addProjectV2ItemById" in query:
+            return {"addProjectV2ItemById": {"item": {"id": "I1"}}}
+        if "updateProjectV2ItemFieldValue" in query:
+            self.updates.append(variables)
+            return {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "I1"}}}
+        raise AssertionError(f"unexpected query: {query[:60]}")
+
+
+async def test_project_upsert_skips_built_in_fields() -> None:
+    from agents.elixpoo_v2.project import ProjectRecords
+
+    api = _FakeProjectApi(
+        [
+            # GitHub's built-in Repository field: type REPOSITORY, not writable.
+            {"id": "F_repo", "name": "Repository", "dataType": "REPOSITORY"},
+            {
+                "id": "F_kind",
+                "name": "Kind",
+                "dataType": "SINGLE_SELECT",
+                "options": [{"id": "O_issue", "name": "issue"}],
+            },
+            {"id": "F_note", "name": "Area", "dataType": "TEXT"},
+        ]
+    )
+    result = await ProjectRecords(api, "plumlang", 1).upsert(
+        content_id="C1", repository="plumlang/plumlang", values={"kind": "issue", "area": "backend"}
+    )
+    assert result["created"] is True
+    assert result["updated_fields"] == ["kind", "area"]
+    assert result["unavailable_fields"] == ["repository (repository)"]
+    assert [u["field"] for u in api.updates] == ["F_kind", "F_note"]
+    assert api.updates[0]["value"] == {"singleSelectOptionId": "O_issue"}
+    assert api.updates[1]["value"] == {"text": "backend"}
+
+
+def test_restrict_to_allowlists_drops_values_the_model_invented() -> None:
+    # plumlang/plumlang#108: the model blended the Status field option "ready"
+    # into a label, and triage failed instead of applying the valid labels.
+    labels = {"documentation", "area/infrastructure", "status/review"}
+    fields = {"status": {"triage", "ready"}, "area": {"infrastructure"}}
+    action = MetadataAction(
+        kind="labels",
+        response="Classified.",
+        add_labels=("documentation", "status/ready", "area/infrastructure"),
+        project_fields={"status": "ready", "area": "frontend"},
+    )
+    restricted, dropped = restrict_to_allowlists(action, labels=labels, fields=fields)
+    assert restricted.add_labels == ("documentation", "area/infrastructure")
+    assert restricted.project_fields == {"status": "ready"}
+    assert dropped == ["label status/ready", "field area=frontend"]
+    validate_allowlists(restricted, labels=labels, fields=fields)
+    with pytest.raises(ValueError):
+        validate_allowlists(action, labels=labels, fields=fields)
+
+    clean, nothing = restrict_to_allowlists(restricted, labels=labels, fields=fields)
+    assert clean is restricted and nothing == []

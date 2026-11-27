@@ -7,6 +7,10 @@ __pycache__/
 *.pyc
 *.mp4
 *.rv565
+# RV565 conformance vectors for the browser converter's tests.
+!falera.elixpo/scripts/fixtures/**/*.rv565
+# The boot splash clip the native player plays (tools/build_splash_clip.py).
+!oreoOS/splash.rv565
 *.pyo
 *.pyd
 .venv/
@@ -23,8 +27,24 @@ firmware/*.bin
 .vscode/settings.json
 .idea/
 .secrets_tmp.py
+.cfg_snapshot.py
 *.swp
 .env.local
 .deploy_hashes.json
+.deploy_mpy/
 dist/
 legal/
+
+# Doom game data (lives on the doom-edition branch; never commit WAD/OWZ files)
+oreoWare/doom/
+*.wad
+*.WAD
+*.owz
+
+# The owner's avatar belongs to one person (#133): `falera setup` puts it on
+# the badge as /avatar.bin; never commit or ship one.
+apps/badge/assets/optimized/avatar.py
+avatar.bin
+
+# Rendered sponsor deck (pitch-deck/render.py)
+pitch-deck/out/

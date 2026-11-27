@@ -1,5 +1,6 @@
 export const runtime = "edge";
 
+import { assertCanCreateProduct } from "@/lib/billing";
 import { getDatabase } from "@/lib/d1-client";
 import { createProduct, listProductsWithCounts, productToPublic } from "@/lib/products";
 import { getSession } from "@/lib/session";
@@ -41,6 +42,15 @@ export async function POST(request: NextRequest) {
 
     const str = (v: unknown) => (typeof v === "string" ? v : null);
     const db = await getDatabase();
+
+    const canCreate = await assertCanCreateProduct(db, session.tenantId);
+    if (!canCreate.allowed) {
+        return NextResponse.json(
+            { error: "plan_limit_reached", message: canCreate.reason },
+            { status: 403 },
+        );
+    }
+
     const { product, secret } = await createProduct(
         db,
         session.tenantId,

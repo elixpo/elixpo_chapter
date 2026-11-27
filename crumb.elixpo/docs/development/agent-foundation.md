@@ -70,6 +70,86 @@ interrupted, and gives the next turn a brief of the interrupted request, open
 tasks, and earlier jobs. Project memory and the code graph are read again each
 turn.
 
+## Checks after edits
+
+When a native turn edited files (a successful `WriteWorkspace` or
+`Destructive` tool call) and the model gives its final answer, the harness
+runs the project's fast check before finishing: `cargo check` for a
+`Cargo.toml`, the local `tsc --noEmit` for a `tsconfig.json`, `go vet ./...`
+for a `go.mod`, or `ruff check` for Python projects with ruff installed.
+Failures go back to the model to fix, at most twice per turn. A check that
+cannot give a verdict (missing tool, timeout, Ctrl+C) never fails the turn.
+Configure it in `.crumb/agent.json`:
+
+```json
+"checks": {"after_edit": true, "command": "make lint", "timeout_secs": 120}
+```
+
+`command` replaces the detected check; `"after_edit": false` turns it off.
+## Hooks
+
+Hooks run user commands around native agent tool calls, configured in
+`.crumb/agent.json` (project hooks only run in a folder you trusted):
+
+```json
+"hooks": {
+  "pre_tool": [{"command": "./scripts/guard.sh", "tools": ["run_shell"]}],
+  "post_tool": [{"command": "cargo fmt --all", "tools": ["edit_file", "write_file"]}],
+  "on_stop": [{"command": "notify-send 'Crumb is done'"}]
+}
+```
+
+Each hook runs in the workspace with `sh -c` (`cmd /C` on Windows) and gets a
+JSON event on stdin (`event`, `tool`, `arguments`, `workspace`; `status` for
+`on_stop`) plus `CRUMB_HOOK_EVENT` and `CRUMB_WORKSPACE`. `tools` limits a hook
+to some tools (empty or `"*"` means all), and `timeout_secs` defaults to 30.
+
+- `pre_tool` runs before approval. Exit status 2 blocks the call; stderr is
+  the reason reported to the model.
+- `post_tool` runs after a successful call. Exit status 2 appends stderr to
+  the result the model sees.
+- `on_stop` runs when a turn ends; its outcome is ignored.
+
+Any other exit status, a timeout or a hook that cannot start lets the call
+proceed. Hooks can only block or annotate: they never approve a call or widen
+permissions.
+## Command sandbox
+
+On Linux, agent shell commands and background jobs start through
+`crumb __sandbox-exec --write <dir>… -- <shell> <args>…`. The helper applies a
+Landlock ruleset to itself while still single-threaded, then `exec`s the
+shell, so the restriction needs no `unsafe` code and covers every process the
+command starts. Reading and executing stay allowed everywhere; writing is
+limited to the workspace, the temporary directories, `/dev`, and toolchain
+caches (`~/.cargo`, `~/.rustup`, `~/.cache`, `~/.npm`, `~/go`, plus
+`CARGO_HOME`, `RUSTUP_HOME`, `GOPATH`, `GOCACHE` and `XDG_CACHE_HOME`). A
+failed command whose error looks like a refused write gets a note pointing the
+model at `run_shell_outside_sandbox`: the same shell without the sandbox,
+registered only while the sandbox is on, with the `SystemMutation` risk class.
+No policy allows it on its own, so every call shows the user an approval prompt
+("Running outside the sandbox · $ …"); without an interactive user, as in
+`crumb exec`, it is denied.
+
+The sandbox is skipped in full-access mode, with
+`"permissions": {"sandbox": false}`, on kernels without Landlock, and on other
+platforms (macOS Seatbelt is a follow-up). Network access is not restricted
+yet. The interactive shell is never sandboxed.
+## Write helpers in worktrees
+
+`spawn_agents` with `access: "write"` runs each helper in its own git
+worktree when the workspace is inside a git repository (Unix for now). The
+worktree starts from what the user sees: the current commit plus uncommitted
+and untracked changes (`.crumb/` excluded), committed in the worktree as the
+helper's starting point. As soon as a helper finishes, its diff against that
+starting point is applied to the workspace with `git apply` (files only, never
+the user's index), and the progress line says so. A diff that no longer
+applies, for example because a sibling changed the same lines, is not forced:
+it is saved as `<team>-agent-<n>.patch` next to the helper journals and
+reported to the parent model and the user. Worktrees live under the system
+temp directory and are removed after merging, on cancellation and on errors;
+stale records are pruned at the next team start. Outside git repositories,
+helpers share the workspace as before.
+
 Ctrl+C sets the shared cancellation token. Native tools must stop their child
 processes. The current DeepSeek Harness JSON-RPC SDK has no turn-cancellation
 method, so its adapter must terminate and restart the harness subprocess.

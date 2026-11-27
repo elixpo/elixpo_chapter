@@ -5,6 +5,7 @@ changes.**
 
 [![PyPI](https://img.shields.io/pypi/v/qfabric?label=PyPI&color=3775A9)](https://pypi.org/project/qfabric/)
 [![CI](https://github.com/elixpo/qfabric/actions/workflows/ci.yml/badge.svg)](https://github.com/elixpo/qfabric/actions/workflows/ci.yml)
+[![arXiv](https://img.shields.io/badge/arXiv-2611.01598-b31b1b.svg)](https://arxiv.org/abs/2611.01598)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23692354.svg)](https://doi.org/10.5281/zenodo.23692354)
 [![License: Apache-2.0](https://img.shields.io/badge/software-Apache--2.0-blue.svg)](LICENSE)
 [![Research](https://img.shields.io/badge/status-research-purple.svg)](paper/)
@@ -90,7 +91,7 @@ matching firmware from this repository.
 
 | Start here | What it contains |
 | --- | --- |
-| [Research paper](paper/) | IEEE-style manuscript, bibliography, figures, and build instructions |
+| [Research paper](https://arxiv.org/abs/2611.01598) | arXiv:2611.01598; LaTeX source, bibliography, and build instructions in [paper/](paper/) |
 | [Stage 12 evaluation](docs/stage-12-evaluation.md) | Matched-load protocol, results, and the v1.0.x correction |
 | [Stage 11 evaluation](docs/stage-11-evaluation.md) | Superseded evaluation, kept for transparency |
 | [Recovery design](docs/stage-7-recovery.md) | Safe switching, probation, commit, and rollback |

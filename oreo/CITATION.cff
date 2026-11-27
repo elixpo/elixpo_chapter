@@ -9,11 +9,11 @@
 # Validate locally with: pip install cffconvert && cffconvert -i CITATION.cff -f bibtex
 
 cff-version: 1.2.0
-message: "If you use OreoOS, the Oreo Badge, or the RV565 media pipeline, please cite this software."
-title: "OreoOS: The Oreo Badge Operating System and RV565 Media Pipeline"
+message: "If you use FaleraOS, the Falera Badge, or the RV565 media pipeline, please cite this software."
+title: "FaleraOS: The Falera Badge Operating System and RV565 Media Pipeline"
 type: software
 abstract: >
-  OreoOS is a MicroPython-based application operating system for an
+  FaleraOS is a MicroPython-based application operating system for an
   ESP32-S3 conference badge. The repository includes the operating system,
   hardware drivers, host media-ingestion tools, and RV565, a frame-independent
   compressed RGB565 playback pipeline with native scaling and DMA experiments.
@@ -39,14 +39,14 @@ keywords:
   - video-playback
   - direct-memory-access
 license: MIT
-license-url: "https://github.com/elixpo/oreo/blob/main/LICENSE"
+license-url: "https://github.com/elixpo/falera/blob/main/LICENSE"
 doi: "10.5281/zenodo.23543367"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.23543367"
     description: "Archived RV565 paper artifact (rv565-arxiv-v1)"
-repository-code: "https://github.com/elixpo/oreo"
-url: "https://oreo.elixpo.com"
+repository-code: "https://github.com/elixpo/falera"
+url: "https://falera.elixpo.com"
 contact:
   - email: ayushman.elixpo@gmail.com
     name: Ayushman Bhattacharya

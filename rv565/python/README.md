@@ -15,7 +15,7 @@ pip install "rv565[pillow]"  # plus the Pillow plugin
 
 Published on PyPI: [pypi.org/project/rv565](https://pypi.org/project/rv565/).
 Prefer not to install anything? The
-[online converter](https://oreo.elixpo.com/rv565/convert/) does the same
+[online converter](https://falera.elixpo.com/rv565/convert/) does the same
 encoding in your browser.
 
 ## Command line
@@ -23,6 +23,7 @@ encoding in your browser.
 ```bash
 rv565 encode input.mp4 clip.rv565 --size 180x135 --fps 24   # needs FFmpeg
 rv565 info clip.rv565        # sizes and predicted missed frames on ESP32-S3
+rv565 info --chip rp2350 clip.rv565   # ... or on a Raspberry Pi Pico 2
 rv565 verify clip.rv565
 rv565 c-array clip.rv565 clip.h   # for Arduino sketches
 ```

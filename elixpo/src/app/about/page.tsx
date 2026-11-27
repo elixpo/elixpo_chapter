@@ -6,6 +6,7 @@ import {
   Scale,
 } from "lucide-react";
 import { createPageMetadata, serializeJsonLd } from "@/lib/seo";
+import { Sparks } from "@/components/Sparks";
 
 export const metadata = createPageMetadata({
   title: "About Elixpo — an open-source project foundry",
@@ -108,7 +109,7 @@ export default function AboutPage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
-      <header className="about-hero">
+      <header className="about-hero"><Sparks chips={["build in public", "release ↗", "since 2023"]} />
         <div className="about-hero-geometry" aria-hidden="true">
           <span />
           <span />
@@ -176,7 +177,7 @@ export default function AboutPage() {
       </section>
 
       <section className="about-value section-wrap">
-        <div className="section-heading split">
+        <div className="section-heading split"><Sparks stars={4} />
           <div><p className="eyebrow">The practical value</p><h2>What people receive.</h2></div>
           <p>Elixpo does not replace the people who understand a project. It makes their work easier to enter, finish, explain, and carry forward.</p>
         </div>
@@ -189,7 +190,7 @@ export default function AboutPage() {
 
       <section className="about-chapter">
         <div className="section-wrap">
-          <div className="section-heading split">
+          <div className="section-heading split"><Sparks stars={4} />
             <div><p className="eyebrow">The operating unit</p><h2>An Elixpo Chapter has an end condition.</h2></div>
             <p>A Chapter is a time-bounded period of public work. It is neither a permanent ownership claim nor a vague promise to maintain a project forever.</p>
           </div>
@@ -203,7 +204,7 @@ export default function AboutPage() {
       </section>
 
       <section className="about-relationships section-wrap">
-        <div className="section-heading split">
+        <div className="section-heading split"><Sparks stars={4} />
           <div><p className="eyebrow">How work relates to Elixpo</p><h2>One commons. Different responsibilities.</h2></div>
           <p>Relationship, lifecycle, custody, and license are recorded as separate facts. Being visible through Elixpo never silently changes who authored, owns, maintains, or may reuse a project.</p>
         </div>
@@ -248,7 +249,7 @@ export default function AboutPage() {
       </section>
 
       <section className="about-faq section-wrap">
-        <div className="section-heading split">
+        <div className="section-heading split"><Sparks stars={4} />
           <div><p className="eyebrow">Direct answers</p><h2>The questions that matter.</h2></div>
           <p>The model should be understandable before anyone contributes code, moves a repository, or attaches their name to the work.</p>
         </div>
