@@ -1,35 +1,54 @@
 {
   "hero": {
-    "focusTags": ["System Design", "ML", "Open Source"],
+    "focusTags": [
+      "Research",
+      "Embedded Systems",
+      "ML",
+      "Open Source"
+    ],
     "name": "ANWESHA",
-    "headline": "System Design Engineer & ML Developer",
-    "subhead": "Co-developer @ Elixpo · Content Team Lead, GDG JIS University · GSSoC '25 Contributor",
-    "intro": "Final-year CSE undergraduate turning complex patterns into scalable systems - building ML pipelines with TensorFlow and PyTorch, designing architecture, and contributing to open source across communities like GSSoC, GDG, and Elixpo.",
+    "headline": "Researcher at Elixpo",
+    "subhead": "Researcher @ Elixpo · Content Team Lead, GDG JIS University · GSSoC '25 & OSCI '25 Contributor",
+    "intro": "Computer Science & Engineering researcher at JIS University and Elixpo, co-authoring open, reproducible papers on Linux-RTOS task recovery (QFabric), frame-independent video on ESP32-S3 (RV565), one-bit diffusion models (MonoDiffuse), and microcoded breadboard CPUs (OctaBit). Every result ships with its code, artifacts, and citation record.",
     "credentials": [
-      { "label": "Content Team Lead", "org": "GDG JIS University" },
-      { "label": "Co-developer", "org": "Elixpo" }
+      {
+        "label": "Researcher",
+        "org": "Elixpo"
+      },
+      {
+        "label": "4 papers",
+        "org": "research.elixpo.com"
+      },
+      {
+        "label": "Content Team Lead",
+        "org": "GDG JIS University"
+      }
     ],
     "ctas": [
-      { "label": "View Work", "href": "projects" },
-      { "label": "Connect", "href": "connect" }
+      {
+        "label": "Read the papers",
+        "href": "publications"
+      },
+      {
+        "label": "Connect",
+        "href": "connect"
+      }
     ],
     "portrait": "/assets/anwesha/punchlineSection/vr-pic1.webp"
   },
   "intro": {
     "heroName": "ANWESHA",
-    "tagline": "System Design",
-    "taglineSuffix": "ENGINEER!",
-    "description": "Hi, I am Anwesha, a final year undergraduate student, majoring in Computer Science and Engineering. With a passion for system design and architecture, I have honed my skills through various projects and collaborations. My journey in the tech world has been fueled by curiosity and a relentless drive to learn and innovate. I am excited to share my work and connect with like-minded individuals who are passionate about technology and its potential to transform the world.",
-
+    "tagline": "Elixpo",
+    "taglineSuffix": "RESEARCHER!",
+    "description": "Hi, I'm Anwesha, a Computer Science and Engineering student at JIS University and a researcher at Elixpo. I work where systems meet evidence: measuring how tasks recover across Linux and real-time domains, how far a microcontroller can push video, how small a diffusion model's weights can get, and how a CPU's microcode really runs on a breadboard. I care about research that anyone can rerun, so each of my papers comes with its source, data, and artifacts in the open.",
     "highlights": [
-      "Ex- Biology Enthusiast",
-      "OSCI Contributor",
-      "GSSOC Contributor" ,
+      "Researcher @ Elixpo",
+      "4 Research Papers",
+      "arXiv Author",
       "GDG Content Lead",
-      "System Design",
-      "Co-dev @elixpo"
+      "GSSoC & OSCI Contributor",
+      "Ex-Biology Enthusiast"
     ],
-
     "images": {
       "portrait": "/assets/anwesha/punchlineSection/vr-pic1.webp",
       "landscape": "/assets/anwesha/punchlineSection/hz-pic1.webp"
@@ -37,8 +56,8 @@
   },
   "websiteSection": {
     "designedBy": "Designed from the idea of Miranda website theme! Formulated on a JSON parse architechture for quick data edits. Designed by @elixpo and edited by @anwesha",
-    "futurePlans": "Moving forward with the dream of grasping system architectures and design, I am eager to explore the depths of scalable systems, distributed computing, and cloud technologies. My goal is to contribute to innovative projects that push the boundaries of technology and create impactful solutions for real-world problems. I am excited to continue learning, growing, and collaborating with talented individuals in the tech community.", 
-    "codeStory": "A former biology enthusiast, slowly turned into a CS Major working on system design and archirechture. Learning concepts of the design and technological gain was the most interesting part of the game so far! diving deep into the topics and the scales of the vast serving of CS and the fast growing technological scope is really awesome but sometimes tiring. But with the advent of time and love for the subject, moving forwrd with the choice of transfer and change is quite fun. Neverthless wish to explore more and push forward some awesome projects down the line with Elixpo and Computer Science ~ Wish me Luck :D",
+    "futurePlans": "Next, I want to go deeper into heterogeneous and real-time systems, and into efficient models that fit on small hardware. That means more measured, reproducible studies at Elixpo, more open artifacts, and helping new contributors turn their own experiments into published records.",
+    "codeStory": "A former biology enthusiast who moved into Computer Science. Biology taught me to form a hypothesis, control the variables, and trust the measurement over the expectation. I now apply the same habit to systems research: in QFabric, the honest result was that migration never helped on the board we measured, and the paper says exactly that. Turning curiosity into evidence is still the best part of the work.",
     "images": {
       "owl": "/assets/anwesha/websiteSection/hz-owl1.webp",
       "humanThink": "/assets/anwesha/websiteSection/human-think1.webp",
@@ -47,37 +66,139 @@
   },
   "techSection": {
     "subheading": "DEV-S",
-    "description": "A system design enthusiast who views every codebase as an uncharted territory. From dissecting complex biological patterns to mapping out scalable software infrastructures, Anwesha builds with the precision of a scientist and the curiosity of a global traveler.",
+    "description": "A researcher who treats every system as an experiment. From biological patterns to RTOS timing contracts, quantized diffusion, and microcoded CPUs, Anwesha works with a scientist's precision: state the question, measure carefully, and publish the artifacts alongside the result.",
     "skills": [
-      { "type": "icon", "src": "https://img.icons8.com/fluency/144/javascript.png", "alt": "JavaScript" },
-      { "type": "icon", "src": "https://img.icons8.com/fluency/144/node-js.png", "alt": "Node.js" },
-      { "type": "icon", "src": "https://img.icons8.com/ios/100/express-js.png", "alt": "Express.js" },
-      { "type": "text", "label": "KUBERNETES" },
-      { "type": "icon", "src": "https://img.icons8.com/ios-filled/150/postgreesql.png", "alt": "PostgreSQL" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/mongodb.png", "alt": "MongoDB" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/mysql-logo.png", "alt": "MySQL" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/tensorflow.png", "alt": "TensorFlow" },
-      { "type": "icon", "src": "https://img.icons8.com/fluency/144/pytorch.png", "alt": "PyTorch" },
-      { "type": "text", "label": "GIT + GIT-OPS" },
-      { "type": "icon", "src": "https://img.icons8.com/ios/50/kubernetes.png", "alt": "Kubernetes" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/docker.png", "alt": "Docker" },
-      { "type": "text", "label": "NLP + ML-OPS" },
-      { "type": "icon", "src": "https://img.icons8.com/ios-filled/100/artificial-intelligence.png", "alt": "AI" },
-      { "type": "text", "label": "System Design" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/redis.png", "alt": "Redis" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/elasticsearch.png", "alt": "Elasticsearch" },
-      { "type": "text", "label": "GCP + AWS" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/google-cloud.png", "alt": "Google Cloud" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/amazon-web-services.png", "alt": "AWS" },
-      { "type": "text", "label": "CP --" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/c-plus-plus-logo.png", "alt": "C++" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/c-programming.png", "alt": "C" },
-      { "type": "icon", "src": "https://img.icons8.com/color/144/python.png", "alt": "Python" }
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/javascript.png",
+        "alt": "JavaScript"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/node-js.png",
+        "alt": "Node.js"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios/100/express-js.png",
+        "alt": "Express.js"
+      },
+      {
+        "type": "text",
+        "label": "KUBERNETES"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios-filled/150/postgreesql.png",
+        "alt": "PostgreSQL"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/mongodb.png",
+        "alt": "MongoDB"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/mysql-logo.png",
+        "alt": "MySQL"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/tensorflow.png",
+        "alt": "TensorFlow"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/pytorch.png",
+        "alt": "PyTorch"
+      },
+      {
+        "type": "text",
+        "label": "GIT + GIT-OPS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios/50/kubernetes.png",
+        "alt": "Kubernetes"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/docker.png",
+        "alt": "Docker"
+      },
+      {
+        "type": "text",
+        "label": "NLP + ML-OPS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios-filled/100/artificial-intelligence.png",
+        "alt": "AI"
+      },
+      {
+        "type": "text",
+        "label": "System Design"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/redis.png",
+        "alt": "Redis"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/elasticsearch.png",
+        "alt": "Elasticsearch"
+      },
+      {
+        "type": "text",
+        "label": "GCP + AWS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/google-cloud.png",
+        "alt": "Google Cloud"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/amazon-web-services.png",
+        "alt": "AWS"
+      },
+      {
+        "type": "text",
+        "label": "CP --"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/c-plus-plus-logo.png",
+        "alt": "C++"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/c-programming.png",
+        "alt": "C"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/python.png",
+        "alt": "Python"
+      }
     ],
     "explore": [
-      { "label": "Talks", "caption": "Speaking & sessions", "href": "talks" },
-      { "label": "Writing", "caption": "Notes & blog posts", "href": "blogs" },
-      { "label": "Papers", "caption": "Research & publications", "href": "publications" }
+      {
+        "label": "Papers",
+        "caption": "Research & publications",
+        "href": "publications"
+      },
+      {
+        "label": "Projects",
+        "caption": "Research systems & builds",
+        "href": "projects"
+      },
+      {
+        "label": "Connect",
+        "caption": "Collaborate on research",
+        "href": "connect"
+      }
     ],
     "images": {
       "wand": "/assets/anwesha/techTracks/wand-1.webp",

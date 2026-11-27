@@ -1,6 +1,6 @@
 {
   "heading": "CONNECT",
-  "description": "Let's connect! Find me on your favorite platforms or drop me a message directly. I'm always open to new opportunities, collaborations, and conversations. Whether you want to discuss a project, share ideas, or just say hi, feel free to reach out. Looking forward to connecting with you!",
+  "description": "Want to talk about a paper, a reproducible-research idea, embedded systems, or a collaboration with Elixpo? Find me on the platforms below or write to me directly. I'm always happy to hear from fellow researchers, open-source contributors, and students getting started.",
   "emails": [
     "anwesha@elixpo.com"
   ],
@@ -8,6 +8,7 @@
   "socialLinks": [
     { "platform": "GitHub", "url": "https://github.com/anwe-ch", "icon": "logo-github", "hoverColor": "#333" },
     { "platform": "LinkedIn", "url": "https://linkedin.com/in/anwe", "icon": "logo-linkedin", "hoverColor": "#0077b5" },
-    { "platform": "Instagram", "url": "https://instagram.com/itz_anwesha_", "icon": "logo-instagram", "hoverColor": "#E1306C" }
+    { "platform": "Instagram", "url": "https://instagram.com/itz_anwesha_", "icon": "logo-instagram", "hoverColor": "#E1306C" },
+    { "platform": "Research", "url": "https://research.elixpo.com", "icon": "school-outline", "hoverColor": "#6b4f2a" }
   ]
 }

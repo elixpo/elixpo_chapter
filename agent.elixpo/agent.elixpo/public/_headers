@@ -2,3 +2,6 @@
 # revalidate within minutes instead of holding an old theme for hours.
 /festive/theme.js
   Cache-Control: public, max-age=300, must-revalidate
+/festive/lumi.webp
+  Cache-Control: public, max-age=86400
+  Access-Control-Allow-Origin: *

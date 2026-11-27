@@ -3,6 +3,7 @@
   "siteName": "Nihal",
   "siteDescription": "AI Researcher & Systems Architect · Founder, KindSynapse",
   "location": "Kolkata, IN",
+  "birthday": null,
   "email": "info@nihalgazi.com",
   "socials": [
     { "platform": "GitHub", "url": "https://github.com/nihal-gazi", "icon": "logo-github", "hoverColor": "#333333" },

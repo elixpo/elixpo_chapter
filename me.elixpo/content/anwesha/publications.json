@@ -1,6 +1,6 @@
 {
   "heading": "PUBLICATIONS",
-  "description": "  As a passionate explorer of the intersection between technology and innovation, I have delved into various research endeavors that have culminated in insightful publications.For me, a research paper isn't just a document, it is a report from the front lines of technical discovery Working alongside my fellow researchers, I bridge the gap between theoretical analysis and structural design.",
+  "description": "Research records co-authored at Elixpo, spanning embedded and heterogeneous systems, one-bit diffusion models, and hand-built computer architecture. Every paper ships with its source, artifacts, and citation record on research.elixpo.com.",
   "highlights": [
     "The Archive of Inquiries"
   ],
@@ -10,9 +10,56 @@
   ],
   "papers": [
     {
-      "title": "Exploring Microcode CPU Instructions with RISC-V Breadboard Computer",
+      "title": "QFabric: Guarded Cross-Domain Task Recovery and Its Limits on a Linux-RTOS Board",
+      "authors": "Ayushman Bhattacharya and Anwesha Chakraborty",
+      "status": "arXiv preprint · arXiv:2611.01598",
+      "year": "2026",
+      "isNew": true,
+      "links": [
+        { "label": "arXiv", "url": "https://arxiv.org/abs/2611.01598" },
+        { "label": "Research record", "url": "https://research.elixpo.com/qfabric" },
+        { "label": "Code", "url": "https://github.com/elixpo/qfabric" },
+        { "label": "PyPI", "url": "https://pypi.org/project/qfabric/" },
+        { "label": "Zenodo", "url": "https://doi.org/10.5281/zenodo.23692354" }
+      ]
+    },
+    {
+      "title": "RV565: Cross-Layer Co-Design for Frame-Independent Video Playback on MicroPython-Class ESP32-S3 Systems",
+      "authors": "Ayushman Bhattacharya and Anwesha Chakraborty",
+      "status": "arXiv preprint · arXiv:2610.35935",
+      "year": "2026",
+      "isNew": true,
+      "links": [
+        { "label": "arXiv", "url": "https://arxiv.org/abs/2610.35935" },
+        { "label": "Research record", "url": "https://research.elixpo.com/oreo" },
+        { "label": "Code", "url": "https://github.com/elixpo/falera" },
+        { "label": "Zenodo", "url": "https://doi.org/10.5281/zenodo.23543367" }
+      ]
+    },
+    {
+      "title": "Native Binary-Weight Training Outperforms Zero-Shot Sign Projection in MNIST Diffusion",
+      "authors": "Ayushman Bhattacharya, Anwesha Chakraborty and Nihal Gazi",
+      "status": "Technical report · MonoDiffuse-TR-2026-01",
+      "year": "2026",
+      "isNew": true,
+      "links": [
+        { "label": "Paper (Zenodo)", "url": "https://doi.org/10.5281/zenodo.23424654" },
+        { "label": "Research record", "url": "https://research.elixpo.com/monodiffuse" },
+        { "label": "Code", "url": "https://github.com/elixpo/monodiffuse" },
+        { "label": "Model", "url": "https://huggingface.co/Elixpo/monodiffuse" }
+      ]
+    },
+    {
+      "title": "Exploring Microcode CPU Instructions with RISC 8-Bit Breadboard Computer",
+      "authors": "Ayushman Bhattacharya, Anwesha Chakraborty, Vivek Yadav, Piyali Sarkar, Sonali Bhowmik, Dipankar Misra and Sumit Nandi",
+      "status": "International Journal of Enhanced Research in Science, Technology & Engineering 14(6), 212–226",
       "year": "2025",
-      "isNew": true
+      "isNew": false,
+      "links": [
+        { "label": "Paper (PDF)", "url": "https://artefacts-discovery.researcher.life/full_text/DA-2/32/326151b325b83d9cad2c965f7146b37b/full_text/6dd33d2ab3e8a75dd7c06626d2651050.pdf" },
+        { "label": "Research record", "url": "https://research.elixpo.com/octabit" },
+        { "label": "Code", "url": "https://github.com/elixpo/octabit" }
+      ]
     }
   ]
 }

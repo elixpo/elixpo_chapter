@@ -3,6 +3,7 @@
   "siteName": "Divyanshu",
   "siteDescription": "Open Source Contributor & Full-Stack Developer",
   "location": "Kolkata, WB, IN",
+  "birthday": null,
   "email": "divjha.cloud@gmail.com",
   "socials": [
     { "platform": "GitHub", "url": "https://github.com/divyanshuj91", "icon": "logo-github", "hoverColor": "#333" },

@@ -24,6 +24,21 @@ file once, and the browser picks the theme from today's date in `Asia/Kolkata`.
 No service needs a redeploy. A festival runs from `before` days ahead (default 7) to `after` days
 past its last day (default 3). Seasons fill the gaps.
 
+## Birthdays
+
+`birthdays` in `config/festivals.yaml` lists members as `{name, date: "MM-DD", url}`. On the day
+itself (in `timezone`) the `birthday` theme replaces any festival or season: bunting, confetti,
+balloons at the page edges, a badge linking to the person's page, and Lumi in a party hat. Shared
+birthdays are combined into one greeting. Keep the dates in step with `birthday` in me.elixpo's
+`content/<person>/profile.json`.
+
+- `?festive=birthday` previews the first listed birthday; add `&festive-who=<name>` for another.
+- The greeting is exposed as `--ef-greeting` (a quoted CSS string), so a site with its own mascot
+  can show it with `content: var(--ef-greeting)`.
+- A site that already renders Lumi sets `<html data-elixpo-lumi="self">`; the engine then skips its
+  own Lumi and the site dresses its mascot up under `html[data-elixpo-festive="birthday"]`.
+- Lumi's image is `agent.elixpo/festive/lumi.webp`, copied next to `theme.js` at build time.
+
 ## Controls
 
 - `override: diwali` forces one theme everywhere; `override: none` turns all themes off.

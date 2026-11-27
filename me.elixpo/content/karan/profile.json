@@ -3,6 +3,7 @@
   "siteName": "Karan",
   "siteDescription": "Open Source Contributor & T-Shaped Developer",
   "location": "WB, IN",
+  "birthday": null,
   "email": "2006karanray@gmail.com",
   "socials": [
     { "platform": "GitHub", "url": "https://github.com/karanray06", "icon": "logo-github", "hoverColor": "#333" },

@@ -24,3 +24,6 @@ yarn-error.log*
 next-env.d.ts
 .lighthouseci/
 /audit/
+
+# local build of agent.elixpo festive/theme.js for testing unreleased themes
+/public/festive/

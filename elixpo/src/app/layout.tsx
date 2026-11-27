@@ -80,6 +80,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
+      // The portal renders its own Lumi, so the festive script dresses her up instead of adding another.
+      data-elixpo-lumi="self"
       className="h-full antialiased"
     >
       <body className="min-h-full">
@@ -95,8 +97,9 @@ export default function RootLayout({
             <PointerEffects />
           </div>
         </MotionPreferences>
-        {/* Elixpo festive themes: dates live in agent.elixpo config/festivals.yaml */}
-        <Script src="https://agent.elixpo.com/festive/theme.js" strategy="afterInteractive" />
+        {/* Elixpo festive themes: dates and birthdays live in agent.elixpo config/festivals.yaml.
+            NEXT_PUBLIC_FESTIVE_THEME_URL points at a local build when testing an unreleased theme. */}
+        <Script src={process.env.NEXT_PUBLIC_FESTIVE_THEME_URL || "https://agent.elixpo.com/festive/theme.js"} strategy="afterInteractive" />
       </body>
     </html>
   );

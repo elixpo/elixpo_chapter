@@ -55,14 +55,14 @@
     ]
   },
   "anwesha": {
-    "title": "Anwesha Chakraborty — System Design & ML | Elixpo",
-    "description": "Anwesha Chakraborty is a system design engineer and ML developer building scalable architectures and machine-learning pipelines with TensorFlow and PyTorch.",
+    "title": "Anwesha Chakraborty — Researcher | Elixpo",
+    "description": "Anwesha Chakraborty is a researcher at Elixpo, co-authoring open, reproducible papers on Linux-RTOS task recovery, ESP32-S3 video playback, one-bit diffusion models, and microcoded breadboard CPUs.",
     "givenName": "Anwesha",
     "familyName": "Chakraborty",
-    "jobTitle": "System Design Engineer and ML Developer",
+    "jobTitle": "Researcher at Elixpo",
     "aliases": [
       "Anwesha",
-      "CSE-Anwesha"
+      "anwe-ch"
     ],
     "keywords": [
       "system design",
@@ -74,15 +74,21 @@
       "MLOps",
       "open source",
       "GSSoC",
-      "GDG"
+      "GDG",
+      "embedded systems",
+      "real-time systems",
+      "reproducible research",
+      "diffusion models",
+      "computer architecture",
+      "arXiv"
     ],
     "knowsAbout": [
-      "System Design",
+      "Embedded Systems",
+      "Real-Time Systems",
       "Machine Learning",
-      "Software Architecture",
-      "TensorFlow",
-      "PyTorch",
-      "MLOps",
+      "Computer Architecture",
+      "Reproducible Research",
+      "System Design",
       "Open Source"
     ],
     "affiliations": [

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LandingBirthday } from "@/components/BirthdayCelebration";
 
 export default function LandingClient({ profiles }) {
   const [query, setQuery] = useState("");
@@ -25,6 +26,8 @@ export default function LandingClient({ profiles }) {
           Organization directory <span aria-hidden="true">↗</span>
         </a>
       </header>
+
+      <LandingBirthday profiles={profiles} />
 
       <section className="registry-hero">
         <div className="portfolio-geometry" aria-hidden="true"><i /><i /><i /><i /></div>

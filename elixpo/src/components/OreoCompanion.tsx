@@ -35,7 +35,8 @@ const FALLBACK = ["Hi! I'm Lumi.", "ship it ↗", "LGTM ✓"];
 const IDLE_LINE = "Still reading? Respect.";
 const DISMISS_KEY = "elixpo:oreo-dismissed";
 
-type FestiveWindow = Window & { ElixpoFestive?: { active: { greeting: string | null } | null } };
+type FestiveWindow = Window & { ElixpoFestive?: { active: { greeting: string | null; url?: string | null } | null } };
+type Festive = { line: string; url: string | null };
 
 const linesFor = (path: string) => [...(QUIPS.find(([route]) => (route.endsWith("/") ? path.startsWith(route) : path === route))?.[1] ?? []), ...FALLBACK];
 
@@ -55,8 +56,8 @@ export function OreoCompanion() {
 }
 
 function Oreo({ pathname }: { pathname: string }) {
-  const [greeting, setGreeting] = useState<string | null>(null);
-  const lines = greeting ? [`${greeting}! 🎉`, ...linesFor(pathname)] : linesFor(pathname);
+  const [festive, setFestive] = useState<Festive | null>(null);
+  const lines = festive ? [festive.line, ...linesFor(pathname)] : linesFor(pathname);
   const [line, setLine] = useState(0);
   const [idle, setIdle] = useState(false);
   const [mode, setMode] = useState<Mode>("hidden");
@@ -90,7 +91,9 @@ function Oreo({ pathname }: { pathname: string }) {
     };
     const enter = window.setTimeout(() => {
       // The shared festive script (agent.elixpo.com/festive/theme.js) loads after hydration.
-      setGreeting((window as FestiveWindow).ElixpoFestive?.active?.greeting ?? null);
+      // Birthdays carry a link to the person's page so readers can send a wish.
+      const active = (window as FestiveWindow).ElixpoFestive?.active;
+      if (active?.greeting) setFestive({ line: `${active.greeting.replace(/[!.]+$/, "")}! 🎉`, url: active.url ?? null });
       rest();
     }, 1200);
     const idleTimer = window.setTimeout(() => setIdle(true), 45000);
@@ -131,7 +134,7 @@ function Oreo({ pathname }: { pathname: string }) {
       onPointerLeave={(event) => { if (event.pointerType === "mouse") { hovering.current = false; setMode(blocked.current ? "hidden" : "peek"); } }}
     >
       <p className="oreo-companion-bubble">
-        <span key={`${say}-${hop}`}>{say}</span>
+        <span key={`${say}-${hop}`}>{festive?.url && say === festive.line ? <a href={festive.url}>{say} Send a wish ↗</a> : say}</span>
         <button type="button" onClick={shoo} aria-label="Send Lumi away for this visit">×</button>
       </p>
       <button type="button" className="oreo-companion-panda" onClick={poke} aria-label={`Lumi the panda says: ${say} Press for another line.`}>

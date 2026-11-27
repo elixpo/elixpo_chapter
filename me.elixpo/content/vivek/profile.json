@@ -3,6 +3,7 @@
   "siteName": "Vivek",
   "siteDescription": "Developer at Elixpo",
   "location": "WB, IN",
+  "birthday": null,
   "email": "vivek@elixpo.com",
   "socials": [
     { "platform": "GitHub", "url": "https://github.com/ez-vivek", "icon": "logo-github", "hoverColor": "#333" },

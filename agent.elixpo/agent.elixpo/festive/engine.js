@@ -22,15 +22,21 @@
     "durga-puja": { accent: "#d00000", colors: ["#d00000", "#ffba08", "#ffffff", "#f48c06"], particle: "petal", garland: "lights" },
     "christmas": { accent: "#c1121f", colors: ["#ffffff", "#e0f2fe", "#c1121f", "#2d6a4f"], particle: "snow", garland: "lights" },
     "new-year": { accent: "#eab308", colors: ["#ffd166", "#c7d2fe", "#ffffff", "#ff6b6b"], particle: "sparkle", garland: "lights" },
+    // Birthdays from festivals.yaml take priority over festivals and seasons on the day itself.
+    "birthday": { accent: "#ec4899", colors: ["#ff6fae", "#ffd166", "#7dd3fc", "#a78bfa", "#34d399"], particle: "confetti", garland: "bunting",
+      topOffset: 26, tint: true, balloons: true, lumi: true },
     "winter": { accent: "#60a5fa", colors: ["#ffffff", "#dbeafe", "#bfdbfe"], particle: "snow", garland: null },
     "summer": { accent: "#f59e0b", colors: ["#ffd166", "#ffb347", "#fde68a"], particle: "sun", garland: null }
   };
 
   var DAY = 86400000;
   var dayNumber = function (iso) { var p = iso.split("-").map(Number); return Date.UTC(p[0], p[1] - 1, p[2]) / DAY; };
-  var todayIso = function () {
-    try { return new Intl.DateTimeFormat("en-CA", { timeZone: CALENDAR.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
-    catch (e) { return new Date().toISOString().slice(0, 10); }
+  // Birthdays switch on a minute early (23:59 the night before), so they are live at midnight.
+  var BIRTHDAY_LEAD_MS = 60 * 1000;
+  var todayIso = function (offsetMs) {
+    var now = new Date(Date.now() + (offsetMs || 0));
+    try { return new Intl.DateTimeFormat("en-CA", { timeZone: CALENDAR.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now); }
+    catch (e) { return now.toISOString().slice(0, 10); }
   };
 
   function occurrences(festival, year) {
@@ -38,7 +44,16 @@
     return (festival.dates || []).map(function (d) { return { start: d.start, end: d.end || d.start }; });
   }
 
-  function resolve(iso) {
+  /** One event for everyone whose birthday (MM-DD) is the given day. */
+  function birthdayEvent(people) {
+    var names = people.map(function (b) { return b.name; });
+    var joined = names.length > 1 ? names.slice(0, -1).join(", ") + " & " + names[names.length - 1] : names[0];
+    return { id: "birthday", name: "Birthday", greeting: "Happy birthday, " + joined + "!", festival: true, people: people, url: people[0].url };
+  }
+
+  function resolve(iso, birthdayIso) {
+    var birthdays = (CALENDAR.birthdays || []).filter(function (b) { return b.date === (birthdayIso || iso).slice(5); });
+    if (birthdays.length) return birthdayEvent(birthdays);
     var today = dayNumber(iso), year = Number(iso.slice(0, 4)), best = null;
     CALENDAR.festivals.forEach(function (festival) {
       var before = festival.before != null ? festival.before : CALENDAR.defaults.before;
@@ -94,12 +109,18 @@
     try { param = new URLSearchParams(location.search).get("festive"); } catch (e) { /* no URL API */ }
     if (param === "off" || CALENDAR.override === "none") return null;
     var forced = param || CALENDAR.override;
+    if (forced === "birthday" && (CALENDAR.birthdays || []).length) {
+      var who = null;
+      try { who = (new URLSearchParams(location.search).get("festive-who") || "").toLowerCase(); } catch (e) { /* no URL API */ }
+      var match = CALENDAR.birthdays.filter(function (b) { return b.name.toLowerCase() === who || (b.url || "").toLowerCase().split("/").pop() === who; });
+      return birthdayEvent(match.length ? match : [CALENDAR.birthdays[0]]);
+    }
     if (forced && THEMES[forced]) {
       var known = CALENDAR.festivals.concat(CALENDAR.seasons || []).filter(function (f) { return f.id === forced; })[0] || {};
       return { id: forced, name: known.name || forced, greeting: known.greeting || null, festival: !!known.greeting };
     }
     if (!isLocal && CALENDAR.services.indexOf(host) === -1) return null;
-    return resolve(todayIso());
+    return resolve(todayIso(), todayIso(BIRTHDAY_LEAD_MS));
   }
 
   var store = {
@@ -132,6 +153,24 @@
     ".ef-badge button:hover{background:var(--ef-accent)}",
     "@keyframes ef-in{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}",
     "html[data-elixpo-festive] ::selection{background:var(--ef-accent-soft-strong)}",
+    "#elixpo-festive .ef-balloon{position:absolute;bottom:-110px;left:var(--x);width:34px;height:42px;border-radius:50% 50% 48% 48%/56% 56% 44% 44%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.75) 0 9%,var(--c) 32%);opacity:0;will-change:transform,opacity;animation:ef-balloon var(--d) ease-in-out var(--delay) infinite}",
+    "#elixpo-festive .ef-balloon::before{content:'';position:absolute;left:50%;top:100%;width:8px;height:6px;margin-left:-4px;background:var(--c);clip-path:polygon(50% 0,100% 100%,0 100%)}",
+    "#elixpo-festive .ef-balloon::after{content:'';position:absolute;left:50%;top:calc(100% + 6px);width:1px;height:54px;background:rgba(40,30,40,.28)}",
+    "@keyframes ef-balloon{0%{transform:translate3d(0,0,0) rotate(-4deg);opacity:0}8%{opacity:.9}50%{transform:translate3d(14px,-58vh,0) rotate(4deg)}90%{opacity:.85}100%{transform:translate3d(-8px,-120vh,0) rotate(-3deg);opacity:0}}",
+    ".ef-lumi{position:fixed;right:18px;bottom:16px;z-index:9991;display:flex;align-items:flex-end;gap:6px;text-decoration:none;color:#2a1630;animation:ef-in .6s cubic-bezier(.3,1.4,.5,1)}",
+    ".ef-lumi-body{position:relative;display:block;width:84px;height:84px;animation:ef-lumi-bob 2.6s ease-in-out infinite}",
+    ".ef-lumi-body img{display:block;width:84px;height:84px;filter:drop-shadow(0 8px 14px rgba(60,20,60,.25))}",
+    ".ef-hat{position:absolute;left:50%;top:-20px;width:30px;height:34px;margin-left:-15px;transform:rotate(-14deg);background:repeating-linear-gradient(135deg,#ff6fae 0 6px,#ffd166 6px 12px);clip-path:polygon(50% 0,100% 100%,0 100%)}",
+    ".ef-pom{position:absolute;left:50%;top:-25px;width:10px;height:10px;margin-left:-9px;border-radius:50%;background:#7dd3fc;box-shadow:0 0 0 2px #fff}",
+    ".ef-lumi-balloon{position:absolute;right:-2px;top:-48px;width:22px;height:28px;border-radius:50% 50% 48% 48%/56% 56% 44% 44%;background:radial-gradient(circle at 34% 30%,#fff 0 9%,#a78bfa 34%);animation:ef-lumi-bob 3.2s ease-in-out infinite reverse}",
+    ".ef-lumi-balloon::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:34px;background:rgba(40,30,40,.35);transform:rotate(-18deg);transform-origin:top}",
+    ".ef-lumi-bubble{margin-bottom:58px;padding:7px 11px;border:2px solid #2a1630;border-radius:10px 10px 2px 10px;background:#fffaf2;box-shadow:3px 3px 0 #2a1630;font:700 12px/1.3 system-ui,-apple-system,'Segoe UI',sans-serif;white-space:nowrap;transform:rotate(-3deg)}",
+    ".ef-lumi:hover .ef-lumi-bubble{background:#ffe3f1}",
+    "@keyframes ef-lumi-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}",
+    ".ef-badge a{color:var(--ef-accent);font-weight:700;text-decoration:none;margin-left:6px}",
+    ".ef-badge a:hover{text-decoration:underline}",
+    "html[data-elixpo-festive-off] .ef-lumi{display:none!important}",
+    "@media (max-width:640px){.ef-lumi-bubble{display:none}.ef-lumi{right:10px;bottom:70px}}",
     "#elixpo-festive .ef-garland.toran{height:22px;background:radial-gradient(ellipse 4px 7px at 8px 17px,#2d6a4f 0 98%,transparent 100%) 4px 0/48px 26px,radial-gradient(circle at 8px 9px,#ff9f1c 0 6px,transparent 6.5px) 0 0/16px 22px,radial-gradient(circle at 8px 9px,#ffd166 0 6px,transparent 6.5px) 8px 4px/16px 22px;filter:drop-shadow(0 2px 2px rgba(120,40,0,.25))}",
     ".ef-diya{position:absolute;width:30px;height:14px;transition:opacity .35s}",
     ".ef-diya::before{content:'';position:absolute;inset:0;border-radius:0 0 50% 50%/0 0 100% 100%;background:linear-gradient(180deg,#f48c06,#9d0208);box-shadow:inset 0 2px 0 #ffba08}",
@@ -154,8 +193,8 @@
     "@keyframes ef-flicker{from{transform:scale(1,1) rotate(-2deg)}to{transform:scale(.9,1.13) rotate(2deg)}}",
     "@keyframes ef-pool{from{opacity:.65;transform:scale(.92)}to{opacity:1;transform:scale(1.06)}}",
     "@keyframes ef-sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}",
-    "@media (prefers-reduced-motion:reduce){#elixpo-festive .ef-p,#elixpo-festive .ef-spark{display:none}#elixpo-festive .ef-garland::after,.ef-flame,#elixpo-festive .ef-hang,.ef-diya::after,.ef-badge{animation:none}}",
-    "@media print{#elixpo-festive,#elixpo-festive-bg,#elixpo-festive-tint,.ef-badge{display:none}}"
+    "@media (prefers-reduced-motion:reduce){#elixpo-festive .ef-p,#elixpo-festive .ef-spark,#elixpo-festive .ef-balloon{display:none}#elixpo-festive .ef-garland::after,.ef-flame,#elixpo-festive .ef-hang,.ef-diya::after,.ef-badge,.ef-lumi,.ef-lumi-body,.ef-lumi-balloon{animation:none}}",
+    "@media print{#elixpo-festive,#elixpo-festive-bg,#elixpo-festive-tint,.ef-badge,.ef-lumi{display:none}}"
   ].join("");
 
   var PARTICLES = {
@@ -342,18 +381,53 @@
     return function () { observer.disconnect(); };
   }
 
+  var escapeHtml = function (text) { return String(text).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  // Assets (Lumi) are served next to this script.
+  var ASSET_BASE = (function () {
+    try { return new URL(".", document.currentScript.src).href; } catch (e) { return "https://agent.elixpo.com/festive/"; }
+  })();
+
+  function mountBalloons(layer, colors) {
+    var count = window.matchMedia("(max-width: 640px)").matches ? 3 : 6;
+    for (var i = 0; i < count; i++) {
+      var b = document.createElement("i");
+      b.className = "ef-balloon";
+      // Keep balloons to the page edges, away from reading content.
+      var edge = i % 2 ? rand(92, 97) : rand(1, 6);
+      b.style.setProperty("--x", edge.toFixed(1) + "vw");
+      b.style.setProperty("--c", colors[i % colors.length]);
+      b.style.setProperty("--d", rand(20, 30).toFixed(1) + "s");
+      b.style.setProperty("--delay", (-rand(0, 30)).toFixed(1) + "s");
+      layer.appendChild(b);
+    }
+  }
+
+  /** Lumi, the Elixpo panda, joins the party; sites that already show their own Lumi opt out. */
+  function mountLumi(active) {
+    if (document.documentElement.getAttribute("data-elixpo-lumi") === "self") return function () {};
+    var lumi = document.createElement(active.url ? "a" : "div");
+    lumi.className = "ef-lumi";
+    if (active.url) { lumi.href = active.url; lumi.setAttribute("aria-label", "Lumi says: " + active.greeting + " Open their page to send a wish."); }
+    lumi.innerHTML = '<span class="ef-lumi-bubble">' + escapeHtml(active.greeting) + " \ud83c\udf89</span>" +
+      '<span class="ef-lumi-body" aria-hidden="true"><img src="' + ASSET_BASE + 'lumi.webp" alt="" width="84" height="84"><i class="ef-hat"></i><i class="ef-pom"></i><i class="ef-lumi-balloon"></i></span>';
+    document.body.appendChild(lumi);
+    return function () { lumi.remove(); };
+  }
+
   function mount(active) {
     var base = THEMES[active.id], theme = {};
     for (var k in base) theme[k] = base[k];
     if (isCanary && base.canary) for (var c in base.canary) theme[c] = base.canary[c];
     var root = document.documentElement;
-    var dismissKey = "elixpo-festive-dismissed:" + active.id + ":" + todayIso().slice(0, 4);
+    var dismissKey = "elixpo-festive-dismissed:" + active.id + (active.people ? ":" + active.people.map(function (b) { return b.name; }).join("+") : "") + ":" + todayIso().slice(0, 4);
     var dismissed = store.get(dismissKey) === "1";
     root.setAttribute("data-elixpo-festive", active.id);
     root.style.setProperty("--ef-accent", theme.accent);
     root.style.setProperty("--ef-accent-soft", hexAlpha(theme.accent, 0.12));
     root.style.setProperty("--ef-accent-soft-strong", hexAlpha(theme.accent, 0.32));
     theme.colors.slice(0, 3).forEach(function (c, i) { root.style.setProperty("--ef-c" + i, c); });
+    // Sites with their own mascot can show the greeting with CSS: content: var(--ef-greeting).
+    if (active.greeting) root.style.setProperty("--ef-greeting", JSON.stringify(active.greeting));
 
     var style = document.createElement("style");
     style.id = "elixpo-festive-style";
@@ -372,6 +446,8 @@
       if (!dismissed) cleanups.push(mountBackdrop());
     }
     if (!dismissed && theme.trail) cleanups.push(mountTrail(layer, theme.colors));
+    if (!dismissed && theme.balloons) mountBalloons(layer, theme.colors);
+    if (!dismissed && theme.lumi) cleanups.push(mountLumi(active));
     if (!dismissed && theme.particle) {
       var kind = PARTICLES[theme.particle];
       var count = window.matchMedia("(max-width: 640px)").matches ? 7 : 14;
@@ -394,7 +470,9 @@
       var badge = document.createElement("div");
       badge.className = "ef-badge";
       badge.setAttribute("role", "note");
-      badge.innerHTML = "<span><b>✦</b> " + active.greeting + " from Elixpo</span>";
+      badge.innerHTML = active.people
+        ? "<span><b>\ud83c\udf82</b> " + escapeHtml(active.greeting) + (active.url ? ' <a href="' + escapeHtml(active.url) + '">Send a wish \u2197</a>' : "") + "</span>"
+        : "<span><b>✦</b> " + active.greeting + " from Elixpo</span>";
       var close = document.createElement("button");
       close.type = "button";
       close.setAttribute("aria-label", "Hide the " + active.name + " greeting and effects");
@@ -402,7 +480,7 @@
       close.addEventListener("click", function () {
         store.set(dismissKey, "1");
         badge.remove();
-        layer.querySelectorAll(".ef-p").forEach(function (p) { p.remove(); });
+        layer.querySelectorAll(".ef-p,.ef-balloon").forEach(function (p) { p.remove(); });
         cleanups.forEach(function (stop) { stop(); });
       });
       badge.appendChild(close);
@@ -413,6 +491,22 @@
   var active = pick();
   if (active && THEMES[active.id]) watchRoutes();
   window.ElixpoFestive = { active: active, calendar: CALENDAR, resolve: resolve };
+
+  // A page left open without a theme picks up a birthday the moment it starts (23:59 IST).
+  if ((!active || !THEMES[active.id]) && (CALENDAR.birthdays || []).length && CALENDAR.timezone === "Asia/Kolkata") {
+    var IST_OFFSET_MS = 5.5 * 3600 * 1000, DAY_MS = 86400000;
+    var untilStart = DAY_MS - ((Date.now() + IST_OFFSET_MS + BIRTHDAY_LEAD_MS) % DAY_MS);
+    var tomorrow = todayIso(BIRTHDAY_LEAD_MS + untilStart + 1000).slice(5);
+    var startsSoon = untilStart < 12 * 3600 * 1000 && CALENDAR.birthdays.some(function (b) { return b.date === tomorrow; });
+    if (startsSoon) setTimeout(function () {
+      var next = pick();
+      if (!next || next.id !== "birthday") return;
+      window.ElixpoFestive.active = next;
+      watchRoutes();
+      mount(next);
+    }, untilStart + 1000);
+  }
+
   if (!active || !THEMES[active.id]) return;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { mount(active); });
   else mount(active);

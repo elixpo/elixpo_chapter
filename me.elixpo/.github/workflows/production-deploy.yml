@@ -18,7 +18,7 @@ jobs:
     uses: elixpo/agent.elixpo/.github/workflows/deploy-cloudflare-pages.yml@main
     with:
       project-name: elixpome
-      node-version: "20"
+      node-version: "22"
       # Sitemap lastmod comes from git history; the shared checkout is shallow, so fetch the
       # rest (public repository, no credentials needed). The media optimizer needs FFmpeg.
       pre-build-command: |

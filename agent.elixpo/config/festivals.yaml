@@ -46,6 +46,18 @@ exclude_paths:
     - /edit/*
     - /new-blog
 
+# Elixpo members' birthdays (MM-DD, in `timezone`). On the day itself the birthday theme
+# replaces any festival or season: confetti, balloons, and Lumi in a party hat linking to
+# the person's page. Keep in step with `birthday` in me.elixpo content/<person>/profile.json.
+# Preview with ?festive=birthday, or ?festive=birthday&festive-who=<name>.
+birthdays:
+  - name: Ayushman
+    date: "03-13"
+    url: https://me.elixpo.com/ayushman
+  - name: Anwesha
+    date: "11-29"
+    url: https://me.elixpo.com/anwesha
+
 festivals:
   - id: new-year
     name: New Year

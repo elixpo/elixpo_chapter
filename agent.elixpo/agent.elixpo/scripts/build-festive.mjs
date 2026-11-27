@@ -1,6 +1,6 @@
 // Validates config/festivals.yaml and writes public/festive/theme.js with the calendar inlined.
 // Runs before every build; a malformed calendar fails the build instead of shipping a broken theme.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
@@ -48,6 +48,16 @@ const festivals = (calendar?.festivals ?? []).map((festival) => {
   for (const key of ["before", "after"]) if (festival[key] != null && !Number.isInteger(festival[key])) fail(`${where}: ${key} must be an integer`);
   return { id: festival.id, name: festival.name, greeting: festival.greeting, every_year: festival.every_year, dates: festival.dates ? dates : undefined, before: festival.before, after: festival.after };
 });
+const birthdays = (calendar?.birthdays ?? []).map((person) => {
+  const where = `birthday ${person?.name ?? "?"}`;
+  if (!person?.name || typeof person.name !== "string") fail(`${where}: name is required`);
+  const date = String(person?.date ?? "");
+  const [month, day] = date.split("-").map(Number);
+  // Validate against a leap year so 02-29 is allowed.
+  if (!/^\d{2}-\d{2}$/.test(date) || new Date(Date.UTC(2024, month - 1, day)).getUTCDate() !== day) fail(`${where}: date must be a real "MM-DD"`);
+  if (person?.url != null && !/^https:\/\//.test(person.url)) fail(`${where}: url must be https`);
+  return { name: person.name, date, url: person.url ?? null };
+});
 const seasons = (calendar?.seasons ?? []).map((season) => {
   if (!THEMES.includes(season?.id)) fail(`season ${season?.id}: id has no theme`);
   if (!Array.isArray(season.months) || season.months.some((m) => !Number.isInteger(m) || m < 1 || m > 12)) fail(`season ${season.id}: months must be 1–12`);
@@ -59,8 +69,10 @@ if (problems.length) {
   process.exit(1);
 }
 
-const payload = { timezone: calendar.timezone, defaults: calendar.defaults, override: calendar.override ?? null, services: calendar.services, canary: calendar.canary ?? [], exclude_paths: calendar.exclude_paths ?? {}, festivals, seasons };
+const payload = { timezone: calendar.timezone, defaults: calendar.defaults, override: calendar.override ?? null, services: calendar.services, canary: calendar.canary ?? [], exclude_paths: calendar.exclude_paths ?? {}, birthdays, festivals, seasons };
 const out = join(site, "public", "festive", "theme.js");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, engine.replace("/*__ELIXPO_FESTIVE_CALENDAR__*/ null", JSON.stringify(payload)));
-console.log(`festive: wrote ${festivals.length} festivals and ${seasons.length} seasons to public/festive/theme.js`);
+// Lumi joins birthday parties; the engine loads her from next to theme.js.
+copyFileSync(join(site, "festive", "lumi.webp"), join(dirname(out), "lumi.webp"));
+console.log(`festive: wrote ${birthdays.length} birthdays, ${festivals.length} festivals and ${seasons.length} seasons to public/festive/theme.js`);

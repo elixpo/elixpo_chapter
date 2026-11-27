@@ -3,6 +3,7 @@
   "siteName": "Bhumika",
   "siteDescription": "Open Source Contributor & Full-Stack Developer",
   "location": "Kolkata, IN",
+  "birthday": null,
   "email": "bhumikasudarshani@gmail.com",
   "socials": [
     { "platform": "GitHub", "url": "https://github.com/bhumikasudarshani-cmd", "icon": "logo-github", "hoverColor": "#333" },

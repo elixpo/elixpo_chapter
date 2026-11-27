@@ -158,6 +158,14 @@ source is MIT.
 
 1. Create a new directory under `content/` with the member's name.
 2. Add the required JSON files: `profile.json`, `home.json`, `about.json`, `projects.json`, `publications.json`, `spotlight.json`, `recommendations.json`, `work.json`, `connect.json`.
+   In `profile.json`, `birthday` is optional: `"MM-DD"` (no year), or `null`. On that day, in
+   India time, the member's pages show a birthday banner and the landing page points to them.
+   Also add the date to `birthdays` in agent.elixpo's `config/festivals.yaml` so every Elixpo
+   site celebrates. Preview with `?birthday=preview` or `?birthday=<name>`.
+   The banner's "Send a wish" counter is served by `functions/api/wishes/[slug].js`. Wishes are
+   stored on the member's Elixpo account (`users.birthday_wishes` in the accounts database), so
+   the member needs an account with `member = 1` and `portfolio_slug` set (accounts.elixpo
+   migration 0028). Locally, point `NEXT_PUBLIC_WISHES_API` at a `wrangler pages dev` server.
 3. Add assets under `public/assets/{name}/`.
 4. The member's portfolio will be available at `/{name}`.
 5. Submit a PR with the new content and assets, and we'll review it for deployment.

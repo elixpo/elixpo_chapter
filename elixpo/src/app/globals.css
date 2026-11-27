@@ -177,14 +177,27 @@ svg { transition: transform .2s ease; }
 .oreo-companion { position: fixed; z-index: 40; right: clamp(.6rem,2vw,1.75rem); bottom: 0; width: 92px; transform: translateY(105%); transition: transform .5s cubic-bezier(.3,1.35,.5,1); pointer-events: none; }
 .oreo-companion[data-mode="peek"] { transform: translateY(48%); pointer-events: auto; }
 .oreo-companion[data-mode="up"] { transform: translateY(-.6rem); pointer-events: auto; }
-.oreo-companion-panda { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
-.oreo-companion-panda img { display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 14px rgba(20,32,24,.22)); transform-origin: 50% 100%; transition: transform .35s; }
-.oreo-companion[data-mode="peek"] .oreo-companion-panda img { transform: rotate(-12deg); }
+.oreo-companion-panda { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.oreo-companion-panda img { display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 14px rgba(20,32,24,.22)); transform-origin: 50% 100%; }
+.oreo-companion-panda { transform-origin: 50% 100%; transition: transform .35s; }
+.oreo-companion[data-mode="peek"] .oreo-companion-panda { transform: rotate(-12deg); }
 .oreo-companion-panda img.is-hopping { animation: oreo-hop .6s cubic-bezier(.3,1.6,.5,1); }
 .oreo-companion-panda:focus-visible { outline: 2px solid var(--leaf); outline-offset: 4px; border-radius: 1rem; }
 .oreo-companion-bubble { position: absolute; right: 78%; bottom: 72%; display: flex; align-items: center; gap: .6rem; width: max-content; max-width: min(260px, calc(100vw - 7rem)); opacity: 0; transform: translateY(6px) scale(.9) rotate(-2deg); transform-origin: 100% 100%; transition: opacity .2s, transform .3s cubic-bezier(.3,1.5,.5,1); pointer-events: none; }
 .oreo-companion[data-mode="up"] .oreo-companion-bubble { opacity: 1; transform: rotate(-2deg); pointer-events: auto; }
 .oreo-companion-bubble span { animation: oreo-say-in .35s ease-out; }
+/* Birthdays (agent.elixpo festive theme "birthday"): Lumi wears a party hat and says the greeting. */
+html[data-elixpo-festive="birthday"] .hero-oreo::before,
+html[data-elixpo-festive="birthday"] .oreo-companion-panda::before { content: ""; position: absolute; z-index: 2; left: 50%; top: -15%; width: 30%; aspect-ratio: 30 / 34; margin-left: -15%; background: repeating-linear-gradient(135deg, #ff6fae 0 7px, #ffd166 7px 14px); clip-path: polygon(50% 0, 100% 100%, 0 100%); transform: rotate(-14deg); pointer-events: none; }
+html[data-elixpo-festive="birthday"] .hero-oreo::before { animation: birthday-hat-bob 3.4s ease-in-out infinite; }
+html[data-elixpo-festive="birthday"] .hero-oreo::after,
+html[data-elixpo-festive="birthday"] .oreo-companion-panda::after { content: ""; position: absolute; z-index: 2; left: 50%; top: -18%; width: 7%; aspect-ratio: 1; margin-left: -5.5%; border-radius: 50%; background: #7dd3fc; box-shadow: 0 0 0 2px #fff; pointer-events: none; }
+html[data-elixpo-festive="birthday"] .hero-oreo::after { animation: birthday-hat-bob 3.4s ease-in-out infinite; }
+html[data-elixpo-festive="birthday"] .oreo-bubble span { display: none; }
+html[data-elixpo-festive="birthday"] .oreo-bubble::before { content: var(--ef-greeting) " 🎉"; }
+@keyframes birthday-hat-bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+@media (prefers-reduced-motion: reduce) { html[data-elixpo-festive="birthday"] .hero-oreo::before, html[data-elixpo-festive="birthday"] .hero-oreo::after { animation: none; } }
+.oreo-companion-bubble a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 2px; }
 .oreo-companion-bubble button { flex: none; width: 1.3rem; height: 1.3rem; padding: 0; border: 1.5px solid var(--ink); border-radius: 50%; background: none; color: var(--ink); font: 700 .8rem/1 var(--font-ui-sans); cursor: pointer; }
 .oreo-companion-bubble button:hover { background: #e76043; border-color: #e76043; color: #fff; }
 .site-footer { position: relative; }
