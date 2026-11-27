@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="88.0mm" height="74.5mm" viewBox="0 0 88.0 74.5">
+<title>Falera Badge name card, 1:1 (mm)</title>
+<style>
+    .cut   { fill: #ffffff; stroke: #c93a45; stroke-width: 0.25; }
+    .fold  { stroke: #c93a45; stroke-width: 0.2; stroke-dasharray: 1 0.7; }
+    .guide { fill: none; stroke: #1d2420; stroke-width: 0.15; stroke-dasharray: 0.8 0.6; opacity: 0.55; }
+    .safe  { fill: none; stroke: #2e7d5b; stroke-width: 0.15; stroke-dasharray: 0.4 0.4; }
+    .lab   { font: 1.3px Arial, sans-serif; fill: #1d2420; text-anchor: middle; dominant-baseline: middle; }
+    .dl line { stroke: #1d4fa0; stroke-width: 0.12; }
+    .dt    { font: 1.15px Arial, sans-serif; fill: #1d4fa0; text-anchor: middle; }
+    .th    { font: bold 1.5px Arial, sans-serif; fill: #1d2420; }
+    .td    { font: 1.3px Arial, sans-serif; fill: #1d2420; }
+    .tn    { font: 1.15px Arial, sans-serif; fill: #6b756f; }
+    </style>
+<path class="cut" fill-rule="evenodd" d="M3.0,0 H85.0 A3.0,3.0 0 0 1 88.0,3.0 V19.800 H75.670 A1.0,1.0 0 0 0 74.670,20.800 V27.270 A1.0,1.0 0 0 0 75.670,28.270 H88.0 V59.5 H86.0 V73.5 A1.0,1.0 0 0 1 85.0,74.5 H3.0 A1.0,1.0 0 0 1 2.0,73.5 V59.5 H0 V3.0 A3.0,3.0 0 0 1 3.0,0 Z M4.850,3.350 H15.150 A2.150,2.150 0 0 1 15.150,7.650 H4.850 A2.150,2.150 0 0 1 4.850,3.350 Z M72.850,3.350 H83.150 A2.150,2.150 0 0 1 83.150,7.650 H72.850 A2.150,2.150 0 0 1 72.850,3.350 Z"/>
+<line class="fold" x1="2.0" y1="59.5" x2="86.0" y2="59.5"/>
+</svg>
