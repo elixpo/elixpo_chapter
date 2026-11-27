@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>17 / 17 · Thank you · FaleraOS sponsor deck</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* The close: four steps from interest to a signed MoU, joined by a line,
+       then one contact card, with Lumi on the right. Steps follow
+       pitch-deck/SPONSORSHIP.md (MoU, credit live within 7 days of payment).
+       The QR code opens falera.elixpo.com. */
+    .left { width: 1150px; }
+    .lead { margin-top: 20px; font-size: 32px; line-height: 1.4; color: var(--dim); }
+
+    .steps { margin-top: 40px; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 18px; position: relative; }
+    /* The line through the numbers. */
+    .steps::before { content: ""; position: absolute; left: 24px; right: 24px; top: 23px; height: 3px; background: var(--border); }
+    .step { position: relative; }
+    .step .n {
+      width: 48px; height: 48px; border-radius: 50%; background: var(--red); color: #fff;
+      font-family: var(--mono); font-size: 22px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .step .what { margin-top: 18px; font-size: 25px; font-weight: 700; color: var(--ink); line-height: 1.2; letter-spacing: -0.01em; }
+    .step .why { margin-top: 8px; font-size: 20px; line-height: 1.4; color: var(--dim); padding-right: 14px; }
+
+    .reach {
+      margin-top: 44px; padding: 24px 28px; border-radius: 22px; border: 1px solid var(--border); background: #fff;
+      display: grid; grid-template-columns: 156px 1fr; column-gap: 32px; align-items: center;
+    }
+    .reach .qr { width: 156px; height: 156px; }
+    .reach .k { font-family: var(--mono); font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .reach .email { margin-top: 6px; font-size: 62px; font-weight: 700; letter-spacing: -0.02em; color: var(--red); line-height: 1.05; }
+    .reach .links { margin-top: 12px; font-family: var(--mono); font-size: 21px; color: var(--dim); display: flex; gap: 26px; flex-wrap: wrap; }
+    .reach .links b { color: var(--ink); font-weight: 700; }
+
+    /* Top right: two marks a sponsor can verify. The GitHub mark is the
+       Octicons mark-github path (MIT). */
+    .proof { position: absolute; right: 136px; top: 100px; width: 400px; display: grid; row-gap: 12px; }
+    .proof .row { display: flex; align-items: center; gap: 18px; padding: 14px 20px; border: 1px solid var(--border); border-radius: 16px; background: #fff; }
+    .proof .row img { height: 40px; flex: 0 0 auto; }
+    .proof .row svg { width: 40px; height: 40px; flex: 0 0 40px; }
+    .proof .t b { display: block; font-size: 20px; color: var(--ink); white-space: nowrap; }
+    .proof .t span { display: block; font-family: var(--mono); font-size: 16px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+    .lumi { position: absolute; right: 100px; bottom: -24px; width: 450px; }
+    /* Registration as text only: no government emblem or logo. */
+    .reach .reg { margin-top: 10px; font-family: var(--mono); font-size: 17px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="slide">
+  <!-- No corner mark on the last slide: Lumi is drawn large instead. -->
+  <div class="body">
+    <div class="eyebrow">
+      <img class="bow-34" src="../assets/bow.svg" alt="">
+      <span>Thank you</span>
+    </div>
+
+    <h2 class="title left" style="max-width: 1250px">
+      Let’s put the first Falera badges <em>in people’s hands, together.</em>
+    </h2>
+    <p class="lead left">If the plan fits, here’s how we take it from here.</p>
+
+    <div class="steps left">
+      <div class="step"><div class="n">1</div><div class="what">Introductory call</div><div class="why">We walk you through the badge and answer your questions.</div></div>
+      <div class="step"><div class="n">2</div><div class="what">Follow-up meeting</div><div class="why">We agree the level, the returns and the timeline.</div></div>
+      <div class="step"><div class="n">3</div><div class="what">Sign the MoU</div><div class="why">Level, returns and payment terms, signed by both sides.</div></div>
+      <div class="step"><div class="n">4</div><div class="what">Payment</div><div class="why">A receipt, and your credit live within 7 days.</div></div>
+    </div>
+
+    <div class="reach left">
+      <img class="qr" src="../assets/qr-falera.svg" alt="QR code for falera.elixpo.com">
+      <div>
+        <div class="k">Start with an email</div>
+        <div class="email">hello@elixpo.com</div>
+        <div class="links"><span>Founder: <b>ayushman@elixpo.com</b></span><span>falera.elixpo.com</span></div>
+        <div class="reg">Elixpo · Udyam-registered MSME, India · UDYAM-WB-07-0152337</div>
+      </div>
+    </div>
+
+    <div class="proof">
+      <div class="row"><img src="../assets/oshw_mark.png" alt="OSHWA certified open source hardware mark, IN000107"><div class="t"><b>OSHWA certified</b><span>open source hardware</span></div></div>
+      <div class="row"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#1d2420" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><div class="t"><b>Open source, in public</b><span>github.com/elixpo/falera</span></div></div>
+    </div>
+
+    <img class="lumi" src="../assets/lumi-badge.webp" alt="Lumi, the Falera panda, holding a badge">
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><b>FaleraOS</b> · Elixpo</span>
+    <span class="num">17 / 17</span>
+    <span>falera.elixpo.com</span>
+  </div>
+</div>
+</body>
+</html>

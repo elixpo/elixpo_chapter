@@ -1,0 +1,5 @@
+# Cloudflare Pages redirects.
+# Wi-Fi file transfer was retired: files now go over USB with the Transfer app.
+# Older badges still print falera.elixpo.com/upload on screen.
+/upload   /docs/transfer/   301
+/upload/  /docs/transfer/   301
