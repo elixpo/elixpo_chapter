@@ -1,0 +1,6 @@
+(version 1)
+# The USB-C receptacle's GND pads sit 0.19 mm from its locating holes, as
+# GCT drew the footprint.
+(rule "USB-C shell holes"
+  (condition "A.Parent == 'J1' && B.Parent == 'J1'")
+  (constraint hole_clearance (min 0.15mm)))

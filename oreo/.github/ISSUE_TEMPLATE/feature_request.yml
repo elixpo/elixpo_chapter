@@ -1,0 +1,47 @@
+name: Other idea
+description: Hardware, the website, docs, tooling or anything that is not an app, a bug, a hack or an OS change.
+title: "idea: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Apps, bugs, hacks and OS changes have their own forms; please use
+        those when they fit. This one is for the rest.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Hardware (PCB, schematics, BOM)
+        - Website (falera.elixpo.com)
+        - Docs
+        - Build and CI
+        - Assets (icons, sprites, fonts)
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: pitch
+    attributes:
+      label: Pitch
+      description: What you want and why, in a sentence or two.
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: How would it work?
+      description: Sketch it out; links, photos and drawings are welcome.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow the project's [Code of Conduct](https://github.com/elixpo/falera/blob/main/CODE_OF_CONDUCT.md).
+          required: true
