@@ -1,9 +1,0 @@
-CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
-CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
-
-# Full 16 MiB flash with the badge's own layout: a larger firmware partition
-# (MicroPython and the FaleraOS modules) and the FaleraOS filesystem. See
-# partitions-oreo-badge.csv; its path is set by mpconfigboard.cmake, since
-# this board is out of tree.
-CONFIG_ESPTOOLPY_FLASHSIZE_4MB=
-CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y

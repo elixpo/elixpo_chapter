@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 24">
-  <!-- Lumi's bow: two loops and a knot. -->
-  <path d="M18 12C12 3 3 1 2 7c-1 5-1 10 1 13 3 3 10-1 15-8z" fill="#C93A45"/>
-  <path d="M22 12c6-9 15-11 16-5 1 5 1 10-1 13-3 3-10-1-15-8z" fill="#C93A45"/>
-  <rect x="15.5" y="7" width="9" height="10" rx="3.5" fill="#A92F39"/>
-</svg>
