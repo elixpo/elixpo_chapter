@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Hugging Face Space of the Week & Global Rank #21",
+    "date": "2025-06-15",
+    "description": "Founder of KindSynapse AI; reached Global Rank #21 on Hugging Face's Top Contributors leaderboard, serving 310K+ users with 3,200+ community likes and official Space of the Week honors.",
+    "image": "/assets/nihal/spotlight/hf-kindsynapse.webp"
+  },
+  {
+    "title": "FaceFlux: Zero-GPU Edge Facial Inference",
+    "date": "2025-07-10",
+    "description": "Architected an optimized CPU-only real-time facial inference pipeline with sub-second execution bounds, eliminating GPU dependencies for accessible edge computing.",
+    "image": "/assets/nihal/spotlight/faceflux.webp"
+  },
+  {
+    "title": "SCNTSE 2025 National Top 10 & INR 1 Lakh Grant",
+    "date": "2025-07-20",
+    "description": "Secured National Top 10 standing at SCNTSE 2025 for FaceFlux, receiving a INR 1,00,000 cash research grant on stage with extensive regional newspaper and media coverage.",
+    "image": "/assets/nihal/spotlight/scntse-news.webp"
+  },
+  {
+    "title": "IEMPHYS-26 Conference Gold Medal",
+    "date": "2026-02-15",
+    "description": "Awarded the First Prize Gold Medal in academic research at the International Conference on Advanced Physics for ARGUS, a linear vision transformer for CERN LHC tracking.",
+    "image": "/assets/nihal/spotlight/iemphys-gold-medal.webp"
+  }
+]

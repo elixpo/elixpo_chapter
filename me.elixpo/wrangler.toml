@@ -1,0 +1,11 @@
+name = "elixpome"
+compatibility_date = "2025-09-23"
+pages_build_output_dir = "out"
+
+# Birthday wish counter (functions/api/wishes). The count is stored on the member's Elixpo
+# account (users.birthday_wishes), so this binds the accounts database; its schema and
+# migrations belong to accounts.elixpo. The function runs only its two wish statements.
+[[d1_databases]]
+binding = "ACCOUNTS_DB"
+database_name = "elixpo_auth"
+database_id = "f7455042-ed14-466a-9461-5fd36f628746"

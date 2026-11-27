@@ -1,0 +1,37 @@
+name: Search Console Sync
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # daily; Google re-reads sitemaps every few days
+  workflow_run:
+    workflows: [Production Deploy]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: search-console
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Submit sitemap and report index status
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Sync with Google Search Console
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SEARCH_CONSOLE_SITE: ${{ vars.SEARCH_CONSOLE_SITE }}
+        run: node scripts/search-console.mjs

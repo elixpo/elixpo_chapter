@@ -1,0 +1,209 @@
+{
+  "hero": {
+    "focusTags": [
+      "Research",
+      "Embedded Systems",
+      "ML",
+      "Open Source"
+    ],
+    "name": "ANWESHA",
+    "headline": "Researcher at Elixpo",
+    "subhead": "Researcher @ Elixpo · Content Team Lead, GDG JIS University · GSSoC '25 & OSCI '25 Contributor",
+    "intro": "Computer Science & Engineering researcher at JIS University and Elixpo, co-authoring open, reproducible papers on Linux-RTOS task recovery (QFabric), frame-independent video on ESP32-S3 (RV565), one-bit diffusion models (MonoDiffuse), and microcoded breadboard CPUs (OctaBit). Every result ships with its code, artifacts, and citation record.",
+    "credentials": [
+      {
+        "label": "Researcher",
+        "org": "Elixpo"
+      },
+      {
+        "label": "4 papers",
+        "org": "research.elixpo.com"
+      },
+      {
+        "label": "Content Team Lead",
+        "org": "GDG JIS University"
+      }
+    ],
+    "ctas": [
+      {
+        "label": "Read the papers",
+        "href": "publications"
+      },
+      {
+        "label": "Connect",
+        "href": "connect"
+      }
+    ],
+    "portrait": "/assets/anwesha/punchlineSection/vr-pic1.webp"
+  },
+  "intro": {
+    "heroName": "ANWESHA",
+    "tagline": "Elixpo",
+    "taglineSuffix": "RESEARCHER!",
+    "description": "Hi, I'm Anwesha, a Computer Science and Engineering student at JIS University and a researcher at Elixpo. I work where systems meet evidence: measuring how tasks recover across Linux and real-time domains, how far a microcontroller can push video, how small a diffusion model's weights can get, and how a CPU's microcode really runs on a breadboard. I care about research that anyone can rerun, so each of my papers comes with its source, data, and artifacts in the open.",
+    "highlights": [
+      "Researcher @ Elixpo",
+      "4 Research Papers",
+      "arXiv Author",
+      "GDG Content Lead",
+      "GSSoC & OSCI Contributor",
+      "Ex-Biology Enthusiast"
+    ],
+    "images": {
+      "portrait": "/assets/anwesha/punchlineSection/vr-pic1.webp",
+      "landscape": "/assets/anwesha/punchlineSection/hz-pic1.webp"
+    }
+  },
+  "websiteSection": {
+    "designedBy": "Designed from the idea of Miranda website theme! Formulated on a JSON parse architechture for quick data edits. Designed by @elixpo and edited by @anwesha",
+    "futurePlans": "Next, I want to go deeper into heterogeneous and real-time systems, and into efficient models that fit on small hardware. That means more measured, reproducible studies at Elixpo, more open artifacts, and helping new contributors turn their own experiments into published records.",
+    "codeStory": "A former biology enthusiast who moved into Computer Science. Biology taught me to form a hypothesis, control the variables, and trust the measurement over the expectation. I now apply the same habit to systems research: in QFabric, the honest result was that migration never helped on the board we measured, and the paper says exactly that. Turning curiosity into evidence is still the best part of the work.",
+    "images": {
+      "owl": "/assets/anwesha/websiteSection/hz-owl1.webp",
+      "humanThink": "/assets/anwesha/websiteSection/human-think1.webp",
+      "seal": "/assets/anwesha/websiteSection/sq-seal1.webp"
+    }
+  },
+  "techSection": {
+    "subheading": "DEV-S",
+    "description": "A researcher who treats every system as an experiment. From biological patterns to RTOS timing contracts, quantized diffusion, and microcoded CPUs, Anwesha works with a scientist's precision: state the question, measure carefully, and publish the artifacts alongside the result.",
+    "skills": [
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/javascript.png",
+        "alt": "JavaScript"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/node-js.png",
+        "alt": "Node.js"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios/100/express-js.png",
+        "alt": "Express.js"
+      },
+      {
+        "type": "text",
+        "label": "KUBERNETES"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios-filled/150/postgreesql.png",
+        "alt": "PostgreSQL"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/mongodb.png",
+        "alt": "MongoDB"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/mysql-logo.png",
+        "alt": "MySQL"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/tensorflow.png",
+        "alt": "TensorFlow"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/fluency/144/pytorch.png",
+        "alt": "PyTorch"
+      },
+      {
+        "type": "text",
+        "label": "GIT + GIT-OPS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios/50/kubernetes.png",
+        "alt": "Kubernetes"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/docker.png",
+        "alt": "Docker"
+      },
+      {
+        "type": "text",
+        "label": "NLP + ML-OPS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/ios-filled/100/artificial-intelligence.png",
+        "alt": "AI"
+      },
+      {
+        "type": "text",
+        "label": "System Design"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/redis.png",
+        "alt": "Redis"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/elasticsearch.png",
+        "alt": "Elasticsearch"
+      },
+      {
+        "type": "text",
+        "label": "GCP + AWS"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/google-cloud.png",
+        "alt": "Google Cloud"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/amazon-web-services.png",
+        "alt": "AWS"
+      },
+      {
+        "type": "text",
+        "label": "CP --"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/c-plus-plus-logo.png",
+        "alt": "C++"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/c-programming.png",
+        "alt": "C"
+      },
+      {
+        "type": "icon",
+        "src": "https://img.icons8.com/color/144/python.png",
+        "alt": "Python"
+      }
+    ],
+    "explore": [
+      {
+        "label": "Papers",
+        "caption": "Research & publications",
+        "href": "publications"
+      },
+      {
+        "label": "Projects",
+        "caption": "Research systems & builds",
+        "href": "projects"
+      },
+      {
+        "label": "Connect",
+        "caption": "Collaborate on research",
+        "href": "connect"
+      }
+    ],
+    "images": {
+      "wand": "/assets/anwesha/techTracks/wand-1.webp",
+      "landscape": "/assets/anwesha/techTracks/hz-image1.webp",
+      "banner": "/assets/anwesha/hrz-image1.webp"
+    }
+  }
+}
