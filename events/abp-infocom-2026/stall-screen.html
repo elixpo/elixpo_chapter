@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falera · stall screen</title>
+<!--
+  The laptop at the ABP Infocom stall: open full screen (F11) and leave it.
+  Follows the demo in DEMO.md. Keys: 1 the overview, 2 the three layers,
+  3 what it does (updates over the air, infrared, the RV565 video format),
+  4 the research paper, 5 star and back it (big QR codes). Scales to any screen.
+-->
+<style>
+  :root {
+    --ink: #142018; --dim: #4a514d; --muted: #5f6962; --red: #c93a45; --red-dim: #a92f39;
+    --border: #d7dbd6; --card: #f6f7f4; --paper: #fbfbf8;
+    --serif: Georgia, "Noto Serif", serif;
+    --sans: Arial, "Liberation Sans", "Noto Sans", sans-serif;
+    --mono: "Liberation Mono", "DejaVu Sans Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--paper); overflow: hidden; }
+  body { font-family: var(--sans); color: var(--ink); position: relative; }
+  /* A 1920 x 1080 stage, centred in the window and scaled to fit it whole
+     (letterboxed on screens that aren't 16:9). Centring by translate keeps
+     it exact whatever the window's size or shape. */
+  .stage { width: 1920px; height: 1080px; position: absolute; left: 50%; top: 50%;
+           transform-origin: 50% 50%; transform: translate(-50%, -50%); }
+  .stage > section { position: absolute; inset: 0; display: none; }
+  .stage > section.on { display: block; }
+  .band { position: absolute; left: 0; right: 0; top: 0; height: 14px; background: var(--red); }
+  .eyebrow { position: absolute; left: 96px; top: 64px; display: flex; gap: 14px; align-items: center;
+             font: 700 22px/1 var(--mono); letter-spacing: 4px; text-transform: uppercase; color: var(--red); }
+  .eyebrow img { height: 26px; }
+  .eyebrow span { color: var(--muted); }
+  .foot { position: absolute; left: 96px; right: 96px; bottom: 48px; display: flex; justify-content: space-between;
+          font: 700 22px/1 var(--mono); color: var(--muted); letter-spacing: 1px; }
+  .foot b { color: var(--red); }
+
+  /* 1 · overview */
+  .hero { position: absolute; right: 40px; top: 70px; height: 900px; }
+  .h1 { position: absolute; left: 96px; top: 120px; width: 900px; font: 700 96px/1.02 var(--serif); letter-spacing: -2px; }
+  .h1 em { font-style: normal; color: var(--red); }
+  .why { position: absolute; left: 96px; top: 470px; width: 820px; font: 400 34px/1.35 var(--sans); color: var(--dim); }
+  .why b { color: var(--ink); }
+  .stack { position: absolute; left: 96px; top: 640px; width: 860px; display: flex; flex-direction: column; gap: 14px; }
+  .layer { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 22px; padding: 18px 26px;
+           background: #fff; border: 2px solid var(--border); border-radius: 18px; }
+  .layer .n { font: 700 44px/1 var(--serif); color: var(--red); text-align: center; }
+  .layer b { display: block; font: 700 32px/1.1 var(--serif); }
+  .layer span { display: block; margin-top: 4px; font: 400 23px/1.3 var(--sans); color: var(--dim); }
+
+  /* 2 · the three layers, large */
+  .big-stack { position: absolute; left: 96px; right: 96px; top: 150px; display: flex; flex-direction: column-reverse; gap: 26px; }
+  .big-stack .layer { grid-template-columns: 120px 1fr 520px; padding: 34px 40px; border-radius: 24px; }
+  .big-stack .layer .n { font-size: 84px; }
+  .big-stack .layer b { font-size: 54px; }
+  .big-stack .layer span { font-size: 30px; }
+  .big-stack .layer i { font-style: normal; font: 700 26px/1.3 var(--mono); color: var(--muted); text-align: right; }
+  .big-stack .layer.top { border-color: var(--red); }
+
+  /* 3 · what it does */
+  .feats { position: absolute; left: 96px; right: 96px; top: 140px; bottom: 120px; display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 30px; }
+  .feat { background: #fff; border: 2px solid var(--border); border-radius: 24px; padding: 30px 32px 26px; display: flex; flex-direction: column; min-height: 0; }
+  .feat.red { border-color: var(--red); }
+  .feat svg { flex: none; width: 64px; height: 64px; stroke: var(--red); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .feat h3 { margin-top: 16px; font: 700 40px/1.08 var(--serif); }
+  .feat p { margin-top: 14px; font: 400 26px/1.4 var(--sans); color: var(--dim); }
+  .feat p b { color: var(--ink); }
+  .feat ul { margin-top: 16px; padding-left: 26px; font: 400 25px/1.45 var(--sans); color: var(--dim); }
+  .feat ul b { color: var(--ink); }
+  .feat .shot { margin-top: 16px; padding: 8px; background: #1b1f1d; border-radius: 12px; width: 78%; align-self: center; }
+  .feat .shot img { display: block; width: 100%; aspect-ratio: 4 / 3; }
+  .feat .credit { margin-top: 8px; font: 400 16px/1.25 var(--sans); color: var(--muted); text-align: center; }
+  .flow { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .flow div { padding: 12px 16px; background: var(--card); border: 2px solid var(--border); border-radius: 12px;
+              font: 700 22px/1.2 var(--mono); color: var(--ink); text-align: center; }
+  .flow i { font-style: normal; font: 700 24px/1 var(--mono); color: var(--red); text-align: center; }
+  .app-ic { margin-top: auto; display: flex; align-items: center; gap: 22px; }
+  .app-ic img { width: 150px; height: 150px; border-radius: 30px; }
+  .app-ic span { font: 400 24px/1.35 var(--sans); color: var(--dim); }
+  .app-ic span b { display: block; font: 700 30px/1.2 var(--serif); color: var(--ink); }
+  .fps { margin-top: 14px; display: flex; align-items: baseline; gap: 16px; font: 700 58px/1 var(--serif); color: var(--red); white-space: nowrap; }
+  .fps span { font: 700 30px/1 var(--mono); color: var(--muted); }
+
+  /* 4 · the research paper */
+  .paper { position: absolute; left: 96px; top: 150px; width: 1180px; }
+  .paper .kicker { font: 700 26px/1 var(--mono); letter-spacing: 2px; color: var(--muted); }
+  .paper h2 { margin-top: 22px; font: 700 64px/1.1 var(--serif); letter-spacing: -1px; }
+  .paper h2 em { font-style: normal; color: var(--red); }
+  .paper .by { margin-top: 22px; font: italic 30px/1.3 var(--serif); color: var(--dim); }
+  .paper ul { margin-top: 40px; padding-left: 34px; font: 400 32px/1.5 var(--sans); color: var(--dim); }
+  .paper ul b { color: var(--ink); }
+  .paper-qr { position: absolute; right: 96px; top: 170px; text-align: center; }
+  .paper-qr img { width: 380px; height: 380px; border: 2px solid var(--border); border-radius: 12px; background: #fff; }
+  .paper-qr p { margin-top: 20px; font: 700 34px/1.2 var(--serif); }
+  .paper-qr p span { display: block; margin-top: 8px; font: 700 26px/1 var(--mono); color: var(--red); }
+  .paper-note { position: absolute; right: 96px; top: 680px; width: 480px; text-align: center; font: 400 24px/1.4 var(--sans); color: var(--muted); }
+
+  /* 5 · star and back it */
+  .ask { position: absolute; left: 96px; top: 150px; width: 900px; font: 700 104px/1.02 var(--serif); letter-spacing: -2px; }
+  .ask em { font-style: normal; color: var(--red); }
+  .ask-sub { position: absolute; left: 96px; top: 540px; width: 860px; font: 400 36px/1.35 var(--sans); color: var(--dim); }
+  .qrs { position: absolute; right: 96px; top: 150px; display: flex; gap: 70px; }
+  .qrs figure { margin: 0; text-align: center; }
+  .qrs img { width: 360px; height: 360px; background: #fff; padding: 0; border: 2px solid var(--border); border-radius: 12px; }
+  .qrs figcaption { margin-top: 22px; font: 700 34px/1.2 var(--serif); color: var(--ink); }
+  .qrs figcaption span { display: block; margin-top: 8px; font: 700 24px/1 var(--mono); color: var(--red); }
+  .lumi { position: absolute; right: 120px; bottom: 120px; width: 230px; }
+  .press { position: absolute; left: 96px; bottom: 140px; display: flex; gap: 46px; align-items: center; }
+  .press .lab { font: 700 20px/1 var(--mono); letter-spacing: 3px; color: var(--red); text-transform: uppercase; }
+  .press img { height: 54px; }
+  .press .tile { background: var(--ink); padding: 10px 16px; border-radius: 8px; }
+  .press .tile img { height: 36px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <!-- 1 · The overview: leave this on screen. -->
+  <section id="s1" class="on">
+    <div class="band"></div>
+    <div class="eyebrow"><img src="assets/bow.svg" alt="">Falera <span>· ABP Infocom 2026</span></div>
+    <h1 class="h1">A computer you can <em>wear round your neck.</em></h1>
+    <p class="why">Event badges are thrown away in two days. <b>This one you keep</b>: it runs its own operating system, and anyone can build apps for it.</p>
+    <div class="stack">
+      <div class="layer"><div class="n">3</div><div><b>Apps, built by anyone</b><span>Python apps, installed from the App Store over Wi-Fi.</span></div></div>
+      <div class="layer"><div class="n">2</div><div><b>FaleraOS, the operating system</b><span>The launcher, the App Store, over-the-air updates, the CLI link.</span></div></div>
+      <div class="layer"><div class="n">1</div><div><b>The kernel</b><span>MicroPython firmware on the ESP32-S3, with our drivers.</span></div></div>
+    </div>
+    <img class="hero" src="assets/hero-final.png" alt="The Falera Badge">
+    <div class="foot"><span>Designed by <b>Ayushman Bhattacharya</b> · Elixpo</span><span>github.com/elixpo/falera</span></div>
+  </section>
+
+  <!-- 2 · The three layers, large: while you explain them. -->
+  <section id="s2">
+    <div class="band"></div>
+    <div class="eyebrow"><img src="assets/bow.svg" alt="">Three layers <span>· how it fits together</span></div>
+    <div class="big-stack">
+      <div class="layer"><div class="n">1</div><div><b>The kernel</b><span>MicroPython firmware on the ESP32-S3, with drivers for the screen, buttons, sensors, Wi-Fi and IR.</span></div><i>firmware<br>oreoWare/</i></div>
+      <div class="layer"><div class="n">2</div><div><b>FaleraOS</b><span>The launcher and home screen, the App Store, over-the-air updates, and a link to your computer over USB.</span></div><i>the operating system<br>oreoOS/</i></div>
+      <div class="layer top"><div class="n">3</div><div><b>Apps, built by anyone</b><span>A manifest and a Python class. Games, the Gallery, the Badge, Weather, and more, in the App Store.</span></div><i>apps/ · apps_market/<br>falera new my_app</i></div>
+    </div>
+    <div class="foot"><span>Everything is open: code, board and paper</span><span>github.com/elixpo/falera</span></div>
+  </section>
+
+  <!-- 3 · What it does: updates over the air, infrared, the video format. -->
+  <section id="s3">
+    <div class="band"></div>
+    <div class="eyebrow"><img src="assets/bow.svg" alt="">What it does <span>· beyond the apps</span></div>
+    <div class="feats">
+      <div class="feat">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></svg>
+        <h3>Updates over the air</h3>
+        <p>New versions of FaleraOS arrive <b>over Wi-Fi, from GitHub</b>, like a phone update.</p>
+        <p>Apps update from the App Store the same way.</p>
+        <div class="flow"><div>A release on GitHub</div><i>↓</i><div>Downloaded over Wi-Fi</div><i>↓</i><div>Every file checked (SHA-256)</div><i>↓</i><div>Installed at the next start</div></div>
+      </div>
+      <div class="feat">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><path d="M10.5 8.5a5 5 0 0 1 0 7M13.5 6a8.5 8.5 0 0 1 0 12M16.5 3.5a12 12 0 0 1 0 17"/></svg>
+        <h3>Infrared, in and out</h3>
+        <p>An IR receiver and an IR LED, like a TV remote.</p>
+        <ul>
+          <li><b>IR Quest:</b> badges find each other and trade tokens</li>
+          <li>Reads and sends <b>TV-remote codes</b> (NEC)</li>
+        </ul>
+        <div class="app-ic"><img src="assets/ir-quest-icon.png" alt=""><span><b>IR Quest</b>Point two badges at each other to trade.</span></div>
+      </div>
+      <div class="feat red">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M10 9.2v5.6l4.8-2.8z"/></svg>
+        <h3>RV565, a video format I invented</h3>
+        <p>It sends the screen <b>only what changed</b>.</p>
+        <div class="fps">0.5 → 24 <span>frames a second</span></div>
+        <div class="shot"><img src="assets/screen-video.png" alt="Big Buck Bunny playing on the badge"></div>
+        <p class="credit">On the ESP32-S3 (firmware path). Big Buck Bunny © Blender Foundation, CC BY 3.0</p>
+      </div>
+    </div>
+    <div class="foot"><span>Updates · infrared · video</span><span>github.com/elixpo/falera</span></div>
+  </section>
+
+  <!-- 4 · The research paper. -->
+  <section id="s4">
+    <div class="band"></div>
+    <div class="eyebrow"><img src="assets/bow.svg" alt="">The research <span>· arXiv preprint</span></div>
+    <div class="paper">
+      <div class="kicker">arXiv:2610.35935 · cs.AR</div>
+      <h2>RV565: <em>Cross-Layer Co-Design for Frame-Independent Video Playback</em> on MicroPython-Class ESP32-S3 Systems</h2>
+      <p class="by">Ayushman Bhattacharya</p>
+      <ul>
+        <li>Frames stored in the <b>display's own pixel format</b>: nothing to convert</li>
+        <li><b>Frame-independent</b> decoding, on both cores, with DMA to the display</li>
+        <li><b>24 frames a second</b> on an ESP32-S3 SPI display</li>
+        <li>Now in Arduino, the Espressif registry and PyPI; <b>featured on the Adafruit blog</b></li>
+      </ul>
+    </div>
+    <div class="paper-qr">
+      <img src="assets/qr-arxiv.svg" alt="QR: arxiv.org/abs/2610.35935">
+      <p>Read the paper<span>arxiv.org/abs/2610.35935</span></p>
+    </div>
+    <div class="foot"><span>A preprint on arXiv</span><span>github.com/elixpo/rv565</span></div>
+  </section>
+
+  <!-- 5 · The ask: at the end of the demo. -->
+  <section id="s5">
+    <div class="band"></div>
+    <div class="eyebrow"><img src="assets/bow.svg" alt="">Thank you <span>· one last thing</span></div>
+    <h2 class="ask">Star it, <em>and help build the first badges.</em></h2>
+    <p class="ask-sub">A star tells other makers it's worth a look. A small contribution buys real parts: ₹100 is the buttons for one badge.</p>
+    <div class="qrs">
+      <figure><img src="assets/qr-github.svg" alt="QR: github.com/elixpo/falera"><figcaption>Star the repo<span>github.com/elixpo/falera</span></figcaption></figure>
+      <figure><img src="assets/qr-fund.svg" alt="QR: payouts.elixpo.com/f/falera-badge"><figcaption>Back the badges<span>payouts.elixpo.com</span></figcaption></figure>
+    </div>
+    <div class="press">
+      <span class="lab">Featured by</span>
+      <img src="assets/press/adafruit.svg" alt="Adafruit">
+      <span class="tile"><img src="assets/press/ma-no.png" alt="MA-NO"></span>
+      <span class="lab">Recognised by</span>
+      <img src="assets/press/espressif.svg" alt="Espressif" style="height:40px">
+      <img src="assets/oshw_mark.png" alt="OSHWA" style="height:44px">
+      <img src="assets/press/openssf.svg" alt="OpenSSF">
+    </div>
+    <img class="lumi" src="assets/lumi-badge-3x.png" alt="Lumi">
+    <div class="foot"><span>Ayushman Bhattacharya · ayushman@elixpo.com</span><span>falera.elixpo.com</span></div>
+  </section>
+</div>
+<script>
+  const stage = document.getElementById("stage");
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+  addEventListener("resize", fit); fit();
+  addEventListener("keydown", (e) => {
+    const n = { "1": "s1", "2": "s2", "3": "s3", "4": "s4", "5": "s5" }[e.key];
+    if (!n) return;
+    for (const s of document.querySelectorAll(".stage > section")) s.classList.toggle("on", s.id === n);
+  });
+</script>
+</body>
+</html>

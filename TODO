@@ -1,0 +1,94 @@
+RV565 / Oreo Badge: full tracker (updated 2026-11-11)
+Legend: [you] = Ayushman, [claude] = Claude, [wait] = waiting on someone else
+
+== GOAL NOW: CircuitPython + stable oreo-cli + release, so the badge is easy to use ==
+Decisions (2026-11-11):
+- The CLI is named oreo-cli (command: oreo). Stable 1.0.0 is published on GitHub after you test it here, with full docs.
+- File transfer moves out of Settings/WiFi into a pre-installed app "Transfer": the badge shows a code, `oreo transfer send` asks for it, then files go over USB.
+- Wi-Fi does only internet work (App Store, OTA, GitHub data, weather, time). The Send Files page and upload server are retired.
+- Bluetooth is the last feature (#101, #103, #124).
+[done] Workflow wf_8ebce785-d89 finished (17 agents); integrated and verified (324 + 198 tests, validate_app 24/0, mpy-cross clean).
+PRs to test, then merge:
+  elixpo/oreo#125   Transfer app, oreo-cli 1.0.0, badge follow-ups, app platform (state/profile/crashlog/validator), docs
+                    Closes #120; supersedes #116 (close #116 after merging #125). Branch release/oreo-cli-1.0.
+  elixpo/rv565#39   CircuitPython library (experimental), ports/circuitpython; test on the Pico 2
+  elixpo/oreo#123   Elixpo CI startup fix + deploy.py --help/bump (ready to merge)
+[you] BEFORE DEPLOYING #125: add GITHUB_USER, DISPLAY_NAME, DESIGNATION, TIMEZONE_OFFSET, WEATHER_LAT, WEATHER_LON (+ OWM_API_KEY) to .env.local
+      (they are no longer hardcoded; see docs/PROFILE.md).
+[you] Test order:
+      1. Merge #123.
+      2. Check out release/oreo-cli-1.0 and run ./deploy --board --no-bump. Run the 6 test groups in #125
+         (Transfer, CLI, badge, app platform, Wi-Fi).
+      3. Pico 2 + CircuitPython: run rv565#39's 5 steps and note the FPS.
+      4. Report back. Claude fixes what you find. Then merge #125 and #39, and tag cli-v1.0.0 (stable oreo-cli release).
+[claude] Second agent run wf_0fc4ae31-994 (started 2026-11-11), stacked on #125 (base release/oreo-cli-1.0):
+  - feat/cli-setup-new : `oreo setup` (/profile.json), `oreo new`, `oreo app install/remove`, Transfer/setup/install in the interactive menu
+  - fix/badge-dev-loop : crash tracebacks (file:line) via crashlog, unload app modules on exit, launcher prefers /remote apps for `oreo dev`,
+                         App Store icons off the UI thread, header Wi-Fi bars show connecting/retrying
+  When done: integrate, test, open a PR on top of #125.
+Transfer app icon: prompt in elixpo/brand-production#11 (prompts/icons/oreoOS/transfer_icon.md).
+  [you]    Generate it and place the 1024x1024 PNG at assets/icons/raw/transfer_icon.png (oreoOS-stable / #125 branch).
+  [claude] Then bake it (tools/optimize_assets.py), drop the placeholder in apps/transfer/assets, and push to #125.
+Second agent run wf_0fc4ae31-994: DONE -> elixpo/oreo#126 (stacked on #125, base release/oreo-cli-1.0):
+  oreo setup / new / app install / interactive t,p,i; crash tracebacks; unload apps on exit; live editing via /remote/apps;
+  App Store icons off the UI thread; Wi-Fi retry bars. 352 + 260 tests, validate 24/0, mpy clean. Test after #125 (7 steps in the PR).
+Not done yet (from the agents' lists):
+  - CLI side of the profile (oreo setup); app dev loop (oreo new / oreo app install); crash traceback in launcher; unloading app modules
+  - Transfer entry in the interactive `oreo` menu; App Store icon downloads still block a frame; header Wi-Fi bars don't show "retrying"
+  - CircuitPython: Community Bundle submission after hardware test; Sphinx build not verified
+
+== 1. YOU, NOW ==
+1. [done] FFmpeg: rebased onto newer master and pushed (9db3b9688f, includes the 3 fixes). Now STOP pushing; wait for a maintainer.
+   Note: your local ~/src/ffmpeg rv565-v2 is still at fcabf98f7a (pre-rebase); reset it to forge/rv565 before any follow-up.
+2. Reply to Anne (Adafruit), thanking her for the blog post:
+     https://blog.adafruit.com/2026/11/10/rv565-frame-independent-rgb565-video-for-esp32-s3-and-rp2350-spi-displays/
+3. Flash the badge from main (#121 + #122 merged; OS files only, no firmware change):
+     ./deploy --board --no-bump --port /dev/ttyACM0
+   Then run the 8 tests in PR #121 and the 6 in PR #122. Send Claude perf.report() and wifi.debug_dump().
+4. After the CLI works on the badge: tag the first CLI release:
+     git tag cli-v0.1.0 && git push origin cli-v0.1.0
+5. Raspberry Pi news tip (drafts.md F). Now you can cite the Adafruit blog post too.
+
+== 2. CLAUDE, NEXT (after your badge results) ==
+- Fix whatever the badge tests turn up in #121/#122.
+- #116 docs/USB.md: rework it around the oreo CLI (it still documents Send Files), then you check it on the badge and merge.
+- #120 last step: remove Send Files + the Wi-Fi password handoff once `oreo add` / `oreo wifi` are confirmed.
+- Follow-ups from #121: manual Sync rows -> netsvc.request_sync(); OTA check onto the worker; status bar "retrying in N s"; watch wifi.link_seq().
+- Follow-ups from #122: tune the push chunk size; release-based `oreo update` (no checkout needed).
+- [PR #123, ready to merge] Elixpo CI startup failure fixed (job permissions); deploy.py --help + bump order fixed. Its Elixpo CI run passed.
+- CircuitPython library (elixpo/rv565 #30): planned, not started. It's what gets RV565 into Adafruit's Python newsletter. Needs a CircuitPython test board (the Pico 2 or a spare S3; the badge would lose OreoOS).
+- [done] Filed #124: badge-to-badge Bluetooth sharing (last, with the mobile app).
+- [done] Removed merged worktrees and agent branches; left: oreoOS-ci (#123), oreoOS-usbdoc (#116).
+
+== 3. OPEN ISSUES (elixpo/oreo) ==
+#117 oreo CLI (Python, released on GitHub): 0.1.0 merged in #122; release-based update and Bluetooth remain
+#118 #119 background network / boot responsiveness: merged in #121, close after the badge tests pass
+#120 Wi-Fi scan/join: fixes merged in #121, CLI wifi in #122; Send Files removal pending
+#101 #103 #124 Bluetooth: companion app, transfer, badge-to-badge sharing; last, with the mobile app
+#100 wallpapers, #98 roadmap, #94 #95 games, #66 WIFI_NETWORKS test
+
+== 4. WAITING ON OTHERS ==
+FFmpeg         code.ffmpeg.org PR, technically approved; head 9db3b9688f (rebased); a maintainer decides on inclusion
+shared-mime    freedesktop !449: ping after FFmpeg merges
+file(1)        https://bugs.astron.com/view.php?id=822 (+ emailed Christos Zoulas)
+PRONOM         digital-preservation/PRONOM_Research#202; [you] close the duplicate issue #205 (still open)
+usb.ids        patch emailed to linux.usb.ids@gmail.com; watch for the robot's reply
+Kaitai         kaitai-io/kaitai_struct_formats#803
+Arduino_GFX    moononournation/Arduino_GFX#823
+awesome lists  agucova/awesome-esp#67 #68 (inactive list), mcauser/awesome-micropython#235, thibmaek/awesome-raspberry-pi#371
+MicroPython    micropython/micropython#19846 + micropython-media#132
+pico-sdk       raspberrypi/pico-sdk#3285
+RPi forum      post live, replied to the 80 MHz question
+LVGL forum     feature request pending; write lv_rv565 only after they reply
+#116           docs/USB.md (ours): needs the CLI rework (section 2) before merging
+
+== 5. DONE ==
+2026-11-11  Adafruit blogged RV565 (not in the newsletter: Python projects only)
+2026-11-10  #121 network/boot/Wi-Fi and #122 oreo CLI merged (main 07ff252, stable/v2.0.5 released)
+2026-11-10  micropython-media#132, Adafruit email, FFmpeg approval + fixes, RPi forum reply, file(1), Kaitai, Arduino_GFX, awesome lists, usb.ids email, LVGL post
+2026-11-10  Pico 2 vs MJPEG benchmark (rv565 #36), Kaitai .ksy (#37), USB PID 0x83EC firmware (#113-#115)
+
+== 6. LATER ==
+- OreoOS v2.1 issues #100-#105
+- PCB fabrication (circuit/elixpo/elixpo.kicad_pcb): unblocks battery features and a real board photo
+- Posts from drafts.md 1-5: Hackaday.io, Arduino forum, Reddit, Espressif forum (cite the Adafruit blog)

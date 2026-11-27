@@ -1,0 +1,85 @@
+(kicad_sch
+  (version 20250114)
+  (generator "oreo_badge_generator")
+  (generator_version "1.0")
+  (uuid "437c7978-44d4-5146-9b67-eaf1728b0a2f")
+  (paper "A3")
+  (title_block (title "Oreo badge complete hardware") (rev "0.1")
+    (company "OreoOS open hardware badge"))
+  (lib_symbols)
+  (text "OREO BADGE — COMPLETE HARDWARE" (exclude_from_sim no) (at 25 25 0) (effects (font (size 2.5 2.5) (bold yes)) (justify left bottom)) (uuid "600011d7-d355-5f3a-ac3d-880cddb97bd8"))
+  (text "ESP32-S3-WROOM-1-N16R8 / 2.8 inch ILI9341 / 1000 mAh LiPo / 4-layer PCB" (exclude_from_sim no) (at 25 34 0) (effects (font (size 1.35 1.35)) (justify left bottom)) (uuid "807c72e3-5c66-57e7-8d13-0173704ce7c1"))
+  (text "Open each sheet for component-level wiring and assigned footprints." (exclude_from_sim no) (at 25 42 0) (effects (font (size 1.15 1.15)) (justify left bottom)) (uuid "297ac894-fdfa-5653-90e4-57f02ee5695e"))
+  (sheet
+    (at 25 60)
+    (size 110 60)
+    (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)
+    (stroke (width 0.4) (type solid))
+    (fill (color 245 230 220 1))
+    (uuid "1918421a-51ac-5390-bfc2-b915bf30d891")
+    (property "Sheetname" "Oreo badge — ESP32-S3-WROOM-1 module, buttons and debug" (at 25 59 0) (effects (font (size 1.15 1.15) (bold yes)) (justify left bottom)))
+    (property "Sheetfile" "core_compute.kicad_sch" (at 25 121 0) (effects (font (size 1.0 1.0)) (justify left top)))
+    (instances
+      (project "elixpo"
+        (path "/1918421a-51ac-5390-bfc2-b915bf30d891" (page "2")))
+    )
+  )
+  (sheet
+    (at 150 60)
+    (size 110 60)
+    (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)
+    (stroke (width 0.4) (type solid))
+    (fill (color 245 230 220 1))
+    (uuid "b7a5c141-1bd0-5eca-9147-013546ab968e")
+    (property "Sheetname" "Oreo badge — USB-C, charger, battery sense and 3.3 V rail" (at 150 59 0) (effects (font (size 1.15 1.15) (bold yes)) (justify left bottom)))
+    (property "Sheetfile" "power_usb.kicad_sch" (at 150 121 0) (effects (font (size 1.0 1.0)) (justify left top)))
+    (instances
+      (project "elixpo"
+        (path "/b7a5c141-1bd0-5eca-9147-013546ab968e" (page "3")))
+    )
+  )
+  (sheet
+    (at 275 60)
+    (size 110 60)
+    (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)
+    (stroke (width 0.4) (type solid))
+    (fill (color 245 230 220 1))
+    (uuid "5d5c251b-5f21-5085-9b9d-0f14b3450606")
+    (property "Sheetname" "Oreo badge — 2.8 inch ILI9341 SPI module and buttons" (at 275 59 0) (effects (font (size 1.15 1.15) (bold yes)) (justify left bottom)))
+    (property "Sheetfile" "display_controls.kicad_sch" (at 275 121 0) (effects (font (size 1.0 1.0)) (justify left top)))
+    (instances
+      (project "elixpo"
+        (path "/5d5c251b-5f21-5085-9b9d-0f14b3450606" (page "4")))
+    )
+  )
+  (sheet
+    (at 25 160)
+    (size 110 60)
+    (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)
+    (stroke (width 0.4) (type solid))
+    (fill (color 245 230 220 1))
+    (uuid "fe0792e5-9f87-5b76-b754-53a589d4c014")
+    (property "Sheetname" "Oreo badge — AW9523B expander, I2C bus and corner LEDs" (at 25 159 0) (effects (font (size 1.15 1.15) (bold yes)) (justify left bottom)))
+    (property "Sheetfile" "expander_leds.kicad_sch" (at 25 221 0) (effects (font (size 1.0 1.0)) (justify left top)))
+    (instances
+      (project "elixpo"
+        (path "/fe0792e5-9f87-5b76-b754-53a589d4c014" (page "5")))
+    )
+  )
+  (sheet
+    (at 150 160)
+    (size 110 60)
+    (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)
+    (stroke (width 0.4) (type solid))
+    (fill (color 245 230 220 1))
+    (uuid "f1a55271-7b42-5efb-9c99-f876ba69095f")
+    (property "Sheetname" "Oreo badge — speaker, motion, microSD, infrared and expansion" (at 150 159 0) (effects (font (size 1.15 1.15) (bold yes)) (justify left bottom)))
+    (property "Sheetfile" "peripherals_expansion.kicad_sch" (at 150 221 0) (effects (font (size 1.0 1.0)) (justify left top)))
+    (instances
+      (project "elixpo"
+        (path "/f1a55271-7b42-5efb-9c99-f876ba69095f" (page "6")))
+    )
+  )
+  (sheet_instances (path "/" (page "1")))
+  (embedded_fonts no)
+)
