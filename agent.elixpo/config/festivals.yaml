@@ -1,0 +1,112 @@
+# Festive themes for Elixpo's core services.
+#
+# Every listed service loads https://agent.elixpo.com/festive/theme.js, which is generated
+# from this file at build time. The browser picks the theme from today's date, so themes
+# switch on and off by themselves; editing this file only needs an agent.elixpo.com deploy.
+#
+# Window: a festival is active from `before` days before its first day until `after` days
+# after its last day, evaluated in `timezone`. When festival windows overlap, the festival
+# whose dates are nearest to today wins. Seasons apply only when no festival is active.
+#
+# Preview any theme on a live site with ?festive=<id>, or turn themes off with ?festive=off.
+
+version: 1
+timezone: Asia/Kolkata
+
+defaults:
+  before: 7
+  after: 3
+
+# Force one theme everywhere (e.g. "diwali"), or "none" to switch every theme off.
+# Leave null to follow the calendar.
+override: null
+
+# Only these hosts render themes; removing one switches it off without touching that site.
+services:
+  - elixpo.com
+  - lixrl.com
+  - sketch.elixpo.com
+  - blogs.elixpo.com
+  - accounts.elixpo.com
+  - mail.elixpo.com
+  - me.elixpo.com
+
+# Hosts that get a theme's next design (its `canary` override in the engine) before every
+# service does. Empty while no design is in trial; preview one anywhere with ?festive-canary=1.
+canary: []
+
+# Routes that never show a theme, per host: work surfaces such as canvases and editors.
+# Globs; * matches anything, including "/".
+exclude_paths:
+  sketch.elixpo.com:
+    - /c/*
+    - /room/*
+    - /s/*
+  blogs.elixpo.com:
+    - /edit/*
+    - /new-blog
+
+# Elixpo members' birthdays (MM-DD, in `timezone`). On the day itself the birthday theme
+# replaces any festival or season: confetti, balloons, and Lumi in a party hat linking to
+# the person's page. Keep in step with `birthday` in me.elixpo content/<person>/profile.json.
+# Preview with ?festive=birthday, or ?festive=birthday&festive-who=<name>.
+birthdays:
+  - name: Ayushman
+    date: "03-13"
+    url: https://me.elixpo.com/ayushman
+  - name: Anwesha
+    date: "11-29"
+    url: https://me.elixpo.com/anwesha
+
+festivals:
+  - id: new-year
+    name: New Year
+    greeting: Happy New Year
+    every_year: "01-01"
+
+  - id: republic-day
+    name: Republic Day
+    greeting: Happy Republic Day
+    every_year: "01-26"
+    before: 3
+
+  - id: holi
+    name: Holi
+    greeting: Happy Holi
+    dates:
+      - start: 2027-03-21 # Holika Dahan; Rangwali Holi is 22 March
+        end: 2027-03-22
+
+  - id: independence-day
+    name: Independence Day
+    greeting: Happy Independence Day
+    every_year: "08-15"
+    before: 3
+
+  - id: durga-puja
+    name: Durga Puja
+    greeting: Shubho Durga Puja
+    dates:
+      - start: 2027-10-05 # Shashthi to Bijoya Dashami; confirm against the 2027 West Bengal notification
+        end: 2027-10-09
+
+  - id: diwali
+    name: Diwali
+    greeting: Happy Diwali
+    dates:
+      - start: 2026-11-08
+      - start: 2027-10-29 # single-source date; confirm against the 2027 panchang
+
+  - id: christmas
+    name: Christmas
+    greeting: Merry Christmas
+    every_year: "12-25"
+
+seasons:
+  - id: winter
+    name: Winter
+    months: [12, 1, 2]
+
+  - id: summer
+    name: Summer
+    months: [4, 5, 6]

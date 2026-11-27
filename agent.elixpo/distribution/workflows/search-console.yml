@@ -1,0 +1,25 @@
+name: Search Console Sync
+on:
+  # Standard cadence: after every successful deploy of a merge, plus a sweep
+  # every third day. Give each repo its own minute so runs do not overlap.
+  workflow_run:
+    workflows: [Production Deploy] # this repo's deploy workflow name
+    types: [completed]
+  schedule:
+    - cron: "17 3 */3 * *"
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: search-console-${{ github.repository }}
+  cancel-in-progress: true
+jobs:
+  sync:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+    uses: elixpo/agent.elixpo/.github/workflows/search-console-reusable.yml@main
+    with:
+      site-url: https://example.elixpo.com # replace with this repo's site
+      inspect-limit: 50
+    secrets:
+      google_service_account_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}

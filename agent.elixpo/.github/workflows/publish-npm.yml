@@ -1,0 +1,100 @@
+# Reusable npm publish for Elixpo packages, with provenance.
+# Publishes only when package.json's version is not on the registry yet, so it is safe on every push.
+#
+#   jobs:
+#     npm:
+#       permissions: { contents: read, id-token: write }
+#       uses: elixpo/agent.elixpo/.github/workflows/publish-npm.yml@main
+#       with:
+#         working-directory: packages/sdk
+#       secrets:
+#         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+name: Publish npm package
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: "."
+      node-version:
+        type: string
+        default: "22"
+      build-command:
+        type: string
+        default: ""
+      access:
+        type: string
+        default: public
+      tag:
+        description: dist-tag to publish under
+        type: string
+        default: latest
+      environment:
+        type: string
+        default: npm
+    secrets:
+      NPM_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: npm-${{ github.repository }}-${{ inputs.working-directory }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ inputs.node-version }}
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Check whether this version is already published
+        id: version
+        run: |
+          name=$(node -p 'require("./package.json").name')
+          version=$(node -p 'require("./package.json").version')
+          echo "label=$name@$version" >> "$GITHUB_OUTPUT"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "$name@$version is already on npm; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.version.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.version.outputs.publish == 'true' && inputs.build-command != ''
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+
+      - name: Publish
+        if: steps.version.outputs.publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          ACCESS: ${{ inputs.access }}
+          TAG: ${{ inputs.tag }}
+          LABEL: ${{ steps.version.outputs.label }}
+        run: |
+          npm publish --provenance --access "$ACCESS" --tag "$TAG"
+          echo "Published \`$LABEL\` to npm." >> "$GITHUB_STEP_SUMMARY"
