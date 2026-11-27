@@ -1,0 +1,29 @@
+{
+  "intro": {
+    "heading": "ANWESHA",
+    "subheading": "ABOUT!",
+    "description": "Welcome to Anwesha's corner of the internet!\nShe's a researcher at Elixpo and a Computer Science and Engineering student at JIS University, working on embedded and heterogeneous systems, efficient machine learning, and computer architecture. She has co-authored four research records, from a 2025 journal paper on a microcoded 8-bit breadboard CPU to 2026 arXiv preprints on Linux-RTOS task recovery and ESP32-S3 video playback. More about her as you scroll down!",
+    "portraitImage": "/assets/anwesha/about/ptr-11.webp"
+  },
+  "fancySection": {
+    "banner": "LET'S GO!!",
+    "subtitle": "Collabs & Meets!",
+    "content": "The best research is built with others. At Elixpo I co-author papers with Ayushman Bhattacharya, Nihal Gazi, and Vivek Yadav, and each one is published with its code, data, and citation record so anyone can check it. Outside the lab, I lead content for GDG on Campus JIS University and have contributed through GSSoC '25, OSCI '25, and Hacktoberfest. If you're working on systems, efficient ML, or reproducible research, let's talk.",
+    "highlights": [
+      "research",
+      "reproducibility",
+      "Elixpo",
+      "GDG",
+      "GSSoC",
+      "OSCI"
+    ],
+    "shoutouts": [],
+    "contactNote": "Reach out if you want to collaborate on a paper, rerun one of our experiments, or just talk about systems and research. Thanks to everyone who has been part of the journey."
+  },
+  "images": {
+    "gallery": [
+      "/assets/anwesha/about/sq-22.webp",
+      "/assets/anwesha/about/sq-11.webp"
+    ]
+  }
+}

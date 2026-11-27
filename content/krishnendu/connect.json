@@ -1,0 +1,14 @@
+{
+  "heading": "CONNECT",
+  "heroImage": "/assets/krishnendu/websiteSection/blackhole-seal.webp",
+  "description": "Let's connect for open-source collaborations, full-stack engineering, AI developer tooling, or new opportunities.",
+  "emails": [
+    "krishnendu125dutta@gmail.com",
+    "krishnendu.dutta.dev@gmail.com"
+  ],
+  "contactImage": "/assets/krishnendu/connect-hero.jpg",
+  "socialLinks": [
+    { "platform": "GitHub", "url": "https://github.com/dev-krish", "icon": "logo-github", "hoverColor": "#333" },
+    { "platform": "LinkedIn", "url": "https://www.linkedin.com/in/krishnendu-dutta-5a1512384/", "icon": "logo-linkedin", "hoverColor": "#0077b5" }
+  ]
+}

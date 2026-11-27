@@ -1,0 +1,32 @@
+[
+  {
+    "jobTitle": "Researcher, Elixpo",
+    "timeline": "2025 - Present",
+    "description": "Co-authoring Elixpo's open research: QFabric (Linux-RTOS task recovery, arXiv:2611.01598), RV565 (ESP32-S3 video playback, arXiv:2610.35935), MonoDiffuse (one-bit diffusion, TR-2026-01), and OctaBit (microcoded 8-bit breadboard CPU, IJERSTE 2025). Works across experiment design, measurement, writing, and technical review, with every paper published alongside its source and artifacts."
+  },
+  {
+    "jobTitle": "Co-developer & Maintainer, Elixpo",
+    "timeline": "Oct 2024 - Present",
+    "description": "Co-developer on Elixpo Chapter, the organization's public build-and-release repository (35 commits), including the Discord bot code and the elixpo.search restructure. Also co-develops this Elixpo member portfolio platform."
+  },
+  {
+    "jobTitle": "Content Team Lead, GDG on Campus JIS University",
+    "timeline": "Sep 2025 - Present",
+    "description": "Leading the content team at GDG JIS University, overseeing content strategy, event documentation, and community engagement for Google Developer Group initiatives in Kolkata."
+  },
+  {
+    "jobTitle": "Contributor, GirlScript Summer of Code",
+    "timeline": "Sep 2025 - Present",
+    "description": "Contributing to open-source projects through GSSoC '25, focusing on DevOps workflows and collaborative development across remote teams."
+  },
+  {
+    "jobTitle": "Contributor, Open Source Connect India",
+    "timeline": "Jul 2025 - Oct 2025",
+    "description": "Contributed to three projects during OSCI '25, working on DevOps tooling and version-control workflows."
+  },
+  {
+    "jobTitle": "Member, GDG Kolkata",
+    "timeline": "Jun 2023 - Present",
+    "description": "Active member of GDG Kolkata, taking part in developer meetups, tech talks, and community events around Google technologies and open source."
+  }
+]

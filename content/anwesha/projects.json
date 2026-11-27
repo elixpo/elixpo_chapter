@@ -1,0 +1,72 @@
+{
+  "heading": "PROJECTS",
+  "subText": "Researcher",
+  "description": "The research systems Anwesha has co-authored at Elixpo, the community repository she helps maintain, and her own builds. Each research project links to its paper on the Publications page. Star counts are a snapshot from 27 November 2026.",
+  "projects": [
+    {
+      "name": "qfabric",
+      "displayName": "QFabric",
+      "description": "Research runtime for contract-driven task recovery across Linux and RTOS execution domains on the Arduino UNO Q. Treats task placement as guarded recovery from violated timing contracts, with hysteresis, admission checks, epoch switching, and probation-based rollback. Co-author of the QFabric paper (arXiv:2611.01598).",
+      "stars": 2,
+      "url": "https://github.com/elixpo/qfabric",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["real-time-systems", "rtos", "embedded-systems", "fault-recovery", "research"],
+      "language": "Python"
+    },
+    {
+      "name": "falera",
+      "displayName": "Falera · RV565",
+      "description": "FaleraOS and the ESP32-S3 Falera Badge. Co-author of the RV565 paper, which stores frames in the display's native RGB565 format and decodes them independently on a dual-core pipeline, reaching 24 FPS with no missed frames (arXiv:2610.35935).",
+      "stars": 14,
+      "url": "https://github.com/elixpo/falera",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["esp32-s3", "micropython", "video-playback", "open-hardware", "rv565"],
+      "language": "Python"
+    },
+    {
+      "name": "monodiffuse",
+      "displayName": "MonoDiffuse",
+      "description": "Controlled experiments in one-bit diffusion: native binary-weight training against post-training sign projection, with matched residual U-Nets, repeated seeds, packed checkpoints, and reproducible artifacts. Co-author of MonoDiffuse Technical Report 2026-01.",
+      "stars": 0,
+      "url": "https://github.com/elixpo/monodiffuse",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["diffusion-models", "binary-neural-networks", "quantization", "edge-ai", "research"],
+      "language": "Python"
+    },
+    {
+      "name": "octabit",
+      "displayName": "OctaBit",
+      "description": "A RISC-style 8-bit breadboard computer built from transistor and TTL logic, with a discrete ALU, Arduino-managed microcode, and a seven-segment output. Co-author of the paper published in IJERSTE 14(6), 2025.",
+      "stars": 4,
+      "url": "https://github.com/elixpo/octabit",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["computer-architecture", "breadboard-computer", "arduino", "systemdesign"],
+      "language": "C++"
+    },
+    {
+      "name": "elixpo_chapter",
+      "displayName": "Elixpo Chapter",
+      "description": "Elixpo's canonical collection of public build-and-release Chapters, bringing open-source software, reproducible research, hardware, and community contributions into one record. Co-developer and maintainer since 2024, with 35 commits including the Discord bot code and the elixpo.search restructure.",
+      "stars": 85,
+      "url": "https://github.com/elixpo/elixpo_chapter",
+      "owner": "elixpo",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/161109909?v=4",
+      "topics": ["open-source", "community-driven", "monorepo", "reproducible-research", "hacktoberfest"],
+      "language": "Python"
+    },
+    {
+      "name": "Videolize",
+      "description": "A personal animated portfolio built with vanilla JavaScript, CSS3, and Firebase.",
+      "stars": 2,
+      "url": "https://github.com/anwe-ch/Videolize",
+      "owner": "anwe-ch",
+      "ownerLogo": "https://avatars.githubusercontent.com/u/148317441?v=4",
+      "topics": ["portfolio", "javascript", "firebase", "personal-website"],
+      "language": "JavaScript"
+    }
+  ]
+}
