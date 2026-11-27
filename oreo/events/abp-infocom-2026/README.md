@@ -6,6 +6,10 @@ For the JIS University stall at ABP Infocom 2026, Hyatt Regency, Kolkata,
 
 ![The poster](out/poster-a3-preview.png)
 
+The poster is **generic**: no event or university branding (no JIS University
+logo, no event name), so it can be reused at any event. The QR cards, the
+funding card and the pitch are generic too.
+
 ## Print files (`out/`)
 
 | File | What |
@@ -22,6 +26,19 @@ Images print above 300 dpi: the hero at 372 dpi, the three screenshots at
 917 dpi (UI screens enlarged 4x pixel for pixel), Lumi (pixel art, tripled)
 at 713 dpi, the logos above 500 dpi. Both QR codes decode from
 a 300 dpi raster of the RGB and the CMYK PDF; the main one is 40 × 40 mm.
+
+## The demo and the laptop
+
+[DEMO.md](DEMO.md): the one focused demo (about 3 minutes): a computer you
+can wear round your neck, why, the three layers, examples, remote control
+over USB with `falera transfer`, the paper, the video, and the ask; with
+what to say, what to show on the badge and which screen to show at each
+step, and what to do if something goes wrong.
+
+[stall-screen.html](stall-screen.html): the laptop's full-screen page, scaled
+to any screen. Keys 1 to 5: the overview, the three layers, what it does
+(updates over the air, infrared, the RV565 video format), the research
+paper, and star and back it (QR codes).
 
 ## The pitch
 

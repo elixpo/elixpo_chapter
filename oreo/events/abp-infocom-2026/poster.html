@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Falera poster · ABP Infocom 2026 · A3 landscape</title>
+<title>Falera poster · A3 landscape</title>
 <!--
-  A3 landscape poster for ABP Infocom 2026 (JIS University stall, 28 Nov 2026).
+  A3 landscape poster for Falera, generic for any event (first made for
+  ABP Infocom 2026; no event or university branding on it).
   Every size is in millimetres at print size (420 x 297 mm). Edit the text
   here, then run `python3 make_poster.py` to rebuild out/poster-a3*.pdf and
   the PNG preview. ?bleed adds 3 mm of background on every side.
@@ -54,7 +55,6 @@
 
   /* ── Centre: the badge in 3D, Lumi ─────────────────────────────────── */
   .hero { left: 144mm; top: 11mm; width: 164mm; }
-  .render-cap { left: 150mm; top: 190mm; font: 400 3.4mm/1 var(--mono); color: var(--muted); letter-spacing: 0.2mm; }
   .lumi { left: 262mm; top: 182mm; width: 40mm; }
   .lumi-says { left: 212mm; top: 194mm; width: 48mm; padding: 2.6mm 3mm; background: #fff; border: 0.5mm solid var(--border);
                border-radius: 3mm; font: 400 3.8mm/1.3 var(--sans); color: var(--dim); }
@@ -94,8 +94,11 @@
   .who .role b { color: var(--red); }
   .who .mail { margin-top: 1.6mm; font: 700 4.2mm/1 var(--mono); color: var(--ink); letter-spacing: 0.1mm; }
   .who .url { margin-top: 3.2mm; font: 700 4.2mm/1 var(--mono); color: var(--red); letter-spacing: 0.2mm; }
-  .who .team { margin-top: 1.6mm; font: 400 4.2mm/1.3 var(--sans); color: var(--dim); }
-  .who .team b { font-weight: 700; color: var(--ink); }
+  /* Elixpo's Udyam registration, as text only (no government emblem). */
+  .who .msme { margin-top: 3.4mm; display: inline-flex; align-items: center; gap: 3.4mm;
+               padding: 2.2mm 3.8mm; background: #fff; border: 0.6mm solid var(--red); border-radius: 1.8mm; }
+  .who .msme span { font: 700 3.3mm/1 var(--mono); letter-spacing: 0.45mm; text-transform: uppercase; color: var(--red); }
+  .who .msme b { font: 700 5.2mm/1 var(--mono); letter-spacing: 0.15mm; color: var(--ink); }
   .logos { right: 18mm; top: 252mm; height: 38mm; display: flex; align-items: center; gap: 10mm; }
   .logos .jis { height: 34mm; }
   .logos .elixpo { height: 34mm; }
@@ -105,7 +108,7 @@
 <div class="poster">
   <div class="band"></div>
 
-  <div class="eyebrow"><img src="assets/bow.svg" alt="">JIS University <span>· ABP Infocom 2026 · Kolkata</span></div>
+  <div class="eyebrow"><img src="assets/bow.svg" alt="">Falera Badge <span>· by Elixpo</span></div>
   <h1 class="title"><span class="t1">Falera:</span><span class="t2">An Open-Source Smart Badge<br>with Its Own Operating System</span></h1>
   <p class="tagline">I designed the board and wrote its operating system.</p>
 
@@ -125,7 +128,6 @@
   </div>
 
   <img class="hero" src="assets/hero-final.png" alt="The Falera Badge: the final board with its screen, name card and lanyard">
-  <p class="render-cap">The final board, in 3D</p>
   <p class="lumi-says">Hi, I'm <b>Lumi</b>. Come and try the badge!</p>
   <img class="lumi" src="assets/lumi-badge-3x.png" alt="Lumi, the Falera panda">
 
@@ -163,12 +165,11 @@
   <div class="who">
     <div class="name">Ayushman Bhattacharya</div>
     <div class="mail">ayushman@elixpo.com</div>
-    <div class="role">Founder, <b>Elixpo</b> · JIS University</div>
+    <div class="role">Founder, <b>Elixpo</b></div>
     <div class="url">falera.elixpo.com</div>
-    <div class="team">with <b>Vivek Yadav</b> · <b>Anwesha Chakraborty</b></div>
+    <div class="msme"><span>Udyam-registered MSME</span><b>UDYAM-WB-07-0152337</b></div>
   </div>
   <div class="logos">
-    <img class="jis" src="assets/jis_university_logo.png" alt="JIS University">
     <img class="elixpo" src="assets/elixpo-lockup-clean.png" alt="Elixpo, built in the open">
   </div>
 </div>
